@@ -1,0 +1,122 @@
+{
+  "meta": {
+    "version": "1.0",
+    "lastUpdated": "2026-01-29",
+    "description": "Learning areas configuration for all grade levels. Edit this file to add/modify/remove learning areas."
+  },
+  "ECD": {
+    "label": "Early Childhood Development",
+    "grades": [
+      "NURSERY",
+      "KINDERGARTEN",
+      "PLAYGROUP",
+      "CRECHE"
+    ],
+    "areas": [
+      "Mathematics Activities",
+      "English Activities",
+      "Kiswahili Activities",
+      "Environmental Activities",
+      "Religious Education",
+      "Creative Arts & Sports",
+      "Play-Based Learning"
+    ]
+  },
+  "LOWER_PRIMARY": {
+    "label": "Lower Primary (Grades 1-3)",
+    "grades": [
+      "PP1",
+      "PP2",
+      "GRADE_1",
+      "GRADE_2",
+      "GRADE_3"
+    ],
+    "areas": [
+      "Mathematics",
+      "English",
+      "Kiswahili",
+      "Environmental Studies",
+      "Creative Activities",
+      "Religious Education",
+      "Information Communications Technology"
+    ]
+  },
+  "UPPER_PRIMARY": {
+    "label": "Upper Primary (Grades 4-6)",
+    "grades": [
+      "GRADE_4",
+      "GRADE_5",
+      "GRADE_6"
+    ],
+    "areas": [
+      "Mathematics",
+      "English Language",
+      "Kiswahili Lugha",
+      "Science",
+      "Social Studies",
+      "Agriculture",
+      "Creative Arts",
+      "Physical Education",
+      "Integrated Science",
+      "Religious Education"
+    ]
+  },
+  "LOWER_SECONDARY": {
+    "label": "Lower Secondary (Grades 7-8)",
+    "grades": [
+      "GRADE_7",
+      "GRADE_8"
+    ],
+    "areas": [
+      "Mathematics",
+      "English Language",
+      "Kiswahili Lugha",
+      "Science",
+      "Social Studies",
+      "Agriculture",
+      "Creative Arts and Sports",
+      "Pre-Technical Studies",
+      "Integrated Science",
+      "IRE",
+      "CRE"
+    ]
+  },
+  "UPPER_SECONDARY": {
+    "label": "Upper Secondary (Grades 9-12)",
+    "grades": [
+      "GRADE_9",
+      "GRADE_10",
+      "GRADE_11",
+      "GRADE_12"
+    ],
+    "areas": [
+      "Mathematics",
+      "English Language",
+      "Kiswahili Lugha",
+      "Physics",
+      "Chemistry",
+      "Biology",
+      "Integrated Science",
+      "Computer Studies",
+      "Coding & Robotics",
+      "Agriculture",
+      "Social Studies",
+      "History",
+      "Geography",
+      "Government",
+      "French",
+      "CRE",
+      "IRE",
+      "Pre-Technical Studies",
+      "Creative Arts and Sports",
+      "Business Studies",
+      "Economics"
+    ]
+  },
+  "_instructions": {
+    "addNewArea": "Add the new area to the 'areas' array in the appropriate level",
+    "addNewGrade": "Add the grade to 'grades' array, then add a new level if needed",
+    "example": "To add 'German Language' to Upper Secondary: add it to UPPER_SECONDARY.areas array",
+    "reload": "After editing, the system will auto-reload on next page load"
+  }
+}

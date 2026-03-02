@@ -1,0 +1,134 @@
+import { Response } from 'express';
+import { AuthRequest } from '../middleware/auth.middleware';
+import { accountingService } from '../services/accounting.service';
+import { ApiError } from '../utils/error.util';
+
+export class AccountingController {
+    /**
+     * Chart of Accounts
+     */
+    async getAccounts(req: AuthRequest, res: Response) {
+        try {
+            const accounts = await accountingService.getAccounts();
+            res.json({ success: true, data: accounts });
+        } catch (error: any) {
+            res.status(error.statusCode || 500).json({ success: false, message: error.message });
+        }
+    }
+
+    async getJournals(req: AuthRequest, res: Response) {
+        try {
+            const journals = await accountingService.getJournals();
+            res.json({ success: true, data: journals });
+        } catch (error: any) {
+            res.status(error.statusCode || 500).json({ success: false, message: error.message });
+        }
+    }
+
+    /**
+     * Journal Operations
+     */
+    async createJournalEntry(req: AuthRequest, res: Response) {
+        try {
+            const entry = await accountingService.createJournalEntry(req.body);
+            res.status(201).json({ success: true, message: 'Journal entry created', data: entry });
+        } catch (error: any) {
+            res.status(400).json({ success: false, message: error.message });
+        }
+    }
+
+    async postJournalEntry(req: AuthRequest, res: Response) {
+        try {
+            const { id } = req.params;
+            const posted = await accountingService.postJournalEntry(id);
+            res.json({ success: true, message: 'Journal entry posted', data: posted });
+        } catch (error: any) {
+            res.status(400).json({ success: false, message: error.message });
+        }
+    }
+
+    /**
+     * Reports
+     */
+    async getTrialBalance(req: AuthRequest, res: Response) {
+        try {
+            const { startDate, endDate } = req.query;
+            const report = await accountingService.getFinancialReport(
+                new Date(startDate as string),
+                new Date(endDate as string)
+            );
+            res.json({ success: true, data: report });
+        } catch (error: any) {
+            res.status(500).json({ success: false, message: error.message });
+        }
+    }
+
+    async getVendors(req: AuthRequest, res: Response) {
+        try {
+            const vendors = await accountingService.getVendors();
+            res.json({ success: true, data: vendors });
+        } catch (error: any) {
+            res.status(500).json({ success: false, message: error.message });
+        }
+    }
+
+    async createVendor(req: AuthRequest, res: Response) {
+        try {
+            const vendor = await accountingService.createVendor(req.body);
+            res.status(201).json({ success: true, message: 'Vendor created', data: vendor });
+        } catch (error: any) {
+            res.status(400).json({ success: false, message: error.message });
+        }
+    }
+
+    async recordExpense(req: AuthRequest, res: Response) {
+        try {
+            const expense = await accountingService.recordExpense(req.body);
+            res.status(201).json({ success: true, message: 'Expense recorded and posted to ledger', data: expense });
+        } catch (error: any) {
+            res.status(400).json({ success: false, message: error.message });
+        }
+    }
+
+    async getBankStatements(req: AuthRequest, res: Response) {
+        try {
+            const statements = await accountingService.getBankStatements();
+            res.json({ success: true, data: statements });
+        } catch (error: any) {
+            res.status(500).json({ success: false, message: error.message });
+        }
+    }
+
+    async importBankStatement(req: AuthRequest, res: Response) {
+        try {
+            const statement = await accountingService.importBankStatement(req.body);
+            res.status(201).json({ success: true, message: 'Bank statement imported', data: statement });
+        } catch (error: any) {
+            res.status(400).json({ success: false, message: error.message });
+        }
+    }
+
+    async reconcileLine(req: AuthRequest, res: Response) {
+        try {
+            const { lineId, journalItemId } = req.body;
+            const reconciled = await accountingService.reconcileStatementLine(lineId, journalItemId);
+            res.json({ success: true, message: 'Line reconciled', data: reconciled });
+        } catch (error: any) {
+            res.status(400).json({ success: false, message: error.message });
+        }
+    }
+
+    /**
+     * Initialization
+     */
+    async initializeCoA(req: AuthRequest, res: Response) {
+        try {
+            await accountingService.initializeDefaultCoA();
+            res.json({ success: true, message: 'Default Chart of Accounts initialized' });
+        } catch (error: any) {
+            res.status(500).json({ success: false, message: error.message });
+        }
+    }
+}
+
+export const accountingController = new AccountingController();

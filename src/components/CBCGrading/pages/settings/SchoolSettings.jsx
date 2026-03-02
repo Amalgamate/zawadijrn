@@ -1,0 +1,684 @@
+/**
+ * School Settings Page - Unified Configuration Hub
+ */
+
+import React, { useState, useRef, useEffect } from 'react';
+import { School, Save, Upload, X, AlertTriangle, MapPin, Loader2, Palette, Image as ImageIcon, Info, Phone, Mail, MessageSquare } from 'lucide-react';
+import { toast } from 'react-hot-toast';
+import { useNotifications } from '../../hooks/useNotifications';
+import { API_BASE_URL } from '../../../../services/api';
+
+const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
+  const { showSuccess } = useNotifications();
+  const fileInputRef = useRef(null);
+  const faviconInputRef = useRef(null);
+  const stampInputRef = useRef(null);
+
+  // State for tabs
+  const [activeTab, setActiveTab] = useState('general');
+
+  // State for school settings - Unified Hub
+  const [settings, setSettings] = useState({
+    schoolName: brandingSettings?.schoolName || '',
+    address: brandingSettings?.address || '',
+    phone: brandingSettings?.phone || '',
+    email: brandingSettings?.email || '',
+    motto: brandingSettings?.motto || '',
+    vision: '',
+    mission: '',
+    latitude: null,
+    longitude: null,
+    brandColor: brandingSettings?.brandColor || '#520050',
+    logoUrl: brandingSettings?.logoUrl || '/logo-elimcrown.png',
+    faviconUrl: brandingSettings?.faviconUrl || '/favicon.png',
+    stampUrl: brandingSettings?.stampUrl || '/stamp.svg',
+    welcomeTitle: brandingSettings?.welcomeTitle || '',
+    welcomeMessage: brandingSettings?.welcomeMessage || '',
+    onboardingTitle: brandingSettings?.onboardingTitle || '',
+    onboardingMessage: brandingSettings?.onboardingMessage || ''
+  });
+
+  const [previews, setPreviews] = useState({
+    logo: brandingSettings?.logoUrl || '/logo-elimcrown.png',
+    favicon: brandingSettings?.faviconUrl || '/favicon.png',
+    stamp: brandingSettings?.stampUrl || '/stamp.svg'
+  });
+
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  // Track initial state for dirty checking
+  const [savedState, setSavedState] = useState({
+    settings: {
+      schoolName: brandingSettings?.schoolName || '',
+      address: brandingSettings?.address || '',
+      phone: brandingSettings?.phone || '',
+      email: brandingSettings?.email || '',
+      motto: brandingSettings?.motto || '',
+      vision: '',
+      mission: '',
+      latitude: null,
+      longitude: null,
+      brandColor: brandingSettings?.brandColor || '#520050',
+      logoUrl: brandingSettings?.logoUrl || '/logo-elimcrown.png',
+      faviconUrl: brandingSettings?.faviconUrl || '/favicon.png',
+      stampUrl: brandingSettings?.stampUrl || '/stamp.svg',
+      welcomeTitle: brandingSettings?.welcomeTitle || '',
+      welcomeMessage: brandingSettings?.welcomeMessage || '',
+      onboardingTitle: brandingSettings?.onboardingTitle || '',
+      onboardingMessage: brandingSettings?.onboardingMessage || ''
+    },
+    previews: {
+      logo: brandingSettings?.logoUrl || '/logo-elimcrown.png',
+      favicon: brandingSettings?.faviconUrl || '/favicon.png',
+      stamp: brandingSettings?.stampUrl || '/stamp.svg'
+    }
+  });
+
+  // Check for unsaved changes
+  const hasUnsavedChanges = savedState && (
+    JSON.stringify(settings) !== JSON.stringify(savedState.settings) ||
+    JSON.stringify(previews) !== JSON.stringify(savedState.previews)
+  );
+
+  // Warn on page leave if unsaved
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
+  // Fetch school data from backend on mount
+  useEffect(() => {
+    const fetchSchoolData = async () => {
+      try {
+        const schoolId = localStorage.getItem('currentSchoolId');
+        const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+
+        if (!schoolId || !token) return;
+
+        const response = await fetch(`${API_BASE_URL}/schools/${schoolId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'X-School-Id': schoolId
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const school = data.data || data;
+
+          if (school) {
+            const fetchedSettings = {
+              schoolName: school.name || '',
+              address: school.address || '',
+              phone: school.phone || '',
+              email: school.email || '',
+              motto: school.motto || '',
+              vision: school.vision || '',
+              mission: school.mission || '',
+              latitude: school.latitude || null,
+              longitude: school.longitude || null,
+              brandColor: school.brandColor || '#520050',
+              logoUrl: school.logoUrl || '/logo-elimcrown.png',
+              faviconUrl: school.faviconUrl || '/favicon.png',
+              stampUrl: school.stampUrl || '/stamp.svg',
+              welcomeTitle: school.welcomeTitle || '',
+              welcomeMessage: school.welcomeMessage || '',
+              onboardingTitle: school.onboardingTitle || '',
+              onboardingMessage: school.onboardingMessage || ''
+            };
+
+            const fetchedPreviews = {
+              logo: fetchedSettings.logoUrl,
+              favicon: fetchedSettings.faviconUrl,
+              stamp: fetchedSettings.stampUrl
+            };
+
+            setSettings(fetchedSettings);
+            setPreviews(fetchedPreviews);
+            setSavedState({
+              settings: fetchedSettings,
+              previews: fetchedPreviews
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching school data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSchoolData();
+  }, [API_BASE_URL]);
+
+  // Sync with global branding state (for sidebar/favicon/title reflection)
+  useEffect(() => {
+    if (setBrandingSettings && !loading) {
+      setBrandingSettings(prev => ({
+        ...prev,
+        logoUrl: previews.logo,
+        faviconUrl: previews.favicon,
+        stampUrl: previews.stamp,
+        schoolName: settings.schoolName,
+        brandColor: settings.brandColor
+      }));
+    }
+  }, [previews, settings.schoolName, settings.brandColor, setBrandingSettings, loading]);
+
+  const handleChange = (field, value) => {
+    setSettings(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleImageUpload = (e, type) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please upload an image file');
+        return;
+      }
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error('File size must be less than 2MB');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result;
+        setPreviews(prev => ({ ...prev, [type]: result }));
+        setSettings(prev => ({ ...prev, [`${type}Url`]: result }));
+        showSuccess(`${type.charAt(0).toUpperCase() + type.slice(1)} updated! Click "Save Changes" to persist.`);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = (type, defaultPath) => {
+    setPreviews(prev => ({ ...prev, [type]: defaultPath }));
+    setSettings(prev => ({ ...prev, [`${type}Url`]: defaultPath }));
+    showSuccess(`${type.charAt(0).toUpperCase() + type.slice(1)} reset to default.`);
+  };
+
+  const handleGetLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported by your browser');
+      return;
+    }
+
+    const toastId = toast.loading('Fetching your location...');
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        const lat = parseFloat(latitude.toFixed(6));
+        const lon = parseFloat(longitude.toFixed(6));
+
+        setSettings(prev => ({ ...prev, latitude: lat, longitude: lon }));
+
+        try {
+          const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=1`);
+          const data = await response.json();
+
+          if (data && data.display_name) {
+            const addr = data.address;
+            const locationName = addr.city || addr.town || addr.village || addr.county || addr.state || data.name;
+            const fullAddress = locationName ? `${locationName}, ${addr.country}` : data.display_name;
+
+            setSettings(prev => ({ ...prev, address: fullAddress }));
+            toast.success(`Location captured: ${fullAddress}!`, { id: toastId });
+          } else {
+            toast.success('Coordinates captured!', { id: toastId });
+          }
+        } catch (error) {
+          console.error('Reverse geocoding error:', error);
+          toast.success('Coordinates captured (address lookup failed).', { id: toastId });
+        }
+      },
+      (error) => {
+        toast.error('Failed to get location. Please enable location access.', { id: toastId });
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const schoolId = localStorage.getItem('currentSchoolId');
+      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+
+      if (!schoolId || !token) throw new Error('Authentication required');
+
+      const response = await fetch(`${API_BASE_URL}/schools/${schoolId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'X-School-Id': schoolId
+        },
+        body: JSON.stringify({
+          name: settings.schoolName,
+          address: settings.address,
+          phone: settings.phone,
+          email: settings.email,
+          motto: settings.motto,
+          vision: settings.vision,
+          mission: settings.mission,
+          logoUrl: settings.logoUrl,
+          faviconUrl: settings.faviconUrl,
+          stampUrl: settings.stampUrl,
+          brandColor: settings.brandColor,
+          latitude: settings.latitude,
+          longitude: settings.longitude,
+          welcomeTitle: settings.welcomeTitle,
+          welcomeMessage: settings.welcomeMessage,
+          onboardingTitle: settings.onboardingTitle,
+          onboardingMessage: settings.onboardingMessage
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to save settings');
+      }
+
+      setSavedState({ settings: { ...settings }, previews: { ...previews } });
+      toast.success('✅ School settings updated successfully!');
+
+      // Sync local storage user object for header/sidebar immediate reflection
+      try {
+        const userString = localStorage.getItem('user');
+        if (userString) {
+          const user = JSON.parse(userString);
+          if (user.school) {
+            user.school.name = settings.schoolName;
+            user.school.phone = settings.phone;
+            user.school.email = settings.email;
+            user.school.address = settings.address;
+            user.school.motto = settings.motto;
+            user.school.logoUrl = settings.logoUrl;
+            user.school.brandColor = settings.brandColor;
+            user.school.stampUrl = settings.stampUrl;
+          }
+          localStorage.setItem('user', JSON.stringify(user));
+        }
+      } catch (e) {
+        console.error('Error updating user object in storage:', e);
+      }
+
+      window.dispatchEvent(new Event('storage'));
+    } catch (error) {
+      toast.error(error.message || 'Failed to sync with server.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="animate-spin text-blue-600" size={48} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-6 pb-12">
+      {/* Header with Save Button */}
+      <div className="flex justify-between items-center bg-white p-6 rounded-xl shadow-sm mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">School Configuration</h2>
+          <p className="text-gray-500 text-sm">Manage your school's identity, branding, and contact details.</p>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="flex bg-gray-100 p-1 rounded-lg">
+            <button
+              onClick={() => setActiveTab('general')}
+              className={`px-4 py-2 rounded-md text-sm font-semibold transition-all ${activeTab === 'general' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-600 hover:bg-gray-200'
+                }`}
+            >
+              General Defaults
+            </button>
+            <button
+              onClick={() => setActiveTab('branding')}
+              className={`px-4 py-2 rounded-md text-sm font-semibold transition-all ${activeTab === 'branding' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-600 hover:bg-gray-200'
+                }`}
+            >
+              Branding Settings
+            </button>
+          </div>
+          <button
+            onClick={handleSave}
+            disabled={saving || !hasUnsavedChanges}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-lg transition-all font-semibold shadow-md ${!hasUnsavedChanges
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              : saving
+                ? 'bg-gray-400 text-white cursor-not-allowed'
+                : 'bg-green-600 text-white hover:bg-green-700 hover:shadow-lg'
+              }`}
+          >
+            {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+            {saving ? 'Saving...' : 'Save Changes'}
+          </button>
+        </div>
+      </div>
+
+      {hasUnsavedChanges && (
+        <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded flex items-center gap-3 animate-in fade-in slide-in-from-top-2 mb-6">
+          <AlertTriangle className="text-amber-500" size={20} />
+          <p className="text-sm text-amber-800 flex-1">
+            <strong>Unsaved Changes:</strong> You have modified settings that haven't been saved yet.
+          </p>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {activeTab === 'general' ? (
+          /* Left Column: Identity & Contact */
+          <div className="lg:col-span-12 space-y-6">
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+              <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+                <School className="text-blue-600" size={20} />
+                <h3 className="font-bold text-gray-700">School Identity</h3>
+              </div>
+              <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">School Official Name</label>
+                  <input
+                    type="text"
+                    value={settings.schoolName}
+                    onChange={(e) => handleChange('schoolName', e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition"
+                    placeholder="e.g. Elimcrown Academy"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">School Motto</label>
+                  <input
+                    type="text"
+                    value={settings.motto}
+                    onChange={(e) => handleChange('motto', e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition"
+                    placeholder="e.g. Empowering Excellence"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">
+                    <Palette size={16} className="text-gray-400" />
+                    Primary Brand Color
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <input
+                      type="color"
+                      value={settings.brandColor}
+                      onChange={(e) => handleChange('brandColor', e.target.value)}
+                      className="w-12 h-12 rounded cursor-pointer border-0 p-0 overflow-hidden shadow-sm"
+                    />
+                    <input
+                      type="text"
+                      value={settings.brandColor}
+                      onChange={(e) => handleChange('brandColor', e.target.value)}
+                      className="flex-1 px-4 py-2 border border-gray-200 rounded-lg font-mono text-sm uppercase"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+              <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+                <MapPin className="text-blue-600" size={20} />
+                <h3 className="font-bold text-gray-700">Location & Contact</h3>
+              </div>
+              <div className="p-6 space-y-6">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Physical Address</label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        type="text"
+                        value={settings.address}
+                        onChange={(e) => handleChange('address', e.target.value)}
+                        className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                        placeholder="Street, City, County"
+                      />
+                    </div>
+                    <button
+                      onClick={handleGetLocation}
+                      type="button"
+                      className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-100 transition whitespace-nowrap font-medium"
+                    >
+                      <MapPin size={18} />
+                      Get GPS Location
+                    </button>
+                  </div>
+                  {(settings.latitude || settings.longitude) && (
+                    <div className="mt-2 text-[10px] text-gray-400 flex items-center gap-3 font-mono">
+                      <span className="bg-gray-50 px-2 py-0.5 rounded border border-gray-100">LAT: {settings.latitude}</span>
+                      <span className="bg-gray-50 px-2 py-0.5 rounded border border-gray-100">LONG: {settings.longitude}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">
+                      <Phone size={16} className="text-gray-400" />
+                      Office Phone
+                    </label>
+                    <input
+                      type="tel"
+                      value={settings.phone}
+                      onChange={(e) => handleChange('phone', e.target.value)}
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                      placeholder="e.g. +254 700 000 000"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">
+                      <Mail size={16} className="text-gray-400" />
+                      Office Email
+                    </label>
+                    <input
+                      type="email"
+                      value={settings.email}
+                      onChange={(e) => handleChange('email', e.target.value)}
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                      placeholder="e.g. info@school.com"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+              <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+                <Info className="text-blue-600" size={20} />
+                <h3 className="font-bold text-gray-700">Vision & Mission</h3>
+              </div>
+              <div className="p-6 space-y-6">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Vision Statement</label>
+                  <textarea
+                    value={settings.vision}
+                    onChange={(e) => handleChange('vision', e.target.value)}
+                    rows="3"
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition"
+                    placeholder="The long-term goal for the school..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Mission Statement</label>
+                  <textarea
+                    value={settings.mission}
+                    onChange={(e) => handleChange('mission', e.target.value)}
+                    rows="3"
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition"
+                    placeholder="How the school plans to achieve its vision..."
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Branding Tab Content */
+          <div className="lg:col-span-12 space-y-6">
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+              <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+                <ImageIcon className="text-blue-600" size={20} />
+                <h3 className="font-bold text-gray-700">Brand Assets</h3>
+              </div>
+              <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-8">
+                {/* Logo */}
+                <div className="text-center group">
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">School Logo</label>
+                  <div className="relative mx-auto w-40 h-40 border-2 border-dashed border-gray-200 rounded-2xl flex items-center justify-center bg-gray-50 overflow-hidden transition-colors hover:border-blue-400 group-hover:bg-white shadow-inner">
+                    <img src={previews.logo} alt="Logo" className="max-w-[85%] max-h-[85%] object-contain drop-shadow-sm" onError={(e) => e.target.src = '/logo-elimcrown.png'} />
+                    {previews.logo !== '/logo-elimcrown.png' && (
+                      <button onClick={() => handleRemoveImage('logo', '/logo-elimcrown.png')} className="absolute top-2 right-2 w-7 h-7 bg-red-100 text-red-600 rounded-lg opacity-0 group-hover:opacity-100 transition shadow-sm flex items-center justify-center">
+                        <X size={16} />
+                      </button>
+                    )}
+                  </div>
+                  <input ref={fileInputRef} type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'logo')} className="hidden" />
+                  <button onClick={() => fileInputRef.current?.click()} className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-700 transition">
+                    <Upload size={16} />
+                    Replace Logo
+                  </button>
+                </div>
+
+                {/* Favicon */}
+                <div className="text-center group">
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Page Favicon</label>
+                  <div className="relative mx-auto w-24 h-24 border-2 border-dashed border-gray-200 rounded-2xl flex items-center justify-center bg-gray-50 overflow-hidden transition-colors hover:border-blue-400 group-hover:bg-white shadow-inner mt-8">
+                    <img src={previews.favicon} alt="Favicon" className="w-12 h-12 object-contain" onError={(e) => e.target.src = '/favicon.png'} />
+                    {previews.favicon !== '/favicon.png' && (
+                      <button onClick={() => handleRemoveImage('favicon', '/favicon.png')} className="absolute top-1 right-1 w-6 h-6 bg-red-100 text-red-600 rounded-md opacity-0 group-hover:opacity-100 transition shadow-sm flex items-center justify-center">
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+                  <input ref={faviconInputRef} type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'favicon')} className="hidden" />
+                  <button onClick={() => faviconInputRef.current?.click()} className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-700 transition">
+                    <Upload size={16} />
+                    Change Icon
+                  </button>
+                  <p className="text-[10px] text-gray-400 mt-1">Recommended: 32x32px PNG</p>
+                </div>
+
+                {/* Official Stamp */}
+                <div className="text-center group">
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Official Stamp</label>
+                  <div className="relative mx-auto w-40 h-40 border-2 border-dashed border-gray-200 rounded-2xl flex items-center justify-center bg-gray-50 overflow-hidden transition-colors hover:border-blue-400 group-hover:bg-white shadow-inner">
+                    <img src={previews.stamp} alt="Stamp" className="max-w-[85%] max-h-[85%] object-contain" onError={(e) => e.target.src = '/stamp.svg'} />
+                    {previews.stamp !== '/stamp.svg' && (
+                      <button onClick={() => handleRemoveImage('stamp', '/stamp.svg')} className="absolute top-2 right-2 w-7 h-7 bg-red-100 text-red-600 rounded-lg opacity-0 group-hover:opacity-100 transition shadow-sm flex items-center justify-center">
+                        <X size={16} />
+                      </button>
+                    )}
+                  </div>
+                  <input ref={stampInputRef} type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'stamp')} className="hidden" />
+                  <button onClick={() => stampInputRef.current?.click()} className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-700 transition">
+                    <Upload size={16} />
+                    Update Stamp
+                  </button>
+                  <p className="text-[10px] text-gray-400 mt-1">Used on official reports & PDFs</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+              <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+                <MessageSquare className="text-blue-600" size={20} />
+                <h3 className="font-bold text-gray-700">Auth Portal Messaging</h3>
+              </div>
+              <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Welcome Title</label>
+                  <input
+                    type="text"
+                    value={settings.welcomeTitle}
+                    onChange={(e) => handleChange('welcomeTitle', e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition"
+                    placeholder="e.g. Welcome to Elimcrown"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Welcome Message</label>
+                  <textarea
+                    value={settings.welcomeMessage}
+                    onChange={(e) => handleChange('welcomeMessage', e.target.value)}
+                    rows="2"
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition"
+                    placeholder="Short greeting for your users..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Onboarding Title</label>
+                  <input
+                    type="text"
+                    value={settings.onboardingTitle}
+                    onChange={(e) => handleChange('onboardingTitle', e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition"
+                    placeholder="e.g. Join Our Community"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Onboarding Message</label>
+                  <textarea
+                    value={settings.onboardingMessage}
+                    onChange={(e) => handleChange('onboardingMessage', e.target.value)}
+                    rows="2"
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition"
+                    placeholder="Message shown on registration page..."
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Footer Preview */}
+      <div className="bg-blue-600 rounded-2xl p-8 text-white shadow-xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+        <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
+          <div className="w-24 h-24 bg-white/10 backdrop-blur-md rounded-2xl p-4 flex items-center justify-center border border-white/20">
+            <img src={previews.logo} alt="Logo" className="max-w-full max-h-full object-contain" />
+          </div>
+          <div className="flex-1 text-center md:text-left">
+            <h4 className="text-3xl font-black tracking-tight mb-2 uppercase">{settings.schoolName || 'YOUR SCHOOL NAME'}</h4>
+            <div className="flex flex-wrap justify-center md:justify-start gap-y-2 gap-x-6 text-blue-100 text-sm font-medium">
+              <div className="flex items-center gap-2">
+                <MapPin size={16} />
+                {settings.address || 'Address not set'}
+              </div>
+              <div className="flex items-center gap-2">
+                <Phone size={16} />
+                {settings.phone || 'Phone not set'}
+              </div>
+              <div className="flex items-center gap-2">
+                <Mail size={16} />
+                {settings.email || 'Email not set'}
+              </div>
+            </div>
+            {settings.motto && (
+              <p className="mt-4 text-blue-200 italic font-serif">"{settings.motto}"</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default SchoolSettings;
+

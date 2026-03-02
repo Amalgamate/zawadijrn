@@ -1,0 +1,278 @@
+/**
+ * Termly Report Page
+ * Now with PDF Download functionality!
+ */
+
+import React, { useState, useCallback } from 'react';
+import { FileText, Printer, Edit3, User, ArrowRight, Filter } from 'lucide-react';
+import { generatePDFWithLetterhead } from '../../../utils/simplePdfGenerator';
+import { useNotifications } from '../hooks/useNotifications';
+import api from '../../../services/api';
+import DownloadReportButton from '../shared/DownloadReportButton';
+import SmartLearnerSearch from '../shared/SmartLearnerSearch';
+import { useAssessmentSetup } from '../hooks/useAssessmentSetup';
+import { useLearnerSelection } from '../hooks/useLearnerSelection';
+import TermlyReportTemplate from '../templates/TermlyReportTemplate';
+
+const TermlyReport = ({ learners, brandingSettings, user }) => {
+  const { showSuccess, showError } = useNotifications();
+
+  // Use centralized hooks for assessment state management
+  const setup = useAssessmentSetup({ defaultTerm: 'TERM_1' });
+  const selection = useLearnerSelection(learners || [], { status: ['ACTIVE', 'Active'] });
+
+  // Use grades, terms, and selection from setup/selection hooks
+  const grades = setup.grades || [];
+  const setSelectedGrade = setup.updateGrade;
+  const selectedGrade = setup.selectedGrade;
+  const setSelectedTerm = setup.updateTerm;
+  const selectedTerm = setup.selectedTerm;
+  const terms = setup.terms;
+  const academicYear = setup.academicYear;
+  const filteredLearners = selection.filteredLearners;
+  const selectedLearnerId = selection.selectedLearnerId;
+  const setSelectedLearnerId = selection.selectLearner;
+  const selectedLearner = learners?.find(l => l.id === selectedLearnerId);
+
+  const [viewMode, setViewMode] = useState('setup'); // 'setup' | 'report'
+  const [reportData, setReportData] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const fetchReportData = useCallback(async () => {
+    if (!selection.selectedLearnerId) return;
+
+    setLoading(true);
+    try {
+      const response = await api.reports.getTermlyReport(selection.selectedLearnerId, {
+        term: setup.selectedTerm,
+        academicYear: setup.academicYear
+      });
+
+      if (response.success) {
+        setReportData(response.data);
+        setViewMode('report');
+      } else {
+        throw new Error(response.message || 'Failed to load report');
+      }
+    } catch (error) {
+      console.error('Error fetching termly report:', error);
+      showError(error.message || 'Failed to load termly report');
+      setReportData(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [selection.selectedLearnerId, setup.selectedTerm, setup.academicYear, showError]);
+
+  const handleGenerateReport = () => {
+    if (selectedLearner) {
+      fetchReportData();
+    }
+  };
+
+  const handleReset = () => {
+    setViewMode('setup');
+    setSelectedLearnerId('');
+    setReportData(null);
+  };
+
+  /**
+   * Handle PDF Download
+   * Generates and downloads the termly report as PDF
+   */
+  const handleDownloadPDF = async (onProgress) => {
+    if (!selectedLearner) {
+      showError('Please select a learner first');
+      return { success: false, error: 'No learner selected' };
+    }
+    try {
+      // Generate filename
+      const filename = `${selectedLearner.firstName}_${selectedLearner.lastName}_${selectedTerm.replace(' ', '_')}_Report.pdf`;
+      const schoolInfo = {
+        schoolName: user?.school?.name || brandingSettings?.schoolName || '',
+        address: user?.school?.location || brandingSettings?.address || 'P.O. Box 1234, Nairobi, Kenya',
+        phone: user?.school?.phone || brandingSettings?.phone || '+254 700 000000',
+        email: user?.school?.email || brandingSettings?.email || 'info@school.ac.ke',
+        website: user?.school?.website || brandingSettings?.website || 'www.school.ac.ke',
+        logoUrl: user?.school?.logo || brandingSettings?.logoUrl || '/logo-new.png',
+        brandColor: brandingSettings?.brandColor || '#1e3a8a'
+      };
+      // Generate PDF from the report content
+      const result = await generatePDFWithLetterhead(
+        'termly-report-content',
+        filename,
+        { ...schoolInfo, skipLetterhead: true },
+        {
+          scale: 2, // Higher quality
+          multiPage: true, // Support multiple pages if needed
+          onProgress
+        }
+      );
+      if (result.success) {
+        showSuccess('Report downloaded successfully!');
+        return { success: true };
+      } else {
+        throw new Error(result.error || 'PDF generation failed');
+      }
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      showError('Failed to generate PDF. Please try again.');
+      return { success: false, error: error.message };
+    }
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+
+  return (
+    <div className="space-y-6">
+
+      {/* SETUP VIEW */}
+      {viewMode === 'setup' && (
+        <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100 max-w-3xl mx-auto mt-8">
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-gradient-to-br from-brand-purple/10 to-brand-teal/10 rounded-full flex items-center justify-center mx-auto mb-4 text-brand-purple">
+              <FileText size={32} />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800">Termly Report</h2>
+            <p className="text-gray-500">Select a learner to generate their end of term report</p>
+          </div>
+
+          <div className="space-y-6 mb-8">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Select Learner</label>
+
+              {/* Grade Filter Pills */}
+              <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-2 -mx-2 px-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
+                <div className="flex items-center justify-center min-w-[24px] text-gray-400">
+                  <Filter size={14} />
+                </div>
+                {grades.map(grade => (
+                  <button
+                    key={grade.value}
+                    onClick={() => {
+                      setSelectedGrade(grade.value);
+                      setSelectedLearnerId(''); // Clear selection on filter change
+                    }}
+                    className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-bold transition-all ${selectedGrade === grade.value
+                      ? 'bg-brand-purple text-white shadow-md ring-2 ring-brand-purple/20'
+                      : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700'
+                      }`}
+                  >
+                    {grade.label}
+                  </button>
+                ))}
+              </div>
+
+              <SmartLearnerSearch
+                learners={filteredLearners}
+                selectedLearnerId={selectedLearnerId}
+                onSelect={setSelectedLearnerId}
+                placeholder={selectedGrade === 'all' ? "Search all learners..." : `Search in ${grades.find(g => g.value === selectedGrade)?.label}...`}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Select Term
+              </label>
+              <select
+                value={selectedTerm}
+                onChange={(e) => setSelectedTerm(e.target.value)}
+                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-purple focus:border-brand-purple"
+              >
+                {terms.map(t => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-6 border-t border-gray-100">
+            <button
+              onClick={handleGenerateReport}
+              disabled={!selectedLearnerId || loading}
+              className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-brand-purple to-brand-teal text-white rounded-xl hover:opacity-90 transition-all font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            >
+              {loading ? 'Generating...' : 'Generate Report'}
+              <ArrowRight size={20} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* REPORT VIEW */}
+      {viewMode === 'report' && reportData && (
+        <>
+          {/* Compact Context Header - Hidden on Print */}
+          <div className="bg-white rounded-xl shadow-sm p-4 border border-brand-purple/10 flex flex-col md:flex-row items-center justify-between gap-4 sticky top-4 z-20 print:hidden">
+            <div className="flex items-center gap-4">
+              <div className="bg-brand-purple/10 p-3 rounded-lg text-brand-purple">
+                <User size={24} />
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-800 text-lg line-clamp-1">
+                  {reportData.learner.firstName} {reportData.learner.lastName}
+                </h3>
+                <div className="flex items-center gap-3 text-sm text-gray-500 font-medium">
+                  <span>{reportData.learner.admissionNumber}</span>
+                  <span className="bg-brand-purple/10 text-brand-purple px-2 py-0.5 rounded-full text-xs">
+                    {reportData.term} {reportData.academicYear}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleReset}
+                className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium"
+              >
+                <Edit3 size={16} />
+                Change
+              </button>
+
+              <DownloadReportButton
+                onDownload={handleDownloadPDF}
+                label="PDF"
+                className="px-4 py-2 bg-brand-teal text-white rounded-lg hover:bg-brand-teal/90 transition shadow-sm font-semibold text-sm flex items-center gap-2"
+              />
+
+              <button
+                onClick={handlePrint}
+                className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition"
+                title="Print Report"
+              >
+                <Printer size={20} />
+              </button>
+            </div>
+          </div>
+
+          {/* Report Content - This will be converted to PDF */}
+          <div className="bg-white rounded-xl shadow-md overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+
+            {/* On-Screen Header (Hidden in Print/PDF as Letterhead is added) */}
+            <div className="text-white p-4 text-center print:hidden" style={{ backgroundColor: brandingSettings?.brandColor || '#4a0404' }}>
+              <h2 className="text-xl font-bold">{brandingSettings?.schoolName || 'ACADEMIC SCHOOL'}</h2>
+              <p className="opacity-80 text-sm">Excellence in Competency Based Curriculum</p>
+            </div>
+
+            <TermlyReportTemplate reportData={{
+              ...reportData,
+              schoolName: user?.school?.name || brandingSettings?.schoolName,
+              schoolAddress: user?.school?.location || brandingSettings?.address,
+              schoolPhone: user?.school?.phone || brandingSettings?.phone,
+              schoolEmail: user?.school?.email || brandingSettings?.email,
+              logoUrl: brandingSettings?.logoUrl || user?.school?.logo,
+              schoolStamp: brandingSettings?.stampUrl || user?.school?.stampUrl,
+              brandColor: brandingSettings?.brandColor || reportData.brandColor
+            }} />
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+export default TermlyReport;

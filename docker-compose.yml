@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: zawadi-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-zawadi_sms}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - zawadi-network
+
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: zawadi-backend
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-zawadi_sms}?schema=public
+      PORT: 5000
+      JWT_SECRET: ${JWT_SECRET}
+      NODE_ENV: production
+    depends_on:
+      - db
+    networks:
+      - zawadi-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: zawadi-frontend
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - zawadi-network
+
+networks:
+  zawadi-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

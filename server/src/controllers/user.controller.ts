@@ -1,0 +1,348 @@
+/**
+ * User Controller
+ * Handles user management operations for a single-tenant environment
+ * 
+ * @module controllers/user.controller
+ */
+
+import { Response } from 'express';
+import bcrypt from 'bcrypt';
+import prisma from '../config/database';
+import { ApiError } from '../utils/error.util';
+import { AuthRequest } from '../middleware/permissions.middleware';
+import { Role, canManageRole } from '../config/permissions';
+import { whatsappService } from '../services/whatsapp.service';
+import { SmsService } from '../services/sms.service';
+import { SMS_MESSAGES } from '../config/communication.messages';
+import { generateStaffId } from '../services/staffId.service';
+
+export class UserController {
+  /**
+   * Get all users
+   */
+  async getAllUsers(req: AuthRequest, res: Response) {
+    const currentUserRole = req.user!.role;
+    const includeArchived = req.query.includeArchived === 'true';
+
+    let whereClause: any = {};
+    if (!includeArchived) {
+      whereClause.archived = false;
+    }
+
+    if (currentUserRole === 'HEAD_TEACHER' || currentUserRole === 'HEAD_OF_CURRICULUM') {
+      whereClause.role = { in: ['TEACHER', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM'] };
+    }
+
+    const users = await prisma.user.findMany({
+      where: whereClause,
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        middleName: true,
+        lastName: true,
+        phone: true,
+        role: true,
+        status: true,
+        createdAt: true,
+        lastLogin: true,
+        staffId: true,
+        subject: true,
+        gender: true
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.json({
+      success: true,
+      data: users,
+      count: users.length
+    });
+  }
+
+  /**
+   * Get single user by ID
+   */
+  async getUserById(req: AuthRequest, res: Response) {
+    const { id } = req.params;
+    const currentUserId = req.user!.userId;
+    const currentUserRole = req.user!.role;
+
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        middleName: true,
+        phone: true,
+        role: true,
+        status: true,
+        emailVerified: true,
+        createdAt: true,
+        updatedAt: true,
+        lastLogin: true,
+        staffId: true,
+        subject: true,
+        gender: true,
+        classesAsTeacher: {
+          select: { id: true, name: true, grade: true, stream: true }
+        }
+      }
+    });
+
+    if (!user) throw new ApiError(404, 'User not found');
+
+    const canAccess = currentUserId === id || ['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER'].includes(currentUserRole);
+    if (!canAccess) throw new ApiError(403, 'Access denied');
+
+    res.json({ success: true, data: user });
+  }
+
+  /**
+   * Create new user
+   */
+  async createUser(req: AuthRequest, res: Response) {
+    const { email, password, firstName, lastName, middleName, phone, role, subject, gender } = req.body;
+    const currentUserRole = req.user!.role;
+
+    if (!email || !password || !firstName || !lastName || !role) {
+      throw new ApiError(400, 'Missing required fields');
+    }
+
+    const validRoles: Role[] = ['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM', 'TEACHER', 'PARENT', 'ACCOUNTANT', 'RECEPTIONIST'];
+    if (!validRoles.includes(role as Role)) {
+      throw new ApiError(400, `Invalid role`);
+    }
+
+    if (!canManageRole(currentUserRole, role as Role)) {
+      throw new ApiError(403, `You cannot create users with role: ${role}`);
+    }
+
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) throw new ApiError(400, 'User with this email already exists');
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    let staffId = req.body.staffId;
+    const staffRoles: Role[] = ['ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM', 'TEACHER', 'ACCOUNTANT', 'RECEPTIONIST'];
+
+    if (!staffId && staffRoles.includes(role as Role)) {
+      staffId = await generateStaffId();
+    }
+
+    const user = await prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        firstName,
+        lastName,
+        middleName,
+        phone,
+        role: role as Role,
+        status: 'ACTIVE',
+        staffId,
+        subject,
+        gender,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        status: true,
+        staffId: true
+      }
+    });
+
+    res.status(201).json({ success: true, data: user });
+  }
+
+  /**
+   * Update user
+   */
+  async updateUser(req: AuthRequest, res: Response) {
+    const { id } = req.params;
+    const currentUserId = req.user!.userId;
+    const currentUserRole = req.user!.role;
+    const { firstName, lastName, middleName, phone, role, status, password, subject, gender } = req.body;
+
+    const targetUser = await prisma.user.findUnique({ where: { id } });
+    if (!targetUser) throw new ApiError(404, 'User not found');
+
+    const isSelfUpdate = currentUserId === id;
+    const canUpdate = isSelfUpdate || ['SUPER_ADMIN', 'ADMIN'].includes(currentUserRole);
+    if (!canUpdate) throw new ApiError(403, 'Permission denied');
+
+    const updateData: any = {};
+    if (firstName) updateData.firstName = firstName;
+    if (lastName) updateData.lastName = lastName;
+    if (middleName !== undefined) updateData.middleName = middleName;
+    if (phone !== undefined) updateData.phone = phone;
+    if (subject !== undefined) updateData.subject = subject;
+    if (gender !== undefined) updateData.gender = gender;
+
+    if (!isSelfUpdate && ['SUPER_ADMIN', 'ADMIN'].includes(currentUserRole)) {
+      if (role) updateData.role = role as Role;
+      if (status) updateData.status = status;
+    }
+
+    if (password) {
+      if (password.length < 8) throw new ApiError(400, 'Password too short');
+      updateData.password = await bcrypt.hash(password, 12);
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id },
+      data: updateData,
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        status: true,
+        staffId: true
+      }
+    });
+
+    res.json({ success: true, data: updatedUser });
+  }
+
+  /**
+   * Archive user
+   */
+  async archiveUser(req: AuthRequest, res: Response) {
+    const { id } = req.params;
+    const currentUserId = req.user!.userId;
+    const currentUserRole = req.user!.role;
+
+    if (currentUserId === id) throw new ApiError(403, 'Cannot archive self');
+
+    const targetUser = await prisma.user.findUnique({ where: { id } });
+    if (!targetUser) throw new ApiError(404, 'User not found');
+
+    if (currentUserRole === 'TEACHER' && targetUser.role !== 'PARENT') {
+      throw new ApiError(403, 'Teachers can only archive parents');
+    }
+
+    const archivedUser = await prisma.user.update({
+      where: { id },
+      data: { archived: true, archivedAt: new Date(), archivedBy: currentUserId, status: 'INACTIVE' },
+    });
+
+    res.json({ success: true, message: 'User archived' });
+  }
+
+  async unarchiveUser(req: AuthRequest, res: Response) {
+    const { id } = req.params;
+    const currentUserRole = req.user!.role;
+
+    if (!['ADMIN', 'SUPER_ADMIN'].includes(currentUserRole)) {
+      throw new ApiError(403, 'Only admins can unarchive');
+    }
+
+    const updated = await prisma.user.update({
+      where: { id },
+      data: { archived: false, archivedAt: null, archivedBy: null, status: 'ACTIVE' },
+    });
+
+    res.json({ success: true, message: 'User unarchived' });
+  }
+
+  async deleteUser(req: AuthRequest, res: Response) {
+    const { id } = req.params;
+    if (req.user!.role !== 'SUPER_ADMIN') throw new ApiError(403, 'SUPER_ADMIN only');
+
+    await prisma.user.delete({ where: { id } });
+    res.json({ success: true, message: 'Permanently deleted' });
+  }
+
+  async getUsersByRole(req: AuthRequest, res: Response) {
+    const { role } = req.params;
+    const { search, page = 1, limit = 20 } = req.query;
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const whereClause: any = { role: role as Role, archived: false };
+    if (search) {
+      whereClause.OR = [
+        { firstName: { contains: search as string, mode: 'insensitive' } },
+        { lastName: { contains: search as string, mode: 'insensitive' } },
+        { email: { contains: search as string, mode: 'insensitive' } },
+      ];
+    }
+
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where: whereClause,
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          phone: true,
+          role: true,
+          status: true,
+          staffId: true,
+          subject: true,
+          gender: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: Number(limit)
+      }),
+      prisma.user.count({ where: whereClause })
+    ]);
+
+    res.json({
+      success: true,
+      data: users,
+      pagination: { total, page: Number(page), limit: Number(limit) }
+    });
+  }
+
+  async getUserStats(req: AuthRequest, res: Response) {
+    const counts = await prisma.user.groupBy({
+      by: ['role'],
+      _count: true,
+    });
+
+    res.json({
+      success: true,
+      data: counts.reduce((acc, item) => {
+        acc[item.role] = item._count;
+        return acc;
+      }, {} as any)
+    });
+  }
+
+  async uploadProfilePicture(req: AuthRequest, res: Response) {
+    const { id } = req.params;
+    const { photoData } = req.body;
+    const currentUserId = req.user!.userId;
+
+    const user = await prisma.user.update({
+      where: { id },
+      data: { profilePicture: photoData }
+    });
+
+    res.json({ success: true, data: user });
+  }
+
+  async resetPassword(req: AuthRequest, res: Response) {
+    const { id } = req.params;
+    const { newPassword } = req.body;
+
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+    await prisma.user.update({
+      where: { id },
+      data: { password: hashedPassword, loginAttempts: 0, lockedUntil: null }
+    });
+
+    res.json({ success: true, message: 'Password reset' });
+  }
+}
+
+export const userController = new UserController();

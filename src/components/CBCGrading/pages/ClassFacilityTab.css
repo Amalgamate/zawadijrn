@@ -1,0 +1,38 @@
+/* ClassFacilityTab Styles */
+
+.facility-card {
+  transition: all 0.2s ease;
+}
+
+.facility-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.facility-status {
+  font-weight: bold;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+}
+
+.facility-status.functional {
+  background-color: rgb(220, 252, 231);
+  color: rgb(22, 101, 52);
+}
+
+.facility-status.maintenance {
+  background-color: rgb(254, 243, 199);
+  color: rgb(120, 53, 15);
+}
+
+.facility-status.non-functional {
+  background-color: rgb(254, 226, 226);
+  color: rgb(127, 29, 29);
+}
+
+.maintenance-alert {
+  background-color: rgb(254, 252, 232);
+  border-left: 4px solid rgb(251, 191, 36);
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+}

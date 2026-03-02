@@ -1,0 +1,170 @@
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
+import { useAuth } from './hooks/useAuth';
+import Auth from './pages/Auth';
+import CBCGradingSystem from './components/CBCGrading/CBCGradingSystem';
+import SplashScreen from './components/mobile/SplashScreen';
+import api from './services/api';
+import axiosInstance from './services/axiosConfig';
+
+const DEFAULT_BRANDING = {
+  logoUrl: '/logo-new.png',
+  faviconUrl: '/favicon.png',
+  stampUrl: '/stamp.svg',
+  brandColor: '#520050',
+  welcomeTitle: 'Welcome to Zawadi',
+  welcomeMessage: 'Sign in to access your school portal.',
+  schoolName: 'Zawadi Junior Academy',
+};
+
+function AppContent() {
+  const { isAuthenticated, user, login, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const pathname = location.pathname;
+  const [appReady, setAppReady] = useState(false);
+  const [brandingSettings, setBrandingSettings] = useState(DEFAULT_BRANDING);
+
+  // Mark app as ready
+  useEffect(() => {
+    const timer = setTimeout(() => setAppReady(true), 300);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Fetch school branding when authenticated
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    let cancelled = false;
+
+    const fetchBranding = async () => {
+      try {
+        // Fetch public branding from the active school instead of relying on user.schoolId
+        const schoolsResp = await axiosInstance.get('/schools');
+        if (cancelled) return;
+
+        let schoolId = user?.schoolId;
+        const schoolsList = schoolsResp.data?.data || schoolsResp.data || schoolsResp;
+
+        if (Array.isArray(schoolsList) && schoolsList.length > 0) {
+          schoolId = schoolsList[0].id;
+          localStorage.setItem('currentSchoolId', schoolId);
+        }
+
+        if (schoolId) {
+          const resp = await axiosInstance.get(`/schools/${schoolId}`);
+          if (cancelled) return;
+          const branding = resp?.data?.data || resp?.data || resp;
+          if (branding) {
+            // Map `name` to `schoolName` to match frontend expectations
+            const mappedBranding = {
+              ...branding,
+              schoolName: branding.name || branding.schoolName || 'Zawadi Junior Academy'
+            };
+            setBrandingSettings(prev => ({ ...prev, ...mappedBranding }));
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to fetch branding, using defaults:', err);
+      }
+    };
+
+    fetchBranding();
+    return () => { cancelled = true; };
+  }, [isAuthenticated, user?.schoolId]);
+
+  // Update favicon
+  useEffect(() => {
+    let link = document.querySelector("link[rel*='icon']");
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'icon';
+      document.head.appendChild(link);
+    }
+    const url = brandingSettings.faviconUrl;
+    if (!url) { link.href = '/favicon.png'; return; }
+    link.href = url.startsWith('data:') ? url : `${url}${url.includes('?') ? '&' : '?'}v=${Date.now()}`;
+  }, [brandingSettings.faviconUrl]);
+
+  // Update page title
+  useEffect(() => {
+    if (isAuthenticated) {
+      document.title = user?.role === 'SUPER_ADMIN'
+        ? 'Admin Dashboard'
+        : `${brandingSettings.schoolName || 'School'} — Dashboard`;
+    } else {
+      document.title = brandingSettings.schoolName || 'School Management';
+    }
+  }, [isAuthenticated, user, brandingSettings.schoolName]);
+
+  // Navigation guards
+  useEffect(() => {
+    if (isAuthenticated) {
+      if (!pathname.startsWith('/app')) navigate('/app', { replace: true });
+    } else {
+      if (pathname.startsWith('/app')) {
+        navigate('/auth/login', { replace: true });
+      }
+    }
+  }, [isAuthenticated, user?.role, pathname, navigate]);
+
+  const handleAuthSuccess = (userData, token, refreshToken) => {
+    login(userData, token, refreshToken);
+    navigate('/app', { replace: true });
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/auth/login', { replace: true });
+  };
+
+  if (isAuthenticated) {
+    return (
+      <>
+        <SplashScreen isLoading={!appReady} />
+        {appReady && (
+          <Routes>
+            <Route
+              path="/app/*"
+              element={
+                <CBCGradingSystem
+                  user={user}
+                  onLogout={handleLogout}
+                  brandingSettings={brandingSettings}
+                  setBrandingSettings={setBrandingSettings}
+                />
+              }
+            />
+            <Route path="*" element={<Navigate to="/app" replace />} />
+          </Routes>
+        )}
+      </>
+    );
+  }
+
+  return (
+    <>
+      <SplashScreen isLoading={!appReady} />
+      {appReady && (
+        <Routes>
+          <Route path="/" element={<Navigate to="/auth/login" replace />} />
+          <Route path="/auth" element={<Navigate to="/auth/login" replace />} />
+          <Route path="/auth/login" element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} basePath="/auth" />} />
+          <Route path="/auth/register" element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} basePath="/auth" />} />
+          <Route path="/auth/forgot-password" element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} basePath="/auth" />} />
+          <Route path="/auth/reset-password" element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} basePath="/auth" />} />
+          <Route path="/auth/verify-email" element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} basePath="/auth" />} />
+          <Route path="/auth/welcome" element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} basePath="/auth" />} />
+          <Route path="*" element={<Navigate to="/auth/login" replace />} />
+        </Routes>
+      )}
+    </>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
+  );
+}

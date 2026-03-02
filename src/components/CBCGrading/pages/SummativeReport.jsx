@@ -1,0 +1,3271 @@
+/**
+ * Summary Report Page
+ * Clean, minimal design matching Summative Assessment setup - Single Source of Truth
+ */
+
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { Download, Loader, MessageCircle, Printer, MessageSquare, AlertCircle, CheckCircle, XCircle, Edit2, FileText } from 'lucide-react';
+import VirtualizedTable from '../shared/VirtualizedTable';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { useNotifications } from '../hooks/useNotifications';
+import { generateHighFidelityPDF } from '../../../utils/simplePdfGenerator';
+import api, { configAPI, communicationAPI } from '../../../services/api';
+import { useAssessmentSetup } from '../hooks/useAssessmentSetup';
+import { getLearningAreasByGrade, getAllLearningAreas } from '../../../constants/learningAreas';
+
+
+const LEARNING_AREA_ABBREVIATIONS = {
+  'MATHEMATICS': 'MAT',
+  'ENGLISH': 'ENG',
+  'KISWAHILI': 'KIS',
+  'SCIENCE AND TECHNOLOGY': 'SCITECH',
+  'SOCIAL STUDIES': 'SST',
+  'CHRISTIAN RELIGIOUS EDUCATION': 'CRE',
+  'ISLAMIC RELIGIOUS EDUCATION': 'IRE',
+  'CREATIVE ARTS AND SPORTS': 'CREATIVE',
+  'AGRICULTURE AND NUTRITION': 'AGRNT',
+  'ENVIRONMENTAL ACTIVITIES': 'ENV',
+  'HOMESCIENCE': 'H SCI',
+  'MUSIC': 'MUSIC',
+  'ART AND CRAFT': 'ART',
+  'PHYSICAL AND HEALTH EDUCATION': 'PHE',
+  'SHUGHULI ZA KISWAHILI': 'KIS',
+  'MATHEMATICAL ACTIVITIES': 'MAT',
+  'ENGLISH LANGUAGE ACTIVITIES': 'ENG',
+  'KISWAHILI LANGUAGE ACTIVITIES': 'KIS',
+  'SCIENCE & TECHNOLOGY': 'SCITECH',
+  'AGRICULTURE': 'AGRNT',
+  'NUTRITION': 'NUTR',
+  'PRE-TECHNICAL STUDIES': 'PRE-TECH',
+  'INTEGRATED SCIENCE': 'INT SCI',
+  'SOCIAL STUDIES & LIFE SKILLS': 'SST',
+  'MOVEMENT AND CREATIVE ACTIVITIES': 'CREATIVE',
+  'ENVIRONMENTAL STUDIES': 'ENV'
+};
+
+const formatSubjectName = (name) => {
+  if (!name) return name;
+  const upper = name.toUpperCase().trim();
+  if (upper === 'MATHEMATICAL ACTIVITIES' || upper === 'MATHEMATICS') return 'Mathematics';
+  if (upper === 'ENGLISH LANGUAGE ACTIVITIES' || upper === 'ENGLISH') return 'English';
+  if (upper === 'KISWAHILI LANGUAGE ACTIVITIES' || upper === 'KISWAHILI') return 'Kiswahili';
+  if (upper === 'ENVIRONMENTAL ACTIVITIES') return 'Environmental Activities';
+  if (upper === 'MOVEMENT AND CREATIVE ACTIVITIES' || upper === 'CREATIVE ACTIVITIES') return 'Creative Activities';
+  return name.charAt(0) + name.slice(1).toLowerCase();
+};
+
+
+const getAbbreviatedName = (name) => {
+  if (!name) return '';
+  const upper = name.toUpperCase().trim();
+  return LEARNING_AREA_ABBREVIATIONS[upper] || (name.length > 8 ? name.substring(0, 8).toUpperCase() : name.toUpperCase());
+};
+
+const getLearnerPhone = (learner) => {
+  if (!learner) return '';
+  return learner.primaryContactPhone ||
+    learner.guardianPhone ||
+    learner.parent?.phone ||
+    learner.fatherPhone ||
+    learner.motherPhone ||
+    learner.parentPhone ||
+    learner.parentPhoneNumber ||
+    '';
+};
+
+const getLearnerContactOptions = (learner) => {
+  if (!learner) return [];
+  const options = [];
+
+  if (learner.primaryContactPhone) options.push({ label: 'Primary', phone: learner.primaryContactPhone, name: learner.primaryContactName });
+  if (learner.guardianPhone) options.push({ label: 'Parent/Guardian', phone: learner.guardianPhone, name: learner.guardianName });
+  if (learner.fatherPhone) options.push({ label: 'Father', phone: learner.fatherPhone, name: learner.fatherName });
+  if (learner.motherPhone) options.push({ label: 'Mother', phone: learner.motherPhone, name: learner.motherName });
+  if (learner.parent?.phone) options.push({ label: 'ParentAccount', phone: learner.parent.phone, name: learner.parent.firstName });
+  if (learner.parentPhone) options.push({ label: 'Secondary', phone: learner.parentPhone });
+  if (learner.parentPhoneNumber) options.push({ label: 'Secondary', phone: learner.parentPhoneNumber });
+
+  // Filter out empty phones and duplicates
+  const uniquePhones = new Set();
+  return options.filter(opt => {
+    if (!opt.phone || uniquePhones.has(opt.phone)) return false;
+    uniquePhones.add(opt.phone);
+    return true;
+  });
+};
+
+
+// Helper to refine learning area based on test title (fixes aggregation issues)
+const getRefinedLearningArea = (currentArea, testTitle) => {
+  return currentArea; // Disable fuzzy merging to prevent data corruption
+};
+
+const CHART_COLORS = [
+  '#3b82f6', // blue
+  '#10b981', // emerald
+  '#6366f1', // indigo
+  '#8b5cf6', // violet
+  '#ec4899', // pink
+  '#f43f5e', // rose
+  '#f59e0b', // amber
+  '#06b6d4', // cyan
+  '#84cc16', // lime
+  '#f97316'  // orange
+];
+
+// ============================================================================
+// CBC SMS COMPLIANCE REQUIREMENTS CHECKER
+// ============================================================================
+/**
+ * Validates report data against CBC-compliant SMS requirements
+ * Returns { isCompliant: boolean, gaps: Array<string>, warnings: Array<string> }
+ */
+
+// ============================================================================
+// GRADING UTILITIES
+// ============================================================================
+const getCBCGrade = (percentage) => {
+  if (percentage >= 90) return { grade: 'EE1', remark: 'Exceeding Expectations 1 - Outstanding', color: '#006400' }; // Deep Green
+  if (percentage >= 75) return { grade: 'EE2', remark: 'Exceeding Expectations 2 - Very High', color: '#008000' }; // Green
+  if (percentage >= 58) return { grade: 'ME1', remark: 'Meeting Expectations 1 - High Average', color: '#000080' }; // Navy Blue
+  if (percentage >= 41) return { grade: 'ME2', remark: 'Meeting Expectations 2 - Average', color: '#0000CD' }; // Medium Blue
+  if (percentage >= 31) return { grade: 'AE1', remark: 'Approaching Expectations 1 - Low Average', color: '#8B4513' }; // SaddleBrown (Darker than Goldenrod)
+  if (percentage >= 21) return { grade: 'AE2', remark: 'Approaching Expectations 2 - Below Average', color: '#A0522D' }; // Sienna
+  if (percentage >= 11) return { grade: 'BE1', remark: 'Below Expectations 1 - Low', color: '#D2691E' }; // Chocolate
+  return { grade: 'BE2', remark: 'Below Expectations 2 - Very Low', color: '#8B0000' }; // Dark Red
+};
+
+// ============================================================================
+// LEARNER REPORT TEMPLATE COMPONENT (Reusable for Bulk Print)
+// ============================================================================
+const LearnerReportTemplate = ({ learner, results, term, academicYear, brandingSettings, user, streamConfigs }) => {
+  // --- DATA PREPARATION LOGIC ---
+  const standardAreas = getLearningAreasByGrade(learner.grade);
+  const resultAreas = new Set(results?.map(r => r.learningArea || 'General') || []);
+  const configAreas = [];
+  if (streamConfigs && streamConfigs.length > 0) {
+    const gradeConfig = streamConfigs.find(sc => sc.grade === learner.grade);
+    if (gradeConfig?.streams) {
+      const streamConfig = gradeConfig.streams.find(s => !s.name || s.name === learner.stream);
+      if (streamConfig?.learningAreas) configAreas.push(...streamConfig.learningAreas);
+    }
+  }
+  const allAreasSet = new Set([...standardAreas, ...resultAreas, ...configAreas]);
+  const areasToDisplay = Array.from(allAreasSet).sort();
+  if (areasToDisplay.length === 0) areasToDisplay.push('General');
+
+  // Organize results by Area
+  const resultsByArea = {};
+  results?.forEach(result => {
+    const area = result.learningArea || 'General';
+    if (!resultsByArea[area]) resultsByArea[area] = [];
+    resultsByArea[area].push(result);
+  });
+
+  // Identify unique Test Types for Columns
+  const testTypesFound = new Set();
+  results?.forEach(r => {
+    const type = r.test?.testType || r.testType || 'Assessment';
+    testTypesFound.add(type);
+  });
+
+  const testColumns = Array.from(testTypesFound).sort();
+  const formatTestName = (str) => {
+    if (!str) return '';
+    return str.replace(/_/g, ' ')
+      .toUpperCase();
+  };
+
+  // Prepare row data
+  const tableRows = areasToDisplay.map(area => {
+    const areaResults = resultsByArea[area] || [];
+
+    // Map scores by test column
+    const scoresByCol = {};
+    testColumns.forEach(col => {
+      const match = areaResults.find(r => (r.test?.testType || r.testType || 'Assessment') === col);
+      scoresByCol[col] = match ? (match.score || 0) : null;
+    });
+
+    const testCount = areaResults.length;
+    const totalScore = areaResults.reduce((sum, r) => sum + (r.score || 0), 0);
+    const totalMarks = areaResults.reduce((sum, r) => sum + (r.totalMarks || 0), 0);
+    const percentage = totalMarks > 0 ? (totalScore / totalMarks) * 100 : 0;
+
+    let grade = '—';
+    let remark = '—';
+    let color = '#d1d5db';
+
+    if (testCount > 0 && totalMarks > 0) {
+      const res = getCBCGrade(percentage);
+      grade = res.grade;
+      remark = res.remark;
+      color = res.color;
+    }
+
+    let displayArea = formatSubjectName(area).toUpperCase();
+    if (displayArea === 'IRE' || displayArea === 'ISLAMIC RELIGIOUS EDUCATION') {
+      displayArea = 'RE';
+    }
+
+    return {
+      area: displayArea,
+      scoresByCol,
+      testCount,
+      totalScore,
+      totalMarks,
+      percentage: parseFloat(percentage.toFixed(0)),
+      grade,
+      remark,
+      color
+    };
+  }).filter(row => row.testCount > 0);
+
+  // --- COMMENT STATE & LOGIC ---
+  const [commentData, setCommentData] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedComment, setEditedComment] = useState('');
+  const [isSavingComment, setIsSavingComment] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+
+  // Debounced auto-save useEffect
+  useEffect(() => {
+    if (!isEditing || !isTyping) return;
+
+    const timer = setTimeout(() => {
+      handleSaveComment();
+      setIsTyping(false);
+    }, 2000); // 2 second debounce
+
+    return () => clearTimeout(timer);
+  }, [editedComment]);
+
+  useEffect(() => {
+    const fetchComment = async () => {
+      if (!learner?.id) return;
+      try {
+        const res = await api.cbc.getComments(learner.id, { term, academicYear });
+        if (res.success && res.data) {
+          setCommentData(res.data);
+          setEditedComment(res.data.classTeacherComment || '');
+        }
+      } catch (err) {
+        console.error('Error fetching comments:', err);
+      }
+    };
+    fetchComment();
+  }, [learner?.id, term, academicYear]);
+
+  const handleSaveComment = async () => {
+    if (!learner?.id) return;
+    try {
+      setIsSavingComment(true);
+      const payload = {
+        learnerId: learner.id,
+        term,
+        academicYear,
+        classTeacherComment: editedComment,
+        classTeacherName: user?.firstName ? `${user.firstName} ${user.lastName}` : 'Class Teacher',
+        classTeacherDate: new Date().toISOString(),
+        nextTermOpens: commentData?.nextTermOpens || new Date(new Date().setMonth(new Date().getMonth() + 3)).toISOString()
+      };
+
+      const res = await api.cbc.saveComments(payload);
+      if (res.success) {
+        setCommentData(res.data);
+      }
+    } catch (err) {
+      console.error('Error saving comment:', err);
+    } finally {
+      setIsSavingComment(false);
+    }
+  };
+
+  return (
+    <div className="relative bg-white mx-auto overflow-hidden"
+      style={{
+        fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+        lineHeight: '1.2',
+        width: '210mm',
+        minHeight: '297mm',
+        padding: '8mm',
+        boxSizing: 'border-box'
+      }}
+    >
+      {/* Header Section - Centered Professional Redesign */}
+      <div className="mb-6 flex flex-col items-center text-center">
+        {/* Logo Middle */}
+        <div className="mb-4">
+          <img
+            src={brandingSettings?.logoUrl || user?.school?.logo || ""}
+            alt="Logo"
+            style={{ height: '100px', width: 'auto', objectFit: 'contain', display: brandingSettings?.logoUrl || user?.school?.logo ? 'block' : 'none' }}
+            onError={(e) => { e.target.style.display = 'none'; }} // Hide if logo is broken
+          />
+        </div>
+
+        {/* School Info */}
+        <h1 style={{ fontSize: '26px', fontWeight: '900', color: brandingSettings?.brandColor || '#1E3A8A', margin: '0', textTransform: 'uppercase', letterSpacing: '1px', lineHeight: '1.1' }}>
+          {user?.school?.name || brandingSettings?.schoolName || 'ACADEMIC SCHOOL'}
+        </h1>
+
+        {user?.school?.motto && (
+          <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginTop: '2px', textTransform: 'uppercase', fontStyle: 'italic' }}>
+            "{user.school.motto}"
+          </div>
+        )}
+
+        {/* Contact Details */}
+        <div style={{ fontSize: '11px', color: '#444', marginTop: '6px', fontWeight: '500', opacity: '0.8' }}>
+          {user?.school?.location && <span>{user.school.location}</span>}
+          {user?.school?.email && <span> • {user.school.email}</span>}
+        </div>
+
+        {/* Separator Line */}
+        <div className="w-full h-1 mt-4 mb-4" style={{ backgroundColor: brandingSettings?.brandColor || '#1e3a8a' }}></div>
+
+        {/* Report Title */}
+        <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#000', margin: '0', textTransform: 'uppercase', letterSpacing: '2px' }}>
+          Summative Assessment Report
+        </h2>
+
+        {/* Exam Name / Termly Details */}
+        <div style={{ fontSize: '12px', fontWeight: '700', color: '#1E3A8A', marginTop: '4px', textTransform: 'uppercase', backgroundColor: '#eff6ff', padding: '4px 16px', borderRadius: '40px' }}>
+          {Array.from(testTypesFound).map(t => t.replace(/_/g, ' ')).join(', ')} | {term ? (typeof term === 'string' ? term.replace(/_/g, ' ') : (term.label || '')) : 'TERM'} | {academicYear || new Date().getFullYear()} ACADEMIC YEAR
+        </div>
+      </div>
+
+      {/* Student Info Table (Compact) */}
+      <div className="mb-10 text-xs">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '11px', border: '1px solid #e2e8f0', padding: '8px', borderRadius: '4px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 8px' }}>
+            <div style={{ fontWeight: 'bold', color: '#444' }}>NAME:</div>
+            <div style={{ fontWeight: 'bold', color: '#000', textTransform: 'uppercase' }}>{learner.firstName} {learner.lastName}</div>
+
+            <div style={{ fontWeight: 'bold', color: '#444' }}>ADM NO:</div>
+            <div style={{ fontWeight: 'bold' }}>{learner.admissionNumber || '—'}</div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 8px' }}>
+            <div style={{ fontWeight: 'bold', color: '#444' }}>GRADE:</div>
+            <div style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>{learner.grade?.replace(/_/g, ' ')}</div>
+
+            <div style={{ fontWeight: 'bold', color: '#444' }}>STREAM:</div>
+            <div style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>{learner.stream || 'A'}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Results Table */}
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px', marginBottom: '20px' }}>
+        <thead>
+          <tr style={{ backgroundColor: '#1e3a8a', color: 'white' }}>
+            <th style={{ padding: '8px 4px', textAlign: 'left', fontWeight: 'bold' }}>SUBJECT</th>
+            {testColumns.map(col => (
+              <th key={col} style={{ padding: '8px 4px', textAlign: 'center', fontWeight: 'bold', borderLeft: '1px solid rgba(255,255,255,0.2)' }}>
+                {formatTestName(col)}
+              </th>
+            ))}
+            <th style={{ padding: '8px 4px', textAlign: 'center', fontWeight: 'bold', borderLeft: '1px solid rgba(255,255,255,0.2)' }}>AVG %</th>
+            <th style={{ padding: '8px 4px', textAlign: 'left', fontWeight: 'bold', borderLeft: '1px solid rgba(255,255,255,0.2)' }}>GRADE</th>
+            <th style={{ padding: '8px 4px', textAlign: 'left', fontWeight: 'bold', borderLeft: '1px solid rgba(255,255,255,0.2)' }}>REMARKS</th>
+          </tr>
+        </thead>
+        <tbody>
+          {tableRows.map((row, idx) => (
+            <tr key={row.area} style={{ backgroundColor: idx % 2 === 0 ? '#f8fafc' : 'white', borderBottom: '1px solid #e2e8f0' }}>
+              <td style={{ padding: '6px 4px', fontWeight: '700', fontSize: '16px', color: '#000000', letterSpacing: '-0.2px' }}>{row.area}</td>
+              {testColumns.map(col => (
+                <td key={col} style={{ padding: '6px 4px', textAlign: 'center', color: '#000000', fontWeight: '700', fontSize: '16px' }}>
+                  {row.scoresByCol[col] !== null ? row.scoresByCol[col] : '—'}
+                </td>
+              ))}
+              <td style={{ padding: '6px 4px', textAlign: 'center', fontWeight: '700', fontSize: '16px', color: '#000000' }}>{row.percentage}%</td>
+              <td style={{ padding: '6px 4px', textAlign: 'left', fontWeight: '700', fontSize: '16px', color: row.color }}>{row.grade}</td>
+              <td style={{ padding: '6px 4px', fontSize: '11px', fontStyle: 'italic', fontWeight: '700', color: '#000000', lineHeight: '1.2' }}>{row.remark}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {/* Summary Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '20px' }}>
+        {(() => {
+          const totalTests = tableRows.reduce((acc, r) => acc + r.testCount, 0);
+          const totalMax = tableRows.reduce((acc, r) => acc + r.totalMarks, 0);
+          const avgPct = totalMax > 0 ? (tableRows.reduce((acc, r) => acc + r.totalScore, 0) / totalMax * 100).toFixed(0) : 0;
+
+          let overallGrade = 'E';
+          if (avgPct >= 90) overallGrade = 'EE1';
+          else if (avgPct >= 75) overallGrade = 'EE2';
+          else if (avgPct >= 58) overallGrade = 'ME1';
+          else if (avgPct >= 41) overallGrade = 'ME2';
+          else if (avgPct >= 31) overallGrade = 'AE1';
+          else if (avgPct >= 21) overallGrade = 'AE2';
+          else if (avgPct >= 11) overallGrade = 'BE1';
+          else overallGrade = 'BE2';
+
+          const cardStyle = { padding: '8px', border: '1px solid #e2e8f0', borderRadius: '4px', textAlign: 'center', backgroundColor: '#f8fafc' };
+          const labelStyle = { fontSize: '10px', fontWeight: 'bold', color: '#64748b', marginBottom: '2px', textTransform: 'uppercase' };
+          const valueStyle = { fontSize: '18px', fontWeight: '700', color: '#0f172a' };
+
+          return (
+            <>
+              <div style={cardStyle}>
+                <div style={labelStyle}>Subjects Assessed</div>
+                <div style={valueStyle}>{tableRows.length}</div>
+              </div>
+              <div style={cardStyle}>
+                <div style={labelStyle}>Total Assessments</div>
+                <div style={valueStyle}>{totalTests}</div>
+              </div>
+              <div style={cardStyle}>
+                <div style={labelStyle}>Average Score</div>
+                <div style={valueStyle}>{avgPct}%</div>
+              </div>
+              <div style={{ ...cardStyle, backgroundColor: '#eff6ff', borderColor: '#bfdbfe' }}>
+                <div style={{ ...labelStyle, color: '#1e40af' }}>Overall Grade</div>
+                <div style={{ ...valueStyle, color: '#1e3a8a' }}>{overallGrade}</div>
+              </div>
+            </>
+          );
+        })()}
+      </div>
+
+      {/* Performance Chart & Grading Key Row */}
+      <div className="flex gap-4 mb-4 page-break-inside-avoid">
+        {/* Performance Chart - 65% */}
+        <div className="w-[65%]">
+          <h3 className="text-[10px] font-bold text-gray-800 uppercase border-b border-gray-200 mb-2 pb-1">Subject Performance</h3>
+          <div style={{ height: '140px', width: '100%' }}>
+            {tableRows && tableRows.length > 0 && BarChart ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={tableRows.map(r => ({ ...r, area: getAbbreviatedName(r.area) }))} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis dataKey="area" interval={0} axisLine={{ stroke: '#e2e8f0' }} tickLine={false} tick={{ fontSize: 8, fontWeight: 'bold' }} />
+                  <YAxis domain={[0, 100]} tick={{ fontSize: 9, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                  <Bar dataKey="percentage" fill="#1E3A8A" barSize={30} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full bg-gray-50 text-[10px] text-gray-400 font-bold uppercase">No data for chart</div>
+            )}
+          </div>
+        </div>
+
+        {/* Grading Key - 35% */}
+        <div className="w-[35%] border-l border-gray-100 pl-4">
+          <h3 className="text-[10px] font-bold text-gray-800 uppercase border-b border-gray-200 mb-2 pb-1">Grading Key</h3>
+          <div className="flex flex-col gap-1 text-[8px]">
+            <div className="flex items-center gap-1"><span className="w-5 h-3 bg-[#15803d] text-white flex items-center justify-center font-bold rounded-sm">EE1</span> <span>90-100% (Outstanding)</span></div>
+            <div className="flex items-center gap-1"><span className="w-5 h-3 bg-[#166534] text-white flex items-center justify-center font-bold rounded-sm">EE2</span> <span>75-89% (Very High)</span></div>
+            <div className="flex items-center gap-1"><span className="w-5 h-3 bg-[#22c55e] text-white flex items-center justify-center font-bold rounded-sm">ME1</span> <span>58-74% (High Avg)</span></div>
+            <div className="flex items-center gap-1"><span className="w-5 h-3 bg-[#4ade80] text-gray-900 flex items-center justify-center font-bold rounded-sm">ME2</span> <span>41-57% (Average)</span></div>
+            <div className="flex items-center gap-1"><span className="w-5 h-3 bg-[#eab308] text-white flex items-center justify-center font-bold rounded-sm">AE1</span> <span>31-40% (Low Avg)</span></div>
+            <div className="flex items-center gap-1"><span className="w-5 h-3 bg-[#facc15] text-gray-900 flex items-center justify-center font-bold rounded-sm">AE2</span> <span>21-30% (Below Avg)</span></div>
+            <div className="flex items-center gap-1"><span className="w-5 h-3 bg-[#f97316] text-white flex items-center justify-center font-bold rounded-sm">BE1</span> <span>11-20% (Low)</span></div>
+            <div className="flex items-center gap-1"><span className="w-5 h-3 bg-[#dc2626] text-white flex items-center justify-center font-bold rounded-sm">BE2</span> <span>0-10% (Very Low)</span></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Signatures & Remarks Section */}
+      <div className="mt-4 pt-3 border-t-2 border-gray-100 flex justify-between items-start page-break-inside-avoid">
+        {/* Class Teacher Remarks Area — read-only */}
+        <div className="flex flex-col gap-1 w-[60%] pr-4">
+          <div className="text-[10px] font-extrabold text-[#1E3A8A] uppercase mb-1">
+            Class Teacher's Remarks:
+          </div>
+          <div className="min-h-[75px] border-b-2 border-slate-300 border-dotted pb-1 text-[12px] font-semibold text-slate-800 italic leading-snug">
+            {commentData?.classTeacherComment || ''}
+          </div>
+        </div>
+
+        {/* Principal / Head Teacher Section */}
+        <div className="w-[40%]"></div>
+      </div>
+
+      {/* Signature & Stamp Area - Bottom Anchored - Adjusted for breathing room above footer (18mm) */}
+      <div className="absolute bottom-[18mm] right-[8mm] w-[40%] flex flex-col items-center">
+        {/* Stamp Area - Reduced further (w-80 -> w-68) */}
+        <div className="mb-[-12px] z-10 flex justify-center">
+          <img
+            src={user?.school?.stampUrl || brandingSettings?.stampUrl || "/stamp.svg"}
+            alt="School Stamp"
+            className="w-48 h-auto opacity-95"
+            style={{ mixBlendMode: 'multiply' }}
+            onError={(e) => {
+              if (e.target.src.includes('/stamp.svg')) {
+                e.target.src = '/ZawadiStamp.svg';
+              } else if (e.target.src.includes('/ZawadiStamp.svg')) {
+                e.target.style.display = 'none';
+              } else {
+                e.target.src = '/stamp.svg';
+              }
+            }}
+          />
+        </div>
+
+        {/* Signature Line Area - Thin line below stamp */}
+        <div className="w-full border-b border-slate-900 mb-1"></div>
+        <div className="text-[11px] font-bold uppercase text-slate-900 tracking-wider">Principal's Signature & Stamp</div>
+      </div>
+
+      {/* Footer Disclaimer - Absolute Bottom */}
+      <div style={{ position: 'absolute', bottom: '8mm', left: '8mm', right: '8mm', paddingTop: '10px', borderTop: '2px solid #f1f5f9', fontSize: '10px', textAlign: 'center', color: '#64748b', fontWeight: '800' }}>
+        <div>This is an official report generated by the Assessment System.</div>
+        <div style={{ marginTop: '2px' }}>For inquiries, contact the administration office.</div>
+      </div>
+    </div >
+  );
+};
+
+
+const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) => {
+  const { showSuccess, showError } = useNotifications();
+
+  // Use centralized hooks for assessment state management
+  const setup = useAssessmentSetup({ defaultTerm: 'TERM_1' });
+
+  const [selectedType, setSelectedType] = useState('LEARNER_REPORT');
+  const [selectedTestGroups, setSelectedTestGroups] = useState([]);
+  const [selectedTestIds, setSelectedTestIds] = useState([]);
+  const [availableTests, setAvailableTests] = useState([]);
+  const [streamConfigs, setStreamConfigs] = useState([]);
+  const [grades, setGrades] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [reportData, setReportData] = useState(null);
+
+  // Custom Tick component for wrapping long learning area names in charts
+  const CustomXAxisTick = ({ x, y, payload }) => {
+    const text = payload.value;
+    if (!text) return null;
+
+    // Split text by space and wrap into lines
+    const words = text.split(' ');
+    const lines = [];
+    let currentLine = '';
+
+    words.forEach(word => {
+      if ((currentLine + word).length > 12) {
+        lines.push(currentLine.trim());
+        currentLine = word + ' ';
+      } else {
+        currentLine += word + ' ';
+      }
+    });
+    lines.push(currentLine.trim());
+
+    return (
+      <g transform={`translate(${x},${y})`}>
+        {lines.map((line, index) => (
+          <text
+            key={index}
+            x={0}
+            y={index * 10}
+            dy={10}
+            textAnchor="middle"
+            fill="#64748b"
+            fontSize={8}
+            fontWeight="bold"
+          >
+            {line}
+          </text>
+        ))}
+      </g>
+    );
+  };
+
+  const [statusMessage, setStatusMessage] = useState('');
+  const [showTestGroupOptions, setShowTestGroupOptions] = useState(false);
+  const [showTestOptions, setShowTestOptions] = useState(false);
+  const [complianceCheckResult, setComplianceCheckResult] = useState(null);
+  const [showComplianceDetails, setShowComplianceDetails] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [pdfProgress, setPdfProgress] = useState('');
+  // Bulk Actions State
+  const [isBulkPrinting, setIsBulkPrinting] = useState(false);
+  const [selectedReportRows, setSelectedReportRows] = useState([]); // Track selected rows for bulk action
+  const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0, active: false, success: 0, failed: 0 });
+  const [singleDownloadData, setSingleDownloadData] = useState(null);
+  const [bulkDownloadData, setBulkDownloadData] = useState(null);
+  const [isSingleDownloading, setIsSingleDownloading] = useState(false);
+
+  const reportRef = useRef(null);
+  const testGroupRef = useRef(null);
+  const testOptionsRef = useRef(null);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (testGroupRef.current && !testGroupRef.current.contains(event.target)) {
+        setShowTestGroupOptions(false);
+      }
+      if (testOptionsRef.current && !testOptionsRef.current.contains(event.target)) {
+        setShowTestOptions(false);
+      }
+      if (learnerOptionsRef.current && !learnerOptionsRef.current.contains(event.target)) {
+        setShowLearnerOptions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Grade ordering for sorting (lowest to highest)
+  const gradeOrder = [
+    'CRECHE', 'RECEPTION', 'TRANSITION',
+    'PLAYGROUP', 'PP1', 'PP2',
+    'GRADE_1', 'GRADE_2', 'GRADE_3', 'GRADE_4', 'GRADE_5', 'GRADE_6',
+    'GRADE_7', 'GRADE_8', 'GRADE_9', 'GRADE_10', 'GRADE_11', 'GRADE_12'
+  ];
+
+  const [generateTrigger, setGenerateTrigger] = useState(0);
+
+  // Apply staged filters to actual state
+  const applyFilters = () => {
+    setSelectedType(stagedType);
+    setSelectedGrade(stagedGrade);
+    setSelectedStream(stagedStream);
+    setSelectedTerm(stagedTerm);
+    setSelectedTestGroups(stagedTestGroups);
+    setSelectedTestIds(stagedTestIds);
+    setSelectedLearnerIds(stagedLearnerIds);
+
+    // Trigger handleGenerate after state has been set
+    setGenerateTrigger(prev => prev + 1);
+  };
+
+  useEffect(() => {
+    if (generateTrigger > 0) {
+      handleGenerate();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [generateTrigger]);
+
+  const handleToggleSelectRow = (idx) => {
+    setSelectedReportRows(prev => {
+      if (prev.includes(idx)) {
+        return prev.filter(i => i !== idx);
+      } else {
+        return [...prev, idx];
+      }
+    });
+  };
+
+  const handleSelectAll = (total) => {
+    if (selectedReportRows.length === total) {
+      setSelectedReportRows([]);
+    } else {
+      setSelectedReportRows(Array.from({ length: total }, (_, i) => i));
+    }
+  };
+
+
+  // Local learner fetching state
+  const [fetchedReportLearners, setFetchedReportLearners] = useState([]);
+  const [loadingLearners, setLoadingLearners] = useState(false);
+
+  // SMS sending state
+  const [isSendingSMS, setIsSendingSMS] = useState(false);
+  const [showSMSPreview, setShowSMSPreview] = useState(false);
+  const [smsPreviewData, setSmsPreviewData] = useState(null);
+  const [editedPhoneNumber, setEditedPhoneNumber] = useState('');
+  const [showSMSBulkConfirm, setShowSMSBulkConfirm] = useState(false);
+  const [smsProgress, setSmsProgress] = useState({ current: 0, total: 0, success: 0, failed: 0 });
+
+  // WhatsApp sending state
+  const [isSendingWhatsApp, setIsSendingWhatsApp] = useState(false);
+  const [whatsAppProgress, setWhatsAppProgress] = useState({ current: 0, total: 0, status: '' });
+  const [showWhatsAppConfirm, setShowWhatsAppConfirm] = useState(false);
+
+  // General Notification Modal state
+  const [notificationModal, setNotificationModal] = useState({ show: false, title: '', message: '', type: 'info' });
+
+  const reportTypes = [
+    { value: 'GRADE_REPORT', label: 'Grade Report' },
+    { value: 'STREAM_REPORT', label: 'Stream Report' },
+    { value: 'LEARNER_REPORT', label: 'Learner Report' },
+    { value: 'LEARNER_TERMLY_REPORT', label: 'Learner Termly Report' },
+    { value: 'STREAM_RANKING_REPORT', label: 'Stream Ranking Report' },
+    { value: 'STREAM_ANALYSIS_REPORT', label: 'Stream Analysis Report' },
+    { value: 'GRADE_ANALYSIS_REPORT', label: 'Grade Analysis Report' }
+  ];
+
+  // Local state for grade, stream, term selections (instead of relying on setup hook)
+  const [selectedGrade, setSelectedGrade] = useState('');
+  const [selectedStream, setSelectedStream] = useState('');
+  const [selectedTerm, setSelectedTerm] = useState('TERM_1');
+
+  // Staged filter state - filters only apply when button is clicked
+  const [stagedType, setStagedType] = useState('LEARNER_REPORT');
+  const [stagedGrade, setStagedGrade] = useState('');
+  const [stagedStream, setStagedStream] = useState('');
+  const [stagedTerm, setStagedTerm] = useState('TERM_1');
+  const [stagedTestGroups, setStagedTestGroups] = useState([]);
+  const [stagedTestIds, setStagedTestIds] = useState([]);
+  const [stagedLearnerIds, setStagedLearnerIds] = useState([]);
+
+  // Get terms from hook
+  const terms = setup.terms;
+  const academicYear = setup.academicYear;
+
+  // Selection mappings - use local state for learner selection
+  const [selectedLearnerIds, setSelectedLearnerIds] = useState([]);
+  const [showLearnerOptions, setShowLearnerOptions] = useState(false);
+  const learnerOptionsRef = useRef(null);
+
+  // Helper to normalize strings for comparison (e.g., "Grade 1" -> "GRADE_1")
+  const normalize = (str) => {
+    if (!str) return '';
+    return String(str).trim().replace(/\s+/g, '_').toUpperCase();
+  };
+
+  // Dynamic learner fetching whenever grade or stream changes
+  useEffect(() => {
+    const fetchReportLearners = async () => {
+      // If grade is not selected, we don't fetch specific learners
+      if (!stagedGrade || stagedGrade === 'all') {
+        setFetchedReportLearners([]);
+        return;
+      }
+
+      try {
+        setLoadingLearners(true);
+        const params = {
+          grade: stagedGrade,
+          limit: 1000 // Ensure we get all students for the grade
+        };
+        if (stagedStream && stagedStream !== 'all') params.stream = stagedStream;
+
+        console.log('🔄 Fetching learners for selection from API...', params);
+        const response = await api.learners.getAll(params);
+
+        if (response.success) {
+          const data = response.data || [];
+          setFetchedReportLearners(data.sort((a, b) =>
+            `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`)
+          ));
+        }
+      } catch (err) {
+        console.error('❌ Error fetching learners in SummativeReport:', err);
+      } finally {
+        setLoadingLearners(false);
+      }
+    };
+
+    fetchReportLearners();
+  }, [stagedGrade, stagedStream]);
+
+  // Filter learners by grade and stream - Properly named useMemo
+  const filteredLearners = useMemo(() => {
+    // Priority: Use locally fetched learners if we have a grade selection
+    if (stagedGrade && stagedGrade !== 'all' && fetchedReportLearners.length > 0) {
+      return fetchedReportLearners;
+    }
+
+    // Fallback: Use the learners prop passed from parent (limited to 50)
+    if (!learners || learners.length === 0) return [];
+
+    return learners.filter(l => {
+      // Filter by grade
+      if (stagedGrade && stagedGrade !== 'all') {
+        if (normalize(l.grade) !== normalize(stagedGrade)) return false;
+      }
+
+      // Filter by stream
+      if (stagedStream && stagedStream !== 'all') {
+        if (normalize(l.stream) !== normalize(stagedStream)) return false;
+      }
+
+      return true;
+    }).sort((a, b) => `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`));
+  }, [learners, fetchedReportLearners, stagedGrade, stagedStream]);
+
+  // Fetch learners on component mount
+  useEffect(() => {
+    if (onFetchLearners && typeof onFetchLearners === 'function') {
+      onFetchLearners();
+    } else {
+      console.warn('⚠️ onFetchLearners not available or not a function');
+    }
+  }, [onFetchLearners]);
+
+  // Fetch grades from backend (Source of Truth)
+  useEffect(() => {
+    const fetchGrades = async () => {
+      try {
+        const schoolId = user?.schoolId || user?.school?.id || localStorage.getItem('currentSchoolId');
+
+        if (!schoolId) {
+          console.warn('⚠️ No school ID found - cannot fetch grades');
+          setGrades([]);
+          return;
+        }
+
+        console.log('🔄 Fetching grades for school:', schoolId);
+        const response = await configAPI.getGrades(schoolId);
+
+        let gradesData = Array.isArray(response) ? response : (response?.data ? response.data : []);
+
+        // If grades are strings, convert to objects with value and label
+        gradesData = gradesData.map(g => {
+          if (typeof g === 'string') {
+            return { value: g, label: g };
+          }
+          return { value: g.value || g.name || g, label: g.label || g.name || g };
+        });
+
+        console.log('✅ Grades loaded:', gradesData.length);
+        setGrades(gradesData || []);
+      } catch (err) {
+        console.error('❌ Error fetching grades:', err);
+        setGrades([]);
+      }
+    };
+
+    if (user) {
+      fetchGrades();
+    }
+  }, [user]);
+
+  // Fetch stream configurations from backend (Source of Truth)
+  useEffect(() => {
+    const fetchStreamConfigs = async () => {
+      try {
+        console.log('🔍 useEffect triggered - user prop:', user);
+
+        const schoolId = user?.schoolId || user?.school?.id || localStorage.getItem('currentSchoolId');
+        console.log('📍 Extracted schoolId:', schoolId);
+
+        if (!schoolId) {
+          console.warn('⚠️ No school ID found - cannot fetch stream configs');
+          setStreamConfigs([]);
+          return;
+        }
+
+        console.log('🔄 Fetching stream configurations for school:', schoolId);
+        const response = await configAPI.getStreamConfigs(schoolId);
+
+        console.log('📦 Raw API Response:', response);
+
+        const configs = Array.isArray(response) ? response : (response?.data ? response.data : []);
+        console.log('✅ Stream configs processed:', configs.length, 'configs');
+
+        if (configs.length === 0) {
+          console.warn('⚠️ No stream configs returned from API');
+        } else {
+          console.log('   Stream names:', configs.map(c => c.name));
+        }
+
+        setStreamConfigs(configs || []);
+      } catch (err) {
+        console.error('❌ Error fetching stream configs:', err);
+        console.error('   Error message:', err.message);
+        console.error('   Error response:', err.response?.data);
+        setStreamConfigs([]);
+      }
+    };
+
+    if (user) {
+      fetchStreamConfigs();
+    } else {
+      console.log('⏳ User prop not available yet, waiting...');
+    }
+  }, [user]);
+
+  // Monitor learners prop changes
+  useEffect(() => {
+    if (learners && learners.length > 0) {
+      console.log('✅ Learners loaded:', learners.length);
+      console.log('   Sample learner grades:', learners.slice(0, 3).map(l => l.grade));
+    } else {
+      console.log('⏳ Waiting for learners to load... (Learners:', learners?.length || 0, ')');
+      // If no learners after a delay, try to fetch them again
+      const timer = setTimeout(() => {
+        if (!learners || learners.length === 0) {
+          console.warn('⚠️ Still no learners after 2 seconds, retrying fetch...');
+          if (onFetchLearners && typeof onFetchLearners === 'function') {
+            onFetchLearners();
+          }
+        }
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [learners, onFetchLearners]);
+
+  // Fetch tests when grade, term or year changes - use local state
+  useEffect(() => {
+    const fetchTests = async () => {
+      try {
+        const params = {
+          term: stagedTerm,
+          academicYear: academicYear // from setup hook or local
+        };
+
+        if (stagedGrade && stagedGrade !== 'all') {
+          params.grade = stagedGrade;
+        }
+
+        console.log('🔄 Fetching available tests for reports...', params);
+        const res = await api.assessments.getTests(params);
+
+        if (res.success) {
+          // Reset selections when available tests change significantly
+          setStagedTestGroups([]);
+          setStagedTestIds([]);
+
+          setAvailableTests(res.data || []);
+          console.log('✅ Tests loaded:', res.data?.length || 0);
+        }
+      } catch (err) {
+        console.error('Fetch tests error:', err);
+      }
+    };
+    fetchTests();
+  }, [stagedGrade, stagedTerm, academicYear]);
+
+  // Helper to extract group from test
+  const getTestGroup = (test) => {
+    if (test.testType) return test.testType;
+    // Smart detection: if type is null but title has prefix (e.g. "dd - "), use prefix
+    if (test.title && test.title.includes(' - ')) {
+      const parts = test.title.split(' - ');
+      if (parts[0].length < 12) return parts[0];
+    }
+    return 'General';
+  };
+
+  // Derive unique test groups (testType) from available tests
+  const availableTestGroups = useMemo(() => {
+    if (!availableTests || availableTests.length === 0) {
+      return [];
+    }
+
+    // Get unique test types/groups from all available tests (removed results count filter)
+    const groupsSet = new Set();
+    availableTests.forEach(t => {
+      groupsSet.add(getTestGroup(t));
+    });
+
+    const groups = Array.from(groupsSet);
+    console.log('📊 Available test groups detected:', groups);
+    return groups.sort();
+  }, [availableTests]);
+
+  // Derive tests within the selected test group(s)
+  const testsInGroups = useMemo(() => {
+    // Show all tests, even those without results (removed results count filter)
+    if (!stagedTestGroups || stagedTestGroups.length === 0) {
+      // If no groups selected, show all tests
+      return availableTests;
+    }
+
+    const filtered = availableTests.filter(t => {
+      return stagedTestGroups.includes(getTestGroup(t));
+    });
+    return filtered;
+  }, [availableTests, stagedTestGroups]);
+
+  // Derive unique streams from stream configurations (Source of Truth)
+  // Falls back to learner streams if configs not loaded yet
+  const availableStreams = useMemo(() => {
+    console.log('📊 useMemo recalculating - streamConfigs:', streamConfigs.length);
+
+    // Priority 1: Use official stream configs if available
+    if (streamConfigs && streamConfigs.length > 0) {
+      const activeStreams = streamConfigs
+        .filter(s => s.active !== false)  // Include by default if not explicitly set to false
+        .map(s => ({
+          id: s.id,
+          name: s.name,  // Full name like "ABC&D"
+          value: s.name
+        }));
+
+      console.log('✅ Using official stream configs:', activeStreams.map(s => s.name));
+      return activeStreams;
+    }
+
+    // Fallback: Extract from learners if configs haven't loaded yet
+    if (!learners || learners.length === 0) {
+      console.log('⏳ No learners or stream configs available yet');
+      return [];
+    }
+
+    let filtered = learners;
+    if (selectedGrade !== 'all') {
+      filtered = learners.filter(l => l.grade === selectedGrade);
+    }
+
+    const learnerStreams = Array.from(new Set(filtered.map(l => l.stream).filter(Boolean)));
+    console.log('⚠️ Fallback: Using streams from learners:', learnerStreams);
+
+    return learnerStreams.map(s => ({
+      id: s,
+      name: s,
+      value: s
+    })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [streamConfigs, learners, selectedGrade]);
+
+  const handleExportPDF = async () => {
+    if (!reportData) {
+      showError(
+        'No report data to export. Please generate a report first by clicking the "Generate Report" button.'
+      );
+      return;
+    }
+    if (isExporting) return;
+
+    setIsExporting(true);
+    try {
+      const timestamp = new Date().toISOString().split('T')[0];
+      let filename = `Summative_Report_${timestamp}.pdf`;
+
+      if (reportData.learner) {
+        filename = `${reportData.learner.firstName}_${reportData.learner.lastName}_Summative_Report_${timestamp}.pdf`;
+      } else if (reportData.title) {
+        filename = `${reportData.title.replace(/[^a-zA-Z0-9]/g, '_')}_${timestamp}.pdf`;
+      }
+
+
+
+      const result = await generateHighFidelityPDF(
+        'summative-report-content',
+        filename,
+        {
+          onProgress: (msg) => {
+            setPdfProgress(msg);
+            console.log(`📑 PDF Progress: ${msg}`);
+          }
+        }
+      );
+
+      if (result?.success) {
+        showSuccess('High-quality report downloaded successfully!');
+      } else {
+        showError(result?.error || 'High-fidelity PDF generation failed');
+      }
+    } catch (err) {
+      console.error('PDF export error:', err);
+      showError(err?.message || 'Failed to export PDF. Please try again.');
+    } finally {
+      setIsExporting(false);
+      setPdfProgress('');
+    }
+  };
+
+  const handlePrintPDF = async () => {
+    if (!reportData) return;
+    setIsExporting(true);
+    try {
+      setPdfProgress('Generating print preview...');
+      const result = await generateHighFidelityPDF(
+        'summative-report-content',
+        'Report_Print.pdf',
+        {
+          action: 'print',
+          onProgress: (msg) => setPdfProgress(msg)
+        }
+      );
+      if (result?.success) {
+        showSuccess('High-quality print preview opened!');
+      } else {
+        showError(result?.error || 'Failed to generate print preview');
+      }
+    } catch (err) {
+      console.error('Print error:', err);
+      showError('Failed to open high-fidelity print preview');
+    } finally {
+      setIsExporting(false);
+      setPdfProgress('');
+    }
+  };
+
+  /**
+   * Helper to format SMS message for a row
+   */
+  const formatSmsReport = (row) => {
+    const learner = row.learner;
+    // 1. Data Preparation (Priority: Parent/Guardian -> Parent)
+    const parentName = learner.guardianName || learner.parent?.firstName || 'Parent';
+    const termLabel = terms.find(t => t.value === selectedTerm)?.label || selectedTerm;
+    const schoolName = brandingSettings?.schoolName || 'YOUR SCHOOL';
+
+    const results = row.results || [];
+    const totalMarks = results.reduce((sum, r) => sum + (r.score || 0), 0);
+    const maxPossibleMarks = results.reduce((sum, r) => sum + (r.totalMarks || 0), 0);
+    const averageScore = row.averageScore || row.averagePct || (maxPossibleMarks > 0 ? ((totalMarks / maxPossibleMarks) * 100).toFixed(1) : 0);
+    const { grade: overallGrade } = getCBCGrade(parseFloat(averageScore));
+
+    const processedSmsTests = new Set();
+    const subjects = results.reduce((acc, r) => {
+      // Deduplicate exact results
+      const resultKey = r.id || `${r.testId}-${r.score}`;
+      if (processedSmsTests.has(resultKey)) return acc;
+      processedSmsTests.add(resultKey);
+
+      const rawArea = r.learningArea || r.test?.learningArea || 'General';
+      const area = rawArea.trim().toUpperCase();
+
+      const pct = (r.totalMarks || r.test?.totalMarks) > 0 ? (r.score / (r.totalMarks || r.test?.totalMarks)) * 100 : 0;
+      const { grade } = getCBCGrade(pct);
+      const simpleGrade = grade.replace(/\d+/g, '');
+
+      // If multiple tests for one subject, average them for the summary
+      if (acc[area]) {
+        acc[area].score = Math.round((acc[area].score + r.score) / 2);
+      } else {
+        acc[area] = { score: Math.round(r.score), grade: simpleGrade };
+      }
+      return acc;
+    }, {});
+
+    const subjectsList = Object.entries(subjects).map(([name, detail]) => {
+      const shortName = getAbbreviatedName(name);
+      return `${shortName}: ${detail.score} ${detail.grade}`;
+    }).join('\n');
+
+    return `${schoolName.toUpperCase()}\n` +
+      `Official Assessment Report\n\n` +
+      `Dear ${parentName},\n` +
+      `Here is the assessment summary for\n${learner.firstName} ${learner.lastName} for ${termLabel}:\n\n` +
+      `${subjectsList}\n\n` +
+      `AVERAGE: ${averageScore}% ${overallGrade.replace(/\d+/g, '')}\n` +
+      `Total Marks: ${totalMarks} / ${maxPossibleMarks}\n` +
+      `Overall Status: ${overallGrade.replace(/\d+/g, '')}`;
+  };
+
+  const handleSendSMS = async (directRow = null) => {
+    const row = (directRow && directRow.learner) ? directRow : (reportData?.type === 'LEARNER_REPORT' || reportData?.type === 'LEARNER_TERMLY_REPORT' ? reportData : null);
+
+    if (!row) {
+      showError('Learner information not available');
+      return;
+    }
+
+    let learner = row.learner;
+    if (!learner) {
+      showError('Learner information not available');
+      return;
+    }
+
+    // Fix stale number by fetching latest (addresses user request)
+    try {
+      const latest = await api.learners.getById(learner.id);
+      const unpackedLearner = latest?.data || latest;
+      if (unpackedLearner && unpackedLearner.id) {
+        learner = unpackedLearner;
+        // Optionally update the row object if it's from the table
+        if (directRow) {
+          directRow.learner = unpackedLearner;
+        }
+      }
+    } catch (e) {
+      console.warn("Could not fetch latest learner contact, using row data", e);
+    }
+
+    // Get parent phone from learner data (Priority: Guardian -> Parent)
+    const parentPhone = getLearnerPhone(learner);
+    const parentName = learner.guardianName || learner.parent?.firstName || 'Parent';
+    const termLabel = terms.find(t => t.value === selectedTerm)?.label || selectedTerm;
+    const contactOptions = getLearnerContactOptions(learner);
+
+    // Proceed to SMS preview even if phone is missing (user can enter it)
+    const message = formatSmsReport(row);
+
+    setEditedPhoneNumber(parentPhone); // Initialize edit field
+    setSmsPreviewData({
+      recipient: parentPhone,
+      parentName: parentName,
+      learnerName: `${learner.firstName} ${learner.lastName}`,
+      message: message,
+      termLabel: termLabel,
+      learnerId: learner.id, // Store learner ID for tracking
+      contactOptions: contactOptions
+    });
+    setShowSMSPreview(true);
+  };
+
+
+
+  /**
+   * Send summary via WhatsApp - Clean Rewrite to avoid duplication
+   */
+  const handleSendWhatsApp = async (directRow = null) => {
+    // 0. Argument handling: if called as an onClick without params, directRow is an Event
+    const row = (directRow && directRow.learner) ? directRow : (reportData?.type === 'LEARNER_REPORT' || reportData?.type === 'LEARNER_TERMLY_REPORT' ? reportData : null);
+
+    if (!row) {
+      showError('Learner information not available');
+      return;
+    }
+
+    const currentLearner = row.learner;
+    if (!currentLearner) {
+      showError('Learner details missing');
+      return;
+    }
+
+    // Refresh contact info for WhatsApp too
+    let learnerObj = currentLearner;
+    try {
+      const latest = await api.learners.getById(currentLearner.id);
+      const unpacked = latest?.data || latest;
+      if (unpacked && unpacked.id) {
+        learnerObj = unpacked;
+      }
+    } catch (e) {
+      console.warn("Could not fetch latest learner contact for WhatsApp", e);
+    }
+
+    // 1. Data Preparation (Priority: Guardian -> Parent)
+    const parentPhone = getLearnerPhone(learnerObj);
+    const parentName = learnerObj.guardianName || learnerObj.parent?.firstName || 'Parent';
+    const termLabel = terms.find(t => t.value === selectedTerm)?.label || selectedTerm;
+    const schoolName = brandingSettings?.schoolName || 'YOUR SCHOOL';
+
+    const results = row.results || [];
+
+    // Aggregate results by area (to avoid duplicates in the WhatsApp message)
+    // and normalize area names to avoid nearly-identical keys
+    const areaSummary = {};
+    const processedTests = new Set();
+
+    results.forEach(r => {
+      // Deduplicate if the same result appears twice in the array
+      const resultKey = r.id || `${r.testId}-${r.score}`;
+      if (processedTests.has(resultKey)) return;
+      processedTests.add(resultKey);
+
+      const area = (r.learningArea || 'General').trim().toUpperCase();
+      if (!areaSummary[area]) areaSummary[area] = { score: 0, total: 0 };
+      areaSummary[area].score += (r.score || 0);
+      areaSummary[area].total += (r.totalMarks || 0);
+    });
+
+    const tableRows = Object.keys(areaSummary).map(area => {
+      const summary = areaSummary[area];
+      const percentage = summary.total > 0 ? (summary.score / summary.total) * 100 : 0;
+      const { grade } = getCBCGrade(percentage);
+      return {
+        area,
+        score: summary.score,
+        grade
+      };
+    }).sort((a, b) => a.area.localeCompare(b.area));
+
+    const totalMarks = results.reduce((sum, r) => sum + (r.score || 0), 0);
+    const maxPossibleMarks = results.reduce((sum, r) => sum + (r.totalMarks || 0), 0);
+    const averageScore = row.averageScore || (maxPossibleMarks > 0 ? ((totalMarks / maxPossibleMarks) * 100).toFixed(1) : 0);
+    const { grade: overallGrade } = getCBCGrade(parseFloat(averageScore));
+
+    const subjectsListText = tableRows.map(r => {
+      const name = getAbbreviatedName(r.area).toUpperCase().padEnd(10).slice(0, 10);
+      const score = Math.round(r.score).toString().padStart(5);
+      const grade = r.grade.replace(/\d+/g, '').padStart(5);
+      return `${name}|${score} |${grade}`;
+    }).join('\n');
+
+    const tableHeader = `SUBJECT   |  SCR |  GRD`;
+    const separator = `----------|-----|----`;
+
+    const avgLabel = "AVERAGE".padEnd(10);
+    const avgScore = (averageScore + "%").padStart(6);
+    const avgGrade = overallGrade.replace(/\d+/g, '').padStart(4);
+    const avgRow = `${avgLabel}|${avgScore}|${avgGrade}`;
+
+    // 3. Construct the Final Message (Matching user request)
+    const waMessage =
+      `*${schoolName.toUpperCase()}*\n` +
+      `_Official Assessment Report_\n\n` +
+      `Dear *${parentName}*,\n` +
+      `Here is the assessment summary for\n*${learnerObj.firstName || ''} ${learnerObj.lastName || ''}* for *${termLabel}*:\n\n` +
+      `\`\`\`\n` +
+      `${tableHeader}\n` +
+      `${separator}\n` +
+      `${subjectsListText}\n` +
+      `${separator}\n` +
+      `${avgRow}\n` +
+      `\`\`\`\n\n` +
+      `*Total Marks:* ${totalMarks} / ${maxPossibleMarks}\n` +
+      `*Overall Status:* ${overallGrade.replace(/\d+/g, '')}\n\n` +
+      `_Generated on ${new Date().toLocaleDateString()}_`;
+
+    // 3.5 Open WhatsApp immediately (before async logs to prevent browser blocking)
+    let cleanPhone = parentPhone ? parentPhone.replace(/\D/g, '') : '';
+    if (cleanPhone.startsWith('0')) cleanPhone = '254' + cleanPhone.substring(1);
+
+    if (cleanPhone) {
+      window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(waMessage)}`, '_blank');
+    } else {
+      showError('Parent phone number is unavailable or invalid');
+      return;
+    }
+
+    // 4. Log communication to backend to track status
+    try {
+      await api.notifications.logCommunication({
+        learnerId: learnerObj.id,
+        channel: 'WHATSAPP',
+        term: selectedTerm,
+        academicYear: setup.academicYear,
+        assessmentType: 'SUMMATIVE'
+      });
+
+      // Update local UI state to reflect sent status
+      if (reportData?.rows) {
+        setReportData(prev => ({
+          ...prev,
+          rows: prev.rows.map(r => r.learner.id === learnerObj.id
+            ? { ...r, communication: { ...r.communication, hasSentWhatsApp: true, lastWhatsAppAt: new Date() } }
+            : r)
+        }));
+      }
+    } catch (e) {
+      console.error('Failed to log WhatsApp communication', e);
+    }
+  };
+
+
+
+  /**
+   * Bulk SMS Handler - Shows confirmation modal
+   */
+  const handleBulkSMS = async () => {
+    if (!reportData?.rows || reportData.rows.length === 0) {
+      showError('No learners to send SMS to');
+      return;
+    }
+
+    // Show confirmation modal instead of browser alert
+    setShowSMSBulkConfirm(true);
+  };
+
+  /**
+   * Execute Bulk SMS - Called after user confirms in modal
+   */
+  const executeBulkSMS = async (testNumber = null) => {
+    setShowSMSBulkConfirm(false);
+
+    // Determine target rows (selected or all)
+    const rowsToProcess = selectedReportRows.length > 0
+      ? selectedReportRows.map(idx => reportData.rows[idx])
+      : reportData.rows;
+
+    setBulkProgress({ current: 0, total: rowsToProcess.length, active: true, success: 0, failed: 0 });
+    const total = rowsToProcess.length;
+
+    for (let i = 0; i < total; i++) {
+      const row = rowsToProcess[i];
+      const learner = row.learner;
+
+      try {
+        // Prepare Data (Priority: Parent/Guardian -> Parent)
+        const parentPhone = getLearnerPhone(learner);
+        if (!parentPhone) {
+          setBulkProgress(prev => ({ ...prev, current: i + 1, failed: prev.failed + 1 }));
+          continue;
+        }
+
+        const message = formatSmsReport(row);
+        let formattedPhone = parentPhone.replace(/\D/g, '');
+        if (formattedPhone.startsWith('0')) formattedPhone = '254' + formattedPhone.substring(1);
+
+        // Send via Communication API (Direct delivery)
+        await communicationAPI.sendTestSMS({
+          phoneNumber: formattedPhone,
+          message: message,
+          schoolId: user?.schoolId || user?.school?.id || localStorage.getItem('currentSchoolId')
+        });
+
+        // Log communication to backend
+        try {
+          await api.notifications.logCommunication({
+            learnerId: learner.id,
+            channel: 'SMS',
+            term: selectedTerm,
+            academicYear: setup.academicYear,
+            assessmentType: 'SUMMATIVE'
+          });
+        } catch (logErr) {
+          console.warn("Failed to log SMS communication", logErr);
+        }
+
+        setBulkProgress(prev => ({ ...prev, current: i + 1, success: prev.success + 1 }));
+
+      } catch (err) {
+        console.error(`Failed to send SMS to ${learner.firstName}:`, err);
+        setBulkProgress(prev => ({ ...prev, current: i + 1, failed: prev.failed + 1 }));
+      }
+
+      // Small delay to prevent rate limiting
+      await new Promise(r => setTimeout(r, 200));
+    }
+
+    setTimeout(() => {
+      setBulkProgress(prev => ({ ...prev, active: false }));
+      showSuccess('Bulk SMS processing completed');
+    }, 1000);
+  };
+
+  /**
+   * Bulk Print Handler
+   */
+  const handleBulkPrint = async () => {
+    if (!reportData?.rows || reportData.rows.length === 0) return;
+    if (isBulkPrinting) return;
+
+    // Determine rows to print
+    const rowsToPrint = selectedReportRows.length > 0
+      ? selectedReportRows.map(idx => reportData.rows[idx])
+      : reportData.rows;
+
+    if (rowsToPrint.length === 0) {
+      showError('No learners selected for PDF generation');
+      return;
+    }
+
+    setBulkDownloadData(rowsToPrint);
+    setIsBulkPrinting(true);
+    setPdfProgress('🚀 Initializing bulk report engine...');
+
+    try {
+      // 1. Give the DOM time to render the hidden content (Increased wait for bulk rendering)
+      await new Promise(resolve => setTimeout(resolve, 2500));
+
+      const timestamp = new Date().toISOString().split('T')[0];
+      const filename = `${(reportData?.title || 'Report').replace(/[^a-zA-Z0-9]/g, '_')}_Detailed_Reports_${timestamp}.pdf`;
+
+      setPdfProgress('📄 Preparing report layouts...');
+
+      const result = await generateHighFidelityPDF('bulk-print-content', filename, {
+        onProgress: (msg) => {
+          console.log(`PDF Progress: ${msg}`);
+          setPdfProgress(msg);
+        },
+        docInfo: {
+          type: selectedType === 'LEARNER_REPORT' ? 'SUMMATIVE REPORT' : 'TERMLY REPORT',
+          ref: `BATCH-${selectedGrade}-${selectedTerm}`
+        },
+        brandingSettings // Pass current branding
+      });
+
+      if (result.success) {
+        showSuccess('✅ Bulk reports generated and downloaded successfully');
+      } else {
+        throw new Error(result.error || 'Failed to generate PDF');
+      }
+    } catch (err) {
+      console.error('❌ Bulk print error:', err);
+      showError(`PDF Generation Failed: ${err.message || 'An unexpected error occurred'}`);
+    } finally {
+      setIsBulkPrinting(false);
+      setPdfProgress('');
+      setBulkDownloadData(null);
+    }
+  };
+
+  /**
+   * Single Download Handler (Directly from list)
+   */
+
+  const handleSingleDownload = async (row) => {
+    if (isSingleDownloading || !row) return;
+
+    setSingleDownloadData(row);
+    setIsSingleDownloading(true);
+
+    try {
+      // Wait for hidden container to render
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      const filename = `${row.learner.firstName}_${row.learner.lastName}_Summative_Report.pdf`;
+      const result = await generateHighFidelityPDF('single-print-content', filename, {
+        docInfo: {
+          type: selectedType === 'LEARNER_REPORT' ? 'SUMMATIVE REPORT' : 'TERMLY REPORT',
+          ref: row.learner.admissionNumber
+        },
+        brandingSettings // Pass current branding
+      });
+
+      if (result.success) {
+        showSuccess(`Report for ${row.learner.firstName} downloaded`);
+      } else {
+        throw new Error(result.error || 'Failed to generate PDF');
+      }
+    } catch (err) {
+      console.error('❌ Individual download error:', err);
+      showError(`Failed to download: ${err.message}`);
+    } finally {
+      setIsSingleDownloading(false);
+      setSingleDownloadData(null);
+    }
+  };
+
+  const executeSendSMS = async () => {
+    if (!smsPreviewData) return;
+
+    // Use the edited number
+    if (!editedPhoneNumber) {
+      showError('Please enter a valid phone number');
+      return;
+    }
+
+    try {
+      setIsSendingSMS(true);
+      const schoolId = user?.schoolId || user?.school?.id || localStorage.getItem('currentSchoolId');
+
+      // Format number to international standard if it starts with 0
+      let formattedPhone = editedPhoneNumber;
+      if (formattedPhone.startsWith('0')) {
+        formattedPhone = '254' + formattedPhone.substring(1);
+      }
+
+      await communicationAPI.sendTestSMS({
+        phoneNumber: formattedPhone,
+        message: smsPreviewData.message,
+        schoolId: schoolId
+      });
+
+      setNotificationModal({
+        show: true,
+        title: 'SMS Sent Successfully',
+        message: `The report summary has been sent to ${editedPhoneNumber}.`,
+        type: 'success'
+      });
+
+      setShowSMSPreview(false);
+      // Refresh to update status if needed
+      if (onFetchLearners) onFetchLearners();
+    } catch (error) {
+      console.error('SMS Error:', error);
+      showError('Failed to send SMS');
+      setNotificationModal({
+        show: true,
+        title: 'SMS Delivery Failed',
+        message: error.message || 'An error occurred while sending the SMS.',
+        type: 'error'
+      });
+    } finally {
+      setIsSendingSMS(false);
+    }
+  };
+
+
+  /**
+   * Bulk WhatsApp Handler
+   * Sends reports to selected learners in batches with intervals
+   */
+  const handleBulkWhatsApp = async (testNumber = null) => {
+    const rowsToSend = selectedReportRows.length > 0
+      ? selectedReportRows.map(idx => reportData.rows[idx])
+      : reportData.rows;
+
+    if (rowsToSend.length === 0) {
+      showError('No learners selected for WhatsApp');
+      return;
+    }
+
+    const confirmMsg = testNumber
+      ? `Sending TEST reports for ${rowsToSend.length} learners to ${testNumber}. Continue?`
+      : `Ready to send WhatsApp reports to ${rowsToSend.length} parents. This will take approx ${Math.ceil(rowsToSend.length * 2 / 60)} minutes. Continue?`;
+
+    if (!window.confirm(confirmMsg)) return;
+
+    setIsSendingWhatsApp(true);
+    setWhatsAppProgress({ current: 0, total: rowsToSend.length, status: 'Initializing...' });
+    // setShowWhatsAppConfirm(false); // Kept open for progress display
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (let i = 0; i < rowsToSend.length; i++) {
+      const row = rowsToSend[i];
+      const learner = row.learner;
+      const progress = Math.round(((i + 1) / rowsToSend.length) * 100);
+
+      setWhatsAppProgress({
+        current: i + 1,
+        total: rowsToSend.length,
+        status: `Sending to ${learner.firstName}... (${i + 1}/${rowsToSend.length})`,
+        percent: progress
+      });
+
+      try {
+        // format subjects
+        const subjects = {};
+        const processedBatchTests = new Set();
+        if (row.results) {
+          row.results.forEach(r => {
+            const resultKey = r.id || `${r.testId}-${r.score}`;
+            if (processedBatchTests.has(resultKey)) return;
+            processedBatchTests.add(resultKey);
+
+            const rawName = r.learningArea || r.test?.learningArea || 'Subject';
+            const subjectName = rawName.trim().toUpperCase();
+
+            // If multiple tests for one subject, we average them for the bulk view payload
+            if (subjects[subjectName]) {
+              subjects[subjectName].score = (subjects[subjectName].score + (r.score || 0)) / 2;
+            } else {
+              subjects[subjectName] = {
+                score: r.score || 0,
+                grade: r.grade || '-'
+              };
+            }
+          });
+        }
+
+        const parentPhone = testNumber || getLearnerPhone(learner);
+
+        if (parentPhone) {
+          await api.notifications.sendAssessmentReportWhatsApp({
+            learnerId: learner.id,
+            learnerName: `${learner.firstName} ${learner.lastName}`,
+            learnerGrade: learner.grade,
+            parentPhone: parentPhone,
+            parentName: learner.guardianName || learner.parent?.firstName || 'Parent',
+            term: reportData.term?.replace(/_/g, ' ') || 'Term',
+            totalTests: row.results?.length || 0,
+            averageScore: row.averageScore,
+            overallGrade: row.grade,
+            subjects: subjects
+          });
+          successCount++;
+        } else {
+          console.warn(`Skipping ${learner.firstName}: No phone number`);
+          failCount++;
+        }
+
+      } catch (err) {
+        console.error(`Failed to send WA to ${learner.firstName}`, err);
+        failCount++;
+      }
+
+      // 2.5 second delay between messages to respect policies and avoid rate limiting
+      if (i < rowsToSend.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 2500));
+      }
+    }
+
+    setIsSendingWhatsApp(false);
+    setShowWhatsAppConfirm(false); // Close progress modal
+    setNotificationModal({
+      show: true,
+      title: 'Bulk WhatsApp Complete',
+      message: `Process finished.\n✅ Sent: ${successCount}\n❌ Failed/Skipped: ${failCount}`,
+      type: successCount > 0 ? 'success' : 'warning'
+    });
+  };
+
+  const handleGenerate = async () => {
+    setStatusMessage('');
+    setComplianceCheckResult(null); // Reset compliance check
+
+    if (!selectedType) {
+      setStatusMessage('❌ Error: Please select a report type');
+      showError('Please select a report type');
+      return;
+    }
+
+    // Validation for Learner Reports
+    if (selectedType === 'LEARNER_REPORT' || selectedType === 'LEARNER_TERMLY_REPORT') {
+      if (!learners || learners.length === 0) {
+        setStatusMessage('❌ Error: No learners available');
+        showError('No learners found in the system');
+        return;
+      }
+
+      if (selectedLearnerIds.length === 0) {
+        setStatusMessage('❌ Error: Please select at least one learner');
+        showError('Please select at least one learner');
+        return;
+      }
+
+      if (selectedGrade === 'all') {
+        setStatusMessage('❌ Error: Please select a grade');
+        showError('Please select a grade');
+        return;
+      }
+    }
+
+    if (selectedType === 'STREAM_REPORT' && (!selectedStream || selectedStream === 'all')) {
+      setStatusMessage('❌ Error: Please select a stream');
+      showError('Please select a stream');
+      return;
+    }
+
+    setLoading(true);
+    setStatusMessage('⏳ Generating report...');
+    setSelectedReportRows([]); // Reset selection on new report
+
+    const queryParams = {
+      term: selectedTerm,
+      academicYear: setup.academicYear
+    };
+    if (selectedGrade && selectedGrade !== 'all') queryParams.grade = selectedGrade;
+    if (selectedStream && selectedStream !== 'all') queryParams.stream = selectedStream;
+
+    try {
+      if (selectedType === 'LEARNER_REPORT' || selectedType === 'LEARNER_TERMLY_REPORT') {
+        setStatusMessage(`📚 Loading results for ${selectedLearnerIds.length} learner(s)...`);
+
+        const allReportRows = [];
+
+        // OPTIMIZED: Fetch all results and communication history for the whole group in one hit
+        const bulkRes = await api.assessments.getBulkResults(queryParams);
+        const allResults = bulkRes.success ? bulkRes.data : [];
+        const allCommunications = bulkRes.success ? (bulkRes.communications || []) : [];
+
+        console.log(`[Report] Bulk fetch returned ${allResults.length} results and ${allCommunications.length} comm histories`);
+
+        for (const learnerId of selectedLearnerIds) {
+          const learner = filteredLearners?.find(l => l.id === learnerId);
+          if (!learner) continue;
+
+          // Filter this student's results and communication from the bulk payload
+          let processedResults = allResults.filter(r => r.learnerId === learnerId);
+          let communication = allCommunications.find(c => c.learnerId === learnerId) || null;
+
+          if (selectedTestIds.length > 0) {
+            // Specific tests selected
+            processedResults = processedResults.filter(r => selectedTestIds.includes(r.testId));
+          }
+
+          // Filter results by selected test groups if any
+          if (selectedTestGroups.length > 0) {
+            processedResults = processedResults.filter(r => {
+              const type = r.test?.testType || r.testType;
+              return selectedTestGroups.includes(type);
+            });
+          }
+
+          // Process and format results for the UI
+          processedResults = processedResults.map(r => {
+            const test = r.test || availableTests.find(t => t.id === r.testId) || {};
+            const score = r.score !== undefined ? r.score : r.marksObtained;
+            const totalMarks = r.totalMarks || test.totalMarks || 100;
+            const percentage = totalMarks > 0 ? (score / totalMarks) * 100 : 0;
+            const { grade, remark } = getCBCGrade(percentage);
+
+            const rawArea = r.learningArea || test.learningArea || 'General';
+            const refinedArea = getRefinedLearningArea(rawArea, test.title);
+
+            return {
+              ...r,
+              test: { ...test, ...r.test },
+              learningArea: refinedArea,
+              originalLearningArea: rawArea,
+              score: Number(score || 0),
+              totalMarks: Number(totalMarks),
+              percentage: parseFloat(percentage.toFixed(1)),
+              grade,
+              remark,
+              parentPhone: learner.parent?.phone || learner.parentPhone || learner.parentPhoneNumber || learner.guardianPhone
+            };
+          });
+
+          processedResults.sort((a, b) => {
+            const dateA = new Date(a.testDate || (a.test && a.test.testDate) || 0);
+            const dateB = new Date(b.testDate || (b.test && b.test.testDate) || 0);
+            return dateB - dateA;
+          });
+
+          allReportRows.push({
+            learner,
+            results: processedResults,
+            communication,
+            averageScore: processedResults.length > 0
+              ? (processedResults.reduce((sum, r) => sum + (r.score || r.percentage || 0), 0) / processedResults.length).toFixed(1)
+              : 0
+          });
+        }
+
+        if (allReportRows.length === 0) {
+          setStatusMessage('⚠️ Warning: No assessment results found for selected learner(s)');
+        } else {
+          setStatusMessage(`✅ Success: Loaded reports for ${allReportRows.length} learner(s)`);
+        }
+
+        setReportData({
+          type: selectedType,
+          rows: allReportRows,
+          // Set primary learner/results for single student backward compatibility
+          learner: allReportRows.length === 1 ? allReportRows[0].learner : null,
+          results: allReportRows.length === 1 ? allReportRows[0].results : [],
+          averageScore: allReportRows.length === 1 ? allReportRows[0].averageScore : 0,
+          totalTests: allReportRows.length === 1 ? allReportRows[0].results.length : 0,
+          academicYear: setup.academicYear,
+          term: selectedTerm,
+          testGroups: selectedTestGroups.length > 0 ? selectedTestGroups : 'All Groups',
+          selectedTests: selectedTestIds.length > 0 ? selectedTestIds.length : 'All Tests',
+          stream: selectedStream !== 'all' ? selectedStream : 'All Streams',
+          grade: selectedGrade,
+          totalLearners: allReportRows.length,
+          generatedAt: new Date()
+        });
+
+        showSuccess(`Generated ${allReportRows.length} report(s) successfully`);
+      }
+      else if (selectedType === 'GRADE_REPORT' || selectedType === 'STREAM_REPORT' || selectedType === 'STREAM_RANKING_REPORT') {
+        // --- BROADSHEET GENERATION LOGIC ---
+
+        // 1. Identify Target Learners
+        let targetLearners = filteredLearners;
+        if (selectedType === 'STREAM_REPORT') {
+          if (!selectedStream || selectedStream === 'all') {
+            showError('Please select a specific stream for Stream Report');
+            setLoading(false);
+            return;
+          }
+        }
+
+        if (targetLearners.length === 0) {
+          showError('No learners found for the selected Grade/Stream');
+          setLoading(false);
+          return;
+        }
+
+        setStatusMessage(`⏳ Fetching results for ${targetLearners.length} learners...`);
+
+        // 2. Identify Target Tests
+        let targetTests = availableTests;
+        if (selectedTestIds.length > 0) {
+          targetTests = availableTests.filter(t => selectedTestIds.includes(t.id));
+        } else if (selectedTestGroups.length > 0) {
+          targetTests = availableTests.filter(t => selectedTestGroups.includes(t.testType));
+        }
+
+        if (targetTests.length === 0) {
+          showError('No tests found for this selection');
+          setLoading(false);
+          return;
+        }
+
+        // 3. Fetch Results (Bulk or Iterative)
+        const allResultsMap = {}; // learnerId -> [results]
+        let processedCount = 0;
+
+        // Initialize map
+        targetLearners.forEach(l => allResultsMap[l.id] = []);
+
+        for (const test of targetTests) {
+          try {
+            // Fetch results for this test
+            const res = await api.assessments.getTestResults(test.id);
+            if (res.success && res.data) {
+              res.data.forEach(result => {
+                if (allResultsMap[result.learnerId]) {
+                  allResultsMap[result.learnerId].push({
+                    ...result,
+                    test: test,
+                    learningArea: test.learningArea,
+                    score: result.marksObtained, // Normalize to .score for aggregation logic below
+                    maxScore: test.totalMarks || 100
+                  });
+                }
+              });
+            }
+            processedCount++;
+            setStatusMessage(`⏳ Processing assessment data: ${processedCount}/${targetTests.length} subjects...`);
+          } catch (err) {
+            console.error(`Failed to fetch results for test ${test.id}`, err);
+          }
+        }
+
+        // 4. Aggregate Data for Broadsheet
+        const broadsheetData = targetLearners.map(learner => {
+          const learnerResults = allResultsMap[learner.id] || [];
+
+          // Aggregates
+          const totalScore = learnerResults.reduce((sum, r) => sum + (r.score || 0), 0);
+          const totalMax = learnerResults.reduce((sum, r) => sum + (r.maxScore || 100), 0);
+          const averagePct = totalMax > 0 ? (totalScore / totalMax) * 100 : 0;
+          const { grade, remark } = getCBCGrade(averagePct);
+
+          // Subject Breakdown
+          const subjectScores = {};
+          learnerResults.forEach(r => {
+            const area = r.learningArea || 'General';
+            if (!subjectScores[area]) subjectScores[area] = 0;
+            subjectScores[area] += (r.score || 0);
+          });
+
+          return {
+            learner,
+            results: learnerResults,
+            totalScore,
+            totalMax,
+            averagePct: parseFloat(averagePct.toFixed(1)),
+            grade,
+            remark,
+            subjectScores
+          };
+        });
+
+        // 5. Ranking
+        broadsheetData.sort((a, b) => b.averagePct - a.averagePct);
+        const rankedData = broadsheetData.map((d, index) => ({ ...d, position: index + 1 }));
+
+        setReportData({
+          type: selectedType,
+          title: selectedType === 'GRADE_REPORT' ? `Grade Report - ${selectedGrade}` : `Stream Report - ${selectedGrade} ${selectedStream}`,
+          rows: rankedData,
+          subjects: Array.from(new Set(targetTests.map(t => t.learningArea))).sort(),
+          generatedAt: new Date(),
+          meta: {
+            grade: selectedGrade,
+            stream: selectedStream,
+            term: selectedTerm,
+            totalLearners: targetLearners.length
+          }
+        });
+        setStatusMessage(`✅ Success: Generated broadsheet for ${targetLearners.length} learners`);
+        showSuccess(`Generated ${selectedType.replace(/_/g, ' ')} for ${targetLearners.length} students`);
+      }
+      else if (selectedType.includes('ANALYSIS')) {
+        // --- ANALYSIS REPORT LOGIC ---
+
+        if (!selectedGrade || selectedGrade === 'all') {
+          showError('Please select a Grade for analysis');
+          setLoading(false);
+          return;
+        }
+
+        let targetTests = availableTests;
+        if (selectedTestIds.length > 0) {
+          targetTests = availableTests.filter(t => selectedTestIds.includes(t.id));
+        } else if (selectedTestGroups.length > 0) {
+          targetTests = availableTests.filter(t => selectedTestGroups.includes(t.testType));
+        }
+
+        if (targetTests.length === 0) {
+          showError('No tests available for analysis');
+          setLoading(false);
+          return;
+        }
+
+        setStatusMessage('⏳ Analyzing subject performance...');
+
+        // Fetch all results
+        const allResults = [];
+        for (const test of targetTests) {
+          const res = await api.assessments.getTestResults(test.id);
+          if (res.success && res.data) {
+            res.data.forEach(r => {
+              allResults.push({
+                ...r,
+                test,
+                learningArea: test.learningArea,
+                score: r.marksObtained // Normalize for analysis logic below
+              });
+            });
+          }
+        }
+
+        // Aggregate by Subject
+        const subjects = {};
+
+        allResults.forEach(r => {
+          const area = r.learningArea || 'General';
+          if (!subjects[area]) subjects[area] = { totalScore: 0, totalMax: 0, count: 0, scores: [] };
+
+          subjects[area].totalScore += (r.score || 0);
+          subjects[area].totalMax += (r.test?.totalMarks || 100);
+          subjects[area].count++;
+
+          const pct = (r.test?.totalMarks > 0) ? ((r.score || 0) / r.test.totalMarks * 100) : 0;
+          subjects[area].scores.push(pct);
+        });
+
+        // Calculate subject stats
+        const subjectStats = Object.keys(subjects).map(area => {
+          const data = subjects[area];
+          const mean = data.totalMax > 0 ? (data.totalScore / data.totalMax * 100) : 0;
+          return {
+            subject: area,
+            mean: parseFloat(mean.toFixed(1)),
+            count: data.count,
+            highest: Math.max(...data.scores).toFixed(1),
+            lowest: Math.min(...data.scores).toFixed(1)
+          };
+        }).sort((a, b) => b.mean - a.mean);
+
+        // Grade Distribution
+        const gradeDist = { 'EE': 0, 'ME': 0, 'AE': 0, 'BE': 0 };
+
+        const learnerMap = {};
+        allResults.forEach(r => {
+          if (!learnerMap[r.learnerId]) learnerMap[r.learnerId] = { score: 0, max: 0 };
+          learnerMap[r.learnerId].score += (r.score || 0);
+          learnerMap[r.learnerId].max += (r.test?.totalMarks || 100);
+        });
+
+        Object.values(learnerMap).forEach(l => {
+          const avg = l.max > 0 ? (l.score / l.max * 100) : 0;
+          const { grade } = getCBCGrade(avg);
+          const simpleGrade = grade.substring(0, 2);
+          if (gradeDist[simpleGrade] !== undefined) gradeDist[simpleGrade]++;
+        });
+
+        setReportData({
+          type: selectedType,
+          title: `Performance Analysis - ${selectedGrade}`,
+          subjectStats,
+          gradeDist,
+          generatedAt: new Date(),
+          meta: {
+            grade: selectedGrade,
+            stream: selectedStream,
+            term: selectedTerm
+          }
+        });
+        showSuccess('Analysis report generated');
+      }
+
+      setLoading(false);
+    } catch (err) {
+      console.error('❌ Error generating report:', err);
+      const errorMessage = err.response?.data?.error || err.message || 'Failed to generate report';
+      setStatusMessage(`❌ Error: ${errorMessage}`);
+      showError(errorMessage);
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="bg-white -mt-6 -mx-6 h-[calc(100vh-80px)] overflow-y-auto relative custom-scrollbar">
+      {/* STICKY HEADER & FILTER BAR */}
+      <div className="sticky top-0 z-40 bg-white shadow-sm">
+        {/* Dynamic Report Particulars Header */}
+        <div className="border-b border-slate-100 px-6 py-3 flex justify-center items-center bg-slate-50">
+          <div className="text-xs text-slate-500 flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+            <span className="font-semibold text-brand-teal uppercase tracking-wider">
+              {reportTypes.find(t => t.value === stagedType)?.label || 'Summative Report'}
+            </span>
+            <span className="text-slate-300">•</span>
+            <span className="font-medium">
+              {stagedGrade ? (stagedGrade === 'all' ? 'All Grades' : normalize(stagedGrade).replace('_', ' ')) : 'Grade Not Selected'}
+            </span>
+            <span className="text-slate-300">•</span>
+            <span>
+              {stagedStream ? (stagedStream === 'all' ? 'All Streams' : stagedStream) : 'All Streams'}
+            </span>
+            <span className="text-slate-300">•</span>
+            <span>
+              {terms?.find(t => t.value === stagedTerm)?.label || stagedTerm}
+            </span>
+            <span className="text-slate-300">•</span>
+            <span>
+              {academicYear}
+            </span>
+          </div>
+        </div>
+
+        {/* Single Row Filter Bar */}
+        <div className="border-t border-slate-200 px-6 py-3.5 flex flex-wrap justify-center gap-3 items-center w-full max-w-[1200px] mx-auto">
+          {/* Type Selector */}
+          <select
+            value={stagedType}
+            onChange={(e) => setStagedType(e.target.value)}
+            className="h-9 px-2.5 py-1.5 border border-slate-300 rounded text-xs focus:ring-1 focus:ring-brand-teal focus:border-brand-teal outline-none"
+          >
+            {reportTypes.map(t => (
+              <option key={t.value} value={t.value}>
+                {t.label}
+              </option>
+            ))}
+          </select>
+
+          {/* Grade Selector */}
+          <select
+            value={stagedGrade}
+            onChange={(e) => {
+              setStagedGrade(e.target.value);
+              setStagedStream('');
+            }}
+            className="h-9 px-2.5 py-1.5 border border-slate-300 rounded text-xs focus:ring-1 focus:ring-brand-teal focus:border-brand-teal outline-none w-28"
+          >
+            <option value="">Grade</option>
+            <option value="all">All Grades</option>
+            {(grades || []).sort((a, b) => {
+              const aVal = typeof a === 'string' ? a : (a.value || a.id || a.name);
+              const bVal = typeof b === 'string' ? b : (b.value || b.id || b.name);
+
+              const aIndex = gradeOrder.indexOf(aVal);
+              const bIndex = gradeOrder.indexOf(bVal);
+
+              // If not found in gradeOrder, push it to the end instead of the beginning (-1)
+              const safeAIndex = aIndex === -1 ? 999 : aIndex;
+              const safeBIndex = bIndex === -1 ? 999 : bIndex;
+
+              return safeAIndex - safeBIndex;
+            }).map(g => {
+              const gradeValue = typeof g === 'string' ? g : (g.value || g.id || g.name);
+              const gradeLabel = typeof g === 'string' ? g : (g.label || g.name || g);
+              return (
+                <option key={gradeValue} value={gradeValue}>
+                  {gradeLabel}
+                </option>
+              );
+            })}
+          </select>
+
+          {/* Stream Selector */}
+          <select
+            value={stagedStream}
+            onChange={(e) => setStagedStream(e.target.value)}
+            className="h-9 px-2.5 py-1.5 border border-slate-300 rounded text-xs focus:ring-1 focus:ring-brand-teal focus:border-brand-teal outline-none w-20"
+          >
+            <option value="">Stream</option>
+            <option value="all">All</option>
+            {availableStreams?.map(s => (
+              <option key={s.id || s.name} value={s.value || s.name}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+
+          {/* Term Selector */}
+          <select
+            value={stagedTerm}
+            onChange={(e) => setStagedTerm(e.target.value)}
+            className="h-9 px-2.5 py-1.5 border border-slate-300 rounded text-xs focus:ring-1 focus:ring-brand-teal focus:border-brand-teal outline-none w-20"
+          >
+            {terms?.map(t => (
+              <option key={t.value} value={t.value}>
+                {t.label}
+              </option>
+            ))}
+          </select>
+
+          {/* Learner Selector */}
+          {(stagedType === 'LEARNER_REPORT' || stagedType === 'LEARNER_TERMLY_REPORT') && (
+            <div className="relative" ref={learnerOptionsRef}>
+              <button
+                onClick={() => setShowLearnerOptions(!showLearnerOptions)}
+                className="h-9 px-3 py-1.5 border border-slate-300 rounded text-xs focus:ring-1 focus:ring-brand-teal focus:border-brand-teal outline-none flex items-center justify-between min-w-[180px] max-w-[280px] bg-white text-gray-700 w-full"
+              >
+                <span className="truncate">
+                  {stagedLearnerIds.length === 0 ? 'Select Learner(s)'
+                    : stagedLearnerIds.length === filteredLearners.length ? `All Learners (${filteredLearners.length})`
+                      : `${stagedLearnerIds.length} Selected`}
+                </span>
+                <span className="text-gray-400 ml-2 text-[10px]">▼</span>
+              </button>
+
+              {showLearnerOptions && (
+                <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-slate-200 rounded-md shadow-lg z-50 max-h-60 flex flex-col">
+                  <div className="p-2 border-b bg-slate-50 flex gap-2 shrink-0">
+                    <button
+                      onClick={() => setStagedLearnerIds(filteredLearners.map(l => l.id))}
+                      className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded hover:bg-indigo-100 flex-1 transition-colors"
+                    >
+                      Select All
+                    </button>
+                    <button
+                      onClick={() => setStagedLearnerIds([])}
+                      className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded hover:bg-slate-200 flex-1 transition-colors"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  <div className="overflow-y-auto flex-1">
+                    {loadingLearners ? (
+                      <div className="p-4 text-center text-xs text-gray-500">Loading learners...</div>
+                    ) : filteredLearners.length === 0 ? (
+                      <div className="p-3 text-center text-xs text-gray-500">No learners found</div>
+                    ) : (
+                      <div className="p-1">
+                        {filteredLearners.map(learner => (
+                          <label
+                            key={learner.id}
+                            className="flex items-center gap-2 p-2 hover:bg-slate-50 rounded cursor-pointer text-xs"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={stagedLearnerIds.includes(learner.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setStagedLearnerIds(prev => [...prev, learner.id]);
+                                } else {
+                                  setStagedLearnerIds(prev => prev.filter(id => id !== learner.id));
+                                }
+                              }}
+                              className="rounded border-slate-300 text-brand-teal focus:ring-brand-teal"
+                            />
+                            <span className="truncate">{learner.firstName} {learner.lastName}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Test Group Selector */}
+          <div className="relative" ref={testGroupRef}>
+            <button
+              onClick={() => setShowTestGroupOptions(!showTestGroupOptions)}
+              className="h-9 px-3 py-1.5 border border-slate-300 rounded text-xs focus:ring-1 focus:ring-brand-teal focus:border-brand-teal outline-none flex items-center justify-between min-w-[140px] max-w-[200px] bg-white text-gray-700"
+            >
+              <span className="truncate">
+                {stagedTestGroups.length === 0 ? 'All Test Groups' : `${stagedTestGroups.length} Groups Selected`}
+              </span>
+              <span className="text-gray-400 ml-2 text-[10px]">▼</span>
+            </button>
+            {showTestGroupOptions && (
+              <div className="absolute top-full left-0 mt-1 w-56 bg-white border border-slate-200 rounded-md shadow-lg z-50 py-1">
+                {availableTestGroups.length === 0 ? (
+                  <div className="p-3 text-center text-xs text-gray-500">No test groups found for this grade/term</div>
+                ) : (
+                  <>
+                    <div className="p-2 border-b bg-slate-50 flex gap-2 shrink-0">
+                      <button
+                        onClick={() => setStagedTestGroups([])}
+                        className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded hover:bg-slate-200 w-full transition-colors"
+                      >
+                        Reset Group Selection
+                      </button>
+                    </div>
+                    {availableTestGroups.map(group => (
+                      <label key={group} className="flex items-center gap-2 p-2 px-3 hover:bg-slate-50 cursor-pointer text-xs">
+                        <input
+                          type="checkbox"
+                          checked={stagedTestGroups.includes(group)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setStagedTestGroups([...stagedTestGroups, group]);
+                            } else {
+                              setStagedTestGroups(stagedTestGroups.filter(g => g !== group));
+                            }
+                            setStagedTestIds([]); // Reset specific tests if group changes
+                          }}
+                          className="rounded border-slate-300 text-brand-teal focus:ring-brand-teal"
+                        />
+                        <span className="truncate">{group}</span>
+                      </label>
+                    ))}
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Specific Test Selector */}
+          <div className="relative" ref={testOptionsRef}>
+            <button
+              onClick={() => setShowTestOptions(!showTestOptions)}
+              className="h-9 px-3 py-1.5 border border-slate-300 rounded text-xs focus:ring-1 focus:ring-brand-teal focus:border-brand-teal outline-none flex items-center justify-between min-w-[140px] max-w-[240px] bg-white text-gray-700"
+            >
+              <span className="truncate">
+                {stagedTestIds.length === 0
+                  ? 'All Tests in Group'
+                  : `${stagedTestIds.length} Tests Selected`}
+              </span>
+              <span className="text-gray-400 ml-2 text-[10px]">▼</span>
+            </button>
+            {showTestOptions && (
+              <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-slate-200 rounded-md shadow-lg z-50 py-1 max-h-60 overflow-y-auto">
+                {testsInGroups.length === 0 ? (
+                  <div className="p-3 text-center text-xs text-gray-500">No specific tests found</div>
+                ) : (
+                  <>
+                    <div className="p-2 border-b bg-slate-50 flex gap-2 shrink-0">
+                      <button
+                        onClick={() => setStagedTestIds([])}
+                        className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded hover:bg-slate-200 w-full transition-colors"
+                      >
+                        Clear Specific Tests
+                      </button>
+                    </div>
+                    {testsInGroups.map(test => (
+                      <label key={test.id} className="flex items-start gap-2 p-2 px-3 hover:bg-slate-50 cursor-pointer text-xs">
+                        <input
+                          type="checkbox"
+                          checked={stagedTestIds.includes(test.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setStagedTestIds([...stagedTestIds, test.id]);
+                            } else {
+                              setStagedTestIds(stagedTestIds.filter(id => id !== test.id));
+                            }
+                          }}
+                          className="rounded border-slate-300 text-brand-teal focus:ring-brand-teal mt-0.5"
+                        />
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-semibold text-slate-800 truncate">{test.title}</span>
+                          <span className="text-[10px] text-slate-500 truncate">{test.learningArea} | Type: {test.testType}</span>
+                        </div>
+                      </label>
+                    ))}
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Generate Button with Icon */}
+          <button
+            onClick={applyFilters}
+            disabled={loading}
+            className="h-9 px-3 rounded bg-brand-teal text-white flex items-center gap-1.5 hover:bg-brand-teal/90 disabled:opacity-50 transition text-xs font-medium whitespace-nowrap"
+          >
+            <FileText size={16} />
+            <span>Generate</span>
+          </button>
+
+          {/* Status Message */}
+          {statusMessage && (
+            <div className="text-xs ml-2 flex items-center gap-1">
+              {statusMessage.includes('✅') ? (
+                <CheckCircle size={14} className="text-green-600 flex-shrink-0" />
+              ) : statusMessage.includes('⚠️') ? (
+                <AlertCircle size={14} className="text-amber-600 flex-shrink-0" />
+              ) : statusMessage.includes('⏳') ? (
+                <Loader size={14} className="animate-spin text-blue-600 flex-shrink-0" />
+              ) : (
+                <XCircle size={14} className="text-red-600 flex-shrink-0" />
+              )}
+              <span className="text-gray-600 max-w-xs truncate">{statusMessage}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+
+      {/* LEARNER REPORT DISPLAY - COMPACT PROFESSIONAL LAYOUT */}
+      <div className="px-6 py-8">
+        {(reportData?.type === 'LEARNER_REPORT' || reportData?.type === 'LEARNER_TERMLY_REPORT') && reportData?.rows?.length > 0 && (
+          <div className="bg-gray-100 py-12 px-4 rounded-xl shadow-inner mb-8 no-print">
+            {reportData.rows.length === 1 ? (
+              <>
+                <div
+                  id="summative-report-content"
+                  ref={reportRef}
+                  className="rounded-xl overflow-hidden shadow-2xl"
+                >
+                  <LearnerReportTemplate
+                    learner={reportData.learner || reportData.rows[0].learner}
+                    results={reportData.results?.length > 0 ? reportData.results : reportData.rows[0].results}
+                    term={reportData.term}
+                    academicYear={reportData.academicYear}
+                    brandingSettings={brandingSettings}
+                    user={user}
+                    streamConfigs={streamConfigs}
+                  />
+                </div>
+
+                {/* PRINT CONTROLS - SINGLE STUDENT */}
+                <div className="no-print mt-8 flex gap-4 justify-center">
+                  <button
+                    onClick={() => setReportData(null)}
+                    className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded text-sm font-semibold transition"
+                  >
+                    ← Back
+                  </button>
+                  <button
+                    onClick={handleSendSMS}
+                    disabled={isSendingSMS}
+                    className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-semibold transition disabled:opacity-50"
+                    title="Send report summary via SMS"
+                  >
+                    {isSendingSMS ? '📤 Sending...' : '📱 Send SMS'}
+                  </button>
+                  <button
+                    onClick={handleSendWhatsApp}
+                    className="px-6 py-2 bg-emerald-500 text-white rounded hover:bg-emerald-600 text-sm font-semibold transition flex items-center gap-2"
+                  >
+                    <MessageCircle size={18} />
+                    WhatsApp
+                  </button>
+                  <button
+                    onClick={handlePrintPDF}
+                    disabled={isExporting}
+                    className="px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm font-semibold transition flex items-center gap-2 shadow-md shadow-indigo-100"
+                  >
+                    {isExporting ? <Loader size={18} className="animate-spin" /> : <Printer size={18} />}
+                    Print Preview
+                  </button>
+                  <button
+                    onClick={handleExportPDF}
+                    disabled={isExporting}
+                    className="px-6 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 text-sm font-semibold transition flex items-center gap-2 shadow-md shadow-emerald-100"
+                  >
+                    {isExporting ? <Loader size={18} className="animate-spin" /> : <Download size={18} />}
+                    Download PDF
+                  </button>
+                </div>
+              </>
+            ) : (
+              /* BULK VIEW SUMMARY */
+              <div className="max-w-5xl mx-auto bg-white rounded-2xl shadow-2xl p-8 border border-gray-200">
+                <div className="text-center mb-8 pb-6 border-b">
+                  <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Printer size={32} />
+                  </div>
+                  <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Bulk Summary Reports</h2>
+                  <p className="text-slate-500 font-bold mt-1 uppercase text-sm">
+                    GRADE: {selectedGrade} | STREAM: {selectedStream} | {reportData.rows.length} STUDENTS SELECTED
+                  </p>
+                </div>
+
+                {/* ACTION BAR FOR BULK PREVIEW */}
+                <div className="flex justify-between items-center mb-6 bg-indigo-50 p-4 rounded-xl border border-indigo-100 no-print">
+                  <div>
+                    <p className="text-sm font-bold text-indigo-900">Combined Actions</p>
+                    <p className="text-[10px] text-indigo-600 font-bold uppercase tracking-wider">
+                      {selectedReportRows.length > 0 ? `${selectedReportRows.length} learners selected` : `Apply to all ${reportData.rows.length} learners`}
+                    </p>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleBulkSMS}
+                      disabled={bulkProgress.active}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-md flex items-center gap-2 font-bold uppercase text-[10px]"
+                    >
+                      {bulkProgress.active ? <Loader className="animate-spin" size={14} /> : <MessageSquare size={14} />}
+                      {bulkProgress.active ? 'Sending SMS...' : 'Bulk Send SMS'}
+                    </button>
+                    <button
+                      onClick={() => setShowWhatsAppConfirm(true)}
+                      disabled={isSendingWhatsApp}
+                      className="px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition shadow-md flex items-center gap-2 font-bold uppercase text-[10px]"
+                    >
+                      {isSendingWhatsApp ? <Loader className="animate-spin" size={14} /> : <MessageCircle size={14} />}
+                      {isSendingWhatsApp ? 'Sending...' : 'Bulk WhatsApp'}
+                    </button>
+                    <div className="relative">
+                      <button
+                        onClick={handleBulkPrint}
+                        disabled={isBulkPrinting}
+                        className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-md flex items-center gap-2 font-bold uppercase text-[10px]"
+                      >
+                        {isBulkPrinting ? <Loader className="animate-spin" size={14} /> : <Printer size={14} />}
+                        {isBulkPrinting ? 'Processing...' : 'Download Combined PDF'}
+                      </button>
+                      {isBulkPrinting && pdfProgress && (
+                        <div className="absolute top-full right-0 mt-1.5 text-[10px] font-bold text-indigo-600 animate-pulse whitespace-nowrap">
+                          {pdfProgress}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mb-8 border rounded-xl overflow-hidden shadow-sm bg-white">
+                  <div className="bg-slate-50 border-b p-3 grid grid-cols-12 text-[10px] font-black text-slate-500 uppercase tracking-widest items-center">
+                    <div className="col-span-1 flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                        checked={selectedReportRows.length === reportData.rows.length}
+                        onChange={() => handleSelectAll(reportData.rows.length)}
+                      />
+                      <span>#</span>
+                    </div>
+                    <div className="col-span-4">Learner Name</div>
+                    <div className="col-span-1 text-center">Avg</div>
+                    <div className="col-span-2 text-center">Status</div>
+                    <div className="col-span-4 text-right">Individual Actions</div>
+                  </div>
+                  <div className="max-h-[450px] overflow-y-auto">
+                    {reportData.rows.map((row, idx) => (
+                      <div key={idx} className={`grid grid-cols-12 items-center p-3 border-b border-slate-50 transition-colors ${selectedReportRows.includes(idx) ? 'bg-indigo-50/50' : 'hover:bg-slate-50'}`}>
+                        <div className="col-span-1 flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                            checked={selectedReportRows.includes(idx)}
+                            onChange={() => handleToggleSelectRow(idx)}
+                          />
+                          <span className="text-[10px] font-bold text-slate-400">{idx + 1}</span>
+                        </div>
+                        <div className="col-span-4">
+                          <p className="font-bold text-slate-800 text-sm">{row.learner.firstName} {row.learner.lastName}</p>
+                          <p className="text-[10px] text-slate-500 uppercase font-semibold">{row.learner.admissionNumber || 'ADM: N/A'}</p>
+                        </div>
+                        <div className="col-span-1 text-center font-black text-blue-600 text-sm">{row.averageScore}%</div>
+
+                        {/* STATUS INDICATORS */}
+                        <div className="col-span-2 flex justify-center gap-1">
+                          {row.communication?.hasSentSms && (
+                            <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[8px] font-black uppercase flex items-center gap-1" title="SMS Sent">
+                              <CheckCircle size={8} /> SMS
+                            </span>
+                          )}
+                          {row.communication?.hasSentWhatsApp && (
+                            <span className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-[8px] font-black uppercase flex items-center gap-1" title="WhatsApp Sent">
+                              <CheckCircle size={8} /> WA
+                            </span>
+                          )}
+                          {!row.communication?.hasSentSms && !row.communication?.hasSentWhatsApp && (
+                            <span className="text-[8px] text-slate-300 font-bold uppercase italic">Not Sent</span>
+                          )}
+                        </div>
+
+                        <div className="col-span-4 flex justify-end gap-2">
+                          <button
+                            onClick={() => {
+                              // Switch to single view for this learner
+                              setReportData({
+                                ...reportData,
+                                rows: [row],
+                                learner: row.learner,
+                                results: row.results,
+                                averageScore: row.averageScore,
+                                communication: row.communication
+                              });
+                            }}
+                            className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded transition shadow-sm"
+                            title="View Full Report"
+                          >
+                            <Printer size={12} />
+                          </button>
+                          <button
+                            onClick={() => handleSingleDownload(row)}
+                            className="p-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded transition shadow-sm"
+                            title="Download PDF"
+                          >
+                            <Download size={12} />
+                          </button>
+                          <button
+                            disabled={isSendingSMS}
+                            className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded transition shadow-sm disabled:opacity-30"
+                            title="Send SMS"
+                            onClick={() => handleSendSMS(row)}
+                          >
+                            <MessageSquare size={12} />
+                          </button>
+                          <button
+                            disabled={!(row.learner.parent?.phone || row.learner.parentPhone || row.learner.parentPhoneNumber || row.learner.guardianPhone)}
+                            className={`p-2 rounded transition shadow-sm disabled:opacity-30 ${row.communication?.hasSentWhatsApp ? 'bg-green-600 text-white' : 'bg-green-50 text-green-600 hover:bg-green-600 hover:text-white'}`}
+                            title={row.communication?.hasSentWhatsApp ? "WhatsApp Sent - Click to resend" : "Send WhatsApp"}
+                            onClick={() => {
+                              const currentLearner = row.learner;
+                              handleSendWhatsApp(row); // Update this function to handle direct send
+                            }}
+                          >
+                            <MessageCircle size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-center gap-4 border-t pt-6">
+                  <button
+                    onClick={() => setReportData(null)}
+                    className="text-slate-500 hover:text-slate-800 font-bold uppercase text-xs transition px-4 py-2 border rounded-lg hover:bg-slate-50"
+                  >
+                    ← Back to Filters
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* GRADE / STREAM REPORT DISPLAY - BROADSHEET */}
+      {(reportData?.type === 'GRADE_REPORT' || reportData?.type === 'STREAM_REPORT' || reportData?.type === 'STREAM_RANKING_REPORT') && reportData?.rows && (
+        <div className="px-6 py-8">
+          <div className="bg-gray-100 py-12 px-4 rounded-xl shadow-inner mb-8 no-print">
+            <div
+              id="summative-report-content"
+              className="bg-white mx-auto shadow-2xl overflow-hidden"
+              style={{
+                fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+                lineHeight: '1.2',
+                width: '297mm', // Landscape for broadsheet
+                minHeight: '210mm',
+                padding: '10mm',
+                boxSizing: 'border-box'
+              }}
+            >
+              {/* Professional Letterhead - Matching Learner's Report Flow */}
+              <div className="mb-6 flex flex-col items-center text-center">
+                {/* Logo Middle */}
+                <div className="mb-4">
+                  <img
+                    src={brandingSettings?.logoUrl || user?.school?.logo || "/logo-new.png"}
+                    alt="Logo"
+                    style={{ height: '100px', width: 'auto', objectFit: 'contain' }}
+                    onError={(e) => { e.target.src = '/logo-new.png'; }}
+                  />
+                </div>
+
+                {/* School Info */}
+                <h1 style={{ fontSize: '28px', fontWeight: '900', color: brandingSettings?.brandColor || '#1E3A8A', margin: '0', textTransform: 'uppercase', letterSpacing: '1px', lineHeight: '1.1' }}>
+                  {user?.school?.name || brandingSettings?.schoolName || 'ACADEMIC SCHOOL'}
+                </h1>
+
+                {user?.school?.motto && (
+                  <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginTop: '2px', textTransform: 'uppercase', fontStyle: 'italic' }}>
+                    "{user.school.motto}"
+                  </div>
+                )}
+
+                {/* Contact Details */}
+                <div style={{ fontSize: '11px', color: '#444', marginTop: '6px', fontWeight: '500', opacity: '0.8' }}>
+                  {user?.school?.location && <span>{user.school.location}</span>}
+                  {user?.school?.email && <span> • {user.school.email}</span>}
+                </div>
+
+                {/* Separator Line */}
+                <div className="w-full h-1 mt-4 mb-4" style={{ backgroundColor: brandingSettings?.brandColor || '#1e3a8a' }}></div>
+
+                {/* Bold Report Title */}
+                <h2 style={{ fontSize: '22px', fontWeight: '900', color: '#000', margin: '0', textTransform: 'uppercase', letterSpacing: '2px' }}>
+                  {reportData?.title}
+                </h2>
+
+                {/* Term/Academic Year Details In Pill */}
+                <div className="flex justify-between items-center w-full mt-4">
+                  <div style={{ fontSize: '12px', fontWeight: '800', color: '#1E3A8A', textTransform: 'uppercase', backgroundColor: '#eff6ff', padding: '6px 20px', borderRadius: '40px', border: '1px solid #dbeafe' }}>
+                    {setup.academicYear} | {reportData.meta?.term?.replace(/_/g, ' ')}
+                  </div>
+
+                  <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>
+                    CLASS: {reportData.meta?.grade?.replace(/_/g, ' ')} {reportData.meta?.stream !== 'all' ? reportData.meta?.stream : ''} | GENERATED: {new Date().toLocaleDateString()}
+                  </div>
+                </div>
+              </div>
+
+
+              {/* Broadsheet Table */}
+              <div className="overflow-x-auto">
+                <VirtualizedTable
+                  data={reportData.rows}
+                  rowHeight={28} // Compact broadsheet row height
+                  visibleHeight={500}
+                  className="no-print border border-gray-200"
+                  header={
+                    <tr style={{ backgroundColor: '#1e3a8a', color: 'white' }}>
+                      <th style={{ padding: '6px', border: '1px solid #ccc', textAlign: 'center', width: '30px' }}>#</th>
+                      <th style={{ padding: '6px', border: '1px solid #ccc', textAlign: 'left', minWidth: '150px' }}>LEARNER NAME</th>
+                      {reportData.subjects.map(subj => (
+                        <th key={subj} style={{ padding: '6px', border: '1px solid #ccc', textAlign: 'center', writingMode: 'vertical-rl', transform: 'rotate(180deg)', minHeight: '80px' }}>
+                          {getAbbreviatedName(subj)}
+                        </th>
+                      ))}
+                      <th style={{ padding: '6px', border: '1px solid #ccc', textAlign: 'center' }}>TOTAL</th>
+                      <th style={{ padding: '6px', border: '1px solid #ccc', textAlign: 'center' }}>AVG %</th>
+                      <th style={{ padding: '6px', border: '1px solid #ccc', textAlign: 'center' }}>GRD</th>
+                      <th className="no-print" style={{ padding: '6px', border: '1px solid #ccc', textAlign: 'center', width: '40px' }}>ACT</th>
+                    </tr>
+                  }
+                  renderRow={(row, idx) => (
+                    <tr key={row.learner.id} style={{ backgroundColor: idx % 2 === 0 ? 'white' : '#f8fafc' }}>
+                      <td style={{ padding: '4px', border: '1px solid #e2e8f0', textAlign: 'center' }}>{row.position}</td>
+                      <td style={{ padding: '4px', border: '1px solid #e2e8f0', fontWeight: 'bold' }}>
+                        {row.learner.firstName} {row.learner.lastName}
+                      </td>
+                      {reportData.subjects.map(subj => (
+                        <td key={subj} style={{ padding: '4px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+                          {row.subjectScores[subj] || '-'}
+                        </td>
+                      ))}
+                      <td style={{ padding: '4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: 'bold' }}>{Math.round(row.totalScore)}</td>
+                      <td style={{ padding: '4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: 'bold' }}>{row.averagePct}%</td>
+                      <td style={{ padding: '4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: 'bold', color: row.grade?.includes('EE') ? 'green' : row.grade?.includes('ME') ? 'blue' : 'orange' }}>
+                        {row.grade}
+                      </td>
+                      <td className="no-print" style={{ padding: '4px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+                        <button
+                          title="Share via WhatsApp"
+                          onClick={() => {
+                            const learner = row.learner;
+                            const parentPhone = getLearnerPhone(learner);
+                            if (!parentPhone) {
+                              alert('No parent phone number');
+                              return;
+                            }
+                            const msg = `*${brandingSettings?.schoolName || 'SCHOOL'} REPORT*\nName: ${learner.firstName}\nMean: ${row.averagePct}%\nGrade: ${row.grade}`;
+                            let cleanPhone = parentPhone.replace(/\D/g, '');
+                            if (cleanPhone.startsWith('0')) cleanPhone = '254' + cleanPhone.substring(1);
+                            window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+                          }}
+                          className="p-1 bg-green-100 text-green-600 rounded hover:bg-green-200"
+                        >
+                          <MessageCircle size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  )}
+                />
+              </div>
+
+              {/* BULK ACTIONS & CONTROLS */}
+              <div className="no-print mt-8 flex flex-wrap justify-center items-center gap-3 bg-blue-50/50 p-4 rounded-lg border border-blue-100 mb-4">
+                <button
+                  onClick={() => setReportData(null)}
+                  className="px-4 py-2 text-gray-700 bg-white hover:bg-gray-50 border border-gray-200 rounded text-sm font-semibold transition shadow-sm"
+                >
+                  ← Back
+                </button>
+
+                <button
+                  onClick={handleBulkPrint}
+                  disabled={isBulkPrinting}
+                  className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition shadow-sm font-semibold text-sm"
+                >
+                  {isBulkPrinting ? <Loader className="animate-spin" size={16} /> : <Printer size={16} />}
+                  {isBulkPrinting ? 'Generating...' : 'Print All'}
+                </button>
+
+                <button
+                  onClick={handleBulkSMS}
+                  disabled={bulkProgress.active}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition shadow-sm font-semibold text-sm"
+                >
+                  {bulkProgress.active ? <Loader className="animate-spin" size={16} /> : <MessageSquare size={16} />}
+                  {bulkProgress.active ? `Sending (${bulkProgress.current}/${bulkProgress.total})` : 'Send SMS All'}
+                </button>
+
+                <button
+                  onClick={() => setShowWhatsAppConfirm(true)}
+                  disabled={isSendingWhatsApp}
+                  className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded hover:bg-emerald-600 transition shadow-sm font-semibold text-sm"
+                  title="Send via WhatsApp (Batched)"
+                >
+                  {isSendingWhatsApp ? <Loader className="animate-spin" size={16} /> : <MessageCircle size={16} />}
+                  {isSendingWhatsApp ? 'Wait...' : 'Bulk WhatsApp'}
+                </button>
+
+                <button
+                  onClick={handleExportPDF}
+                  disabled={isExporting}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition shadow-sm font-semibold text-sm"
+                >
+                  {isExporting ? <Loader size={16} className="animate-spin" /> : <Download size={16} />}
+                  {isExporting ? 'Exporting...' : 'Export Broadsheet'}
+                </button>
+
+                {(bulkProgress.active || isSendingWhatsApp) && (
+                  <div className="w-full text-center mt-2 text-sm font-medium text-gray-700">
+                    {isSendingWhatsApp ? (
+                      <span className="text-green-600 flex items-center justify-center gap-2 font-bold animate-pulse">
+                        <Loader className="animate-spin" size={12} />
+                        WhatsApp Batch: {whatsAppProgress.current}/{whatsAppProgress.total}
+                      </span>
+                    ) : (
+                      <div className="flex justify-center gap-3 font-bold">
+                        <span className="text-green-600">SUCCESS: {bulkProgress.success}</span>
+                        <span className="text-gray-300">|</span>
+                        <span className="text-red-500">FAILED: {bulkProgress.failed}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ANALYSIS REPORT DISPLAY */}
+      {reportData?.type?.includes('ANALYSIS') && (
+        <div className="px-6 py-8">
+          <div className="bg-gray-100 py-12 px-4 rounded-xl shadow-inner mb-8 no-print">
+            <div
+              id="summative-report-content"
+              className="bg-white mx-auto shadow-2xl overflow-hidden"
+              style={{
+                fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+                lineHeight: '1.2',
+                width: '210mm',
+                minHeight: '297mm',
+                padding: '12mm',
+                boxSizing: 'border-box'
+              }}
+            >
+              {/* Professional Letterhead - Consistency across reports */}
+              <div className="mb-6 flex flex-col items-center text-center">
+                {/* Logo Middle */}
+                <div className="mb-4">
+                  <img
+                    src={brandingSettings?.logoUrl || user?.school?.logo || ""}
+                    alt="Logo"
+                    style={{ height: '80px', width: 'auto', objectFit: 'contain', display: brandingSettings?.logoUrl || user?.school?.logo ? 'block' : 'none' }}
+                    onError={(e) => { e.target.style.display = 'none'; }}
+                  />
+                </div>
+
+                {/* School Info */}
+                <h1 style={{ fontSize: '24px', fontWeight: '900', color: brandingSettings?.brandColor || '#1E3A8A', margin: '0', textTransform: 'uppercase', letterSpacing: '1px', lineHeight: '1.2' }}>
+                  {user?.school?.name || brandingSettings?.schoolName || 'ACADEMIC SCHOOL'}
+                </h1>
+
+                {user?.school?.motto && (
+                  <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', marginTop: '2px', textTransform: 'uppercase', fontStyle: 'italic' }}>
+                    "{user.school.motto}"
+                  </div>
+                )}
+
+                {/* Separator Line */}
+                <div className="w-full h-0.5 mt-3 mb-3" style={{ backgroundColor: brandingSettings?.brandColor || '#1e3a8a' }}></div>
+
+                {/* Bold Report Title */}
+                <h2 style={{ fontSize: '18px', fontWeight: '900', color: '#000', margin: '0', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                  {reportData?.title}
+                </h2>
+
+                <div style={{ fontSize: '12px', fontWeight: '700', color: '#1E3A8A', marginTop: '4px', textTransform: 'uppercase', backgroundColor: '#eff6ff', padding: '4px 16px', borderRadius: '40px' }}>
+                  {setup.academicYear} | {reportData.meta?.term?.replace(/_/g, ' ')}
+                </div>
+              </div>
+
+              {/* Subject Performance Table */}
+              <div className="mb-8">
+                <h2 className="text-lg font-bold text-gray-800 mb-4 border-l-4 border-blue-600 pl-2">Subject Performance Analysis</h2>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#f1f5f9', color: '#1e293b' }}>
+                      <th style={{ padding: '8px', textAlign: 'left', borderBottom: '2px solid #cbd5e1' }}>SUBJECT</th>
+                      <th style={{ padding: '8px', textAlign: 'center', borderBottom: '2px solid #cbd5e1' }}>LEARNERS</th>
+                      <th style={{ padding: '8px', textAlign: 'center', borderBottom: '2px solid #cbd5e1' }}>MEAN SCORE</th>
+                      <th style={{ padding: '8px', textAlign: 'center', borderBottom: '2px solid #cbd5e1' }}>HIGHEST</th>
+                      <th style={{ padding: '8px', textAlign: 'center', borderBottom: '2px solid #cbd5e1' }}>LOWEST</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reportData.subjectStats.map((stat, idx) => (
+                      <tr key={stat.subject} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                        <td style={{ padding: '8px', fontWeight: '600' }}>{stat.subject}</td>
+                        <td style={{ padding: '8px', textAlign: 'center' }}>{stat.count}</td>
+                        <td style={{ padding: '8px', textAlign: 'center', fontWeight: 'bold', color: '#2563eb' }}>{stat.mean}%</td>
+                        <td style={{ padding: '8px', textAlign: 'center', color: '#16a34a' }}>{stat.highest}%</td>
+                        <td style={{ padding: '8px', textAlign: 'center', color: '#dc2626' }}>{stat.lowest}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Grade Distribution */}
+              <div className="mb-8">
+                <h2 className="text-lg font-bold text-gray-800 mb-4 border-l-4 border-blue-600 pl-2">Grade Distribution</h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px' }}>
+                  <div className="p-4 bg-green-50 rounded border border-green-200 text-center">
+                    <div className="text-2xl font-bold text-green-700">{reportData.gradeDist['EE'] || 0}</div>
+                    <div className="text-xs font-bold text-green-800 uppercase mt-1">Exceeding Exp.</div>
+                  </div>
+                  <div className="p-4 bg-blue-50 rounded border border-blue-200 text-center">
+                    <div className="text-2xl font-bold text-blue-700">{reportData.gradeDist['ME'] || 0}</div>
+                    <div className="text-xs font-bold text-blue-800 uppercase mt-1">Meeting Exp.</div>
+                  </div>
+                  <div className="p-4 bg-yellow-50 rounded border border-yellow-200 text-center">
+                    <div className="text-2xl font-bold text-yellow-700">{reportData.gradeDist['AE'] || 0}</div>
+                    <div className="text-xs font-bold text-yellow-800 uppercase mt-1">Approaching Exp.</div>
+                  </div>
+                  <div className="p-4 bg-red-50 rounded border border-red-200 text-center">
+                    <div className="text-2xl font-bold text-red-700">{reportData.gradeDist['BE'] || 0}</div>
+                    <div className="text-xs font-bold text-red-800 uppercase mt-1">Below Exp.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Controls */}
+            <div className="no-print mt-8 flex gap-4 justify-center">
+              <button
+                onClick={() => setReportData(null)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded text-sm font-semibold transition"
+              >
+                ← Back
+              </button>
+              <button
+                onClick={handleExportPDF}
+                disabled={isExporting}
+                className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm font-semibold transition flex items-center gap-2"
+              >
+                {isExporting ? <Loader size={18} className="animate-spin" /> : <Download size={18} />}
+                {isExporting ? 'Exporting...' : 'Export Analysis PDF'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CONSOLIDATED HIDDEN CONTAINERS FOR PDF GENERATION */}
+      <div className="fixed -left-[10000px] top-0 no-print" style={{ pointerEvents: 'none', visibility: 'hidden' }}>
+        {/* Bulk Download Container */}
+        {bulkDownloadData && (
+          <div id="bulk-print-content">
+            {bulkDownloadData.map((row, index) => (
+              <div
+                key={`bulk-${row.learner.id}-${index}`}
+                className="pdf-report-page"
+                style={{ pageBreakAfter: index === bulkDownloadData.length - 1 ? 'auto' : 'always' }}
+              >
+                <LearnerReportTemplate
+                  learner={row.learner}
+                  results={row.results}
+                  term={stagedTerm || selectedTerm}
+                  academicYear={academicYear || setup.academicYear}
+                  brandingSettings={brandingSettings}
+                  user={user}
+                  streamConfigs={streamConfigs}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Single Download Container */}
+        {singleDownloadData && (
+          <div id="single-print-content">
+            <LearnerReportTemplate
+              learner={singleDownloadData.learner}
+              results={singleDownloadData.results}
+              term={stagedTerm || selectedTerm}
+              academicYear={academicYear || setup.academicYear}
+              brandingSettings={brandingSettings}
+              user={user}
+              streamConfigs={streamConfigs}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* SMS PREVIEW MODAL */}
+      {
+        showSMSPreview && smsPreviewData && (
+          <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+              <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onClick={() => setShowSMSPreview(false)}></div>
+              <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+              <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                  <div className="sm:flex sm:items-start">
+                    <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+                      <AlertCircle className="h-6 w-6 text-blue-600" aria-hidden="true" />
+                    </div>
+                    <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                      <h3 className="text-lg leading-6 font-bold text-gray-900" id="modal-title">
+                        Confirm SMS Delivery
+                      </h3>
+                      <div className="mt-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        {/* Editable Phone Number Input */}
+                        <div className="mb-4">
+                          <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Recipient Phone Number</label>
+                          <input
+                            type="text"
+                            value={editedPhoneNumber}
+                            onChange={(e) => setEditedPhoneNumber(e.target.value)}
+                            className="w-full border border-gray-300 rounded p-2 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none"
+                            placeholder="e.g. 0712345678"
+                          />
+
+                          {/* Contact Suggestions */}
+                          {smsPreviewData.contactOptions?.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {smsPreviewData.contactOptions.map((opt, i) => (
+                                <button
+                                  key={i}
+                                  onClick={() => setEditedPhoneNumber(opt.phone)}
+                                  className={`px-2 py-1 rounded text-[10px] font-bold transition-all border ${editedPhoneNumber === opt.phone
+                                    ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                                    : 'bg-white text-gray-600 border-gray-200 hover:border-blue-400 hover:text-blue-600'
+                                    }`}
+                                  title={`Use ${opt.label}: ${opt.phone}`}
+                                >
+                                  {opt.label}: {opt.phone}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex justify-between text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider">
+                          <span>Message Preview</span>
+                        </div>
+                        <div className="text-sm text-gray-900 whitespace-pre-wrap font-mono bg-white p-3 border border-gray-200 rounded shadow-inner">
+                          {smsPreviewData.message}
+                        </div>
+                        <div className="mt-2 text-[10px] text-gray-400 text-right italic">
+                          Estimated: {Math.ceil(smsPreviewData.message.length / 160)} SMS Part(s)
+                        </div>
+                      </div>
+                      <div className="mt-4">
+                        <p className="text-sm text-gray-500">
+                          This summary will be sent to the parent. Please verify the content before proceeding.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                  <button
+                    type="button"
+                    onClick={executeSendSMS}
+                    disabled={isSendingSMS}
+                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50"
+                  >
+                    {isSendingSMS ? 'Sending...' : 'Send Now'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowSMSPreview(false)}
+                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {/* SMS BULK CONFIRMATION / PROGRESS MODAL */}
+      {
+        (showSMSBulkConfirm || bulkProgress.active) && (
+          <div className="fixed inset-0 bg-black/60 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md border border-gray-100">
+
+              {!bulkProgress.active ? (
+                <>
+                  <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-gray-800">
+                    <MessageSquare className="text-blue-500" />
+                    Start Bulk SMS?
+                  </h3>
+                  <p className="text-gray-600 mb-4 text-sm">
+                    You are about to send report summaries to <strong>{selectedReportRows.length > 0 ? selectedReportRows.length : reportData.rows.length}</strong> parents via SMS.
+                  </p>
+                  <div className="bg-blue-50 border border-blue-200 p-3 rounded mb-4 text-xs text-blue-800 font-medium">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
+                      <div>
+                        <div className="font-bold mb-1">Cost Estimate</div>
+                        <div>Approx. {Math.ceil((selectedReportRows.length > 0 ? selectedReportRows.length : reportData.rows.length) * 2)} SMS parts will be sent.</div>
+                        <div className="text-[10px] text-blue-600 mt-1 italic">Each report is ~2-3 SMS parts (160 chars each)</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mb-6">
+                    <label className="block text-xs font-bold mb-1 text-gray-500 uppercase">Send Test Message To (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 0712345678"
+                      id="sms-test-number"
+                      className="w-full border border-gray-300 p-2 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
+                    />
+                    <p className="text-[10px] text-gray-400 mt-1">If entered, ALL messages will be sent to this number for testing.</p>
+                  </div>
+
+                  <div className="flex justify-end gap-3">
+                    <button
+                      onClick={() => setShowSMSBulkConfirm(false)}
+                      className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded text-sm font-bold transition"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        const testNum = document.getElementById('sms-test-number').value;
+                        executeBulkSMS(testNum || null);
+                      }}
+                      className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-bold text-sm shadow-lg shadow-blue-200 transition transform hover:scale-105"
+                    >
+                      Start Sending
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-4">
+                  <div className="w-16 h-16 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+                  <h3 className="text-lg font-bold text-gray-800 mb-2">Sending SMS Messages...</h3>
+                  <p className="text-gray-500 text-sm mb-6">Please do not close this window.</p>
+
+                  <div className="w-full bg-gray-100 rounded-full h-4 mb-2 overflow-hidden">
+                    <div
+                      className="bg-blue-600 h-4 rounded-full transition-all duration-300 ease-out"
+                      style={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }}
+                    ></div>
+                  </div>
+                  <div className="flex justify-between text-xs font-bold text-gray-500 uppercase mb-4">
+                    <span>Progress</span>
+                    <span>{bulkProgress.current} / {bulkProgress.total}</span>
+                  </div>
+
+                  <div className="flex justify-center gap-4 text-sm font-medium">
+                    <div className="flex items-center gap-1">
+                      <CheckCircle size={14} className="text-green-600" />
+                      <span className="text-green-600">Success: {bulkProgress.success}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <XCircle size={14} className="text-red-600" />
+                      <span className="text-red-600">Failed: {bulkProgress.failed}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      }
+
+      {/* GENERAL NOTIFICATION MODAL */}
+
+      {/* WHATSAPP PROGRESS / CONFIRMATION MODAL - GLOBAL */}
+      {
+        (showWhatsAppConfirm || isSendingWhatsApp) && (
+          <div className="fixed inset-0 bg-black/60 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md border border-gray-100">
+
+              {!isSendingWhatsApp ? (
+                <>
+                  <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-gray-800">
+                    <MessageCircle className="text-green-500" />
+                    Start Bulk WhatsApp?
+                  </h3>
+                  <p className="text-gray-600 mb-4 text-sm">
+                    You are about to send report summaries to <strong>{selectedReportRows.length > 0 ? selectedReportRows.length : reportData.rows.length}</strong> parents via WhatsApp.
+                  </p>
+                  <div className="bg-yellow-50 border border-yellow-200 p-3 rounded mb-4 text-xs text-yellow-800 font-medium">
+                    Messages will be sent in batches with intervals to comply with WhatsApp policies.
+                  </div>
+
+                  <div className="mb-6">
+                    <label className="block text-xs font-bold mb-1 text-gray-500 uppercase">Send Test Message To (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 0712345678"
+                      id="wa-test-number"
+                      className="w-full border border-gray-300 p-2 rounded text-sm focus:ring-2 focus:ring-green-500 outline-none transition"
+                    />
+                    <p className="text-[10px] text-gray-400 mt-1">If entered, ALL messages will be sent to this number for testing.</p>
+                  </div>
+
+                  <div className="flex justify-end gap-3">
+                    <button
+                      onClick={() => setShowWhatsAppConfirm(false)}
+                      className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded text-sm font-bold transition"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        const testNum = document.getElementById('wa-test-number').value;
+                        handleBulkWhatsApp(testNum || null);
+                      }}
+                      className="px-6 py-2 bg-green-500 text-white rounded hover:bg-green-600 font-bold text-sm shadow-lg shadow-green-200 transition transform hover:scale-105"
+                    >
+                      Start Sending
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-4">
+                  <div className="w-16 h-16 border-4 border-green-100 border-t-green-500 rounded-full animate-spin mx-auto mb-4"></div>
+                  <h3 className="text-lg font-bold text-gray-800 mb-2">Sending WhatsApp Messages...</h3>
+                  <p className="text-gray-500 text-sm mb-6">Please do not close this window.</p>
+
+                  <div className="w-full bg-gray-100 rounded-full h-4 mb-2 overflow-hidden">
+                    <div
+                      className="bg-green-500 h-4 rounded-full transition-all duration-300 ease-out"
+                      style={{ width: `${(whatsAppProgress.current / whatsAppProgress.total) * 100}%` }}
+                    ></div>
+                  </div>
+                  <div className="flex justify-between text-xs font-bold text-gray-500 uppercase">
+                    <span>Progress</span>
+                    <span>{whatsAppProgress.current} / {whatsAppProgress.total}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      }
+
+      {/* NOTIFICATION MODAL */}
+      {
+        notificationModal.show && (
+          <div className="fixed inset-0 z-[60] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+              <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onClick={() => setNotificationModal({ ...notificationModal, show: false })}></div>
+
+              <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+              <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                  <div className="sm:flex sm:items-start">
+                    <div className={`mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full sm:mx-0 sm:h-10 sm:w-10 ${notificationModal.type === 'error' ? 'bg-red-100' : notificationModal.type === 'success' ? 'bg-green-100' : 'bg-blue-100'}`}>
+                      {notificationModal.type === 'error' ? (
+                        <svg className="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                      ) : notificationModal.type === 'success' ? (
+                        <CheckCircle className="h-6 w-6 text-green-600" />
+                      ) : (
+                        <svg className="h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      )}
+                    </div>
+                    <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                      <h3 className="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                        {notificationModal.title}
+                      </h3>
+                      <div className="mt-2">
+                        <pre className="text-sm text-gray-500 whitespace-pre-wrap font-sans">
+                          {notificationModal.message}
+                        </pre>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                  <button
+                    type="button"
+                    className={`w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 text-base font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm ${notificationModal.type === 'error' ? 'bg-red-600 hover:bg-red-700 focus:ring-red-500' : 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500'}`}
+                    onClick={() => setNotificationModal({ ...notificationModal, show: false })}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {/* LOADING OVERLAY FOR PDF EXPORT */}
+      {
+        isExporting && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white bg-opacity-90 backdrop-blur-sm">
+            <div className="text-center p-8 bg-white rounded-2xl shadow-2xl border border-gray-100 max-w-sm w-full">
+              <div className="relative mb-6 flex justify-center">
+                <div className="w-16 h-16 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-8 h-8 bg-blue-600 rounded-lg animate-pulse flex items-center justify-center">
+                    <span className="text-white text-[10px] font-bold">PDF</span>
+                  </div>
+                </div>
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Generating High-Quality Report</h3>
+              <p className="text-sm text-gray-500 mb-4">Please wait while we render your professional vector PDF. This may take a few seconds.</p>
+              <div className="flex items-center justify-center gap-2 text-blue-600 font-semibold text-sm">
+                <Loader className="animate-spin" size={14} />
+                <span>{pdfProgress || 'Initializing...'}</span>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+
+    </div >
+  );
+};
+
+export default SummativeReport;

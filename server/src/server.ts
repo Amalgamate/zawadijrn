@@ -1,0 +1,55 @@
+import express, { Application } from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import 'express-async-errors';
+import routes from './routes';
+import { errorHandler, notFoundHandler } from './middleware/error.middleware';
+import { sanitizeResponse, hideSensitiveHeaders, securityHeaders } from './middleware/response-sanitization.middleware';
+import { ipRateLimit } from './middleware/enhanced-rateLimit.middleware';
+
+const app: Application = express();
+
+// Trust proxy
+app.set('trust proxy', 1);
+
+// Security middleware
+app.use(helmet());
+
+// CORS — allow any origin in single-tenant/desktop mode
+// Clients connect from Electron (file://), localhost, or any configured server URL
+app.use(cors({
+  origin: true, // Reflect request origin — safe for single-tenant
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  exposedHeaders: ['X-Total-Count', 'X-Page-Count'],
+  maxAge: 86400,
+}));
+
+// Hide sensitive headers
+app.use(hideSensitiveHeaders);
+
+// Add security headers
+app.use(securityHeaders);
+
+// Global IP-based rate limiting
+app.use(ipRateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  maxRequests: 1000, // 1000 requests per 15 minutes
+  message: 'Too many requests from this IP. Please try again later.'
+}));
+
+// Response sanitization
+app.use(sanitizeResponse);
+
+// Body parsers
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// API Routes
+app.use('/api', routes);
+
+// Error handling
+app.use(notFoundHandler);
+app.use(errorHandler);
+
+export default app;

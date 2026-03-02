@@ -1,0 +1,52 @@
+/* ClassInventoryTab Styles */
+
+.inventory-item {
+  transition: all 0.2s ease;
+}
+
+.inventory-item:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.inventory-condition {
+  font-weight: bold;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  display: inline-block;
+}
+
+.inventory-condition.good {
+  background-color: rgb(220, 252, 231);
+  color: rgb(22, 101, 52);
+}
+
+.inventory-condition.fair {
+  background-color: rgb(254, 243, 199);
+  color: rgb(120, 53, 15);
+}
+
+.inventory-condition.poor {
+  background-color: rgb(254, 226, 226);
+  color: rgb(127, 29, 29);
+}
+
+.inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.add-inventory-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 2rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  z-index: 50;
+  max-width: 500px;
+  width: 90%;
+}

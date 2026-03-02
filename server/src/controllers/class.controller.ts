@@ -1,0 +1,363 @@
+/**
+ * Class Controller
+ * Handles class management and learner enrollment for a single-tenant environment
+ */
+
+import { Response } from 'express';
+import prisma from '../config/database';
+import { ApiError } from '../utils/error.util';
+import { AuthRequest } from '../middleware/permissions.middleware';
+import { Grade, Term } from '@prisma/client';
+import { configService } from '../services/config.service';
+
+export class ClassController {
+
+  private async generateClassCode(): Promise<string> {
+    const totalClasses = await prisma.class.count();
+    const nextNumber = totalClasses + 1;
+    let classCode = `CLS-${String(nextNumber).padStart(5, '0')}`;
+
+    let existing = await prisma.class.findUnique({ where: { classCode } });
+    let counter = nextNumber;
+    while (existing) {
+      counter++;
+      classCode = `CLS-${String(counter).padStart(5, '0')}`;
+      existing = await prisma.class.findUnique({ where: { classCode } });
+    }
+    return classCode;
+  }
+
+  private async getActiveContext() {
+    const activeConfig = await configService.getActiveTermConfig();
+    if (activeConfig) {
+      return { academicYear: activeConfig.academicYear, term: activeConfig.term };
+    }
+
+    // Fallback: If no active TermConfig, try to find the most recent year that has classes
+    const latestClass = await prisma.class.findFirst({
+      orderBy: { academicYear: 'desc' },
+      select: { academicYear: true, term: true }
+    });
+
+    if (latestClass) {
+      return { academicYear: latestClass.academicYear, term: latestClass.term };
+    }
+
+    // Ultimate fallback: current year
+    const year = new Date().getFullYear();
+    const month = new Date().getMonth();
+    let term: Term = 'TERM_1';
+    if (month >= 4 && month <= 7) term = 'TERM_2';
+    if (month >= 8 && month <= 11) term = 'TERM_3';
+    return { academicYear: year, term };
+  }
+
+  async getAllClasses(req: AuthRequest, res: Response) {
+    const { grade, stream, academicYear, term, active = 'true' } = req.query;
+    const whereClause: any = {};
+
+    if (grade) whereClause.grade = grade as Grade;
+    if (stream) whereClause.stream = stream as any;
+
+    if (academicYear) whereClause.academicYear = parseInt(academicYear as string);
+    if (term) whereClause.term = term as Term;
+
+    if (!academicYear && !term) {
+      const context = await this.getActiveContext();
+      whereClause.academicYear = context.academicYear;
+      whereClause.term = context.term;
+    }
+
+    if (active) whereClause.active = active === 'true';
+
+    const classes = await prisma.class.findMany({
+      where: whereClause,
+      include: {
+        teacher: { select: { id: true, firstName: true, lastName: true, email: true } },
+        _count: { select: { enrollments: true } },
+      },
+      orderBy: [{ grade: 'asc' }, { stream: 'asc' }],
+    });
+
+    res.json({ success: true, data: classes, count: classes.length });
+  }
+
+  async getClassById(req: AuthRequest, res: Response) {
+    const { id } = req.params;
+    const classData = await prisma.class.findUnique({
+      where: { id },
+      include: {
+        teacher: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
+        enrollments: {
+          where: { active: true },
+          include: {
+            learner: { select: { id: true, admissionNumber: true, firstName: true, lastName: true, middleName: true, dateOfBirth: true, gender: true, status: true, photoUrl: true } },
+          },
+          orderBy: { learner: { firstName: 'asc' } }
+        },
+        schedules: {
+          include: {
+            teacher: { select: { id: true, firstName: true, lastName: true } },
+            learningArea: { select: { id: true, name: true, shortName: true } }
+          },
+          orderBy: [
+            { day: 'asc' },
+            { startTime: 'asc' }
+          ]
+        }
+      },
+    });
+
+    if (!classData) throw new ApiError(404, 'Class not found');
+    res.json({ success: true, data: classData });
+  }
+
+  async createClass(req: AuthRequest, res: Response) {
+    const { name, grade, stream, teacherId, academicYear, term, capacity = 40, room } = req.body;
+
+    if (!grade) throw new ApiError(400, 'Grade is required');
+
+    let finalYear = academicYear;
+    let finalTerm = term;
+    if (!finalYear || !finalTerm) {
+      const context = await this.getActiveContext();
+      finalYear = finalYear || context.academicYear;
+      finalTerm = finalTerm || context.term;
+    }
+
+    if (teacherId) {
+      const teacher = await prisma.user.findUnique({ where: { id: teacherId } });
+      if (!teacher || (teacher.role !== 'TEACHER' && teacher.role !== 'HEAD_TEACHER')) throw new ApiError(400, 'Invalid teacher');
+    }
+
+    const finalStream = stream || 'A';
+    const finalName = name || `${grade} ${finalStream}`;
+
+    const existingClass = await prisma.class.findFirst({
+      where: { grade: grade as Grade, stream: finalStream as any, academicYear: finalYear, term: finalTerm as Term }
+    });
+    if (existingClass) throw new ApiError(409, 'Class already exists for this term');
+
+    const classCode = await this.generateClassCode();
+    const newClass = await prisma.class.create({
+      data: { classCode, name: finalName, grade: grade as Grade, stream: finalStream as any, teacherId, academicYear: finalYear, term: finalTerm as Term, capacity, room },
+      include: { teacher: { select: { id: true, firstName: true, lastName: true } } }
+    });
+
+    res.status(201).json({ success: true, data: newClass });
+  }
+
+  async updateClass(req: AuthRequest, res: Response) {
+    const { id } = req.params;
+    const { name, teacherId, capacity, room, active } = req.body;
+
+    const classData = await prisma.class.findUnique({ where: { id } });
+    if (!classData) throw new ApiError(404, 'Class not found');
+
+    const updateData: any = {};
+    if (name) updateData.name = name;
+    if (teacherId !== undefined) updateData.teacherId = teacherId;
+    if (capacity) updateData.capacity = capacity;
+    if (room !== undefined) updateData.room = room;
+    if (active !== undefined) updateData.active = active;
+
+    const updatedClass = await prisma.class.update({
+      where: { id },
+      data: updateData,
+      include: { teacher: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } } }
+    });
+
+    res.json({ success: true, data: updatedClass });
+  }
+
+  async enrollLearner(req: AuthRequest, res: Response) {
+    const { classId, learnerId } = req.body;
+    if (!classId || !learnerId) throw new ApiError(400, 'Missing fields');
+
+    const classData = await prisma.class.findUnique({ where: { id: classId } });
+    if (!classData) throw new ApiError(404, 'Class not found');
+
+    const learner = await prisma.learner.findUnique({ where: { id: learnerId } });
+    if (!learner) throw new ApiError(404, 'Learner not found');
+
+    const existingEnrollment = await prisma.classEnrollment.findFirst({
+      where: { learnerId, active: true, class: { academicYear: classData.academicYear, term: classData.term } }
+    });
+    if (existingEnrollment && existingEnrollment.classId !== classId) {
+      throw new ApiError(400, 'Learner already enrolled in another class this term');
+    }
+
+    const enrollment = await prisma.classEnrollment.upsert({
+      where: { classId_learnerId: { classId, learnerId } },
+      update: { active: true },
+      create: { classId, learnerId }
+    });
+
+    res.status(201).json({ success: true, data: enrollment });
+  }
+
+  async unenrollLearner(req: AuthRequest, res: Response) {
+    const { classId, learnerId } = req.body;
+    await prisma.classEnrollment.update({
+      where: { classId_learnerId: { classId, learnerId } },
+      data: { active: false }
+    });
+    res.json({ success: true, message: 'Unenrolled successfully' });
+  }
+
+  async getLearnerClass(req: AuthRequest, res: Response) {
+    const { learnerId } = req.params;
+    const enrollment = await prisma.classEnrollment.findFirst({
+      where: { learnerId, active: true },
+      include: { class: { include: { teacher: { select: { id: true, firstName: true, lastName: true } } } } },
+      orderBy: { enrolledAt: 'desc' }
+    });
+    res.json({ success: true, data: enrollment });
+  }
+
+  async getTeacherWorkload(req: AuthRequest, res: Response) {
+    const { teacherId } = req.params;
+    let { academicYear, term } = req.query;
+
+    if (!academicYear || !term) {
+      const context = await this.getActiveContext();
+      academicYear = academicYear || context.academicYear.toString();
+      term = term || context.term;
+    }
+
+    const classes = await prisma.class.findMany({
+      where: { teacherId, academicYear: parseInt(academicYear as string), term: term as Term, active: true },
+      include: { _count: { select: { enrollments: true } } }
+    });
+
+    res.json({ success: true, data: { classes, totalStudents: classes.reduce((sum, c) => sum + c._count.enrollments, 0) } });
+  }
+
+  async assignTeacher(req: AuthRequest, res: Response) {
+    const { id } = req.params;
+    const { classId, teacherId } = req.body;
+
+    const finalClassId = id || classId;
+
+    if (!finalClassId) throw new ApiError(400, 'Class ID is required');
+    if (!teacherId) throw new ApiError(400, 'Teacher ID is required');
+
+    const updatedClass = await prisma.class.update({
+      where: { id: finalClassId },
+      data: { teacherId },
+      include: { teacher: { select: { id: true, firstName: true, lastName: true } } }
+    });
+    res.json({ success: true, data: updatedClass });
+  }
+
+  async unassignTeacher(req: AuthRequest, res: Response) {
+    const { id } = req.params;
+    const { classId } = req.body;
+
+    const finalClassId = id || classId;
+
+    if (!finalClassId) throw new ApiError(400, 'Class ID is required');
+
+    const updatedClass = await prisma.class.update({
+      where: { id: finalClassId },
+      data: { teacherId: null },
+      include: { teacher: true }
+    });
+    res.json({ success: true, data: updatedClass });
+  }
+
+  async getTeacherSchedules(req: AuthRequest, res: Response) {
+    const { teacherId } = req.params;
+    const { academicYear, term } = req.query;
+
+    const context = await this.getActiveContext();
+    const year = academicYear ? parseInt(academicYear as string) : context.academicYear;
+    const currentTerm = (term as Term) || context.term;
+
+    const classes = await prisma.class.findMany({
+      where: { teacherId, academicYear: year, term: currentTerm },
+      include: { _count: { select: { enrollments: true } } }
+    });
+    res.json({ success: true, data: classes });
+  }
+
+  async getClassSchedules(req: AuthRequest, res: Response) {
+    const { id } = req.params;
+    const schedules = await prisma.classSchedule.findMany({
+      where: { classId: id },
+      include: {
+        teacher: { select: { id: true, firstName: true, lastName: true } },
+        learningArea: { select: { id: true, name: true, shortName: true } }
+      },
+      orderBy: [
+        { day: 'asc' },
+        { startTime: 'asc' }
+      ]
+    });
+    res.json({ success: true, data: schedules });
+  }
+
+  async createClassSchedule(req: AuthRequest, res: Response) {
+    const { id } = req.params;
+    const { subject, day, startTime, endTime, room, teacherId, learningAreaId, semester, academicYear } = req.body;
+    const schoolId = req.user?.schoolId;
+
+    const schedule = await prisma.classSchedule.create({
+      data: {
+        classId: id,
+        subject,
+        day,
+        startTime,
+        endTime,
+        room,
+        teacherId,
+        learningAreaId,
+        semester,
+        academicYear: parseInt(academicYear as string) || new Date().getFullYear(),
+        schoolId
+      },
+      include: {
+        teacher: { select: { id: true, firstName: true, lastName: true } },
+        learningArea: { select: { id: true, name: true, shortName: true } }
+      }
+    });
+
+    res.status(201).json({ success: true, data: schedule });
+  }
+
+  async updateClassSchedule(req: AuthRequest, res: Response) {
+    const { scheduleId } = req.params;
+    const { subject, day, startTime, endTime, room, teacherId, learningAreaId, semester, academicYear } = req.body;
+
+    const schedule = await prisma.classSchedule.update({
+      where: { id: scheduleId },
+      data: {
+        subject,
+        day,
+        startTime,
+        endTime,
+        room,
+        teacherId,
+        learningAreaId,
+        semester,
+        academicYear: academicYear ? parseInt(academicYear as string) : undefined,
+      },
+      include: {
+        teacher: { select: { id: true, firstName: true, lastName: true } },
+        learningArea: { select: { id: true, name: true, shortName: true } }
+      }
+    });
+
+    res.json({ success: true, data: schedule });
+  }
+
+  async deleteClassSchedule(req: AuthRequest, res: Response) {
+    const { scheduleId } = req.params;
+    await prisma.classSchedule.delete({
+      where: { id: scheduleId }
+    });
+    res.json({ success: true, message: 'Schedule deleted successfully' });
+  }
+}
+
+export const classController = new ClassController();
