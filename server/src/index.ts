@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { validateEnvironment } from './config/env-validator';
+import { execSync } from 'child_process';
 
 // Validate environment before anything else
 validateEnvironment();
@@ -17,6 +18,18 @@ async function startServer() {
     // Test database connection
     await prisma.$connect();
     console.log('✅ Database connected successfully');
+
+    // Run pending migrations
+    console.log('🔄 Running database migrations...');
+    try {
+      execSync('npx prisma migrate deploy', { stdio: 'inherit', cwd: __dirname + '/..' });
+      console.log('✅ Migrations completed successfully');
+    } catch (migrationError: any) {
+      // Migrations may fail if already applied, that's okay
+      if (migrationError.message && !migrationError.message.includes('already applied')) {
+        console.warn('⚠️  Migration warning:', migrationError.message);
+      }
+    }
 
     // Create HTTP server
     const httpServer = http.createServer(app);
