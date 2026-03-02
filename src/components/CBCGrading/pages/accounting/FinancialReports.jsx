@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Download, Calendar, Activity, PieChart, DollarSign, RefreshCw } from 'lucide-react';
 import api from '../../../../services/api';
-import { toInputDate } from '../utils/dateHelpers';
+import { toInputDate } from '../../utils/dateHelpers';
 import { useNotifications } from '../../hooks/useNotifications';
 
 const FinancialReports = () => {
