@@ -55,7 +55,10 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
         password: formData.password,
       });
 
-      if (formData.skipOTP) {
+      // If user is a Teacher, OTP is disabled in backend, so we MUST skip OTP flow
+      const isTeacher = credentialsData.user?.role === 'TEACHER';
+
+      if (formData.skipOTP || isTeacher) {
         if (credentialsData.token) {
           localStorage.setItem('token', credentialsData.token);
           if (credentialsData.refreshToken) localStorage.setItem('refreshToken', credentialsData.refreshToken);
@@ -65,7 +68,7 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
         // Get school ID - use user's school or default to first school in single-tenant mode
         let schoolId = credentialsData.user.schoolId || credentialsData.user.school?.id;
         let school = credentialsData.user.school || null;
-        
+
         if (!schoolId) {
           const defaultSchool = await getDefaultSchool();
           if (defaultSchool) {
@@ -126,7 +129,7 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
     // Get school ID - use user's school or default to first school in single-tenant mode
     let schoolId = pendingUserData.user.schoolId || pendingUserData.user.school?.id;
     let school = pendingUserData.user.school || null;
-    
+
     if (!schoolId) {
       const defaultSchool = await getDefaultSchool();
       if (defaultSchool) {
