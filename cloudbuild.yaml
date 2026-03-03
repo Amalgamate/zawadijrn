@@ -1,5 +1,5 @@
 steps:
-  # Step 1: Build the Docker image
+  # Step 1: Build the Docker image (Backend API)
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
@@ -8,9 +8,8 @@ steps:
       - '-t'
       - 'gcr.io/$PROJECT_ID/zawadi-api:$SHORT_SHA'
       - '-f'
-      - 'Dockerfile'
-      - '.'
-    dir: 'server'
+      - 'server/Dockerfile'
+      - 'server'
 
   # Step 2: Push the image to Container Registry
   - name: 'gcr.io/cloud-builders/docker'
