@@ -15,21 +15,10 @@ const PORT = process.env.PORT || 5000;
 
 async function startServer() {
   try {
-    // Test database connection
-    await prisma.$connect();
-    console.log('✅ Database connected successfully');
-
-    // Run pending migrations
-    console.log('🔄 Running database migrations...');
-    try {
-      execSync('npx prisma migrate deploy', { stdio: 'inherit', cwd: __dirname + '/..' });
-      console.log('✅ Migrations completed successfully');
-    } catch (migrationError: any) {
-      // Migrations may fail if already applied, that's okay
-      if (migrationError.message && !migrationError.message.includes('already applied')) {
-        console.warn('⚠️  Migration warning:', migrationError.message);
-      }
-    }
+    // Note: Don't block on database connection on startup
+    // Prisma will automatically connect when first query is made
+    // This allows the server to start and handle requests even if DB is temporarily unavailable
+    console.log('🚀 Starting server (database connection will be established on first request)...');
 
     // Create HTTP server
     const httpServer = http.createServer(app);
