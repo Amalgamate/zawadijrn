@@ -25,12 +25,6 @@ app.use(cors({
   maxAge: 86400,
 }));
 
-// Hide sensitive headers
-app.use(hideSensitiveHeaders);
-
-// Add security headers
-app.use(securityHeaders);
-
 // Global IP-based rate limiting  
 // DISABLED TEMPORARILY FOR DEBUGGING - was causing request timeout
 // app.use(ipRateLimit({

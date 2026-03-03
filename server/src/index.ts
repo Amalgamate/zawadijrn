@@ -21,16 +21,23 @@ async function startServer() {
     console.log('🚀 Starting server (database connection will be established on first request)...');
 
     // Create HTTP server
+    console.log('[DEBUG] Creating HTTP server...');
     const httpServer = http.createServer(app);
+    console.log('[DEBUG] HTTP server created');
 
     // Initialize Socket.io
+    console.log('[DEBUG] Initializing Socket.io...');
     const io = initializeSocket(httpServer);
+    console.log('[DEBUG] Socket.io initialized');
 
     // Store io instance in app for access in controllers (optional, but good practice)
     app.set('io', io);
+    console.log('[DEBUG] Socket.io stored in app instance');
 
     // Start server
+    console.log('[DEBUG] Calling httpServer.listen()...');
     httpServer.listen(PORT, () => {
+      console.log('[DEBUG] Listen callback FIRED');
       // Determine API URL based on environment
       const apiUrl = process.env.NODE_ENV === 'production'
         ? 'https://elimcrown-api.onrender.com/api'
