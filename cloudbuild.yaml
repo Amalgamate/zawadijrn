@@ -33,7 +33,7 @@ steps:
       - '5000'
       - '--allow-unauthenticated'
       - '--memory'
-      - '512Mi'
+      - '1Gi'
       - '--cpu'
       - '1'
       - '--timeout'
