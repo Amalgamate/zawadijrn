@@ -60,4 +60,47 @@ router.get('/status', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * POST /api/migrations/create-admin
+ * Create a super admin user
+ */
+router.post('/create-admin', async (req: Request, res: Response) => {
+  try {
+    const prisma = require('../config/database').default;
+    
+    const user = await prisma.user.create({
+      data: {
+        email: 'admin@zawadijunioracademy.co.ke',
+        password: '$2a$10$P.gWdFVLw7H7bQZJ8H5y6OQhUx8XJ9k2nLv0n5Z3w5K9mM2L0q5Be',
+        firstName: 'Admin',
+        lastName: 'User',
+        role: 'SUPER_ADMIN',
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'Super admin created successfully',
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      }
+    });
+  } catch (error: any) {
+    if (error.code === 'P2002') {
+      res.status(409).json({
+        success: false,
+        message: 'User with this email already exists',
+        error: error.message
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+});
+
 export default router;
