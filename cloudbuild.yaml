@@ -1,0 +1,46 @@
+steps:
+  # Step 1: Build the Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/zawadi-api:latest'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/zawadi-api:$SHORT_SHA'
+      - '-f'
+      - 'Dockerfile'
+      - '.'
+    dir: 'server'
+
+  # Step 2: Push the image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/zawadi-api:latest'
+
+  # Step 3: Deploy to Cloud Run
+  - name: 'gcr.io/cloud-builders/run'
+    args:
+      - 'deploy'
+      - 'zawadi-api'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/zawadi-api:latest'
+      - '--region'
+      - 'europe-west1'
+      - '--platform'
+      - 'managed'
+      - '--port'
+      - '5000'
+      - '--allow-unauthenticated'
+      - '--set-env-vars'
+      - 'NODE_ENV=production,PORT=5000,DATABASE_URL=postgresql://postgres.jpngcprtuqfrjjqgoyvq:gtICRvWBoOQb95a5@aws-s1-eu-west-1.pooler.supabase.com:5432/postgres?schema=public&sslmode=require&connection_limit=20,SUPABASE_URL=https://jpngcprtuqfrjjqgoyvq.supabase.co,SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwbmdjcHJ0dXFmcmpqcWdveXZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NDc4MjUsImV4cCI6MjA4ODAyMzgyNX0.fmo8hgojrUyFN1EIXpfTmjBfDFe-6m1sEA4cVS7FbjM,JWT_SECRET=zawadi-super-secret-jwt-key-2026-change-in-production,JWT_REFRESH_SECRET=zawadi-refresh-secret-jwt-key-2026-change-in-production,FRONTEND_URL=https://zawadijrn.vercel.app,REDIS_HOST=,RESEND_API_KEY=re_5LyWjhHo_47jjTTHdBK7hwVuuV6yBcX9m,EMAIL_FROM=admin@elimcrown.co.ke'
+
+images:
+  - 'gcr.io/$PROJECT_ID/zawadi-api:latest'
+  - 'gcr.io/$PROJECT_ID/zawadi-api:$SHORT_SHA'
+
+options:
+  machineType: 'N1_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
+  
+timeout: '3600s'
