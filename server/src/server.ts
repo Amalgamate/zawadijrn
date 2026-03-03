@@ -9,6 +9,8 @@ import { ipRateLimit } from './middleware/enhanced-rateLimit.middleware';
 
 const app: Application = express();
 
+console.log('[ROUTES_DEBUG] Routes module loaded:', !!routes);
+
 // Trust proxy
 app.set('trust proxy', 1);
 
@@ -40,8 +42,10 @@ app.use(sanitizeResponse);
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
+console.log('[ROUTES_DEBUG] About to mount API routes...');
 // API Routes
 app.use('/api', routes);
+console.log('[ROUTES_DEBUG] API routes mounted successfully');
 
 // DEBUG: Simple endpoint that bypasses all other middleware for diagnostics
 app.get('/status', (_req, res) => {
