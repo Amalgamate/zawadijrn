@@ -70,7 +70,8 @@ export const reportController = {
       // Get class teacher comment
       const teacherComment = await prisma.termlyReportComment.findUnique({
         where: {
-          learnerId_term_academicYear: {
+          schoolId_learnerId_term_academicYear: {
+            schoolId: req.user?.schoolId || '',
             learnerId,
             term: term as Term,
             academicYear: parseInt(academicYear as string)

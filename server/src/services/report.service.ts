@@ -22,6 +22,7 @@ export interface LearnerInfo {
   admissionNumber: string;
   grade: string;
   stream: string | null;
+  schoolId: string;
   dateOfBirth: Date | null;
   gender: string;
   parent?: {
@@ -170,10 +171,10 @@ export async function generateTermlyReport(
     fetchFormativeAssessments(learnerId, term, academicYear),
     fetchSummativeResults(learnerId, term, academicYear),
     fetchAttendanceRecords(learnerId, term, academicYear),
-    fetchCoreCompetencies(learnerId, term, academicYear),
-    fetchValuesAssessment(learnerId, term, academicYear),
+    fetchCoreCompetencies(learnerId, term, academicYear, learner.schoolId),
+    fetchValuesAssessment(learnerId, term, academicYear, learner.schoolId),
     fetchCoCurricularActivities(learnerId, term, academicYear),
-    fetchReportComments(learnerId, term, academicYear)
+    fetchReportComments(learnerId, term, academicYear, learner.schoolId)
   ]);
 
   if (!cbcSystem || !summativeSystem) {
@@ -249,6 +250,7 @@ async function fetchLearnerInfo(learnerId: string): Promise<LearnerInfo> {
       admissionNumber: true,
       grade: true,
       stream: true,
+      schoolId: true,
       dateOfBirth: true,
       gender: true,
       parent: {
@@ -292,16 +294,16 @@ async function fetchAttendanceRecords(learnerId: string, term: Term, academicYea
   });
 }
 
-async function fetchCoreCompetencies(learnerId: string, term: Term, academicYear: number) {
+async function fetchCoreCompetencies(learnerId: string, term: Term, academicYear: number, schoolId: string) {
   return await prisma.coreCompetency.findUnique({
-    where: { learnerId_term_academicYear: { learnerId, term, academicYear } },
+    where: { schoolId_learnerId_term_academicYear: { schoolId, learnerId, term, academicYear } },
     include: { assessor: { select: { firstName: true, lastName: true } } }
   });
 }
 
-async function fetchValuesAssessment(learnerId: string, term: Term, academicYear: number) {
+async function fetchValuesAssessment(learnerId: string, term: Term, academicYear: number, schoolId: string) {
   return await prisma.valuesAssessment.findUnique({
-    where: { learnerId_term_academicYear: { learnerId, term, academicYear } }
+    where: { schoolId_learnerId_term_academicYear: { schoolId, learnerId, term, academicYear } }
   });
 }
 
@@ -312,9 +314,9 @@ async function fetchCoCurricularActivities(learnerId: string, term: Term, academ
   });
 }
 
-async function fetchReportComments(learnerId: string, term: Term, academicYear: number) {
+async function fetchReportComments(learnerId: string, term: Term, academicYear: number, schoolId: string) {
   return await prisma.termlyReportComment.findUnique({
-    where: { learnerId_term_academicYear: { learnerId, term, academicYear } }
+    where: { schoolId_learnerId_term_academicYear: { schoolId, learnerId, term, academicYear } }
   });
 }
 

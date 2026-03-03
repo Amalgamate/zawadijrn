@@ -33,12 +33,14 @@ export const createOrUpdateCompetencies = async (req: AuthRequest, res: Response
       citizenship,
       citizenshipComment,
       learningToLearn,
-      learningToLearnComment
+      learningToLearnComment,
+      schoolId: bodySchoolId
     } = req.body;
 
     const assessedBy = req.user?.userId;
+    const schoolId = bodySchoolId || req.user?.schoolId;
 
-    if (!assessedBy) {
+    if (!assessedBy || !schoolId) {
       return res.status(401).json({
         success: false,
         message: 'Unauthorized'
@@ -57,7 +59,8 @@ export const createOrUpdateCompetencies = async (req: AuthRequest, res: Response
     // Upsert (create or update)
     const competencies = await prisma.coreCompetency.upsert({
       where: {
-        learnerId_term_academicYear: {
+        schoolId_learnerId_term_academicYear: {
+          schoolId,
           learnerId,
           term: term as Term,
           academicYear: parseInt(academicYear)
@@ -79,6 +82,7 @@ export const createOrUpdateCompetencies = async (req: AuthRequest, res: Response
         assessedBy
       },
       create: {
+        schoolId,
         learnerId,
         term: term as Term,
         academicYear: parseInt(academicYear),
@@ -147,7 +151,8 @@ export const getCompetenciesByLearner = async (req: AuthRequest, res: Response) 
 
     const competencies = await prisma.coreCompetency.findUnique({
       where: {
-        learnerId_term_academicYear: {
+        schoolId_learnerId_term_academicYear: {
+          schoolId: req.user?.schoolId || '',
           learnerId,
           term: term as Term,
           academicYear: parseInt(academicYear as string)
@@ -230,7 +235,8 @@ export const createOrUpdateValues = async (req: AuthRequest, res: Response) => {
     // Upsert
     const values = await prisma.valuesAssessment.upsert({
       where: {
-        learnerId_term_academicYear: {
+        schoolId_learnerId_term_academicYear: {
+          schoolId: req.user?.schoolId || '',
           learnerId,
           term: term as Term,
           academicYear: parseInt(academicYear)
@@ -306,7 +312,8 @@ export const getValuesByLearner = async (req: AuthRequest, res: Response) => {
 
     const values = await prisma.valuesAssessment.findUnique({
       where: {
-        learnerId_term_academicYear: {
+        schoolId_learnerId_term_academicYear: {
+          schoolId: req.user?.schoolId || '',
           learnerId,
           term: term as Term,
           academicYear: parseInt(academicYear as string)
@@ -584,7 +591,8 @@ export const saveReportComments = async (req: Request, res: Response) => {
 
     const comments = await prisma.termlyReportComment.upsert({
       where: {
-        learnerId_term_academicYear: {
+        schoolId_learnerId_term_academicYear: {
+          schoolId: req.user?.schoolId || '',
           learnerId,
           term: term as Term,
           academicYear: parseInt(academicYear)
@@ -660,7 +668,8 @@ export const getCommentsByLearner = async (req: AuthRequest, res: Response) => {
 
     const comments = await prisma.termlyReportComment.findUnique({
       where: {
-        learnerId_term_academicYear: {
+        schoolId_learnerId_term_academicYear: {
+          schoolId: req.user?.schoolId || '',
           learnerId,
           term: term as Term,
           academicYear: parseInt(academicYear as string)
