@@ -397,7 +397,7 @@ const CommunicationSettings = () => {
 
       {/* Template Editor */}
       {activeTab === 'email' && (
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 border border-gray-100 dark:border-slate-700 transition-colors duration-300">
+        <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100 transition-colors duration-300">
           <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
             <MessageSquare size={20} className="text-purple-600" />
             Email Templates
@@ -466,7 +466,7 @@ const CommunicationSettings = () => {
 
       {/* Test Email */}
       {activeTab === 'email' && (
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 border border-gray-100 dark:border-slate-700 transition-colors duration-300">
+        <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100 transition-colors duration-300">
           <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
             <TestTube size={20} className="text-blue-600" />
             Test Email
