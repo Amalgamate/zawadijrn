@@ -6,9 +6,10 @@
   "scripts": {
     "dev": "nodemon",
     "build": "tsc",
-    "postinstall": "prisma generate --schema ./prisma/schema.prisma",
+    "postinstall": "prisma generate",
     "deploy": "npm install && npm run build",
-    "start": "npx prisma migrate deploy && node dist/index.js",
+    "start": "prisma migrate deploy && node dist/index.js",
+    "start:push": "prisma db push --skip-generate && node dist/index.js",
     "db:reset": "prisma migrate reset --force --schema ./prisma/schema.prisma",
     "seed": "ts-node prisma/seed.ts",
     "seed:streams": "ts-node prisma/seed-streams.ts",
@@ -48,7 +49,7 @@
   "author": "Zawadi JRN Academy",
   "license": "MIT",
   "dependencies": {
-    "@prisma/client": "^5.8.0",
+    "@prisma/client": "^5.22.0",
     "@react-email/components": "^1.0.6",
     "@react-email/render": "^2.0.4",
     "@types/bcrypt": "^5.0.2",
@@ -102,7 +103,7 @@
     "eslint": "^8.56.0",
     "jest": "^29.7.0",
     "nodemon": "^3.0.2",
-    "prisma": "^5.8.0",
+    "prisma": "^5.22.0",
     "supertest": "^7.2.2",
     "ts-jest": "^29.1.1"
   },
