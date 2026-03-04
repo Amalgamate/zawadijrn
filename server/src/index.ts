@@ -10,6 +10,7 @@ import app from './server';
 import prisma from './config/database';
 import http from 'http';
 import { initializeSocket } from './services/socket.service';
+import { ensureSuperAdmin } from './utils/setup-admin';
 
 const PORT = process.env.PORT || 5000;
 
@@ -19,6 +20,9 @@ async function startServer() {
     // Prisma will automatically connect when first query is made
     // This allows the server to start and handle requests even if DB is temporarily unavailable
     console.log('🚀 Starting server (database connection will be established on first request)...');
+
+    // Setup SuperAdmin
+    await ensureSuperAdmin();
 
     // Create HTTP server
     console.log('[DEBUG] Creating HTTP server...');
