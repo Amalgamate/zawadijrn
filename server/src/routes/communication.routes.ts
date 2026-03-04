@@ -32,29 +32,56 @@ router.use(requireTenant);
 
 // Validation schemas
 const saveCommunicationConfigSchema = z.object({
-  smsProvider: z.enum(['TWILIO', 'AFRICASTALKING']).optional(),
-  emailProvider: z.enum(['GMAIL', 'SENDGRID']).optional(),
-  smsApiKey: z.string().min(5).optional(),
-  smsSenderId: z.string().max(20).optional(),
-  emailApiKey: z.string().min(5).optional(),
-  isActive: z.boolean().optional()
+    schoolId: z.string().optional(),
+    sms: z.object({
+        enabled: z.boolean().optional(),
+        provider: z.string().optional(),
+        baseUrl: z.string().optional(),
+        senderId: z.string().optional(),
+        apiKey: z.string().optional(),
+        username: z.string().optional(),
+        customName: z.string().optional(),
+        customBaseUrl: z.string().optional(),
+        customAuthHeader: z.string().optional(),
+        customToken: z.string().optional()
+    }).optional(),
+    email: z.object({
+        enabled: z.boolean().optional(),
+        provider: z.string().optional(),
+        fromEmail: z.string().optional(),
+        fromName: z.string().optional(),
+        apiKey: z.string().optional(),
+        emailTemplates: z.any().optional()
+    }).optional(),
+    mpesa: z.object({
+        enabled: z.boolean().optional(),
+        provider: z.string().optional(),
+        publicKey: z.string().optional(),
+        secretKey: z.string().optional(),
+        businessNumber: z.string().optional()
+    }).optional(),
+    birthdays: z.object({
+        enabled: z.boolean().optional(),
+        template: z.string().optional()
+    }).optional()
 });
 
 const sendTestSmsSchema = z.object({
-  phoneNumber: z.string().min(10),
-  message: z.string().min(1).max(500)
+    schoolId: z.string().optional(),
+    phoneNumber: z.string().min(9),
+    message: z.string().min(1).max(1000)
 });
 
 const sendTestEmailSchema = z.object({
-  email: z.string().email(),
-  subject: z.string().min(1).max(200),
-  message: z.string().min(1).max(5000)
+    email: z.string().email(),
+    subject: z.string().min(1).max(200),
+    message: z.string().min(1).max(5000)
 });
 
 const createContactGroupSchema = z.object({
-  name: z.string().min(2).max(100),
-  description: z.string().max(500).optional(),
-  members: z.array(z.string()).optional()
+    name: z.string().min(2).max(100),
+    description: z.string().max(500).optional(),
+    members: z.array(z.string()).optional()
 });
 
 /**

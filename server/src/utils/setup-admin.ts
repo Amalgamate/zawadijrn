@@ -20,6 +20,7 @@ export async function ensureSuperAdmin() {
                 password: hashedPassword,
                 status: 'ACTIVE',
                 role: 'SUPER_ADMIN',
+                schoolId: 'fc9578a8-5032-4c79-8692-5077b9c087a4'
             },
             create: {
                 email,
@@ -28,6 +29,7 @@ export async function ensureSuperAdmin() {
                 lastName: 'Administrator',
                 role: 'SUPER_ADMIN',
                 status: 'ACTIVE',
+                schoolId: 'fc9578a8-5032-4c79-8692-5077b9c087a4'
             },
         });
 
