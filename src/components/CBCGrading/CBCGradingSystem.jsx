@@ -971,7 +971,7 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
     <>
       {/* Desktop Layout */}
       {!isMobile && (
-        <div className="flex h-screen bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-slate-100 transition-colors duration-300">
+        <div className="flex h-screen bg-gray-50 text-gray-900 transition-colors duration-300">
           {/* Sidebar */}
           <Sidebar
             sidebarOpen={sidebarOpen}

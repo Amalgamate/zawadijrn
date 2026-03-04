@@ -136,7 +136,7 @@ const SupportWidget = () => {
     }
 
     return (
-        <div className="fixed bottom-6 right-6 w-[400px] h-[600px] bg-white dark:bg-slate-900 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] overflow-hidden flex flex-col z-50 border border-slate-100 dark:border-slate-800 animate-in slide-in-from-bottom-10 fade-in duration-300">
+        <div className="fixed bottom-6 right-6 w-[400px] h-[600px] bg-white rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] overflow-hidden flex flex-col z-50 border border-slate-100 animate-in slide-in-from-bottom-10 fade-in duration-300">
             {/* Header */}
             <div className="bg-[#14B8A6] p-6 text-white flex items-center justify-between shadow-sm">
                 <div className="flex items-center gap-3">
@@ -157,7 +157,7 @@ const SupportWidget = () => {
 
             {/* Content Area with hidden scrollbars */}
             <div
-                className="flex-1 overflow-y-auto bg-gray-50 dark:bg-slate-950 p-6"
+                className="flex-1 overflow-y-auto bg-gray-50 p-6"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
                 <style>{`.hide-scrollbar::-webkit-scrollbar { display: none; }`}</style>
@@ -185,7 +185,7 @@ const SupportWidget = () => {
                                         </div>
                                     ) : (
                                         tickets.map(ticket => (
-                                            <div key={ticket.id} onClick={() => openChat(ticket.id)} className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all cursor-pointer group">
+                                            <div key={ticket.id} onClick={() => openChat(ticket.id)} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group">
                                                 <div className="flex justify-between items-start mb-2">
                                                     <span className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-wider ${ticket.status === 'OPEN' ? 'bg-teal-50 text-teal-600' :
                                                         ticket.status === 'RESOLVED' ? 'bg-blue-50 text-blue-600' :
@@ -295,7 +295,7 @@ const SupportWidget = () => {
                                         <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                                             <div className={`max-w-[85%] p-4 rounded-2xl shadow-sm ${isMe
                                                 ? 'bg-[#14B8A6] text-white rounded-br-none'
-                                                : 'bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-200 border border-gray-100 dark:border-slate-700 rounded-bl-none'
+                                                : 'bg-white text-gray-800 border border-gray-100 rounded-bl-none'
                                                 }`}>
                                                 <p className="text-sm leading-relaxed">{msg.message}</p>
                                                 <span className={`text-[9px] font-bold block mt-2 uppercase tracking-tighter ${isMe ? 'text-teal-100' : 'text-gray-400'}`}>
@@ -314,13 +314,13 @@ const SupportWidget = () => {
 
             {/* Chat Input Bar (Visible only in chat view) */}
             {view === 'chat' && (
-                <div className="p-4 bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-800">
+                <div className="p-4 bg-white border-t border-gray-100">
                     <form onSubmit={handleSendMessage} className="flex gap-2">
                         <input
                             type="text"
                             value={newMessage}
                             onChange={e => setNewMessage(e.target.value)}
-                            className="flex-1 px-5 py-3 bg-gray-50 dark:bg-slate-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-teal-500 border-none text-sm"
+                            className="flex-1 px-5 py-3 bg-gray-50 rounded-2xl focus:outline-none focus:ring-2 focus:ring-teal-500 border-none text-sm"
                             placeholder="Shift + Enter for new line..."
                         />
                         <button type="submit" className="p-3 bg-[#14B8A6] text-white rounded-2xl hover:bg-[#0F9A8A] transition-all shadow-md active:scale-95">

@@ -311,7 +311,7 @@ const CommunicationSettings = () => {
       {/* EMAIL TAB */}
       {activeTab === 'email' && (
         <div className="space-y-6">
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 border border-gray-100 dark:border-slate-700 transition-colors duration-300">
+          <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100 transition-colors duration-300">
             <h3 className="text-lg font-bold mb-6">Email Configuration (Resend)</h3>
 
             {loading && !schoolId && <div className="text-center py-4"><Loader className="animate-spin inline" /> Loading config...</div>}
@@ -598,7 +598,7 @@ const CommunicationSettings = () => {
       {/* SMS TAB */}
       {activeTab === 'sms' && (
         <div className="space-y-6">
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 border border-gray-100 dark:border-slate-700 transition-colors duration-300">
+          <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100 transition-colors duration-300">
             <h3 className="text-lg font-bold mb-6">SMS Configuration</h3>
 
             {loading && !schoolId && <div className="text-center py-4"><Loader className="animate-spin inline" /> Loading config...</div>}
@@ -764,7 +764,7 @@ const CommunicationSettings = () => {
           </div>
 
           {/* Test SMS */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 border border-gray-100 dark:border-slate-700 transition-colors duration-300">
+          <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100 transition-colors duration-300">
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
               <TestTube size={20} className="text-blue-600" />
               Test SMS
