@@ -647,9 +647,9 @@ const Sidebar = React.memo(({
   }, [currentPage, schoolSections, sharedSections]);
 
   return (
-    <div className={`${sidebarOpen ? 'w-52' : 'w-20'} bg-[#5D0057] text-white transition-all duration-300 flex flex-col border-r border-white/10 shadow-lg`}>
+    <div className={`${sidebarOpen ? 'w-52' : 'w-20'} bg-[#5D0057] dark:bg-slate-900 text-white transition-all duration-300 flex flex-col border-r border-white/10 dark:border-slate-800 shadow-lg`}>
       {/* Logo/Brand with Premium Styling */}
-      <div className="h-20 p-5 border-b border-white/10 bg-[#520050] relative overflow-hidden">
+      <div className="h-20 p-5 border-b border-white/10 dark:border-slate-800 bg-[#520050] dark:bg-slate-950 relative overflow-hidden">
         {/* Decorative gradient overlay */}
         <div className="absolute inset-0 opacity-0"></div>
 
@@ -669,7 +669,7 @@ const Sidebar = React.memo(({
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto p-3 bg-[#5D0057] custom-scrollbar space-y-2">
+      <nav className="flex-1 overflow-y-auto p-3 bg-[#5D0057] dark:bg-slate-900 custom-scrollbar space-y-2">
         <div className="space-y-3">
           {/* Dashboard */}
           {dashboardSection && (
