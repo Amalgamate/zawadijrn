@@ -197,7 +197,7 @@ const SupportWidget = () => {
                                                         {new Date(ticket.updatedAt).toLocaleDateString()}
                                                     </span>
                                                 </div>
-                                                <h4 className="font-bold text-gray-800 dark:text-slate-100 truncate group-hover:text-[#14B8A6] transition-colors">{ticket.subject}</h4>
+                                                <h4 className="font-bold text-gray-800 truncate group-hover:text-[#14B8A6] transition-colors">{ticket.subject}</h4>
                                                 <p className="text-xs text-gray-500 truncate mt-1">
                                                     {ticket._count?.messages || 0} messages • Click to open
                                                 </p>
