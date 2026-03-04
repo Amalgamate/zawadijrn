@@ -6,6 +6,10 @@
   --text-primary: #0f172a;
   --text-secondary: #475569;
   --border-color: #e2e8f0;
+  --sidebar-bg: #5D0057;
+  --sidebar-active: rgba(255, 255, 255, 0.1);
+  --input-bg: #ffffff;
+  --input-text: #0f172a;
 }
 
 .dark {
@@ -16,6 +20,10 @@
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
   --border-color: #334155;
+  --sidebar-bg: #0f172a;
+  --sidebar-active: #1e293b;
+  --input-bg: #1e293b;
+  --input-text: #f8fafc;
   --card-bg: #1e293b;
 }
 

@@ -353,7 +353,7 @@ const CommunicationSettings = () => {
                     type="password"
                     value={emailSettings.apiKey}
                     onChange={(e) => setEmailSettings({ ...emailSettings, apiKey: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg pr-24 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-purple outline-none transition"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg pr-24 bg-[var(--input-bg)] text-[var(--input-text)] focus:ring-2 focus:ring-brand-purple outline-none transition"
                     placeholder={emailSettings.hasApiKey ? '••••••••••••••••' : 're_YourActualAPIKey...'}
                   />
                   {emailSettings.hasApiKey && !emailSettings.apiKey && (
