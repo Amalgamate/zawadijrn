@@ -32,23 +32,23 @@ const createSchoolSchema = z.object({
 });
 
 const updateSchoolSchema = z.object({
-  name: z.string().min(3).max(100).optional(),
-  email: z.string().email().optional(),
-  phone: z.string().min(1).max(20).optional(),
-  address: z.string().min(1).max(255).optional(),
-  motto: z.string().max(255).optional(),
-  vision: z.string().max(1000).optional(),
-  mission: z.string().max(1000).optional(),
-  logoUrl: z.string().optional(),
-  faviconUrl: z.string().optional(),
-  stampUrl: z.string().optional(),
-  brandColor: z.string().max(20).optional(),
+  name: z.string().min(3).max(100).optional().nullable(),
+  email: z.string().email().or(z.literal('')).optional().nullable(),
+  phone: z.string().max(20).optional().nullable(),
+  address: z.string().max(255).optional().nullable(),
+  motto: z.string().max(255).optional().nullable(),
+  vision: z.string().max(2000).optional().nullable(),
+  mission: z.string().max(2000).optional().nullable(),
+  logoUrl: z.string().optional().nullable(),
+  faviconUrl: z.string().optional().nullable(),
+  stampUrl: z.string().optional().nullable(),
+  brandColor: z.string().max(20).optional().nullable(),
   latitude: z.number().optional().nullable(),
   longitude: z.number().optional().nullable(),
-  welcomeTitle: z.string().max(255).optional(),
-  welcomeMessage: z.string().max(1000).optional(),
-  onboardingTitle: z.string().max(255).optional(),
-  onboardingMessage: z.string().max(1000).optional()
+  welcomeTitle: z.string().max(255).optional().nullable(),
+  welcomeMessage: z.string().max(2000).optional().nullable(),
+  onboardingTitle: z.string().max(255).optional().nullable(),
+  onboardingMessage: z.string().max(2000).optional().nullable()
 });
 
 const createBranchSchema = z.object({
