@@ -94,10 +94,10 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
   const quickActions = getQuickActions();
 
   return (
-    <div className="h-20 border-b border-brand-purple/20 shadow-xl px-8 py-5 flex items-center justify-between">
+    <div className="h-20 border-b border-brand-purple/20 dark:border-white/10 shadow-xl px-8 py-5 flex items-center justify-between bg-white dark:bg-slate-900 transition-colors duration-300">
       <div className="flex items-center gap-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             {title || brandingSettings?.schoolName || 'Elimcrown'}
           </h1>
           <p className="text-xs text-gray-600 font-semibold uppercase tracking-wider">
@@ -111,7 +111,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setShowQuickActions(!showQuickActions)}
-            className="flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-gray-900 bg-slate-200 hover:bg-slate-300 border border-gray-300 hover:border-gray-400 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg group"
+            className="flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-gray-900 dark:text-white bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 border border-gray-300 dark:border-slate-700 hover:border-gray-400 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg group"
           >
             <Zap size={18} className="text-yellow-400 group-hover:scale-110 transition-transform duration-300" />
             <span>Quick Actions</span>
@@ -119,7 +119,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
           </button>
 
           {showQuickActions && (
-            <div className="absolute right-0 mt-3 w-64 bg-slate-100 rounded-lg shadow-2xl border border-gray-300 py-2 z-50">
+            <div className="absolute right-0 mt-3 w-64 bg-white dark:bg-slate-800 rounded-lg shadow-2xl border border-gray-300 dark:border-slate-700 py-2 z-50">
               <div className="px-4 py-2 border-b border-gray-300">
                 <p className="text-[10px] font-bold text-brand-purple uppercase tracking-widest">Available Actions</p>
               </div>
@@ -145,7 +145,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
         <div className="relative" ref={notificationRef}>
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className="text-gray-900 hover:text-brand-purple bg-slate-200 hover:bg-slate-300 p-3 rounded-lg transition-all duration-300 border border-gray-300 hover:border-brand-purple/60 shadow-md hover:shadow-lg group relative"
+            className="text-gray-900 dark:text-white hover:text-brand-purple bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 p-3 rounded-lg transition-all duration-300 border border-gray-300 dark:border-slate-700 hover:border-brand-purple/60 shadow-md hover:shadow-lg group relative"
           >
             <Bell size={20} className="opacity-75 group-hover:scale-110 transition-transform duration-300" />
             {birthdays.length > 0 && (
@@ -217,7 +217,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
 
         <div className="flex items-center gap-4 pl-6 border-l border-brand-purple/20">
           <div className="text-right">
-            <p className="text-sm font-bold text-gray-900">{user?.name || 'Admin User'}</p>
+            <p className="text-sm font-bold text-gray-900 dark:text-white">{user?.name || 'Admin User'}</p>
             <p className="text-xs text-gray-600 font-semibold uppercase tracking-wider">
               {user?.role || 'System Admin'}
             </p>
@@ -227,7 +227,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
           </div>
           <button
             onClick={onLogout}
-            className="text-gray-900 hover:text-red-600 bg-slate-200 hover:bg-red-100 border border-gray-300 hover:border-red-400 p-3 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg group"
+            className="text-gray-900 dark:text-white hover:text-red-600 bg-slate-200 dark:bg-slate-800 hover:bg-red-100 dark:hover:bg-red-900/30 border border-gray-300 dark:border-slate-700 hover:border-red-400 p-3 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg group"
             title="Logout"
           >
             <LogOut size={18} className="opacity-75 group-hover:scale-110 transition-transform duration-300" />

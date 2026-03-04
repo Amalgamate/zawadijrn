@@ -971,7 +971,7 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
     <>
       {/* Desktop Layout */}
       {!isMobile && (
-        <div className="flex h-screen bg-gray-50">
+        <div className="flex h-screen bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-slate-100 transition-colors duration-300">
           {/* Sidebar */}
           <Sidebar
             sidebarOpen={sidebarOpen}
@@ -998,7 +998,7 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
             <main
               ref={mainContentRef}
               onScroll={handleScroll}
-              className="flex-1 overflow-auto p-6 custom-scrollbar"
+              className="flex-1 overflow-auto p-6 custom-scrollbar bg-gray-50 dark:bg-slate-900/50"
             >
               <div className="max-w-screen-2xl mx-auto">
                 <Suspense fallback={<LoadingOverlay />}>
