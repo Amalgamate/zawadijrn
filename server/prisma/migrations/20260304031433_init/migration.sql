@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "UserRole" AS ENUM ('SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'TEACHER', 'PARENT', 'ACCOUNTANT', 'RECEPTIONIST', 'LIBRARIAN', 'NURSE', 'SECURITY', 'DRIVER', 'COOK', 'CLEANER', 'GROUNDSKEEPER', 'IT_SUPPORT');
+CREATE TYPE "UserRole" AS ENUM ('SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM', 'TEACHER', 'PARENT', 'ACCOUNTANT', 'RECEPTIONIST', 'LIBRARIAN', 'NURSE', 'SECURITY', 'DRIVER', 'COOK', 'CLEANER', 'GROUNDSKEEPER', 'IT_SUPPORT', 'STUDENT');
 
 -- CreateEnum
 CREATE TYPE "UserStatus" AS ENUM ('ACTIVE', 'INACTIVE', 'SUSPENDED');
@@ -36,9 +36,6 @@ CREATE TYPE "AssessmentMode" AS ENUM ('FORMATIVE_ONLY', 'SUMMATIVE_ONLY', 'MIXED
 
 -- CreateEnum
 CREATE TYPE "AdmissionFormatType" AS ENUM ('NO_BRANCH', 'BRANCH_PREFIX_START', 'BRANCH_PREFIX_MIDDLE', 'BRANCH_PREFIX_END');
-
--- CreateEnum
-CREATE TYPE "DomainType" AS ENUM ('SUBDOMAIN', 'CUSTOM');
 
 -- CreateEnum
 CREATE TYPE "RubricRating" AS ENUM ('EE', 'ME', 'AE', 'BE');
@@ -91,6 +88,30 @@ CREATE TYPE "TicketStatus" AS ENUM ('OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED')
 -- CreateEnum
 CREATE TYPE "EventType" AS ENUM ('GENERAL', 'ACADEMIC', 'SPORTS', 'MEETING', 'HOLIDAY', 'EXAM');
 
+-- CreateEnum
+CREATE TYPE "LeaveStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'CANCELLED');
+
+-- CreateEnum
+CREATE TYPE "PayrollStatus" AS ENUM ('DRAFT', 'GENERATED', 'PAID', 'VOID');
+
+-- CreateEnum
+CREATE TYPE "AccountType" AS ENUM ('ASSET_RECEIVABLE', 'ASSET_CASH', 'ASSET_NON_CURRENT', 'LIABILITY_PAYABLE', 'LIABILITY_CURRENT', 'LIABILITY_NON_CURRENT', 'EQUITY', 'REVENUE', 'EXPENSE', 'EXPENSE_DEPRECIATION');
+
+-- CreateEnum
+CREATE TYPE "JournalType" AS ENUM ('SALES', 'PURCHASE', 'CASH', 'BANK', 'GENERAL');
+
+-- CreateEnum
+CREATE TYPE "InventoryItemType" AS ENUM ('CONSUMABLE', 'ASSET');
+
+-- CreateEnum
+CREATE TYPE "StockMovementType" AS ENUM ('IN', 'OUT', 'TRANSFER', 'ADJUSTMENT');
+
+-- CreateEnum
+CREATE TYPE "RequisitionStatus" AS ENUM ('DRAFT', 'PENDING', 'APPROVED', 'REJECTED', 'FULFILLED', 'CANCELLED');
+
+-- CreateEnum
+CREATE TYPE "AssetCondition" AS ENUM ('NEW', 'GOOD', 'FAIR', 'POOR', 'BROKEN', 'REJECTED');
+
 -- CreateTable
 CREATE TABLE "users" (
     "id" TEXT NOT NULL,
@@ -98,9 +119,11 @@ CREATE TABLE "users" (
     "username" TEXT,
     "password" TEXT NOT NULL,
     "firstName" TEXT NOT NULL,
-    "lastName" TEXT NOT NULL,
     "middleName" TEXT,
+    "lastName" TEXT NOT NULL,
     "phone" TEXT,
+    "schoolId" TEXT,
+    "branchId" TEXT,
     "role" "UserRole" NOT NULL DEFAULT 'TEACHER',
     "status" "UserStatus" NOT NULL DEFAULT 'ACTIVE',
     "archived" BOOLEAN NOT NULL DEFAULT false,
@@ -110,8 +133,6 @@ CREATE TABLE "users" (
     "emailVerificationSentAt" TIMESTAMP(3),
     "phoneVerificationCode" TEXT,
     "phoneVerificationSentAt" TIMESTAMP(3),
-    "schoolId" TEXT,
-    "branchId" TEXT,
     "staffId" TEXT,
     "idCardPhoto" TEXT,
     "idCardIssued" TIMESTAMP(3),
@@ -125,6 +146,17 @@ CREATE TABLE "users" (
     "passwordResetToken" TEXT,
     "passwordResetExpiry" TIMESTAMP(3),
     "profilePicture" TEXT,
+    "kraPin" TEXT,
+    "nhifNumber" TEXT,
+    "nssfNumber" TEXT,
+    "bankName" TEXT,
+    "bankAccountName" TEXT,
+    "bankAccountNumber" TEXT,
+    "basicSalary" DECIMAL(10,2),
+    "employmentType" TEXT DEFAULT 'PERMANENT',
+    "joinedAt" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP,
+    "subject" TEXT,
+    "gender" TEXT,
 
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
 );
@@ -145,16 +177,20 @@ CREATE TABLE "schools" (
     "principalPhone" TEXT,
     "logoUrl" TEXT,
     "faviconUrl" TEXT,
+    "stampUrl" TEXT,
+    "latitude" DOUBLE PRECISION,
+    "longitude" DOUBLE PRECISION,
     "schoolType" TEXT,
     "motto" TEXT,
     "vision" TEXT,
     "mission" TEXT,
+    "brandColor" TEXT,
+    "welcomeTitle" TEXT,
+    "welcomeMessage" TEXT,
     "admissionFormatType" "AdmissionFormatType" NOT NULL DEFAULT 'BRANCH_PREFIX_START',
     "branchSeparator" TEXT NOT NULL DEFAULT '-',
     "active" BOOLEAN NOT NULL DEFAULT true,
     "status" TEXT NOT NULL DEFAULT 'ACTIVE',
-    "trialStart" TIMESTAMP(3),
-    "trialDays" INTEGER DEFAULT 30,
     "curriculumType" "CurriculumType" NOT NULL DEFAULT 'CBC_AND_EXAM',
     "assessmentMode" "AssessmentMode" NOT NULL DEFAULT 'MIXED',
     "customGradingScale" JSONB,
@@ -163,58 +199,18 @@ CREATE TABLE "schools" (
     "archivedBy" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    "customDomain" TEXT,
-    "customDomainVerified" BOOLEAN NOT NULL DEFAULT false,
-    "customDomainVerifiedAt" TIMESTAMP(3),
-    "domainType" "DomainType" NOT NULL DEFAULT 'SUBDOMAIN',
-    "subdomain" TEXT,
-    "subdomainVerified" BOOLEAN NOT NULL DEFAULT false,
-    "subdomainVerifiedAt" TIMESTAMP(3),
 
     CONSTRAINT "schools_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "subscription_plans" (
-    "id" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "modules" JSONB NOT NULL,
-    "maxBranches" INTEGER NOT NULL DEFAULT 1,
-    "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "subscription_plans_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "school_subscriptions" (
-    "id" TEXT NOT NULL,
-    "schoolId" TEXT NOT NULL,
-    "planId" TEXT NOT NULL,
-    "startedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "expiresAt" TIMESTAMP(3) NOT NULL,
-    "status" TEXT NOT NULL DEFAULT 'ACTIVE',
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "school_subscriptions_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "branches" (
     "id" TEXT NOT NULL,
-    "schoolId" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "code" TEXT NOT NULL,
+    "schoolId" TEXT,
+    "name" TEXT,
+    "code" TEXT,
     "address" TEXT,
     "phone" TEXT,
-    "email" TEXT,
-    "principalName" TEXT,
-    "active" BOOLEAN NOT NULL DEFAULT true,
-    "archived" BOOLEAN NOT NULL DEFAULT false,
-    "archivedAt" TIMESTAMP(3),
-    "archivedBy" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -224,7 +220,6 @@ CREATE TABLE "branches" (
 -- CreateTable
 CREATE TABLE "admission_sequences" (
     "id" TEXT NOT NULL,
-    "schoolId" TEXT NOT NULL,
     "academicYear" INTEGER NOT NULL,
     "currentValue" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -239,7 +234,6 @@ CREATE TABLE "admission_sequences" (
 -- CreateTable
 CREATE TABLE "staff_sequences" (
     "id" TEXT NOT NULL,
-    "schoolId" TEXT NOT NULL,
     "currentValue" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -253,7 +247,6 @@ CREATE TABLE "staff_sequences" (
 -- CreateTable
 CREATE TABLE "streams" (
     "id" TEXT NOT NULL,
-    "branchId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "active" BOOLEAN NOT NULL DEFAULT true,
     "archived" BOOLEAN NOT NULL DEFAULT false,
@@ -269,11 +262,12 @@ CREATE TABLE "streams" (
 CREATE TABLE "classes" (
     "id" TEXT NOT NULL,
     "classCode" TEXT NOT NULL,
-    "branchId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "grade" "Grade" NOT NULL,
     "stream" TEXT,
     "teacherId" TEXT,
+    "schoolId" TEXT,
+    "branchId" TEXT,
     "academicYear" INTEGER NOT NULL DEFAULT 2025,
     "term" "Term" NOT NULL DEFAULT 'TERM_1',
     "capacity" INTEGER NOT NULL DEFAULT 40,
@@ -289,28 +283,6 @@ CREATE TABLE "classes" (
 );
 
 -- CreateTable
-CREATE TABLE "class_inventory" (
-    "id" TEXT NOT NULL,
-    "classId" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "category" TEXT NOT NULL,
-    "description" TEXT,
-    "quantity" INTEGER NOT NULL DEFAULT 0,
-    "condition" TEXT NOT NULL DEFAULT 'GOOD',
-    "acquisitionDate" TIMESTAMP(3),
-    "location" TEXT,
-    "cost" DOUBLE PRECISION,
-    "active" BOOLEAN NOT NULL DEFAULT true,
-    "archived" BOOLEAN NOT NULL DEFAULT false,
-    "archivedAt" TIMESTAMP(3),
-    "archivedBy" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "class_inventory_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "class_schedules" (
     "id" TEXT NOT NULL,
     "classId" TEXT NOT NULL,
@@ -320,6 +292,8 @@ CREATE TABLE "class_schedules" (
     "endTime" TEXT NOT NULL,
     "room" TEXT,
     "teacherId" TEXT,
+    "schoolId" TEXT,
+    "branchId" TEXT,
     "semester" TEXT,
     "academicYear" INTEGER NOT NULL DEFAULT 2025,
     "notes" TEXT,
@@ -329,6 +303,7 @@ CREATE TABLE "class_schedules" (
     "archivedBy" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "learningAreaId" TEXT,
 
     CONSTRAINT "class_schedules_pkey" PRIMARY KEY ("id")
 );
@@ -359,6 +334,8 @@ CREATE TABLE "class_enrollments" (
     "id" TEXT NOT NULL,
     "classId" TEXT NOT NULL,
     "learnerId" TEXT NOT NULL,
+    "schoolId" TEXT,
+    "branchId" TEXT,
     "enrolledAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "active" BOOLEAN NOT NULL DEFAULT true,
     "archived" BOOLEAN NOT NULL DEFAULT false,
@@ -371,8 +348,6 @@ CREATE TABLE "class_enrollments" (
 -- CreateTable
 CREATE TABLE "learners" (
     "id" TEXT NOT NULL,
-    "schoolId" TEXT NOT NULL,
-    "branchId" TEXT NOT NULL,
     "admissionNumber" TEXT NOT NULL,
     "firstName" TEXT NOT NULL,
     "lastName" TEXT NOT NULL,
@@ -381,6 +356,8 @@ CREATE TABLE "learners" (
     "gender" "Gender" NOT NULL,
     "photoUrl" TEXT,
     "photoPublicId" TEXT,
+    "schoolId" TEXT,
+    "branchId" TEXT,
     "grade" "Grade" NOT NULL,
     "stream" TEXT,
     "parentId" TEXT,
@@ -434,6 +411,8 @@ CREATE TABLE "attendances" (
     "id" TEXT NOT NULL,
     "learnerId" TEXT NOT NULL,
     "classId" TEXT,
+    "schoolId" TEXT,
+    "branchId" TEXT,
     "date" DATE NOT NULL,
     "status" "AttendanceStatus" NOT NULL DEFAULT 'PRESENT',
     "remarks" TEXT,
@@ -450,6 +429,8 @@ CREATE TABLE "attendances" (
 CREATE TABLE "formative_assessments" (
     "id" TEXT NOT NULL,
     "learnerId" TEXT NOT NULL,
+    "schoolId" TEXT,
+    "branchId" TEXT,
     "term" "Term" NOT NULL DEFAULT 'TERM_1',
     "academicYear" INTEGER NOT NULL DEFAULT 2026,
     "learningArea" TEXT NOT NULL,
@@ -477,8 +458,6 @@ CREATE TABLE "formative_assessments" (
     "locked" BOOLEAN NOT NULL DEFAULT false,
     "lockedAt" TIMESTAMP(3),
     "lockedBy" TEXT,
-    "schoolId" TEXT NOT NULL,
-    "branchId" TEXT,
     "archived" BOOLEAN NOT NULL DEFAULT false,
     "archivedAt" TIMESTAMP(3),
     "archivedBy" TEXT,
@@ -493,6 +472,8 @@ CREATE TABLE "summative_tests" (
     "id" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "learningArea" TEXT NOT NULL,
+    "schoolId" TEXT,
+    "branchId" TEXT,
     "term" "Term" NOT NULL DEFAULT 'TERM_1',
     "academicYear" INTEGER NOT NULL DEFAULT 2026,
     "grade" "Grade" NOT NULL,
@@ -517,8 +498,6 @@ CREATE TABLE "summative_tests" (
     "approvedBy" TEXT,
     "approvedAt" TIMESTAMP(3),
     "scaleId" TEXT,
-    "schoolId" TEXT NOT NULL,
-    "branchId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "archived" BOOLEAN NOT NULL DEFAULT false,
@@ -532,7 +511,6 @@ CREATE TABLE "summative_tests" (
 -- CreateTable
 CREATE TABLE "term_configs" (
     "id" TEXT NOT NULL,
-    "schoolId" TEXT NOT NULL,
     "academicYear" INTEGER NOT NULL,
     "term" "Term" NOT NULL,
     "startDate" TIMESTAMP(3) NOT NULL,
@@ -547,6 +525,7 @@ CREATE TABLE "term_configs" (
     "archived" BOOLEAN NOT NULL DEFAULT false,
     "archivedAt" TIMESTAMP(3),
     "archivedBy" TEXT,
+    "schoolId" TEXT,
 
     CONSTRAINT "term_configs_pkey" PRIMARY KEY ("id")
 );
@@ -554,7 +533,6 @@ CREATE TABLE "term_configs" (
 -- CreateTable
 CREATE TABLE "aggregation_configs" (
     "id" TEXT NOT NULL,
-    "schoolId" TEXT NOT NULL,
     "grade" "Grade",
     "learningArea" TEXT,
     "type" "FormativeAssessmentType" NOT NULL,
@@ -567,6 +545,7 @@ CREATE TABLE "aggregation_configs" (
     "archived" BOOLEAN NOT NULL DEFAULT false,
     "archivedAt" TIMESTAMP(3),
     "archivedBy" TEXT,
+    "schoolId" TEXT,
 
     CONSTRAINT "aggregation_configs_pkey" PRIMARY KEY ("id")
 );
@@ -574,7 +553,6 @@ CREATE TABLE "aggregation_configs" (
 -- CreateTable
 CREATE TABLE "change_history" (
     "id" TEXT NOT NULL,
-    "schoolId" TEXT NOT NULL,
     "entityType" TEXT NOT NULL,
     "entityId" TEXT NOT NULL,
     "action" TEXT NOT NULL,
@@ -584,6 +562,7 @@ CREATE TABLE "change_history" (
     "changedBy" TEXT NOT NULL,
     "changedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "reason" TEXT,
+    "schoolId" TEXT,
 
     CONSTRAINT "change_history_pkey" PRIMARY KEY ("id")
 );
@@ -593,6 +572,8 @@ CREATE TABLE "summative_results" (
     "id" TEXT NOT NULL,
     "testId" TEXT NOT NULL,
     "learnerId" TEXT NOT NULL,
+    "schoolId" TEXT,
+    "branchId" TEXT,
     "marksObtained" INTEGER NOT NULL,
     "percentage" DOUBLE PRECISION NOT NULL,
     "grade" "SummativeGrade" NOT NULL,
@@ -603,8 +584,6 @@ CREATE TABLE "summative_results" (
     "remarks" TEXT,
     "teacherComment" TEXT,
     "recordedBy" TEXT NOT NULL,
-    "schoolId" TEXT NOT NULL,
-    "branchId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "archived" BOOLEAN NOT NULL DEFAULT false,
@@ -633,6 +612,8 @@ CREATE TABLE "summative_result_history" (
 CREATE TABLE "core_competencies" (
     "id" TEXT NOT NULL,
     "learnerId" TEXT NOT NULL,
+    "schoolId" TEXT,
+    "branchId" TEXT,
     "term" "Term" NOT NULL,
     "academicYear" INTEGER NOT NULL,
     "communication" "DetailedRubricRating" NOT NULL,
@@ -661,6 +642,8 @@ CREATE TABLE "core_competencies" (
 CREATE TABLE "values_assessments" (
     "id" TEXT NOT NULL,
     "learnerId" TEXT NOT NULL,
+    "schoolId" TEXT,
+    "branchId" TEXT,
     "term" "Term" NOT NULL,
     "academicYear" INTEGER NOT NULL,
     "love" "DetailedRubricRating" NOT NULL,
@@ -685,6 +668,8 @@ CREATE TABLE "values_assessments" (
 CREATE TABLE "co_curricular_activities" (
     "id" TEXT NOT NULL,
     "learnerId" TEXT NOT NULL,
+    "schoolId" TEXT,
+    "branchId" TEXT,
     "term" "Term" NOT NULL,
     "academicYear" INTEGER NOT NULL,
     "activityName" TEXT NOT NULL,
@@ -706,6 +691,8 @@ CREATE TABLE "co_curricular_activities" (
 CREATE TABLE "termly_report_comments" (
     "id" TEXT NOT NULL,
     "learnerId" TEXT NOT NULL,
+    "schoolId" TEXT,
+    "branchId" TEXT,
     "term" "Term" NOT NULL,
     "academicYear" INTEGER NOT NULL,
     "classTeacherComment" TEXT NOT NULL,
@@ -765,8 +752,8 @@ CREATE TABLE "fee_types" (
     "name" TEXT NOT NULL,
     "description" TEXT,
     "category" "FeeCategory" NOT NULL DEFAULT 'ACADEMIC',
+    "schoolId" TEXT,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "schoolId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -778,11 +765,11 @@ CREATE TABLE "fee_structures" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT,
+    "schoolId" TEXT,
+    "branchId" TEXT,
     "grade" "Grade" NOT NULL,
     "term" "Term" NOT NULL,
     "academicYear" INTEGER NOT NULL,
-    "schoolId" TEXT NOT NULL,
-    "branchId" TEXT,
     "active" BOOLEAN NOT NULL DEFAULT true,
     "mandatory" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -813,6 +800,8 @@ CREATE TABLE "fee_invoices" (
     "invoiceNumber" TEXT NOT NULL,
     "learnerId" TEXT NOT NULL,
     "feeStructureId" TEXT NOT NULL,
+    "schoolId" TEXT,
+    "branchId" TEXT,
     "term" "Term" NOT NULL,
     "academicYear" INTEGER NOT NULL,
     "dueDate" TIMESTAMP(3) NOT NULL,
@@ -856,6 +845,8 @@ CREATE TABLE "messages" (
     "senderType" "UserRole" NOT NULL,
     "recipientType" "RecipientType" NOT NULL,
     "recipientIds" TEXT[],
+    "schoolId" TEXT,
+    "branchId" TEXT,
     "subject" TEXT,
     "body" TEXT NOT NULL,
     "messageType" "MessageType" NOT NULL DEFAULT 'IN_APP',
@@ -874,6 +865,8 @@ CREATE TABLE "message_receipts" (
     "id" TEXT NOT NULL,
     "messageId" TEXT NOT NULL,
     "recipientId" TEXT NOT NULL,
+    "schoolId" TEXT,
+    "branchId" TEXT,
     "recipientEmail" TEXT,
     "recipientPhone" TEXT,
     "status" "MessageStatus" NOT NULL DEFAULT 'SENT',
@@ -889,8 +882,9 @@ CREATE TABLE "message_receipts" (
 -- CreateTable
 CREATE TABLE "broadcast_campaigns" (
     "id" TEXT NOT NULL,
-    "schoolId" TEXT NOT NULL,
     "senderId" TEXT NOT NULL,
+    "schoolId" TEXT,
+    "branchId" TEXT,
     "messagePreview" TEXT NOT NULL,
     "messageTemplate" TEXT NOT NULL,
     "totalRecipients" INTEGER NOT NULL,
@@ -910,6 +904,8 @@ CREATE TABLE "broadcast_campaigns" (
 CREATE TABLE "broadcast_recipients" (
     "id" TEXT NOT NULL,
     "campaignId" TEXT NOT NULL,
+    "schoolId" TEXT,
+    "branchId" TEXT,
     "recipientPhone" TEXT NOT NULL,
     "recipientName" TEXT,
     "status" "MessageStatus" NOT NULL DEFAULT 'SENT',
@@ -927,6 +923,8 @@ CREATE TABLE "broadcast_recipients" (
 CREATE TABLE "sms_delivery_logs" (
     "id" TEXT NOT NULL,
     "campaignId" TEXT NOT NULL,
+    "schoolId" TEXT,
+    "branchId" TEXT,
     "recipientPhone" TEXT NOT NULL,
     "message" TEXT NOT NULL,
     "messageLength" INTEGER NOT NULL,
@@ -947,7 +945,6 @@ CREATE TABLE "scale_groups" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT,
-    "schoolId" TEXT NOT NULL,
     "active" BOOLEAN NOT NULL DEFAULT true,
     "isDefault" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -967,7 +964,7 @@ CREATE TABLE "grading_systems" (
     "scaleGroupId" TEXT,
     "grade" "Grade",
     "learningArea" TEXT,
-    "schoolId" TEXT NOT NULL,
+    "schoolId" TEXT,
     "active" BOOLEAN NOT NULL DEFAULT true,
     "archived" BOOLEAN NOT NULL DEFAULT false,
     "archivedAt" TIMESTAMP(3),
@@ -1003,7 +1000,6 @@ CREATE TABLE "grading_ranges" (
 -- CreateTable
 CREATE TABLE "stream_configs" (
     "id" TEXT NOT NULL,
-    "schoolId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "active" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1018,7 +1014,6 @@ CREATE TABLE "stream_configs" (
 -- CreateTable
 CREATE TABLE "communication_configs" (
     "id" TEXT NOT NULL,
-    "schoolId" TEXT NOT NULL,
     "smsProvider" TEXT DEFAULT 'mobilesasa',
     "smsApiKey" TEXT,
     "smsBaseUrl" TEXT DEFAULT 'https://api.mobilesasa.com',
@@ -1045,6 +1040,7 @@ CREATE TABLE "communication_configs" (
     "birthdayMessageTemplate" TEXT DEFAULT 'Happy Birthday {learnerName}! Best wishes from {schoolName}.',
     "emailTemplates" JSONB,
     "smsUsername" TEXT,
+    "schoolId" TEXT,
 
     CONSTRAINT "communication_configs_pkey" PRIMARY KEY ("id")
 );
@@ -1073,7 +1069,6 @@ CREATE TABLE "assessment_sms_audits" (
     "failureReason" TEXT,
     "sentByUserId" TEXT,
     "cooldownExpiry" TIMESTAMP(3),
-    "schoolId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "academicYear" INTEGER,
@@ -1090,14 +1085,30 @@ CREATE TABLE "learning_areas" (
     "name" TEXT NOT NULL,
     "shortName" TEXT,
     "gradeLevel" TEXT NOT NULL,
+    "schoolId" TEXT,
+    "branchId" TEXT,
     "icon" TEXT NOT NULL DEFAULT '📚',
     "color" TEXT NOT NULL DEFAULT '#3b82f6',
     "description" TEXT,
-    "schoolId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "learning_areas_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "subject_assignments" (
+    "id" TEXT NOT NULL,
+    "teacherId" TEXT NOT NULL,
+    "learningAreaId" TEXT NOT NULL,
+    "grade" "Grade" NOT NULL,
+    "schoolId" TEXT,
+    "branchId" TEXT,
+    "active" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "subject_assignments_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -1107,12 +1118,12 @@ CREATE TABLE "support_tickets" (
     "priority" "TicketPriority" NOT NULL DEFAULT 'MEDIUM',
     "status" "TicketStatus" NOT NULL DEFAULT 'OPEN',
     "userId" TEXT,
-    "schoolId" TEXT,
     "assignedToId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "guestEmail" TEXT,
     "guestName" TEXT,
+    "schoolId" TEXT,
 
     CONSTRAINT "support_tickets_pkey" PRIMARY KEY ("id")
 );
@@ -1139,7 +1150,8 @@ CREATE TABLE "documents" (
     "type" TEXT NOT NULL,
     "size" INTEGER,
     "category" TEXT NOT NULL DEFAULT 'general',
-    "schoolId" TEXT NOT NULL,
+    "schoolId" TEXT,
+    "branchId" TEXT,
     "uploadedById" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -1154,10 +1166,11 @@ CREATE TABLE "books" (
     "author" TEXT,
     "isbn" TEXT,
     "category" TEXT,
+    "schoolId" TEXT,
+    "branchId" TEXT,
     "assignedToId" TEXT,
     "assignedAt" TIMESTAMP(3),
     "returnDate" TIMESTAMP(3),
-    "schoolId" TEXT NOT NULL,
     "status" TEXT NOT NULL DEFAULT 'AVAILABLE',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -1177,8 +1190,9 @@ CREATE TABLE "Event" (
     "location" TEXT,
     "googleEventId" TEXT,
     "meetingLink" TEXT,
-    "schoolId" TEXT NOT NULL,
     "creatorId" TEXT NOT NULL,
+    "schoolId" TEXT,
+    "branchId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -1190,13 +1204,384 @@ CREATE TABLE "contact_groups" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT,
-    "schoolId" TEXT NOT NULL,
+    "schoolId" TEXT,
+    "branchId" TEXT,
     "createdById" TEXT NOT NULL,
     "recipients" JSONB NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "contact_groups_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "leave_types" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "maxDays" INTEGER NOT NULL DEFAULT 21,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "leave_types_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "leave_requests" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "leaveTypeId" TEXT NOT NULL,
+    "startDate" TIMESTAMP(3) NOT NULL,
+    "endDate" TIMESTAMP(3) NOT NULL,
+    "reason" TEXT,
+    "status" "LeaveStatus" NOT NULL DEFAULT 'PENDING',
+    "approvedById" TEXT,
+    "approvedAt" TIMESTAMP(3),
+    "rejectionReason" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "leave_requests_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "payroll_records" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "month" INTEGER NOT NULL,
+    "year" INTEGER NOT NULL,
+    "schoolId" TEXT,
+    "branchId" TEXT,
+    "basicSalary" DECIMAL(10,2) NOT NULL,
+    "allowances" JSONB,
+    "deductions" JSONB,
+    "netSalary" DECIMAL(10,2) NOT NULL,
+    "status" "PayrollStatus" NOT NULL DEFAULT 'DRAFT',
+    "generatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "generatedBy" TEXT,
+    "paidAt" TIMESTAMP(3),
+    "reference" TEXT,
+    "notes" TEXT,
+
+    CONSTRAINT "payroll_records_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "staff_documents" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "schoolId" TEXT,
+    "branchId" TEXT,
+    "name" TEXT NOT NULL,
+    "url" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "category" TEXT NOT NULL DEFAULT 'CONTRACT',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "staff_documents_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "performance_reviews" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "reviewerId" TEXT NOT NULL,
+    "schoolId" TEXT,
+    "branchId" TEXT,
+    "reviewDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "periodStart" TIMESTAMP(3) NOT NULL,
+    "periodEnd" TIMESTAMP(3) NOT NULL,
+    "technicalRating" INTEGER NOT NULL DEFAULT 3,
+    "behavioralRating" INTEGER NOT NULL DEFAULT 3,
+    "collaborationRating" INTEGER NOT NULL DEFAULT 3,
+    "overallRating" DECIMAL(3,2) NOT NULL,
+    "comments" TEXT,
+    "goals" JSONB,
+    "status" TEXT NOT NULL DEFAULT 'COMPLETED',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "performance_reviews_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "accounts" (
+    "id" TEXT NOT NULL,
+    "code" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "type" "AccountType" NOT NULL,
+    "schoolId" TEXT,
+    "branchId" TEXT,
+    "parentId" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "accounts_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "journals" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "code" TEXT NOT NULL,
+    "type" "JournalType" NOT NULL,
+    "schoolId" TEXT,
+    "branchId" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "journals_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "journal_entries" (
+    "id" TEXT NOT NULL,
+    "date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "reference" TEXT,
+    "journalId" TEXT NOT NULL,
+    "schoolId" TEXT,
+    "branchId" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'DRAFT',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "journal_entries_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "journal_items" (
+    "id" TEXT NOT NULL,
+    "entryId" TEXT NOT NULL,
+    "accountId" TEXT NOT NULL,
+    "debit" DECIMAL(15,2) NOT NULL DEFAULT 0,
+    "credit" DECIMAL(15,2) NOT NULL DEFAULT 0,
+    "label" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "journal_items_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "fiscal_years" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "startDate" TIMESTAMP(3) NOT NULL,
+    "endDate" TIMESTAMP(3) NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'OPEN',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "fiscal_years_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "vendors" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "schoolId" TEXT,
+    "branchId" TEXT,
+    "contact" TEXT,
+    "email" TEXT,
+    "phone" TEXT,
+    "address" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "vendors_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "expenses" (
+    "id" TEXT NOT NULL,
+    "date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "amount" DECIMAL(15,2) NOT NULL,
+    "description" TEXT NOT NULL,
+    "category" TEXT NOT NULL,
+    "schoolId" TEXT,
+    "branchId" TEXT,
+    "vendorId" TEXT,
+    "accountId" TEXT NOT NULL,
+    "paymentMethod" "PaymentMethod" NOT NULL DEFAULT 'CASH',
+    "reference" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'PAID',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "expenses_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "bank_statements" (
+    "id" TEXT NOT NULL,
+    "accountId" TEXT NOT NULL,
+    "dateRange" TEXT,
+    "schoolId" TEXT,
+    "branchId" TEXT,
+    "startingBalance" DECIMAL(15,2) NOT NULL,
+    "endingBalance" DECIMAL(15,2) NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'DRAFT',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "bank_statements_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "bank_statement_lines" (
+    "id" TEXT NOT NULL,
+    "statementId" TEXT NOT NULL,
+    "date" TIMESTAMP(3) NOT NULL,
+    "description" TEXT NOT NULL,
+    "amount" DECIMAL(15,2) NOT NULL,
+    "reference" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'UNRECONCILED',
+    "journalItemId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "bank_statement_lines_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "inventory_categories" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "parentId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "inventory_categories_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "inventory_stores" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "code" TEXT,
+    "location" TEXT,
+    "schoolId" TEXT,
+    "branchId" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "inventory_stores_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "inventory_items" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "sku" TEXT,
+    "description" TEXT,
+    "categoryId" TEXT,
+    "schoolId" TEXT,
+    "branchId" TEXT,
+    "type" "InventoryItemType" NOT NULL DEFAULT 'CONSUMABLE',
+    "unitOfMeasure" TEXT NOT NULL DEFAULT 'PCS',
+    "reorderLevel" DECIMAL(10,2) NOT NULL DEFAULT 0,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "inventory_items_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "stock_movements" (
+    "id" TEXT NOT NULL,
+    "itemId" TEXT NOT NULL,
+    "schoolId" TEXT,
+    "branchId" TEXT,
+    "fromStoreId" TEXT,
+    "toStoreId" TEXT,
+    "quantity" DECIMAL(10,2) NOT NULL,
+    "type" "StockMovementType" NOT NULL,
+    "reference" TEXT,
+    "description" TEXT,
+    "performedById" TEXT,
+    "date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "stock_movements_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "stock_requisitions" (
+    "id" TEXT NOT NULL,
+    "requisitionNo" TEXT NOT NULL,
+    "schoolId" TEXT,
+    "branchId" TEXT,
+    "requestedById" TEXT NOT NULL,
+    "department" TEXT,
+    "priority" TEXT NOT NULL DEFAULT 'NORMAL',
+    "status" "RequisitionStatus" NOT NULL DEFAULT 'PENDING',
+    "notes" TEXT,
+    "requiredDate" TIMESTAMP(3),
+    "approvedById" TEXT,
+    "approvedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "stock_requisitions_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "stock_requisition_items" (
+    "id" TEXT NOT NULL,
+    "requisitionId" TEXT NOT NULL,
+    "itemId" TEXT NOT NULL,
+    "quantity" DECIMAL(10,2) NOT NULL,
+    "fulfilledQty" DECIMAL(10,2) NOT NULL DEFAULT 0,
+
+    CONSTRAINT "stock_requisition_items_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "fixed_assets" (
+    "id" TEXT NOT NULL,
+    "assetCode" TEXT NOT NULL,
+    "itemId" TEXT,
+    "schoolId" TEXT,
+    "branchId" TEXT,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "serialNumber" TEXT,
+    "model" TEXT,
+    "manufacturer" TEXT,
+    "purchaseDate" TIMESTAMP(3),
+    "purchaseCost" DECIMAL(15,2),
+    "warrantyExpiry" TIMESTAMP(3),
+    "condition" "AssetCondition" NOT NULL DEFAULT 'NEW',
+    "location" TEXT,
+    "currentStoreId" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "fixed_assets_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "asset_assignments" (
+    "id" TEXT NOT NULL,
+    "assetId" TEXT NOT NULL,
+    "assignedToId" TEXT,
+    "assignedToClassId" TEXT,
+    "assignedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "expectedReturn" TIMESTAMP(3),
+    "returnedAt" TIMESTAMP(3),
+    "conditionOnAssigned" "AssetCondition" NOT NULL,
+    "conditionOnReturned" "AssetCondition",
+    "notes" TEXT,
+
+    CONSTRAINT "asset_assignments_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -1209,73 +1594,31 @@ CREATE UNIQUE INDEX "users_username_key" ON "users"("username");
 CREATE UNIQUE INDEX "users_staffId_key" ON "users"("staffId");
 
 -- CreateIndex
-CREATE INDEX "users_schoolId_idx" ON "users"("schoolId");
-
--- CreateIndex
-CREATE INDEX "users_branchId_idx" ON "users"("branchId");
-
--- CreateIndex
 CREATE UNIQUE INDEX "schools_name_key" ON "schools"("name");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "schools_registrationNo_key" ON "schools"("registrationNo");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "schools_customDomain_key" ON "schools"("customDomain");
-
--- CreateIndex
-CREATE UNIQUE INDEX "schools_subdomain_key" ON "schools"("subdomain");
-
--- CreateIndex
 CREATE INDEX "schools_county_idx" ON "schools"("county");
-
--- CreateIndex
-CREATE UNIQUE INDEX "subscription_plans_name_key" ON "subscription_plans"("name");
-
--- CreateIndex
-CREATE INDEX "school_subscriptions_schoolId_idx" ON "school_subscriptions"("schoolId");
-
--- CreateIndex
-CREATE INDEX "school_subscriptions_planId_idx" ON "school_subscriptions"("planId");
 
 -- CreateIndex
 CREATE INDEX "branches_schoolId_idx" ON "branches"("schoolId");
 
 -- CreateIndex
-CREATE INDEX "branches_code_idx" ON "branches"("code");
-
--- CreateIndex
-CREATE UNIQUE INDEX "branches_schoolId_code_key" ON "branches"("schoolId", "code");
-
--- CreateIndex
-CREATE INDEX "admission_sequences_schoolId_idx" ON "admission_sequences"("schoolId");
-
--- CreateIndex
 CREATE INDEX "admission_sequences_academicYear_idx" ON "admission_sequences"("academicYear");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "admission_sequences_schoolId_academicYear_key" ON "admission_sequences"("schoolId", "academicYear");
+CREATE UNIQUE INDEX "admission_sequences_academicYear_key" ON "admission_sequences"("academicYear");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "staff_sequences_schoolId_key" ON "staff_sequences"("schoolId");
-
--- CreateIndex
-CREATE INDEX "staff_sequences_schoolId_idx" ON "staff_sequences"("schoolId");
-
--- CreateIndex
-CREATE INDEX "streams_branchId_idx" ON "streams"("branchId");
+CREATE UNIQUE INDEX "streams_name_key" ON "streams"("name");
 
 -- CreateIndex
 CREATE INDEX "streams_name_idx" ON "streams"("name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "streams_branchId_name_key" ON "streams"("branchId", "name");
-
--- CreateIndex
 CREATE UNIQUE INDEX "classes_classCode_key" ON "classes"("classCode");
-
--- CreateIndex
-CREATE INDEX "classes_branchId_idx" ON "classes"("branchId");
 
 -- CreateIndex
 CREATE INDEX "classes_teacherId_idx" ON "classes"("teacherId");
@@ -1284,22 +1627,19 @@ CREATE INDEX "classes_teacherId_idx" ON "classes"("teacherId");
 CREATE INDEX "classes_grade_stream_idx" ON "classes"("grade", "stream");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "classes_branchId_grade_stream_academicYear_term_key" ON "classes"("branchId", "grade", "stream", "academicYear", "term");
+CREATE INDEX "classes_schoolId_idx" ON "classes"("schoolId");
 
 -- CreateIndex
-CREATE INDEX "class_inventory_classId_idx" ON "class_inventory"("classId");
-
--- CreateIndex
-CREATE INDEX "class_inventory_category_idx" ON "class_inventory"("category");
-
--- CreateIndex
-CREATE INDEX "class_inventory_condition_idx" ON "class_inventory"("condition");
+CREATE UNIQUE INDEX "classes_grade_stream_academicYear_term_key" ON "classes"("grade", "stream", "academicYear", "term");
 
 -- CreateIndex
 CREATE INDEX "class_schedules_classId_idx" ON "class_schedules"("classId");
 
 -- CreateIndex
 CREATE INDEX "class_schedules_day_idx" ON "class_schedules"("day");
+
+-- CreateIndex
+CREATE INDEX "class_schedules_schoolId_idx" ON "class_schedules"("schoolId");
 
 -- CreateIndex
 CREATE INDEX "class_schedules_subject_idx" ON "class_schedules"("subject");
@@ -1326,13 +1666,13 @@ CREATE INDEX "class_enrollments_learnerId_active_idx" ON "class_enrollments"("le
 CREATE INDEX "class_enrollments_classId_active_idx" ON "class_enrollments"("classId", "active");
 
 -- CreateIndex
+CREATE INDEX "class_enrollments_schoolId_idx" ON "class_enrollments"("schoolId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "class_enrollments_classId_learnerId_key" ON "class_enrollments"("classId", "learnerId");
 
 -- CreateIndex
-CREATE INDEX "learners_schoolId_idx" ON "learners"("schoolId");
-
--- CreateIndex
-CREATE INDEX "learners_branchId_idx" ON "learners"("branchId");
+CREATE UNIQUE INDEX "learners_admissionNumber_key" ON "learners"("admissionNumber");
 
 -- CreateIndex
 CREATE INDEX "learners_admissionNumber_idx" ON "learners"("admissionNumber");
@@ -1353,10 +1693,7 @@ CREATE INDEX "learners_status_idx" ON "learners"("status");
 CREATE INDEX "learners_lastName_firstName_idx" ON "learners"("lastName", "firstName");
 
 -- CreateIndex
-CREATE INDEX "learners_schoolId_grade_stream_status_idx" ON "learners"("schoolId", "grade", "stream", "status");
-
--- CreateIndex
-CREATE UNIQUE INDEX "learners_schoolId_admissionNumber_key" ON "learners"("schoolId", "admissionNumber");
+CREATE INDEX "learners_schoolId_idx" ON "learners"("schoolId");
 
 -- CreateIndex
 CREATE INDEX "attendances_date_idx" ON "attendances"("date");
@@ -1371,13 +1708,10 @@ CREATE INDEX "attendances_classId_idx" ON "attendances"("classId");
 CREATE INDEX "attendances_status_idx" ON "attendances"("status");
 
 -- CreateIndex
+CREATE INDEX "attendances_schoolId_idx" ON "attendances"("schoolId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "attendances_learnerId_date_key" ON "attendances"("learnerId", "date");
-
--- CreateIndex
-CREATE INDEX "formative_assessments_schoolId_idx" ON "formative_assessments"("schoolId");
-
--- CreateIndex
-CREATE INDEX "formative_assessments_branchId_idx" ON "formative_assessments"("branchId");
 
 -- CreateIndex
 CREATE INDEX "formative_assessments_learnerId_idx" ON "formative_assessments"("learnerId");
@@ -1395,37 +1729,28 @@ CREATE INDEX "formative_assessments_learningArea_idx" ON "formative_assessments"
 CREATE INDEX "formative_assessments_learnerId_learningArea_term_academicY_idx" ON "formative_assessments"("learnerId", "learningArea", "term", "academicYear");
 
 -- CreateIndex
+CREATE INDEX "formative_assessments_schoolId_idx" ON "formative_assessments"("schoolId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "formative_assessments_learnerId_term_academicYear_learningA_key" ON "formative_assessments"("learnerId", "term", "academicYear", "learningArea", "type", "title");
-
--- CreateIndex
-CREATE INDEX "summative_tests_schoolId_idx" ON "summative_tests"("schoolId");
-
--- CreateIndex
-CREATE INDEX "summative_tests_branchId_idx" ON "summative_tests"("branchId");
 
 -- CreateIndex
 CREATE INDEX "summative_tests_testType_idx" ON "summative_tests"("testType");
 
 -- CreateIndex
-CREATE INDEX "summative_tests_schoolId_grade_learningArea_term_idx" ON "summative_tests"("schoolId", "grade", "learningArea", "term");
+CREATE INDEX "summative_tests_grade_learningArea_term_idx" ON "summative_tests"("grade", "learningArea", "term");
 
 -- CreateIndex
 CREATE INDEX "summative_tests_grade_term_academicYear_idx" ON "summative_tests"("grade", "term", "academicYear");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "term_configs_schoolId_academicYear_term_key" ON "term_configs"("schoolId", "academicYear", "term");
+CREATE INDEX "summative_tests_schoolId_idx" ON "summative_tests"("schoolId");
 
 -- CreateIndex
-CREATE INDEX "change_history_schoolId_idx" ON "change_history"("schoolId");
+CREATE UNIQUE INDEX "term_configs_academicYear_term_key" ON "term_configs"("academicYear", "term");
 
 -- CreateIndex
 CREATE INDEX "change_history_entityType_entityId_idx" ON "change_history"("entityType", "entityId");
-
--- CreateIndex
-CREATE INDEX "summative_results_schoolId_idx" ON "summative_results"("schoolId");
-
--- CreateIndex
-CREATE INDEX "summative_results_branchId_idx" ON "summative_results"("branchId");
 
 -- CreateIndex
 CREATE INDEX "summative_results_moderationStatus_idx" ON "summative_results"("moderationStatus");
@@ -1446,6 +1771,9 @@ CREATE INDEX "summative_results_status_idx" ON "summative_results"("status");
 CREATE INDEX "summative_results_testId_grade_marksObtained_idx" ON "summative_results"("testId", "grade", "marksObtained");
 
 -- CreateIndex
+CREATE INDEX "summative_results_schoolId_idx" ON "summative_results"("schoolId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "summative_results_testId_learnerId_key" ON "summative_results"("testId", "learnerId");
 
 -- CreateIndex
@@ -1464,7 +1792,10 @@ CREATE INDEX "core_competencies_learnerId_idx" ON "core_competencies"("learnerId
 CREATE INDEX "core_competencies_term_academicYear_idx" ON "core_competencies"("term", "academicYear");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "core_competencies_learnerId_term_academicYear_key" ON "core_competencies"("learnerId", "term", "academicYear");
+CREATE INDEX "core_competencies_schoolId_idx" ON "core_competencies"("schoolId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "core_competencies_schoolId_learnerId_term_academicYear_key" ON "core_competencies"("schoolId", "learnerId", "term", "academicYear");
 
 -- CreateIndex
 CREATE INDEX "values_assessments_learnerId_idx" ON "values_assessments"("learnerId");
@@ -1473,7 +1804,10 @@ CREATE INDEX "values_assessments_learnerId_idx" ON "values_assessments"("learner
 CREATE INDEX "values_assessments_term_academicYear_idx" ON "values_assessments"("term", "academicYear");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "values_assessments_learnerId_term_academicYear_key" ON "values_assessments"("learnerId", "term", "academicYear");
+CREATE INDEX "values_assessments_schoolId_idx" ON "values_assessments"("schoolId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "values_assessments_schoolId_learnerId_term_academicYear_key" ON "values_assessments"("schoolId", "learnerId", "term", "academicYear");
 
 -- CreateIndex
 CREATE INDEX "co_curricular_activities_learnerId_idx" ON "co_curricular_activities"("learnerId");
@@ -1485,25 +1819,28 @@ CREATE INDEX "co_curricular_activities_term_academicYear_idx" ON "co_curricular_
 CREATE INDEX "co_curricular_activities_activityType_idx" ON "co_curricular_activities"("activityType");
 
 -- CreateIndex
+CREATE INDEX "co_curricular_activities_schoolId_idx" ON "co_curricular_activities"("schoolId");
+
+-- CreateIndex
 CREATE INDEX "termly_report_comments_learnerId_idx" ON "termly_report_comments"("learnerId");
 
 -- CreateIndex
 CREATE INDEX "termly_report_comments_term_academicYear_idx" ON "termly_report_comments"("term", "academicYear");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "termly_report_comments_learnerId_term_academicYear_key" ON "termly_report_comments"("learnerId", "term", "academicYear");
+CREATE UNIQUE INDEX "termly_report_comments_schoolId_learnerId_term_academicYear_key" ON "termly_report_comments"("schoolId", "learnerId", "term", "academicYear");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "id_card_templates_templateName_key" ON "id_card_templates"("templateName");
 
 -- CreateIndex
-CREATE INDEX "fee_types_schoolId_idx" ON "fee_types"("schoolId");
+CREATE UNIQUE INDEX "fee_types_code_key" ON "fee_types"("code");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "fee_types_schoolId_code_key" ON "fee_types"("schoolId", "code");
+CREATE INDEX "fee_structures_academicYear_idx" ON "fee_structures"("academicYear");
 
 -- CreateIndex
-CREATE INDEX "fee_structures_schoolId_academicYear_idx" ON "fee_structures"("schoolId", "academicYear");
+CREATE INDEX "fee_structures_schoolId_idx" ON "fee_structures"("schoolId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "fee_structures_schoolId_grade_term_academicYear_key" ON "fee_structures"("schoolId", "grade", "term", "academicYear");
@@ -1530,6 +1867,9 @@ CREATE INDEX "fee_invoices_status_idx" ON "fee_invoices"("status");
 CREATE INDEX "fee_invoices_dueDate_idx" ON "fee_invoices"("dueDate");
 
 -- CreateIndex
+CREATE INDEX "fee_invoices_schoolId_idx" ON "fee_invoices"("schoolId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "fee_payments_receiptNumber_key" ON "fee_payments"("receiptNumber");
 
 -- CreateIndex
@@ -1554,6 +1894,9 @@ CREATE INDEX "messages_messageType_idx" ON "messages"("messageType");
 CREATE INDEX "messages_scheduledFor_idx" ON "messages"("scheduledFor");
 
 -- CreateIndex
+CREATE INDEX "messages_schoolId_idx" ON "messages"("schoolId");
+
+-- CreateIndex
 CREATE INDEX "message_receipts_messageId_idx" ON "message_receipts"("messageId");
 
 -- CreateIndex
@@ -1563,7 +1906,7 @@ CREATE INDEX "message_receipts_recipientId_idx" ON "message_receipts"("recipient
 CREATE INDEX "message_receipts_status_idx" ON "message_receipts"("status");
 
 -- CreateIndex
-CREATE INDEX "broadcast_campaigns_schoolId_idx" ON "broadcast_campaigns"("schoolId");
+CREATE INDEX "message_receipts_schoolId_idx" ON "message_receipts"("schoolId");
 
 -- CreateIndex
 CREATE INDEX "broadcast_campaigns_senderId_idx" ON "broadcast_campaigns"("senderId");
@@ -1575,6 +1918,9 @@ CREATE INDEX "broadcast_campaigns_status_idx" ON "broadcast_campaigns"("status")
 CREATE INDEX "broadcast_campaigns_sentAt_idx" ON "broadcast_campaigns"("sentAt");
 
 -- CreateIndex
+CREATE INDEX "broadcast_campaigns_schoolId_idx" ON "broadcast_campaigns"("schoolId");
+
+-- CreateIndex
 CREATE INDEX "broadcast_recipients_campaignId_idx" ON "broadcast_recipients"("campaignId");
 
 -- CreateIndex
@@ -1582,6 +1928,9 @@ CREATE INDEX "broadcast_recipients_status_idx" ON "broadcast_recipients"("status
 
 -- CreateIndex
 CREATE INDEX "broadcast_recipients_recipientPhone_idx" ON "broadcast_recipients"("recipientPhone");
+
+-- CreateIndex
+CREATE INDEX "broadcast_recipients_schoolId_idx" ON "broadcast_recipients"("schoolId");
 
 -- CreateIndex
 CREATE INDEX "sms_delivery_logs_campaignId_idx" ON "sms_delivery_logs"("campaignId");
@@ -1593,13 +1942,10 @@ CREATE INDEX "sms_delivery_logs_status_idx" ON "sms_delivery_logs"("status");
 CREATE INDEX "sms_delivery_logs_sentAt_idx" ON "sms_delivery_logs"("sentAt");
 
 -- CreateIndex
-CREATE INDEX "scale_groups_schoolId_idx" ON "scale_groups"("schoolId");
+CREATE INDEX "sms_delivery_logs_schoolId_idx" ON "sms_delivery_logs"("schoolId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "scale_groups_schoolId_name_key" ON "scale_groups"("schoolId", "name");
-
--- CreateIndex
-CREATE INDEX "grading_systems_schoolId_idx" ON "grading_systems"("schoolId");
+CREATE UNIQUE INDEX "scale_groups_name_key" ON "scale_groups"("name");
 
 -- CreateIndex
 CREATE INDEX "grading_systems_scaleGroupId_idx" ON "grading_systems"("scaleGroupId");
@@ -1611,13 +1957,7 @@ CREATE INDEX "grading_systems_grade_idx" ON "grading_systems"("grade");
 CREATE INDEX "grading_ranges_systemId_idx" ON "grading_ranges"("systemId");
 
 -- CreateIndex
-CREATE INDEX "stream_configs_schoolId_idx" ON "stream_configs"("schoolId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "stream_configs_schoolId_name_key" ON "stream_configs"("schoolId", "name");
-
--- CreateIndex
-CREATE UNIQUE INDEX "communication_configs_schoolId_key" ON "communication_configs"("schoolId");
+CREATE UNIQUE INDEX "stream_configs_name_key" ON "stream_configs"("name");
 
 -- CreateIndex
 CREATE INDEX "assessment_sms_audits_learnerId_idx" ON "assessment_sms_audits"("learnerId");
@@ -1632,9 +1972,6 @@ CREATE INDEX "assessment_sms_audits_sentAt_idx" ON "assessment_sms_audits"("sent
 CREATE INDEX "assessment_sms_audits_smsStatus_idx" ON "assessment_sms_audits"("smsStatus");
 
 -- CreateIndex
-CREATE INDEX "assessment_sms_audits_schoolId_idx" ON "assessment_sms_audits"("schoolId");
-
--- CreateIndex
 CREATE INDEX "assessment_sms_audits_term_academicYear_idx" ON "assessment_sms_audits"("term", "academicYear");
 
 -- CreateIndex
@@ -1644,13 +1981,25 @@ CREATE INDEX "learning_areas_gradeLevel_idx" ON "learning_areas"("gradeLevel");
 CREATE INDEX "learning_areas_schoolId_idx" ON "learning_areas"("schoolId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "learning_areas_schoolId_name_gradeLevel_key" ON "learning_areas"("schoolId", "name", "gradeLevel");
+CREATE UNIQUE INDEX "learning_areas_name_gradeLevel_key" ON "learning_areas"("name", "gradeLevel");
+
+-- CreateIndex
+CREATE INDEX "subject_assignments_teacherId_idx" ON "subject_assignments"("teacherId");
+
+-- CreateIndex
+CREATE INDEX "subject_assignments_learningAreaId_idx" ON "subject_assignments"("learningAreaId");
+
+-- CreateIndex
+CREATE INDEX "subject_assignments_grade_idx" ON "subject_assignments"("grade");
+
+-- CreateIndex
+CREATE INDEX "subject_assignments_schoolId_idx" ON "subject_assignments"("schoolId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "subject_assignments_teacherId_learningAreaId_grade_key" ON "subject_assignments"("teacherId", "learningAreaId", "grade");
 
 -- CreateIndex
 CREATE INDEX "support_tickets_userId_idx" ON "support_tickets"("userId");
-
--- CreateIndex
-CREATE INDEX "support_tickets_schoolId_idx" ON "support_tickets"("schoolId");
 
 -- CreateIndex
 CREATE INDEX "support_tickets_status_idx" ON "support_tickets"("status");
@@ -1662,16 +2011,16 @@ CREATE INDEX "support_messages_ticketId_idx" ON "support_messages"("ticketId");
 CREATE INDEX "support_messages_senderId_idx" ON "support_messages"("senderId");
 
 -- CreateIndex
-CREATE INDEX "documents_schoolId_idx" ON "documents"("schoolId");
-
--- CreateIndex
 CREATE INDEX "documents_category_idx" ON "documents"("category");
 
 -- CreateIndex
-CREATE INDEX "books_schoolId_idx" ON "books"("schoolId");
+CREATE INDEX "documents_schoolId_idx" ON "documents"("schoolId");
 
 -- CreateIndex
 CREATE INDEX "books_assignedToId_idx" ON "books"("assignedToId");
+
+-- CreateIndex
+CREATE INDEX "books_schoolId_idx" ON "books"("schoolId");
 
 -- CreateIndex
 CREATE INDEX "books_status_idx" ON "books"("status");
@@ -1680,46 +2029,178 @@ CREATE INDEX "books_status_idx" ON "books"("status");
 CREATE INDEX "Event_schoolId_idx" ON "Event"("schoolId");
 
 -- CreateIndex
+CREATE INDEX "contact_groups_createdById_idx" ON "contact_groups"("createdById");
+
+-- CreateIndex
 CREATE INDEX "contact_groups_schoolId_idx" ON "contact_groups"("schoolId");
 
 -- CreateIndex
-CREATE INDEX "contact_groups_createdById_idx" ON "contact_groups"("createdById");
+CREATE UNIQUE INDEX "leave_types_name_key" ON "leave_types"("name");
 
--- AddForeignKey
-ALTER TABLE "users" ADD CONSTRAINT "users_branchId_fkey" FOREIGN KEY ("branchId") REFERENCES "branches"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+-- CreateIndex
+CREATE INDEX "leave_requests_userId_idx" ON "leave_requests"("userId");
+
+-- CreateIndex
+CREATE INDEX "leave_requests_leaveTypeId_idx" ON "leave_requests"("leaveTypeId");
+
+-- CreateIndex
+CREATE INDEX "leave_requests_status_idx" ON "leave_requests"("status");
+
+-- CreateIndex
+CREATE INDEX "payroll_records_userId_idx" ON "payroll_records"("userId");
+
+-- CreateIndex
+CREATE INDEX "payroll_records_month_year_idx" ON "payroll_records"("month", "year");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "payroll_records_userId_month_year_key" ON "payroll_records"("userId", "month", "year");
+
+-- CreateIndex
+CREATE INDEX "staff_documents_userId_idx" ON "staff_documents"("userId");
+
+-- CreateIndex
+CREATE INDEX "staff_documents_schoolId_idx" ON "staff_documents"("schoolId");
+
+-- CreateIndex
+CREATE INDEX "performance_reviews_userId_idx" ON "performance_reviews"("userId");
+
+-- CreateIndex
+CREATE INDEX "performance_reviews_reviewerId_idx" ON "performance_reviews"("reviewerId");
+
+-- CreateIndex
+CREATE INDEX "performance_reviews_schoolId_idx" ON "performance_reviews"("schoolId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "accounts_code_key" ON "accounts"("code");
+
+-- CreateIndex
+CREATE INDEX "accounts_schoolId_idx" ON "accounts"("schoolId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "journals_code_key" ON "journals"("code");
+
+-- CreateIndex
+CREATE INDEX "journals_schoolId_idx" ON "journals"("schoolId");
+
+-- CreateIndex
+CREATE INDEX "journal_entries_journalId_idx" ON "journal_entries"("journalId");
+
+-- CreateIndex
+CREATE INDEX "journal_entries_date_idx" ON "journal_entries"("date");
+
+-- CreateIndex
+CREATE INDEX "journal_entries_schoolId_idx" ON "journal_entries"("schoolId");
+
+-- CreateIndex
+CREATE INDEX "journal_items_entryId_idx" ON "journal_items"("entryId");
+
+-- CreateIndex
+CREATE INDEX "journal_items_accountId_idx" ON "journal_items"("accountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "fiscal_years_name_key" ON "fiscal_years"("name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "vendors_name_key" ON "vendors"("name");
+
+-- CreateIndex
+CREATE INDEX "vendors_schoolId_idx" ON "vendors"("schoolId");
+
+-- CreateIndex
+CREATE INDEX "expenses_vendorId_idx" ON "expenses"("vendorId");
+
+-- CreateIndex
+CREATE INDEX "expenses_accountId_idx" ON "expenses"("accountId");
+
+-- CreateIndex
+CREATE INDEX "expenses_schoolId_idx" ON "expenses"("schoolId");
+
+-- CreateIndex
+CREATE INDEX "bank_statements_schoolId_idx" ON "bank_statements"("schoolId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "bank_statement_lines_journalItemId_key" ON "bank_statement_lines"("journalItemId");
+
+-- CreateIndex
+CREATE INDEX "bank_statement_lines_statementId_idx" ON "bank_statement_lines"("statementId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "inventory_categories_name_key" ON "inventory_categories"("name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "inventory_stores_name_key" ON "inventory_stores"("name");
+
+-- CreateIndex
+CREATE INDEX "inventory_stores_schoolId_idx" ON "inventory_stores"("schoolId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "inventory_items_name_key" ON "inventory_items"("name");
+
+-- CreateIndex
+CREATE INDEX "inventory_items_sku_idx" ON "inventory_items"("sku");
+
+-- CreateIndex
+CREATE INDEX "inventory_items_schoolId_idx" ON "inventory_items"("schoolId");
+
+-- CreateIndex
+CREATE INDEX "stock_movements_itemId_idx" ON "stock_movements"("itemId");
+
+-- CreateIndex
+CREATE INDEX "stock_movements_fromStoreId_idx" ON "stock_movements"("fromStoreId");
+
+-- CreateIndex
+CREATE INDEX "stock_movements_toStoreId_idx" ON "stock_movements"("toStoreId");
+
+-- CreateIndex
+CREATE INDEX "stock_movements_date_idx" ON "stock_movements"("date");
+
+-- CreateIndex
+CREATE INDEX "stock_movements_schoolId_idx" ON "stock_movements"("schoolId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "stock_requisitions_requisitionNo_key" ON "stock_requisitions"("requisitionNo");
+
+-- CreateIndex
+CREATE INDEX "stock_requisitions_status_idx" ON "stock_requisitions"("status");
+
+-- CreateIndex
+CREATE INDEX "stock_requisitions_schoolId_idx" ON "stock_requisitions"("schoolId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "fixed_assets_assetCode_key" ON "fixed_assets"("assetCode");
+
+-- CreateIndex
+CREATE INDEX "fixed_assets_assetCode_idx" ON "fixed_assets"("assetCode");
+
+-- CreateIndex
+CREATE INDEX "fixed_assets_schoolId_idx" ON "fixed_assets"("schoolId");
+
+-- CreateIndex
+CREATE INDEX "asset_assignments_assetId_idx" ON "asset_assignments"("assetId");
 
 -- AddForeignKey
 ALTER TABLE "users" ADD CONSTRAINT "users_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "school_subscriptions" ADD CONSTRAINT "school_subscriptions_planId_fkey" FOREIGN KEY ("planId") REFERENCES "subscription_plans"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "school_subscriptions" ADD CONSTRAINT "school_subscriptions_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "branches" ADD CONSTRAINT "branches_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "admission_sequences" ADD CONSTRAINT "admission_sequences_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "staff_sequences" ADD CONSTRAINT "staff_sequences_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "streams" ADD CONSTRAINT "streams_branchId_fkey" FOREIGN KEY ("branchId") REFERENCES "branches"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "classes" ADD CONSTRAINT "classes_branchId_fkey" FOREIGN KEY ("branchId") REFERENCES "branches"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "classes" ADD CONSTRAINT "classes_teacherId_fkey" FOREIGN KEY ("teacherId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "class_inventory" ADD CONSTRAINT "class_inventory_classId_fkey" FOREIGN KEY ("classId") REFERENCES "classes"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "classes" ADD CONSTRAINT "classes_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "class_schedules" ADD CONSTRAINT "class_schedules_classId_fkey" FOREIGN KEY ("classId") REFERENCES "classes"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "class_schedules" ADD CONSTRAINT "class_schedules_learningAreaId_fkey" FOREIGN KEY ("learningAreaId") REFERENCES "learning_areas"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "class_schedules" ADD CONSTRAINT "class_schedules_teacherId_fkey" FOREIGN KEY ("teacherId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "class_schedules" ADD CONSTRAINT "class_schedules_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "class_facilities" ADD CONSTRAINT "class_facilities_classId_fkey" FOREIGN KEY ("classId") REFERENCES "classes"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -1731,13 +2212,13 @@ ALTER TABLE "class_enrollments" ADD CONSTRAINT "class_enrollments_classId_fkey" 
 ALTER TABLE "class_enrollments" ADD CONSTRAINT "class_enrollments_learnerId_fkey" FOREIGN KEY ("learnerId") REFERENCES "learners"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "learners" ADD CONSTRAINT "learners_branchId_fkey" FOREIGN KEY ("branchId") REFERENCES "branches"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "class_enrollments" ADD CONSTRAINT "class_enrollments_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "learners" ADD CONSTRAINT "learners_parentId_fkey" FOREIGN KEY ("parentId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "learners" ADD CONSTRAINT "learners_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "learners" ADD CONSTRAINT "learners_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "attendances" ADD CONSTRAINT "attendances_classId_fkey" FOREIGN KEY ("classId") REFERENCES "classes"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -1749,22 +2230,19 @@ ALTER TABLE "attendances" ADD CONSTRAINT "attendances_learnerId_fkey" FOREIGN KE
 ALTER TABLE "attendances" ADD CONSTRAINT "attendances_markedBy_fkey" FOREIGN KEY ("markedBy") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "formative_assessments" ADD CONSTRAINT "formative_assessments_branchId_fkey" FOREIGN KEY ("branchId") REFERENCES "branches"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "attendances" ADD CONSTRAINT "attendances_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "formative_assessments" ADD CONSTRAINT "formative_assessments_learnerId_fkey" FOREIGN KEY ("learnerId") REFERENCES "learners"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "formative_assessments" ADD CONSTRAINT "formative_assessments_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "formative_assessments" ADD CONSTRAINT "formative_assessments_teacherId_fkey" FOREIGN KEY ("teacherId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "summative_tests" ADD CONSTRAINT "summative_tests_approvedBy_fkey" FOREIGN KEY ("approvedBy") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "formative_assessments" ADD CONSTRAINT "formative_assessments_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "summative_tests" ADD CONSTRAINT "summative_tests_branchId_fkey" FOREIGN KEY ("branchId") REFERENCES "branches"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "summative_tests" ADD CONSTRAINT "summative_tests_approvedBy_fkey" FOREIGN KEY ("approvedBy") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "summative_tests" ADD CONSTRAINT "summative_tests_createdBy_fkey" FOREIGN KEY ("createdBy") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -1773,31 +2251,28 @@ ALTER TABLE "summative_tests" ADD CONSTRAINT "summative_tests_createdBy_fkey" FO
 ALTER TABLE "summative_tests" ADD CONSTRAINT "summative_tests_scaleId_fkey" FOREIGN KEY ("scaleId") REFERENCES "grading_systems"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "summative_tests" ADD CONSTRAINT "summative_tests_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "summative_tests" ADD CONSTRAINT "summative_tests_submittedBy_fkey" FOREIGN KEY ("submittedBy") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "summative_tests" ADD CONSTRAINT "summative_tests_submittedBy_fkey" FOREIGN KEY ("submittedBy") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "summative_tests" ADD CONSTRAINT "summative_tests_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "term_configs" ADD CONSTRAINT "term_configs_createdBy_fkey" FOREIGN KEY ("createdBy") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "term_configs" ADD CONSTRAINT "term_configs_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "term_configs" ADD CONSTRAINT "term_configs_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "aggregation_configs" ADD CONSTRAINT "aggregation_configs_createdBy_fkey" FOREIGN KEY ("createdBy") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "aggregation_configs" ADD CONSTRAINT "aggregation_configs_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "aggregation_configs" ADD CONSTRAINT "aggregation_configs_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "change_history" ADD CONSTRAINT "change_history_changedBy_fkey" FOREIGN KEY ("changedBy") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "change_history" ADD CONSTRAINT "change_history_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "summative_results" ADD CONSTRAINT "summative_results_branchId_fkey" FOREIGN KEY ("branchId") REFERENCES "branches"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "change_history" ADD CONSTRAINT "change_history_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "summative_results" ADD CONSTRAINT "summative_results_learnerId_fkey" FOREIGN KEY ("learnerId") REFERENCES "learners"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -1806,10 +2281,10 @@ ALTER TABLE "summative_results" ADD CONSTRAINT "summative_results_learnerId_fkey
 ALTER TABLE "summative_results" ADD CONSTRAINT "summative_results_recordedBy_fkey" FOREIGN KEY ("recordedBy") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "summative_results" ADD CONSTRAINT "summative_results_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "summative_results" ADD CONSTRAINT "summative_results_testId_fkey" FOREIGN KEY ("testId") REFERENCES "summative_tests"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "summative_results" ADD CONSTRAINT "summative_results_testId_fkey" FOREIGN KEY ("testId") REFERENCES "summative_tests"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "summative_results" ADD CONSTRAINT "summative_results_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "summative_result_history" ADD CONSTRAINT "summative_result_history_changedBy_fkey" FOREIGN KEY ("changedBy") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -1824,10 +2299,16 @@ ALTER TABLE "core_competencies" ADD CONSTRAINT "core_competencies_assessedBy_fke
 ALTER TABLE "core_competencies" ADD CONSTRAINT "core_competencies_learnerId_fkey" FOREIGN KEY ("learnerId") REFERENCES "learners"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "core_competencies" ADD CONSTRAINT "core_competencies_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "values_assessments" ADD CONSTRAINT "values_assessments_assessedBy_fkey" FOREIGN KEY ("assessedBy") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "values_assessments" ADD CONSTRAINT "values_assessments_learnerId_fkey" FOREIGN KEY ("learnerId") REFERENCES "learners"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "values_assessments" ADD CONSTRAINT "values_assessments_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "co_curricular_activities" ADD CONSTRAINT "co_curricular_activities_learnerId_fkey" FOREIGN KEY ("learnerId") REFERENCES "learners"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -1836,19 +2317,22 @@ ALTER TABLE "co_curricular_activities" ADD CONSTRAINT "co_curricular_activities_
 ALTER TABLE "co_curricular_activities" ADD CONSTRAINT "co_curricular_activities_recordedBy_fkey" FOREIGN KEY ("recordedBy") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "co_curricular_activities" ADD CONSTRAINT "co_curricular_activities_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "termly_report_comments" ADD CONSTRAINT "termly_report_comments_learnerId_fkey" FOREIGN KEY ("learnerId") REFERENCES "learners"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "fee_types" ADD CONSTRAINT "fee_types_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "termly_report_comments" ADD CONSTRAINT "termly_report_comments_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "fee_structures" ADD CONSTRAINT "fee_structures_branchId_fkey" FOREIGN KEY ("branchId") REFERENCES "branches"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "fee_types" ADD CONSTRAINT "fee_types_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "fee_structures" ADD CONSTRAINT "fee_structures_createdBy_fkey" FOREIGN KEY ("createdBy") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "fee_structures" ADD CONSTRAINT "fee_structures_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "fee_structures" ADD CONSTRAINT "fee_structures_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "fee_structure_items" ADD CONSTRAINT "fee_structure_items_feeStructureId_fkey" FOREIGN KEY ("feeStructureId") REFERENCES "fee_structures"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -1863,52 +2347,73 @@ ALTER TABLE "fee_invoices" ADD CONSTRAINT "fee_invoices_feeStructureId_fkey" FOR
 ALTER TABLE "fee_invoices" ADD CONSTRAINT "fee_invoices_learnerId_fkey" FOREIGN KEY ("learnerId") REFERENCES "learners"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "fee_invoices" ADD CONSTRAINT "fee_invoices_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "fee_payments" ADD CONSTRAINT "fee_payments_invoiceId_fkey" FOREIGN KEY ("invoiceId") REFERENCES "fee_invoices"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "fee_payments" ADD CONSTRAINT "fee_payments_recordedBy_fkey" FOREIGN KEY ("recordedBy") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "messages" ADD CONSTRAINT "messages_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "message_receipts" ADD CONSTRAINT "message_receipts_messageId_fkey" FOREIGN KEY ("messageId") REFERENCES "messages"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "message_receipts" ADD CONSTRAINT "message_receipts_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "broadcast_campaigns" ADD CONSTRAINT "broadcast_campaigns_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "broadcast_recipients" ADD CONSTRAINT "broadcast_recipients_campaignId_fkey" FOREIGN KEY ("campaignId") REFERENCES "broadcast_campaigns"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "broadcast_recipients" ADD CONSTRAINT "broadcast_recipients_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "sms_delivery_logs" ADD CONSTRAINT "sms_delivery_logs_campaignId_fkey" FOREIGN KEY ("campaignId") REFERENCES "broadcast_campaigns"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "scale_groups" ADD CONSTRAINT "scale_groups_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "sms_delivery_logs" ADD CONSTRAINT "sms_delivery_logs_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "grading_systems" ADD CONSTRAINT "grading_systems_scaleGroupId_fkey" FOREIGN KEY ("scaleGroupId") REFERENCES "scale_groups"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "grading_systems" ADD CONSTRAINT "grading_systems_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "grading_systems" ADD CONSTRAINT "grading_systems_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "grading_ranges" ADD CONSTRAINT "grading_ranges_systemId_fkey" FOREIGN KEY ("systemId") REFERENCES "grading_systems"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "stream_configs" ADD CONSTRAINT "stream_configs_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "communication_configs" ADD CONSTRAINT "communication_configs_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "communication_configs" ADD CONSTRAINT "communication_configs_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "assessment_sms_audits" ADD CONSTRAINT "assessment_sms_audits_learnerId_fkey" FOREIGN KEY ("learnerId") REFERENCES "learners"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "learning_areas" ADD CONSTRAINT "learning_areas_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "learning_areas" ADD CONSTRAINT "learning_areas_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "subject_assignments" ADD CONSTRAINT "subject_assignments_teacherId_fkey" FOREIGN KEY ("teacherId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "subject_assignments" ADD CONSTRAINT "subject_assignments_learningAreaId_fkey" FOREIGN KEY ("learningAreaId") REFERENCES "learning_areas"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "subject_assignments" ADD CONSTRAINT "subject_assignments_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "support_tickets" ADD CONSTRAINT "support_tickets_assignedToId_fkey" FOREIGN KEY ("assignedToId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "support_tickets" ADD CONSTRAINT "support_tickets_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "support_tickets" ADD CONSTRAINT "support_tickets_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "support_tickets" ADD CONSTRAINT "support_tickets_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "support_tickets" ADD CONSTRAINT "support_tickets_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "support_messages" ADD CONSTRAINT "support_messages_senderId_fkey" FOREIGN KEY ("senderId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -1917,25 +2422,157 @@ ALTER TABLE "support_messages" ADD CONSTRAINT "support_messages_senderId_fkey" F
 ALTER TABLE "support_messages" ADD CONSTRAINT "support_messages_ticketId_fkey" FOREIGN KEY ("ticketId") REFERENCES "support_tickets"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "documents" ADD CONSTRAINT "documents_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "documents" ADD CONSTRAINT "documents_uploadedById_fkey" FOREIGN KEY ("uploadedById") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "documents" ADD CONSTRAINT "documents_uploadedById_fkey" FOREIGN KEY ("uploadedById") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "documents" ADD CONSTRAINT "documents_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "books" ADD CONSTRAINT "books_assignedToId_fkey" FOREIGN KEY ("assignedToId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "books" ADD CONSTRAINT "books_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "books" ADD CONSTRAINT "books_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Event" ADD CONSTRAINT "Event_creatorId_fkey" FOREIGN KEY ("creatorId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Event" ADD CONSTRAINT "Event_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "contact_groups" ADD CONSTRAINT "contact_groups_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Event" ADD CONSTRAINT "Event_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "contact_groups" ADD CONSTRAINT "contact_groups_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "contact_groups" ADD CONSTRAINT "contact_groups_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "leave_requests" ADD CONSTRAINT "leave_requests_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "leave_requests" ADD CONSTRAINT "leave_requests_approvedById_fkey" FOREIGN KEY ("approvedById") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "leave_requests" ADD CONSTRAINT "leave_requests_leaveTypeId_fkey" FOREIGN KEY ("leaveTypeId") REFERENCES "leave_types"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "payroll_records" ADD CONSTRAINT "payroll_records_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "payroll_records" ADD CONSTRAINT "payroll_records_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "staff_documents" ADD CONSTRAINT "staff_documents_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "staff_documents" ADD CONSTRAINT "staff_documents_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "performance_reviews" ADD CONSTRAINT "performance_reviews_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "performance_reviews" ADD CONSTRAINT "performance_reviews_reviewerId_fkey" FOREIGN KEY ("reviewerId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "performance_reviews" ADD CONSTRAINT "performance_reviews_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "accounts" ADD CONSTRAINT "accounts_parentId_fkey" FOREIGN KEY ("parentId") REFERENCES "accounts"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "accounts" ADD CONSTRAINT "accounts_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "journals" ADD CONSTRAINT "journals_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "journal_entries" ADD CONSTRAINT "journal_entries_journalId_fkey" FOREIGN KEY ("journalId") REFERENCES "journals"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "journal_entries" ADD CONSTRAINT "journal_entries_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "journal_items" ADD CONSTRAINT "journal_items_entryId_fkey" FOREIGN KEY ("entryId") REFERENCES "journal_entries"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "journal_items" ADD CONSTRAINT "journal_items_accountId_fkey" FOREIGN KEY ("accountId") REFERENCES "accounts"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "vendors" ADD CONSTRAINT "vendors_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "expenses" ADD CONSTRAINT "expenses_vendorId_fkey" FOREIGN KEY ("vendorId") REFERENCES "vendors"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "expenses" ADD CONSTRAINT "expenses_accountId_fkey" FOREIGN KEY ("accountId") REFERENCES "accounts"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "expenses" ADD CONSTRAINT "expenses_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "bank_statements" ADD CONSTRAINT "bank_statements_accountId_fkey" FOREIGN KEY ("accountId") REFERENCES "accounts"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "bank_statements" ADD CONSTRAINT "bank_statements_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "bank_statement_lines" ADD CONSTRAINT "bank_statement_lines_statementId_fkey" FOREIGN KEY ("statementId") REFERENCES "bank_statements"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "bank_statement_lines" ADD CONSTRAINT "bank_statement_lines_journalItemId_fkey" FOREIGN KEY ("journalItemId") REFERENCES "journal_items"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "inventory_categories" ADD CONSTRAINT "inventory_categories_parentId_fkey" FOREIGN KEY ("parentId") REFERENCES "inventory_categories"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "inventory_stores" ADD CONSTRAINT "inventory_stores_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "inventory_items" ADD CONSTRAINT "inventory_items_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "inventory_categories"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "inventory_items" ADD CONSTRAINT "inventory_items_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "stock_movements" ADD CONSTRAINT "stock_movements_itemId_fkey" FOREIGN KEY ("itemId") REFERENCES "inventory_items"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "stock_movements" ADD CONSTRAINT "stock_movements_fromStoreId_fkey" FOREIGN KEY ("fromStoreId") REFERENCES "inventory_stores"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "stock_movements" ADD CONSTRAINT "stock_movements_toStoreId_fkey" FOREIGN KEY ("toStoreId") REFERENCES "inventory_stores"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "stock_movements" ADD CONSTRAINT "stock_movements_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "stock_requisitions" ADD CONSTRAINT "stock_requisitions_requestedById_fkey" FOREIGN KEY ("requestedById") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "stock_requisitions" ADD CONSTRAINT "stock_requisitions_approvedById_fkey" FOREIGN KEY ("approvedById") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "stock_requisitions" ADD CONSTRAINT "stock_requisitions_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "stock_requisition_items" ADD CONSTRAINT "stock_requisition_items_requisitionId_fkey" FOREIGN KEY ("requisitionId") REFERENCES "stock_requisitions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "stock_requisition_items" ADD CONSTRAINT "stock_requisition_items_itemId_fkey" FOREIGN KEY ("itemId") REFERENCES "inventory_items"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "fixed_assets" ADD CONSTRAINT "fixed_assets_itemId_fkey" FOREIGN KEY ("itemId") REFERENCES "inventory_items"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "fixed_assets" ADD CONSTRAINT "fixed_assets_currentStoreId_fkey" FOREIGN KEY ("currentStoreId") REFERENCES "inventory_stores"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "fixed_assets" ADD CONSTRAINT "fixed_assets_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "asset_assignments" ADD CONSTRAINT "asset_assignments_assetId_fkey" FOREIGN KEY ("assetId") REFERENCES "fixed_assets"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "asset_assignments" ADD CONSTRAINT "asset_assignments_assignedToId_fkey" FOREIGN KEY ("assignedToId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "asset_assignments" ADD CONSTRAINT "asset_assignments_assignedToClassId_fkey" FOREIGN KEY ("assignedToClassId") REFERENCES "classes"("id") ON DELETE SET NULL ON UPDATE CASCADE;
