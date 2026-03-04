@@ -998,7 +998,7 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
             <main
               ref={mainContentRef}
               onScroll={handleScroll}
-              className="flex-1 overflow-auto p-6 custom-scrollbar bg-gray-50 dark:bg-slate-900/50"
+              className="flex-1 overflow-auto p-6 custom-scrollbar"
             >
               <div className="max-w-screen-2xl mx-auto">
                 <Suspense fallback={<LoadingOverlay />}>

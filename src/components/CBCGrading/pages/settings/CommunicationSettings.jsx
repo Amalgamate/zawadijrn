@@ -270,8 +270,8 @@ const CommunicationSettings = () => {
   return (
     <div className="space-y-6">
       {/* Tabs */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-md border border-gray-200 dark:border-slate-700 transition-colors duration-300">
-        <div className="border-b border-gray-200 dark:border-slate-700 flex overflow-x-auto">
+      <div className="bg-white rounded-xl shadow-md border border-gray-200 transition-colors duration-300">
+        <div className="border-b border-gray-200 flex overflow-x-auto">
           {['email', 'sms'].map((tab) => (
             <button
               key={tab}
@@ -317,7 +317,7 @@ const CommunicationSettings = () => {
             {loading && !schoolId && <div className="text-center py-4"><Loader className="animate-spin inline" /> Loading config...</div>}
 
             <div className="space-y-4">
-              <div className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-lg mb-4">
+              <div className="flex items-center gap-3 p-4 bg-blue-50 text-blue-800 rounded-lg mb-4">
                 <Mail size={20} />
                 <p className="text-sm">Configure your own Resend account to use custom domains and track your school's email delivery.</p>
               </div>
@@ -329,7 +329,7 @@ const CommunicationSettings = () => {
                     type="email"
                     value={emailSettings.fromEmail}
                     onChange={(e) => setEmailSettings({ ...emailSettings, fromEmail: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-purple outline-none transition"
+                    className="w-full px-4 py-2 border rounded-lg"
                     placeholder="onboarding@resend.dev"
                   />
                   <p className="text-xs text-gray-500 mt-1">Default: onboarding@resend.dev (Resend Sandbox)</p>
@@ -340,7 +340,7 @@ const CommunicationSettings = () => {
                     type="text"
                     value={emailSettings.fromName}
                     onChange={(e) => setEmailSettings({ ...emailSettings, fromName: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-purple outline-none transition"
+                    className="w-full px-4 py-2 border rounded-lg"
                     placeholder="Elimcrown / Your School Name"
                   />
                 </div>
@@ -353,7 +353,7 @@ const CommunicationSettings = () => {
                     type="password"
                     value={emailSettings.apiKey}
                     onChange={(e) => setEmailSettings({ ...emailSettings, apiKey: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg pr-24 bg-[var(--input-bg)] text-[var(--input-text)] focus:ring-2 focus:ring-brand-purple outline-none transition"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg pr-24 bg-white text-gray-900 focus:ring-2 focus:ring-brand-purple outline-none transition"
                     placeholder={emailSettings.hasApiKey ? '••••••••••••••••' : 're_YourActualAPIKey...'}
                   />
                   {emailSettings.hasApiKey && !emailSettings.apiKey && (
@@ -374,8 +374,8 @@ const CommunicationSettings = () => {
                       checked={emailSettings.enabled}
                       onChange={(e) => setEmailSettings({ ...emailSettings, enabled: e.target.checked })}
                     />
-                    <div className="w-11 h-6 bg-gray-200 dark:bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                    <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">Enable Email Notifications</span>
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    <span className="ml-3 text-sm font-medium text-gray-700">Enable Email Notifications</span>
                   </label>
                 </div>
               </div>
@@ -420,7 +420,7 @@ const CommunicationSettings = () => {
             </div>
 
             {/* Editor Fields */}
-            <div className="space-y-4 border dark:border-slate-700 p-4 rounded-lg bg-gray-50 dark:bg-slate-900/50">
+            <div className="space-y-4 border p-4 rounded-lg bg-gray-50">
               <div>
                 <label className="block text-sm font-semibold mb-2">Email Heading</label>
                 <input
@@ -442,7 +442,7 @@ const CommunicationSettings = () => {
                     ...prev,
                     [editingTemplate]: { ...prev[editingTemplate], body: e.target.value }
                   }))}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-brand-purple outline-none transition"
+                  className="w-full px-4 py-3 border rounded-lg font-mono text-sm"
                   rows={6}
                   placeholder="Type your custom message here. You can use HTML tags like <b>bold</b> or <br/> for line breaks."
                 />
@@ -472,7 +472,7 @@ const CommunicationSettings = () => {
             Test Email
           </h3>
           <div className="space-y-4">
-            <div className="p-4 bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-lg text-sm">
+            <div className="p-4 bg-blue-50 text-blue-800 rounded-lg text-sm">
               <p className="font-semibold">Verify your templates:</p>
               <ul className="list-disc list-inside mt-1">
                 <li><strong>Welcome Email:</strong> Standard greeting for new users.</li>
@@ -631,7 +631,7 @@ const CommunicationSettings = () => {
 
               {/* Africa's Talking Fields */}
               {smsSettings.provider === 'africastalking' && (
-                <div className="border-l-4 border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded text-gray-900 dark:text-gray-100">
+                <div className="border-l-4 border-yellow-400 bg-yellow-50 p-4 rounded text-gray-900">
                   <p className="text-sm font-semibold text-yellow-800 mb-3">Africa's Talking Configuration</p>
                   <div className="space-y-3">
                     <div>
@@ -686,7 +686,7 @@ const CommunicationSettings = () => {
 
               {/* MobileSasa Fields */}
               {smsSettings.provider === 'mobilesasa' && (
-                <div className="border-l-4 border-blue-400 bg-blue-50 dark:bg-blue-900/20 p-4 rounded text-gray-900 dark:text-gray-100">
+                <div className="border-l-4 border-blue-400 bg-blue-50 p-4 rounded text-gray-900">
                   <p className="text-sm font-semibold text-blue-800 mb-3">MobileSasa Configuration</p>
                   <div className="space-y-3">
                     <div>
@@ -695,7 +695,7 @@ const CommunicationSettings = () => {
                         type="text"
                         value={smsSettings.baseUrl}
                         onChange={(e) => setSmsSettings({ ...smsSettings, baseUrl: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-900 dark:text-gray-100"
+                        className="w-full px-4 py-2 border rounded-lg bg-gray-100"
                         readOnly
                       />
                       <p className="text-xs text-gray-600 mt-1">Default MobileSasa endpoint</p>
@@ -710,7 +710,7 @@ const CommunicationSettings = () => {
                           type="password"
                           value={smsSettings.apiKey}
                           onChange={(e) => setSmsSettings({ ...smsSettings, apiKey: e.target.value })}
-                          className={`w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg pr-24 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-purple outline-none transition ${!smsSettings.apiKey && smsSettings.hasApiKey ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-800' : ''}`}
+                          className="w-full px-4 py-2 border rounded-lg pr-24"
                           placeholder={smsSettings.hasApiKey && !smsSettings.apiKey ? 'Already saved - leave blank to keep' : 'Enter your MobileSasa API Key'}
                         />
                         {smsSettings.hasApiKey && !smsSettings.apiKey && (
@@ -728,7 +728,7 @@ const CommunicationSettings = () => {
                         type="text"
                         value={smsSettings.senderId}
                         onChange={(e) => setSmsSettings({ ...smsSettings, senderId: e.target.value.toUpperCase() })}
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-purple outline-none transition"
+                        className="w-full px-4 py-2 border rounded-lg"
                         maxLength={11}
                         placeholder="Your registered Sender ID"
                       />
@@ -798,7 +798,7 @@ const CommunicationSettings = () => {
                           localStorage.setItem('testContactPhone', newValue);
                         }
                       }}
-                      className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-purple outline-none transition"
+                      className="flex-1 px-4 py-2 border rounded-lg"
                       placeholder="254712345678"
                       autoFocus
                     />

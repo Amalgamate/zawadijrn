@@ -1,4 +1,5 @@
-:root {
+html {
+  color-scheme: light;
   --brand-purple: #520050;
   --brand-teal: #0D9488;
   --bg-primary: #ffffff;
@@ -12,7 +13,7 @@
   --input-text: #0f172a;
 }
 
-.dark {
+html.dark {
   --brand-purple: #7e22ce;
   --brand-teal: #14b8a6;
   --bg-primary: #0f172a;
