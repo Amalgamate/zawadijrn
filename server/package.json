@@ -20,6 +20,7 @@
     "check-migration": "ts-node scripts/check-migration.ts",
     "check-schools": "ts-node scripts/check-schools.ts",
     "provision": "ts-node src/scripts/provision-school.ts",
+    "system-setup": "ts-node src/scripts/setup-system.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
