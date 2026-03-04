@@ -5,7 +5,6 @@
 
 import React from 'react';
 import { usePermissions } from '../../../../hooks/usePermissions';
-import Overview from '../../../../EDucore/admin/Overview';
 import AdminDashboard from './AdminDashboard';
 import HeadTeacherDashboard from './HeadTeacherDashboard';
 import TeacherDashboard from './TeacherDashboard';
@@ -19,8 +18,6 @@ const RoleDashboard = ({ learners, pagination, teachers, user, onNavigate }) => 
   // Render dashboard based on user role
   switch (role) {
     case 'SUPER_ADMIN':
-      return <Overview />;
-
     case 'ADMIN':
       return <AdminDashboard learners={learners} pagination={pagination} teachers={teachers} user={user} onNavigate={onNavigate} />;
 
