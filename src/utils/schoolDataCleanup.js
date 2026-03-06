@@ -8,7 +8,7 @@ export const cleanupSchoolData = async () => {
 };
 
 export const clearAllSchoolData = () => {
-  // Stub function - multi-tenant cleanup in progress
+  // Stub function - no cleanup action required in current setup
   return { cleared: 0, message: 'No school data to clear' };
 };
 

@@ -7,11 +7,11 @@ export function requireSubdomainAccess(_req: any, _res: any, next: any): void {
   next();
 }
 
-export async function ensureTenantContext(_req: any, _res: any, next: any): Promise<void> {
+export async function ensureSchoolContext(_req: any, _res: any, next: any): Promise<void> {
   next();
 }
 
-export function getTenantContextFromRequest(_req: any): null {
+export function getSchoolContextFromRequest(_req: any): null {
   return null;
 }
 

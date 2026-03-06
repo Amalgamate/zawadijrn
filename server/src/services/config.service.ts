@@ -20,6 +20,7 @@ interface CreateTermConfigInput {
   formativeWeight: number;
   summativeWeight: number;
   isActive?: boolean;
+  schoolId: string;
   createdBy: string;
 }
 
@@ -65,6 +66,7 @@ interface UpsertClassInput {
   academicYear?: number;
   term?: Term;
   active?: boolean;
+  schoolId?: string;
 }
 
 interface TermConfiguration {
@@ -91,9 +93,10 @@ export class ConfigService {
 
     let config = await prisma.termConfig.findUnique({
       where: {
-        academicYear_term: {
+        academicYear_term_schoolId: {
           academicYear,
-          term
+          term,
+          schoolId: params.schoolId || ''
         }
       },
       include: {
@@ -209,9 +212,10 @@ export class ConfigService {
 
     return await prisma.termConfig.upsert({
       where: {
-        academicYear_term: {
+        academicYear_term_schoolId: {
           academicYear,
-          term
+          term,
+          schoolId: data.schoolId
         }
       },
       update: updateData,
@@ -348,98 +352,9 @@ export class ConfigService {
     });
   }
 
-  async getAggregationConfigs(): Promise<any[]> {
-    return await prisma.aggregationConfig.findMany({
-      orderBy: [
-        { type: 'asc' },
-        { grade: 'asc' }
-      ],
-      include: {
-        creator: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true
-          }
-        }
-      }
-    });
-  }
-
-  async createAggregationConfig(data: CreateAggregationConfigInput): Promise<any> {
-    this.validateAggregationStrategy(data.strategy, data.nValue, data.weight);
-    return await prisma.aggregationConfig.create({
-      data: {
-        ...data,
-        weight: data.weight ?? 1.0
-      },
-      include: {
-        creator: {
-          select: { id: true, firstName: true, lastName: true }
-        }
-      }
-    });
-  }
-
-  async updateAggregationConfig(id: string, data: UpdateAggregationConfigInput): Promise<any> {
-    const existing = await prisma.aggregationConfig.findUnique({ where: { id } });
-    if (!existing) throw new Error('Aggregation configuration not found');
-
-    const strategy = data.strategy ?? existing.strategy;
-    const nValue = data.nValue !== undefined ? data.nValue : existing.nValue;
-    const weight = data.weight !== undefined ? data.weight : existing.weight;
-    this.validateAggregationStrategy(strategy, nValue, weight);
-
-    return await prisma.aggregationConfig.update({
-      where: { id },
-      data,
-      include: {
-        creator: {
-          select: { id: true, firstName: true, lastName: true }
-        }
-      }
-    });
-  }
-
-  async deleteAggregationConfig(id: string): Promise<void> {
-    await prisma.aggregationConfig.delete({ where: { id } });
-  }
-
-  async getStreamConfigs(schoolId?: string): Promise<any[]> {
-    // StreamConfig is global, but accept schoolId for API consistency
-    return await prisma.streamConfig.findMany({ orderBy: { name: 'asc' } });
-  }
-
-  async upsertStreamConfig(data: StreamConfigInput): Promise<any> {
-    const { id, name, active } = data;
-    const existing = await prisma.streamConfig.findFirst({
-      where: {
-        name: { equals: name, mode: 'insensitive' },
-        id: id ? { not: id } : undefined
-      }
-    });
-
-    if (existing) throw new Error(`Stream "${name}" already exists`);
-
-    if (id) {
-      return await prisma.streamConfig.update({
-        where: { id },
-        data: { name, active }
-      });
-    } else {
-      return await prisma.streamConfig.create({
-        data: { name, active: active ?? true }
-      });
-    }
-  }
-
-  async deleteStreamConfig(id: string): Promise<void> {
-    await prisma.streamConfig.delete({ where: { id } });
-  }
-
   async getClasses(schoolId?: string): Promise<any[]> {
     return await prisma.class.findMany({
-      where: schoolId ? { schoolId } : undefined,
+      where: { schoolId, archived: false },
       include: {
         teacher: { select: { id: true, firstName: true, lastName: true } }
       },
@@ -451,16 +366,28 @@ export class ConfigService {
     });
   }
 
-  async upsertClass(data: UpsertClassInput): Promise<any> {
+  async upsertClass(data: any): Promise<any> {
     const { id, ...classData } = data;
+    const parsedAcademicYear = Number(classData.academicYear);
+    const parsedCapacity = Number(classData.capacity);
+
     const normalizedData = {
       ...classData,
-      stream: classData.stream || null,
-      academicYear: classData.academicYear || 2026,
-      term: classData.term || 'TERM_1'
+      name: typeof classData.name === 'string' ? classData.name.trim() : classData.name,
+      stream: typeof classData.stream === 'string' ? (classData.stream.trim() || null) : (classData.stream || null),
+      teacherId: typeof classData.teacherId === 'string' ? (classData.teacherId.trim() || null) : (classData.teacherId || null),
+      room: typeof classData.room === 'string' ? (classData.room.trim() || null) : (classData.room || null),
+      academicYear: Number.isFinite(parsedAcademicYear) ? parsedAcademicYear : new Date().getFullYear(),
+      capacity: Number.isFinite(parsedCapacity) && parsedCapacity > 0 ? parsedCapacity : 40,
+      term: classData.term || 'TERM_1',
+      active: typeof classData.active === 'boolean' ? classData.active : true
     };
 
     if (id) {
+      if (!normalizedData.schoolId) {
+        delete (normalizedData as any).schoolId;
+      }
+
       return await prisma.class.update({
         where: { id },
         data: normalizedData,
@@ -469,19 +396,16 @@ export class ConfigService {
         }
       });
     } else {
-      const existing = await prisma.class.findFirst({
-        where: {
-          grade: normalizedData.grade,
-          stream: normalizedData.stream,
-          academicYear: normalizedData.academicYear,
-          term: normalizedData.term
-        }
-      });
-      if (existing) throw new Error('Class already exists for this period.');
+      if (!normalizedData.schoolId) {
+        throw new Error('School ID is required to create a class');
+      }
+
+      const totalClasses = await prisma.class.count();
+      const classCode = `CLS-${String(totalClasses + 1).padStart(5, '0')}`;
 
       return await prisma.class.create({
         data: {
-          classCode: `CLS-${Date.now()}`,
+          classCode,
           ...normalizedData
         },
         include: {
@@ -501,6 +425,86 @@ export class ConfigService {
     if ((strategy === 'BEST_N' || strategy === 'DROP_LOWEST_N') && (!nValue || nValue <= 0)) {
       throw new Error(`Strategy ${strategy} requires a positive nValue`);
     }
+  }
+
+  async getStreamConfigs(schoolId?: string): Promise<any[]> {
+    return await prisma.stream.findMany({
+      where: { archived: false },
+      orderBy: { name: 'asc' }
+    });
+  }
+
+  async upsertStreamConfig(data: any): Promise<any> {
+    const { name } = data;
+    return await prisma.stream.upsert({
+      where: { name },
+      update: { active: true, archived: false },
+      create: { name, active: true }
+    });
+  }
+
+  async deleteStreamConfig(id: string): Promise<void> {
+    await prisma.stream.update({
+      where: { id },
+      data: { archived: true, archivedAt: new Date() }
+    });
+  }
+
+  async getAggregationConfigs(schoolId?: string): Promise<any[]> {
+    return await prisma.aggregationConfig.findMany({
+      where: { schoolId, archived: false },
+      include: {
+        creator: {
+          select: { id: true, firstName: true, lastName: true }
+        }
+      }
+    });
+  }
+
+  async getSpecificAggregationConfig(params: { type: FormativeAssessmentType; schoolId?: string; grade?: Grade }): Promise<any> {
+    const { type, schoolId, grade } = params;
+    return await prisma.aggregationConfig.findFirst({
+      where: {
+        type,
+        schoolId,
+        grade,
+        archived: false
+      }
+    });
+  }
+
+  async createAggregationConfig(data: any): Promise<any> {
+    this.validateAggregationStrategy(data.strategy, data.nValue, data.weight);
+    return await prisma.aggregationConfig.create({
+      data,
+      include: {
+        creator: {
+          select: { id: true, firstName: true, lastName: true }
+        }
+      }
+    });
+  }
+
+  async updateAggregationConfig(id: string, data: any): Promise<any> {
+    if (data.strategy) {
+      this.validateAggregationStrategy(data.strategy, data.nValue, data.weight);
+    }
+    return await prisma.aggregationConfig.update({
+      where: { id },
+      data,
+      include: {
+        creator: {
+          select: { id: true, firstName: true, lastName: true }
+        }
+      }
+    });
+  }
+
+  async deleteAggregationConfig(id: string): Promise<void> {
+    await prisma.aggregationConfig.update({
+      where: { id },
+      data: { archived: true, archivedAt: new Date() }
+    });
   }
 
   async getTermConfigurations(params: { term: Term; academicYear: number }): Promise<TermConfiguration> {

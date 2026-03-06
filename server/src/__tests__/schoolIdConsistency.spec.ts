@@ -1,24 +1,24 @@
 import express from 'express';
 import request from 'supertest';
 import { authenticate } from '../middleware/auth.middleware';
-import { enforceSchoolConsistency, requireTenant } from '../middleware/tenant.middleware';
+import { enforceSchoolContextConsistency, requireSchoolContext } from '../middleware/school.middleware';
 import { generateAccessToken } from '../utils/jwt.util';
 
 const buildApp = () => {
   const app = express();
   app.use(express.json());
   app.get('/health', (_req, res) => res.json({ ok: true }));
-  // apply auth and consistency middlewares
+  // apply auth and school-context middlewares
   app.use(authenticate);
-  app.use(requireTenant);
-  // app.use(enforceSchoolConsistency); // Global removed, but we use it below
+  app.use(requireSchoolContext);
+  // app.use(enforceSchoolContextConsistency); // Global removed, but we use it below
   
   // Test route that expects :schoolId
-  app.get('/config/term/:schoolId', enforceSchoolConsistency, (req, res) => {
-    // Return the tenant schoolId to verify resolution
+  app.get('/config/term/:schoolId', enforceSchoolContextConsistency, (req, res) => {
+    // Return the resolved school context ID to verify resolution
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const tenant = (req as any).tenant || {};
-    return res.json({ success: true, tenant });
+    const schoolContext = (req as any).schoolContext || {};
+    return res.json({ success: true, schoolContext });
   });
   return app;
 };
@@ -37,7 +37,7 @@ describe('schoolId consistency middleware', () => {
       .get('/config/term/S1')
       .set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
-    expect(res.body.tenant.schoolId).toBe('S1');
+    expect(res.body.schoolContext.schoolId).toBe('S1');
   });
 
   it('rejects mismatched JWT and param schoolId', async () => {
@@ -58,10 +58,10 @@ describe('schoolId consistency middleware', () => {
       .get('/config/term/S3')
       .set('Authorization', `Bearer ${token}`);
     
-    // requireTenant bypasses SUPER_ADMIN
-    // enforceSchoolConsistency sees no tenant.schoolId, so it uses param S3
+    // requireSchoolContext bypasses strict schoolId requirement for SUPER_ADMIN
+    // enforceSchoolContextConsistency uses param S3 here
     expect(res.status).toBe(200);
-    expect(res.body.tenant.schoolId).toBe('S3');
+    expect(res.body.schoolContext.schoolId).toBe('S3');
   });
 
   it('ignores header X-School-Id (deprecated)', async () => {
@@ -73,6 +73,6 @@ describe('schoolId consistency middleware', () => {
       .set('X-School-Id', 'S999'); // Should be ignored
     
     expect(res.status).toBe(200);
-    expect(res.body.tenant.schoolId).toBe('S4'); // Uses param
+    expect(res.body.schoolContext.schoolId).toBe('S4'); // Uses param
   });
 });

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { authAPI, schoolAPI } from '../../services/api';
-import { setAdminSchoolId, setBranchId } from '../../services/tenantContext';
+import { setCurrentSchoolId, setBranchId } from '../../services/schoolContext';
 import OTPVerificationForm from './OTPVerificationForm';
 
-// Helper: Get default school for single-tenant mode
+// Helper: Get default school when user context has no school yet
 const getDefaultSchool = async () => {
   try {
     const response = await schoolAPI.getAll();
@@ -65,7 +65,7 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
           if (formData.rememberMe) localStorage.setItem('authToken', credentialsData.token);
         }
 
-        // Get school ID - use user's school or default to first school in single-tenant mode
+        // Get school ID - use user's school or default to first school
         let schoolId = credentialsData.user.schoolId || credentialsData.user.school?.id;
         let school = credentialsData.user.school || null;
 
@@ -90,7 +90,7 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
           branch: credentialsData.user.branch || null
         };
 
-        if (schoolId) setAdminSchoolId(schoolId);
+        if (schoolId) setCurrentSchoolId(schoolId);
         const bid = credentialsData.user.branchId || credentialsData.user.branch?.id || '';
         if (bid) setBranchId(bid);
 
@@ -126,7 +126,7 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
       if (formData.rememberMe) localStorage.setItem('authToken', pendingUserData.token);
     }
 
-    // Get school ID - use user's school or default to first school in single-tenant mode
+    // Get school ID - use user's school or default to first school
     let schoolId = pendingUserData.user.schoolId || pendingUserData.user.school?.id;
     let school = pendingUserData.user.school || null;
 
@@ -151,7 +151,7 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
       branch: pendingUserData.user.branch || null
     };
 
-    if (schoolId) setAdminSchoolId(schoolId);
+    if (schoolId) setCurrentSchoolId(schoolId);
     const bid = pendingUserData.user.branchId || pendingUserData.user.branch?.id || '';
     if (bid) setBranchId(bid);
 

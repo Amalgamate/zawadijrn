@@ -4,7 +4,7 @@ import { Card, CardHeader, CardContent, CardTitle, CardDescription, Button, Inpu
 import { useNotifications } from '../hooks/useNotifications';
 import { toInputDate } from '../utils/dateHelpers';
 import api from '../../../services/api';
-import { getAdminSchoolId, getStoredUser } from '../../../services/tenantContext';
+import { getCurrentSchoolId, getStoredUser } from '../../../services/schoolContext';
 
 const MessageHistoryPage = () => {
     const { showSuccess, showError } = useNotifications();
@@ -30,7 +30,7 @@ const MessageHistoryPage = () => {
     const limit = 50;
 
     useEffect(() => {
-        let sid = getAdminSchoolId();
+        let sid = getCurrentSchoolId();
         if (!sid) {
             const user = getStoredUser();
             sid = user?.schoolId || user?.school?.id;

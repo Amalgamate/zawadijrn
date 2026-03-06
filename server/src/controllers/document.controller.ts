@@ -16,7 +16,7 @@ export class DocumentController {
     async uploadDocument(req: AuthRequest, res: Response) {
         try {
             const { category, name } = req.body;
-            const schoolId = (req as any).tenant?.schoolId;
+            const schoolId = (req as any).schoolContext?.schoolId;
             const userId = req.user?.userId; // Fixed property name
 
             if (!schoolId) {
@@ -78,7 +78,7 @@ export class DocumentController {
     async uploadMultipleDocuments(req: AuthRequest, res: Response) {
         try {
             const { category } = req.body;
-            const schoolId = (req as any).tenant?.schoolId;
+            const schoolId = (req as any).schoolContext?.schoolId;
             const userId = req.user?.userId;
 
             if (!schoolId) {
@@ -142,7 +142,7 @@ export class DocumentController {
      */
     async getDocuments(req: AuthRequest, res: Response) {
         try {
-            const schoolId = (req as any).tenant?.schoolId;
+            const schoolId = (req as any).schoolContext?.schoolId;
             const { category, search, page = 1, limit = 20 } = req.query;
 
             if (!schoolId) {
@@ -216,7 +216,7 @@ export class DocumentController {
     async getDocument(req: AuthRequest, res: Response) {
         try {
             const { id } = req.params;
-            const schoolId = (req as any).tenant?.schoolId;
+            const schoolId = (req as any).schoolContext?.schoolId;
 
             if (!schoolId) {
                 throw new ApiError(403, 'School context required');
@@ -269,7 +269,7 @@ export class DocumentController {
     async deleteDocument(req: AuthRequest, res: Response) {
         try {
             const { id } = req.params;
-            const schoolId = (req as any).tenant?.schoolId;
+            const schoolId = (req as any).schoolContext?.schoolId;
 
             if (!schoolId) {
                 throw new ApiError(403, 'School context required');
@@ -323,7 +323,7 @@ export class DocumentController {
         try {
             const { id } = req.params;
             const { name, category } = req.body;
-            const schoolId = (req as any).tenant?.schoolId;
+            const schoolId = (req as any).schoolContext?.schoolId;
 
             if (!schoolId) {
                 throw new ApiError(403, 'School context required');
@@ -374,7 +374,7 @@ export class DocumentController {
      */
     async getCategories(req: AuthRequest, res: Response) {
         try {
-            const schoolId = (req as any).tenant?.schoolId;
+            const schoolId = (req as any).schoolContext?.schoolId;
 
             if (!schoolId) {
                 throw new ApiError(403, 'School context required');

@@ -6,7 +6,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { subjectAssignmentController } from '../controllers/subjectAssignment.controller';
 import { authenticate } from '../middleware/auth.middleware';
-import { requireTenant } from '../middleware/tenant.middleware';
+import { requireSchoolContext } from '../middleware/school.middleware';
 import { requireRole, auditLog } from '../middleware/permissions.middleware';
 import { validate } from '../middleware/validation.middleware';
 import { rateLimit } from '../middleware/enhanced-rateLimit.middleware';
@@ -17,8 +17,8 @@ const router = Router();
 // Validation schemas
 const createAssignmentSchema = z.object({
   teacherId: z.string().min(1),
-  subjectId: z.string().min(1),
-  gradeId: z.string().min(1),
+    learningAreaId: z.string().min(1),
+    grade: z.string().min(1),
   classId: z.string().min(1).optional()
 });
 
@@ -29,7 +29,7 @@ const createAssignmentSchema = z.object({
 router.get(
     '/',
     authenticate,
-    requireTenant,
+    requireSchoolContext,
     rateLimit({ windowMs: 60_000, maxRequests: 100 }),
     asyncHandler(subjectAssignmentController.getAllAssignments.bind(subjectAssignmentController))
 );
@@ -41,7 +41,7 @@ router.get(
 router.post(
     '/',
     authenticate,
-    requireTenant,
+    requireSchoolContext,
     requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM']),
     rateLimit({ windowMs: 60_000, maxRequests: 30 }),
     validate(createAssignmentSchema),
@@ -56,7 +56,7 @@ router.post(
 router.delete(
     '/:id',
     authenticate,
-    requireTenant,
+    requireSchoolContext,
     requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM']),
     rateLimit({ windowMs: 60_000, maxRequests: 20 }),
     auditLog('DELETE_SUBJECT_ASSIGNMENT'),
@@ -70,7 +70,7 @@ router.delete(
 router.get(
     '/eligible-teachers',
     authenticate,
-    requireTenant,
+    requireSchoolContext,
     rateLimit({ windowMs: 60_000, maxRequests: 100 }),
     asyncHandler(subjectAssignmentController.getEligibleTeachers.bind(subjectAssignmentController))
 );

@@ -7,6 +7,7 @@ export const GRADES = [
     { value: 'CRECHE', label: 'Crèche' },
     { value: 'PLAYGROUP', label: 'Playgroup' },
     { value: 'RECEPTION', label: 'Reception' },
+    { value: 'TRANSITION', label: 'Transition' },
     { value: 'PP1', label: 'PP1' },
     { value: 'PP2', label: 'PP2' },
     { value: 'GRADE_1', label: 'Grade 1' },
@@ -22,6 +23,8 @@ export const GRADES = [
     { value: 'GRADE_11', label: 'Grade 11' },
     { value: 'GRADE_12', label: 'Grade 12' }
 ];
+
+export const LEARNING_AREA_GRADES = GRADES;
 
 /**
  * Get grade label by value

@@ -9,7 +9,7 @@ import {
 } from '../../../components/ui';
 import { useNotifications } from '../hooks/useNotifications';
 import api from '../../../services/api';
-import { getAdminSchoolId, getStoredUser } from '../../../services/tenantContext';
+import { getCurrentSchoolId, getStoredUser } from '../../../services/schoolContext';
 import { formatPhoneNumber, isValidPhoneNumber, getDisplayPhoneNumber } from '../../../utils/phoneFormatter';
 
 const BroadcastMessagesPage = () => {
@@ -50,7 +50,7 @@ const BroadcastMessagesPage = () => {
   const [failedRecipients, setFailedRecipients] = useState([]);
 
   useEffect(() => {
-    let sid = getAdminSchoolId();
+    let sid = getCurrentSchoolId();
     if (!sid) {
       const user = getStoredUser();
       sid = user?.schoolId || user?.school?.id;

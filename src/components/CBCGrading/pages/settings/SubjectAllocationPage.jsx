@@ -1,318 +1,433 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { UserPlus, Search, GraduationCap, X, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import {
-    UserPlus,
-    Trash2,
-    Search,
-    BookOpen,
-    User,
-    ChevronRight,
-    ChevronDown,
-    GraduationCap,
-    Plus,
-    X,
-    CheckCircle2,
-    AlertCircle,
-    Loader2
-} from 'lucide-react';
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-    Button,
-    Input,
-    Badge,
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogFooter
+  Button,
+  Input,
+  Badge,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
 } from '../../../../components/ui';
 import api from '../../../../services/api';
 import { useNotifications } from '../../hooks/useNotifications';
+import { getCurrentSchoolId, getStoredUser } from '../../../../services/schoolContext';
+import { getGradeLabel } from '../../../../constants/grades';
+
+const dayAlias = {
+  MONDAY: 'MONDAY',
+  MON: 'MONDAY',
+  TUESDAY: 'TUESDAY',
+  TUE: 'TUESDAY',
+  WEDNESDAY: 'WEDNESDAY',
+  WED: 'WEDNESDAY',
+  THURSDAY: 'THURSDAY',
+  THU: 'THURSDAY',
+  FRIDAY: 'FRIDAY',
+  FRI: 'FRIDAY',
+  SATURDAY: 'SATURDAY',
+  SAT: 'SATURDAY',
+  SUNDAY: 'SUNDAY',
+  SUN: 'SUNDAY'
+};
+
+const normalizeDay = (day) => {
+  if (!day) return '';
+  return dayAlias[String(day).trim().toUpperCase()] || String(day).trim().toUpperCase();
+};
+
+const toMinutes = (timeVal) => {
+  if (!timeVal) return -1;
+  const [h = '0', m = '0'] = String(timeVal).split(':');
+  return Number(h) * 60 + Number(m);
+};
 
 const SubjectAllocationPage = () => {
-    const [loading, setLoading] = useState(true);
-    const [teachers, setTeachers] = useState([]);
-    const [learningAreas, setLearningAreas] = useState([]);
-    const [assignments, setAssignments] = useState([]);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [expandedGrades, setExpandedGrades] = useState({});
-    const [showAssignModal, setShowAssignModal] = useState(false);
-    const [selectedSubject, setSelectedSubject] = useState(null);
-    const [submitting, setSubmitting] = useState(false);
-    const { showSuccess, showError } = useNotifications();
+  const [loading, setLoading] = useState(true);
+  const [teachers, setTeachers] = useState([]);
+  const [learningAreas, setLearningAreas] = useState([]);
+  const [assignments, setAssignments] = useState([]);
+  const [classSchedules, setClassSchedules] = useState([]);
 
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        try {
-            const [teachersResp, areasResp, assignmentsResp] = await Promise.all([
-                api.teachers.getAll(),
-                api.config.getLearningAreas(),
-                api.subjectAssignments.getAll()
-            ]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [selectedSubject, setSelectedSubject] = useState(null);
+  const [teacherSearchTerm, setTeacherSearchTerm] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-            setTeachers(teachersResp.data || []);
-            setLearningAreas(areasResp.data || []);
-            setAssignments(assignmentsResp.data || []);
+  const { showSuccess, showError } = useNotifications();
 
-            // Expand the first grade by default
-            if (areasResp.data && areasResp.data.length > 0) {
-                setExpandedGrades({ [areasResp.data[0].gradeLevel]: true });
-            }
-        } catch (error) {
-            console.error('Failed to fetch allocation data:', error);
-            showError('Failed to load allocation data');
-        } finally {
-            setLoading(false);
-        }
-    }, [showError]);
+  const resolveSchoolId = () => {
+    const fromContext = getCurrentSchoolId();
+    if (fromContext) return fromContext;
 
-    useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+    const user = getStoredUser();
+    return user?.schoolId || user?.school?.id || null;
+  };
 
-    const handleRemove = async (assignmentId) => {
-        if (!window.confirm('Are you sure you want to remove this assignment?')) return;
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const schoolId = resolveSchoolId();
+      const isSuperAdmin = getStoredUser()?.role === 'SUPER_ADMIN';
 
-        try {
-            await api.subjectAssignments.delete(assignmentId);
-            showSuccess('Assignment removed successfully');
-            setAssignments(prev => prev.filter(a => a.id !== assignmentId));
-        } catch (error) {
-            showError('Failed to remove assignment');
-        }
-    };
+      if (!schoolId && !isSuperAdmin) {
+        showError('Select a school first to manage subject allocation.');
+        setLearningAreas([]);
+        setAssignments([]);
+        setClassSchedules([]);
+        setTeachers([]);
+        return;
+      }
 
-    const handleAssign = async (teacherId) => {
-        if (!selectedSubject || !teacherId) return;
+      const [teachersResp, areasResp, assignmentsResp, classesResp] = await Promise.all([
+        api.teachers.getAll(),
+        api.config.getLearningAreas(schoolId || undefined),
+        api.subjectAssignments.getAll(),
+        api.classes.getAll({ active: true })
+      ]);
 
-        setSubmitting(true);
-        try {
-            const resp = await api.subjectAssignments.create({
-                teacherId,
-                learningAreaId: selectedSubject.id,
-                grade: selectedSubject.gradeLevel
-            });
+      const teachersData = Array.isArray(teachersResp?.data) ? teachersResp.data : [];
+      const areasData = Array.isArray(areasResp?.data)
+        ? areasResp.data
+        : Array.isArray(areasResp)
+          ? areasResp
+          : [];
+      const assignmentsData = Array.isArray(assignmentsResp?.data) ? assignmentsResp.data : [];
+      const classesData = Array.isArray(classesResp?.data) ? classesResp.data : [];
 
-            showSuccess('Teacher assigned successfully');
-            setShowAssignModal(false);
-            fetchData(); // Refresh to get the full joined data
-        } catch (error) {
-            showError(error.message || 'Failed to assign teacher');
-        } finally {
-            setSubmitting(false);
-        }
-    };
+      setTeachers(teachersData);
+      setLearningAreas(areasData);
+      setAssignments(assignmentsData);
 
-    const toggleGrade = (grade) => {
-        setExpandedGrades(prev => ({ ...prev, [grade]: !prev[grade] }));
-    };
+      const scheduleResponses = await Promise.all(
+        classesData.map(async (classItem) => {
+          try {
+            const resp = await api.classes.getSchedules(classItem.id);
+            const schedules = Array.isArray(resp?.data) ? resp.data : [];
+            return schedules.map((schedule) => ({
+              ...schedule,
+              classId: classItem.id,
+              className: classItem.name,
+              classGrade: classItem.grade,
+              classTeacherName: classItem.teacher
+                ? `${classItem.teacher.firstName || ''} ${classItem.teacher.lastName || ''}`.trim()
+                : null
+            }));
+          } catch {
+            return [];
+          }
+        })
+      );
 
-    // Group learning areas by grade level
-    const groupedAreas = learningAreas.reduce((acc, area) => {
-        if (!acc[area.gradeLevel]) acc[area.gradeLevel] = [];
-        acc[area.gradeLevel].push(area);
-        return acc;
-    }, {});
-
-    const filteredTeachers = teachers.filter(t =>
-        `${t.firstName} ${t.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        t.staffId?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-    if (loading) {
-        return (
-            <div className="flex flex-col items-center justify-center py-24 text-gray-500">
-                <Loader2 className="animate-spin mb-4" size={48} />
-                <p className="text-lg font-medium">Loading allocations...</p>
-            </div>
-        );
+      setClassSchedules(scheduleResponses.flat());
+    } catch (error) {
+      console.error('Failed to fetch allocation data:', error);
+      showError(error.message || 'Failed to load subject allocation data');
+    } finally {
+      setLoading(false);
     }
+  }, [showError]);
 
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const handleRemove = async (assignmentId) => {
+    if (!assignmentId) return;
+    if (!window.confirm('Are you sure you want to remove this assignment?')) return;
+
+    try {
+      await api.subjectAssignments.delete(assignmentId);
+      showSuccess('Assignment removed successfully');
+      setAssignments((prev) => prev.filter((item) => item.id !== assignmentId));
+    } catch (error) {
+      showError(error.message || 'Failed to remove assignment');
+    }
+  };
+
+  const handleAssign = async (teacherId) => {
+    if (!selectedSubject || !teacherId) return;
+
+    setSubmitting(true);
+    try {
+      await api.subjectAssignments.create({
+        teacherId,
+        learningAreaId: selectedSubject.id,
+        grade: selectedSubject.gradeLevel
+      });
+
+      showSuccess('Teacher assigned successfully');
+      setShowAssignModal(false);
+      setTeacherSearchTerm('');
+      await fetchData();
+    } catch (error) {
+      showError(error.message || 'Failed to assign teacher');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const subjectRows = useMemo(() => {
+    const now = new Date();
+    const today = normalizeDay(now.toLocaleDateString('en-US', { weekday: 'long' }));
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+    return (learningAreas || []).map((area) => {
+      const rowAssignments = (assignments || []).filter(
+        (assignment) => assignment.learningAreaId === area.id && assignment.grade === area.gradeLevel
+      );
+      const activeAssignment = rowAssignments[0] || null;
+
+      const relatedSchedules = (classSchedules || []).filter(
+        (schedule) => schedule.learningAreaId === area.id && schedule.classGrade === area.gradeLevel
+      );
+
+      const todaysSchedules = relatedSchedules
+        .filter((schedule) => normalizeDay(schedule.day) === today)
+        .sort((a, b) => toMinutes(a.startTime) - toMinutes(b.startTime));
+
+      const currentLesson = todaysSchedules.find((slot) => {
+        const start = toMinutes(slot.startTime);
+        const end = toMinutes(slot.endTime);
+        return start >= 0 && end >= 0 && nowMinutes >= start && nowMinutes < end;
+      }) || null;
+
+      const activeTeacher = activeAssignment?.teacher
+        ? `${activeAssignment.teacher.firstName || ''} ${activeAssignment.teacher.lastName || ''}`.trim()
+        : '—';
+
+      const currentTeacher = currentLesson?.teacher
+        ? `${currentLesson.teacher.firstName || ''} ${currentLesson.teacher.lastName || ''}`.trim()
+        : currentLesson?.classTeacherName || activeTeacher;
+
+      const timetableSummary = todaysSchedules.length > 0
+        ? todaysSchedules.slice(0, 2).map((slot) => `${slot.className} ${slot.startTime}-${slot.endTime}`).join(' • ')
+        : relatedSchedules.length > 0
+          ? `${relatedSchedules.length} slot(s) configured`
+          : '—';
+
+      return {
+        ...area,
+        activeAssignment,
+        activeTeacher,
+        timetableSummary,
+        currentLesson: currentLesson
+          ? `${currentLesson.subject || area.name} (${currentLesson.startTime}-${currentLesson.endTime})`
+          : '—',
+        currentTeacher: currentTeacher || '—'
+      };
+    });
+  }, [learningAreas, assignments, classSchedules]);
+
+  const filteredRows = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return subjectRows;
+
+    return subjectRows.filter((row) => {
+      return (
+        row.name?.toLowerCase().includes(term) ||
+        row.shortName?.toLowerCase().includes(term) ||
+        getGradeLabel(row.gradeLevel)?.toLowerCase().includes(term) ||
+        row.activeTeacher?.toLowerCase().includes(term) ||
+        row.currentTeacher?.toLowerCase().includes(term)
+      );
+    });
+  }, [searchTerm, subjectRows]);
+
+  const filteredTeachers = useMemo(() => {
+    const term = teacherSearchTerm.trim().toLowerCase();
+    return (teachers || []).filter((teacher) => {
+      if (!term) return true;
+      return (
+        `${teacher.firstName || ''} ${teacher.lastName || ''}`.toLowerCase().includes(term) ||
+        (teacher.staffId || '').toLowerCase().includes(term)
+      );
+    });
+  }, [teacherSearchTerm, teachers]);
+
+  if (loading) {
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                <div>
-                    <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                        <GraduationCap className="text-purple-600" />
-                        Subject Allocation
-                    </h2>
-                    <p className="text-sm text-gray-500">Assign teachers to subjects across different grades</p>
-                </div>
-                <div className="flex items-center gap-2 text-sm font-medium text-purple-700 bg-purple-50 px-3 py-1 rounded-full border border-purple-100">
-                    <BookOpen size={16} />
-                    <span>{assignments.length} Assignments Active</span>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4">
-                {Object.entries(groupedAreas).sort().map(([grade, areas]) => (
-                    <Card key={grade} className="overflow-hidden border-gray-200 hover:border-purple-200 transition-all">
-                        <div
-                            className={`p-4 flex items-center justify-between cursor-pointer select-none transition-colors ${expandedGrades[grade] ? 'bg-purple-50/50' : 'hover:bg-gray-50'
-                                }`}
-                            onClick={() => toggleGrade(grade)}
-                        >
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-lg bg-white shadow-sm border border-purple-100 flex items-center justify-center text-purple-600">
-                                    <GraduationCap size={20} />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-gray-800 uppercase tracking-tight">{grade.replace(/_/g, ' ')}</h3>
-                                    <p className="text-xs text-gray-500 font-medium">{areas.length} Learning Areas</p>
-                                </div>
-                            </div>
-                            {expandedGrades[grade] ? <ChevronDown size={20} className="text-gray-400" /> : <ChevronRight size={20} className="text-gray-400" />}
-                        </div>
-
-                        {expandedGrades[grade] && (
-                            <CardContent className="p-0 border-t border-gray-100">
-                                <div className="divide-y divide-gray-100">
-                                    {areas.sort((a, b) => a.name.localeCompare(b.name)).map(area => {
-                                        const areaAssignments = assignments.filter(a => a.learningAreaId === area.id && a.grade === grade);
-
-                                        return (
-                                            <div key={area.id} className="p-4 hover:bg-gray-50/50 transition-colors group">
-                                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                                    <div className="flex items-start gap-3">
-                                                        <div className="mt-1 flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 group-hover:bg-purple-100 transition-colors">
-                                                            <span className="text-sm">{area.icon || '📚'}</span>
-                                                        </div>
-                                                        <div>
-                                                            <h4 className="font-bold text-gray-900">{area.name}</h4>
-                                                            {area.description && <p className="text-xs text-gray-500 max-w-md">{area.description}</p>}
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="flex flex-wrap items-center gap-2">
-                                                        {areaAssignments.map(assign => (
-                                                            <Badge
-                                                                key={assign.id}
-                                                                variant="secondary"
-                                                                className="pl-1 pr-1 py-1 flex items-center gap-1 group/badge bg-white border-gray-200 hover:border-red-200 transition-all"
-                                                            >
-                                                                <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center text-[10px] font-bold text-purple-600">
-                                                                    {assign.teacher?.firstName?.charAt(0)}{assign.teacher?.lastName?.charAt(0)}
-                                                                </div>
-                                                                <span className="text-xs font-semibold text-gray-700">
-                                                                    {assign.teacher?.firstName} {assign.teacher?.lastName}
-                                                                </span>
-                                                                <button
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        handleRemove(assign.id);
-                                                                    }}
-                                                                    className="p-1 rounded-full hover:bg-red-50 text-gray-400 hover:text-red-500 transition-all opacity-0 group-hover/badge:opacity-100"
-                                                                >
-                                                                    <X size={12} />
-                                                                </button>
-                                                            </Badge>
-                                                        ))}
-
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            className="h-8 rounded-full border-dashed border-gray-300 hover:border-purple-400 hover:bg-purple-50 text-gray-600 hover:text-purple-700 gap-1 px-3"
-                                                            onClick={() => {
-                                                                setSelectedSubject(area);
-                                                                setShowAssignModal(true);
-                                                            }}
-                                                        >
-                                                            <UserPlus size={14} />
-                                                            <span className="text-xs font-bold">Assign Tutor</span>
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </CardContent>
-                        )}
-                    </Card>
-                ))}
-            </div>
-
-            {/* Assign Tutor Modal */}
-            <Dialog open={showAssignModal} onOpenChange={setShowAssignModal}>
-                <DialogContent className="max-w-md overflow-hidden p-0 rounded-2xl border-none shadow-2xl">
-                    <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-6 text-white">
-                        <DialogHeader>
-                            <DialogTitle className="text-xl font-bold flex items-center gap-2">
-                                <UserPlus />
-                                Assign Tutor
-                            </DialogTitle>
-                            <p className="text-purple-100 text-xs mt-1 font-medium opacity-90">
-                                {selectedSubject?.name} • {selectedSubject?.gradeLevel.replace(/_/g, ' ')}
-                            </p>
-                        </DialogHeader>
-                    </div>
-
-                    <div className="p-6 space-y-4">
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                            <Input
-                                placeholder="Search by name or staff ID..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-10 h-11 bg-gray-50 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:bg-white transition-all"
-                            />
-                        </div>
-
-                        <div className="max-h-64 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
-                            {filteredTeachers.map(teacher => {
-                                const isAlreadyAssigned = assignments.some(
-                                    a => a.teacherId === teacher.id &&
-                                        a.learningAreaId === selectedSubject?.id &&
-                                        a.grade === selectedSubject?.gradeLevel
-                                );
-
-                                return (
-                                    <div
-                                        key={teacher.id}
-                                        className={`flex items-center justify-between p-3 rounded-xl border transition-all ${isAlreadyAssigned
-                                                ? 'bg-gray-50 border-gray-100 opacity-60 cursor-not-allowed'
-                                                : 'border-gray-100 hover:border-purple-200 hover:bg-purple-50/50 cursor-pointer'
-                                            }`}
-                                        onClick={() => !isAlreadyAssigned && handleAssign(teacher.id)}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold shadow-sm">
-                                                {teacher.firstName?.charAt(0)}{teacher.lastName?.charAt(0)}
-                                            </div>
-                                            <div>
-                                                <p className="font-bold text-gray-800 text-sm">{teacher.firstName} {teacher.lastName}</p>
-                                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{teacher.staffId || 'Tutor'}</p>
-                                            </div>
-                                        </div>
-                                        {isAlreadyAssigned ? (
-                                            <CheckCircle2 className="text-green-500" size={20} />
-                                        ) : (
-                                            <ChevronRight className="text-gray-300" size={20} />
-                                        )}
-                                    </div>
-                                );
-                            })}
-
-                            {filteredTeachers.length === 0 && (
-                                <div className="text-center py-8 text-gray-500">
-                                    <AlertCircle size={32} className="mx-auto mb-2 opacity-20" />
-                                    <p className="text-sm font-medium">No results found for "{searchTerm}"</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    <DialogFooter className="bg-gray-50 p-4 border-t border-gray-100">
-                        <Button variant="ghost" onClick={() => setShowAssignModal(false)} className="rounded-xl font-bold">
-                            Cancel
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-        </div>
+      <div className="flex flex-col items-center justify-center py-24 text-gray-500">
+        <Loader2 className="animate-spin mb-4" size={48} />
+        <p className="text-lg font-medium">Loading subject allocation...</p>
+      </div>
     );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+        <div>
+          <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+            <GraduationCap className="text-purple-600" />
+            Subject Allocation
+          </h2>
+          <p className="text-sm text-gray-500">Learning areas, active teacher, class timetable, current lesson and current teacher.</p>
+        </div>
+        <div className="flex items-center gap-2 text-sm font-medium text-purple-700 bg-purple-50 px-3 py-1 rounded-full border border-purple-100 w-fit">
+          <span>{assignments.length} assignments active</span>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+        <div className="relative mb-4 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+          <Input
+            placeholder="Search by subject, grade, active/current teacher..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+
+        {filteredRows.length === 0 ? (
+          <div className="text-center py-10 text-gray-500">
+            <p className="font-medium">No learning areas available for allocation</p>
+            <p className="text-sm mt-1">Seed or add learning areas in the Learning Areas tab first.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-gray-50 border-y border-gray-100 text-xs uppercase tracking-wide text-gray-600">
+                  <th className="p-3">Grade</th>
+                  <th className="p-3">Learning Area</th>
+                  <th className="p-3">Active Teacher</th>
+                  <th className="p-3">Class Timetable</th>
+                  <th className="p-3">Current Lesson</th>
+                  <th className="p-3">Current Teacher</th>
+                  <th className="p-3">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredRows.map((row) => (
+                  <tr key={row.id} className="border-b border-gray-100 hover:bg-gray-50/70 align-top">
+                    <td className="p-3 text-sm font-semibold text-gray-700">{getGradeLabel(row.gradeLevel)}</td>
+                    <td className="p-3">
+                      <div className="flex items-start gap-2">
+                        <span>{row.icon || '📚'}</span>
+                        <div>
+                          <p className="font-semibold text-gray-900">{row.name}</p>
+                          {row.shortName && <p className="text-xs text-gray-500">{row.shortName}</p>}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-3 text-sm text-gray-700">{row.activeTeacher || '—'}</td>
+                    <td className="p-3 text-sm text-gray-700">{row.timetableSummary}</td>
+                    <td className="p-3 text-sm text-gray-700">{row.currentLesson}</td>
+                    <td className="p-3 text-sm text-gray-700">{row.currentTeacher}</td>
+                    <td className="p-3">
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8"
+                          onClick={() => {
+                            setSelectedSubject(row);
+                            setTeacherSearchTerm('');
+                            setShowAssignModal(true);
+                          }}
+                        >
+                          <UserPlus size={14} className="mr-1" />
+                          Assign
+                        </Button>
+                        {row.activeAssignment?.id && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => handleRemove(row.activeAssignment.id)}
+                          >
+                            <X size={14} className="mr-1" />
+                            Remove
+                          </Button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <Dialog open={showAssignModal} onOpenChange={setShowAssignModal}>
+        <DialogContent className="max-w-md overflow-hidden p-0 rounded-2xl border-none shadow-2xl">
+          <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-6 text-white">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                <UserPlus />
+                Assign Teacher
+              </DialogTitle>
+              <p className="text-purple-100 text-xs mt-1 font-medium opacity-90">
+                {selectedSubject?.name} • {getGradeLabel(selectedSubject?.gradeLevel || '')}
+              </p>
+            </DialogHeader>
+          </div>
+
+          <div className="p-6 space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <Input
+                placeholder="Search by name or staff ID..."
+                value={teacherSearchTerm}
+                onChange={(e) => setTeacherSearchTerm(e.target.value)}
+                className="pl-10 h-11 bg-gray-50 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:bg-white transition-all"
+              />
+            </div>
+
+            <div className="max-h-72 overflow-y-auto space-y-2 pr-1">
+              {filteredTeachers.map((teacher) => {
+                const alreadyAssigned = assignments.some(
+                  (assignment) => assignment.teacherId === teacher.id &&
+                    assignment.learningAreaId === selectedSubject?.id &&
+                    assignment.grade === selectedSubject?.gradeLevel
+                );
+
+                return (
+                  <div
+                    key={teacher.id}
+                    className={`flex items-center justify-between p-3 rounded-xl border transition-all ${alreadyAssigned
+                      ? 'bg-gray-50 border-gray-100 opacity-60 cursor-not-allowed'
+                      : 'border-gray-100 hover:border-purple-200 hover:bg-purple-50/50 cursor-pointer'
+                      }`}
+                    onClick={() => !alreadyAssigned && !submitting && handleAssign(teacher.id)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold shadow-sm">
+                        {teacher.firstName?.charAt(0)}{teacher.lastName?.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="font-bold text-gray-800 text-sm">{teacher.firstName} {teacher.lastName}</p>
+                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{teacher.staffId || 'Teacher'}</p>
+                      </div>
+                    </div>
+                    {alreadyAssigned ? <CheckCircle2 className="text-green-500" size={20} /> : null}
+                  </div>
+                );
+              })}
+
+              {filteredTeachers.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <AlertCircle size={32} className="mx-auto mb-2 opacity-20" />
+                  <p className="text-sm font-medium">No teachers found</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="bg-gray-50 p-4 border-t border-gray-100">
+            <Button variant="ghost" onClick={() => setShowAssignModal(false)} className="rounded-xl font-bold" disabled={submitting}>
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
 };
 
 export default SubjectAllocationPage;

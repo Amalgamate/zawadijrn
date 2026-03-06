@@ -15,11 +15,26 @@ const router = Router();
  */
 export const getLearningAreas = async (req: AuthRequest, res: Response) => {
   try {
-    let schoolId = (req.query.schoolId as string) || req.user?.schoolId;
+    const querySchoolIdRaw = req.query.schoolId as string | undefined;
+    const querySchoolId = querySchoolIdRaw && querySchoolIdRaw !== 'undefined' && querySchoolIdRaw !== 'null'
+      ? querySchoolIdRaw
+      : undefined;
+
+    let schoolId = querySchoolId || req.user?.schoolId;
 
     // Phase 5: Tenant Isolation
     if (req.user?.role !== 'SUPER_ADMIN' && req.user?.schoolId) {
       schoolId = req.user.schoolId;
+    }
+
+    if (!schoolId && req.user?.role === 'SUPER_ADMIN') {
+      const learningAreas = await prisma.learningArea.findMany({
+        orderBy: [
+          { gradeLevel: 'asc' },
+          { name: 'asc' }
+        ]
+      });
+      return res.json(learningAreas);
     }
 
     if (!schoolId) {
@@ -245,64 +260,60 @@ export const seedLearningAreas = async (req: AuthRequest, res: Response) => {
       'Pre-Primary': '🎨', 'Lower Primary': '📘', 'Upper Primary': '🧪', 'Junior School': '📗'
     };
 
-    let created = 0;
-    let skipped = 0;
+    const shortNameMapping: { [key: string]: string } = {
+      'English': 'ENG',
+      'Kiswahili': 'KISW',
+      'Mathematics': 'MATH',
+      'Mathematical Activities': 'MATH',
+      'Language Activities': 'LANG',
+      'Environmental Activities': 'ENV',
+      'Creative Activities': 'CREA',
+      'Religious Education': 'RE',
+      'Religious Activities': 'REL',
+      'Science and Technology': 'SCI',
+      'Social Studies': 'SOC',
+      'Agriculture & Nutrition': 'AGRI',
+      'Creative Arts': 'ARTS',
+      'Integrated Science': 'INT_SCI',
+      'Pre-Technical Studies': 'PRE-TECH',
+      'Creative Arts & Sports': 'ARTS'
+    };
+
+    const rowsToSeed: Array<{
+      name: string;
+      shortName: string;
+      gradeLevel: string;
+      icon: string;
+      color: string;
+      schoolId: string;
+    }> = [];
 
     for (const [grade, areas] of Object.entries(gradeMappings)) {
-      // Determine a visual "group" for color/icon purposes, but the gradeLevel in DB is the actual Grade
       let visualGroup = 'Lower Primary';
       if (['CRECHE', 'PLAYGROUP', 'RECEPTION', 'TRANSITION', 'PP1', 'PP2'].includes(grade)) visualGroup = 'Pre-Primary';
       if (['GRADE_4', 'GRADE_5', 'GRADE_6'].includes(grade)) visualGroup = 'Upper Primary';
       if (['GRADE_7', 'GRADE_8', 'GRADE_9'].includes(grade)) visualGroup = 'Junior School';
 
       for (const area of areas) {
-        const existing = await prisma.learningArea.findFirst({
-          where: {
-            name: area,
-            gradeLevel: grade, // Actual Grade here!
-            schoolId
-          }
+        rowsToSeed.push({
+          name: area,
+          shortName: shortNameMapping[area] || area.substring(0, 5).toUpperCase(),
+          gradeLevel: grade,
+          icon: icons[visualGroup] || '📚',
+          color: colors[visualGroup] || '#3b82f6',
+          schoolId
         });
-
-        if (existing) {
-          skipped++;
-          continue;
-        }
-
-        // Generate a better short name
-        const shortNameMapping: { [key: string]: string } = {
-          'English': 'ENG',
-          'Kiswahili': 'KISW',
-          'Mathematics': 'MATH',
-          'Mathematical Activities': 'MATH',
-          'Language Activities': 'LANG',
-          'Environmental Activities': 'ENV',
-          'Creative Activities': 'CREA',
-          'Religious Education': 'RE',
-          'Religious Activities': 'REL',
-          'Science and Technology': 'SCI',
-          'Social Studies': 'SOC',
-          'Agriculture & Nutrition': 'AGRI',
-          'Creative Arts': 'ARTS',
-          'Integrated Science': 'INT_SCI',
-          'Pre-Technical Studies': 'PRE-TECH',
-          'Creative Arts & Sports': 'ARTS'
-        };
-
-        await prisma.learningArea.create({
-          data: {
-            name: area,
-            shortName: shortNameMapping[area] || area.substring(0, 5).toUpperCase(),
-            gradeLevel: grade, // Store actual Grade
-            icon: icons[visualGroup] || '📚',
-            color: colors[visualGroup] || '#3b82f6',
-            schoolId
-          }
-        });
-
-        created++;
       }
     }
+
+    const total = rowsToSeed.length;
+    const result = await prisma.learningArea.createMany({
+      data: rowsToSeed,
+      skipDuplicates: true
+    });
+
+    const created = result.count;
+    const skipped = Math.max(total - created, 0);
 
     res.json({
       message: 'Learning areas seeded successfully',

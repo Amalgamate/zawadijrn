@@ -3,7 +3,7 @@ import { Plus, Edit, Trash2, X, Eye, Cake, Bell, Megaphone, RefreshCw, Send, Sav
 import { Card, CardHeader, CardContent, CardTitle, CardDescription, Button, Input, Label, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, Tabs, TabsList, TabsTrigger, TabsContent, Badge } from '../../../components/ui';
 import { useNotifications } from '../hooks/useNotifications';
 import api, { communicationAPI } from '../../../services/api';
-import { getAdminSchoolId, getStoredUser } from '../../../services/tenantContext';
+import { getCurrentSchoolId, getStoredUser } from '../../../services/schoolContext';
 
 const cakeEmoji = String.fromCodePoint(0x1F382);
 const balloonEmoji = String.fromCodePoint(0x1F388);
@@ -97,7 +97,7 @@ const NoticesPage = ({ initialTab }) => {
 
   useEffect(() => {
     // Determine School ID
-    let sid = getAdminSchoolId();
+    let sid = getCurrentSchoolId();
     if (!sid) {
       const user = getStoredUser();
       sid = user?.schoolId || user?.school?.id;

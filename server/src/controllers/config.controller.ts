@@ -5,6 +5,17 @@ import { calculationService } from '../services/calculation.service';
 import { Term, FormativeAssessmentType, Grade } from '@prisma/client';
 import prisma from '../config/database';
 
+const extractSchoolId = (req: AuthRequest): string | undefined => {
+  const headerSchoolId = req.headers['x-school-id'];
+  const bodySchoolId = req.body?.schoolId;
+
+  if (Array.isArray(headerSchoolId)) {
+    return headerSchoolId[0] || req.user?.schoolId || bodySchoolId;
+  }
+
+  return (headerSchoolId as string) || req.user?.schoolId || bodySchoolId;
+};
+
 export const getTermConfigs = async (req: Request, res: Response) => {
   try {
     const { schoolId } = req.params;
@@ -40,17 +51,30 @@ export const getActiveTermConfig = async (req: Request, res: Response) => {
   }
 };
 
+// Helper to safely parse dates
+const safeParseDate = (dateVal: any, defaultDate: Date): Date => {
+  if (!dateVal) return defaultDate;
+  const d = new Date(dateVal);
+  return isNaN(d.getTime()) ? defaultDate : d;
+};
+
 export const upsertTermConfig = async (req: AuthRequest, res: Response) => {
   try {
     const { academicYear, term, startDate, endDate, formativeWeight, summativeWeight, isActive } = req.body;
+
+    // Use weights from body or default to 30/70
+    const fw = formativeWeight != null ? parseFloat(formativeWeight) : 30.0;
+    const sw = summativeWeight != null ? parseFloat(summativeWeight) : 70.0;
+
     const config = await configService.upsertTermConfig({
       academicYear: parseInt(academicYear),
       term,
-      startDate: new Date(startDate),
-      endDate: new Date(endDate),
-      formativeWeight: parseFloat(formativeWeight),
-      summativeWeight: parseFloat(summativeWeight),
+      startDate: safeParseDate(startDate, new Date()),
+      endDate: safeParseDate(endDate, new Date()),
+      formativeWeight: fw,
+      summativeWeight: sw,
       isActive: Boolean(isActive),
+      schoolId: req.user!.schoolId!,
       createdBy: req.user!.userId
     });
     res.json({ success: true, data: config });
@@ -163,7 +187,12 @@ export const getClasses = async (req: Request, res: Response) => {
 
 export const upsertClass = async (req: AuthRequest, res: Response) => {
   try {
-    const cls = await configService.upsertClass(req.body);
+    const schoolId = extractSchoolId(req);
+    if (!schoolId) {
+      return res.status(400).json({ success: false, error: 'School ID required' });
+    }
+
+    const cls = await configService.upsertClass({ ...req.body, schoolId });
     res.json({ success: true, data: cls });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
@@ -233,6 +262,9 @@ export const seedStreams = async (req: Request, res: Response) => {
 
 export const seedClasses = async (req: AuthRequest, res: Response) => {
   try {
+    const schoolId = extractSchoolId(req);
+    if (!schoolId) return res.status(400).json({ success: false, error: 'School ID required' });
+
     const year = new Date().getFullYear();
     const term: Term = 'TERM_1';
     const grades: Grade[] = [
@@ -243,18 +275,19 @@ export const seedClasses = async (req: AuthRequest, res: Response) => {
     ];
 
     const results = [];
+    let skipped = 0;
     for (const grade of grades) {
       const stream = 'A';
       const name = `${grade.replace('_', ' ')} ${stream}`;
 
-      // Check if exists
+      // Check if exists for THIS school
       const existing = await prisma.class.findFirst({
-        where: { grade, stream, academicYear: year, term }
+        where: { grade, stream, academicYear: year, term, schoolId }
       });
 
       if (!existing) {
-        const totalClasses = await prisma.class.count();
-        const classCode = `CLS-${String(totalClasses + 1).padStart(5, '0')}`;
+        const totalClasses = await prisma.class.count({ where: { schoolId } });
+        const classCode = `CLS-${schoolId.substring(0, 4)}-${String(totalClasses + 1).padStart(4, '0')}`;
 
         const newClass = await prisma.class.create({
           data: {
@@ -264,14 +297,23 @@ export const seedClasses = async (req: AuthRequest, res: Response) => {
             stream,
             academicYear: year,
             term,
-            active: true
+            active: true,
+            schoolId
           }
         });
         results.push(newClass);
+      } else {
+        skipped++;
       }
     }
 
-    res.json({ success: true, message: `Seeded ${results.length} classes for ${year} ${term}`, data: results });
+    res.json({
+      success: true,
+      message: `Seeded ${results.length} classes for ${year} ${term}`,
+      created: results.length,
+      skipped,
+      data: results
+    });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getPortalSchoolId, isStoredUserSuperAdmin, ensureSchoolId } from './tenantContext';
+import { resolveCurrentSchoolId } from './schoolContext';
 
 // Use environment variable for API URL or fall back to automatic discovery for production stability
 const getApiBaseUrl = () => {
@@ -31,21 +31,14 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
     async (config) => {
         const token = localStorage.getItem('token');
-        const isSuperAdmin = isStoredUserSuperAdmin();
-        // Use ensureSchoolId for robust tenant recovery
-        const currentSchoolId = isSuperAdmin ? ensureSchoolId() : null;
-        const portalSchoolId = getPortalSchoolId();
+        const currentSchoolId = resolveCurrentSchoolId();
 
         if (token) {
             config.headers['Authorization'] = `Bearer ${token}`;
         }
 
-        if (isSuperAdmin && currentSchoolId) {
+        if (currentSchoolId) {
             config.headers['X-School-Id'] = currentSchoolId;
-        }
-
-        if (!isSuperAdmin && portalSchoolId) {
-            config.headers['X-Portal-School-Id'] = portalSchoolId;
         }
 
         return config;

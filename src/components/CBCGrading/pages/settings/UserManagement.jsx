@@ -5,7 +5,7 @@ import {
   Settings, Lock, Check, AlertCircle, Clock, Activity, BookOpen, MessageCircle, Key
 } from 'lucide-react';
 import { userAPI } from '../../../../services/api';
-import { getAdminSchoolId, getStoredUser } from '../../../../services/tenantContext';
+import { getCurrentSchoolId, getStoredUser } from '../../../../services/schoolContext';
 import ResetPasswordModal from '../../shared/ResetPasswordModal';
 
 // Real API is imported from services/api.js
@@ -219,7 +219,7 @@ const UserManagement = () => {
       setLoading(true);
 
       // Get school ID from context
-      let sid = getAdminSchoolId();
+      let sid = getCurrentSchoolId();
       if (!sid) {
         const user = getStoredUser();
         sid = user?.schoolId || user?.school?.id;

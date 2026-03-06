@@ -14,7 +14,7 @@ import { COMMUNICATION_CONFIG, ERROR_MESSAGES, SMS_MESSAGES } from '../config/co
  */
 export const getCommunicationConfig = async (req: AuthRequest, res: Response) => {
     try {
-        // Get schoolId from URL params or tenant context
+        // Get schoolId from URL params or school context
         const { schoolId } = req.params;
 
         if (!schoolId) {
@@ -105,8 +105,8 @@ export const getCommunicationConfig = async (req: AuthRequest, res: Response) =>
 export const saveCommunicationConfig = async (req: AuthRequest, res: Response) => {
     try {
         const { sms, email, mpesa, birthdays } = req.body;
-        // Get schoolId from tenant context (set by auth middleware) or fallback to body
-        const schoolId = (req as any).tenant?.schoolId || req.body.schoolId;
+        // Get schoolId from school context (set by middleware) or fallback to body
+        const schoolId = (req as any).schoolContext?.schoolId || req.body.schoolId;
 
         if (!schoolId) {
             throw new ApiError(403, 'School context required');
@@ -236,11 +236,11 @@ export const sendTestSms = async (req: AuthRequest, res: Response) => {
     try {
         const { phoneNumber, message, schoolId: bodySchoolId } = req.body;
 
-        // Get schoolId from tenant middleware (preferred) or request body (fallback)
-        let schoolId = (req as any).tenant?.schoolId || bodySchoolId;
+        // Get schoolId from school middleware (preferred) or request body (fallback)
+        let schoolId = (req as any).schoolContext?.schoolId || bodySchoolId;
 
         if (!schoolId) {
-            console.error('❌ School ID not found in tenant or request body');
+            console.error('❌ School ID not found in school context or request body');
             return res.status(400).json({
                 error: 'School context required. Please ensure you are authenticated.'
             });
@@ -290,10 +290,10 @@ export const sendTestSms = async (req: AuthRequest, res: Response) => {
 export const sendTestEmail = async (req: AuthRequest, res: Response) => {
     try {
         const { email, template = 'welcome', schoolId: bodySchoolId } = req.body;
-        let schoolId = (req as any).tenant?.schoolId || bodySchoolId;
+        let schoolId = (req as any).schoolContext?.schoolId || bodySchoolId;
 
         if (!schoolId) {
-            console.error('❌ School ID not found in tenant or request body');
+            console.error('❌ School ID not found in school context or request body');
             return res.status(400).json({
                 error: 'School context required. Please ensure you are authenticated.'
             });
@@ -359,7 +359,7 @@ export const sendTestEmail = async (req: AuthRequest, res: Response) => {
  */
 export const getBirthdaysToday = async (req: AuthRequest, res: Response) => {
     try {
-        const schoolId = (req as any).tenant?.schoolId;
+        const schoolId = (req as any).schoolContext?.schoolId;
 
         if (!schoolId) {
             throw new ApiError(403, 'School context required');
@@ -413,7 +413,7 @@ export const getBirthdaysToday = async (req: AuthRequest, res: Response) => {
 export const sendBirthdayWishes = async (req: AuthRequest, res: Response) => {
     try {
         const { learnerIds, template, channel = 'sms' } = req.body;
-        const schoolId = (req as any).tenant?.schoolId;
+        const schoolId = (req as any).schoolContext?.schoolId;
 
         if (!schoolId || !learnerIds || !Array.isArray(learnerIds)) {
             throw new ApiError(400, 'learnerIds array is required in a valid school context');
@@ -555,11 +555,11 @@ export const sendBirthdayWishes = async (req: AuthRequest, res: Response) => {
 export const getBroadcastRecipients = async (req: AuthRequest, res: Response) => {
     try {
         const { grade } = req.query;
-        // Check req.user.schoolId first (standard), fallback to tenant if available
-        const schoolId = req.user?.schoolId || (req as any).tenant?.schoolId;
+        // Check req.user.schoolId first (standard), fallback to school context if available
+        const schoolId = req.user?.schoolId || (req as any).schoolContext?.schoolId;
 
         if (!schoolId) {
-            console.error('getBroadcastRecipients: No schoolId found in request context', { user: req.user, tenant: (req as any).tenant });
+            console.error('getBroadcastRecipients: No schoolId found in request context', { user: req.user, schoolContext: (req as any).schoolContext });
             throw new ApiError(403, 'School context required');
         }
 
@@ -739,7 +739,7 @@ export const getBroadcastRecipients = async (req: AuthRequest, res: Response) =>
  */
 export const getStaffContacts = async (req: AuthRequest, res: Response) => {
     try {
-        const schoolId = req.user?.schoolId || (req as any).tenant?.schoolId;
+        const schoolId = req.user?.schoolId || (req as any).schoolContext?.schoolId;
 
         if (!schoolId) {
             throw new ApiError(403, 'School context required');
@@ -794,7 +794,7 @@ export const getStaffContacts = async (req: AuthRequest, res: Response) => {
 export const createContactGroup = async (req: AuthRequest, res: Response) => {
     try {
         const { name, description, recipients } = req.body;
-        const schoolId = req.user?.schoolId || (req as any).tenant?.schoolId;
+        const schoolId = req.user?.schoolId || (req as any).schoolContext?.schoolId;
         const createdById = req.user?.userId;
 
         if (!schoolId || !createdById) {
@@ -833,7 +833,7 @@ export const createContactGroup = async (req: AuthRequest, res: Response) => {
  */
 export const getContactGroups = async (req: AuthRequest, res: Response) => {
     try {
-        const schoolId = req.user?.schoolId || (req as any).tenant?.schoolId;
+        const schoolId = req.user?.schoolId || (req as any).schoolContext?.schoolId;
 
         if (!schoolId) {
             throw new ApiError(403, 'School context required');
@@ -878,7 +878,7 @@ export const getContactGroups = async (req: AuthRequest, res: Response) => {
 export const getContactGroupById = async (req: AuthRequest, res: Response) => {
     try {
         const { id } = req.params;
-        const schoolId = req.user?.schoolId || (req as any).tenant?.schoolId;
+        const schoolId = req.user?.schoolId || (req as any).schoolContext?.schoolId;
 
         if (!schoolId) {
             throw new ApiError(403, 'School context required');
@@ -981,7 +981,7 @@ export const updateContactGroup = async (req: AuthRequest, res: Response) => {
     try {
         const { id } = req.params;
         const { name, description, recipients } = req.body;
-        const schoolId = req.user?.schoolId || (req as any).tenant?.schoolId;
+        const schoolId = req.user?.schoolId || (req as any).schoolContext?.schoolId;
 
         if (!schoolId) {
             throw new ApiError(403, 'School context required');
@@ -1026,7 +1026,7 @@ export const updateContactGroup = async (req: AuthRequest, res: Response) => {
 export const deleteContactGroup = async (req: AuthRequest, res: Response) => {
     try {
         const { id } = req.params;
-        const schoolId = req.user?.schoolId || (req as any).tenant?.schoolId;
+        const schoolId = req.user?.schoolId || (req as any).schoolContext?.schoolId;
 
         if (!schoolId) {
             throw new ApiError(403, 'School context required');

@@ -8,7 +8,7 @@
 import { Router } from 'express';
 import { ClassController } from '../controllers/class.controller';
 import { authenticate, authorize } from '../middleware/auth.middleware';
-import { requireTenant } from '../middleware/tenant.middleware';
+import { requireSchoolContext } from '../middleware/school.middleware';
 import { requirePermission, requireRole, auditLog } from '../middleware/permissions.middleware';
 import { asyncHandler } from '../utils/async.util';
 import { validate } from '../middleware/validation.middleware';
@@ -39,7 +39,7 @@ const updateClassSchema = z.object({
  */
 router.get('/', 
   authenticate, 
-  requireTenant, 
+  requireSchoolContext, 
   requirePermission('VIEW_ALL_LEARNERS'),
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   asyncHandler(classController.getAllClasses.bind(classController))
@@ -53,7 +53,7 @@ router.get('/',
 router.get(
   '/:id',
   authenticate,
-  requireTenant,
+  requireSchoolContext,
   requirePermission('VIEW_ALL_LEARNERS'),
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   asyncHandler(classController.getClassById.bind(classController))
@@ -67,7 +67,7 @@ router.get(
 router.post(
   '/',
   authenticate,
-  requireTenant,
+  requireSchoolContext,
   requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER']),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
   validate(createClassSchema),
@@ -83,7 +83,7 @@ router.post(
 router.put(
   '/:id',
   authenticate,
-  requireTenant,
+  requireSchoolContext,
   requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER']),
   auditLog('UPDATE_CLASS'),
   asyncHandler(classController.updateClass.bind(classController))
@@ -97,7 +97,7 @@ router.put(
 router.post(
   '/enroll',
   authenticate,
-  requireTenant,
+  requireSchoolContext,
   requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER']),
   auditLog('ENROLL_LEARNER'),
   asyncHandler(classController.enrollLearner.bind(classController))
@@ -111,7 +111,7 @@ router.post(
 router.post(
   '/unenroll',
   authenticate,
-  requireTenant,
+  requireSchoolContext,
   requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER']),
   auditLog('UNENROLL_LEARNER'),
   asyncHandler(classController.unenrollLearner.bind(classController))
@@ -122,7 +122,7 @@ router.post(
  * @desc    Get learner's current class
  * @access  SUPER_ADMIN, ADMIN, HEAD_TEACHER, TEACHER, PARENT
  */
-router.get('/learner/:learnerId', authenticate, requireTenant, asyncHandler(classController.getLearnerClass.bind(classController)));
+router.get('/learner/:learnerId', authenticate, requireSchoolContext, asyncHandler(classController.getLearnerClass.bind(classController)));
 
 /**
  * @route   POST /api/classes/assign-teacher
@@ -132,7 +132,7 @@ router.get('/learner/:learnerId', authenticate, requireTenant, asyncHandler(clas
 router.post(
   '/assign-teacher',
   authenticate,
-  requireTenant,
+  requireSchoolContext,
   requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM']),
   auditLog('ASSIGN_TEACHER'),
   asyncHandler(classController.assignTeacher.bind(classController))
@@ -146,7 +146,7 @@ router.post(
 router.post(
   '/unassign-teacher',
   authenticate,
-  requireTenant,
+  requireSchoolContext,
   requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM']),
   auditLog('UNASSIGN_TEACHER'),
   asyncHandler(classController.unassignTeacher.bind(classController))
@@ -160,7 +160,7 @@ router.post(
 router.get(
   '/teacher/:teacherId/workload',
   authenticate,
-  requireTenant,
+  requireSchoolContext,
   requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM', 'TEACHER']),
   asyncHandler(classController.getTeacherWorkload.bind(classController))
 );
@@ -173,7 +173,7 @@ router.get(
 router.get(
   '/teacher/:teacherId/schedules',
   authenticate,
-  requireTenant,
+  requireSchoolContext,
   requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM', 'TEACHER']),
   asyncHandler(classController.getTeacherSchedules.bind(classController))
 );
@@ -185,7 +185,7 @@ router.get(
 router.get(
   '/:id/schedules',
   authenticate,
-  requireTenant,
+  requireSchoolContext,
   asyncHandler(classController.getClassSchedules.bind(classController))
 );
 
@@ -196,7 +196,7 @@ router.get(
 router.post(
   '/:id/schedules',
   authenticate,
-  requireTenant,
+  requireSchoolContext,
   requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM']),
   asyncHandler(classController.createClassSchedule.bind(classController))
 );
@@ -208,7 +208,7 @@ router.post(
 router.put(
   '/:id/schedules/:scheduleId',
   authenticate,
-  requireTenant,
+  requireSchoolContext,
   requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM']),
   asyncHandler(classController.updateClassSchedule.bind(classController))
 );
@@ -220,7 +220,7 @@ router.put(
 router.delete(
   '/:id/schedules/:scheduleId',
   authenticate,
-  requireTenant,
+  requireSchoolContext,
   requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM']),
   asyncHandler(classController.deleteClassSchedule.bind(classController))
 );

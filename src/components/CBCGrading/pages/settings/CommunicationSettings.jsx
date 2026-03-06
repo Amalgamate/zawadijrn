@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { useNotifications } from '../../hooks/useNotifications';
 import { communicationAPI } from '../../../../services/api';
-import { getAdminSchoolId, getStoredUser } from '../../../../services/tenantContext';
+import { getCurrentSchoolId, getStoredUser } from '../../../../services/schoolContext';
 import { COMMUNICATION_DEFAULTS, TEST_MESSAGES } from '../../../../constants/communicationMessages';
 
 const CommunicationSettings = () => {
@@ -71,7 +71,7 @@ const CommunicationSettings = () => {
         }
 
         // Determine School ID
-        let sid = getAdminSchoolId();
+        let sid = getCurrentSchoolId();
         if (!sid) {
           const user = getStoredUser();
           sid = user?.schoolId || user?.school?.id;

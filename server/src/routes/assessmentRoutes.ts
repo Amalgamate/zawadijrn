@@ -8,7 +8,7 @@ import { z } from 'zod';
 import * as assessmentController from '../controllers/assessmentController';
 import * as setupController from '../controllers/setupController';
 import { authenticate } from '../middleware/auth.middleware';
-import { requireTenant } from '../middleware/tenant.middleware';
+import { requireSchoolContext } from '../middleware/school.middleware';
 import { rateLimit } from '../middleware/enhanced-rateLimit.middleware';
 import { validate } from '../middleware/validation.middleware';
 import { auditLog } from '../middleware/permissions.middleware';
@@ -56,7 +56,7 @@ const recordSummativeResultSchema = z.object({
 router.post(
   '/formative',
   authenticate,
-  requireTenant,
+  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
   validate(createFormativeAssessmentSchema),
   auditLog('CREATE_FORMATIVE_ASSESSMENT'),
@@ -66,7 +66,7 @@ router.post(
 router.post(
   '/formative/bulk',
   authenticate,
-  requireTenant,
+  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 10 }),
   validate(recordFormativeResultsSchema),
   auditLog('RECORD_FORMATIVE_BULK'),
@@ -76,7 +76,7 @@ router.post(
 router.get(
   '/formative',
   authenticate,
-  requireTenant,
+  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   assessmentController.getFormativeAssessments
 );
@@ -84,7 +84,7 @@ router.get(
 router.get(
   '/formative/learner/:learnerId',
   authenticate,
-  requireTenant,
+  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   assessmentController.getFormativeByLearner
 );
@@ -92,7 +92,7 @@ router.get(
 router.delete(
   '/formative/:id',
   authenticate,
-  requireTenant,
+  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 10 }),
   auditLog('DELETE_FORMATIVE_ASSESSMENT'),
   assessmentController.deleteFormativeAssessment
@@ -105,7 +105,7 @@ router.delete(
 router.post(
   '/tests',
   authenticate,
-  requireTenant,
+  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 20 }),
   validate(createSummativeTestSchema),
   auditLog('CREATE_SUMMATIVE_TEST'),
@@ -115,7 +115,7 @@ router.post(
 router.post(
   '/tests/bulk',
   authenticate,
-  requireTenant,
+  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 10 }),
   auditLog('GENERATE_TESTS_BULK'),
   assessmentController.generateTestsBulk
@@ -124,7 +124,7 @@ router.post(
 router.get(
   '/tests',
   authenticate,
-  requireTenant,
+  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   assessmentController.getSummativeTests
 );
@@ -132,7 +132,7 @@ router.get(
 router.get(
   '/tests/:id',
   authenticate,
-  requireTenant,
+  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   assessmentController.getSummativeTest
 );
@@ -140,7 +140,7 @@ router.get(
 router.put(
   '/tests/:id',
   authenticate,
-  requireTenant,
+  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
   auditLog('UPDATE_SUMMATIVE_TEST'),
   assessmentController.updateSummativeTest
@@ -149,7 +149,7 @@ router.put(
 router.delete(
   '/tests/bulk',
   authenticate,
-  requireTenant,
+  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 5 }),
   auditLog('DELETE_TESTS_BULK'),
   assessmentController.deleteSummativeTestsBulk
@@ -158,13 +158,11 @@ router.delete(
 router.delete(
   '/tests/:id',
   authenticate,
-  requireTenant,
+  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 10 }),
   auditLog('DELETE_SUMMATIVE_TEST'),
   assessmentController.deleteSummativeTest
 );
-
-
 
 // ============================================
 // SUMMATIVE RESULT ROUTES
@@ -173,7 +171,7 @@ router.delete(
 router.post(
   '/summative/results',
   authenticate,
-  requireTenant,
+  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 50 }),
   validate(recordSummativeResultSchema),
   auditLog('RECORD_SUMMATIVE_RESULT'),
@@ -183,7 +181,7 @@ router.post(
 router.post(
   '/summative/results/bulk',
   authenticate,
-  requireTenant,
+  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 10 }),
   auditLog('RECORD_SUMMATIVE_BULK'),
   assessmentController.recordSummativeResultsBulk
@@ -192,7 +190,7 @@ router.post(
 router.get(
   '/summative/results/bulk',
   authenticate,
-  requireTenant,
+  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   assessmentController.getBulkSummativeResults
 );
@@ -200,7 +198,7 @@ router.get(
 router.get(
   '/summative/results/learner/:learnerId',
   authenticate,
-  requireTenant,
+  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   assessmentController.getSummativeByLearner
 );
@@ -208,7 +206,7 @@ router.get(
 router.get(
   '/summative/results/test/:testId',
   authenticate,
-  requireTenant,
+  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   assessmentController.getTestResults
 );
@@ -222,7 +220,7 @@ router.get(
 router.post(
   '/setup/create-scales',
   authenticate,
-  requireTenant,
+  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 5 }),
   auditLog('SETUP_CREATE_SCALES'),
   setupController.bulkCreateGradingScales
@@ -231,7 +229,7 @@ router.post(
 router.post(
   '/setup/create-tests',
   authenticate,
-  requireTenant,
+  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 5 }),
   auditLog('SETUP_CREATE_TESTS'),
   setupController.bulkCreateSummativeTests
@@ -240,7 +238,7 @@ router.post(
 router.post(
   '/setup/complete',
   authenticate,
-  requireTenant,
+  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 5 }),
   auditLog('SETUP_COMPLETE_SCHOOL'),
   setupController.completeSchoolSetup

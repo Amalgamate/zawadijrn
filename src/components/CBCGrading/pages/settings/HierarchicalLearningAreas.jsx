@@ -6,6 +6,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, ChevronRight, BookOpen, Edit, Trash2, Plus, Trash } from 'lucide-react';
 import { getStrandsForArea } from '../../../../constants/strandsConfig';
+import { LEARNING_AREA_GRADES, getGradeLabel } from '../../../../constants/grades';
 
 const HierarchicalLearningAreas = ({
   learningAreas = [],
@@ -30,8 +31,8 @@ const HierarchicalLearningAreas = ({
     return acc;
   }, {});
 
-  // Sort grades based on the order in gradeStructure
-  const gradeOrder = gradeStructure.map(g => g.name);
+  // Sort grades based on the single source of truth order
+  const gradeOrder = LEARNING_AREA_GRADES.map(g => g.value);
 
   const sortedGrades = Object.keys(groupedByGrade).sort(
     (a, b) => {
@@ -74,7 +75,7 @@ const HierarchicalLearningAreas = ({
     if (allSelected) {
       newSelection = selectedAreas.filter(id => !gradeAreaIds.includes(id));
     } else {
-      newSelection = [...new Set([...selectedAreas, ...gradeAreaIds])];
+      newSelection = gradeAreaIds;
     }
     onSelectionChange(newSelection);
   };
@@ -131,7 +132,7 @@ const HierarchicalLearningAreas = ({
                   )}
                   <div>
                     <h3 className="font-bold text-gray-800 text-lg">
-                      {gradeStructure.find(g => g.code === grade || g.name === grade)?.name || grade}
+                      {getGradeLabel(grade)}
                     </h3>
                     <p className="text-xs text-gray-500">
                       {groupedByGrade[grade].length} learning {groupedByGrade[grade].length === 1 ? 'area' : 'areas'}

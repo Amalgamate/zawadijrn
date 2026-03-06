@@ -1,6 +1,6 @@
 /**
- * useSubdomain Hook (Deprecated - Multi-tenant cleanup)
- * Stub hook to maintain compatibility during migration away from multi-tenancy
+ * useSubdomain Hook (Deprecated)
+ * Stub hook kept for backward compatibility
  */
 
 export const useSubdomainCheck = () => {

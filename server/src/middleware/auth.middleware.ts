@@ -23,9 +23,8 @@ export const authenticate = async (
     const decoded = verifyAccessToken(token);
     req.user = decoded;
 
-    // Single-tenant: Set tenant context with schoolId from JWT
-    (req as any).tenant = {
-      isSingleTenant: true,
+    // Set school context with schoolId from JWT
+    (req as any).schoolContext = {
       schoolId: decoded.schoolId || null
     };
 

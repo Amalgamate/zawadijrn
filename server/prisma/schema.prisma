@@ -266,7 +266,7 @@ model Class {
   school       School?           @relation(fields: [schoolId], references: [id])
   teacher      User?             @relation("ClassTeacher", fields: [teacherId], references: [id])
 
-  @@unique([grade, stream, academicYear, term])
+  @@unique([grade, stream, academicYear, term, schoolId])
   @@index([teacherId])
   @@index([grade, stream])
   @@index([schoolId])
@@ -582,7 +582,7 @@ model TermConfig {
   creator         User      @relation(fields: [createdBy], references: [id])
   school          School?   @relation(fields: [schoolId], references: [id])
 
-  @@unique([academicYear, term])
+  @@unique([academicYear, term, schoolId])
   @@map("term_configs")
 }
 

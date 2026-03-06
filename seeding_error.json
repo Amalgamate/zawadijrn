@@ -1,0 +1,13 @@
+{
+  "message": "\nInvalid `prisma.class.create()` invocation in\nC:\\Amalgamate\\Projects\\Zawadi SMS\\server\\src\\controllers\\config.controller.ts:282:47\n\n  279 console.log(`[SEED] Generated code: ${classCode}`);\n  280 \n  281 try {\n→ 282   const newClass = await prisma.class.create(\nUnique constraint failed on the fields: (`grade`,`stream`,`academicYear`,`term`)",
+  "stack": "PrismaClientKnownRequestError: \nInvalid `prisma.class.create()` invocation in\nC:\\Amalgamate\\Projects\\Zawadi SMS\\server\\src\\controllers\\config.controller.ts:282:47\n\n  279 console.log(`[SEED] Generated code: ${classCode}`);\n  280 \n  281 try {\n→ 282   const newClass = await prisma.class.create(\nUnique constraint failed on the fields: (`grade`,`stream`,`academicYear`,`term`)\n    at $n.handleRequestError (C:\\Amalgamate\\Projects\\Zawadi SMS\\server\\node_modules\\@prisma\\client\\runtime\\library.js:121:7315)\n    at $n.handleAndLogRequestError (C:\\Amalgamate\\Projects\\Zawadi SMS\\server\\node_modules\\@prisma\\client\\runtime\\library.js:121:6623)\n    at $n.request (C:\\Amalgamate\\Projects\\Zawadi SMS\\server\\node_modules\\@prisma\\client\\runtime\\library.js:121:6307)\n    at async l (C:\\Amalgamate\\Projects\\Zawadi SMS\\server\\node_modules\\@prisma\\client\\runtime\\library.js:130:9633)\n    at async seedClasses (C:\\Amalgamate\\Projects\\Zawadi SMS\\server\\src\\controllers\\config.controller.ts:282:28)",
+  "user": {
+    "userId": "399f315e-437a-42fc-9fed-bc8ce6767b84",
+    "email": "admin@zawadijunioracademy.co.ke",
+    "role": "SUPER_ADMIN",
+    "schoolId": "fc9578a8-5032-4c79-8692-5077b9c087a4",
+    "iat": 1772633258,
+    "exp": 1772636858
+  },
+  "timestamp": "2026-03-04T14:13:09.134Z"
+}

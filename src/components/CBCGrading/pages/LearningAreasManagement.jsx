@@ -6,6 +6,7 @@ import { useNotifications } from '../hooks/useNotifications';
 import toast from 'react-hot-toast';
 import HierarchicalLearningAreas from './settings/HierarchicalLearningAreas';
 import { gradeStructure } from '../data/gradeStructure';
+import { LEARNING_AREA_GRADES, getGradeLabel } from '../../../constants/grades';
 
 /**
  * LearningAreasManagement
@@ -31,22 +32,10 @@ const LearningAreasManagement = () => {
     name: '',
     description: '',
     code: '',
-    gradeLevel: 'Lower Primary',
+    gradeLevel: 'GRADE_1',
     icon: '📘',
     color: '#3b82f6'
   });
-
-  const GRADE_LEVELS = [
-    'PP1', 'PP2',
-    'GRADE_1', 'GRADE_2', 'GRADE_3',
-    'GRADE_4', 'GRADE_5', 'GRADE_6',
-    'GRADE_7', 'GRADE_8', 'GRADE_9',
-    'Early Years',
-    'Pre-Primary',
-    'Lower Primary',
-    'Upper Primary',
-    'Junior School'
-  ];
 
   const fetchLearningAreas = useCallback(async () => {
     try {
@@ -93,7 +82,7 @@ const LearningAreasManagement = () => {
         name: area.name || '',
         description: area.description || '',
         shortName: area.shortName || '',
-        gradeLevel: area.gradeLevel || 'Lower Primary',
+        gradeLevel: area.gradeLevel || 'GRADE_1',
         icon: area.icon || '📘',
         color: area.color || '#3b82f6'
       });
@@ -103,7 +92,7 @@ const LearningAreasManagement = () => {
         name: '',
         description: '',
         shortName: '',
-        gradeLevel: 'Lower Primary',
+        gradeLevel: 'GRADE_1',
         icon: '📘',
         color: '#3b82f6'
       });
@@ -317,8 +306,8 @@ const LearningAreasManagement = () => {
                     onChange={(e) => setFormData({ ...formData, gradeLevel: e.target.value })}
                     className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-purple/20 focus:border-brand-purple outline-none transition"
                   >
-                    {GRADE_LEVELS.map(level => (
-                      <option key={level} value={level}>{level}</option>
+                    {LEARNING_AREA_GRADES.map((grade) => (
+                      <option key={grade.value} value={grade.value}>{grade.label}</option>
                     ))}
                   </select>
                 </div>
@@ -377,7 +366,7 @@ const LearningAreasManagement = () => {
                   <div className="flex-1">
                     <h4 className="font-bold text-gray-900 leading-tight">{formData.name || 'Subject Name'}</h4>
                     <p className="text-xs text-gray-500 font-medium">
-                      <span className="text-brand-purple">{formData.shortName || 'CODE'}</span> • {formData.gradeLevel}
+                      <span className="text-brand-purple">{formData.shortName || 'CODE'}</span> • {getGradeLabel(formData.gradeLevel)}
                     </p>
                   </div>
                 </div>

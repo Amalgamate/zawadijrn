@@ -1,6 +1,7 @@
 
 import { Request, Response } from 'express';
-import { getFormativeReport } from '../controllers/reportController';
+import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+import { reportController } from '../controllers/reportController';
 import prisma from '../config/database';
 import { ApiError } from '../utils/error.util';
 
@@ -26,14 +27,14 @@ jest.mock('../config/database', () => ({
 // Mock grading service
 jest.mock('../services/grading.service', () => ({
   gradingService: {
-    getGradingSystem: jest.fn().mockResolvedValue({ ranges: [] })
+    getGradingSystem: async () => ({ ranges: [] })
   }
 }));
 
 describe('ReportController Tenant Scoping', () => {
   let mockReq: any;
   let mockRes: any;
-  let next: jest.Mock;
+  let next: any;
 
   beforeEach(() => {
     mockReq = {
@@ -59,7 +60,7 @@ describe('ReportController Tenant Scoping', () => {
 
   it('should allow access when user schoolId matches learner schoolId', async () => {
     // Mock learner found in same school
-    (prisma.learner.findUnique as jest.Mock).mockResolvedValue({
+    (prisma.learner.findUnique as any).mockResolvedValue({
       id: 'learner-123',
       firstName: 'John',
       lastName: 'Doe',
@@ -67,9 +68,9 @@ describe('ReportController Tenant Scoping', () => {
       branchId: 'branch-A'
     });
 
-    (prisma.formativeAssessment.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.formativeAssessment.findMany as any).mockResolvedValue([]);
 
-    await getFormativeReport(mockReq, mockRes);
+    await reportController.getFormativeReport(mockReq, mockRes);
 
     expect(prisma.learner.findUnique).toHaveBeenCalled();
     // Should proceed to fetch assessments (or whatever next step is)
@@ -79,7 +80,7 @@ describe('ReportController Tenant Scoping', () => {
 
   it('should deny access when user schoolId does not match learner schoolId', async () => {
     // Mock learner in different school
-    (prisma.learner.findUnique as jest.Mock).mockResolvedValue({
+    (prisma.learner.findUnique as any).mockResolvedValue({
       id: 'learner-123',
       firstName: 'John',
       lastName: 'Doe',
@@ -87,7 +88,7 @@ describe('ReportController Tenant Scoping', () => {
       branchId: 'branch-B'
     });
 
-    await getFormativeReport(mockReq, mockRes);
+    await reportController.getFormativeReport(mockReq, mockRes);
 
     expect(mockRes.status).toHaveBeenCalledWith(403);
     expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
@@ -103,7 +104,7 @@ describe('ReportController Tenant Scoping', () => {
     mockReq.user.schoolId = null;
 
     // Mock learner in any school
-    (prisma.learner.findUnique as jest.Mock).mockResolvedValue({
+    (prisma.learner.findUnique as any).mockResolvedValue({
       id: 'learner-123',
       firstName: 'John',
       lastName: 'Doe',
@@ -111,9 +112,9 @@ describe('ReportController Tenant Scoping', () => {
       branchId: 'branch-B'
     });
 
-    (prisma.formativeAssessment.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.formativeAssessment.findMany as any).mockResolvedValue([]);
 
-    await getFormativeReport(mockReq, mockRes);
+    await reportController.getFormativeReport(mockReq, mockRes);
 
     expect(prisma.learner.findUnique).toHaveBeenCalled();
     expect(prisma.formativeAssessment.findMany).toHaveBeenCalled();
@@ -123,7 +124,7 @@ describe('ReportController Tenant Scoping', () => {
       mockReq.user.branchId = 'branch-A';
       
       // Mock learner in same school but different branch
-      (prisma.learner.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.learner.findUnique as any).mockResolvedValue({
         id: 'learner-123',
         firstName: 'John',
         lastName: 'Doe',
@@ -131,7 +132,7 @@ describe('ReportController Tenant Scoping', () => {
         branchId: 'branch-B' // Different branch
       });
   
-      await getFormativeReport(mockReq, mockRes);
+      await reportController.getFormativeReport(mockReq, mockRes);
 
       expect(mockRes.status).toHaveBeenCalledWith(403);
       expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({

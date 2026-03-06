@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { configAPI, facilityAPI } from '../../../services/api';
 import { useNotifications } from '../hooks/useNotifications';
-import { getAdminSchoolId, getStoredUser } from '../../../services/tenantContext';
+import { getCurrentSchoolId, getStoredUser } from '../../../services/schoolContext';
 import { GRADES } from '../../../constants/grades';
 import api from '../../../services/api';
 import Toast from '../shared/Toast';
@@ -111,7 +111,7 @@ const FacilityManager = () => {
 
   // Initialize
   useEffect(() => {
-    let sid = getAdminSchoolId();
+    let sid = getCurrentSchoolId();
     if (!sid) {
       const user = getStoredUser();
       sid = user?.schoolId || user?.school?.id;

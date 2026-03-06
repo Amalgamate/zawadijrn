@@ -12,6 +12,7 @@ import { configAPI, authAPI, schoolAPI, userAPI, default as api } from '../../..
 import academicYearConfig from '../../utils/academicYear';
 import { toInputDate } from '../../utils/dateHelpers';
 import { gradeStructure } from '../../data/gradeStructure';
+import { LEARNING_AREA_GRADES, getGradeLabel } from '../../../../constants/grades';
 import HierarchicalLearningAreas from './HierarchicalLearningAreas';
 import SubjectAllocationPage from './SubjectAllocationPage';
 import Toast from '../../shared/Toast';
@@ -147,6 +148,7 @@ const AcademicSettings = () => {
     try {
       setSeedingLearningAreas(true);
       setSubmitting(true);
+      setSelectedLearningAreas([]);
       const result = await configAPI.seedLearningAreas();
 
       // Show success with toast AND notification
@@ -245,6 +247,7 @@ const AcademicSettings = () => {
 
   // Initialize learning areas from database
   const [learningAreas, setLearningAreas] = useState([]);
+  const [selectedLearningAreas, setSelectedLearningAreas] = useState([]);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showStreamModal, setShowStreamModal] = useState(false); // Stream Modal
@@ -257,11 +260,17 @@ const AcademicSettings = () => {
   const [seedingLearningAreas, setSeedingLearningAreas] = useState(false);
   const [seedingClasses, setSeedingClasses] = useState(false);
   const [seedingStreams, setSeedingStreams] = useState(false);
+  const [deletingLearningAreas, setDeletingLearningAreas] = useState(false);
+
+  useEffect(() => {
+    const currentIds = new Set((learningAreas || []).map((area) => area.id));
+    setSelectedLearningAreas((prev) => prev.filter((id) => currentIds.has(id)));
+  }, [learningAreas]);
 
   const [formData, setFormData] = useState({
     name: '',
     shortName: '',
-    gradeLevel: 'Lower Primary',
+    gradeLevel: 'GRADE_1',
     color: '#3b82f6',
     icon: '📚',
     description: ''
@@ -544,7 +553,7 @@ const AcademicSettings = () => {
 
       setShowAddModal(false);
       setEditingArea(null);
-      setFormData({ name: '', shortName: '', gradeLevel: 'Lower Primary', color: '#3b82f6', icon: '📚', description: '' });
+      setFormData({ name: '', shortName: '', gradeLevel: 'GRADE_1', color: '#3b82f6', icon: '📚', description: '' });
       await loadLearningAreas();
     } catch (error) {
       console.error('Error saving learning area:', error);
@@ -560,10 +569,76 @@ const AcademicSettings = () => {
     try {
       await configAPI.deleteLearningArea(area.id);
       setLearningAreas(prev => prev.filter(a => a.id !== area.id));
+      setSelectedLearningAreas(prev => prev.filter(id => id !== area.id));
       notifySuccess('🗑️ Learning area deleted');
     } catch (error) {
       console.error('Error deleting learning area:', error);
       showError('Failed to delete learning area');
+    }
+  };
+
+  const handleBulkDeleteLearningAreas = async () => {
+    const currentIds = new Set((learningAreas || []).map((area) => area.id));
+    const selectedIds = selectedLearningAreas.filter((id) => currentIds.has(id));
+    if (selectedIds.length === 0) {
+      setSelectedLearningAreas([]);
+      return;
+    }
+
+    const selectedCount = selectedIds.length;
+    const confirmed = window.confirm(
+      `Are you sure you want to delete ${selectedCount} learning area(s)? This action cannot be undone.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setDeletingLearningAreas(true);
+
+      const deleteResults = await Promise.all(
+        selectedIds.map(async (id) => {
+          try {
+            await configAPI.deleteLearningArea(id);
+            return { id, deleted: true, alreadyMissing: false };
+          } catch (error) {
+            const message = (error?.message || '').toLowerCase();
+            const isAlreadyMissing = message.includes('not found') || message.includes('404');
+
+            if (isAlreadyMissing) {
+              return { id, deleted: true, alreadyMissing: true };
+            }
+
+            return { id, deleted: false, alreadyMissing: false };
+          }
+        })
+      );
+
+      const deletedCount = deleteResults.filter(r => r.deleted).length;
+      const failedCount = deleteResults.filter(r => !r.deleted).length;
+      const alreadyMissingCount = deleteResults.filter(r => r.alreadyMissing).length;
+
+      if (deletedCount > 0) {
+        setLearningAreas(prev => prev.filter(a => !selectedIds.includes(a.id)));
+      }
+
+      setSelectedLearningAreas([]);
+
+      if (failedCount === 0) {
+        if (alreadyMissingCount > 0) {
+          notifySuccess(`🗑️ Cleared ${deletedCount} learning area(s) (${alreadyMissingCount} were already removed)`);
+        } else {
+          notifySuccess(`🗑️ Deleted ${deletedCount} learning area(s)`);
+        }
+      } else {
+        showError(`Deleted ${deletedCount}, but ${failedCount} failed. Please retry.`);
+      }
+
+      await loadLearningAreas();
+    } catch (error) {
+      console.error('Error bulk deleting learning areas:', error);
+      showError('Failed to bulk delete learning areas');
+    } finally {
+      setDeletingLearningAreas(false);
     }
   };
 
@@ -573,7 +648,7 @@ const AcademicSettings = () => {
       setFormData({
         name: area.name || '',
         shortName: area.shortName || '',
-        gradeLevel: area.gradeLevel || 'Lower Primary',
+        gradeLevel: area.gradeLevel || 'GRADE_1',
         color: area.color || '#3b82f6',
         icon: area.icon || '📚',
         description: area.description || ''
@@ -583,7 +658,7 @@ const AcademicSettings = () => {
       setFormData({
         name: '',
         shortName: '',
-        gradeLevel: 'Lower Primary',
+        gradeLevel: 'GRADE_1',
         color: '#3b82f6',
         icon: '📚',
         description: ''
@@ -726,6 +801,43 @@ const AcademicSettings = () => {
                             />
                           </div>
                         </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 bg-white p-3 rounded border border-gray-100">
+                          <div>
+                            <label className="block text-xs font-bold text-blue-700 mb-1">Formative Weight (%)</label>
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              value={config.formativeWeight ?? 30}
+                              disabled={submitting}
+                              onChange={(e) => handleSaveTerm({
+                                ...config,
+                                formativeWeight: Number(e.target.value),
+                                summativeWeight: 100 - Number(e.target.value)
+                              })}
+                              className="w-full px-3 py-2 border border-blue-100 rounded text-sm focus:ring-1 focus:ring-blue-500 outline-none"
+                            />
+                            <p className="text-[10px] text-gray-400 mt-1">Weight for continuous assessments</p>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-indigo-700 mb-1">Summative Weight (%)</label>
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              value={config.summativeWeight ?? 70}
+                              disabled={submitting}
+                              onChange={(e) => handleSaveTerm({
+                                ...config,
+                                summativeWeight: Number(e.target.value),
+                                formativeWeight: 100 - Number(e.target.value)
+                              })}
+                              className="w-full px-3 py-2 border border-indigo-100 rounded text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                            />
+                            <p className="text-[10px] text-gray-400 mt-1">Weight for end of term exams</p>
+                          </div>
+                        </div>
                       </div>
                     );
                   })}
@@ -749,7 +861,7 @@ const AcademicSettings = () => {
             <div className="flex gap-2">
               <button
                 onClick={handleSeedLearningAreas}
-                disabled={seedingLearningAreas}
+                disabled={seedingLearningAreas || deletingLearningAreas}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg transition font-semibold ${seedingLearningAreas
                   ? 'bg-gray-400 text-white cursor-not-allowed opacity-75'
                   : 'bg-green-600 text-white hover:bg-green-700'
@@ -768,8 +880,34 @@ const AcademicSettings = () => {
                   </>
                 )}
               </button>
+
+              {selectedLearningAreas.length > 0 && (
+                <button
+                  onClick={handleBulkDeleteLearningAreas}
+                  disabled={deletingLearningAreas || seedingLearningAreas}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition font-semibold ${deletingLearningAreas
+                    ? 'bg-gray-400 text-white cursor-not-allowed opacity-75'
+                    : 'bg-red-600 text-white hover:bg-red-700'
+                    }`}
+                  title="Delete selected learning areas"
+                >
+                  {deletingLearningAreas ? (
+                    <>
+                      <Loader size={16} className="animate-spin" />
+                      <span>Deleting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 size={16} />
+                      <span>Delete ({selectedLearningAreas.length})</span>
+                    </>
+                  )}
+                </button>
+              )}
+
               <button
                 onClick={() => handleOpenModal()}
+                disabled={deletingLearningAreas}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold"
               >
                 <Plus size={18} />
@@ -795,6 +933,8 @@ const AcademicSettings = () => {
               gradeStructure={gradeStructure}
               onEdit={(area) => handleOpenModal(area)}
               onDelete={handleDeleteArea}
+              selectedAreas={selectedLearningAreas}
+              onSelectionChange={setSelectedLearningAreas}
               onAddStrand={(area, strand) => {
                 // Placeholder for future strand assessment creation
                 console.log(`Add strand assessment for ${area.name} - ${strand}`);
@@ -1225,7 +1365,7 @@ const AcademicSettings = () => {
                 onClick={() => {
                   setShowAddModal(false);
                   setEditingArea(null);
-                  setFormData({ name: '', shortName: '', gradeLevel: 'Lower Primary', color: '#3b82f6', icon: '📚', description: '' });
+                  setFormData({ name: '', shortName: '', gradeLevel: 'GRADE_1', color: '#3b82f6', icon: '📚', description: '' });
                 }}
                 className="p-2 hover:bg-gray-200 rounded-lg transition"
               >
@@ -1265,12 +1405,9 @@ const AcademicSettings = () => {
                     onChange={(e) => setFormData({ ...formData, gradeLevel: e.target.value })}
                     className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition"
                   >
-                    <option value="Early Years">Early Years</option>
-                    <option value="Pre-Primary">Pre-Primary</option>
-                    <option value="Lower Primary">Lower Primary</option>
-                    <option value="Upper Primary">Upper Primary</option>
-                    <option value="Junior School">Junior School</option>
-                    <option value="Senior School">Senior School</option>
+                    {LEARNING_AREA_GRADES.map((grade) => (
+                      <option key={grade.value} value={grade.value}>{grade.label}</option>
+                    ))}
                   </select>
                 </div>
 
@@ -1328,7 +1465,7 @@ const AcademicSettings = () => {
                   <div className="flex-1">
                     <h4 className="font-bold text-gray-900 leading-tight">{formData.name || 'Subject Name'}</h4>
                     <p className="text-xs text-gray-500 font-medium">
-                      <span className="text-blue-600">{formData.shortName || 'CODE'}</span> • {formData.gradeLevel}
+                      <span className="text-blue-600">{formData.shortName || 'CODE'}</span> • {getGradeLabel(formData.gradeLevel)}
                     </p>
                   </div>
                 </div>
@@ -1340,7 +1477,7 @@ const AcademicSettings = () => {
                   onClick={() => {
                     setShowAddModal(false);
                     setEditingArea(null);
-                    setFormData({ name: '', shortName: '', gradeLevel: 'Lower Primary', color: '#3b82f6', icon: '📚', description: '' });
+                    setFormData({ name: '', shortName: '', gradeLevel: 'GRADE_1', color: '#3b82f6', icon: '📚', description: '' });
                   }}
                   className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition"
                 >

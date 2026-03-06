@@ -9,7 +9,7 @@ import {
   deleteBroadcastCampaign
 } from '../controllers/broadcast.controller';
 import { authenticate } from '../middleware/auth.middleware';
-import { requireTenant } from '../middleware/tenant.middleware';
+import { requireSchoolContext } from '../middleware/school.middleware';
 import { requireRole, auditLog } from '../middleware/permissions.middleware';
 import { validate } from '../middleware/validation.middleware';
 import { rateLimit } from '../middleware/enhanced-rateLimit.middleware';
@@ -33,10 +33,10 @@ const deliveryLogSchema = z.object({
 });
 
 /**
- * Apply authentication and tenant middleware to all routes
+ * Apply authentication and school context middleware to all routes
  */
 router.use(authenticate);
-router.use(requireTenant);
+router.use(requireSchoolContext);
 
 /**
  * Broadcast Routes

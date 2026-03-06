@@ -6,7 +6,7 @@
  */
 
 import React, { createContext, useState, useEffect, useCallback } from 'react';
-import { clearAdminSchoolId, clearBranchId, clearPortalSchoolId } from '../services/tenantContext';
+import { clearCurrentSchoolId, clearBranchId } from '../services/schoolContext';
 
 export const AuthContext = createContext({
   isAuthenticated: false,
@@ -87,8 +87,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('user');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('authToken'); // Also clear legacy authToken if present
-    clearAdminSchoolId();
-    clearPortalSchoolId();
+    clearCurrentSchoolId();
     clearBranchId();
 
     setUser(null);

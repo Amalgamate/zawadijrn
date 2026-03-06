@@ -22,71 +22,45 @@ export const validateTermConfig = (
 
   const errors: string[] = [];
 
-  // Validate weights exist
-  if (formativeWeight === undefined || formativeWeight === null) {
-    errors.push('formativeWeight is required');
+  // Validate weights only if provided
+  if (formativeWeight !== undefined && formativeWeight !== null) {
+    if (typeof formativeWeight !== 'number' && isNaN(parseFloat(formativeWeight as string))) {
+      errors.push('formativeWeight must be a number');
+    }
   }
 
-  if (summativeWeight === undefined || summativeWeight === null) {
-    errors.push('summativeWeight is required');
+  if (summativeWeight !== undefined && summativeWeight !== null) {
+    if (typeof summativeWeight !== 'number' && isNaN(parseFloat(summativeWeight as string))) {
+      errors.push('summativeWeight must be a number');
+    }
   }
 
-  // Validate weights are numbers
-  if (typeof formativeWeight !== 'number') {
-    errors.push('formativeWeight must be a number');
-  }
+  // Validate sum only if both are provided
+  if (formativeWeight != null && summativeWeight != null) {
+    const fw = parseFloat(formativeWeight as string);
+    const sw = parseFloat(summativeWeight as string);
+    const total = fw + sw;
 
-  if (typeof summativeWeight !== 'number') {
-    errors.push('summativeWeight must be a number');
-  }
-
-  if (errors.length > 0) {
-    return res.status(400).json({
-      success: false,
-      error: {
-        code: 'VALIDATION_ERROR',
-        message: 'Invalid term configuration',
-        details: errors
-      }
-    });
-  }
-
-  // Validate weights sum to 100
-  const total = Number(formativeWeight) + Number(summativeWeight);
-  if (Math.abs(total - 100) > 0.01) {
-    return res.status(400).json({
-      success: false,
-      error: {
-        code: 'INVALID_WEIGHTS',
-        message: `Formative and summative weights must sum to 100%. Current sum: ${total}%`,
-        details: {
-          formativeWeight,
-          summativeWeight,
-          total
+    if (Math.abs(total - 100) > 0.01) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_WEIGHTS',
+          message: `Formative and summative weights must sum to 100%. Current sum: ${total}%`,
+          details: {
+            formativeWeight: fw,
+            summativeWeight: sw,
+            total
+          }
         }
-      }
-    });
+      });
+    }
+
+    if (fw < 0 || fw > 100) errors.push('formativeWeight must be between 0 and 100');
+    if (sw < 0 || sw > 100) errors.push('summativeWeight must be between 0 and 100');
   }
 
-  // Validate weights are non-negative
-  if (formativeWeight < 0) {
-    errors.push('formativeWeight cannot be negative');
-  }
-
-  if (summativeWeight < 0) {
-    errors.push('summativeWeight cannot be negative');
-  }
-
-  // Validate weights don't exceed 100 individually
-  if (formativeWeight > 100) {
-    errors.push('formativeWeight cannot exceed 100%');
-  }
-
-  if (summativeWeight > 100) {
-    errors.push('summativeWeight cannot exceed 100%');
-  }
-
-  // Validate dates if provided
+  // Validate dates if provided and not empty
   if (startDate && endDate) {
     const start = new Date(startDate);
     const end = new Date(endDate);
@@ -99,7 +73,7 @@ export const validateTermConfig = (
       errors.push('endDate must be a valid date');
     }
 
-    if (start >= end) {
+    if (!isNaN(start.getTime()) && !isNaN(end.getTime()) && start >= end) {
       errors.push('startDate must be before endDate');
     }
   }
@@ -422,10 +396,10 @@ export const isPositiveInteger = (value: any): boolean => {
  */
 export const parseDate = (dateString: any): Date | null => {
   if (!dateString) return null;
-  
+
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return null;
-  
+
   return date;
 };
 

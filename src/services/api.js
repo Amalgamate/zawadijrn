@@ -103,10 +103,10 @@ export const authAPI = {
     }
   },
   /**
-   * Fetch public tenant branding info.
+   * Fetch public school branding info.
    * @param {string} schoolId
    */
-  tenantPublic: async (schoolId) => {
+  schoolPublic: async (schoolId) => {
     const response = await axiosInstance.get(`/tenants/public/${schoolId}`);
     return response.data;
   },
@@ -349,7 +349,8 @@ export const configAPI = {
    * Get Learning Areas for a school
    */
   getLearningAreas: async (schoolId) => {
-    return fetchCached(`/learning-areas?schoolId=${schoolId}`);
+    const query = schoolId ? `?schoolId=${schoolId}` : '';
+    return fetchWithAuth(`/learning-areas${query}`);
   },
 
   /**
@@ -418,6 +419,32 @@ export const configAPI = {
       headers: {
         'X-School-Id': schoolId,
       },
+    });
+  },
+
+  /**
+   * Get classes for school
+   */
+  getClasses: async (schoolId) => {
+    return fetchCached(`/config/classes/${schoolId}`);
+  },
+
+  /**
+   * Create or update class
+   */
+  upsertClass: async (data) => {
+    return fetchWithAuth('/config/classes', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Delete class
+   */
+  deleteClass: async (id) => {
+    return fetchWithAuth(`/config/classes/${id}`, {
+      method: 'DELETE',
     });
   },
 };

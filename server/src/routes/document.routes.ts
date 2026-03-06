@@ -6,15 +6,15 @@
 import { Router } from 'express';
 import { documentController } from '../controllers/document.controller';
 import { authenticate } from '../middleware/auth.middleware';
-import { requireTenant } from '../middleware/tenant.middleware';
+import { requireSchoolContext } from '../middleware/school.middleware';
 import { auditLog } from '../middleware/permissions.middleware';
 import { uploadSingle, uploadMultiple } from '../middleware/upload.middleware';
 import { rateLimit } from '../middleware/enhanced-rateLimit.middleware';
 
 const router = Router();
 
-// All routes require authentication and tenant context
-router.use(authenticate, requireTenant);
+// All routes require authentication and school context
+router.use(authenticate, requireSchoolContext);
 
 /**
  * @route   POST /api/documents/upload

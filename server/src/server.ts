@@ -14,12 +14,6 @@ console.log('[ROUTES_DEBUG] Routes module loaded:', !!routes);
 // Trust proxy
 app.set('trust proxy', 1);
 
-// Global Request Logger for diagnostics
-app.use((req, _res, next) => {
-  console.log(`[REQUEST] ${new Date().toISOString()} | ${req.method} ${req.url}`);
-  next();
-});
-
 // Security middleware
 app.use(helmet());
 
@@ -55,12 +49,7 @@ console.log('[ROUTES_DEBUG] API routes mounted successfully');
 
 // DEBUG: Simple endpoint that bypasses all other middleware for diagnostics
 app.get('/status', (_req, res) => {
-  res.json({
-    status: 'BACKEND_UP',
-    time: new Date().toISOString(),
-    env: process.env.NODE_ENV,
-    project: 'Zawadi SMS'
-  });
+  res.send('OK');
 });
 
 // Error handling

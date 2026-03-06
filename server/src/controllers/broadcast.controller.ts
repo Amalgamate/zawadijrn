@@ -22,7 +22,7 @@ export const saveBroadcastCampaign = async (req: AuthRequest, res: Response) => 
       recipients // Array of {phone, name, status, messageId, sentAt}
     } = req.body;
 
-    const schoolId = (req as any).tenant?.schoolId || req.user?.schoolId;
+    const schoolId = (req as any).schoolContext?.schoolId || req.user?.schoolId;
     const senderId = req.user?.userId || (req as any).user?.id;
 
     if (!schoolId || !senderId) {
@@ -107,7 +107,7 @@ export const saveBroadcastCampaign = async (req: AuthRequest, res: Response) => 
  */
 export const getBroadcastHistory = async (req: AuthRequest, res: Response) => {
   try {
-    const schoolId = (req as any).tenant?.schoolId || req.user?.schoolId;
+    const schoolId = (req as any).schoolContext?.schoolId || req.user?.schoolId;
     const { limit = 50, offset = 0 } = req.query;
 
     if (!schoolId) {
@@ -161,7 +161,7 @@ export const getBroadcastHistory = async (req: AuthRequest, res: Response) => {
  */
 export const getBroadcastDetails = async (req: AuthRequest, res: Response) => {
   try {
-    const schoolId = (req as any).tenant?.schoolId || req.user?.schoolId;
+    const schoolId = (req as any).schoolContext?.schoolId || req.user?.schoolId;
     const { campaignId } = req.params;
 
     if (!schoolId) {
@@ -207,7 +207,7 @@ export const getBroadcastDetails = async (req: AuthRequest, res: Response) => {
  */
 export const getBroadcastStats = async (req: AuthRequest, res: Response) => {
   try {
-    const schoolId = (req as any).tenant?.schoolId || req.user?.schoolId;
+    const schoolId = (req as any).schoolContext?.schoolId || req.user?.schoolId;
 
     if (!schoolId) {
       throw new ApiError(400, 'School context required');
@@ -288,7 +288,7 @@ export const saveSmsDeliveryLog = async (req: AuthRequest, res: Response) => {
       errorDetails
     } = req.body;
 
-    const schoolId = (req as any).tenant?.schoolId || req.user?.schoolId;
+    const schoolId = (req as any).schoolContext?.schoolId || req.user?.schoolId;
 
     if (!schoolId || !campaignId) {
       throw new ApiError(400, 'Missing required fields');
@@ -337,7 +337,7 @@ export const saveSmsDeliveryLog = async (req: AuthRequest, res: Response) => {
 export const deleteBroadcastCampaign = async (req: AuthRequest, res: Response) => {
   try {
     const { campaignId } = req.params;
-    const schoolId = (req as any).tenant?.schoolId || req.user?.schoolId;
+    const schoolId = (req as any).schoolContext?.schoolId || req.user?.schoolId;
 
     if (!schoolId) {
       throw new ApiError(400, 'School context required');

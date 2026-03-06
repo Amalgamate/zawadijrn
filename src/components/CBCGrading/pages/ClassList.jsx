@@ -8,7 +8,7 @@ import React, { useState, useEffect } from 'react';
 import { Users, GraduationCap, BookOpen, AlertCircle, Loader, Search, Filter, Plus } from 'lucide-react';
 import { configAPI } from '../../../services/api';
 import { useAuth } from '../../../hooks/useAuth';
-import { getAdminSchoolId, getStoredUser } from '../../../services/tenantContext';
+import { getCurrentSchoolId, getStoredUser } from '../../../services/schoolContext';
 import usePageNavigation from '../../../hooks/usePageNavigation';
 import { Button, Input, Card, CardContent, CardHeader, CardTitle } from '../../../components/ui';
 import TeacherClassAssignmentModal from '../shared/TeacherClassAssignmentModal';
@@ -26,7 +26,7 @@ const ClassList = () => {
   const { showSuccess } = useNotifications();
 
   useEffect(() => {
-    let sid = getAdminSchoolId();
+    let sid = getCurrentSchoolId();
     if (!sid) {
       const storedUser = getStoredUser();
       sid = storedUser?.schoolId || user?.schoolId;

@@ -7,7 +7,7 @@ import { Router } from 'express';
 import { FeeController } from '../controllers/fee.controller';
 import { authenticate, authorize } from '../middleware/auth.middleware';
 import { requireRole, auditLog } from '../middleware/permissions.middleware';
-import { requireTenant } from '../middleware/tenant.middleware';
+import { requireSchoolContext } from '../middleware/school.middleware';
 import { asyncHandler } from '../utils/async.util';
 import { validate } from '../middleware/validation.middleware';
 import { rateLimit } from '../middleware/enhanced-rateLimit.middleware';
@@ -33,7 +33,7 @@ const processPaymentSchema = z.object({
   transactionId: z.string().min(1).optional()
 });
 
-router.use(authenticate, requireTenant);
+router.use(authenticate, requireSchoolContext);
 
 // ============================================
 // FEE TYPE ROUTES

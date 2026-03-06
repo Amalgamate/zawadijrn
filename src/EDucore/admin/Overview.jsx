@@ -1,5 +1,5 @@
 /**
- * EDucore Admin Overview (Deprecated - Multi-tenant cleanup)
+ * EDucore Admin Overview (Deprecated)
  * Stub component (not used in single-school implementation)
  */
 

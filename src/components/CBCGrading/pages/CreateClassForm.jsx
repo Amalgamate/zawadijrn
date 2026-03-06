@@ -11,7 +11,7 @@ import { ArrowLeft, AlertCircle, Loader } from 'lucide-react';
 import { Button, Card, CardContent, CardHeader, CardTitle, Input } from '../../../components/ui';
 import { GRADES } from '../../../constants/grades';
 import { useAuth } from '../../../hooks/useAuth';
-import { getAdminSchoolId, getStoredUser } from '../../../services/tenantContext';
+import { getCurrentSchoolId, getStoredUser } from '../../../services/schoolContext';
 import * as classAPI from '../../../services/classAPI';
 import usePageNavigation from '../../../hooks/usePageNavigation';
 import api from '../../../services/api';
@@ -39,7 +39,7 @@ const CreateClassForm = () => {
   });
 
   useEffect(() => {
-    let sid = getAdminSchoolId();
+    let sid = getCurrentSchoolId();
     if (!sid) {
       const storedUser = getStoredUser();
       sid = storedUser?.schoolId || user?.schoolId;

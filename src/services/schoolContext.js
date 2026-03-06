@@ -1,10 +1,9 @@
 /**
- * Tenant Context Module
- * These functions parse local storage to locate tenant/school information.
+ * School Context Module
+ * Helpers for reading and writing school/branch context in local storage.
  */
 
-export const getPortalSchoolId = () => localStorage.getItem('currentSchoolId') || null;
-export const getAdminSchoolId = () => localStorage.getItem('currentSchoolId') || null;
+export const getCurrentSchoolId = () => localStorage.getItem('currentSchoolId') || null;
 
 export const getStoredUser = () => {
     try {
@@ -16,14 +15,14 @@ export const getStoredUser = () => {
     return null;
 };
 
-export const isStoredUserSuperAdmin = () => {
+export const isSuperAdminUser = () => {
     const user = getStoredUser();
     return user?.role === 'SUPER_ADMIN';
 };
 
-export const ensureSchoolId = () => getAdminSchoolId();
+export const resolveCurrentSchoolId = () => getCurrentSchoolId();
 
-export const setAdminSchoolId = (id) => {
+export const setCurrentSchoolId = (id) => {
     if (id) localStorage.setItem('currentSchoolId', id);
 };
 
@@ -31,9 +30,7 @@ export const setBranchId = (id) => {
     if (id) localStorage.setItem('currentBranchId', id);
 };
 
-export const clearAdminSchoolId = () => localStorage.removeItem('currentSchoolId');
+export const clearCurrentSchoolId = () => localStorage.removeItem('currentSchoolId');
 export const clearBranchId = () => localStorage.removeItem('currentBranchId');
-export const clearPortalSchoolId = () => localStorage.removeItem('currentSchoolId');
-export const setPortalSchoolId = (id) => setAdminSchoolId(id);
 
 export const getBranchId = () => localStorage.getItem('currentBranchId') || null;

@@ -18,17 +18,17 @@ import {
 } from '../controllers/communication.controller';
 import { requireRole, auditLog } from '../middleware/permissions.middleware';
 import { authenticate } from '../middleware/auth.middleware';
-import { requireTenant } from '../middleware/tenant.middleware';
+import { requireSchoolContext } from '../middleware/school.middleware';
 import { validate } from '../middleware/validation.middleware';
 import { rateLimit } from '../middleware/enhanced-rateLimit.middleware';
 
 const router = express.Router();
 
 /**
- * Apply authentication and tenant middleware to all routes
+ * Apply authentication and school context middleware to all routes
  */
 router.use(authenticate);
-router.use(requireTenant);
+router.use(requireSchoolContext);
 
 // Validation schemas
 const saveCommunicationConfigSchema = z.object({
