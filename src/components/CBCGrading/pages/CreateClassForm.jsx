@@ -9,7 +9,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, AlertCircle, Loader } from 'lucide-react';
 import { Button, Card, CardContent, CardHeader, CardTitle, Input } from '../../../components/ui';
-import { GRADES } from '../../../constants/grades';
+import { useSchoolData } from '../../../contexts/SchoolDataContext';
 import { useAuth } from '../../../hooks/useAuth';
 import { getCurrentSchoolId, getStoredUser } from '../../../services/schoolContext';
 import * as classAPI from '../../../services/classAPI';
@@ -20,6 +20,7 @@ import toast from 'react-hot-toast';
 const CreateClassForm = () => {
   const navigateTo = usePageNavigation();
   const { user } = useAuth();
+  const { grades } = useSchoolData();
   const [loading, setLoading] = useState(false);
   const [teachers, setTeachers] = useState([]);
   const [branches, setBranches] = useState([]);
@@ -28,7 +29,7 @@ const CreateClassForm = () => {
 
   const [formData, setFormData] = useState({
     name: '',
-    grade: 'GRADE_1',
+    grade: grades.length > 0 ? grades[0] : 'GRADE_1',
     stream: 'A',
     branchId: '',
     teacherId: '',
@@ -156,9 +157,9 @@ const CreateClassForm = () => {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-purple focus:border-transparent"
                 >
                   <option value="">Select Grade</option>
-                  {GRADES.map(grade => (
-                    <option key={grade.value} value={grade.value}>
-                      {grade.label}
+                  {grades.map(grade => (
+                    <option key={grade} value={grade}>
+                      {grade.replace(/_/g, ' ')}
                     </option>
                   ))}
                 </select>

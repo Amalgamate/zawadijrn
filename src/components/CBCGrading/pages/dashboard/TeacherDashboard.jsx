@@ -25,6 +25,7 @@ import {
   ArrowDown
 } from 'lucide-react';
 import AnimatedDoughnutChart from '../../shared/AnimatedDoughnutChart';
+import { clockInTeacher, clockOutTeacher, getCurrentUserClockInStatus, syncCurrentUserClockInStatus } from '../../../../utils/teacherClockIn';
 
 // Professional Components with Premium Styling
 const MetricCard = ({ title, value, subtitle, icon: Icon, trend, trendValue }) => {
@@ -79,6 +80,7 @@ const TeacherDashboard = ({ learners, user, onNavigate }) => {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('overview'); // overview, instructional, students, analytics
   const [metrics, setMetrics] = useState(null);
+  const [clockInState, setClockInState] = useState(() => getCurrentUserClockInStatus(user));
 
   useEffect(() => {
     const loadMetrics = async () => {
@@ -96,6 +98,42 @@ const TeacherDashboard = ({ learners, user, onNavigate }) => {
     };
     loadMetrics();
   }, [user]);
+
+  useEffect(() => {
+    let active = true;
+
+    const refreshClockIn = async () => {
+      const status = await syncCurrentUserClockInStatus(user);
+      if (!active) return;
+      setClockInState(status);
+    };
+
+    refreshClockIn();
+    window.addEventListener('teacherClockInChanged', refreshClockIn);
+    window.addEventListener('storage', refreshClockIn);
+
+    return () => {
+      active = false;
+      window.removeEventListener('teacherClockInChanged', refreshClockIn);
+      window.removeEventListener('storage', refreshClockIn);
+    };
+  }, [user]);
+
+  const handleClockIn = () => {
+    clockInTeacher(user, {
+      source: 'dashboard',
+      role: user?.role
+    });
+    setClockInState(getCurrentUserClockInStatus(user));
+  };
+
+  const handleClockOut = () => {
+    clockOutTeacher(user, {
+      source: 'dashboard',
+      role: user?.role
+    });
+    setClockInState(getCurrentUserClockInStatus(user));
+  };
 
   const stats = {
     myStudents: metrics?.stats?.myStudents || learners?.filter(l => l.status === 'Active').length || 0,
@@ -162,6 +200,11 @@ const TeacherDashboard = ({ learners, user, onNavigate }) => {
               <span className="px-2 py-0.5 bg-rose-50 text-rose-600 border border-rose-100 rounded text-[9px] font-bold uppercase tracking-widest">Urgent</span>
             </div>
             <div className="divide-y divide-gray-100">
+              {!clockInState.clockedIn && (
+                <div className="px-6 py-4 bg-amber-50 border-b border-amber-100 text-amber-800 text-xs font-semibold">
+                  You have not clocked in yet. Clock in to be recognized as available for today&apos;s timetable events.
+                </div>
+              )}
               {metrics?.stats?.pendingTasks > 0 ? (
                 <div className="px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
                   <div className="flex items-center gap-4">
@@ -320,9 +363,20 @@ const TeacherDashboard = ({ learners, user, onNavigate }) => {
               </p>
             </div>
           </div>
-          <button className="px-4 py-2.5 border border-white/30 rounded-lg hover:bg-white/10 transition-all duration-300 text-white font-bold text-sm backdrop-blur-sm flex items-center gap-2">
-            <Calendar size={16} /> View Full Calendar
-          </button>
+          <div className="flex items-center gap-2">
+            <button className="px-4 py-2.5 border border-white/30 rounded-lg hover:bg-white/10 transition-all duration-300 text-white font-bold text-sm backdrop-blur-sm flex items-center gap-2">
+              <Calendar size={16} /> View Full Calendar
+            </button>
+            <button
+              onClick={clockInState.clockedIn ? handleClockOut : handleClockIn}
+              className={`px-4 py-2.5 rounded-lg border font-bold text-sm backdrop-blur-sm transition-all duration-300 ${clockInState.clockedIn
+                ? 'bg-amber-500/30 text-white border-amber-200/60 hover:bg-amber-500/40'
+                : 'border-white/40 text-white hover:bg-white/10'
+                }`}
+            >
+              {clockInState.clockedIn ? 'Clock Out' : 'Clock In'}
+            </button>
+          </div>
         </div>
       </div>
 

@@ -13,6 +13,7 @@ import LoadingSpinner from '../shared/LoadingSpinner';
 import { useNotifications } from '../hooks/useNotifications';
 import api from '../../../services/api';
 import { generateStatementPDF } from '../../../utils/simplePdfGenerator';
+import { useSchoolData } from '../../../contexts/SchoolDataContext';
 
 const StudentStatementsPage = () => {
   const [learners, setLearners] = useState([]);
@@ -24,8 +25,7 @@ const StudentStatementsPage = () => {
   const [filterGrade, setFilterGrade] = useState('all');
   const [showStatement, setShowStatement] = useState(false);
   const { showSuccess, showError } = useNotifications();
-
-  const grades = ['PP1', 'PP2', 'Grade1', 'Grade2', 'Grade3', 'Grade4', 'Grade5', 'Grade6', 'Grade7', 'Grade8', 'Grade9'];
+  const { grades: fetchedGrades } = useSchoolData();
 
   useEffect(() => {
     const fetchLearners = async () => {
@@ -108,9 +108,42 @@ const StudentStatementsPage = () => {
     }
   };
 
-  const handleEmailStatement = () => {
-    showSuccess('Sending statement via email...');
-    // TODO: Implement email functionality
+  const handleEmailStatement = async () => {
+    if (!selectedLearner) return;
+
+    try {
+      showSuccess('Preparing statement for email...');
+
+      const result = await generateStatementPDF(selectedLearner, invoices, payments, {
+        action: 'blob',
+        highFidelity: true
+      });
+
+      if (!result.success || !result.blob) {
+        throw new Error(result.error || 'Failed to generate PDF');
+      }
+
+      const reader = new FileReader();
+      reader.readAsDataURL(result.blob);
+      reader.onloadend = async () => {
+        const base64data = reader.result;
+
+        try {
+          showSuccess('Sending email...');
+          await api.fees.emailStatement(selectedLearner.id, {
+            pdfBase64: base64data
+          });
+          showSuccess('Statement sent successfully');
+        } catch (error) {
+          console.error('Email failed:', error);
+          showError(error.message || 'Failed to send email');
+        }
+      };
+
+    } catch (error) {
+      console.error('Failed to prepare statement:', error);
+      showError('Failed to prepare statement for emailing');
+    }
   };
 
   const getStatusBadge = (status) => {
@@ -176,8 +209,8 @@ const StudentStatementsPage = () => {
                 className="px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Grades</option>
-                {grades.map(grade => (
-                  <option key={grade} value={grade}>{grade}</option>
+                {fetchedGrades.map(grade => (
+                  <option key={grade} value={grade}>{grade.replace(/_/g, ' ')}</option>
                 ))}
               </select>
             </div>

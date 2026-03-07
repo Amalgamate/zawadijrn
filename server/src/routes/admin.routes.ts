@@ -6,6 +6,7 @@ import { rateLimit } from '../middleware/enhanced-rateLimit.middleware';
 import { validate } from '../middleware/validation.middleware';
 import { auditLog } from '../middleware/permissions.middleware';
 import { AdminController } from '../controllers/admin.controller';
+import { asyncHandler } from '../utils/async.util';
 
 const router = Router();
 const admin = new AdminController();
@@ -51,7 +52,7 @@ router.use(requireRole(['SUPER_ADMIN']));
 router.get(
   '/schools',
   rateLimit({ windowMs: 60_000, maxRequests: 50 }),
-  admin.listSchools
+  asyncHandler(admin.listSchools.bind(admin))
 );
 
 router.post(
@@ -59,39 +60,39 @@ router.post(
   rateLimit({ windowMs: 60_000, maxRequests: 5 }),
   validate(provisionSchoolSchema),
   auditLog('ADMIN_PROVISION_SCHOOL'),
-  admin.provisionSchool
+  asyncHandler(admin.provisionSchool.bind(admin))
 );
 
 router.get(
   '/schools/deleted',
   rateLimit({ windowMs: 60_000, maxRequests: 50 }),
-  admin.listDeletedSchools
+  asyncHandler(admin.listDeletedSchools.bind(admin))
 );
 
 router.get(
   '/schools/:schoolId/statistics',
   rateLimit({ windowMs: 60_000, maxRequests: 50 }),
-  admin.getSchoolStatistics
+  asyncHandler(admin.getSchoolStatistics.bind(admin))
 );
 
 router.delete(
   '/schools/:schoolId',
   rateLimit({ windowMs: 60_000, maxRequests: 5 }),
   auditLog('ADMIN_DELETE_SCHOOL'),
-  admin.deleteSchoolWithOptions
+  asyncHandler(admin.deleteSchoolWithOptions.bind(admin))
 );
 
 router.post(
   '/schools/:schoolId/restore',
   rateLimit({ windowMs: 60_000, maxRequests: 10 }),
   auditLog('ADMIN_RESTORE_SCHOOL'),
-  admin.restoreSchool
+  asyncHandler(admin.restoreSchool.bind(admin))
 );
 
 router.get(
   '/schools/:schoolId/communication',
   rateLimit({ windowMs: 60_000, maxRequests: 50 }),
-  admin.getSchoolCommunication
+  asyncHandler(admin.getSchoolCommunication.bind(admin))
 );
 
 router.put(
@@ -99,21 +100,21 @@ router.put(
   rateLimit({ windowMs: 60_000, maxRequests: 10 }),
   validate(updateSchoolCommunicationSchema),
   auditLog('ADMIN_UPDATE_SCHOOL_COMMUNICATION'),
-  admin.updateSchoolCommunication
+  asyncHandler(admin.updateSchoolCommunication.bind(admin))
 );
 
 // Subscription & Plans
 router.get(
   '/plans',
   rateLimit({ windowMs: 60_000, maxRequests: 50 }),
-  admin.listPlans
+  asyncHandler(admin.listPlans.bind(admin))
 );
 
 router.patch(
   '/schools/:schoolId/reactivate',
   rateLimit({ windowMs: 60_000, maxRequests: 10 }),
   auditLog('ADMIN_REACTIVATE_SCHOOL'),
-  admin.reactivateSchool
+  asyncHandler(admin.reactivateSchool.bind(admin))
 );
 
 router.patch(
@@ -121,20 +122,20 @@ router.patch(
   rateLimit({ windowMs: 60_000, maxRequests: 10 }),
   validate(approvePaymentSchema),
   auditLog('ADMIN_APPROVE_PAYMENT'),
-  admin.approvePayment
+  asyncHandler(admin.approvePayment.bind(admin))
 );
 
 // Metrics & Modules
 router.get(
   '/trials/metrics',
   rateLimit({ windowMs: 60_000, maxRequests: 50 }),
-  admin.trialMetrics
+  asyncHandler(admin.trialMetrics.bind(admin))
 );
 
 router.get(
   '/schools/:schoolId/modules',
   rateLimit({ windowMs: 60_000, maxRequests: 50 }),
-  admin.getSchoolModules
+  asyncHandler(admin.getSchoolModules.bind(admin))
 );
 
 router.patch(
@@ -142,7 +143,7 @@ router.patch(
   rateLimit({ windowMs: 60_000, maxRequests: 10 }),
   validate(setSchoolModuleSchema),
   auditLog('ADMIN_SET_SCHOOL_MODULE'),
-  admin.setSchoolModule
+  asyncHandler(admin.setSchoolModule.bind(admin))
 );
 
 // Context Switching
@@ -150,7 +151,7 @@ router.post(
   '/switch-school/:schoolId',
   rateLimit({ windowMs: 60_000, maxRequests: 20 }),
   auditLog('ADMIN_SWITCH_SCHOOL_CONTEXT'),
-  admin.switchSchool
+  asyncHandler(admin.switchSchool.bind(admin))
 );
 
 export default router;

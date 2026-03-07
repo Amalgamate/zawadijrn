@@ -43,8 +43,8 @@ const CommunicationSettings = () => {
   const [smsSettings, setSmsSettings] = useState({
     provider: COMMUNICATION_DEFAULTS.sms.provider,
     baseUrl: COMMUNICATION_DEFAULTS.sms.baseUrl,
-    apiKey: '',
-    username: '',
+    apiKey: COMMUNICATION_DEFAULTS.sms.apiKey || '',
+    username: COMMUNICATION_DEFAULTS.sms.username || '',
     senderId: COMMUNICATION_DEFAULTS.sms.senderId,
     customName: '',
     customBaseUrl: '',
@@ -132,7 +132,7 @@ const CommunicationSettings = () => {
               hasApiKey: data.sms.hasApiKey,
 
               // AT specific
-              username: data.sms.username || '',
+              username: data.sms.username || COMMUNICATION_DEFAULTS.sms.username || '',
 
               // Custom fields
               customName: data.sms.customName || '',
@@ -203,7 +203,7 @@ const CommunicationSettings = () => {
       showSuccess(`${type} settings saved successfully!`);
 
       // Refresh to get 'hasApiKey' flags updated? Use local state for now
-      if (payload.sms?.apiKey) setSmsSettings(s => ({ ...s, hasApiKey: true, apiKey: '' }));
+      if (payload.sms?.apiKey) setSmsSettings(s => ({ ...s, hasApiKey: true }));
       if (payload.email?.apiKey) setEmailSettings(s => ({ ...s, hasApiKey: true, apiKey: '' }));
 
     } catch (error) {
@@ -658,7 +658,7 @@ const CommunicationSettings = () => {
                           value={smsSettings.apiKey}
                           onChange={(e) => setSmsSettings({ ...smsSettings, apiKey: e.target.value })}
                           className={`w-full px-4 py-2 border rounded-lg pr-24 ${!smsSettings.apiKey && smsSettings.hasApiKey ? 'bg-green-50 border-green-300' : ''}`}
-                          placeholder={smsSettings.hasApiKey && !smsSettings.apiKey ? 'Already saved - leave blank to keep' : 'Enter your Africa\'s Talking API Key'}
+                          placeholder={smsSettings.hasApiKey && !smsSettings.apiKey ? 'Saved (Edit to change)' : 'Enter your Africa\'s Talking API Key'}
                         />
                         {smsSettings.hasApiKey && !smsSettings.apiKey && (
                           <span className="absolute right-3 top-2 text-xs text-green-600 font-medium bg-green-50 px-3 py-1 rounded border border-green-300">

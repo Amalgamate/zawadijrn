@@ -241,4 +241,67 @@ export class EmailService {
       console.error('❌ Failed to send fee invoice email:', error);
     }
   }
+
+  static async sendFeeStatementEmail(data: {
+    to: string;
+    schoolName: string;
+    parentName: string;
+    learnerName: string;
+    pdfBuffer: Buffer;
+  }): Promise<void> {
+    const { to, schoolName, parentName, learnerName, pdfBuffer } = data;
+    const brandColor = '#1e3a8a';
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px; }
+          .header { text-align: center; margin-bottom: 30px; }
+          .content { background: #f9fafb; padding: 25px; border-radius: 8px; }
+          .footer { margin-top: 30px; font-size: 0.875rem; color: #6b7280; text-align: center; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="color: ${brandColor};">${schoolName}</h1>
+            <h3>Fee Statement</h3>
+          </div>
+          <div class="content">
+            <p>Dear <strong>${parentName}</strong>,</p>
+            <p>Please find attached the latest fee statement for <strong>${learnerName}</strong>.</p>
+            <p>If you have any questions regarding this statement, please contact the school administration.</p>
+          </div>
+          <div class="footer">
+            <p>&copy; ${new Date().getFullYear()} ${schoolName}. All rights reserved.</p>
+            <p>This is an automated notification.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    try {
+      await this.transporter.sendMail({
+        from: `"${schoolName}" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+        to,
+        subject: `Fee Statement: ${learnerName}`,
+        html,
+        attachments: [
+          {
+            filename: `Statement-${learnerName.replace(/\s+/g, '-')}.pdf`,
+            content: pdfBuffer,
+            contentType: 'application/pdf'
+          }
+        ]
+      });
+      console.log(`📧 Fee statement email sent to ${to}`);
+    } catch (error) {
+      console.error('❌ Failed to send fee statement email:', error);
+      throw error;
+    }
+  }
 }

@@ -1824,6 +1824,29 @@ export const feeAPI = {
   },
 
   /**
+   * Export invoices to CSV
+   */
+  exportInvoices: async (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    const token = localStorage.getItem('token');
+    if (!token) throw new Error('No authentication token found');
+
+    // Have to bypass fetchWithAuth because it expects JSON response
+    const response = await fetch(`${API_BASE_URL}/fees/invoices/export${query ? `?${query}` : ''}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to export invoices');
+    }
+
+    return response.blob();
+  },
+
+  /**
    * Reset all invoices and payments
    * @returns {Promise} Success message
    */
@@ -1848,6 +1871,16 @@ export const feeAPI = {
    */
   bulkSendReminders: async (data) => {
     return fetchWithAuth('/fees/invoices/remind/bulk', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Email fee statement to parent
+   */
+  emailStatement: async (learnerId, data) => {
+    return fetchWithAuth(`/fees/invoices/learner/${learnerId}/email`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -2468,6 +2501,21 @@ export const sharingAPI = {
 // ============================================
 
 export const hrAPI = {
+  clockInStaff: async (data = {}) => {
+    return fetchWithAuth('/hr/attendance/clock-in', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+  clockOutStaff: async (data = {}) => {
+    return fetchWithAuth('/hr/attendance/clock-out', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+  getTodayClockIn: async () => {
+    return fetchWithAuth('/hr/attendance/today');
+  },
   getStaffDirectory: async () => {
     return fetchWithAuth('/hr/staff');
   },
@@ -2647,6 +2695,26 @@ export const inventoryAPI = {
   }),
 };
 
+// Notices
+export const noticesAPI = {
+  getAll: async (params) => {
+    const queryString = new URLSearchParams(params).toString();
+    return fetchWithAuth(`/notices${queryString ? `?${queryString}` : ''}`);
+  },
+  getById: async (id) => fetchWithAuth(`/notices/${id}`),
+  create: async (data) => fetchWithAuth('/notices', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  update: async (id, data) => fetchWithAuth(`/notices/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  }),
+  delete: async (id) => fetchWithAuth(`/notices/${id}`, {
+    method: 'DELETE',
+  }),
+};
+
 // Export all APIs
 const api = {
   auth: authAPI,
@@ -2673,9 +2741,11 @@ const api = {
   admin: adminAPI,
   documents: documentsAPI,
   communication: communicationAPI,
+  notices: noticesAPI,
   broadcasts: broadcastAPI,
   books: bookAPI,
   sharing: sharingAPI,
+  config: configAPI,
   ...configAPI,
   planner: {
     getEvents: async (params) => {

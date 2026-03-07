@@ -233,7 +233,7 @@ export class UserController {
       data: { archived: true, archivedAt: new Date(), archivedBy: currentUserId, status: 'INACTIVE' },
     });
 
-    res.json({ success: true, message: 'User archived' });
+    res.json({ success: true, message: 'User archived', data: archivedUser });
   }
 
   async unarchiveUser(req: AuthRequest, res: Response) {
@@ -249,7 +249,7 @@ export class UserController {
       data: { archived: false, archivedAt: null, archivedBy: null, status: 'ACTIVE' },
     });
 
-    res.json({ success: true, message: 'User unarchived' });
+    res.json({ success: true, message: 'User unarchived', data: updated });
   }
 
   async deleteUser(req: AuthRequest, res: Response) {

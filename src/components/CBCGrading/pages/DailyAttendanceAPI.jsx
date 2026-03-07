@@ -4,6 +4,7 @@ import { useAttendance } from '../hooks/useAttendanceAPI';
 import { useNotifications } from '../hooks/useNotifications';
 import { toInputDate } from '../utils/dateHelpers';
 import LoadingSpinner from '../shared/LoadingSpinner';
+import { useAuth } from '../../../hooks/useAuth';
 
 const DailyAttendance = () => {
   // Staged Filter State (matches SummativeAssessment pattern)
@@ -20,6 +21,8 @@ const DailyAttendance = () => {
   const [pendingChanges, setPendingChanges] = React.useState({});
   const [searchTerm, setSearchTerm] = React.useState('');
   const [isSyncing, setIsSyncing] = React.useState(false);
+  const { user } = useAuth();
+  const isTeacher = user?.role === 'TEACHER';
 
   // Persist staged filters
   React.useEffect(() => {
@@ -48,15 +51,43 @@ const DailyAttendance = () => {
 
   const { showSuccess, showError } = useNotifications();
 
+  const assignedClass = React.useMemo(() => {
+    if (!isTeacher || classes.length === 0) return null;
+    return classes[0];
+  }, [isTeacher, classes]);
+
+  React.useEffect(() => {
+    if (!isTeacher || !assignedClass) return;
+
+    const assignedGrade = assignedClass.grade || '';
+    const assignedStream = assignedClass.stream || '';
+
+    if (stagedGrade !== assignedGrade) {
+      setStagedGrade(assignedGrade);
+    }
+    if (stagedStream !== assignedStream) {
+      setStagedStream(assignedStream);
+    }
+
+    if (activeContext && activeContext.classId !== assignedClass.id) {
+      setActiveContext(null);
+      setDailyReport(null);
+      setPendingChanges({});
+    }
+  }, [isTeacher, assignedClass, stagedGrade, stagedStream, activeContext]);
+
   // Load daily report when "Load Workspace" is clicked
   const handleLoadWorkspace = React.useCallback(async () => {
     // Find the class that matches staged grade and stream
-    const targetClass = classes.find(c =>
-      c.grade === stagedGrade && (stagedStream ? c.stream === stagedStream : true)
-    );
+    const targetClass = isTeacher
+      ? assignedClass
+      : classes.find(c => c.grade === stagedGrade && (stagedStream ? c.stream === stagedStream : true));
 
     if (!targetClass) {
-      showError(`No active class found for ${stagedGrade} ${stagedStream || ''}`);
+      showError(isTeacher
+        ? 'No class assigned to your account. Please contact the Head Teacher.'
+        : `No active class found for ${stagedGrade} ${stagedStream || ''}`
+      );
       return;
     }
 
@@ -69,8 +100,8 @@ const DailyAttendance = () => {
           classId: targetClass.id,
           className: targetClass.name,
           date: stagedDate,
-          grade: stagedGrade,
-          stream: stagedStream
+          grade: targetClass.grade,
+          stream: targetClass.stream || ''
         });
 
         // Initialize pending changes
@@ -90,7 +121,7 @@ const DailyAttendance = () => {
     } finally {
       setIsSyncing(false);
     }
-  }, [stagedGrade, stagedStream, stagedDate, classes, getDailyClassReport, showError]);
+  }, [isTeacher, assignedClass, stagedGrade, stagedStream, stagedDate, classes, getDailyClassReport, showError]);
 
   // Auto-restore workspace if activeContext exists
   React.useEffect(() => {
@@ -98,6 +129,12 @@ const DailyAttendance = () => {
       handleLoadWorkspace();
     }
   }, [classes, activeContext, dailyReport, loading, isSyncing, handleLoadWorkspace]);
+
+  React.useEffect(() => {
+    if (isTeacher && assignedClass && !activeContext && !dailyReport && !loading && !isSyncing) {
+      handleLoadWorkspace();
+    }
+  }, [isTeacher, assignedClass, activeContext, dailyReport, loading, isSyncing, handleLoadWorkspace]);
 
 
   // Status configuration
@@ -236,6 +273,7 @@ const DailyAttendance = () => {
               setStagedGrade(e.target.value);
               setStagedStream('');
             }}
+            disabled={isTeacher}
             className="h-9 px-3 border border-slate-300 rounded-lg text-xs font-semibold bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none w-32"
           >
             <option value="">Grade</option>
@@ -247,7 +285,7 @@ const DailyAttendance = () => {
           <select
             value={stagedStream}
             onChange={(e) => setStagedStream(e.target.value)}
-            disabled={!stagedGrade}
+            disabled={!stagedGrade || isTeacher}
             className="h-9 px-3 border border-slate-300 rounded-lg text-xs font-semibold bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none w-24 disabled:opacity-50"
           >
             <option value="">Stream</option>
@@ -266,7 +304,7 @@ const DailyAttendance = () => {
 
           <button
             onClick={handleLoadWorkspace}
-            disabled={!stagedGrade || loading || isSyncing}
+            disabled={isTeacher ? (!assignedClass || loading || isSyncing) : (!stagedGrade || loading || isSyncing)}
             className="h-9 px-4 bg-brand-teal hover:bg-brand-teal/90 text-white rounded-lg text-xs font-bold flex items-center gap-2 transition-all disabled:opacity-50"
           >
             {isSyncing ? <RefreshCw size={14} className="animate-spin" /> : <Filter size={14} />}

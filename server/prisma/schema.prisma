@@ -53,6 +53,7 @@ model User {
   subject                   String?
   gender                    String?
   createdEvents             Event[]                  @relation("EventCreator")
+  createdNotices            Notice[]                 @relation("NoticeAuthor")
   createdAggregationConfigs AggregationConfig[]
   assignedAssets            AssetAssignment[]        @relation("AssetUser")
   attendancesMarked         Attendance[]             @relation("AttendanceMarker")
@@ -73,6 +74,7 @@ model User {
   payrollRecords            PayrollRecord[]
   conductedReviews          PerformanceReview[]      @relation("ConductedReviews")
   performanceReviews        PerformanceReview[]      @relation("StaffReviews")
+  staffAttendanceLogs       StaffAttendanceLog[]
   staffDocuments            StaffDocument[]
   approvedRequisitions      StockRequisition[]       @relation("ApprovedBy")
   inventoryRequisitions     StockRequisition[]       @relation("RequestedBy")
@@ -164,8 +166,10 @@ model School {
   learningAreas          LearningArea[]
   messageReceipts        MessageReceipt[]
   messages               Message[]
+  notices                Notice[]
   payrollRecords         PayrollRecord[]
   performanceReviews     PerformanceReview[]
+  staffAttendanceLogs    StaffAttendanceLog[]
   smsDeliveryLogs        SmsDeliveryLog[]
   staffDocuments         StaffDocument[]
   stockMovements         StockMovement[]
@@ -237,6 +241,31 @@ model Stream {
 
   @@index([name])
   @@map("streams")
+}
+
+model Notice {
+  id             String    @id @default(uuid())
+  schoolId       String
+  createdById    String?
+  title          String
+  content        String
+  category       String?
+  priority       String    @default("NORMAL")
+  status         String    @default("PUBLISHED")
+  targetAudience String?
+  publishedAt    DateTime  @default(now())
+  expiresAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  archived       Boolean   @default(false)
+  archivedAt     DateTime?
+  archivedBy     String?
+  school         School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  createdBy      User?     @relation("NoticeAuthor", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([schoolId, status, publishedAt])
+  @@index([schoolId, archived])
+  @@map("notices")
 }
 
 model Class {
@@ -1450,6 +1479,8 @@ model PayrollRecord {
   status      PayrollStatus @default(DRAFT)
   generatedAt DateTime      @default(now())
   generatedBy String?
+  workedMinutes Int         @default(0)
+  workedDays    Int         @default(0)
   paidAt      DateTime?
   reference   String?
   notes       String?
@@ -1460,6 +1491,26 @@ model PayrollRecord {
   @@index([userId])
   @@index([month, year])
   @@map("payroll_records")
+}
+
+model StaffAttendanceLog {
+  id         String   @id @default(uuid())
+  userId     String
+  schoolId   String?
+  date       DateTime @db.Date
+  clockInAt  DateTime
+  clockOutAt DateTime?
+  source     String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  school     School?  @relation(fields: [schoolId], references: [id])
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([schoolId, date])
+  @@index([userId, clockInAt])
+  @@map("staff_attendance_logs")
 }
 
 model StaffDocument {

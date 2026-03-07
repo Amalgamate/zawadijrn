@@ -161,11 +161,11 @@ router.delete(
 /**
  * @route   GET /api/config/streams/:schoolId
  * @desc    Get stream configurations
- * @access  ADMIN, SUPER_ADMIN
+ * @access  ADMIN, SUPER_ADMIN, HEAD_TEACHER, TEACHER
  */
 router.get(
   '/streams/:schoolId',
-  requireRole(['ADMIN', 'SUPER_ADMIN']),
+  requireRole(['ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER', 'TEACHER']),
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   configController.getStreamConfigs
 );

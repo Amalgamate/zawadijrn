@@ -4,6 +4,7 @@ import { useAuth } from './hooks/useAuth';
 import Auth from './pages/Auth';
 import CBCGradingSystem from './components/CBCGrading/CBCGradingSystem';
 import SplashScreen from './components/mobile/SplashScreen';
+import { SchoolDataProvider } from './contexts/SchoolDataContext';
 import api from './services/api';
 import axiosInstance from './services/axiosConfig';
 
@@ -126,12 +127,14 @@ function AppContent() {
             <Route
               path="/app/*"
               element={
-                <CBCGradingSystem
-                  user={user}
-                  onLogout={handleLogout}
-                  brandingSettings={brandingSettings}
-                  setBrandingSettings={setBrandingSettings}
-                />
+                <SchoolDataProvider>
+                  <CBCGradingSystem
+                    user={user}
+                    onLogout={handleLogout}
+                    brandingSettings={brandingSettings}
+                    setBrandingSettings={setBrandingSettings}
+                  />
+                </SchoolDataProvider>
               }
             />
             <Route path="*" element={<Navigate to="/app" replace />} />

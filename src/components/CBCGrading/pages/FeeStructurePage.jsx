@@ -13,6 +13,7 @@ import LoadingSpinner from '../shared/LoadingSpinner';
 import ConfirmDialog from '../shared/ConfirmDialog';
 import { useNotifications } from '../hooks/useNotifications';
 import api from '../../../services/api';
+import { useSchoolData } from '../../../contexts/SchoolDataContext';
 
 const FeeStructurePage = () => {
   const [feeStructures, setFeeStructures] = useState([]);
@@ -31,6 +32,7 @@ const FeeStructurePage = () => {
   const [seedStructuresComplete, setSeedStructuresComplete] = useState(false);
   const [expandedStructures, setExpandedStructures] = useState({}); // Track which structures are expanded
   const { showSuccess, showError } = useNotifications();
+  const { grades: fetchedGrades, classes } = useSchoolData();
 
   // Form state
   const [formData, setFormData] = useState({
@@ -44,8 +46,21 @@ const FeeStructurePage = () => {
     feeItems: [] // Array of { feeTypeId, amount, mandatory }
   });
 
-  const grades = ['PP1', 'PP2', 'GRADE_1', 'GRADE_2', 'GRADE_3', 'GRADE_4', 'GRADE_5', 'GRADE_6', 'GRADE_7', 'GRADE_8', 'GRADE_9'];
-  const terms = ['TERM_1', 'TERM_2', 'TERM_3'];
+  const uniqueTerms = Array.from(new Set(classes.map(c => c.term).filter(Boolean))).sort();
+  const terms = uniqueTerms.length > 0 ? uniqueTerms : ['TERM_1', 'TERM_2', 'TERM_3'];
+
+  // Make sure to use first available grade and term as defaults to prevent invalid save
+  useEffect(() => {
+    if (fetchedGrades.length > 0 && (!formData.grade || formData.grade === 'PP1')) {
+      setFormData(prev => ({ ...prev, grade: fetchedGrades[0] }));
+    }
+  }, [fetchedGrades]);
+
+  useEffect(() => {
+    if (terms.length > 0 && (!formData.term || formData.term === 'TERM_1')) {
+      setFormData(prev => ({ ...prev, term: terms[0] }));
+    }
+  }, [terms]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -54,18 +69,18 @@ const FeeStructurePage = () => {
         api.fees.getAllFeeStructures(),
         api.fees.getAllFeeTypes({ active: true })
       ]);
-      
+
       const structures = structuresRes?.data || [];
       const types = typesRes || [];
-      
+
       setFeeStructures(structures);
       setFeeTypes(types);
-      
+
       // Check if fee types were seeded (use a reasonable threshold)
       if (types && types.length >= 9) {
         setSeedTypesComplete(true);
       }
-      
+
       // Don't auto-check structures - user must click seed button
       // Only mark complete if they click the seed button
     } catch (error) {
@@ -322,8 +337,8 @@ const FeeStructurePage = () => {
                   className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                   required
                 >
-                  {grades.map(grade => (
-                    <option key={grade} value={grade}>{grade}</option>
+                  {fetchedGrades.map(grade => (
+                    <option key={grade} value={grade}>{grade.replace(/_/g, ' ')}</option>
                   ))}
                 </select>
               </div>
@@ -337,7 +352,7 @@ const FeeStructurePage = () => {
                   required
                 >
                   {terms.map(term => (
-                    <option key={term} value={term}>{term}</option>
+                    <option key={term} value={term}>{term.replace(/_/g, ' ')}</option>
                   ))}
                 </select>
               </div>
@@ -506,11 +521,10 @@ const FeeStructurePage = () => {
         <button
           onClick={handleSeedFeeTypes}
           disabled={isSeedingTypes || seedTypesComplete}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition font-medium ${
-            seedTypesComplete
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition font-medium ${seedTypesComplete
               ? 'bg-gray-300 text-gray-700 cursor-not-allowed'
               : 'bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed'
-          }`}
+            }`}
           title={seedTypesComplete ? 'Fee types have been seeded' : 'Create the 9 default fee types (Tuition, Transport, etc.)'}
         >
           {isSeedingTypes ? (
@@ -534,11 +548,10 @@ const FeeStructurePage = () => {
         <button
           onClick={handleSeedFeeStructures}
           disabled={isSeedingStructures || seedStructuresComplete}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition font-medium ${
-            seedStructuresComplete
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition font-medium ${seedStructuresComplete
               ? 'bg-gray-300 text-gray-700 cursor-not-allowed'
               : 'bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed'
-          }`}
+            }`}
           title={seedStructuresComplete ? 'Fee structures have been seeded (18 grades × 3 terms)' : 'Create fee structures for all grades and terms'}
         >
           {isSeedingStructures ? (
@@ -592,8 +605,8 @@ const FeeStructurePage = () => {
             className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">All Grades</option>
-            {grades.map(grade => (
-              <option key={grade} value={grade}>{grade}</option>
+            {fetchedGrades.map(grade => (
+              <option key={grade} value={grade}>{grade.replace(/_/g, ' ')}</option>
             ))}
           </select>
           <select
@@ -603,7 +616,7 @@ const FeeStructurePage = () => {
           >
             <option value="all">All Terms</option>
             {terms.map(term => (
-              <option key={term} value={term}>{term}</option>
+              <option key={term} value={term}>{term.replace(/_/g, ' ')}</option>
             ))}
           </select>
         </div>

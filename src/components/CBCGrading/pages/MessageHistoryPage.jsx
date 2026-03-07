@@ -12,13 +12,13 @@ const MessageHistoryPage = () => {
     // State
     const [loading, setLoading] = useState(false);
     const [logs, setLogs] = useState([]);
-    const [summary, setSummary] = useState({ totalSent: 0, successRate: 0, failed: 0, estimatedCost: 0 });
+    const [summary, setSummary] = useState({ totalSent: 0, successRate: 0, failed: 0, bounced: 0, estimatedCost: 0 });
     const [schoolId, setSchoolId] = useState(null);
 
     // Filters
     const [filters, setFilters] = useState({
-        startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        endDate: new Date().toISOString().split('T')[0],
+        startDate: '',
+        endDate: '',
         channel: 'all',
         status: 'all',
         search: ''
@@ -47,8 +47,8 @@ const MessageHistoryPage = () => {
         try {
             const response = await api.notifications.getAuditLogs({
                 schoolId: sid,
-                startDate: filters.startDate,
-                endDate: filters.endDate,
+                startDate: filters.startDate || undefined,
+                endDate: filters.endDate || undefined,
                 channel: filters.channel === 'all' ? undefined : filters.channel,
                 status: filters.status === 'all' ? undefined : filters.status,
                 search: filters.search || undefined,
@@ -58,7 +58,7 @@ const MessageHistoryPage = () => {
 
             if (response.success) {
                 setLogs(response.data.logs || []);
-                setSummary(response.data.summary || { totalSent: 0, successRate: 0, failed: 0, estimatedCost: 0 });
+                setSummary(response.data.summary || { totalSent: 0, successRate: 0, failed: 0, bounced: 0, estimatedCost: 0 });
                 setTotalPages(Math.ceil((response.data.total || 0) / limit));
             }
         } catch (error) {
@@ -112,6 +112,17 @@ const MessageHistoryPage = () => {
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     };
 
+    const getStatusMeta = (status) => {
+        const normalized = String(status || '').toUpperCase();
+        if (normalized === 'SENT') {
+            return { label: 'Sent', className: 'text-green-600' };
+        }
+        if (normalized === 'BOUNCED') {
+            return { label: 'Bounced', className: 'text-orange-600' };
+        }
+        return { label: 'Failed', className: 'text-red-600' };
+    };
+
     return (
         <div className="h-full flex flex-col bg-white rounded-xl shadow-lg overflow-hidden">
             {/* Header Section */}
@@ -147,7 +158,7 @@ const MessageHistoryPage = () => {
             </div>
 
             {/* Metrics Cards */}
-            <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 grid grid-cols-2 md:grid-cols-5 gap-4">
                 <Card>
                     <CardContent className="p-4">
                         <div className="text-center">
@@ -169,6 +180,14 @@ const MessageHistoryPage = () => {
                         <div className="text-center">
                             <p className="text-gray-600 text-sm mb-1">Failed</p>
                             <p className="text-3xl font-bold text-red-600">{summary.failed}</p>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardContent className="p-4">
+                        <div className="text-center">
+                            <p className="text-gray-600 text-sm mb-1">Bounced</p>
+                            <p className="text-3xl font-bold text-orange-600">{summary.bounced || 0}</p>
                         </div>
                     </CardContent>
                 </Card>
@@ -213,7 +232,7 @@ const MessageHistoryPage = () => {
                         >
                             <option value="all">All Channels</option>
                             <option value="SMS">SMS</option>
-                            <option value="WhatsApp">WhatsApp</option>
+                            <option value="WHATSAPP">WhatsApp</option>
                         </select>
                     </div>
                     <div className="space-y-1">
@@ -227,6 +246,7 @@ const MessageHistoryPage = () => {
                             <option value="all">All Status</option>
                             <option value="SENT">Sent</option>
                             <option value="FAILED">Failed</option>
+                            <option value="BOUNCED">Bounced</option>
                         </select>
                     </div>
                     <div className="space-y-1">
@@ -269,7 +289,9 @@ const MessageHistoryPage = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
-                                    {logs.map((log, idx) => (
+                                    {logs.map((log, idx) => {
+                                        const statusMeta = getStatusMeta(log.status);
+                                        return (
                                         <tr key={idx} className="hover:bg-gray-50 transition">
                                             <td className="px-4 py-3 text-xs text-gray-700 font-mono">{formatDate(log.createdAt)}</td>
                                             <td className="px-4 py-3">
@@ -296,14 +318,14 @@ const MessageHistoryPage = () => {
                                             </td>
                                             <td className="px-4 py-3">
                                                 {log.status === 'SENT' ? (
-                                                    <div className="flex items-center gap-1 text-green-600">
+                                                    <div className={`flex items-center gap-1 ${statusMeta.className}`}>
                                                         <CheckCircle size={16} />
-                                                        <span className="text-xs font-bold">Sent</span>
+                                                        <span className="text-xs font-bold">{statusMeta.label}</span>
                                                     </div>
                                                 ) : (
-                                                    <div className="flex items-center gap-1 text-red-600">
+                                                    <div className={`flex items-center gap-1 ${statusMeta.className}`}>
                                                         <XCircle size={16} />
-                                                        <span className="text-xs font-bold">Failed</span>
+                                                        <span className="text-xs font-bold">{statusMeta.label}</span>
                                                     </div>
                                                 )}
                                             </td>
@@ -312,7 +334,8 @@ const MessageHistoryPage = () => {
                                             </td>
                                             <td className="px-4 py-3 text-xs text-gray-700">{log.term || 'N/A'}</td>
                                         </tr>
-                                    ))}
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>

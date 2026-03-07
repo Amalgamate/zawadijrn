@@ -15,10 +15,9 @@ export class SubjectAssignmentController {
      * Get all subject assignments for a school
      */
     async getAllAssignments(req: AuthRequest, res: Response) {
-        const schoolId = req.user?.schoolId;
         const { grade, teacherId, learningAreaId } = req.query;
 
-        const where: any = { schoolId };
+        const where: any = {};
         if (grade) where.grade = grade as Grade;
         if (teacherId) where.teacherId = teacherId as string;
         if (learningAreaId) where.learningAreaId = learningAreaId as string;
@@ -43,7 +42,6 @@ export class SubjectAssignmentController {
      */
     async createAssignment(req: AuthRequest, res: Response) {
         const { teacherId, learningAreaId, grade } = req.body;
-        const schoolId = req.user?.schoolId;
 
         if (!teacherId || !learningAreaId || !grade) {
             throw new ApiError(400, 'Teacher ID, Learning Area ID, and Grade are required');
@@ -74,8 +72,7 @@ export class SubjectAssignmentController {
             create: {
                 teacherId,
                 learningAreaId,
-                grade: grade as Grade,
-                schoolId
+                grade: grade as Grade
             }
         });
 
@@ -100,7 +97,6 @@ export class SubjectAssignmentController {
      */
     async getEligibleTeachers(req: AuthRequest, res: Response) {
         const { learningAreaId, grade } = req.query;
-        const schoolId = req.user?.schoolId;
 
         if (!learningAreaId || !grade) {
             throw new ApiError(400, 'Learning Area ID and Grade are required');
@@ -110,7 +106,6 @@ export class SubjectAssignmentController {
             where: {
                 learningAreaId: learningAreaId as string,
                 grade: grade as Grade,
-                schoolId,
                 active: true
             },
             include: {

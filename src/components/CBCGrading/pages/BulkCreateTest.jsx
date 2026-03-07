@@ -101,8 +101,8 @@ const BulkCreateTest = ({ onBack, onSuccess }) => {
                 gradingAPI.getScaleGroups(),
                 assessmentAPI.getLearningAreas()
             ]);
-            setScaleGroups(scalesRes.data || []);
-            setAllLearningAreas(areasRes || []);
+            setScaleGroups(scalesRes?.data || scalesRes || []);
+            setAllLearningAreas(areasRes?.data || areasRes || []);
         } catch (err) {
             console.error('Error loading bulk create data:', err);
         } finally {

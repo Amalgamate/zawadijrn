@@ -6,7 +6,7 @@
 
 import { useState, useCallback } from 'react';
 import { TERMS } from '../../../constants/terms';
-import { GRADES } from '../../../constants/grades';
+import { useSchoolData } from '../../../contexts/SchoolDataContext';
 import { getCurrentAcademicYear } from '../utils/academicYear';
 
 /**
@@ -31,6 +31,7 @@ export const useAssessmentSetup = (options = {}) => {
   const [selectedStream, setSelectedStream] = useState(defaultStream);
   const [selectedTerm, setSelectedTerm] = useState(defaultTerm);
   const [selectedAcademicYear, setSelectedAcademicYear] = useState(getCurrentAcademicYear());
+  const { grades: dynamicGrades } = useSchoolData();
 
   // Reset all selections
   const resetSetup = useCallback(() => {
@@ -78,7 +79,7 @@ export const useAssessmentSetup = (options = {}) => {
     selectedStream,
     selectedTerm,
     academicYear: selectedAcademicYear,
-    grades: GRADES,
+    grades: dynamicGrades.length > 0 ? dynamicGrades.map(g => ({ value: g, label: g.replace(/_/g, ' ') })) : [],
     terms: TERMS,
 
     // Setters (Standard Names)

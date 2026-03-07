@@ -27,6 +27,44 @@ const performanceSchema = z.object({
 // ============================================
 
 /**
+ * @route   POST /api/hr/attendance/clock-in
+ * @desc    Record authenticated staff clock-in and link monthly payroll draft
+ * @access  Authenticated
+ */
+router.post(
+  '/attendance/clock-in',
+  authenticate,
+  rateLimit({ windowMs: 60_000, maxRequests: 60 }),
+  auditLog('STAFF_CLOCK_IN'),
+  hrController.clockIn
+);
+
+/**
+ * @route   POST /api/hr/attendance/clock-out
+ * @desc    Record authenticated staff clock-out and accumulate payroll worked time
+ * @access  Authenticated
+ */
+router.post(
+  '/attendance/clock-out',
+  authenticate,
+  rateLimit({ windowMs: 60_000, maxRequests: 60 }),
+  auditLog('STAFF_CLOCK_OUT'),
+  hrController.clockOut
+);
+
+/**
+ * @route   GET /api/hr/attendance/today
+ * @desc    Get authenticated staff clock-in record for today
+ * @access  Authenticated
+ */
+router.get(
+  '/attendance/today',
+  authenticate,
+  rateLimit({ windowMs: 60_000, maxRequests: 120 }),
+  hrController.getTodayClockIn
+);
+
+/**
  * @route   GET /api/hr/staff
  * @desc    Get staff directory
  * @access  Authenticated

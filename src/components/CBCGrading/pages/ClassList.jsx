@@ -13,6 +13,7 @@ import usePageNavigation from '../../../hooks/usePageNavigation';
 import { Button, Input, Card, CardContent, CardHeader, CardTitle } from '../../../components/ui';
 import TeacherClassAssignmentModal from '../shared/TeacherClassAssignmentModal';
 import { useNotifications } from '../hooks/useNotifications';
+import { useSchoolData } from '../../../contexts/SchoolDataContext';
 
 const ClassList = () => {
   const navigateTo = usePageNavigation();
@@ -24,6 +25,7 @@ const ClassList = () => {
   const [schoolId, setSchoolId] = useState(null);
   const [selectedClassForAssignment, setSelectedClassForAssignment] = useState(null);
   const { showSuccess } = useNotifications();
+  const { grades } = useSchoolData();
 
   useEffect(() => {
     let sid = getCurrentSchoolId();
@@ -108,19 +110,9 @@ const ClassList = () => {
           className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-purple"
         >
           <option value="ALL">All Grades</option>
-          <option value="CRECHE">Créche</option>
-          <option value="PP1">PP1</option>
-          <option value="PP2">PP2</option>
-          <option value="GRADE_1">Grade 1</option>
-          <option value="GRADE_2">Grade 2</option>
-          <option value="GRADE_3">Grade 3</option>
-          <option value="GRADE_4">Grade 4</option>
-          <option value="GRADE_5">Grade 5</option>
-          <option value="GRADE_6">Grade 6</option>
-          <option value="GRADE_7">Grade 7</option>
-          <option value="GRADE_8">Grade 8</option>
-          <option value="GRADE_9">Grade 9</option>
-          <option value="GRADE_10">Grade 10</option>
+          {grades.map(g => (
+            <option key={g} value={g}>{g.replace(/_/g, ' ')}</option>
+          ))}
         </select>
       </div>
 

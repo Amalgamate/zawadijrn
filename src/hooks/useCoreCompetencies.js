@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { authAPI } from '../services/api';
+import { useSchoolData } from '../contexts/SchoolDataContext';
 
 export const useCoreCompetencies = (initialData = null) => {
   const [formData, setFormData] = useState({
@@ -74,7 +75,7 @@ export const useCoreCompetencies = (initialData = null) => {
     { value: 'BE', label: 'Below Expectations', color: 'bg-red-100 border-red-300' }
   ];
 
-  const grades = ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9'];
+  const { grades } = useSchoolData();
   const terms = ['Term 1', 'Term 2', 'Term 3'];
   const academicYears = ['2023/2024', '2024/2025', '2025/2026'];
 
@@ -179,10 +180,10 @@ export const useCoreCompetencies = (initialData = null) => {
       setSaveStatus('success');
       setLoading(false);
       console.log('✅ Assessment saved successfully');
-      
+
       // Reset after 2 seconds
       setTimeout(() => setSaveStatus('idle'), 2000);
-      
+
       return response.data;
     } catch (error) {
       console.error('💥 Save error:', error);

@@ -26,6 +26,7 @@ export const getCommunicationConfig = async (req: AuthRequest, res: Response) =>
         if (!config) {
             // Return defaults if not found
             return res.status(200).json({
+                success: true,
                 data: {
                     sms: {
                         enabled: false,
@@ -53,6 +54,7 @@ export const getCommunicationConfig = async (req: AuthRequest, res: Response) =>
 
         // Return config with masked keys
         res.status(200).json({
+            success: true,
             data: {
                 id: config.id,
                 sms: {
@@ -94,7 +96,7 @@ export const getCommunicationConfig = async (req: AuthRequest, res: Response) =>
 
     } catch (error: any) {
         console.error('Get Communication Config Error:', error);
-        res.status(500).json({ error: error.message || 'Failed to get configuration' });
+        res.status(500).json({ success: false, error: error.message || 'Failed to get configuration' });
     }
 };
 
@@ -215,6 +217,7 @@ export const saveCommunicationConfig = async (req: AuthRequest, res: Response) =
         console.log(`✅ Communication config saved and cache cleared for school: ${schoolId}`);
 
         res.status(200).json({
+            success: true,
             message: 'Configuration saved successfully',
             data: {
                 id: config.id,
@@ -224,7 +227,7 @@ export const saveCommunicationConfig = async (req: AuthRequest, res: Response) =
 
     } catch (error: any) {
         console.error('Save Communication Config Error:', error);
-        res.status(500).json({ error: error.message || 'Failed to save configuration' });
+        res.status(500).json({ success: false, error: error.message || 'Failed to save configuration' });
     }
 };
 
@@ -242,12 +245,14 @@ export const sendTestSms = async (req: AuthRequest, res: Response) => {
         if (!schoolId) {
             console.error('❌ School ID not found in school context or request body');
             return res.status(400).json({
+                success: false,
                 error: 'School context required. Please ensure you are authenticated.'
             });
         }
 
         if (!phoneNumber || !message) {
             return res.status(400).json({
+                success: false,
                 error: 'phoneNumber and message are required'
             });
         }
@@ -264,6 +269,7 @@ export const sendTestSms = async (req: AuthRequest, res: Response) => {
         if (!result.success) {
             console.error('❌ SMS send failed:', result.error);
             return res.status(400).json({
+                success: false,
                 error: result.error || 'Failed to send SMS'
             });
         }
@@ -272,12 +278,15 @@ export const sendTestSms = async (req: AuthRequest, res: Response) => {
         res.status(200).json({
             success: true,
             message: 'SMS sent successfully',
-            messageId: result.messageId,
-            provider: result.provider
+            data: {
+                messageId: result.messageId,
+                provider: result.provider
+            }
         });
     } catch (error: any) {
         console.error('❌ Send Test SMS Error:', error);
         res.status(500).json({
+            success: false,
             error: error.message || 'Failed to send test SMS'
         });
     }
@@ -295,12 +304,14 @@ export const sendTestEmail = async (req: AuthRequest, res: Response) => {
         if (!schoolId) {
             console.error('❌ School ID not found in school context or request body');
             return res.status(400).json({
+                success: false,
                 error: 'School context required. Please ensure you are authenticated.'
             });
         }
 
         if (!email) {
             return res.status(400).json({
+                success: false,
                 error: 'Email is required'
             });
         }
@@ -344,12 +355,14 @@ export const sendTestEmail = async (req: AuthRequest, res: Response) => {
         res.status(200).json({
             success: true,
             message: `Test email (${template}) sent successfully to ${email}`,
-            provider: 'resend' // We know it's resend
+            data: {
+                provider: 'resend' // We know it's resend
+            }
         });
 
     } catch (error: any) {
         console.error('❌ Send Test Email Error:', error);
-        res.status(500).json({ error: error.message || 'Failed to send test email' });
+        res.status(500).json({ success: false, error: error.message || 'Failed to send test email' });
     }
 };
 
@@ -398,11 +411,11 @@ export const getBirthdaysToday = async (req: AuthRequest, res: Response) => {
             guardianPhone: l.guardianPhone || l.emergencyPhone
         }));
 
-        res.status(200).json({ data: birthdaysToday });
+        res.status(200).json({ success: true, data: birthdaysToday });
 
     } catch (error: any) {
         console.error('Get Birthdays Today Error:', error);
-        res.status(500).json({ error: error.message || 'Failed to fetch birthdays' });
+        res.status(500).json({ success: false, error: error.message || 'Failed to fetch birthdays' });
     }
 };
 
@@ -538,13 +551,14 @@ export const sendBirthdayWishes = async (req: AuthRequest, res: Response) => {
         const failCount = results.length - successCount;
 
         res.status(200).json({
+            success: true,
             message: `Processed ${results.length} birthday messages. ${successCount} sent, ${failCount} failed.`,
-            results
+            data: { results }
         });
 
     } catch (error: any) {
         console.error('Send Birthday Wishes Error:', error);
-        res.status(500).json({ error: error.message || 'Failed to send messages' });
+        res.status(500).json({ success: false, error: error.message || 'Failed to send messages' });
     }
 };
 
@@ -729,7 +743,7 @@ export const getBroadcastRecipients = async (req: AuthRequest, res: Response) =>
 
     } catch (error: any) {
         console.error('Get Broadcast Recipients Error:', error);
-        res.status(500).json({ error: error.message || 'Failed to fetch recipients' });
+        res.status(500).json({ success: false, error: error.message || 'Failed to fetch recipients' });
     }
 };
 
@@ -783,7 +797,7 @@ export const getStaffContacts = async (req: AuthRequest, res: Response) => {
 
     } catch (error: any) {
         console.error('Get Staff Contacts Error:', error);
-        res.status(500).json({ error: error.message || 'Failed to fetch staff contacts' });
+        res.status(500).json({ success: false, error: error.message || 'Failed to fetch staff contacts' });
     }
 };
 
@@ -823,7 +837,7 @@ export const createContactGroup = async (req: AuthRequest, res: Response) => {
 
     } catch (error: any) {
         console.error('Create Contact Group Error:', error);
-        res.status(500).json({ error: error.message || 'Failed to create contact group' });
+        res.status(500).json({ success: false, error: error.message || 'Failed to create contact group' });
     }
 };
 
@@ -867,7 +881,7 @@ export const getContactGroups = async (req: AuthRequest, res: Response) => {
 
     } catch (error: any) {
         console.error('Get Contact Groups Error:', error);
-        res.status(500).json({ error: error.message || 'Failed to fetch contact groups' });
+        res.status(500).json({ success: false, error: error.message || 'Failed to fetch contact groups' });
     }
 };
 
@@ -969,7 +983,7 @@ export const getContactGroupById = async (req: AuthRequest, res: Response) => {
     } catch (error: any) {
         console.error('Get Contact Group By ID Error:', error);
         const status = error.statusCode || 500;
-        res.status(status).json({ error: error.message || 'Failed to fetch contact group' });
+        res.status(status).json({ success: false, error: error.message || 'Failed to fetch contact group' });
     }
 };
 
@@ -1015,7 +1029,7 @@ export const updateContactGroup = async (req: AuthRequest, res: Response) => {
     } catch (error: any) {
         console.error('Update Contact Group Error:', error);
         const status = error.statusCode || 500;
-        res.status(status).json({ error: error.message || 'Failed to update contact group' });
+        res.status(status).json({ success: false, error: error.message || 'Failed to update contact group' });
     }
 };
 
@@ -1053,7 +1067,7 @@ export const deleteContactGroup = async (req: AuthRequest, res: Response) => {
     } catch (error: any) {
         console.error('Delete Contact Group Error:', error);
         const status = error.statusCode || 500;
-        res.status(status).json({ error: error.message || 'Failed to delete contact group' });
+        res.status(status).json({ success: false, error: error.message || 'Failed to delete contact group' });
     }
 };
 

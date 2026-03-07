@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Save, FileText, Lightbulb } from 'lucide-react';
 import { DatePicker } from '../../components/ui/date-picker';
+import { useSchoolData } from '../../contexts/SchoolDataContext';
 
 const TermlyReportCommentsForm = () => {
   const [formData, setFormData] = useState({
@@ -62,7 +63,7 @@ const TermlyReportCommentsForm = () => {
     { key: 'physical', name: 'Physical Education' }
   ];
 
-  const grades = ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9'];
+  const { grades } = useSchoolData();
   const terms = ['Term 1', 'Term 2', 'Term 3'];
 
   const commentSuggestions = {
@@ -268,8 +269,8 @@ const TermlyReportCommentsForm = () => {
                     type="button"
                     onClick={() => setSelectedSubject(subject.key)}
                     className={`px-4 py-2 border-b-2 font-medium transition-colors ${selectedSubject === subject.key
-                        ? 'border-blue-600 text-blue-600'
-                        : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
                       }`}
                   >
                     {subject.name}

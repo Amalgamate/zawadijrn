@@ -2,6 +2,17 @@ import prisma from '../config/database';
 import { accountingService } from './accounting.service';
 
 export class HRService {
+    private toDateOnly(dateValue: Date) {
+        const date = new Date(dateValue);
+        date.setHours(0, 0, 0, 0);
+        return date;
+    }
+
+    private toWorkedMinutes(clockInAt: Date, clockOutAt: Date) {
+        const ms = new Date(clockOutAt).getTime() - new Date(clockInAt).getTime();
+        return Math.max(0, Math.floor(ms / 60000));
+    }
+
     /**
      * Get all staff members for a school with HR details
      */
@@ -199,6 +210,162 @@ export class HRService {
                 }
             }
         });
+    }
+
+    async getTodayClockIn(userId: string, date = new Date()) {
+        const dateOnly = this.toDateOnly(date);
+        return prisma.staffAttendanceLog.findUnique({
+            where: {
+                userId_date: {
+                    userId,
+                    date: dateOnly
+                }
+            }
+        });
+    }
+
+    async clockInStaff(userId: string, schoolId?: string, payload: any = {}) {
+        const timestamp = payload?.timestamp ? new Date(payload.timestamp) : new Date();
+        const dateOnly = this.toDateOnly(timestamp);
+
+        const attendance = await prisma.staffAttendanceLog.upsert({
+            where: {
+                userId_date: {
+                    userId,
+                    date: dateOnly
+                }
+            },
+            update: {
+                clockInAt: timestamp,
+                source: payload?.source || 'web',
+                metadata: payload?.metadata || null
+            },
+            create: {
+                userId,
+                schoolId: schoolId || null,
+                date: dateOnly,
+                clockInAt: timestamp,
+                source: payload?.source || 'web',
+                metadata: payload?.metadata || null
+            }
+        });
+
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+                basicSalary: true,
+                schoolId: true
+            }
+        });
+
+        const month = timestamp.getMonth() + 1;
+        const year = timestamp.getFullYear();
+
+        let payrollRecord = await prisma.payrollRecord.findUnique({
+            where: {
+                userId_month_year: {
+                    userId,
+                    month,
+                    year
+                }
+            }
+        });
+
+        let payrollCreated = false;
+        if (!payrollRecord && user?.basicSalary && Number(user.basicSalary) > 0) {
+            const basicSalary = Number(user.basicSalary);
+            payrollRecord = await prisma.payrollRecord.create({
+                data: {
+                    userId,
+                    month,
+                    year,
+                    schoolId: user.schoolId || schoolId || null,
+                    basicSalary,
+                    netSalary: basicSalary,
+                    workedMinutes: 0,
+                    workedDays: 0,
+                    status: 'DRAFT',
+                    generatedBy: userId,
+                    notes: 'Auto-created from first staff clock-in for the month'
+                }
+            });
+            payrollCreated = true;
+        }
+
+        return {
+            attendance,
+            payroll: payrollRecord,
+            payrollCreated
+        };
+    }
+
+    async clockOutStaff(userId: string, schoolId?: string, payload: any = {}) {
+        const timestamp = payload?.timestamp ? new Date(payload.timestamp) : new Date();
+        const dateOnly = this.toDateOnly(timestamp);
+
+        const attendance = await prisma.staffAttendanceLog.findUnique({
+            where: {
+                userId_date: {
+                    userId,
+                    date: dateOnly
+                }
+            }
+        });
+
+        if (!attendance) {
+            throw new Error('No clock-in record found for today');
+        }
+
+        if (timestamp.getTime() < new Date(attendance.clockInAt).getTime()) {
+            throw new Error('Clock-out time cannot be earlier than clock-in time');
+        }
+
+        const previousWorkedMinutes = attendance.clockOutAt
+            ? this.toWorkedMinutes(attendance.clockInAt, attendance.clockOutAt)
+            : 0;
+
+        const nextWorkedMinutes = this.toWorkedMinutes(attendance.clockInAt, timestamp);
+        const workedMinutesDelta = nextWorkedMinutes - previousWorkedMinutes;
+        const shouldIncrementWorkedDays = !attendance.clockOutAt && nextWorkedMinutes > 0;
+
+        const updatedAttendance = await prisma.staffAttendanceLog.update({
+            where: { id: attendance.id },
+            data: {
+                clockOutAt: timestamp,
+                source: payload?.source || attendance.source || 'web',
+                metadata: payload?.metadata || attendance.metadata || null
+            }
+        });
+
+        const month = timestamp.getMonth() + 1;
+        const year = timestamp.getFullYear();
+
+        let payrollRecord = await prisma.payrollRecord.findUnique({
+            where: {
+                userId_month_year: {
+                    userId,
+                    month,
+                    year
+                }
+            }
+        });
+
+        if (payrollRecord) {
+            payrollRecord = await prisma.payrollRecord.update({
+                where: { id: payrollRecord.id },
+                data: {
+                    workedMinutes: { increment: workedMinutesDelta },
+                    workedDays: shouldIncrementWorkedDays ? { increment: 1 } : undefined
+                }
+            });
+        }
+
+        return {
+            attendance: updatedAttendance,
+            payroll: payrollRecord,
+            workedMinutesDelta,
+            workedDaysIncremented: shouldIncrementWorkedDays
+        };
     }
 
     /**

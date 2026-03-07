@@ -12,7 +12,7 @@ import {
 import { configAPI, facilityAPI } from '../../../services/api';
 import { useNotifications } from '../hooks/useNotifications';
 import { getCurrentSchoolId, getStoredUser } from '../../../services/schoolContext';
-import { GRADES } from '../../../constants/grades';
+import { useSchoolData } from '../../../contexts/SchoolDataContext';
 import api from '../../../services/api';
 import Toast from '../shared/Toast';
 import {
@@ -33,6 +33,7 @@ import {
 } from '../../../components/ui';
 
 const FacilityManager = () => {
+  const { grades } = useSchoolData();
   const {
     showSuccess,
     showError,
@@ -64,7 +65,7 @@ const FacilityManager = () => {
     code: '',
     capacity: 40,
     stream: 'A',
-    grade: 'GRADE_1',
+    grade: grades.length > 0 ? grades[0] : 'GRADE_1',
     teacherId: '',
     branchId: '',
     description: ''
@@ -345,7 +346,7 @@ const FacilityManager = () => {
       code: classItem.code || '',
       capacity: classItem.capacity || 40,
       stream: classItem.stream || 'A',
-      grade: classItem.grade || 'GRADE_1',
+      grade: classItem.grade || (grades.length > 0 ? grades[0] : 'GRADE_1'),
       teacherId: classItem.teacherId || '',
       branchId: classItem.branchId || '',
       description: classItem.description || ''
@@ -380,7 +381,7 @@ const FacilityManager = () => {
       code: '',
       capacity: 40,
       stream: 'A',
-      grade: 'GRADE_1',
+      grade: grades.length > 0 ? grades[0] : 'GRADE_1',
       teacherId: '',
       branchId: '',
       description: ''
@@ -765,9 +766,9 @@ const FacilityManager = () => {
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-purple focus:border-transparent"
                     >
                       <option value="">Select Grade</option>
-                      {GRADES.map(grade => (
-                        <option key={grade.value} value={grade.value}>
-                          {grade.label}
+                      {grades.map(grade => (
+                        <option key={grade} value={grade}>
+                          {grade.replace(/_/g, ' ')}
                         </option>
                       ))}
                     </select>

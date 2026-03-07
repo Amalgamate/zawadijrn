@@ -1,8 +1,70 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, BookOpen, MapPin, Users, Download, Plus, Edit, Trash2, X, Loader2 } from 'lucide-react';
+import { Calendar, Clock, BookOpen, MapPin, Download, Plus, Edit, Trash2, X, Loader2, AlertTriangle, Share2 } from 'lucide-react';
 import EmptyState from '../shared/EmptyState';
 import { useNotifications } from '../hooks/useNotifications';
 import api from '../../../services/api';
+import { getCurrentWeekday, isTeacherClockedIn } from '../../../utils/teacherClockIn';
+import { generateHighFidelityPDF } from '../../../utils/simplePdfGenerator';
+
+const DEFAULT_TIME_SLOTS = [
+  { startTime: '08:00', endTime: '08:45' },
+  { startTime: '08:45', endTime: '09:30' },
+  { startTime: '09:30', endTime: '10:15' },
+  { startTime: '10:15', endTime: '11:00' },
+  { startTime: '11:00', endTime: '11:45' },
+  { startTime: '11:45', endTime: '12:30' },
+  { startTime: '12:30', endTime: '13:15' },
+  { startTime: '13:15', endTime: '14:00' },
+  { startTime: '14:00', endTime: '14:45' },
+  { startTime: '14:45', endTime: '15:30' }
+];
+
+const parseTimeToMinutes = (value) => {
+  const raw = String(value || '').trim();
+  if (!raw) return Number.NaN;
+
+  const twelveHourMatch = raw.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (twelveHourMatch) {
+    const hours = Number(twelveHourMatch[1]);
+    const minutes = Number(twelveHourMatch[2]);
+    const meridiem = twelveHourMatch[3].toUpperCase();
+    let normalizedHours = hours % 12;
+    if (meridiem === 'PM') normalizedHours += 12;
+    return (normalizedHours * 60) + minutes;
+  }
+
+  const twentyFourHourMatch = raw.match(/^(\d{1,2}):(\d{2})$/);
+  if (twentyFourHourMatch) {
+    const hours = Number(twentyFourHourMatch[1]);
+    const minutes = Number(twentyFourHourMatch[2]);
+    return (hours * 60) + minutes;
+  }
+
+  return Number.NaN;
+};
+
+const toDisplayTime = (value) => {
+  const minutes = parseTimeToMinutes(value);
+  if (Number.isNaN(minutes)) return String(value || '').trim();
+
+  const hours24 = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  const meridiem = hours24 >= 12 ? 'PM' : 'AM';
+  const hours12 = ((hours24 + 11) % 12) + 1;
+  return `${hours12}:${String(mins).padStart(2, '0')} ${meridiem}`;
+};
+
+const normalizeSlotKeyPart = (value) => {
+  const minutes = parseTimeToMinutes(value);
+  if (Number.isNaN(minutes)) return String(value || '').trim().toUpperCase();
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+};
+
+const buildSlotKey = (startTime, endTime) => `${normalizeSlotKeyPart(startTime)}-${normalizeSlotKeyPart(endTime)}`;
+
+const buildTimeLine = (startTime, endTime) => `${toDisplayTime(startTime)} - ${toDisplayTime(endTime)}`;
 
 const TimetablePage = () => {
   const [selectedDay, setSelectedDay] = useState(() => {
@@ -27,7 +89,7 @@ const TimetablePage = () => {
     localStorage.setItem('cbc_timetable_selected_class', selectedClassId);
   }, [selectedClassId]);
 
-  const { showSuccess, showError } = useNotifications();
+  const { showSuccess, showError, showInfo } = useNotifications();
 
   // Form state
   const [viewMode, setViewMode] = useState(() => {
@@ -40,9 +102,10 @@ const TimetablePage = () => {
   const [timeLine, setTimeLine] = useState('');
   const [subjectId, setSubjectId] = useState('');
   const [teacherId, setTeacherId] = useState('');
-  const [grade, setGrade] = useState('');
   const [room, setRoom] = useState('');
   const [lessonDay, setLessonDay] = useState('Monday');
+  const [isDownloadingWeekPdf, setIsDownloadingWeekPdf] = useState(false);
+  const [isSharingWeekPdf, setIsSharingWeekPdf] = useState(false);
 
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
@@ -80,6 +143,86 @@ const TimetablePage = () => {
 
   const [scheduleData, setScheduleData] = useState({});
 
+  const normalizeGrade = (value) => {
+    if (!value) return '';
+    return String(value).trim().toUpperCase().replace(/\s+/g, '_');
+  };
+
+  const getSelectedClass = () => classes.find((c) => c.id === selectedClassId);
+
+  const getPrefilledTeacherId = (learningAreaId) => {
+    if (!learningAreaId) return '';
+    const selectedClass = getSelectedClass();
+    if (!selectedClass) return '';
+
+    const classGrade = normalizeGrade(selectedClass.grade);
+    const assignment = assignments.find((a) => (
+      a.learningAreaId === learningAreaId
+      && normalizeGrade(a.grade) === classGrade
+      && a.active !== false
+    ));
+
+    return assignment?.teacherId || selectedClass.teacherId || '';
+  };
+
+  const parseTimeLine = (value) => {
+    const segments = String(value || '').split('-').map((part) => part.trim());
+    if (segments.length < 2 || !segments[0] || !segments[1]) return null;
+    return { startTime: segments[0], endTime: segments[1] };
+  };
+
+  const getTimeSlotOptions = (day) => {
+    const slotMap = new Map();
+
+    DEFAULT_TIME_SLOTS.forEach((slot) => {
+      const key = buildSlotKey(slot.startTime, slot.endTime);
+      slotMap.set(key, {
+        key,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        label: buildTimeLine(slot.startTime, slot.endTime)
+      });
+    });
+
+    (scheduleData[day] || []).forEach((lesson) => {
+      const parsed = parseTimeLine(lesson.time);
+      if (!parsed) return;
+      const key = buildSlotKey(parsed.startTime, parsed.endTime);
+      if (!slotMap.has(key)) {
+        slotMap.set(key, {
+          key,
+          startTime: parsed.startTime,
+          endTime: parsed.endTime,
+          label: buildTimeLine(parsed.startTime, parsed.endTime)
+        });
+      }
+    });
+
+    return Array.from(slotMap.values()).sort((a, b) => {
+      const aMinutes = parseTimeToMinutes(a.startTime);
+      const bMinutes = parseTimeToMinutes(b.startTime);
+      if (Number.isNaN(aMinutes) || Number.isNaN(bMinutes)) {
+        return a.label.localeCompare(b.label);
+      }
+      return aMinutes - bMinutes;
+    });
+  };
+
+  const getUsedSlotKeysForDay = (day) => {
+    return new Set(
+      (scheduleData[day] || [])
+        .map((lesson) => parseTimeLine(lesson.time))
+        .filter(Boolean)
+        .map((slot) => buildSlotKey(slot.startTime, slot.endTime))
+    );
+  };
+
+  const getNextAvailableSlot = (day, excludeKey = '') => {
+    const usedSlotKeys = getUsedSlotKeysForDay(day);
+    const options = getTimeSlotOptions(day);
+    return options.find((option) => !usedSlotKeys.has(option.key) || option.key === excludeKey) || null;
+  };
+
   useEffect(() => {
     if (selectedClassId !== 'all') {
       fetchClassSchedule(selectedClassId);
@@ -88,26 +231,36 @@ const TimetablePage = () => {
       // but let's assume we fetch for all active classes if needed
       setScheduleData({});
     }
-  }, [selectedClassId]);
+  }, [selectedClassId, classes]);
+
+  useEffect(() => {
+    if (!isModalOpen || editingLesson || !subjectId || teacherId) return;
+    const suggestedTeacherId = getPrefilledTeacherId(subjectId);
+    if (suggestedTeacherId) {
+      setTeacherId(suggestedTeacherId);
+    }
+  }, [isModalOpen, editingLesson, subjectId, teacherId, selectedClassId, assignments, classes]);
 
   const fetchClassSchedule = async (classId) => {
     try {
       const resp = await api.classes.getSchedules(classId);
       const schedules = resp.data || [];
+      const selectedClass = classes.find((c) => c.id === classId);
+      const classLabel = selectedClass?.name || [selectedClass?.grade, selectedClass?.stream].filter(Boolean).join(' ') || 'N/A';
 
       // Group by day
       const grouped = schedules.reduce((acc, s) => {
-        const day = s.dayOfWeek || 'Monday';
+        const day = s.day || 'Monday';
         if (!acc[day]) acc[day] = [];
         acc[day].push({
           id: s.id,
-          time: s.timeSlot,
+          time: buildTimeLine(s.startTime || '', s.endTime || ''),
           subject: s.learningArea?.name || s.subject,
           subjectId: s.learningAreaId,
           teacherId: s.teacherId,
           teacherName: s.teacher ? `${s.teacher.firstName} ${s.teacher.lastName}` : 'Unassigned',
-          grade: s.class?.name || 'N/A',
-          room: s.location || 'N/A'
+          grade: classLabel,
+          room: s.room || 'N/A'
         });
         return acc;
       }, {});
@@ -120,12 +273,15 @@ const TimetablePage = () => {
 
   const openAddModal = () => {
     setEditingLesson(null);
-    setTimeLine('8:00 AM - 9:30 AM');
+    const nextSlot = getNextAvailableSlot(selectedDay);
+    setTimeLine(nextSlot?.label || '');
     setSubjectId('');
     setTeacherId('');
-    setGrade('');
     setRoom('');
     setLessonDay(selectedDay);
+    if (!nextSlot) {
+      showError(`All configured time slots are used for ${selectedDay}. Please choose another day.`);
+    }
     setIsModalOpen(true);
   };
 
@@ -159,12 +315,45 @@ const TimetablePage = () => {
       return;
     }
 
+    const parsedTime = parseTimeLine(timeLine);
+    if (!parsedTime) {
+      showError('Please provide a valid time block in the format "Start - End"');
+      return;
+    }
+
+    const selectedSlotKey = buildSlotKey(parsedTime.startTime, parsedTime.endTime);
+    const usedSlotKeys = getUsedSlotKeysForDay(lessonDay);
+    const editingSlot = editingLesson ? parseTimeLine(editingLesson.time) : null;
+    const editingSlotKey = editingSlot ? buildSlotKey(editingSlot.startTime, editingSlot.endTime) : '';
+
+    if (usedSlotKeys.has(selectedSlotKey) && selectedSlotKey !== editingSlotKey) {
+      const nextAvailable = getNextAvailableSlot(lessonDay, editingSlotKey);
+      if (nextAvailable) {
+        setTimeLine(nextAvailable.label);
+      }
+      showError(`That slot is already booked. ${nextAvailable ? `Next available slot preselected: ${nextAvailable.label}` : 'No more free slots for this day.'}`);
+      return;
+    }
+
+    if (lessonDay === getCurrentWeekday() && teacherId && !isTeacherClockedIn(teacherId)) {
+      showError('Selected tutor is not clocked in for today. Ask the tutor to clock in before booking today\'s lesson.');
+      return;
+    }
+
+    const selectedSubject = subjects.find((s) => s.id === subjectId);
+    if (!selectedSubject?.name) {
+      showError('Please select a valid subject');
+      return;
+    }
+
     const payload = {
-      dayOfWeek: lessonDay,
-      timeSlot: timeLine,
+      subject: selectedSubject.name,
+      day: lessonDay,
+      startTime: parsedTime.startTime,
+      endTime: parsedTime.endTime,
       learningAreaId: subjectId,
       teacherId: teacherId || null,
-      location: room || 'Classroom'
+      room: room || 'Classroom'
     };
 
     try {
@@ -182,7 +371,101 @@ const TimetablePage = () => {
     }
   };
 
+  const getWeekPdfFilename = () => {
+    const selectedClass = classes.find((c) => c.id === selectedClassId);
+    const classLabel = selectedClass
+      ? (selectedClass.name || `${selectedClass.grade || ''}_${selectedClass.stream || ''}`.trim())
+      : 'all_classes';
+    const safeClass = String(classLabel || 'all_classes').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '');
+    return `timetable_week_${safeClass}_${new Date().toISOString().split('T')[0]}.pdf`;
+  };
+
+  const handleDownloadWeekPdf = async () => {
+    if (isDownloadingWeekPdf || isSharingWeekPdf) return;
+    if (viewMode !== 'weekly') {
+      showError('Switch to Weekly view to download Week at a Glance PDF.');
+      return;
+    }
+
+    const hasLessons = Object.values(scheduleData).flat().length > 0;
+    if (!hasLessons) {
+      showError('No timetable lessons found to export.');
+      return;
+    }
+
+    try {
+      showInfo('Generating Week at a Glance PDF...');
+      setIsDownloadingWeekPdf(true);
+      const result = await generateHighFidelityPDF('week-at-a-glance-content', getWeekPdfFilename(), {
+        action: 'download'
+      });
+
+      if (result?.success) showSuccess('Week at a Glance downloaded as PDF.');
+      else showError(result?.error || 'Failed to download Week at a Glance PDF.');
+    } finally {
+      setIsDownloadingWeekPdf(false);
+    }
+  };
+
+  const handleShareWeekPdf = async () => {
+    if (isSharingWeekPdf || isDownloadingWeekPdf) return;
+    if (viewMode !== 'weekly') {
+      showError('Switch to Weekly view to share Week at a Glance PDF.');
+      return;
+    }
+
+    const hasLessons = Object.values(scheduleData).flat().length > 0;
+    if (!hasLessons) {
+      showError('No timetable lessons found to share.');
+      return;
+    }
+
+    try {
+      showInfo('Generating Week at a Glance PDF for sharing...');
+      setIsSharingWeekPdf(true);
+      const fileName = getWeekPdfFilename();
+      const result = await generateHighFidelityPDF('week-at-a-glance-content', fileName, {
+        action: 'blob'
+      });
+
+      if (!result?.success || !result?.blob) {
+        showError(result?.error || 'Failed to generate PDF for sharing.');
+        return;
+      }
+
+      const pdfFile = new File([result.blob], fileName, { type: 'application/pdf' });
+
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+        try {
+          await navigator.share({
+            files: [pdfFile],
+            title: 'Class Timetable - Week at a Glance',
+            text: 'Weekly class timetable PDF'
+          });
+          showSuccess('Week at a Glance shared successfully.');
+        } catch (error) {
+          if (error?.name !== 'AbortError') {
+            showError('Share was not completed.');
+          }
+        }
+        return;
+      }
+
+      await generateHighFidelityPDF('week-at-a-glance-content', fileName, { action: 'download' });
+      showSuccess('Sharing is not supported on this browser. PDF downloaded instead.');
+    } finally {
+      setIsSharingWeekPdf(false);
+    }
+  };
+
   const scheduleForSelectedDay = scheduleData[selectedDay] || [];
+  const isTodaySelected = selectedDay === getCurrentWeekday();
+  const daySlotOptions = getTimeSlotOptions(lessonDay);
+  const usedSlotKeys = getUsedSlotKeysForDay(lessonDay);
+  const editingSlotKey = editingLesson ? (() => {
+    const slot = parseTimeLine(editingLesson.time);
+    return slot ? buildSlotKey(slot.startTime, slot.endTime) : '';
+  })() : '';
 
   if (loading) {
     return (
@@ -319,6 +602,13 @@ const TimetablePage = () => {
                         <p className="text-xs text-gray-500">Location</p>
                       </div>
                     </div>
+
+                    {isTodaySelected && lesson.teacherId && !isTeacherClockedIn(lesson.teacherId) && (
+                      <div className="flex items-center gap-2 px-2 py-1 rounded-md border border-amber-200 bg-amber-50 text-amber-700">
+                        <AlertTriangle className="w-4 h-4" />
+                        <span className="text-xs font-semibold">Tutor not clocked in</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Actions */}
@@ -348,12 +638,32 @@ const TimetablePage = () => {
       {/* Weekly Overview Grid */}
       {viewMode === 'weekly' && (
         <div className="bg-white rounded-xl shadow-md border border-gray-200">
-          <div className="p-4 border-b border-gray-200">
-            <h3 className="font-semibold text-gray-900">Week at a Glance</h3>
-            <p className="text-sm text-gray-600">Your full week schedule overview</p>
+          <div className="p-4 border-b border-gray-200 flex items-center justify-between gap-3">
+            <div>
+              <h3 className="font-semibold text-gray-900">Week at a Glance</h3>
+              <p className="text-sm text-gray-600">Your full week schedule overview</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleShareWeekPdf}
+                disabled={isSharingWeekPdf || isDownloadingWeekPdf}
+                className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {isSharingWeekPdf ? <Loader2 size={16} className="animate-spin" /> : <Share2 size={16} />}
+                {isSharingWeekPdf ? 'Sharing…' : 'Share PDF'}
+              </button>
+              <button
+                onClick={handleDownloadWeekPdf}
+                disabled={isDownloadingWeekPdf || isSharingWeekPdf}
+                className="flex items-center gap-2 px-3 py-2 bg-brand-purple text-white rounded-lg hover:bg-brand-purple/90 transition text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {isDownloadingWeekPdf ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                {isDownloadingWeekPdf ? 'Downloading…' : 'Download PDF'}
+              </button>
+            </div>
           </div>
 
-          <div className="p-6 overflow-x-auto">
+          <div id="week-at-a-glance-content" className="p-6 overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-gray-50">
@@ -414,13 +724,42 @@ const TimetablePage = () => {
             <form onSubmit={handleSave} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">Day of Week</label>
-                <select value={lessonDay} onChange={e => setLessonDay(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-purple bg-white">
+                <select
+                  value={lessonDay}
+                  onChange={e => {
+                    const nextDay = e.target.value;
+                    setLessonDay(nextDay);
+                    if (!editingLesson) {
+                      const nextSlot = getNextAvailableSlot(nextDay);
+                      setTimeLine(nextSlot?.label || '');
+                    }
+                  }}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-purple bg-white"
+                >
                   {days.map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">Time Block</label>
-                <input type="text" value={timeLine} onChange={e => setTimeLine(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-purple" placeholder="e.g. 8:00 AM - 9:30 AM" required />
+                <select
+                  value={timeLine}
+                  onChange={e => setTimeLine(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-purple bg-white"
+                  required
+                >
+                  <option value="">Select Time Slot</option>
+                  {daySlotOptions.map((slot) => {
+                    const isUsed = usedSlotKeys.has(slot.key) && slot.key !== editingSlotKey;
+                    return (
+                      <option key={slot.key} value={slot.label} disabled={isUsed}>
+                        {slot.label}{isUsed ? ' (Booked)' : ''}
+                      </option>
+                    );
+                  })}
+                </select>
+                {!editingLesson && !timeLine && (
+                  <p className="mt-1 text-xs text-amber-700 font-medium">No free slots available for this day. Choose another day.</p>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -430,12 +769,8 @@ const TimetablePage = () => {
                     onChange={(e) => {
                       const sid = e.target.value;
                       setSubjectId(sid);
-                      // Auto-suggest teacher
-                      const matchingClass = classes.find(c => c.id === selectedClassId);
-                      const assignment = assignments.find(a => a.learningAreaId === sid && (a.grade === matchingClass?.grade || a.grade === 'all'));
-                      if (assignment) {
-                        setTeacherId(assignment.teacherId);
-                      }
+                      const suggestedTeacherId = getPrefilledTeacherId(sid);
+                      setTeacherId(suggestedTeacherId);
                     }}
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-purple bg-white"
                     required
@@ -460,6 +795,11 @@ const TimetablePage = () => {
                 <label className="block text-sm font-semibold text-gray-700 mb-1">Room/Location</label>
                 <input type="text" value={room} onChange={e => setRoom(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-purple" placeholder="e.g. Room 101" />
               </div>
+              {lessonDay === getCurrentWeekday() && teacherId && !isTeacherClockedIn(teacherId) && (
+                <div className="p-3 rounded-lg border border-amber-200 bg-amber-50 text-amber-800 text-xs font-semibold">
+                  Selected tutor has not clocked in today. This booking cannot be saved until the tutor clocks in.
+                </div>
+              )}
               <div className="pt-4 flex justify-end gap-2 border-t border-gray-100">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-50 bg-white border border-gray-200 rounded-lg font-medium">
                   Cancel

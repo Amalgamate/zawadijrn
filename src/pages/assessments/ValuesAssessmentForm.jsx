@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Save, AlertCircle } from 'lucide-react';
 import { DatePicker } from '../../components/ui/date-picker';
+import { useSchoolData } from '../../contexts/SchoolDataContext';
 
 const ValuesAssessmentForm = () => {
   const [formData, setFormData] = useState({
@@ -144,7 +145,7 @@ const ValuesAssessmentForm = () => {
     { value: 'RE', label: 'Rarely Evident', color: 'bg-red-100 border-red-400', description: 'Seldom shows this value' }
   ];
 
-  const grades = ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9'];
+  const { grades } = useSchoolData();
   const terms = ['Term 1', 'Term 2', 'Term 3'];
 
   const handleInputChange = (field, value) => {
@@ -360,8 +361,8 @@ const ValuesAssessmentForm = () => {
                           type="button"
                           onClick={() => handleValueChange(value.id, 'rating', rating.value)}
                           className={`px-4 py-2 border-2 rounded-lg font-medium transition-all ${value.rating === rating.value
-                              ? rating.color + ' ring-2 ring-blue-500'
-                              : 'bg-white border-gray-300 hover:border-gray-400'
+                            ? rating.color + ' ring-2 ring-blue-500'
+                            : 'bg-white border-gray-300 hover:border-gray-400'
                             }`}
                         >
                           <div className="text-sm">{rating.value}</div>

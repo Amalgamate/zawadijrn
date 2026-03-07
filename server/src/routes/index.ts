@@ -19,7 +19,7 @@ import gradingRoutes from './grading.routes';
 import configRoutes from './config.routes';
 import workflowRoutes from './workflow.routes';
 import communicationRoutes from './communication.routes';
-// import adminRoutes from './admin.routes'; // TODO: Fix subscription references
+import adminRoutes from './admin.routes';
 import learningAreaRoutes from './learningArea.routes';
 import dashboardRoutes from './dashboard.routes';
 import bookRoutes from './book.routes';
@@ -32,6 +32,7 @@ import hrRoutes from './hr.routes';
 import accountingRoutes from './accounting.routes';
 import inventoryRoutes from './inventory.routes';
 import subjectAssignmentRoutes from './subjectAssignment.routes';
+import noticeRoutes from './notice.routes';
 import { issueCsrfToken } from '../middleware/csrf.middleware';
 import { authenticate } from '../middleware/auth.middleware';
 
@@ -52,7 +53,7 @@ router.get('/auth/csrf', issueCsrfToken);
 // ============================================
 router.use(authenticate);
 
-// router.use('/admin', adminRoutes); // TODO: Fix subscription references
+router.use('/admin', adminRoutes);
 router.use('/support', supportRoutes);
 router.use('/schools', schoolRoutes);
 router.use('/users', userRoutes);
@@ -80,5 +81,6 @@ router.use('/accounting', accountingRoutes);
 router.use('/inventory', inventoryRoutes);
 router.use('/subject-assignments', subjectAssignmentRoutes);
 router.use('/communication', communicationRoutes);
+router.use('/notices', noticeRoutes);
 
 export default router;

@@ -114,6 +114,19 @@ router.get(
 );
 
 /**
+ * @route   GET /api/fees/invoices/export
+ * @desc    Export invoices to CSV
+ * @access  ACCOUNTANT, ADMIN, SUPER_ADMIN
+ */
+router.get(
+  '/invoices/export',
+  requireRole(['ACCOUNTANT', 'ADMIN', 'SUPER_ADMIN']),
+  rateLimit({ windowMs: 60_000, maxRequests: 20 }),
+  auditLog('EXPORT_INVOICES'),
+  asyncHandler(feeController.exportInvoices)
+);
+
+/**
  * @route   GET /api/fees/invoices/learner/:learnerId
  * @desc    Get invoices for specific learner
  * @access  ACCOUNTANT, ADMIN, SUPER_ADMIN, PARENT (own child)
@@ -123,6 +136,19 @@ router.get(
   requireRole(['ACCOUNTANT', 'ADMIN', 'SUPER_ADMIN', 'PARENT']),
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   asyncHandler(feeController.getLearnerInvoices)
+);
+
+/**
+ * @route   POST /api/fees/invoices/learner/:learnerId/email
+ * @desc    Email statement to parent/guardian
+ * @access  ACCOUNTANT, ADMIN, SUPER_ADMIN
+ */
+router.post(
+  '/invoices/learner/:learnerId/email',
+  requireRole(['ACCOUNTANT', 'ADMIN', 'SUPER_ADMIN']),
+  rateLimit({ windowMs: 60_000, maxRequests: 20 }),
+  auditLog('EMAIL_FEE_STATEMENT'),
+  asyncHandler(feeController.emailStatement)
 );
 
 /**

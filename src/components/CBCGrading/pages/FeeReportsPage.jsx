@@ -13,6 +13,7 @@ import { useNotifications } from '../hooks/useNotifications';
 import api from '../../../services/api';
 import { toInputDate } from '../utils/dateHelpers';
 import SmartLearnerSearch from '../shared/SmartLearnerSearch';
+import { useSchoolData } from '../../../contexts/SchoolDataContext';
 
 const FeeReportsPage = () => {
   const [loading, setLoading] = useState(true);
@@ -27,9 +28,10 @@ const FeeReportsPage = () => {
   const [filterGrade, setFilterGrade] = useState('all');
   const [filterTerm, setFilterTerm] = useState('all');
   const { showSuccess, showError } = useNotifications();
+  const { grades: fetchedGrades, classes } = useSchoolData();
 
-  const grades = ['PP1', 'PP2', 'Grade1', 'Grade2', 'Grade3', 'Grade4', 'Grade5', 'Grade6', 'Grade7', 'Grade8', 'Grade9'];
-  const terms = ['TERM1', 'TERM2', 'TERM3'];
+  const uniqueTerms = Array.from(new Set(classes.map(c => c.term).filter(Boolean))).sort();
+  const terms = uniqueTerms.length > 0 ? uniqueTerms : ['TERM_1', 'TERM_2', 'TERM_3'];
 
   const fetchStats = React.useCallback(async () => {
     try {
@@ -61,9 +63,32 @@ const FeeReportsPage = () => {
     fetchStats();
   }, [fetchStats]);
 
-  const handleExport = (format) => {
-    showSuccess(`Exporting report as ${format.toUpperCase()}...`);
-    // TODO: Implement actual export functionality
+  const handleExport = async (format) => {
+    showSuccess(`Exporting report as CSV...`);
+
+    try {
+      const params = {
+        startDate: dateRange.startDate,
+        endDate: dateRange.endDate
+      };
+      if (filterGrade !== 'all') params.grade = filterGrade;
+      if (filterTerm !== 'all') params.term = filterTerm;
+
+      const blob = await api.fees.exportInvoices(params);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `fee_invoices_report_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      showSuccess('Report exported successfully');
+    } catch (error) {
+      console.error('Export failed:', error);
+      showError('Failed to export report');
+    }
   };
 
   const StatCard = ({ title, value, icon: Icon, color, trend, trendValue }) => (
@@ -92,11 +117,11 @@ const FeeReportsPage = () => {
     <div className="space-y-4">
       <div className="flex justify-end mb-2">
         <button
-          onClick={() => handleExport('pdf')}
+          onClick={() => handleExport('csv')}
           className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-xs"
         >
           <Download size={16} />
-          Export Report
+          Export CSV
         </button>
       </div>
 
@@ -129,8 +154,8 @@ const FeeReportsPage = () => {
               className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-xs"
             >
               <option value="all">All Grades</option>
-              {grades.map(grade => (
-                <option key={grade} value={grade}>{grade}</option>
+              {fetchedGrades.map(grade => (
+                <option key={grade} value={grade}>{grade.replace(/_/g, ' ')}</option>
               ))}
             </select>
           </div>
@@ -143,7 +168,7 @@ const FeeReportsPage = () => {
             >
               <option value="all">All Terms</option>
               {terms.map(term => (
-                <option key={term} value={term}>{term}</option>
+                <option key={term} value={term}>{term.replace(/_/g, ' ')}</option>
               ))}
             </select>
           </div>

@@ -8,10 +8,11 @@ import { Download, Loader, MessageCircle, Printer, MessageSquare, AlertCircle, C
 import VirtualizedTable from '../shared/VirtualizedTable';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useNotifications } from '../hooks/useNotifications';
-import { generateHighFidelityPDF } from '../../../utils/simplePdfGenerator';
 import api, { configAPI, communicationAPI } from '../../../services/api';
 import { useAssessmentSetup } from '../hooks/useAssessmentSetup';
 import { getLearningAreasByGrade, getAllLearningAreas } from '../../../constants/learningAreas';
+import { useSchoolData } from '../../../contexts/SchoolDataContext';
+import { generateHighFidelityPDF } from '../../../utils/simplePdfGenerator';
 
 
 const LEARNING_AREA_ABBREVIATIONS = {
@@ -135,6 +136,19 @@ const getCBCGrade = (percentage) => {
   return { grade: 'BE2', remark: 'Below Expectations 2 - Very Low', color: '#8B0000' }; // Dark Red
 };
 
+const resolveTestGroup = (item) => {
+  const explicitType = item?.testType;
+  if (explicitType && String(explicitType).trim()) return explicitType;
+
+  const title = item?.title;
+  if (title && title.includes(' - ')) {
+    const prefix = title.split(' - ')[0]?.trim();
+    if (prefix && prefix.length < 12) return prefix;
+  }
+
+  return 'General';
+};
+
 // ============================================================================
 // LEARNER REPORT TEMPLATE COMPONENT (Reusable for Bulk Print)
 // ============================================================================
@@ -165,7 +179,10 @@ const LearnerReportTemplate = ({ learner, results, term, academicYear, brandingS
   // Identify unique Test Types for Columns
   const testTypesFound = new Set();
   results?.forEach(r => {
-    const type = r.test?.testType || r.testType || 'Assessment';
+    const type = resolveTestGroup({
+      testType: r.test?.testType || r.testType,
+      title: r.test?.title || r.title
+    });
     testTypesFound.add(type);
   });
 
@@ -183,7 +200,10 @@ const LearnerReportTemplate = ({ learner, results, term, academicYear, brandingS
     // Map scores by test column
     const scoresByCol = {};
     testColumns.forEach(col => {
-      const match = areaResults.find(r => (r.test?.testType || r.testType || 'Assessment') === col);
+      const match = areaResults.find(r => resolveTestGroup({
+        testType: r.test?.testType || r.testType,
+        title: r.test?.title || r.title
+      }) === col);
       scoresByCol[col] = match ? (match.score || 0) : null;
     });
 
@@ -530,11 +550,12 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
   const [selectedType, setSelectedType] = useState('LEARNER_REPORT');
   const [selectedTestGroups, setSelectedTestGroups] = useState([]);
   const [selectedTestIds, setSelectedTestIds] = useState([]);
-  const [availableTests, setAvailableTests] = useState([]);
   const [streamConfigs, setStreamConfigs] = useState([]);
+  const { grades: contextGrades } = useSchoolData();
   const [grades, setGrades] = useState([]);
   const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState(null);
+  const [availableTests, setAvailableTests] = useState([]);
 
   // Custom Tick component for wrapping long learning area names in charts
   const CustomXAxisTick = ({ x, y, payload }) => {
@@ -796,41 +817,14 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
 
   // Fetch grades from backend (Source of Truth)
   useEffect(() => {
-    const fetchGrades = async () => {
-      try {
-        const schoolId = user?.schoolId || user?.school?.id || localStorage.getItem('currentSchoolId');
-
-        if (!schoolId) {
-          console.warn('⚠️ No school ID found - cannot fetch grades');
-          setGrades([]);
-          return;
-        }
-
-        console.log('🔄 Fetching grades for school:', schoolId);
-        const response = await configAPI.getGrades(schoolId);
-
-        let gradesData = Array.isArray(response) ? response : (response?.data ? response.data : []);
-
-        // If grades are strings, convert to objects with value and label
-        gradesData = gradesData.map(g => {
-          if (typeof g === 'string') {
-            return { value: g, label: g };
-          }
-          return { value: g.value || g.name || g, label: g.label || g.name || g };
-        });
-
-        console.log('✅ Grades loaded:', gradesData.length);
-        setGrades(gradesData || []);
-      } catch (err) {
-        console.error('❌ Error fetching grades:', err);
-        setGrades([]);
-      }
-    };
-
-    if (user) {
-      fetchGrades();
+    if (contextGrades && contextGrades.length > 0) {
+      const formattedGrades = contextGrades.map(g => ({
+        value: g,
+        label: g.replace(/_/g, ' ')
+      }));
+      setGrades(formattedGrades);
     }
-  }, [user]);
+  }, [contextGrades]);
 
   // Fetch stream configurations from backend (Source of Truth)
   useEffect(() => {
@@ -930,13 +924,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
 
   // Helper to extract group from test
   const getTestGroup = (test) => {
-    if (test.testType) return test.testType;
-    // Smart detection: if type is null but title has prefix (e.g. "dd - "), use prefix
-    if (test.title && test.title.includes(' - ')) {
-      const parts = test.title.split(' - ');
-      if (parts[0].length < 12) return parts[0];
-    }
-    return 'General';
+    return resolveTestGroup(test);
   };
 
   // Derive unique test groups (testType) from available tests
@@ -1738,8 +1726,12 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
           // Filter results by selected test groups if any
           if (selectedTestGroups.length > 0) {
             processedResults = processedResults.filter(r => {
-              const type = r.test?.testType || r.testType;
-              return selectedTestGroups.includes(type);
+              const matchingTest = availableTests.find(t => t.id === r.testId);
+              const group = resolveTestGroup({
+                testType: r.test?.testType || r.testType || matchingTest?.testType,
+                title: r.test?.title || matchingTest?.title || r.title
+              });
+              return selectedTestGroups.includes(group);
             });
           }
 
@@ -1836,7 +1828,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
         if (selectedTestIds.length > 0) {
           targetTests = availableTests.filter(t => selectedTestIds.includes(t.id));
         } else if (selectedTestGroups.length > 0) {
-          targetTests = availableTests.filter(t => selectedTestGroups.includes(t.testType));
+          targetTests = availableTests.filter(t => selectedTestGroups.includes(getTestGroup(t)));
         }
 
         if (targetTests.length === 0) {
@@ -1939,7 +1931,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
         if (selectedTestIds.length > 0) {
           targetTests = availableTests.filter(t => selectedTestIds.includes(t.id));
         } else if (selectedTestGroups.length > 0) {
-          targetTests = availableTests.filter(t => selectedTestGroups.includes(t.testType));
+          targetTests = availableTests.filter(t => selectedTestGroups.includes(getTestGroup(t)));
         }
 
         if (targetTests.length === 0) {

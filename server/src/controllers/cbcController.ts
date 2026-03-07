@@ -38,9 +38,8 @@ export const createOrUpdateCompetencies = async (req: AuthRequest, res: Response
     } = req.body;
 
     const assessedBy = req.user?.userId;
-    const schoolId = bodySchoolId || req.user?.schoolId;
 
-    if (!assessedBy || !schoolId) {
+    if (!assessedBy) {
       return res.status(401).json({
         success: false,
         message: 'Unauthorized'
@@ -57,70 +56,91 @@ export const createOrUpdateCompetencies = async (req: AuthRequest, res: Response
     }
 
     // Upsert (create or update)
-    const competencies = await prisma.coreCompetency.upsert({
+    const competencies = await prisma.coreCompetency.findFirst({
       where: {
-        schoolId_learnerId_term_academicYear: {
-          schoolId,
-          learnerId,
-          term: term as Term,
-          academicYear: parseInt(academicYear)
-        }
-      },
-      update: {
-        communication: communication as DetailedRubricRating,
-        communicationComment,
-        criticalThinking: criticalThinking as DetailedRubricRating,
-        criticalThinkingComment,
-        creativity: creativity as DetailedRubricRating,
-        creativityComment,
-        collaboration: collaboration as DetailedRubricRating,
-        collaborationComment,
-        citizenship: citizenship as DetailedRubricRating,
-        citizenshipComment,
-        learningToLearn: learningToLearn as DetailedRubricRating,
-        learningToLearnComment,
-        assessedBy
-      },
-      create: {
-        schoolId,
         learnerId,
         term: term as Term,
-        academicYear: parseInt(academicYear),
-        communication: communication as DetailedRubricRating,
-        communicationComment,
-        criticalThinking: criticalThinking as DetailedRubricRating,
-        criticalThinkingComment,
-        creativity: creativity as DetailedRubricRating,
-        creativityComment,
-        collaboration: collaboration as DetailedRubricRating,
-        collaborationComment,
-        citizenship: citizenship as DetailedRubricRating,
-        citizenshipComment,
-        learningToLearn: learningToLearn as DetailedRubricRating,
-        learningToLearnComment,
-        assessedBy
-      },
-      include: {
-        learner: {
-          select: {
-            firstName: true,
-            lastName: true,
-            admissionNumber: true
-          }
-        },
-        assessor: {
-          select: {
-            firstName: true,
-            lastName: true
-          }
-        }
+        academicYear: parseInt(academicYear)
       }
     });
+
+    let result;
+    if (competencies) {
+      result = await prisma.coreCompetency.update({
+        where: { id: competencies.id },
+        data: {
+          communication: communication as DetailedRubricRating,
+          communicationComment,
+          criticalThinking: criticalThinking as DetailedRubricRating,
+          criticalThinkingComment,
+          creativity: creativity as DetailedRubricRating,
+          creativityComment,
+          collaboration: collaboration as DetailedRubricRating,
+          collaborationComment,
+          citizenship: citizenship as DetailedRubricRating,
+          citizenshipComment,
+          learningToLearn: learningToLearn as DetailedRubricRating,
+          learningToLearnComment,
+          assessedBy
+        },
+        include: {
+          learner: {
+            select: {
+              firstName: true,
+              lastName: true,
+              admissionNumber: true
+            }
+          },
+          assessor: {
+            select: {
+              firstName: true,
+              lastName: true
+            }
+          }
+        }
+      });
+    } else {
+      result = await prisma.coreCompetency.create({
+        data: {
+          learnerId,
+          term: term as Term,
+          academicYear: parseInt(academicYear),
+          communication: communication as DetailedRubricRating,
+          communicationComment,
+          criticalThinking: criticalThinking as DetailedRubricRating,
+          criticalThinkingComment,
+          creativity: creativity as DetailedRubricRating,
+          creativityComment,
+          collaboration: collaboration as DetailedRubricRating,
+          collaborationComment,
+          citizenship: citizenship as DetailedRubricRating,
+          citizenshipComment,
+          learningToLearn: learningToLearn as DetailedRubricRating,
+          learningToLearnComment,
+          assessedBy
+        },
+        include: {
+          learner: {
+            select: {
+              firstName: true,
+              lastName: true,
+              admissionNumber: true
+            }
+          },
+          assessor: {
+            select: {
+              firstName: true,
+              lastName: true
+            }
+          }
+        }
+      });
+    }
 
     res.json({
       success: true,
       message: 'Core competencies saved successfully',
-      data: competencies
+      data: result
     });
 
   } catch (error: any) {
@@ -149,14 +169,11 @@ export const getCompetenciesByLearner = async (req: AuthRequest, res: Response) 
       });
     }
 
-    const competencies = await prisma.coreCompetency.findUnique({
+    const competencies = await prisma.coreCompetency.findFirst({
       where: {
-        schoolId_learnerId_term_academicYear: {
-          schoolId: req.user?.schoolId || '',
-          learnerId,
-          term: term as Term,
-          academicYear: parseInt(academicYear as string)
-        }
+        learnerId,
+        term: term as Term,
+        academicYear: parseInt(academicYear as string)
       },
       include: {
         learner: {
@@ -233,55 +250,71 @@ export const createOrUpdateValues = async (req: AuthRequest, res: Response) => {
     }
 
     // Upsert
-    const values = await prisma.valuesAssessment.upsert({
+    const existing = await prisma.valuesAssessment.findFirst({
       where: {
-        schoolId_learnerId_term_academicYear: {
-          schoolId: req.user?.schoolId || '',
-          learnerId,
-          term: term as Term,
-          academicYear: parseInt(academicYear)
-        }
-      },
-      update: {
-        love: love as DetailedRubricRating,
-        responsibility: responsibility as DetailedRubricRating,
-        respect: respect as DetailedRubricRating,
-        unity: unity as DetailedRubricRating,
-        peace: peace as DetailedRubricRating,
-        patriotism: patriotism as DetailedRubricRating,
-        integrity: integrity as DetailedRubricRating,
-        comment,
-        assessedBy
-      },
-      create: {
         learnerId,
         term: term as Term,
-        academicYear: parseInt(academicYear),
-        love: love as DetailedRubricRating,
-        responsibility: responsibility as DetailedRubricRating,
-        respect: respect as DetailedRubricRating,
-        unity: unity as DetailedRubricRating,
-        peace: peace as DetailedRubricRating,
-        patriotism: patriotism as DetailedRubricRating,
-        integrity: integrity as DetailedRubricRating,
-        comment,
-        assessedBy
-      },
-      include: {
-        learner: {
-          select: {
-            firstName: true,
-            lastName: true,
-            admissionNumber: true
-          }
-        }
+        academicYear: parseInt(academicYear)
       }
     });
+
+    let result;
+    if (existing) {
+      result = await prisma.valuesAssessment.update({
+        where: { id: existing.id },
+        data: {
+          love: love as DetailedRubricRating,
+          responsibility: responsibility as DetailedRubricRating,
+          respect: respect as DetailedRubricRating,
+          unity: unity as DetailedRubricRating,
+          peace: peace as DetailedRubricRating,
+          patriotism: patriotism as DetailedRubricRating,
+          integrity: integrity as DetailedRubricRating,
+          comment,
+          assessedBy
+        },
+        include: {
+          learner: {
+            select: {
+              firstName: true,
+              lastName: true,
+              admissionNumber: true
+            }
+          }
+        }
+      });
+    } else {
+      result = await prisma.valuesAssessment.create({
+        data: {
+          learnerId,
+          term: term as Term,
+          academicYear: parseInt(academicYear),
+          love: love as DetailedRubricRating,
+          responsibility: responsibility as DetailedRubricRating,
+          respect: respect as DetailedRubricRating,
+          unity: unity as DetailedRubricRating,
+          peace: peace as DetailedRubricRating,
+          patriotism: patriotism as DetailedRubricRating,
+          integrity: integrity as DetailedRubricRating,
+          comment,
+          assessedBy
+        },
+        include: {
+          learner: {
+            select: {
+              firstName: true,
+              lastName: true,
+              admissionNumber: true
+            }
+          }
+        }
+      });
+    }
 
     res.json({
       success: true,
       message: 'Values assessment saved successfully',
-      data: values
+      data: result
     });
 
   } catch (error: any) {
@@ -310,14 +343,11 @@ export const getValuesByLearner = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const values = await prisma.valuesAssessment.findUnique({
+    const values = await prisma.valuesAssessment.findFirst({
       where: {
-        schoolId_learnerId_term_academicYear: {
-          schoolId: req.user?.schoolId || '',
-          learnerId,
-          term: term as Term,
-          academicYear: parseInt(academicYear as string)
-        }
+        learnerId,
+        term: term as Term,
+        academicYear: parseInt(academicYear as string)
       },
       include: {
         learner: {
@@ -589,55 +619,71 @@ export const saveReportComments = async (req: Request, res: Response) => {
       });
     }
 
-    const comments = await prisma.termlyReportComment.upsert({
+    const existing = await prisma.termlyReportComment.findFirst({
       where: {
-        schoolId_learnerId_term_academicYear: {
-          schoolId: req.user?.schoolId || '',
-          learnerId,
-          term: term as Term,
-          academicYear: parseInt(academicYear)
-        }
-      },
-      update: {
-        classTeacherComment,
-        classTeacherName,
-        classTeacherSignature,
-        classTeacherDate: new Date(),
-        headTeacherComment,
-        headTeacherName,
-        headTeacherSignature,
-        headTeacherDate: headTeacherComment ? new Date() : undefined,
-        nextTermOpens: new Date(nextTermOpens)
-      },
-      create: {
         learnerId,
         term: term as Term,
-        academicYear: parseInt(academicYear),
-        classTeacherComment,
-        classTeacherName,
-        classTeacherSignature,
-        classTeacherDate: new Date(),
-        headTeacherComment,
-        headTeacherName,
-        headTeacherSignature,
-        headTeacherDate: headTeacherComment ? new Date() : undefined,
-        nextTermOpens: new Date(nextTermOpens)
-      },
-      include: {
-        learner: {
-          select: {
-            firstName: true,
-            lastName: true,
-            admissionNumber: true
-          }
-        }
+        academicYear: parseInt(academicYear)
       }
     });
+
+    let result;
+    if (existing) {
+      result = await prisma.termlyReportComment.update({
+        where: { id: existing.id },
+        data: {
+          classTeacherComment,
+          classTeacherName,
+          classTeacherSignature,
+          classTeacherDate: new Date(),
+          headTeacherComment,
+          headTeacherName,
+          headTeacherSignature,
+          headTeacherDate: headTeacherComment ? new Date() : undefined,
+          nextTermOpens: new Date(nextTermOpens)
+        },
+        include: {
+          learner: {
+            select: {
+              firstName: true,
+              lastName: true,
+              admissionNumber: true
+            }
+          }
+        }
+      });
+    } else {
+      result = await prisma.termlyReportComment.create({
+        data: {
+          learnerId,
+          term: term as Term,
+          academicYear: parseInt(academicYear),
+          classTeacherComment,
+          classTeacherName,
+          classTeacherSignature,
+          classTeacherDate: new Date(),
+          headTeacherComment,
+          headTeacherName,
+          headTeacherSignature,
+          headTeacherDate: headTeacherComment ? new Date() : undefined,
+          nextTermOpens: new Date(nextTermOpens)
+        },
+        include: {
+          learner: {
+            select: {
+              firstName: true,
+              lastName: true,
+              admissionNumber: true
+            }
+          }
+        }
+      });
+    }
 
     res.json({
       success: true,
       message: 'Report comments saved successfully',
-      data: comments
+      data: result
     });
 
   } catch (error: any) {
@@ -666,14 +712,11 @@ export const getCommentsByLearner = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const comments = await prisma.termlyReportComment.findUnique({
+    const comments = await prisma.termlyReportComment.findFirst({
       where: {
-        schoolId_learnerId_term_academicYear: {
-          schoolId: req.user?.schoolId || '',
-          learnerId,
-          term: term as Term,
-          academicYear: parseInt(academicYear as string)
-        }
+        learnerId,
+        term: term as Term,
+        academicYear: parseInt(academicYear as string)
       },
       include: {
         learner: {

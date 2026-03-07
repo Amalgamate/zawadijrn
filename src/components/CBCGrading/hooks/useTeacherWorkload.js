@@ -47,9 +47,16 @@ export const useTeacherWorkload = () => {
 
     // Assigned grades list (unique)
     const assignedGrades = useMemo(() => {
-        if (!workload?.classes) return [];
-        return [...new Set(workload.classes.map(c => c.grade))];
-    }, [workload]);
+        const classGrades = (workload?.classes || [])
+            .map((classItem) => classItem?.grade)
+            .filter(Boolean);
+
+        const scheduleGrades = (schedules || [])
+            .map((schedule) => schedule?.class?.grade || schedule?.grade)
+            .filter(Boolean);
+
+        return [...new Set([...classGrades, ...scheduleGrades])];
+    }, [workload, schedules]);
 
     // Check if assigned to a specific grade
     const isAssignedToGrade = useCallback((grade) => {
@@ -66,7 +73,11 @@ export const useTeacherWorkload = () => {
         );
 
         if (gradeSchedules.length > 0) {
-            return [...new Set(gradeSchedules.map(s => s.subject))];
+            const subjects = gradeSchedules
+                .map((schedule) => schedule?.subject || schedule?.learningArea?.name || schedule?.learningArea?.shortName)
+                .filter(Boolean);
+
+            return subjects.length > 0 ? [...new Set(subjects)] : null;
         }
 
         // Fallback: If assigned as a class teacher for this grade but no specific subjects are in the schedule
@@ -89,8 +100,11 @@ export const useTeacherWorkload = () => {
 
     const primaryStream = useMemo(() => {
         const firstClass = workload?.classes?.[0];
-        return firstClass?.stream || null;
-    }, [workload]);
+        if (firstClass?.stream) return firstClass.stream;
+
+        const firstScheduleClass = schedules.find((schedule) => schedule?.class?.stream)?.class;
+        return firstScheduleClass?.stream || null;
+    }, [workload, schedules]);
 
     return {
         workload,

@@ -544,7 +544,7 @@ const Sidebar = React.memo(({
   const educationSections = useMemo(() => {
     // For teachers, show only Students and Assessment
     if (role === 'TEACHER') {
-      return navSections.filter(s => ['learners', 'assessment'].includes(s.id));
+      return navSections.filter(s => ['learners', 'assessment', 'planner', 'timetable', 'learning-hub', 'attendance'].includes(s.id));
     }
     // For accountants, hide Learning Hub and Timetable
     if (role === 'ACCOUNTANT') {

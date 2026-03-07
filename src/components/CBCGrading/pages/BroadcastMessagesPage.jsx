@@ -11,6 +11,7 @@ import { useNotifications } from '../hooks/useNotifications';
 import api from '../../../services/api';
 import { getCurrentSchoolId, getStoredUser } from '../../../services/schoolContext';
 import { formatPhoneNumber, isValidPhoneNumber, getDisplayPhoneNumber } from '../../../utils/phoneFormatter';
+import { useSchoolData } from '../../../contexts/SchoolDataContext';
 
 const BroadcastMessagesPage = () => {
   const { showSuccess, showError } = useNotifications();
@@ -61,9 +62,16 @@ const BroadcastMessagesPage = () => {
       ...prev,
       schoolName: user?.school?.name || 'School'
     }));
-    fetchGroups();
     loadMessageHistory();
   }, []);
+
+  const { grades: fetchedGrades } = useSchoolData();
+
+  useEffect(() => {
+    if (fetchedGrades && fetchedGrades.length > 0) {
+      setGroups(fetchedGrades.map(g => ({ id: g, name: g.replace(/_/g, ' ') })));
+    }
+  }, [fetchedGrades]);
 
   // Load message history from localStorage
   const loadMessageHistory = () => {
@@ -100,18 +108,7 @@ const BroadcastMessagesPage = () => {
     }
   };
 
-  const fetchGroups = async () => {
-    try {
-      // Fetch groups from API - adjust based on your API structure
-      const response = await api.learners.getAll({ limit: 5000 });
-      if (response.success && Array.isArray(response.data)) {
-        const grades = [...new Set(response.data.map(l => l.grade))].filter(Boolean).sort();
-        setGroups(grades.map(g => ({ id: g, name: g.replace(/_/g, ' ') })));
-      }
-    } catch (err) {
-      console.error('Failed to fetch groups:', err);
-    }
-  };
+  // Removed manual fetchGroups using learners API
 
   const parseCSV = (file) => {
     return new Promise((resolve, reject) => {

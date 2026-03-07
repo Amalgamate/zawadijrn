@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Save, Plus, Trash2, AlertCircle, Award, Users } from 'lucide-react';
 import { DatePicker } from '../../components/ui/date-picker';
+import { useSchoolData } from '../../contexts/SchoolDataContext';
 
 const CoCurricularActivitiesForm = () => {
   const [formData, setFormData] = useState({
@@ -50,7 +51,7 @@ const CoCurricularActivitiesForm = () => {
     'Occasional participant'
   ];
 
-  const grades = ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9'];
+  const { grades } = useSchoolData();
   const terms = ['Term 1', 'Term 2', 'Term 3'];
 
   const handleInputChange = (field, value) => {
@@ -389,8 +390,8 @@ const CoCurricularActivitiesForm = () => {
                               type="button"
                               onClick={() => updateActivity(activity.id, 'performanceRating', level.value)}
                               className={`px-4 py-2 border-2 rounded-lg font-medium transition-all ${activity.performanceRating === level.value
-                                  ? level.color + ' ring-2 ring-blue-500'
-                                  : 'bg-white border-gray-300 hover:border-gray-400'
+                                ? level.color + ' ring-2 ring-blue-500'
+                                : 'bg-white border-gray-300 hover:border-gray-400'
                                 }`}
                             >
                               {level.value}

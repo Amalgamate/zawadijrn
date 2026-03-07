@@ -26,6 +26,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "prisma:seed": "ts-node prisma/seed.ts",
+    "audit:responses": "node scripts/audit-api-response-format.js",
+    "audit:responses:strict": "node scripts/audit-api-response-format.js --fail-on-findings",
     "test": "jest --coverage",
     "test:watch": "jest --watch",
     "lint": "eslint src --ext .ts",

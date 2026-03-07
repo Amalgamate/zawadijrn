@@ -4,6 +4,7 @@ import { useAttendance } from '../hooks/useAttendanceAPI';
 import { getCurrentDate, toInputDate } from '../utils/dateHelpers';
 import SmartLearnerSearch from '../shared/SmartLearnerSearch';
 import LoadingSpinner from '../shared/LoadingSpinner';
+import { useAuth } from '../../../hooks/useAuth';
 
 const AttendanceReports = ({ learners }) => {
   // Staged Filter State
@@ -16,8 +17,42 @@ const AttendanceReports = ({ learners }) => {
   // Active Context State (for loaded report)
   const [activeReport, setActiveReport] = React.useState(null);
   const [searchTerm, setSearchTerm] = React.useState('');
+  const { user } = useAuth();
+  const isTeacher = user?.role === 'TEACHER';
 
-  const { attendanceRecords, fetchAttendance, loading, grades } = useAttendance();
+  const { attendanceRecords, fetchAttendance, loading, grades, classes } = useAttendance();
+
+  const assignedClass = React.useMemo(() => {
+    if (!isTeacher || !classes?.length) return null;
+    return classes[0];
+  }, [isTeacher, classes]);
+
+  const teacherScopedLearners = React.useMemo(() => {
+    if (!isTeacher || !assignedClass) return learners;
+    return (learners || []).filter((learner) => {
+      const sameGrade = learner.grade === assignedClass.grade;
+      const learnerStream = learner.stream || '';
+      const classStream = assignedClass.stream || '';
+      return sameGrade && learnerStream === classStream;
+    });
+  }, [isTeacher, assignedClass, learners]);
+
+  React.useEffect(() => {
+    if (!isTeacher || !assignedClass) return;
+
+    if (stagedGrade !== assignedClass.grade) {
+      setStagedGrade(assignedClass.grade);
+    }
+  }, [isTeacher, assignedClass, stagedGrade]);
+
+  React.useEffect(() => {
+    if (!isTeacher || !stagedLearnerId) return;
+
+    const isScopedLearner = teacherScopedLearners.some((learner) => learner.id === stagedLearnerId);
+    if (!isScopedLearner) {
+      setStagedLearnerId('');
+    }
+  }, [isTeacher, stagedLearnerId, teacherScopedLearners]);
 
   // Load report data
   const handleLoadReport = React.useCallback(() => {
@@ -25,6 +60,9 @@ const AttendanceReports = ({ learners }) => {
       startDate: stagedStartDate,
       endDate: stagedEndDate
     };
+    if (isTeacher && assignedClass?.id) {
+      params.classId = assignedClass.id;
+    }
     if (reportType === 'learner' && stagedLearnerId) {
       params.learnerId = stagedLearnerId;
     }
@@ -32,11 +70,12 @@ const AttendanceReports = ({ learners }) => {
     setActiveReport({
       type: reportType,
       grade: stagedGrade,
+      classId: isTeacher ? assignedClass?.id : undefined,
       learnerId: stagedLearnerId,
       startDate: stagedStartDate,
       endDate: stagedEndDate
     });
-  }, [stagedStartDate, stagedEndDate, reportType, stagedLearnerId, stagedGrade, fetchAttendance]);
+  }, [stagedStartDate, stagedEndDate, reportType, stagedLearnerId, stagedGrade, isTeacher, assignedClass, fetchAttendance]);
 
   // Execute initial load
   React.useEffect(() => {
@@ -60,17 +99,17 @@ const AttendanceReports = ({ learners }) => {
         return true;
       }
 
-      const learner = learners.find(l => l.id === record.learnerId);
+      const learner = teacherScopedLearners.find(l => l.id === record.learnerId);
       if (!learner) return false;
 
       return activeReport?.grade === 'all' || learner.grade === activeReport?.grade;
     }).filter(record => {
-      const learner = learners.find(l => l.id === record.learnerId);
+      const learner = teacherScopedLearners.find(l => l.id === record.learnerId);
       if (!learner) return false;
       const fullName = `${learner.firstName} ${learner.lastName}`.toLowerCase();
       return fullName.includes(searchTerm.toLowerCase()) || learner.admissionNumber?.toLowerCase().includes(searchTerm.toLowerCase());
     });
-  }, [attendanceRecords, learners, activeReport, searchTerm]);
+  }, [attendanceRecords, teacherScopedLearners, activeReport, searchTerm]);
 
   // Calculate statistics
   const totalDays = [...new Set(filteredRecords.map(r => r.date?.split('T')[0]))].length;
@@ -117,14 +156,16 @@ const AttendanceReports = ({ learners }) => {
         <div className="px-6 py-3 border-t border-slate-100 flex flex-wrap items-center gap-3 bg-slate-50/80 backdrop-blur-md">
           <div className="flex bg-white p-1 rounded-xl border border-slate-200 shadow-sm mr-2">
             <button
+              disabled={isTeacher}
               onClick={() => setReportType('grade')}
-              className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${reportType === 'grade' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'}`}
+              className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${reportType === 'grade' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'} disabled:opacity-50`}
             >
               Grade
             </button>
             <button
+              disabled={isTeacher}
               onClick={() => setReportType('learner')}
-              className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${reportType === 'learner' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'}`}
+              className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${reportType === 'learner' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'} disabled:opacity-50`}
             >
               Learner
             </button>
@@ -134,6 +175,7 @@ const AttendanceReports = ({ learners }) => {
             <select
               value={stagedGrade}
               onChange={(e) => setStagedGrade(e.target.value)}
+              disabled={isTeacher}
               className="h-9 px-3 border border-slate-300 rounded-lg text-xs font-semibold bg-white focus:ring-2 focus:ring-indigo-500/20 outline-none w-48"
             >
               <option value="all">Consolidated (All Grades)</option>
@@ -144,7 +186,7 @@ const AttendanceReports = ({ learners }) => {
           ) : (
             <div className="w-64 h-9">
               <SmartLearnerSearch
-                learners={learners}
+                learners={teacherScopedLearners}
                 selectedLearnerId={stagedLearnerId}
                 onSelect={setStagedLearnerId}
                 placeholder="Find learner..."
@@ -245,7 +287,7 @@ const AttendanceReports = ({ learners }) => {
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {filteredRecords.map((record) => {
-                      const learner = learners.find(l => l.id === record.learnerId);
+                      const learner = teacherScopedLearners.find(l => l.id === record.learnerId);
                       if (!learner) return null;
 
                       const statusMap = {

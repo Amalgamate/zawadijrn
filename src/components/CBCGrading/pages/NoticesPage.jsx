@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, X, Eye, Cake, Bell, Megaphone, RefreshCw, Send, Save, CheckCircle, Loader, User, Smartphone, MessageCircle } from 'lucide-react';
+import { Plus, Edit, Trash2, X, Eye, Cake, Bell, Megaphone, RefreshCw, Send, Save, CheckCircle, Loader, User, Smartphone, MessageCircle, Archive, Share2 } from 'lucide-react';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription, Button, Input, Label, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, Tabs, TabsList, TabsTrigger, TabsContent, Badge } from '../../../components/ui';
 import { useNotifications } from '../hooks/useNotifications';
 import api, { communicationAPI } from '../../../services/api';
@@ -40,7 +40,14 @@ const NoticesPage = ({ initialTab }) => {
   const [loadingNotices, setLoadingNotices] = useState(false);
   const [birthdays, setBirthdays] = useState([]);
   const [notices, setNotices] = useState([]);
+  const [focusedNoticeId, setFocusedNoticeId] = useState(null);
+  const [selectedNotice, setSelectedNotice] = useState(null);
+  const [sharingNotice, setSharingNotice] = useState(null);
   const [formData, setFormData] = useState({ title: '', content: '', category: 'Academic', priority: 'Medium' });
+  const [editingNoticeId, setEditingNoticeId] = useState(null);
+  const currentUser = getStoredUser();
+  const currentUserId = currentUser?.id || currentUser?.userId;
+  const isSystemAdmin = currentUser?.role === 'SUPER_ADMIN';
 
   // Birthday features states
   const [schoolId, setSchoolId] = useState(null);
@@ -157,13 +164,23 @@ const NoticesPage = ({ initialTab }) => {
   const fetchNotices = async () => {
     setLoadingNotices(true);
     try {
-      // TODO: Replace with actual API call when notices endpoint is available
-      // const resp = await api.notices.getAll();
-      // setNotices(resp.data || []);
-      // For now, show empty state - notices will be created via the form
-      setNotices([]);
+      const resp = await api.notices.getAll();
+      const mappedNotices = (resp.data || []).map(n => ({
+        id: n.id,
+        title: n.title,
+        content: n.content,
+        category: n.category || 'General',
+        priority: n.priority ? n.priority.charAt(0).toUpperCase() + n.priority.slice(1).toLowerCase() : 'Medium',
+        author: n.createdBy ? `${n.createdBy.firstName} ${n.createdBy.lastName}` : 'Admin',
+        createdById: n.createdBy?.id || n.createdById,
+        date: formatDate(n.publishedAt || n.createdAt),
+        status: n.status || 'Published',
+        raw: n
+      }));
+      setNotices(mappedNotices);
     } catch (error) {
       console.error('Failed to fetch notices:', error);
+      showError('Failed to load notices');
       setNotices([]);
     } finally {
       setLoadingNotices(false);
@@ -336,11 +353,98 @@ const NoticesPage = ({ initialTab }) => {
     }
   };
 
-  const handleSave = () => {
-    setNotices(prev => [...prev, { ...formData, id: prev.length + 1, author: 'Current User', date: new Date().toISOString().split('T')[0], status: 'Published' }]);
-    showSuccess('Notice published successfully!');
-    setShowModal(false);
-    setFormData({ title: '', content: '', category: 'Academic', priority: 'Medium' });
+  const focusNoticeInList = (noticeId) => {
+    if (!noticeId) return;
+    setFocusedNoticeId(noticeId);
+    setTimeout(() => {
+      const el = document.getElementById(`notice-card-${noticeId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
+    setTimeout(() => setFocusedNoticeId(null), 2500);
+  };
+
+  const handleSave = async () => {
+    if (!formData.title || !formData.content) {
+      showError('Title and content are required');
+      return;
+    }
+
+    try {
+      const priorityMap = {
+        Low: 'LOW',
+        Medium: 'NORMAL',
+        High: 'HIGH'
+      };
+
+      const payload = {
+        title: formData.title,
+        content: formData.content,
+        category: formData.category,
+        priority: priorityMap[formData.priority] || 'NORMAL'
+      };
+
+      if (editingNoticeId) {
+        const updatedNoticeId = editingNoticeId;
+        await api.notices.update(editingNoticeId, payload);
+        showSuccess('Notice updated successfully!');
+
+        setShowModal(false);
+        setFormData({ title: '', content: '', category: 'Academic', priority: 'Medium' });
+        setEditingNoticeId(null);
+
+        handleTabChange('notices');
+        await fetchNotices();
+        focusNoticeInList(updatedNoticeId);
+        return;
+      } else {
+        const createdResp = await api.notices.create(payload);
+        const createdNoticeId = createdResp?.data?.id;
+        showSuccess('Notice published successfully!');
+
+        setShowModal(false);
+        setFormData({ title: '', content: '', category: 'Academic', priority: 'Medium' });
+        setEditingNoticeId(null);
+
+        handleTabChange('notices');
+        await fetchNotices();
+
+        focusNoticeInList(createdNoticeId);
+
+        return;
+      }
+    } catch (error) {
+      console.error('Failed to save notice:', error);
+      showError(error.message || 'Failed to save notice');
+    }
+  };
+
+  const handleEditClick = (notice) => {
+    setEditingNoticeId(notice.id);
+    setFormData({
+      title: notice.title,
+      content: notice.content,
+      category: notice.category,
+      priority: notice.priority
+    });
+    setShowModal(true);
+  };
+
+  const handleShareWhatsApp = (notice) => {
+    const message = `*${notice.title}*\n\n${notice.content}`;
+    const waUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    window.open(waUrl, '_blank');
+    showSuccess('Opening WhatsApp share...');
+    setSharingNotice(null);
+  };
+
+  const handleShareSms = (notice) => {
+    const message = `${notice.title}\n\n${notice.content}`;
+    const smsUrl = `sms:?body=${encodeURIComponent(message)}`;
+    window.open(smsUrl, '_self');
+    showSuccess('Opening SMS share...');
+    setSharingNotice(null);
   };
 
   return (
@@ -394,7 +498,11 @@ const NoticesPage = ({ initialTab }) => {
           <TabsContent value="notices" className="flex-1 overflow-auto p-6 space-y-4">
             <div className="flex justify-end mb-4">
               <Button
-                onClick={() => setShowModal(true)}
+                onClick={() => {
+                  setEditingNoticeId(null);
+                  setFormData({ title: '', content: '', category: 'Academic', priority: 'Medium' });
+                  setShowModal(true);
+                }}
                 className="bg-brand-teal hover:bg-brand-teal/90 text-white font-bold gap-2"
               >
                 <Plus size={20} />
@@ -412,7 +520,17 @@ const NoticesPage = ({ initialTab }) => {
             ) : notices.length > 0 ? (
               <div className="space-y-4">
                 {notices.map(notice => (
-                  <Card key={notice.id} className="border-l-4 border-l-brand-teal hover:shadow-lg transition">
+                  (() => {
+                    const isOwner = notice.createdById && currentUserId && notice.createdById === currentUserId;
+                    const canArchive = !!isOwner;
+                    const canDelete = !!isOwner && isSystemAdmin;
+
+                    return (
+                  <Card
+                    key={notice.id}
+                    id={`notice-card-${notice.id}`}
+                    className={`border-l-4 border-l-brand-teal hover:shadow-lg transition ${focusedNoticeId === notice.id ? 'ring-2 ring-brand-teal/60 shadow-lg' : ''}`}
+                  >
                     <CardContent className="p-6">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
@@ -433,27 +551,80 @@ const NoticesPage = ({ initialTab }) => {
                           </div>
                         </div>
                         <div className="flex gap-2">
-                          <Button variant="ghost" size="sm" className="text-brand-teal hover:bg-brand-teal/10">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-brand-teal hover:bg-brand-teal/10"
+                            onClick={() => setSelectedNotice(notice)}
+                            title="View notice"
+                          >
                             <Eye size={18} />
-                          </Button>
-                          <Button variant="ghost" size="sm" className="text-green-600 hover:bg-green-50">
-                            <Edit size={18} />
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => {
-                              setNotices(prev => prev.filter(n => n.id !== notice.id));
-                              showSuccess('Notice deleted');
-                            }}
-                            className="text-red-600 hover:bg-red-50"
+                            className="text-indigo-600 hover:bg-indigo-50"
+                            onClick={() => setSharingNotice(notice)}
+                            title="Share notice"
                           >
-                            <Trash2 size={18} />
+                            <Share2 size={18} />
                           </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-green-600 hover:bg-green-50"
+                            onClick={() => handleEditClick(notice)}
+                          >
+                            <Edit size={18} />
+                          </Button>
+                          {canArchive && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={async () => {
+                                if (window.confirm('Archive this notice?')) {
+                                  try {
+                                    await api.notices.delete(notice.id);
+                                    showSuccess('Notice archived');
+                                    fetchNotices();
+                                  } catch (err) {
+                                    showError(err.message || 'Failed to archive notice');
+                                  }
+                                }
+                              }}
+                              className="text-amber-600 hover:bg-amber-50"
+                              title="Archive notice"
+                            >
+                              <Archive size={18} />
+                            </Button>
+                          )}
+                          {canDelete && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={async () => {
+                                if (window.confirm('Delete this notice permanently?')) {
+                                  try {
+                                    await api.notices.delete(notice.id);
+                                    showSuccess('Notice deleted permanently');
+                                    fetchNotices();
+                                  } catch (err) {
+                                    showError(err.message || 'Failed to delete notice');
+                                  }
+                                }
+                              }}
+                              className="text-red-600 hover:bg-red-50"
+                              title="Delete notice permanently"
+                            >
+                              <Trash2 size={18} />
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </CardContent>
                   </Card>
+                    );
+                  })()
                 ))}
               </div>
             ) : (
@@ -764,7 +935,7 @@ const NoticesPage = ({ initialTab }) => {
           <DialogHeader>
             <DialogTitle className="text-xl font-bold flex items-center gap-2">
               <Plus size={20} className="text-brand-teal" />
-              Create New Notice
+              {editingNoticeId ? 'Edit Notice' : 'Create New Notice'}
             </DialogTitle>
             <DialogDescription>
               Share important updates with your school community
@@ -838,8 +1009,60 @@ const NoticesPage = ({ initialTab }) => {
               className="bg-brand-teal hover:bg-brand-teal/90 text-white font-bold gap-2"
             >
               <Save size={18} />
-              Publish Notice
+              {editingNoticeId ? 'Update Notice' : 'Publish Notice'}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Notice Modal */}
+      <Dialog open={!!selectedNotice} onOpenChange={(open) => !open && setSelectedNotice(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">{selectedNotice?.title}</DialogTitle>
+            <DialogDescription>
+              {selectedNotice?.category} • {selectedNotice?.priority} priority
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedNotice?.content}</p>
+            <div className="text-xs text-gray-500">
+              By {selectedNotice?.author} • {selectedNotice?.date}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSelectedNotice(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Share Notice Modal */}
+      <Dialog open={!!sharingNotice} onOpenChange={(open) => !open && setSharingNotice(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold">Share Notice</DialogTitle>
+            <DialogDescription>
+              Choose how you want to share this notice.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-3 py-2">
+            <Button
+              onClick={() => handleShareWhatsApp(sharingNotice)}
+              className="bg-green-600 hover:bg-green-700 text-white font-bold gap-2"
+            >
+              <MessageCircle size={16} />
+              WhatsApp
+            </Button>
+            <Button
+              onClick={() => handleShareSms(sharingNotice)}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold gap-2"
+            >
+              <Send size={16} />
+              SMS
+            </Button>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSharingNotice(null)}>Cancel</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

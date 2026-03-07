@@ -4,7 +4,7 @@ import React from 'react';
  * IndividualTestTemplate - CORPORATE EDITION
  * Professional focused result statement for a single assessment.
  */
-const IndividualTestTemplate = ({ testData, learner, id = "individual-test-report-content" }) => {
+const IndividualTestTemplate = ({ testData, learner, reportData = {}, id = "individual-test-report-content" }) => {
     if (!testData || !learner) return null;
 
     const brandColor = testData.brandColor || '#4a0404'; // Deep Maroon

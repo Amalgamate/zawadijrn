@@ -19,7 +19,6 @@ import {
   ArrowDown,
   Eye,
   Download,
-  RefreshCw,
   Wallet,
   Settings,
   Activity,
@@ -161,7 +160,6 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
 
     return (
       <div className="space-y-6">
-        {/* Compact Metric Banner */}
         <CompactMetricBanner
           metrics={bannerMetrics}
           gradientFrom="from-brand-purple"
@@ -434,52 +432,6 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      {/* Premium Hero Header */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-brand-purple via-purple-500 to-pink-500 p-8 text-white shadow-xl">
-        {/* Decorative circles */}
-        <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mr-20 -mt-20"></div>
-        <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full -ml-16 -mb-16"></div>
-
-        <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div className="flex items-center gap-4">
-            <div className="p-4 bg-white/20 backdrop-blur-sm rounded-xl border border-white/20">
-              <TrendingUp size={28} className="text-white" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-black text-white tracking-tight">System Performance Dashboard</h1>
-              <p className="text-sm font-bold text-white/80 uppercase tracking-widest flex items-center gap-2 mt-1">
-                <span className="inline-block w-2 h-2 bg-emerald-300 rounded-full animate-pulse" />
-                Live Server Stats • {new Date().toLocaleDateString()}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="flex bg-white/10 p-1 rounded-lg border border-white/20 backdrop-blur-sm">
-              {['today', 'term', 'year'].map(f => (
-                <button
-                  key={f}
-                  onClick={() => setTimeFilter(f)}
-                  className={`px-4 py-2 text-[11px] font-black uppercase tracking-widest rounded-md transition-all duration-300 ${timeFilter === f
-                    ? 'bg-white text-brand-purple shadow-lg'
-                    : 'text-white/70 hover:text-white hover:bg-white/10'
-                    }`}
-                >
-                  {f}
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={() => loadMetrics()}
-              disabled={refreshing}
-              className="p-2.5 border border-white/20 rounded-lg hover:bg-white/10 transition-all duration-300 text-white backdrop-blur-sm"
-            >
-              <RefreshCw size={20} className={refreshing ? 'animate-spin' : ''} />
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* Tabs Navigation */}
       <div className="flex items-center border-b border-gray-200 bg-white px-2 rounded-lg shadow-md border border-gray-200">
         <TabButton id="overview" label="General Overview" icon={Activity} active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />

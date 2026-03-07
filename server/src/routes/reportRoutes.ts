@@ -16,7 +16,8 @@ const router = express.Router();
 // Validation Schemas
 const generatePdfSchema = z.object({
   html: z.string().min(1),
-  filename: z.string().min(1).max(255),
+  filename: z.string().min(1).max(255).optional(),
+  fileName: z.string().min(1).max(255).optional(),
   format: z.enum(['A4', 'LETTER']).optional(),
   margin: z.object({
     top: z.number().optional(),
@@ -24,6 +25,9 @@ const generatePdfSchema = z.object({
     left: z.number().optional(),
     right: z.number().optional(),
   }).optional(),
+  options: z.any().optional(),
+}).refine((payload) => !!(payload.filename || payload.fileName), {
+  message: 'filename or fileName is required'
 });
 
 // ============================================

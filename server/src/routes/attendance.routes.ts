@@ -8,7 +8,7 @@
 import { Router } from 'express';
 import { AttendanceController } from '../controllers/attendance.controller';
 import { authenticate } from '../middleware/auth.middleware';
-import { requirePermission, auditLog } from '../middleware/permissions.middleware';
+import { requireAnyPermission, requirePermission, auditLog } from '../middleware/permissions.middleware';
 import { asyncHandler } from '../utils/async.util';
 import { validate } from '../middleware/validation.middleware';
 import { rateLimit } from '../middleware/enhanced-rateLimit.middleware';
@@ -19,18 +19,31 @@ const attendanceController = new AttendanceController();
 
 const markAttendanceSchema = z.object({
   learnerId: z.string().min(1),
-  date: z.string().datetime().optional(),
+  date: z.union([
+    z.string().datetime(),
+    z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  ]).optional(),
   status: z.enum(['PRESENT', 'ABSENT', 'LATE', 'EXCUSED']),
+  classId: z.string().min(1).optional(),
   remarks: z.string().max(255).optional()
 });
 
+const attendanceItemSchema = z.object({
+  learnerId: z.string().min(1),
+  status: z.enum(['PRESENT', 'ABSENT', 'LATE', 'EXCUSED']),
+  remarks: z.string().max(255).optional(),
+});
+
 const bulkAttendanceSchema = z.object({
-  classId: z.string().min(1),
-  date: z.string().datetime().optional(),
-  attendance: z.array(z.object({
-    learnerId: z.string().min(1),
-    status: z.enum(['PRESENT', 'ABSENT', 'LATE', 'EXCUSED'])
-  }))
+  classId: z.string().min(1).optional(),
+  date: z.union([
+    z.string().datetime(),
+    z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  ]).optional(),
+  attendanceRecords: z.array(attendanceItemSchema).optional(),
+  attendance: z.array(attendanceItemSchema).optional(),
+}).refine((data) => Array.isArray(data.attendanceRecords) || Array.isArray(data.attendance), {
+  message: 'attendanceRecords (array) is required',
 });
 
 /**
@@ -72,7 +85,7 @@ router.get(
   '/',
   authenticate,
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
-  requirePermission('VIEW_ALL_ATTENDANCE'),
+  requireAnyPermission(['VIEW_ALL_ATTENDANCE', 'VIEW_OWN_ATTENDANCE']),
   asyncHandler(attendanceController.getAttendance.bind(attendanceController))
 );
 
@@ -84,7 +97,7 @@ router.get(
 router.get(
   '/stats',
   authenticate,
-  requirePermission('VIEW_ALL_ATTENDANCE'),
+  requireAnyPermission(['VIEW_ALL_ATTENDANCE', 'VIEW_OWN_ATTENDANCE']),
   asyncHandler(attendanceController.getAttendanceStats.bind(attendanceController))
 );
 
@@ -107,7 +120,7 @@ router.get(
 router.get(
   '/class/daily',
   authenticate,
-  requirePermission('VIEW_ALL_ATTENDANCE'),
+  requireAnyPermission(['VIEW_ALL_ATTENDANCE', 'VIEW_OWN_ATTENDANCE']),
   asyncHandler(attendanceController.getDailyClassAttendance.bind(attendanceController))
 );
 

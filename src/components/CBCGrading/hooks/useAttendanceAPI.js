@@ -5,6 +5,8 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import api from '../../../services/api';
+import { useSchoolData } from '../../../contexts/SchoolDataContext';
+import { useAuth } from '../../../hooks/useAuth';
 
 export const useAttendance = () => {
   const [attendanceRecords, setAttendanceRecords] = useState([]);
@@ -14,37 +16,39 @@ export const useAttendance = () => {
   const [selectedClass, setSelectedClass] = useState('');
   const [classes, setClasses] = useState([]);
   const [grades, setGrades] = useState([]);
+  const { classes: contextClasses, grades: contextGrades, loading: schoolDataLoading } = useSchoolData();
+  const { user } = useAuth();
+
+  const isTeacher = user?.role === 'TEACHER';
+  const currentUserId = user?.id || user?.userId;
 
   /**
-   * Fetch all classes and grades on mount
+   * Sync context classes and grades
    */
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [classesRes, gradesRes] = await Promise.all([
-          api.classes.getAll({ active: 'true' }),
-          api.getGrades ? api.getGrades() : Promise.resolve({ success: false })
-        ]);
+    if (!schoolDataLoading) {
+      const resolvedClasses = isTeacher
+        ? (contextClasses || []).filter((classItem) => {
+          const assignedTeacherId = classItem?.teacherId || classItem?.teacher?.id;
+          return assignedTeacherId && currentUserId && assignedTeacherId === currentUserId;
+        })
+        : (contextClasses || []);
 
-        if (classesRes.success) {
-          setClasses(classesRes.data);
-        }
+      const resolvedGrades = isTeacher
+        ? [...new Set(resolvedClasses.map((classItem) => classItem.grade).filter(Boolean))]
+        : (contextGrades || []);
 
-        if (gradesRes.success) {
-          setGrades(gradesRes.data);
-        } else {
-          // Fallback grades if API fails
-          setGrades(['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9']);
+      setClasses(resolvedClasses);
+      setGrades(resolvedGrades);
+
+      if (isTeacher) {
+        const selectedClassExists = resolvedClasses.some((classItem) => classItem.id === selectedClass);
+        if (!selectedClassExists) {
+          setSelectedClass(resolvedClasses[0]?.id || '');
         }
-      } catch (err) {
-        console.error('Error fetching attendance initial data:', err);
-      } finally {
-        setLoading(false);
       }
-    };
-    fetchData();
-  }, []);
+    }
+  }, [contextClasses, contextGrades, schoolDataLoading, isTeacher, currentUserId, selectedClass]);
 
   /**
    * Fetch attendance records

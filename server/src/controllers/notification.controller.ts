@@ -537,6 +537,7 @@ export class NotificationController {
    */
   async getAuditLogs(req: AuthRequest, res: Response) {
     const {
+      schoolId,
       startDate,
       endDate,
       channel,
@@ -550,79 +551,271 @@ export class NotificationController {
       const skip = (parseInt(page) - 1) * parseInt(limit);
       const take = parseInt(limit);
 
-      const where: any = {};
+      const resolvedSchoolId = (schoolId as string) || req.user?.schoolId;
+      const searchText = (search || '').toString().trim().toLowerCase();
+      const normalizedChannel = channel ? String(channel).toUpperCase() : undefined;
+      const normalizedStatus = status ? String(status).toUpperCase() : undefined;
+      const wantsOnlyBounced = normalizedStatus === 'BOUNCED';
 
-      if (channel) where.channel = channel;
-      if (status) where.smsStatus = status;
-      if (startDate || endDate) {
-        where.sentAt = {};
-        if (startDate) where.sentAt.gte = new Date(startDate);
-        if (endDate) {
-          const end = new Date(endDate);
-          end.setHours(23, 59, 59, 999);
-          where.sentAt.lte = end;
-        }
+      const start = startDate ? new Date(startDate) : undefined;
+      const end = endDate ? new Date(endDate) : undefined;
+      if (end) {
+        end.setHours(23, 59, 59, 999);
       }
 
-      if (search) {
-        where.OR = [
-          { parentPhone: { contains: search, mode: 'insensitive' } },
-          { parentName: { contains: search, mode: 'insensitive' } },
-          { learnerName: { contains: search, mode: 'insensitive' } },
+      const isSuccessfulStatus = (rawStatus: any) => {
+        const value = String(rawStatus || '').toUpperCase();
+        return value === 'SENT' || value === 'DELIVERED' || value === 'READ';
+      };
+
+      const normalizeStatus = (rawStatus: any) => {
+        const value = String(rawStatus || '').toUpperCase();
+        if (value === 'BOUNCED') return 'BOUNCED';
+        if (isSuccessfulStatus(value)) return 'SENT';
+        return 'FAILED';
+      };
+
+      const matchesDate = (dateValue: any) => {
+        const date = dateValue ? new Date(dateValue) : null;
+        if (!date) return false;
+        if (start && date < start) return false;
+        if (end && date > end) return false;
+        return true;
+      };
+
+      const matchesSearch = (values: any[]) => {
+        if (!searchText) return true;
+        return values.some(value => (value || '').toString().toLowerCase().includes(searchText));
+      };
+
+      const auditWhere: any = {};
+      if (resolvedSchoolId) {
+        auditWhere.schoolId = resolvedSchoolId;
+      }
+      if (normalizedChannel) {
+        auditWhere.channel = normalizedChannel;
+      }
+      if (normalizedStatus && normalizedStatus !== 'BOUNCED') {
+        auditWhere.smsStatus = normalizedStatus;
+      }
+      if (start || end) {
+        auditWhere.sentAt = {};
+        if (start) auditWhere.sentAt.gte = start;
+        if (end) auditWhere.sentAt.lte = end;
+      }
+      if (searchText) {
+        auditWhere.OR = [
+          { parentPhone: { contains: searchText, mode: 'insensitive' } },
+          { parentName: { contains: searchText, mode: 'insensitive' } },
+          { learnerName: { contains: searchText, mode: 'insensitive' } },
+          { messageContent: { contains: searchText, mode: 'insensitive' } },
         ];
       }
 
-      // Fetch logs
-      const logs = await prisma.assessmentSmsAudit.findMany({
-        where,
-        include: {
-          learner: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              admissionNumber: true,
-              grade: true,
+      const auditLogs = wantsOnlyBounced
+        ? []
+        : await prisma.assessmentSmsAudit.findMany({
+          where: auditWhere,
+          include: {
+            learner: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                admissionNumber: true,
+                grade: true,
+              }
             }
-          }
+          },
+          orderBy: { sentAt: 'desc' },
+        });
+
+      const broadcastWhere: any = {};
+      if (resolvedSchoolId) {
+        broadcastWhere.campaign = { schoolId: resolvedSchoolId };
+      }
+      if (start || end) {
+        broadcastWhere.sentAt = {};
+        if (start) broadcastWhere.sentAt.gte = start;
+        if (end) broadcastWhere.sentAt.lte = end;
+      }
+      if (searchText) {
+        broadcastWhere.OR = [
+          { recipientPhone: { contains: searchText, mode: 'insensitive' } },
+          { recipientName: { contains: searchText, mode: 'insensitive' } },
+        ];
+      }
+
+      const canUseBroadcast = (!normalizedChannel || normalizedChannel === 'SMS') && !wantsOnlyBounced;
+      const broadcastRecipients = canUseBroadcast
+        ? await (prisma as any).broadcastRecipient.findMany({
+          where: broadcastWhere,
+          include: {
+            campaign: {
+              select: {
+                id: true,
+                senderId: true,
+                messageChannel: true,
+                messagePreview: true,
+                schoolId: true,
+                sentAt: true,
+              }
+            }
+          },
+          orderBy: { sentAt: 'desc' }
+        })
+        : [];
+
+      const deliveryWhere: any = {};
+      if (resolvedSchoolId) {
+        deliveryWhere.campaign = { schoolId: resolvedSchoolId };
+      }
+      if (start || end) {
+        deliveryWhere.sentAt = {};
+        if (start) deliveryWhere.sentAt.gte = start;
+        if (end) deliveryWhere.sentAt.lte = end;
+      }
+      if (searchText) {
+        deliveryWhere.OR = [
+          { recipientPhone: { contains: searchText, mode: 'insensitive' } },
+          { message: { contains: searchText, mode: 'insensitive' } },
+        ];
+      }
+
+      const deliveryLogs = canUseBroadcast
+        ? await (prisma as any).smsDeliveryLog.findMany({
+          where: deliveryWhere,
+          include: {
+            campaign: {
+              select: {
+                id: true,
+                senderId: true,
+                schoolId: true,
+                sentAt: true,
+              }
+            }
+          },
+          orderBy: { sentAt: 'desc' }
+        })
+        : [];
+
+      const normalizedAudit = auditLogs.map((log: any) => ({
+        id: `audit_${log.id}`,
+        createdAt: log.sentAt || log.createdAt,
+        sentAt: log.sentAt || log.createdAt,
+        learner: log.learner,
+        phoneNumber: log.parentPhone,
+        channel: log.channel,
+        status: normalizeStatus(log.smsStatus),
+        sentBy: { firstName: 'System', lastName: '' },
+        term: log.term,
+        source: 'ASSESSMENT_AUDIT',
+        messageContent: log.messageContent,
+      }));
+
+      const normalizedBroadcastRecipients = broadcastRecipients.map((recipient: any) => ({
+        id: `broadcast_${recipient.id}`,
+        createdAt: recipient.sentAt || recipient.createdAt || recipient.campaign?.sentAt,
+        sentAt: recipient.sentAt || recipient.createdAt || recipient.campaign?.sentAt,
+        learner: {
+          firstName: recipient.recipientName || 'Recipient',
+          lastName: '',
+          admissionNumber: null,
+          grade: null,
         },
-        orderBy: { sentAt: 'desc' },
-        skip,
-        take,
+        phoneNumber: recipient.recipientPhone,
+        channel: recipient.campaign?.messageChannel || 'SMS',
+        status: normalizeStatus(recipient.status),
+        sentBy: { firstName: 'System', lastName: '' },
+        term: null,
+        source: 'BROADCAST_RECIPIENT',
+        messageContent: recipient.campaign?.messagePreview,
+      }));
+
+      const normalizedDeliveryLogs = deliveryLogs.map((delivery: any) => ({
+        id: `delivery_${delivery.id}`,
+        createdAt: delivery.sentAt || delivery.createdAt,
+        sentAt: delivery.sentAt || delivery.createdAt,
+        learner: {
+          firstName: 'Recipient',
+          lastName: '',
+          admissionNumber: null,
+          grade: null,
+        },
+        phoneNumber: delivery.recipientPhone,
+        channel: 'SMS',
+        status: normalizeStatus(delivery.status),
+        sentBy: { firstName: 'System', lastName: '' },
+        term: null,
+        source: 'SMS_DELIVERY_LOG',
+        messageContent: delivery.message,
+      }));
+
+      const dedupeMap = new Map<string, any>();
+      for (const entry of [...normalizedAudit, ...normalizedBroadcastRecipients, ...normalizedDeliveryLogs]) {
+        const key = `${entry.phoneNumber || 'unknown'}|${entry.createdAt ? new Date(entry.createdAt).toISOString() : 'no-date'}|${entry.channel || 'unknown'}|${entry.status}`;
+        const existing = dedupeMap.get(key);
+        if (!existing) {
+          dedupeMap.set(key, entry);
+          continue;
+        }
+
+        // Prefer richer records (assessment audit), then broadcast recipient, then delivery log
+        const score = (record: any) => {
+          if (record.source === 'ASSESSMENT_AUDIT') return 3;
+          if (record.source === 'BROADCAST_RECIPIENT') return 2;
+          return 1;
+        };
+
+        if (score(entry) > score(existing)) {
+          dedupeMap.set(key, entry);
+        }
+      }
+
+      let allLogs = Array.from(dedupeMap.values());
+
+      allLogs = allLogs.filter((entry: any) => {
+        if (normalizedChannel && String(entry.channel || '').toUpperCase() !== normalizedChannel) {
+          return false;
+        }
+        if (normalizedStatus && String(entry.status || '').toUpperCase() !== normalizedStatus) {
+          return false;
+        }
+        if (!matchesDate(entry.createdAt)) {
+          return false;
+        }
+        return matchesSearch([
+          entry.phoneNumber,
+          entry.messageContent,
+          entry.learner?.firstName,
+          entry.learner?.lastName,
+          entry.sentBy?.firstName,
+          entry.sentBy?.lastName,
+        ]);
       });
 
-      const total = await prisma.assessmentSmsAudit.count({ where });
-
-      // Fetch summary statistics
-      const totalSent = await prisma.assessmentSmsAudit.count({});
-
-      const successfulSent = await prisma.assessmentSmsAudit.count({
-        where: { smsStatus: 'SENT' }
+      allLogs.sort((a: any, b: any) => {
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
 
-      const failedSent = await prisma.assessmentSmsAudit.count({
-        where: { smsStatus: 'FAILED' }
-      });
-
-      // Calculate success rate
-      const successRate = totalSent > 0 ? Math.round((successfulSent / totalSent) * 100) : 0;
+      const total = allLogs.length;
+      const paginatedLogs = allLogs.slice(skip, skip + take);
+      const successfulSent = allLogs.filter(log => log.status === 'SENT').length;
+      const failedSent = allLogs.filter(log => log.status === 'FAILED' || log.status === 'BOUNCED').length;
+      const bouncedSent = allLogs.filter(log => log.status === 'BOUNCED').length;
+      const successRate = total > 0 ? Math.round((successfulSent / total) * 100) : 0;
 
       res.json({
         success: true,
         data: {
-          logs: logs.map(log => ({
-            ...log,
-            phoneNumber: log.parentPhone,
-            status: log.smsStatus,
-            // Mock sentBy for now as relation is missing in schema
-            sentBy: { firstName: 'System', lastName: '' }
-          })),
+          logs: paginatedLogs,
           total,
           summary: {
-            totalSent,
+            totalSent: total,
             successRate,
             failed: failedSent,
-            estimatedCost: 0 // TODO: Calculate based on message parts if needed
+            bounced: bouncedSent,
+            estimatedCost: 0
           }
         }
       });

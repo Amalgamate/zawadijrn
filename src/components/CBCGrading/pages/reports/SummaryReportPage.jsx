@@ -7,22 +7,25 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { FileText } from 'lucide-react';
 import { useAuth } from '../../../../hooks/useAuth';
 import { configAPI } from '../../../../services/api';
+import { useSchoolData } from '../../../../contexts/SchoolDataContext';
 
 const SummaryReportPage = () => {
   const { user } = useAuth();
+  const { grades: fetchedGrades, classes, loading: schoolDataLoading } = useSchoolData();
+
   const [selectedType, setSelectedType] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('');
   const [selectedStream, setSelectedStream] = useState('');
   const [selectedTerm, setSelectedTerm] = useState('');
   const [selectedTest, setSelectedTest] = useState('');
-  
+
   // Staged filter state - only apply when Generate button clicked
   const [stagedType, setStagedType] = useState('');
   const [stagedGrade, setStagedGrade] = useState('');
   const [stagedStream, setStagedStream] = useState('');
   const [stagedTerm, setStagedTerm] = useState('');
   const [stagedTest, setStagedTest] = useState('');
-  
+
   const [availableStreams, setAvailableStreams] = useState([]);
 
   // Apply filters when button clicked
@@ -59,26 +62,22 @@ const SummaryReportPage = () => {
     { value: 'grade-analysis-report', label: 'Grade Analysis Report' }
   ];
 
-  const grades = [
-    { value: 'PLAYGROUP', label: 'Playgroup' },
-    { value: 'PP1', label: 'PP1' },
-    { value: 'PP2', label: 'PP2' },
-    { value: 'GRADE_1', label: 'Grade 1' },
-    { value: 'GRADE_2', label: 'Grade 2' },
-    { value: 'GRADE_3', label: 'Grade 3' },
-    { value: 'GRADE_4', label: 'Grade 4' },
-    { value: 'GRADE_5', label: 'Grade 5' },
-    { value: 'GRADE_6', label: 'Grade 6' },
-    { value: 'GRADE_7', label: 'Grade 7' },
-    { value: 'GRADE_8', label: 'Grade 8' },
-    { value: 'GRADE_9', label: 'Grade 9' }
-  ];
+  const gradesOptions = fetchedGrades.map(g => ({
+    value: g,
+    label: g.replace(/_/g, ' ')
+  }));
 
-  const terms = [
-    { value: 'TERM_1', label: 'Term 1' },
-    { value: 'TERM_2', label: 'Term 2' },
-    { value: 'TERM_3', label: 'Term 3' }
-  ];
+  const termsMap = new Set();
+  classes.forEach(c => c.term && termsMap.add(c.term));
+  const uniqueTerms = Array.from(termsMap).sort();
+
+  const termsOptions = uniqueTerms.length > 0
+    ? uniqueTerms.map(t => ({ value: t, label: t.replace(/_/g, ' ') }))
+    : [
+      { value: 'TERM_1', label: 'Term 1' },
+      { value: 'TERM_2', label: 'Term 2' },
+      { value: 'TERM_3', label: 'Term 3' }
+    ];
 
   const tests = [
     { value: 'mid-term', label: 'Mid-Term Test' },
@@ -123,7 +122,7 @@ const SummaryReportPage = () => {
               title="Select Grade"
             >
               <option value="">Grade</option>
-              {grades.map(grade => (
+              {gradesOptions.map(grade => (
                 <option key={grade.value} value={grade.value}>
                   {grade.label}
                 </option>
@@ -153,7 +152,7 @@ const SummaryReportPage = () => {
               title="Select Term"
             >
               <option value="">Term</option>
-              {terms.map(term => (
+              {termsOptions.map(term => (
                 <option key={term.value} value={term.value}>
                   {term.label}
                 </option>
@@ -197,9 +196,9 @@ const SummaryReportPage = () => {
               <p className="text-gray-600">
                 <strong>Report Type:</strong> {reportTypes.find(t => t.value === selectedType)?.label}
               </p>
-              {selectedGrade && <p className="text-gray-600"><strong>Grade:</strong> {grades.find(g => g.value === selectedGrade)?.label}</p>}
+              {selectedGrade && <p className="text-gray-600"><strong>Grade:</strong> {gradesOptions.find(g => g.value === selectedGrade)?.label || selectedGrade}</p>}
               {selectedStream && <p className="text-gray-600"><strong>Stream:</strong> {selectedStream}</p>}
-              {selectedTerm && <p className="text-gray-600"><strong>Term:</strong> {terms.find(t => t.value === selectedTerm)?.label}</p>}
+              {selectedTerm && <p className="text-gray-600"><strong>Term:</strong> {termsOptions.find(t => t.value === selectedTerm)?.label || selectedTerm}</p>}
               {selectedTest && <p className="text-gray-600"><strong>Test:</strong> {tests.find(t => t.value === selectedTest)?.label}</p>}
               <p className="text-sm text-gray-500 mt-4">Report would be generated with the selected filters...</p>
             </div>

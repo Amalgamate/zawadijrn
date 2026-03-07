@@ -12,12 +12,13 @@ import { configAPI, authAPI, schoolAPI, userAPI, default as api } from '../../..
 import academicYearConfig from '../../utils/academicYear';
 import { toInputDate } from '../../utils/dateHelpers';
 import { gradeStructure } from '../../data/gradeStructure';
-import { LEARNING_AREA_GRADES, getGradeLabel } from '../../../../constants/grades';
+import { useSchoolData } from '../../../../contexts/SchoolDataContext';
 import HierarchicalLearningAreas from './HierarchicalLearningAreas';
 import SubjectAllocationPage from './SubjectAllocationPage';
 import Toast from '../../shared/Toast';
 
 const AcademicSettings = () => {
+  const { grades: dynamicGrades } = useSchoolData();
   const {
     showSuccess,
     showError,
@@ -270,7 +271,7 @@ const AcademicSettings = () => {
   const [formData, setFormData] = useState({
     name: '',
     shortName: '',
-    gradeLevel: 'GRADE_1',
+    gradeLevel: dynamicGrades.length > 0 ? dynamicGrades[0] : 'GRADE_1',
     color: '#3b82f6',
     icon: '📚',
     description: ''
@@ -553,7 +554,7 @@ const AcademicSettings = () => {
 
       setShowAddModal(false);
       setEditingArea(null);
-      setFormData({ name: '', shortName: '', gradeLevel: 'GRADE_1', color: '#3b82f6', icon: '📚', description: '' });
+      setFormData({ name: '', shortName: '', gradeLevel: dynamicGrades.length > 0 ? dynamicGrades[0] : 'GRADE_1', color: '#3b82f6', icon: '📚', description: '' });
       await loadLearningAreas();
     } catch (error) {
       console.error('Error saving learning area:', error);
@@ -648,7 +649,7 @@ const AcademicSettings = () => {
       setFormData({
         name: area.name || '',
         shortName: area.shortName || '',
-        gradeLevel: area.gradeLevel || 'GRADE_1',
+        gradeLevel: area.gradeLevel || (dynamicGrades.length > 0 ? dynamicGrades[0] : 'GRADE_1'),
         color: area.color || '#3b82f6',
         icon: area.icon || '📚',
         description: area.description || ''
@@ -658,7 +659,7 @@ const AcademicSettings = () => {
       setFormData({
         name: '',
         shortName: '',
-        gradeLevel: 'GRADE_1',
+        gradeLevel: dynamicGrades.length > 0 ? dynamicGrades[0] : 'GRADE_1',
         color: '#3b82f6',
         icon: '📚',
         description: ''
@@ -1365,7 +1366,7 @@ const AcademicSettings = () => {
                 onClick={() => {
                   setShowAddModal(false);
                   setEditingArea(null);
-                  setFormData({ name: '', shortName: '', gradeLevel: 'GRADE_1', color: '#3b82f6', icon: '📚', description: '' });
+                  setFormData({ name: '', shortName: '', gradeLevel: dynamicGrades.length > 0 ? dynamicGrades[0] : 'GRADE_1', color: '#3b82f6', icon: '📚', description: '' });
                 }}
                 className="p-2 hover:bg-gray-200 rounded-lg transition"
               >
@@ -1405,8 +1406,8 @@ const AcademicSettings = () => {
                     onChange={(e) => setFormData({ ...formData, gradeLevel: e.target.value })}
                     className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition"
                   >
-                    {LEARNING_AREA_GRADES.map((grade) => (
-                      <option key={grade.value} value={grade.value}>{grade.label}</option>
+                    {dynamicGrades.map((grade) => (
+                      <option key={grade} value={grade}>{grade.replace(/_/g, ' ')}</option>
                     ))}
                   </select>
                 </div>
@@ -1465,7 +1466,7 @@ const AcademicSettings = () => {
                   <div className="flex-1">
                     <h4 className="font-bold text-gray-900 leading-tight">{formData.name || 'Subject Name'}</h4>
                     <p className="text-xs text-gray-500 font-medium">
-                      <span className="text-blue-600">{formData.shortName || 'CODE'}</span> • {getGradeLabel(formData.gradeLevel)}
+                      <span className="text-blue-600">{formData.shortName || 'CODE'}</span> • {formData.gradeLevel?.replace(/_/g, ' ')}
                     </p>
                   </div>
                 </div>
@@ -1477,7 +1478,7 @@ const AcademicSettings = () => {
                   onClick={() => {
                     setShowAddModal(false);
                     setEditingArea(null);
-                    setFormData({ name: '', shortName: '', gradeLevel: 'GRADE_1', color: '#3b82f6', icon: '📚', description: '' });
+                    setFormData({ name: '', shortName: '', gradeLevel: dynamicGrades.length > 0 ? dynamicGrades[0] : 'GRADE_1', color: '#3b82f6', icon: '📚', description: '' });
                   }}
                   className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition"
                 >

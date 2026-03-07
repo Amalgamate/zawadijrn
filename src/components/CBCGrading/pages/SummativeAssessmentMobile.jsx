@@ -17,6 +17,8 @@ import { useTeacherWorkload } from '../hooks/useTeacherWorkload';
 import { useAssessmentSetup } from '../hooks/useAssessmentSetup';
 import { useLearningAreas } from '../hooks/useLearningAreas';
 import EmptyState from '../shared/EmptyState';
+import { useSchoolData } from '../../../contexts/SchoolDataContext';
+import { getLearningAreasByGrade } from '../../../constants/learningAreas';
 
 const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSettings }) => {
   const { showSuccess, showError } = useNotifications();
@@ -35,7 +37,7 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
   const [savedMarks, setSavedMarks] = useState(new Set()); // Track which marks have been saved
   const [fetchedLearners, setFetchedLearners] = useState([]);
   const [loadingLearners, setLoadingLearners] = useState(false);
-  const [availableGrades, setAvailableGrades] = useState([]);
+  const { grades: availableGrades, classes, loading: schoolDataLoading } = useSchoolData();
   const [availableTerms, setAvailableTerms] = useState([]);
   const [selectedLearningArea, setSelectedLearningArea] = useState('');
 
@@ -54,9 +56,9 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
         const status = (t.status || '').toUpperCase();
         return ['PUBLISHED', 'APPROVED'].includes(status) || t.published === true;
       });
-      
+
       // Debug: Log all test learning areas
-      console.log('📋 All Tests by Grade:', 
+      console.log('📋 All Tests by Grade:',
         activeTests.reduce((acc, t) => {
           const gradeKey = t.grade || 'UNKNOWN';
           if (!acc[gradeKey]) acc[gradeKey] = [];
@@ -64,7 +66,7 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
           return acc;
         }, {})
       );
-      
+
       setTests(activeTests);
     } catch (error) {
       console.error('Error loading tests:', error);
@@ -74,20 +76,15 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
     }
   }, [showError]);
 
-  // Load Options (grades from classes + API)
-  const loadOptions = useCallback(async () => {
-    try {
-      const classesResp = await classAPI.getAll();
-      const classesData = classesResp?.data?.data || classesResp?.data || classesResp || [];
-      const uniqueGrades = [...new Set(classesData.map(c => c.grade))].filter(Boolean).sort();
-      setAvailableGrades(uniqueGrades.length > 0 ? uniqueGrades : ['GRADE_1', 'GRADE_2', 'GRADE_3', 'GRADE_4', 'GRADE_5']);
+  // Load Terms (from context classes)
+  const loadOptions = useCallback(() => {
+    if (!schoolDataLoading && classes?.length > 0) {
+      const uniqueTerms = [...new Set(classes.map(c => c.term))].filter(Boolean).sort();
+      setAvailableTerms(uniqueTerms.length > 0 ? uniqueTerms : ['TERM_1', 'TERM_2', 'TERM_3']);
+    } else if (!schoolDataLoading) {
       setAvailableTerms(['TERM_1', 'TERM_2', 'TERM_3']);
-    } catch (error) {
-      console.error('Error loading options:', error);
-      setAvailableTerms(['TERM_1', 'TERM_2', 'TERM_3']);
-      setAvailableGrades(['GRADE_1', 'GRADE_2', 'GRADE_3', 'GRADE_4', 'GRADE_5']);
     }
-  }, []);
+  }, [classes, schoolDataLoading]);
 
   useEffect(() => {
     fetchTests();
@@ -120,7 +117,7 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
     filteredTestsBySelection.forEach(t => {
       // Try to get learning area from field first
       let area = t.learningArea;
-      
+
       // If not available, try to extract from title (e.g., "Test Title (Learning Area)")
       if (!area && t.title) {
         const match = t.title.match(/\((.*?)\)$/);
@@ -128,9 +125,16 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
           area = match[1].trim();
         }
       }
-      
+
       if (area) areas.add(area);
     });
+
+    // Unified source: include canonical learning areas by selected grade
+    if (setup.selectedGrade) {
+      const officialAreas = getLearningAreasByGrade(setup.selectedGrade);
+      officialAreas.forEach((area) => areas.add(area));
+    }
+
     const result = Array.from(areas).sort();
     console.log(`🎓 Learning Areas for Grade ${setup.selectedGrade}:`, result);
     return result;
@@ -139,7 +143,7 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
   // Show ALL available learning areas (not filtered by teacher workload)
   // Teachers can grade any subject, not just assigned ones
   const filteredLearningAreasByWorkload = availableLearningAreas;
-  
+
   // Log available subjects for debugging
   useEffect(() => {
     console.log(`📋 Available Subjects for Grade ${setup.selectedGrade}:`, filteredLearningAreasByWorkload);
@@ -162,11 +166,11 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
           area = match[1].trim();
         }
       }
-      
+
       const testArea = normalize(area);
       return testArea === normalizedSelected;
     });
-    
+
     const testList = filteredTestsBySelection.map(t => {
       let area = t.learningArea;
       if (!area && t.title) {
@@ -182,19 +186,28 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
         matches: normalize(area) === normalizedSelected
       };
     });
-    
+
     console.log(`🧪 Filter Tests by Area: "${selectedLearningArea}" (normalized: "${normalizedSelected}")`);
     console.log('   Tests:', testList);
     console.log(`   Matched ${results.length} tests`);
-    
+
     return results;
   }, [filteredTestsBySelection, selectedLearningArea]);
 
   // Filter grades by teacher's assigned grades
   const filteredGrades = useMemo(() => {
-    if (!teacherWorkload.isTeacher) return availableGrades;
-    return availableGrades.filter(g => teacherWorkload.assignedGrades.includes(g));
-  }, [availableGrades, teacherWorkload.isTeacher, teacherWorkload.assignedGrades]);
+    const gradesFromTests = [...new Set(
+      tests
+        .map((test) => String(test?.grade || '').trim())
+        .filter(Boolean)
+        .map((grade) => grade.replace(/\s+/g, '_').toUpperCase())
+    )];
+
+    const mergedGrades = [...new Set([...(availableGrades || []), ...gradesFromTests])];
+
+    if (!teacherWorkload.isTeacher) return mergedGrades;
+    return mergedGrades.filter(g => teacherWorkload.assignedGrades.includes(g));
+  }, [availableGrades, tests, teacherWorkload.isTeacher, teacherWorkload.assignedGrades]);
 
   // ===== AUTO-SELECTION FOR TEACHERS =====
 
@@ -228,7 +241,7 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
   useEffect(() => {
     if (selectedTest) {
       let testArea = selectedTest.learningArea;
-      
+
       // Fallback: extract from title if not in field
       if (!testArea && selectedTest.title) {
         const match = selectedTest.title.match(/\((.*?)\)$/);
@@ -236,7 +249,7 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
           testArea = match[1].trim();
         }
       }
-      
+
       if (testArea && testArea !== selectedLearningArea) {
         console.log(`📝 Updated learning area to match test: "${testArea}"`);
         setSelectedLearningArea(testArea);
@@ -247,28 +260,28 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
   // Load existing marks from database when entering step 2
   const loadExistingMarks = useCallback(async () => {
     if (!selectedTest?.id) return;
-    
+
     // Clear previous marks first when loading for a new test
     setMarks({});
     setSavedMarks(new Set());
-    
+
     try {
       console.log(`📥 Loading existing marks for test ${selectedTest.id}...`);
       const response = await assessmentAPI.getTestResults(selectedTest.id);
       console.log('📤 Test Results Response:', response);
-      
+
       const results = response?.data || response || [];
-      
+
       if (Array.isArray(results) && results.length > 0) {
         // Load marks into state
         const loadedMarks = {};
         const savedLearnerIds = new Set();
-        
+
         results.forEach(result => {
           loadedMarks[result.learnerId] = result.marksObtained;
           savedLearnerIds.add(result.learnerId);
         });
-        
+
         setMarks(loadedMarks);
         setSavedMarks(savedLearnerIds);
         console.log(`✅ Loaded ${results.length} existing marks for this test`);
@@ -394,7 +407,7 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
 
       // Check if response indicates success (API may return different formats)
       const isSuccess = response && (response.success === true || response.data || response.message === 'saved' || !response.error);
-      
+
       if (isSuccess) {
         // Mark these learners as saved
         const newSavedMarks = new Set(savedMarks);
@@ -403,7 +416,7 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
 
         showSuccess(`✅ ${resultsToSave.length} mark(s) saved successfully!`);
         console.log(`✅ Successfully saved ${resultsToSave.length} marks`);
-        
+
         // Don't clear marks - keep them visible with checkmarks
         // User can continue entering more marks or navigate back voluntarily
       } else {
@@ -425,7 +438,7 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
     // Clear marks when going back to start fresh
     setMarks({});
     setSavedMarks(new Set());
-    
+
     // This will trigger a page navigation back to dashboard in the parent system
     if (onBack) {
       onBack();
@@ -543,11 +556,10 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
                   <button
                     key={test.id}
                     onClick={() => setSelectedTestId(test.id)}
-                    className={`w-full p-3 rounded-xl border-2 transition-all text-left ${
-                      selectedTestId === test.id
+                    className={`w-full p-3 rounded-xl border-2 transition-all text-left ${selectedTestId === test.id
                         ? 'border-brand-teal bg-brand-teal/5'
                         : 'border-slate-200 hover:border-slate-300'
-                    }`}
+                      }`}
                   >
                     <p className="font-bold text-sm">{test.title}</p>
                     <p className="text-xs text-slate-500">{test.totalMarks} marks</p>
@@ -667,7 +679,7 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
               <AlertCircle size={40} className="text-slate-300 mb-3" />
               <p className="text-base font-bold text-slate-700">No Learners Found</p>
               <p className="text-sm text-slate-500 text-center mt-2">
-                {fetchedLearners.length === 0 
+                {fetchedLearners.length === 0
                   ? 'No learners in this class. Check your class assignment.'
                   : 'No results match your search.'}
               </p>
@@ -682,13 +694,12 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
               return (
                 <div
                   key={learnerId}
-                  className={`bg-white rounded-xl p-4 border-2 transition-all transform ${
-                    isSaved
+                  className={`bg-white rounded-xl p-4 border-2 transition-all transform ${isSaved
                       ? 'border-green-400 bg-green-50/30 shadow-sm'
                       : isMarked
-                      ? 'border-brand-teal bg-brand-teal/3 shadow-sm'
-                      : 'border-slate-200 shadow-xs hover:shadow-sm'
-                  }`}
+                        ? 'border-brand-teal bg-brand-teal/3 shadow-sm'
+                        : 'border-slate-200 shadow-xs hover:shadow-sm'
+                    }`}
                 >
                   {/* Learner Info */}
                   <div className="flex items-center justify-between mb-3">
@@ -726,13 +737,12 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
                     value={marks[learnerId] ?? ''}
                     onChange={(e) => handleMarkChange(learnerId, e.target.value)}
                     disabled={isSaved}
-                    className={`w-full px-4 py-3 text-center text-lg font-bold border-2 rounded-xl focus:outline-none transition-colors ${
-                      isSaved
+                    className={`w-full px-4 py-3 text-center text-lg font-bold border-2 rounded-xl focus:outline-none transition-colors ${isSaved
                         ? 'border-green-400 bg-green-100/50 text-green-700 cursor-not-allowed opacity-75'
                         : isMarked
-                        ? 'border-brand-teal bg-white text-brand-teal'
-                        : 'border-slate-300 bg-slate-50 text-slate-900 focus:bg-white focus:border-brand-teal'
-                    }`}
+                          ? 'border-brand-teal bg-white text-brand-teal'
+                          : 'border-slate-300 bg-slate-50 text-slate-900 focus:bg-white focus:border-brand-teal'
+                      }`}
                     max={selectedTest?.totalMarks || 100}
                     autoComplete="off"
                   />
@@ -752,18 +762,17 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
                   const isSaved = savedMarks.has(learnerId);
                   return !isSaved && mark !== null && mark !== undefined && mark !== '';
                 }).length;
-              
+
               return (
                 <>
                   {/* Main Save Button */}
                   <button
                     onClick={handleSaveMarks}
                     disabled={saving || unsavedCount === 0}
-                    className={`w-full py-4 font-black rounded-xl transition-all flex items-center justify-center gap-2 text-white text-sm ${
-                      unsavedCount === 0
+                    className={`w-full py-4 font-black rounded-xl transition-all flex items-center justify-center gap-2 text-white text-sm ${unsavedCount === 0
                         ? 'bg-gray-400 cursor-not-allowed opacity-50'
                         : 'bg-gradient-to-r from-brand-teal to-teal-500 hover:shadow-lg active:scale-95'
-                    }`}
+                      }`}
                   >
                     {saving ? (
                       <>

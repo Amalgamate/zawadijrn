@@ -68,14 +68,11 @@ export const reportController = {
       const summary = calculateFormativeSummary(assessments);
 
       // Get class teacher comment
-      const teacherComment = await prisma.termlyReportComment.findUnique({
+      const teacherComment = await prisma.termlyReportComment.findFirst({
         where: {
-          schoolId_learnerId_term_academicYear: {
-            schoolId: req.user?.schoolId || '',
-            learnerId,
-            term: term as Term,
-            academicYear: parseInt(academicYear as string)
-          }
+          learnerId,
+          term: term as Term,
+          academicYear: parseInt(academicYear as string)
         }
       });
 
@@ -311,17 +308,18 @@ export const reportController = {
    */
   generatePdf: async (req: AuthRequest, res: Response) => {
     try {
-      const { html, fileName, options } = req.body;
+      const { html, fileName, filename, options } = req.body;
 
       if (!html) {
         throw new ApiError(400, 'HTML content is required');
       }
 
       const pdfBuffer = await pdfService.generatePdf(html, options);
+      const outputName = fileName || filename || 'report.pdf';
 
       // Set headers for PDF download
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename=${fileName || 'report.pdf'}`);
+      res.setHeader('Content-Disposition', `attachment; filename=${outputName}`);
       res.setHeader('Content-Length', pdfBuffer.length);
 
       // Send the buffer directly

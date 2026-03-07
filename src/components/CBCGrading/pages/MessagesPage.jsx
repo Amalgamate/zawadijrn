@@ -5,6 +5,7 @@ import { useNotifications } from '../hooks/useNotifications';
 import api from '../../../services/api';
 import { formatPhoneNumber, isValidPhoneNumber, getDisplayPhoneNumber } from '../../../utils/phoneFormatter';
 import BroadcastMessagesPage from './BroadcastMessagesPage';
+import { useSchoolData } from '../../../contexts/SchoolDataContext';
 
 const MessagesPage = () => {
   // Debug logging
@@ -39,17 +40,17 @@ const MessagesPage = () => {
   const [sending, setSending] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0, success: 0, failed: 0 });
   const [deliveryReport, setDeliveryReport] = useState([]);
-  
+
   // Test Parent State
   const [showTestMode, setShowTestMode] = useState(false);
   const [testPhoneNumber, setTestPhoneNumber] = useState('');
   const [isSendingTest, setIsSendingTest] = useState(false);
   const [testResult, setTestResult] = useState(null);
-  
+
   // Message Template State
   const [messageTemplate, setMessageTemplate] = useState('');
   const [templateVariables, setTemplateVariables] = useState({}); // {parentName: 'John', etc}
-  
+
   // Preview State
   const [showPreview, setShowPreview] = useState(false);
 
@@ -97,44 +98,14 @@ const MessagesPage = () => {
     }
   }, [selectedGrade, showError]);
 
+  const { grades: fetchedGrades } = useSchoolData();
+
   // Fetch active grades on mount
   useEffect(() => {
-    const fetchGrades = async () => {
-      try {
-        const response = await api.learners.getAll({ limit: 5000 });
-        if (response.success && Array.isArray(response.data)) {
-          const learners = response.data;
-          // Extract unique grades
-          const grades = [...new Set(learners.map(l => l.grade))].filter(Boolean);
-
-          // Sort grades logically
-          const gradeOrder = [
-            'CRECHE', 'RECEPTION', 'TRANSITION', 'PLAYGROUP', 'PP1', 'PP2',
-            'GRADE_1', 'GRADE_2', 'GRADE_3', 'GRADE_4', 'GRADE_5', 'GRADE_6',
-            'GRADE_7', 'GRADE_8', 'GRADE_9', 'GRADE_10', 'GRADE_11', 'GRADE_12'
-          ];
-
-          const sortedGrades = grades.sort((a, b) => {
-            const indexA = gradeOrder.indexOf(a.toUpperCase());
-            const indexB = gradeOrder.indexOf(b.toUpperCase());
-            // If both found in order list
-            if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-            // If only one found, prioritize known ones
-            if (indexA !== -1) return -1;
-            if (indexB !== -1) return 1;
-            // Fallback for unknown
-            return a.localeCompare(b);
-          });
-
-          setActiveGrades(sortedGrades);
-        }
-      } catch (err) {
-        console.error('Failed to fetch grades', err);
-      }
-    };
-
-    fetchGrades();
-  }, []);
+    if (fetchedGrades && fetchedGrades.length > 0) {
+      setActiveGrades(fetchedGrades);
+    }
+  }, [fetchedGrades]);
 
   // Fetch recipients when grade changes
   useEffect(() => {
@@ -150,7 +121,7 @@ const MessagesPage = () => {
       newSelected.add(recipientId);
     }
     setSelectedRecipientIds(newSelected);
-    
+
     // Update recipients array with selected items
     const selected = allRecipients.filter(r => newSelected.has(r.id));
     setRecipients(selected);
@@ -204,13 +175,13 @@ const MessagesPage = () => {
 
     try {
       const formattedPhone = formatPhoneNumber(testPhoneNumber);
-      
+
       // Get school ID from multiple sources
       let schoolId = localStorage.getItem('currentSchoolId');
       if (!schoolId) {
         schoolId = sessionStorage.getItem('currentSchoolId');
       }
-      
+
       console.log('📞 Formatted phone:', formattedPhone);
       console.log('🏫 School ID:', schoolId);
 
@@ -256,7 +227,7 @@ const MessagesPage = () => {
       });
 
       const errorMessage = error.response?.data?.error || error.message || 'Failed to send test message';
-      
+
       setTestResult({
         success: false,
         message: `✗ Failed: ${errorMessage}`,
@@ -716,12 +687,12 @@ const MessagesPage = () => {
           )}
 
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => {
                 setShowCompose(false);
                 resetComposeState();
-              }} 
+              }}
               disabled={isSendingCompose}
             >
               Cancel
@@ -729,8 +700,8 @@ const MessagesPage = () => {
             <Button
               onClick={handleSendDirectMessage}
               disabled={
-                isSendingCompose || 
-                !composeMessage.trim() || 
+                isSendingCompose ||
+                !composeMessage.trim() ||
                 (composeInputMode === 'single' && !composePhone) ||
                 (composeInputMode === 'bulk' && composePhones.length === 0)
               }
@@ -741,9 +712,8 @@ const MessagesPage = () => {
               ) : (
                 <Send size={18} />
               )}
-              {isSendingCompose ? 'Sending...' : `Send to ${
-                composeInputMode === 'single' ? '1' : composePhones.length || '0'
-              }`}
+              {isSendingCompose ? 'Sending...' : `Send to ${composeInputMode === 'single' ? '1' : composePhones.length || '0'
+                }`}
             </Button>
           </DialogFooter>
         </DialogContent>

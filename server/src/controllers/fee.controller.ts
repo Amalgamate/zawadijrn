@@ -11,6 +11,7 @@ import { AuthRequest } from '../middleware/permissions.middleware';
 import { SmsService } from '../services/sms.service';
 import { whatsappService } from '../services/whatsapp.service';
 import { accountingService } from '../services/accounting.service';
+import { EmailService } from '../services/email.service';
 
 export class FeeController {
   /**
@@ -622,6 +623,100 @@ export class FeeController {
     });
 
     res.json({ success: true, message: `Reminder process started for ${invoices.length} invoices.` });
+  }
+
+  /**
+   * Export invoices to CSV
+   */
+  async exportInvoices(req: AuthRequest, res: Response) {
+    const { status, term, academicYear, grade, learnerId } = req.query;
+    const where: any = {};
+
+    if (status) where.status = status;
+    if (term) where.term = term;
+    if (academicYear) where.academicYear = parseInt(academicYear as string);
+    if (learnerId) where.learnerId = learnerId;
+    if (grade) where.learner = { grade };
+
+    const invoices = await prisma.feeInvoice.findMany({
+      where,
+      include: {
+        learner: {
+          select: {
+            firstName: true,
+            lastName: true,
+            admissionNumber: true,
+            grade: true,
+            stream: true,
+          }
+        },
+        feeStructure: { select: { name: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    const headers = ['Invoice Number', 'Student Name', 'Admission No', 'Grade', 'Stream', 'Fee Structure', 'Total Amount', 'Paid Amount', 'Balance', 'Status', 'Due Date'];
+    const rows = invoices.map((inv: any) => [
+      inv.invoiceNumber,
+      `${inv.learner?.firstName || ''} ${inv.learner?.lastName || ''}`,
+      inv.learner?.admissionNumber || '',
+      inv.learner?.grade || 'N/A',
+      inv.learner?.stream || 'N/A',
+      inv.feeStructure?.name || 'N/A',
+      inv.totalAmount,
+      inv.paidAmount,
+      inv.balance,
+      inv.status,
+      inv.dueDate ? new Date(inv.dueDate).toISOString().split('T')[0] : ''
+    ].map(field => `"${String(field).replace(/"/g, '""')}"`).join(','));
+
+    const csvStr = [headers.join(','), ...rows].join('\n');
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=fee_invoices_report.csv');
+    res.send(csvStr);
+  }
+
+  /**
+   * Email fee statement
+   */
+  async emailStatement(req: AuthRequest, res: Response) {
+    const { learnerId } = req.params;
+    const { pdfBase64 } = req.body;
+
+    if (!pdfBase64) {
+      throw new ApiError(400, 'PDF document is required');
+    }
+
+    const learner = await prisma.learner.findUnique({
+      where: { id: learnerId },
+      include: {
+        school: true,
+        parent: true
+      }
+    });
+
+    if (!learner) throw new ApiError(404, 'Learner not found');
+
+    // Get parent email
+    const contactEmail = learner.guardianEmail || learner.parent?.email || (learner as any).email;
+    if (!contactEmail) {
+      throw new ApiError(400, 'Student has no linked email address to send the statement to');
+    }
+
+    // Convert base64 to buffer
+    const base64Data = pdfBase64.replace(/^data:application\/pdf;base64,/, '');
+    const pdfBuffer = Buffer.from(base64Data, 'base64');
+
+    await EmailService.sendFeeStatementEmail({
+      to: contactEmail,
+      schoolName: learner.school?.name || 'School',
+      parentName: learner.guardianName || learner.parent?.firstName || 'Parent/Guardian',
+      learnerName: `${learner.firstName} ${learner.lastName}`,
+      pdfBuffer
+    });
+
+    res.json({ success: true, message: 'Statement emailed successfully' });
   }
 }
 

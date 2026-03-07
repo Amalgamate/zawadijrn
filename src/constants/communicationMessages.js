@@ -15,9 +15,11 @@ export const COMMUNICATION_DEFAULTS = {
 
   // SMS Defaults
   sms: {
-    provider: 'mobilesasa',
-    baseUrl: 'https://api.mobilesasa.com',
-    senderId: process.env.REACT_APP_SMS_SENDER_ID || 'MOBILESASA',
+    provider: 'africastalking',
+    baseUrl: 'https://api.africastalking.com/version1/messaging',
+    apiKey: process.env.REACT_APP_SMS_API_KEY || 'atsk_a84afb54bb77f8fe05bf8aab8846332b6b42678aa592f2ec016a8a659b3b79f8b6b89248',
+    username: process.env.REACT_APP_SMS_USERNAME || 'zawadijnr',
+    senderId: process.env.REACT_APP_SMS_SENDER_ID || 'ZAWADI_JR',
     enabled: false
   },
 

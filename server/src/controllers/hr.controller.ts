@@ -4,6 +4,47 @@ import { hrService } from '../services/hr.service';
 import { ApiError } from '../utils/error.util';
 
 export class HRController {
+    async clockIn(req: AuthRequest, res: Response) {
+        try {
+            const userId = req.user?.userId;
+            const schoolId = req.user?.schoolId;
+            if (!userId) throw new ApiError(401, 'Unauthorized');
+
+            const result = await hrService.clockInStaff(userId, schoolId, req.body || {});
+            res.status(201).json({ success: true, message: 'Clock-in recorded', data: result });
+        } catch (error: any) {
+            res.status(error.statusCode || 500).json({ success: false, message: error.message });
+        }
+    }
+
+    async getTodayClockIn(req: AuthRequest, res: Response) {
+        try {
+            const userId = req.user?.userId;
+            if (!userId) throw new ApiError(401, 'Unauthorized');
+
+            const data = await hrService.getTodayClockIn(userId);
+            res.json({ success: true, data });
+        } catch (error: any) {
+            res.status(error.statusCode || 500).json({ success: false, message: error.message });
+        }
+    }
+
+    async clockOut(req: AuthRequest, res: Response) {
+        try {
+            const userId = req.user?.userId;
+            const schoolId = req.user?.schoolId;
+            if (!userId) throw new ApiError(401, 'Unauthorized');
+
+            const result = await hrService.clockOutStaff(userId, schoolId, req.body || {});
+            res.status(200).json({ success: true, message: 'Clock-out recorded', data: result });
+        } catch (error: any) {
+            const message = error?.message || 'Failed to clock out';
+            const statusCode = error?.statusCode
+                || (message.includes('No clock-in record') || message.includes('earlier than clock-in') ? 400 : 500);
+            res.status(statusCode).json({ success: false, message });
+        }
+    }
+
     /**
      * Staff Directory
      */

@@ -11,9 +11,11 @@ import { useAuth } from '../../../hooks/useAuth';
 import { configAPI } from '../../../services/api';
 import { toInputDate } from '../utils/dateHelpers';
 import { DatePicker } from '../../ui/date-picker';
+import { useSchoolData } from '../../../contexts/SchoolDataContext';
 
 const AddEditLearnerModal = ({ show, onClose, onSave, learner = null }) => {
   const { user } = useAuth();
+  const { grades } = useSchoolData();
   const isEdit = learner !== null;
 
   const [availableStreams, setAvailableStreams] = useState([]);
@@ -86,7 +88,7 @@ const AddEditLearnerModal = ({ show, onClose, onSave, learner = null }) => {
         lastName: '',
         dateOfBirth: '',
         gender: 'MALE',
-        grade: 'GRADE_1',
+        grade: grades.length > 0 ? grades[0] : 'GRADE_1',
         stream: 'A',
         guardianName: '',
         guardianPhone: '',
@@ -326,14 +328,9 @@ const AddEditLearnerModal = ({ show, onClose, onSave, learner = null }) => {
                     onChange={handleChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="PP1">PP1</option>
-                    <option value="PP2">PP2</option>
-                    <option value="GRADE_1">Grade 1</option>
-                    <option value="GRADE_2">Grade 2</option>
-                    <option value="GRADE_3">Grade 3</option>
-                    <option value="GRADE_4">Grade 4</option>
-                    <option value="GRADE_5">Grade 5</option>
-                    <option value="GRADE_6">Grade 6</option>
+                    {grades.map(g => (
+                      <option key={g} value={g}>{g.replace(/_/g, ' ')}</option>
+                    ))}
                   </select>
                 </div>
 

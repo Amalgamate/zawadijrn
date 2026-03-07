@@ -23,6 +23,7 @@ export class StreamController {
       });
 
       res.json({
+        success: true,
         data: streams,
         count: streams.length
       });
@@ -48,7 +49,7 @@ export class StreamController {
         throw new ApiError(404, 'Stream not found');
       }
 
-      res.json(stream);
+      res.json({ success: true, data: stream });
     } catch (error: any) {
       if (error instanceof ApiError) throw error;
       throw new ApiError(500, error.message || 'Failed to fetch stream');
@@ -89,6 +90,7 @@ export class StreamController {
       });
 
       res.status(201).json({
+        success: true,
         message: 'Stream created successfully',
         data: stream
       });
@@ -139,6 +141,7 @@ export class StreamController {
       });
 
       res.json({
+        success: true,
         message: 'Stream updated successfully',
         data: updated
       });
@@ -188,6 +191,7 @@ export class StreamController {
       });
 
       res.json({
+        success: true,
         message: 'Stream archived successfully',
         data: updated
       });
@@ -218,11 +222,14 @@ export class StreamController {
       const available = allStreamNames.filter(name => !usedNames.includes(name));
 
       res.json({
-        available,
-        used: usedNames,
-        total: {
-          available: available.length,
-          used: usedNames.length
+        success: true,
+        data: {
+          available,
+          used: usedNames,
+          total: {
+            available: available.length,
+            used: usedNames.length
+          }
         }
       });
     } catch (error: any) {

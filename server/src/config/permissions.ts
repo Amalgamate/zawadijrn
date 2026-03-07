@@ -110,6 +110,11 @@ export const PERMISSIONS = {
   // ============================================
   MANAGE_BOOKS: ['SUPER_ADMIN', 'ADMIN', 'LIBRARIAN'],
   VIEW_BOOKS: ['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM', 'TEACHER', 'LIBRARIAN'],
+
+  // ============================================
+  // TIMETABLE
+  // ============================================
+  ACCESS_TIMETABLE: ['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM', 'TEACHER'],
 } as const;
 
 /**

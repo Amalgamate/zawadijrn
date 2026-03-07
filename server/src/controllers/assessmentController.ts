@@ -251,12 +251,15 @@ export const deleteFormativeAssessment = async (req: AuthRequest, res: Response)
 export const createSummativeTest = async (req: AuthRequest, res: Response) => {
   try {
     const {
+      name,
       title,
+      learningAreaId,
       learningArea,
       testType,
       term,
       academicYear,
       testDate,
+      maxScore,
       totalMarks = 100,
       passMarks = 40,
       description,
@@ -268,7 +271,23 @@ export const createSummativeTest = async (req: AuthRequest, res: Response) => {
 
     const teacherId = req.user?.userId;
 
-    if (!teacherId || !title || !learningArea || !term || !academicYear) {
+    const normalizedTerm = String(term || '')
+      .toUpperCase()
+      .replace(/\s+/g, '_') as 'TERM_1' | 'TERM_2' | 'TERM_3';
+
+    let resolvedLearningArea = learningArea;
+    if (!resolvedLearningArea && learningAreaId) {
+      const areaRecord = await prisma.learningArea.findUnique({
+        where: { id: learningAreaId },
+        select: { name: true },
+      });
+      resolvedLearningArea = areaRecord?.name;
+    }
+
+    const resolvedTitle = title || name;
+    const resolvedTotalMarks = totalMarks ?? maxScore ?? 100;
+
+    if (!teacherId || !resolvedTitle || !resolvedLearningArea || !normalizedTerm || !academicYear) {
       return res.status(400).json({
         success: false,
         message: 'Missing required fields'
@@ -277,13 +296,13 @@ export const createSummativeTest = async (req: AuthRequest, res: Response) => {
 
     const test = await prisma.summativeTest.create({
       data: {
-        title,
-        learningArea,
+        title: resolvedTitle,
+        learningArea: resolvedLearningArea,
         testType,
-        term,
+        term: normalizedTerm,
         academicYear: parseInt(academicYear),
         testDate: testDate ? new Date(testDate) : new Date(),
-        totalMarks: parseInt(totalMarks),
+        totalMarks: parseInt(String(resolvedTotalMarks)),
         passMarks: parseInt(passMarks),
         description,
         grade,

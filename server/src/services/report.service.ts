@@ -171,10 +171,10 @@ export async function generateTermlyReport(
     fetchFormativeAssessments(learnerId, term, academicYear),
     fetchSummativeResults(learnerId, term, academicYear),
     fetchAttendanceRecords(learnerId, term, academicYear),
-    fetchCoreCompetencies(learnerId, term, academicYear, learner.schoolId),
-    fetchValuesAssessment(learnerId, term, academicYear, learner.schoolId),
+    fetchCoreCompetencies(learnerId, term, academicYear),
+    fetchValuesAssessment(learnerId, term, academicYear),
     fetchCoCurricularActivities(learnerId, term, academicYear),
-    fetchReportComments(learnerId, term, academicYear, learner.schoolId)
+    fetchReportComments(learnerId, term, academicYear)
   ]);
 
   if (!cbcSystem || !summativeSystem) {
@@ -294,16 +294,16 @@ async function fetchAttendanceRecords(learnerId: string, term: Term, academicYea
   });
 }
 
-async function fetchCoreCompetencies(learnerId: string, term: Term, academicYear: number, schoolId: string) {
-  return await prisma.coreCompetency.findUnique({
-    where: { schoolId_learnerId_term_academicYear: { schoolId, learnerId, term, academicYear } },
+async function fetchCoreCompetencies(learnerId: string, term: Term, academicYear: number) {
+  return await prisma.coreCompetency.findFirst({
+    where: { learnerId, term, academicYear },
     include: { assessor: { select: { firstName: true, lastName: true } } }
   });
 }
 
-async function fetchValuesAssessment(learnerId: string, term: Term, academicYear: number, schoolId: string) {
-  return await prisma.valuesAssessment.findUnique({
-    where: { schoolId_learnerId_term_academicYear: { schoolId, learnerId, term, academicYear } }
+async function fetchValuesAssessment(learnerId: string, term: Term, academicYear: number) {
+  return await prisma.valuesAssessment.findFirst({
+    where: { learnerId, term, academicYear }
   });
 }
 
@@ -314,9 +314,9 @@ async function fetchCoCurricularActivities(learnerId: string, term: Term, academ
   });
 }
 
-async function fetchReportComments(learnerId: string, term: Term, academicYear: number, schoolId: string) {
-  return await prisma.termlyReportComment.findUnique({
-    where: { schoolId_learnerId_term_academicYear: { schoolId, learnerId, term, academicYear } }
+async function fetchReportComments(learnerId: string, term: Term, academicYear: number) {
+  return await prisma.termlyReportComment.findFirst({
+    where: { learnerId, term, academicYear }
   });
 }
 

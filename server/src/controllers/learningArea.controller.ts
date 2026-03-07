@@ -22,23 +22,14 @@ export const getLearningAreas = async (req: AuthRequest, res: Response) => {
 
     let schoolId = querySchoolId || req.user?.schoolId;
 
-    // Phase 5: Tenant Isolation
-    if (req.user?.role !== 'SUPER_ADMIN' && req.user?.schoolId) {
-      schoolId = req.user.schoolId;
-    }
-
-    if (!schoolId && req.user?.role === 'SUPER_ADMIN') {
+    if (!schoolId) {
       const learningAreas = await prisma.learningArea.findMany({
         orderBy: [
           { gradeLevel: 'asc' },
           { name: 'asc' }
         ]
       });
-      return res.json(learningAreas);
-    }
-
-    if (!schoolId) {
-      return res.status(400).json({ error: 'School ID is required' });
+      return res.json({ success: true, data: learningAreas });
     }
 
     const learningAreas = await prisma.learningArea.findMany({
@@ -54,10 +45,10 @@ export const getLearningAreas = async (req: AuthRequest, res: Response) => {
       ]
     });
 
-    res.json(learningAreas);
+    res.json({ success: true, data: learningAreas });
   } catch (error: any) {
     console.error('Error fetching learning areas:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ success: false, error: error.message || 'Failed to fetch learning areas' });
   }
 };
 
@@ -74,18 +65,18 @@ export const getLearningArea = async (req: AuthRequest, res: Response) => {
     });
 
     if (!learningArea) {
-      return res.status(404).json({ error: 'Learning area not found' });
+      return res.status(404).json({ success: false, error: 'Learning area not found' });
     }
 
     // Phase 5: Tenant Check
     if (req.user?.role !== 'SUPER_ADMIN' && req.user?.schoolId && learningArea.schoolId && learningArea.schoolId !== req.user.schoolId) {
-      return res.status(403).json({ error: 'Unauthorized access to learning area' });
+      return res.status(403).json({ success: false, error: 'Unauthorized access to learning area' });
     }
 
-    res.json(learningArea);
+    res.json({ success: true, data: learningArea });
   } catch (error: any) {
     console.error('Error fetching learning area:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ success: false, error: error.message || 'Failed to fetch learning area' });
   }
 };
 
@@ -99,7 +90,7 @@ export const createLearningArea = async (req: AuthRequest, res: Response) => {
     const schoolId = req.user?.schoolId;
 
     if (!name || !gradeLevel) {
-      return res.status(400).json({ error: 'Name and grade level are required' });
+      return res.status(400).json({ success: false, error: 'Name and grade level are required' });
     }
 
     // Check for duplicates
@@ -111,7 +102,7 @@ export const createLearningArea = async (req: AuthRequest, res: Response) => {
     });
 
     if (existing) {
-      return res.status(409).json({ error: 'Learning area already exists for this school' });
+      return res.status(409).json({ success: false, error: 'Learning area already exists for this school' });
     }
 
     const learningArea = await prisma.learningArea.create({
@@ -126,10 +117,10 @@ export const createLearningArea = async (req: AuthRequest, res: Response) => {
       }
     });
 
-    res.status(201).json(learningArea);
+    res.status(201).json({ success: true, data: learningArea });
   } catch (error: any) {
     console.error('Error creating learning area:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ success: false, error: error.message || 'Failed to create learning area' });
   }
 };
 
@@ -147,12 +138,12 @@ export const updateLearningArea = async (req: AuthRequest, res: Response) => {
     });
 
     if (!learningArea) {
-      return res.status(404).json({ error: 'Learning area not found' });
+      return res.status(404).json({ success: false, error: 'Learning area not found' });
     }
 
     // Phase 5: Tenant Check
     if (req.user?.role !== 'SUPER_ADMIN' && req.user?.schoolId && learningArea.schoolId !== req.user.schoolId) {
-      return res.status(403).json({ error: 'Unauthorized: Cannot update learning areas from another school' });
+      return res.status(403).json({ success: false, error: 'Unauthorized: Cannot update learning areas from another school' });
     }
 
     // Check if name already exists for this school (excluding current record)
@@ -166,7 +157,7 @@ export const updateLearningArea = async (req: AuthRequest, res: Response) => {
       });
 
       if (existing) {
-        return res.status(409).json({ error: 'Learning area name already exists' });
+        return res.status(409).json({ success: false, error: 'Learning area name already exists' });
       }
     }
 
@@ -182,10 +173,10 @@ export const updateLearningArea = async (req: AuthRequest, res: Response) => {
       }
     });
 
-    res.json(updated);
+    res.json({ success: true, data: updated });
   } catch (error: any) {
     console.error('Error updating learning area:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ success: false, error: error.message || 'Failed to update learning area' });
   }
 };
 
@@ -202,22 +193,22 @@ export const deleteLearningArea = async (req: AuthRequest, res: Response) => {
     });
 
     if (!learningArea) {
-      return res.status(404).json({ error: 'Learning area not found' });
+      return res.status(404).json({ success: false, error: 'Learning area not found' });
     }
 
     // Phase 5: Tenant Check
     if (req.user?.role !== 'SUPER_ADMIN' && req.user?.schoolId && learningArea.schoolId !== req.user.schoolId) {
-      return res.status(403).json({ error: 'Unauthorized: Cannot delete learning areas from another school' });
+      return res.status(403).json({ success: false, error: 'Unauthorized: Cannot delete learning areas from another school' });
     }
 
     await prisma.learningArea.delete({
       where: { id }
     });
 
-    res.json({ message: 'Learning area deleted successfully' });
+    res.json({ success: true, message: 'Learning area deleted successfully' });
   } catch (error: any) {
     console.error('Error deleting learning area:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ success: false, error: error.message || 'Failed to delete learning area' });
   }
 };
 
@@ -230,7 +221,7 @@ export const seedLearningAreas = async (req: AuthRequest, res: Response) => {
     const schoolId = req.user?.schoolId;
 
     if (!schoolId) {
-      return res.status(400).json({ error: 'School ID is required' });
+      return res.status(400).json({ success: false, error: 'School ID is required' });
     }
 
     // Official CBC Per-Grade Mapping
@@ -316,13 +307,14 @@ export const seedLearningAreas = async (req: AuthRequest, res: Response) => {
     const skipped = Math.max(total - created, 0);
 
     res.json({
+      success: true,
       message: 'Learning areas seeded successfully',
       created,
       skipped
     });
   } catch (error: any) {
     console.error('Error seeding learning areas:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ success: false, error: error.message || 'Failed to seed learning areas' });
   }
 };
 

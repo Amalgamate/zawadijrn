@@ -15,6 +15,8 @@ import { getGradeColor } from '../../../utils/grading/colors';
 import { useAssessmentSetup } from '../hooks/useAssessmentSetup';
 import { useLearningAreas } from '../hooks/useLearningAreas';
 import { useTeacherWorkload } from '../hooks/useTeacherWorkload';
+import { useSchoolData } from '../../../contexts/SchoolDataContext';
+import { getLearningAreasByGrade } from '../../../constants/learningAreas';
 
 const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
   const { showSuccess, showError } = useNotifications();
@@ -49,7 +51,7 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
   const [gradingScale, setGradingScale] = useState(null);
   const [isDraft, setIsDraft] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
-  const [availableGrades, setAvailableGrades] = useState([]);
+  const { grades: availableGrades } = useSchoolData();
   const [availableTerms, setAvailableTerms] = useState([]);
   const [availableStreams, setAvailableStreams] = useState([]);
 
@@ -131,22 +133,9 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
   }, [fetchTests]);
 
 
-  // Load Grades, Terms, and Streams for selectors
+  // Load Terms, and Streams for selectors
   const loadOptions = useCallback(async () => {
     try {
-      // Grades from classes if available
-      const classesResp = await classAPI.getAll();
-      const classesData = classesResp?.data?.data || classesResp?.data || classesResp || [];
-      const classGrades = [...new Set(classesData.map(c => c.grade))].filter(Boolean);
-
-      const defaultGrades = [
-        'PLAYGROUP', 'PP1', 'PP2', 'GRADE_1', 'GRADE_2', 'GRADE_3', 'GRADE_4', 'GRADE_5', 'GRADE_6', 'GRADE_7', 'GRADE_8', 'GRADE_9'
-      ];
-
-      // Merge and unique
-      const allGrades = [...new Set([...classGrades, ...defaultGrades])];
-      setAvailableGrades(allGrades);
-
       setAvailableTerms(['TERM_1', 'TERM_2', 'TERM_3']);
       // Streams from config
       if (schoolId) {
@@ -161,9 +150,6 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
       console.error('Error loading selector options:', error);
       // Safe defaults
       setAvailableTerms(['TERM_1', 'TERM_2', 'TERM_3']);
-      setAvailableGrades([
-        'PP1', 'PP2', 'GRADE_1', 'GRADE_2', 'GRADE_3', 'GRADE_4', 'GRADE_5', 'GRADE_6', 'GRADE_7', 'GRADE_8', 'GRADE_9'
-      ]);
     }
   }, [schoolId]);
 
@@ -227,12 +213,10 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
       if (t.learningArea) areas.add(t.learningArea);
     });
 
-    // Merge with official ones if any tests exist (to ensure we show names correctly)
-    const officialAreas = learningAreasMgr.flatLearningAreas || [];
-    const result = Array.from(areas);
+    // Unified source: merge persisted tests + official grade map
+    (learningAreasMgr.flatLearningAreas || []).forEach((area) => areas.add(area));
 
-    // If result is empty but we have tests, it might be a naming issue, but usually tests have areas
-    return result.sort();
+    return Array.from(areas).sort();
   }, [filteredTestsBySelection, learningAreasMgr.flatLearningAreas]);
 
   // Staged available learning areas - for dropdown options while editing
@@ -241,9 +225,13 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
     stagedFilteredTestsBySelection.forEach(t => {
       if (t.learningArea) areas.add(t.learningArea);
     });
-    const result = Array.from(areas);
-    return result.sort();
-  }, [stagedFilteredTestsBySelection]);
+
+    // Use grade-driven canonical learning areas for staged grade, even before "Load" is clicked
+    const stagedOfficialAreas = stagedGrade ? getLearningAreasByGrade(stagedGrade) : [];
+    stagedOfficialAreas.forEach((area) => areas.add(area));
+
+    return Array.from(areas).sort();
+  }, [stagedFilteredTestsBySelection, stagedGrade]);
 
   const filteredLearningAreasByWorkload = useMemo(() => {
     const areas = availableLearningAreas;
@@ -303,7 +291,18 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
   const gradeOrder = ['PLAYGROUP', 'PP1', 'PP2', 'GRADE_1', 'GRADE_2', 'GRADE_3', 'GRADE_4', 'GRADE_5', 'GRADE_6', 'GRADE_7', 'GRADE_8', 'GRADE_9'];
 
   const filteredGrades = useMemo(() => {
-    let grades = !teacherWorkload.isTeacher ? availableGrades : availableGrades.filter(g => teacherWorkload.assignedGrades.includes(g));
+    const gradesFromTests = [...new Set(
+      tests
+        .map((test) => String(test?.grade || '').trim())
+        .filter(Boolean)
+        .map((grade) => grade.replace(/\s+/g, '_').toUpperCase())
+    )];
+
+    const mergedGrades = [...new Set([...(availableGrades || []), ...gradesFromTests])];
+
+    let grades = !teacherWorkload.isTeacher
+      ? mergedGrades
+      : mergedGrades.filter(g => teacherWorkload.assignedGrades.includes(g));
 
     // Sort by grade order
     return grades.sort((a, b) => {
@@ -313,7 +312,7 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
       if (bIndex === -1) return -1;
       return aIndex - bIndex;
     });
-  }, [availableGrades, teacherWorkload.isTeacher, teacherWorkload.assignedGrades]);
+  }, [availableGrades, tests, teacherWorkload.isTeacher, teacherWorkload.assignedGrades]);
 
 
   // Effects for Auto-selection & Prefill
@@ -326,8 +325,28 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
       if (!setup.selectedStream && teacherWorkload.primaryStream) {
         setup.setSelectedStream(teacherWorkload.primaryStream);
       }
+
+      if (!stagedGrade && teacherWorkload.primaryGrade) {
+        setStagedGrade(teacherWorkload.primaryGrade);
+      }
+      if (!stagedStream && teacherWorkload.primaryStream) {
+        setStagedStream(teacherWorkload.primaryStream);
+      }
+      if (!stagedTerm) {
+        setStagedTerm('TERM_1');
+      }
     }
-  }, [teacherWorkload.isTeacher, teacherWorkload.loading, teacherWorkload.primaryGrade, teacherWorkload.primaryStream, setup, step]);
+  }, [
+    teacherWorkload.isTeacher,
+    teacherWorkload.loading,
+    teacherWorkload.primaryGrade,
+    teacherWorkload.primaryStream,
+    setup,
+    step,
+    stagedGrade,
+    stagedStream,
+    stagedTerm,
+  ]);
 
   // 2. Auto-select Learning Area if only one is available
   useEffect(() => {
@@ -493,6 +512,20 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
 
     loadTestDetails();
   }, [selectedTestId, tests, schoolId, showSuccess]);
+
+  // Clear stale selected test IDs from localStorage/context if they no longer exist
+  useEffect(() => {
+    if (!selectedTestId) return;
+
+    const exists = tests.some((test) => String(test.id) === String(selectedTestId));
+    if (!exists) {
+      setSelectedTestId('');
+      setStagedTestId('');
+      setMarks({});
+      localStorage.removeItem('cbc_summative_appliedTestId');
+      localStorage.removeItem('cbc_summative_stagedTestId');
+    }
+  }, [selectedTestId, tests]);
 
   // Auto-save marks to localStorage with debouncing
   useEffect(() => {

@@ -12,6 +12,7 @@ import { configAPI, communicationAPI, learnerAPI } from '../../../services/api';
 import BulkOperationsModal from '../shared/bulk/BulkOperationsModal';
 import VirtualizedTable from '../shared/VirtualizedTable';
 import { formatPhoneNumber } from '../../../utils/phoneFormatter';
+import { useSchoolData } from '../../../contexts/SchoolDataContext';
 
 const LearnersList = ({
   learners,
@@ -43,6 +44,7 @@ const LearnersList = ({
   const [contactType, setContactType] = useState('sms'); // 'sms' or 'whatsapp'
   const { can, isRole } = usePermissions();
   const { user } = useAuth();
+  const { grades } = useSchoolData();
 
   // Check if user can create learners (only admins, head teachers, super admins)
   const canCreateLearner = can('CREATE_LEARNER');
@@ -277,32 +279,9 @@ const LearnersList = ({
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-purple bg-white"
               >
                 <option value="all">All Grades</option>
-                <optgroup label="Early Years">
-                  <option value="CRECHE">Creche</option>
-                  <option value="PLAYGROUP">Playgroup</option>
-                  <option value="RECEPTION">Reception</option>
-                  <option value="PP1">PP1</option>
-                  <option value="PP2">PP2</option>
-                  <option value="TRANSITION">Transition</option>
-                </optgroup>
-                <optgroup label="Primary">
-                  <option value="GRADE_1">Grade 1</option>
-                  <option value="GRADE_2">Grade 2</option>
-                  <option value="GRADE_3">Grade 3</option>
-                  <option value="GRADE_4">Grade 4</option>
-                  <option value="GRADE_5">Grade 5</option>
-                  <option value="GRADE_6">Grade 6</option>
-                </optgroup>
-                <optgroup label="Junior Secondary">
-                  <option value="GRADE_7">Grade 7</option>
-                  <option value="GRADE_8">Grade 8</option>
-                  <option value="GRADE_9">Grade 9</option>
-                </optgroup>
-                <optgroup label="Senior Secondary">
-                  <option value="GRADE_10">Grade 10</option>
-                  <option value="GRADE_11">Grade 11</option>
-                  <option value="GRADE_12">Grade 12</option>
-                </optgroup>
+                {grades.map(g => (
+                  <option key={g} value={g}>{g.replace(/_/g, ' ')}</option>
+                ))}
               </select>
 
               <select

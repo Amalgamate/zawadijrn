@@ -35,7 +35,7 @@ const ProfileHeader = ({
                                 {avatar ? (
                                     <img src={avatar} alt="Profile" className="w-full h-full object-cover" />
                                 ) : (
-                                    <div className={`w-full h-full flex items-center justify-center bg-${bannerColor}/5 text-${bannerColor} text-3xl font-bold`}>
+                                    <div className={`w-full h-full flex items-center justify-center bg-${bannerColor} text-white text-3xl font-bold`}>
                                         {avatarFallback || '??'}
                                     </div>
                                 )}

@@ -34,12 +34,47 @@ const recordFormativeResultsSchema = z.object({
 });
 
 const createSummativeTestSchema = z.object({
-  name: z.string().min(1).max(255),
-  grade: z.enum(['GRADE_1', 'GRADE_2', 'GRADE_3', 'GRADE_4', 'GRADE_5', 'GRADE_6']),
-  term: z.enum(['TERM_1', 'TERM_2', 'TERM_3']),
-  academicYear: z.number().int().min(2020).max(2100),
-  maxScore: z.number().int().min(1).max(1000),
-  learningAreaId: z.string().min(1),
+  title: z.string().min(1).max(255).optional(),
+  name: z.string().min(1).max(255).optional(),
+  grade: z.enum([
+    'PLAYGROUP',
+    'PP1',
+    'PP2',
+    'GRADE_1',
+    'GRADE_2',
+    'GRADE_3',
+    'GRADE_4',
+    'GRADE_5',
+    'GRADE_6',
+    'GRADE_7',
+    'GRADE_8',
+    'GRADE_9',
+  ]).optional(),
+  term: z.preprocess((value) => {
+    const raw = String(value || '').toUpperCase().trim();
+    if (raw === 'TERM 1') return 'TERM_1';
+    if (raw === 'TERM 2') return 'TERM_2';
+    if (raw === 'TERM 3') return 'TERM_3';
+    return raw;
+  }, z.enum(['TERM_1', 'TERM_2', 'TERM_3']).optional()),
+  academicYear: z.coerce.number().int().min(2020).max(2100).optional(),
+  testDate: z.string().optional(),
+  totalMarks: z.coerce.number().int().min(1).max(1000).optional(),
+  maxScore: z.coerce.number().int().min(1).max(1000).optional(),
+  passMarks: z.coerce.number().int().min(0).max(1000).optional(),
+  learningArea: z.string().min(1).optional(),
+  learningAreaId: z.string().min(1).optional(),
+  testType: z.string().optional(),
+  description: z.string().optional(),
+  stream: z.string().optional(),
+  curriculum: z.string().optional(),
+  scaleId: z.string().nullable().optional(),
+}).refine((data) => Boolean(data.title || data.name), {
+  message: 'title is required',
+}).refine((data) => Boolean(data.learningArea || data.learningAreaId), {
+  message: 'learningArea is required',
+}).refine((data) => data.term && data.academicYear, {
+  message: 'term and academicYear are required',
 });
 
 const recordSummativeResultSchema = z.object({

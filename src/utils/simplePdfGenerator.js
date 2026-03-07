@@ -735,6 +735,8 @@ export const generateDocument = async (options = {}) => {
         if (action === 'print' && win) {
           win.onload = () => win.print();
         }
+      } else if (action === 'blob') {
+        return { success: true, blob: response, url };
       } else {
         const link = document.createElement('a');
         link.href = url;
