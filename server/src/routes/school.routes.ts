@@ -14,7 +14,8 @@ import {
   deleteBranch,
   getAdmissionSequence,
   getAdmissionNumberPreview,
-  resetAdmissionSequence
+  resetAdmissionSequence,
+  getPublicBranding
 } from '../controllers/school.controller';
 import { validate } from '../middleware/validation.middleware';
 import { rateLimit } from '../middleware/enhanced-rateLimit.middleware';
@@ -56,6 +57,9 @@ const createBranchSchema = z.object({
   code: z.string().min(1).max(20),
   location: z.string().min(1).max(255).optional()
 });
+
+// Public branding route
+router.get('/public/branding', rateLimit({ windowMs: 60_000, maxRequests: 100 }), getPublicBranding);
 
 // Protect all routes
 router.use(authenticate);

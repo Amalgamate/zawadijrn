@@ -410,11 +410,18 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess, brand
 
         {/* Header Section */}
         <div className="pt-8 pb-4 text-center">
-          <div className="inline-flex items-center justify-center transform scale-90 mb-2">
-            <span className="text-3xl font-black tracking-tighter flex items-center gap-1">
-              <span className="text-[#520050]">Elim</span>
-              <span className="text-teal-500 font-light">crown</span>
-            </span>
+          <div className="inline-flex flex-col items-center justify-center transform scale-90 mb-2">
+            {brandingSettings?.logoUrl && (
+              <img
+                src={brandingSettings.logoUrl}
+                alt="Logo"
+                className="w-20 h-20 object-contain mb-4 drop-shadow-sm"
+                onError={(e) => { e.target.style.display = 'none'; }}
+              />
+            )}
+            <h2 className="text-3xl font-black tracking-tighter text-gray-900">
+              {brandingSettings?.schoolName || 'Elimcrown Academy'}
+            </h2>
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Create Account</h1>
           <p className="text-gray-600 text-sm mt-1">Join the community to get started</p>
@@ -662,7 +669,7 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess, brand
                         {fieldStatus.subdomain === 'invalid' && <XCircle className="h-4 w-4 text-red-500" />}
                       </div>
                       <div className="bg-gray-50 px-3 py-2 border-l text-gray-500 text-xs">
-                        .elimcrown.co.ke
+                        .{brandingSettings?.schoolName ? brandingSettings.schoolName.toLowerCase().replace(/\s+/g, '') : 'elimcrown'}.co.ke
                       </div>
                     </div>
                     {showErrors && errors.subdomain && <p className="text-xs text-red-500 mt-1">{errors.subdomain}</p>}

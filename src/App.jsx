@@ -32,36 +32,28 @@ function AppContent() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Fetch school branding when authenticated
+  // Fetch school branding
   useEffect(() => {
-    if (!isAuthenticated) return;
     let cancelled = false;
 
     const fetchBranding = async () => {
       try {
-        // Fetch public branding from the active school instead of relying on user.schoolId
-        const schoolsResp = await axiosInstance.get('/schools');
+        // Fetch public branding - works for unauthenticated users too
+        const resp = await axiosInstance.get('/schools/public/branding');
         if (cancelled) return;
 
-        let schoolId = user?.schoolId;
-        const schoolsList = schoolsResp.data?.data || schoolsResp.data || schoolsResp;
+        const branding = resp?.data?.data || resp?.data || resp;
+        if (branding) {
+          // Map `name` to `schoolName` to match frontend expectations
+          const mappedBranding = {
+            ...branding,
+            schoolName: branding.name || branding.schoolName || 'Zawadi Junior Academy'
+          };
+          setBrandingSettings(prev => ({ ...prev, ...mappedBranding }));
 
-        if (Array.isArray(schoolsList) && schoolsList.length > 0) {
-          schoolId = schoolsList[0].id;
-          localStorage.setItem('currentSchoolId', schoolId);
-        }
-
-        if (schoolId) {
-          const resp = await axiosInstance.get(`/schools/${schoolId}`);
-          if (cancelled) return;
-          const branding = resp?.data?.data || resp?.data || resp;
-          if (branding) {
-            // Map `name` to `schoolName` to match frontend expectations
-            const mappedBranding = {
-              ...branding,
-              schoolName: branding.name || branding.schoolName || 'Zawadi Junior Academy'
-            };
-            setBrandingSettings(prev => ({ ...prev, ...mappedBranding }));
+          // Store school ID for context
+          if (branding.id) {
+            localStorage.setItem('currentSchoolId', branding.id);
           }
         }
       } catch (err) {

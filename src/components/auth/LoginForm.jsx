@@ -165,15 +165,34 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
   };
 
   return (
-    <div className="w-full min-h-screen bg-gradient-to-br from-[#520050] to-[#3D0038] flex items-center justify-center p-4">
+    <div
+      className="w-full min-h-screen flex items-center justify-center p-4"
+      style={{
+        background: brandingSettings?.brandColor
+          ? `linear-gradient(to bottom right, ${brandingSettings.brandColor}, ${brandingSettings.brandColor}E6)`
+          : 'linear-gradient(to bottom right, #520050, #3D0038)'
+      }}
+    >
       <div className="w-full max-w-md">
         <div className="bg-white rounded-xl shadow-2xl overflow-hidden">
           <div className="px-8 py-12">
 
             {/* Header */}
             <div className="mb-8 text-center">
-              <h1 className="text-3xl font-bold text-gray-900">Elimcrown</h1>
-              <p className="text-gray-600 text-sm mt-2">School Management System</p>
+              {brandingSettings?.logoUrl && (
+                <img
+                  src={brandingSettings.logoUrl}
+                  alt="Logo"
+                  className="w-20 h-20 object-contain mx-auto mb-4 drop-shadow-sm"
+                  onError={(e) => { e.target.style.display = 'none'; }}
+                />
+              )}
+              <h1 className="text-3xl font-bold text-gray-900">
+                {brandingSettings?.schoolName || 'Elimcrown'}
+              </h1>
+              <p className="text-gray-600 text-sm mt-2">
+                {brandingSettings?.schoolName ? 'School Management System' : 'School Management System'}
+              </p>
             </div>
 
             {/* Error Alert */}

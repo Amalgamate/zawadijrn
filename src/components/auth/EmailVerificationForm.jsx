@@ -228,7 +228,8 @@ export default function EmailVerificationForm({ email, phone, onVerifySuccess, b
 
         {/* Left Column - Branding Area */}
         <div
-          className="w-full lg:w-1/2 p-8 lg:p-16 flex flex-col justify-between items-center text-white relative overflow-hidden bg-[#520050]"
+          className="w-full lg:w-1/2 p-8 lg:p-16 flex flex-col justify-between items-center text-white relative overflow-hidden"
+          style={{ backgroundColor: brandingSettings?.brandColor || '#520050' }}
         >
           {/* Decorative Elements */}
           <div className="absolute inset-0 overflow-hidden opacity-10">
@@ -241,10 +242,17 @@ export default function EmailVerificationForm({ email, phone, onVerifySuccess, b
           <div className="flex-1 flex items-center justify-center relative z-10">
             <div className="max-w-md text-center space-y-8">
               <div className="mb-12 text-center">
-                <div className="inline-flex items-center justify-center p-4 bg-white/10 backdrop-blur-md rounded-3xl border border-white/20 shadow-2xl mb-8 transform hover:scale-105 transition-transform duration-500">
-                  <span className="text-5xl sm:text-6xl font-black tracking-tighter flex items-center gap-1">
-                    <span className="text-white">Elim</span>
-                    <span className="text-teal-300 font-light">crown</span>
+                <div className="inline-flex flex-col items-center justify-center p-4 bg-white/10 backdrop-blur-md rounded-3xl border border-white/20 shadow-2xl mb-8 transform hover:scale-105 transition-transform duration-500">
+                  {brandingSettings?.logoUrl && (
+                    <img
+                      src={brandingSettings.logoUrl}
+                      alt="Logo"
+                      className="w-16 h-16 object-contain mb-4"
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                  )}
+                  <span className="text-5xl sm:text-6xl font-black tracking-tighter text-white">
+                    {brandingSettings?.schoolName || 'Elimcrown'}
                   </span>
                 </div>
               </div>
@@ -299,7 +307,7 @@ export default function EmailVerificationForm({ email, phone, onVerifySuccess, b
           {/* Footer Copyright */}
           <div className="relative z-10 text-center">
             <p className="text-white/60 text-sm">
-              © 2026 {brandingSettings?.schoolName || 'ElimCrown'}. All rights reserved.
+              © {new Date().getFullYear()} {brandingSettings?.schoolName || 'ElimCrown'}. All rights reserved.
             </p>
           </div>
         </div>

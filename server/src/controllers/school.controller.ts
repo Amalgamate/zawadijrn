@@ -9,6 +9,32 @@ import { deleteSchoolSafely } from '../services/school-deletion.service';
 // SCHOOL MANAGEMENT ENDPOINTS (Single-Tenant)
 // ============================================
 
+export const getPublicBranding = async (req: Request, res: Response) => {
+  try {
+    const school = await prisma.school.findFirst({
+      select: {
+        id: true,
+        name: true,
+        logoUrl: true,
+        faviconUrl: true,
+        brandColor: true,
+        welcomeTitle: true,
+        welcomeMessage: true,
+        onboardingTitle: true,
+        onboardingMessage: true,
+        motto: true,
+        address: true,
+        phone: true,
+        email: true
+      }
+    });
+    if (!school) return res.status(404).json({ success: false, error: 'School not found' });
+    res.status(200).json({ success: true, data: school });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to fetch public branding' });
+  }
+};
+
 export const getAllSchools = async (req: AuthRequest, res: Response) => {
   try {
     const schools = await prisma.school.findMany();

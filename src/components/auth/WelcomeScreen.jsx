@@ -14,10 +14,17 @@ export default function WelcomeScreen({ user, onGetStarted, brandingSettings }) 
       {/* Simple centered content */}
       <div className="text-center px-6 max-w-2xl">
         <div className="mb-12 text-center">
-          <div className="inline-flex items-center justify-center p-4 bg-white/10 backdrop-blur-md rounded-3xl border border-white/20 shadow-2xl mb-8 transform hover:scale-105 transition-transform duration-500">
-            <span className="text-5xl sm:text-6xl font-black tracking-tighter flex items-center gap-1">
-              <span className="text-white">Elim</span>
-              <span className="text-teal-300 font-light">crown</span>
+          <div className="inline-flex flex-col items-center justify-center p-4 bg-white/10 backdrop-blur-md rounded-3xl border border-white/20 shadow-2xl mb-8 transform hover:scale-105 transition-transform duration-500">
+            {brandingSettings?.logoUrl && (
+              <img
+                src={brandingSettings.logoUrl}
+                alt="Logo"
+                className="w-16 h-16 object-contain mb-4"
+                onError={(e) => { e.target.style.display = 'none'; }}
+              />
+            )}
+            <span className="text-5xl sm:text-6xl font-black tracking-tighter text-white">
+              {brandingSettings?.schoolName || 'Elimcrown'}
             </span>
           </div>
         </div>
@@ -46,7 +53,7 @@ export default function WelcomeScreen({ user, onGetStarted, brandingSettings }) 
 
         {/* Footer */}
         <p className="text-white/40 text-sm mt-12 font-medium tracking-wide">
-          © 2026 {brandingSettings?.schoolName || 'Elimcrown Academy'} • CBC Grading System
+          © {new Date().getFullYear()} {brandingSettings?.schoolName || 'Elimcrown Academy'} • CBC Grading System
         </p>
       </div>
     </div>

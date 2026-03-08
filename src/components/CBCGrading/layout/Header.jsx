@@ -56,7 +56,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
     const snoozeUntil = Date.now() + (30 * 60 * 1000);
     try {
       localStorage.setItem(snoozeStorageKey, String(snoozeUntil));
-    } catch {}
+    } catch { }
     setShowUnreadReminder(false);
     setReminderCycle((prev) => prev + 1);
   };
@@ -151,7 +151,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
   useEffect(() => {
     try {
       localStorage.setItem(readStorageKey, JSON.stringify(Array.from(readNotificationKeys)));
-    } catch {}
+    } catch { }
   }, [readNotificationKeys, readStorageKey]);
 
   useEffect(() => {
@@ -168,7 +168,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
         try {
           localStorage.removeItem(snoozeStorageKey);
           localStorage.setItem(reminderStorageKey, String(Date.now()));
-        } catch {}
+        } catch { }
         setReminderCycle((prev) => prev + 1);
       }, snoozeUntil - now);
 
@@ -178,7 +178,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
     if (snoozeUntil) {
       try {
         localStorage.removeItem(snoozeStorageKey);
-      } catch {}
+      } catch { }
     }
 
     const lastReminderAt = Number(localStorage.getItem(reminderStorageKey) || 0) || null;
@@ -195,7 +195,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
       setShowUnreadReminder(true);
       try {
         localStorage.setItem(reminderStorageKey, String(Date.now()));
-      } catch {}
+      } catch { }
       setReminderCycle((prev) => prev + 1);
     }, delay);
 
@@ -274,12 +274,20 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
 
   return (
     <div className="h-20 border-b border-brand-purple/20 shadow-xl px-8 py-5 flex items-center justify-between">
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-4">
+        {brandingSettings?.logoUrl && (
+          <img
+            src={brandingSettings.logoUrl}
+            alt="Logo"
+            className="w-12 h-12 object-contain drop-shadow-sm"
+            onError={(e) => { e.target.style.display = 'none'; }}
+          />
+        )}
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-gray-900 leading-tight">
             {title || brandingSettings?.schoolName || 'Elimcrown'}
           </h1>
-          <p className="text-xs text-gray-600 font-semibold uppercase tracking-wider">
+          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">
             {title ? (brandingSettings?.schoolName || 'Elimcrown') : 'CBC Assessment & Grading System'}
           </p>
         </div>
