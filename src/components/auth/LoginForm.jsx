@@ -19,7 +19,7 @@ const getDefaultSchool = async () => {
 };
 
 export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword, onLoginSuccess, brandingSettings }) {
-  const [formData, setFormData] = useState({ email: '', password: '', rememberMe: false, skipOTP: false });
+  const [formData, setFormData] = useState({ email: '', password: '', rememberMe: false });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -55,48 +55,7 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
         password: formData.password,
       });
 
-      // If user is a Teacher, OTP is disabled in backend, so we MUST skip OTP flow
-      const isTeacher = credentialsData.user?.role === 'TEACHER';
-
-      if (formData.skipOTP || isTeacher) {
-        if (credentialsData.token) {
-          localStorage.setItem('token', credentialsData.token);
-          if (credentialsData.refreshToken) localStorage.setItem('refreshToken', credentialsData.refreshToken);
-          if (formData.rememberMe) localStorage.setItem('authToken', credentialsData.token);
-        }
-
-        // Get school ID - use user's school or default to first school
-        let schoolId = credentialsData.user.schoolId || credentialsData.user.school?.id;
-        let school = credentialsData.user.school || null;
-
-        if (!schoolId) {
-          const defaultSchool = await getDefaultSchool();
-          if (defaultSchool) {
-            schoolId = defaultSchool.id;
-            school = defaultSchool;
-          }
-        }
-
-        const userData = {
-          email: credentialsData.user.email,
-          name: `${credentialsData.user.firstName} ${credentialsData.user.lastName}`,
-          role: credentialsData.user.role,
-          id: credentialsData.user.id,
-          firstName: credentialsData.user.firstName,
-          lastName: credentialsData.user.lastName,
-          schoolId: schoolId || null,
-          branchId: credentialsData.user.branchId || credentialsData.user.branch?.id || null,
-          school: school,
-          branch: credentialsData.user.branch || null
-        };
-
-        if (schoolId) setCurrentSchoolId(schoolId);
-        const bid = credentialsData.user.branchId || credentialsData.user.branch?.id || '';
-        if (bid) setBranchId(bid);
-
-        onLoginSuccess(userData, credentialsData.token, credentialsData.refreshToken);
-        return;
-      }
+      // Trigger OTP flow
 
       try {
         const sid = credentialsData.user?.schoolId || credentialsData.user?.school?.id || '';
@@ -259,14 +218,10 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
                 </div>
 
                 {/* Checkboxes */}
-                <div className="space-y-2 pt-1">
+                <div className="pt-1">
                   <label className="flex items-center gap-2">
                     <input type="checkbox" name="rememberMe" checked={formData.rememberMe} onChange={handleChange} className="w-4 h-4 rounded border-gray-300 accent-[#520050]" />
                     <span className="text-sm text-gray-600 font-medium">Remember me</span>
-                  </label>
-                  <label className="flex items-center gap-2 p-2 bg-amber-50 rounded border border-amber-200">
-                    <input type="checkbox" name="skipOTP" checked={formData.skipOTP} onChange={handleChange} className="w-4 h-4 rounded border-amber-300 accent-amber-600" />
-                    <span className="text-sm text-amber-700 font-semibold">Skip OTP</span>
                   </label>
                 </div>
 

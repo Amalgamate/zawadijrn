@@ -60,11 +60,6 @@ export class OtpService {
                 return { success: false, message: 'Account is not active' };
             }
 
-            // OTP is disabled for teacher accounts
-            if (user.role === 'TEACHER') {
-                return { success: false, message: 'OTP is disabled for teacher accounts' };
-            }
-
             if (!user.phone) {
                 return { success: false, message: 'No phone number registered' };
             }
