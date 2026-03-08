@@ -173,26 +173,20 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
           : 'linear-gradient(to bottom right, #520050, #3D0038)'
       }}
     >
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-sm">
         <div className="bg-white rounded-xl shadow-2xl overflow-hidden">
-          <div className="px-8 py-12">
+          <div className="px-10 py-10">
 
             {/* Header */}
-            <div className="mb-8 text-center">
+            <div className="mb-6 text-center">
               {brandingSettings?.logoUrl && (
                 <img
                   src={brandingSettings.logoUrl}
                   alt="Logo"
-                  className="w-28 h-28 object-contain mx-auto mb-6 drop-shadow-md"
+                  className="w-36 h-36 object-contain mx-auto drop-shadow-md"
                   onError={(e) => { e.target.style.display = 'none'; }}
                 />
               )}
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 whitespace-nowrap uppercase tracking-tight">
-                {brandingSettings?.schoolName || 'ELIMCROWN'}
-              </h1>
-              <p className="text-gray-600 text-sm mt-2">
-                {brandingSettings?.schoolName ? 'School Management System' : 'School Management System'}
-              </p>
             </div>
 
             {/* Error Alert */}
