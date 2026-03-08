@@ -213,7 +213,7 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
         const branches = Array.isArray(school?.branches) ? school.branches : [];
         const learnersCount = (school?._count && school._count.learners) || 0;
         const isBlank = (branches.length === 0) && learnersCount === 0;
-        if (isBlank) {
+        if (isBlank && (user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN')) {
           setCurrentPage('settings-school');
           setExpandedSections(prev => ({ ...prev, settings: true }));
           try {

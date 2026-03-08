@@ -8,8 +8,24 @@ export const cleanupSchoolData = async () => {
 };
 
 export const clearAllSchoolData = () => {
-  // Stub function - no cleanup action required in current setup
-  return { cleared: 0, message: 'No school data to clear' };
+  const keysToRemove = [
+    'cbc_current_page',
+    'cbc_page_params',
+    'cbc_expanded_sections',
+    'cbc_last_school_id',
+    'currentSchoolId'
+  ];
+
+  keysToRemove.forEach(key => localStorage.removeItem(key));
+
+  // also specifically remove scroll positions
+  Object.keys(localStorage).forEach(key => {
+    if (key.startsWith('cbc_scroll_')) {
+      localStorage.removeItem(key);
+    }
+  });
+
+  return { cleared: keysToRemove.length, message: 'School data cleared' };
 };
 
 export default cleanupSchoolData;

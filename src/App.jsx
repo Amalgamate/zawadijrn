@@ -109,6 +109,10 @@ function AppContent() {
   }, [isAuthenticated, user?.role, pathname, navigate]);
 
   const handleAuthSuccess = (userData, token, refreshToken) => {
+    localStorage.removeItem('cbc_current_page');
+    localStorage.removeItem('cbc_page_params');
+    localStorage.removeItem('cbc_expanded_sections');
+    localStorage.removeItem('cbc_last_school_id');
     login(userData, token, refreshToken);
     navigate('/app', { replace: true });
   };
