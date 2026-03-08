@@ -173,11 +173,11 @@ router.get(
 /**
  * @route   POST /api/config/streams
  * @desc    Create or update stream configuration
- * @access  ADMIN, SUPER_ADMIN
+ * @access  ADMIN, SUPER_ADMIN, HEAD_TEACHER
  */
 router.post(
   '/streams',
-  requireRole(['ADMIN', 'SUPER_ADMIN']),
+  requireRole(['ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER']),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
   auditLog('UPSERT_STREAM_CONFIG'),
   configController.upsertStreamConfig
@@ -186,11 +186,11 @@ router.post(
 /**
  * @route   DELETE /api/config/streams/:id
  * @desc    Delete stream configuration
- * @access  ADMIN, SUPER_ADMIN
+ * @access  ADMIN, SUPER_ADMIN, HEAD_TEACHER
  */
 router.delete(
   '/streams/:id',
-  requireRole(['ADMIN', 'SUPER_ADMIN']),
+  requireRole(['ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER']),
   rateLimit({ windowMs: 60_000, maxRequests: 10 }),
   auditLog('DELETE_STREAM_CONFIG'),
   configController.deleteStreamConfig
@@ -199,11 +199,11 @@ router.delete(
 /**
  * @route   POST /api/config/streams/seed
  * @desc    Seed default streams
- * @access  ADMIN, SUPER_ADMIN
+ * @access  ADMIN, SUPER_ADMIN, HEAD_TEACHER
  */
 router.post(
   '/streams/seed',
-  requireRole(['ADMIN', 'SUPER_ADMIN']),
+  requireRole(['ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER']),
   rateLimit({ windowMs: 60_000, maxRequests: 5 }),
   auditLog('SEED_STREAMS'),
   configController.seedStreams
@@ -216,11 +216,11 @@ router.post(
 /**
  * @route   GET /api/config/classes/:schoolId
  * @desc    Get classes for school
- * @access  ADMIN, SUPER_ADMIN
+ * @access  ADMIN, SUPER_ADMIN, HEAD_TEACHER, TEACHER
  */
 router.get(
   '/classes/:schoolId',
-  requireRole(['ADMIN', 'SUPER_ADMIN']),
+  requireRole(['ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER', 'TEACHER']),
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   configController.getClasses
 );
@@ -228,11 +228,11 @@ router.get(
 /**
  * @route   POST /api/config/classes
  * @desc    Create or update class
- * @access  ADMIN, SUPER_ADMIN
+ * @access  ADMIN, SUPER_ADMIN, HEAD_TEACHER
  */
 router.post(
   '/classes',
-  requireRole(['ADMIN', 'SUPER_ADMIN']),
+  requireRole(['ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER']),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
   auditLog('UPSERT_CLASS'),
   configController.upsertClass
@@ -241,11 +241,11 @@ router.post(
 /**
  * @route   DELETE /api/config/classes/:id
  * @desc    Delete class
- * @access  ADMIN, SUPER_ADMIN
+ * @access  ADMIN, SUPER_ADMIN, HEAD_TEACHER
  */
 router.delete(
   '/classes/:id',
-  requireRole(['ADMIN', 'SUPER_ADMIN']),
+  requireRole(['ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER']),
   rateLimit({ windowMs: 60_000, maxRequests: 10 }),
   auditLog('DELETE_CLASS'),
   configController.deleteClass
@@ -254,11 +254,11 @@ router.delete(
 /**
  * @route   POST /api/config/classes/seed
  * @desc    Seed default classes
- * @access  ADMIN, SUPER_ADMIN
+ * @access  ADMIN, SUPER_ADMIN, HEAD_TEACHER
  */
 router.post(
   '/classes/seed',
-  requireRole(['ADMIN', 'SUPER_ADMIN']),
+  requireRole(['ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER']),
   rateLimit({ windowMs: 60_000, maxRequests: 5 }),
   auditLog('SEED_CLASSES'),
   configController.seedClasses
