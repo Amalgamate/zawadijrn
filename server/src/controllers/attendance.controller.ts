@@ -74,16 +74,20 @@ export class AttendanceController {
         throw new ApiError(403, 'You can only mark attendance for your assigned class');
       }
 
-      const learnerEnrollment = await prisma.classEnrollment.findFirst({
+      const classObj = await prisma.class.findUnique({ where: { id: resolvedClassId } });
+      const validLearner = await prisma.learner.findFirst({
         where: {
-          classId: resolvedClassId,
-          learnerId,
-          active: true,
+          id: learnerId,
+          status: 'ACTIVE',
+          OR: [
+            { enrollments: { some: { classId: resolvedClassId, active: true } } },
+            { grade: classObj!.grade, ...(classObj!.stream ? { stream: classObj!.stream } : {}) }
+          ]
         },
         select: { id: true },
       });
 
-      if (!learnerEnrollment) {
+      if (!validLearner) {
         throw new ApiError(403, 'You can only mark attendance for learners in your assigned class');
       }
     }
@@ -195,16 +199,20 @@ export class AttendanceController {
         throw new ApiError(400, 'No valid learners provided in attendanceRecords');
       }
 
-      const enrolledLearners = await prisma.classEnrollment.findMany({
+      const classObj = await prisma.class.findUnique({ where: { id: resolvedClassId } });
+      const validLearners = await prisma.learner.findMany({
         where: {
-          classId: resolvedClassId,
-          active: true,
-          learnerId: { in: learnerIds },
+          id: { in: learnerIds },
+          status: 'ACTIVE',
+          OR: [
+            { enrollments: { some: { classId: resolvedClassId, active: true } } },
+            { grade: classObj!.grade, ...(classObj!.stream ? { stream: classObj!.stream } : {}) }
+          ]
         },
-        select: { learnerId: true },
+        select: { id: true },
       });
 
-      const enrolledSet = new Set(enrolledLearners.map((item) => item.learnerId));
+      const enrolledSet = new Set(validLearners.map((item) => item.id));
       const invalidLearners = learnerIds.filter((learnerId: string) => !enrolledSet.has(learnerId));
 
       if (invalidLearners.length > 0) {
@@ -477,19 +485,29 @@ export class AttendanceController {
     }
 
     if (currentUserRole === 'TEACHER') {
-      const learnerEnrollment = await prisma.classEnrollment.findFirst({
+      const teacherClasses = await prisma.class.findMany({
         where: {
-          learnerId,
-          active: true,
-          class: {
-            teacherId: currentUserId,
-            ...(req.user?.schoolId ? { schoolId: req.user.schoolId } : {}),
-          },
+          teacherId: currentUserId,
+          ...(req.user?.schoolId ? { schoolId: req.user.schoolId } : {}),
         },
-        select: { id: true },
+        select: { id: true, grade: true, stream: true }
       });
 
-      if (!learnerEnrollment) {
+      const validLearner = await prisma.learner.findFirst({
+        where: {
+          id: learnerId,
+          status: 'ACTIVE',
+          OR: teacherClasses.length > 0 ? teacherClasses.map(c => ({
+            OR: [
+              { enrollments: { some: { classId: c.id, active: true } } },
+              { grade: c.grade, ...(c.stream ? { stream: c.stream } : {}) }
+            ]
+          })) : [{ id: 'none' }]
+        },
+        select: { id: true }
+      });
+
+      if (!validLearner) {
         throw new ApiError(403, 'You can only access attendance for learners in your assigned class');
       }
     }
@@ -583,9 +601,18 @@ export class AttendanceController {
     const learners = await prisma.learner.findMany({
       where: {
         status: 'ACTIVE',
-        enrollments: {
-          some: { classId: classId as string, active: true }
-        }
+        ...(currentSchoolId ? { schoolId: currentSchoolId } : {}),
+        OR: [
+          {
+            enrollments: {
+              some: { classId: classId as string, active: true }
+            }
+          },
+          {
+            grade: classObj.grade,
+            ...(classObj.stream ? { stream: classObj.stream } : {})
+          }
+        ]
       },
       select: {
         id: true,
