@@ -419,8 +419,8 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess, brand
                 onError={(e) => { e.target.style.display = 'none'; }}
               />
             )}
-            <h2 className="text-3xl font-black tracking-tighter text-gray-900">
-              {brandingSettings?.schoolName || 'Elimcrown Academy'}
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tighter text-gray-900 whitespace-nowrap uppercase">
+              {brandingSettings?.schoolName || 'ELIMCROWN ACADEMY'}
             </h2>
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Create Account</h1>

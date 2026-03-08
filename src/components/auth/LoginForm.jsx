@@ -187,8 +187,8 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
                   onError={(e) => { e.target.style.display = 'none'; }}
                 />
               )}
-              <h1 className="text-3xl font-bold text-gray-900">
-                {brandingSettings?.schoolName || 'Elimcrown'}
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 whitespace-nowrap uppercase">
+                {brandingSettings?.schoolName || 'ELIMCROWN'}
               </h1>
               <p className="text-gray-600 text-sm mt-2">
                 {brandingSettings?.schoolName ? 'School Management System' : 'School Management System'}

@@ -284,8 +284,8 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
           />
         )}
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 leading-tight">
-            {title || brandingSettings?.schoolName || 'Elimcrown'}
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight whitespace-nowrap uppercase">
+            {title || brandingSettings?.schoolName || 'ELIMCROWN'}
           </h1>
           <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">
             {title ? (brandingSettings?.schoolName || 'Elimcrown') : 'CBC Assessment & Grading System'}

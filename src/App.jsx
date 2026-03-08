@@ -15,7 +15,7 @@ const DEFAULT_BRANDING = {
   brandColor: '#520050',
   welcomeTitle: 'Welcome to Zawadi',
   welcomeMessage: 'Sign in to access your school portal.',
-  schoolName: 'Zawadi Junior Academy',
+  schoolName: 'ZAWADI JUNIOR ACADEMY',
 };
 
 function AppContent() {
