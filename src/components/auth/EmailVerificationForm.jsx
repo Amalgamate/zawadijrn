@@ -247,11 +247,11 @@ export default function EmailVerificationForm({ email, phone, onVerifySuccess, b
                     <img
                       src={brandingSettings.logoUrl}
                       alt="Logo"
-                      className="w-16 h-16 object-contain mb-4"
+                      className="w-28 h-28 object-contain mb-6"
                       onError={(e) => { e.target.style.display = 'none'; }}
                     />
                   )}
-                  <span className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tighter text-white whitespace-nowrap uppercase">
+                  <span className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tighter text-white whitespace-nowrap uppercase">
                     {brandingSettings?.schoolName || 'ELIMCROWN'}
                   </span>
                 </div>

@@ -279,12 +279,12 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
           <img
             src={brandingSettings.logoUrl}
             alt="Logo"
-            className="w-12 h-12 object-contain drop-shadow-sm"
+            className="w-14 h-14 object-contain drop-shadow-md"
             onError={(e) => { e.target.style.display = 'none'; }}
           />
         )}
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight whitespace-nowrap uppercase">
+          <h1 className="text-lg sm:text-xl font-bold text-gray-900 leading-tight whitespace-nowrap uppercase">
             {title || brandingSettings?.schoolName || 'ELIMCROWN'}
           </h1>
           <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">

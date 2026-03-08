@@ -415,11 +415,11 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess, brand
               <img
                 src={brandingSettings.logoUrl}
                 alt="Logo"
-                className="w-20 h-20 object-contain mb-4 drop-shadow-sm"
+                className="w-28 h-28 object-contain mb-6 drop-shadow-md"
                 onError={(e) => { e.target.style.display = 'none'; }}
               />
             )}
-            <h2 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tighter text-gray-900 whitespace-nowrap uppercase">
+            <h2 className="text-lg sm:text-xl md:text-2xl font-black tracking-tighter text-gray-900 whitespace-nowrap uppercase">
               {brandingSettings?.schoolName || 'ELIMCROWN ACADEMY'}
             </h2>
           </div>

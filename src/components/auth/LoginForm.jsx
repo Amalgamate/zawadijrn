@@ -183,11 +183,11 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
                 <img
                   src={brandingSettings.logoUrl}
                   alt="Logo"
-                  className="w-20 h-20 object-contain mx-auto mb-4 drop-shadow-sm"
+                  className="w-28 h-28 object-contain mx-auto mb-6 drop-shadow-md"
                   onError={(e) => { e.target.style.display = 'none'; }}
                 />
               )}
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 whitespace-nowrap uppercase">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 whitespace-nowrap uppercase tracking-tight">
                 {brandingSettings?.schoolName || 'ELIMCROWN'}
               </h1>
               <p className="text-gray-600 text-sm mt-2">
