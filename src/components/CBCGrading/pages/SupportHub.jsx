@@ -70,7 +70,7 @@ const SupportHub = () => {
         },
         {
           title: 'Recommended Providers for Schools',
-          content: 'Small schools (<200 students): Email-Resend, SMS-Africa\'s Talking, M-Pesa-IntaSend. Medium schools (200-500): Email-SendGrid, SMS-MobileSasa, M-Pesa-MobileSasa (all-in-one). Large schools (500+): Email-AWS SES, SMS-Africa\'s Talking, M-Pesa-Daraja (lowest fees).'
+          content: 'Small schools (<200 students): Email-Resend, SMS-Africa\'s Talking, M-Pesa-IntaSend. Medium schools (200-500): Email-SendGrid, SMS-Africa\'s Talking. Large schools (500+): Email-AWS SES, SMS-Africa\'s Talking, M-Pesa-Daraja (lowest fees).'
         }
       ]
     },

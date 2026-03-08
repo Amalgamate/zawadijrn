@@ -140,36 +140,6 @@
     "snippet": "result"
   },
   {
-    "file": "C:/Amalgamate/Projects/Zawadi SMS/server/src/controllers/stream.controller.ts",
-    "line": 25,
-    "snippet": "{ data: streams, count: streams.length }"
-  },
-  {
-    "file": "C:/Amalgamate/Projects/Zawadi SMS/server/src/controllers/stream.controller.ts",
-    "line": 51,
-    "snippet": "stream"
-  },
-  {
-    "file": "C:/Amalgamate/Projects/Zawadi SMS/server/src/controllers/stream.controller.ts",
-    "line": 91,
-    "snippet": "{ message: 'Stream created successfully', data: stream }"
-  },
-  {
-    "file": "C:/Amalgamate/Projects/Zawadi SMS/server/src/controllers/stream.controller.ts",
-    "line": 141,
-    "snippet": "{ message: 'Stream updated successfully', data: updated }"
-  },
-  {
-    "file": "C:/Amalgamate/Projects/Zawadi SMS/server/src/controllers/stream.controller.ts",
-    "line": 190,
-    "snippet": "{ message: 'Stream archived successfully', data: updated }"
-  },
-  {
-    "file": "C:/Amalgamate/Projects/Zawadi SMS/server/src/controllers/stream.controller.ts",
-    "line": 220,
-    "snippet": "{ available, used: usedNames, total: { available: available.length, used: usedNames.length } }"
-  },
-  {
     "file": "C:/Amalgamate/Projects/Zawadi SMS/server/src/controllers/support.controller.ts",
     "line": 15,
     "snippet": "{ message: \"Guest Name and Email are required for unauthenticated tickets.\" }"
