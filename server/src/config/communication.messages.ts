@@ -7,8 +7,8 @@
 export const COMMUNICATION_CONFIG = {
   // Email Provider Defaults
   email: {
-    fromEmail: process.env.EMAIL_FROM || 'noreply@elimcrown.ac.ke',
-    fromName: process.env.EMAIL_FROM_NAME || 'Elimcrown Academy',
+    fromEmail: process.env.EMAIL_FROM || 'noreply@zawadijunioracademy.co.ke',
+    fromName: process.env.EMAIL_FROM_NAME || 'Zawadi SMS Academy',
     provider: process.env.EMAIL_PROVIDER || 'resend'
   },
 
@@ -21,14 +21,14 @@ export const COMMUNICATION_CONFIG = {
 
   // Frontend Configuration
   frontend: {
-    url: process.env.FRONTEND_URL || 'https://elimcrown-v1.up.railway.app'
+    url: process.env.FRONTEND_URL || 'https://zawadijrn.vercel.app'
   }
 };
 
 // SMS Message Templates
 export const SMS_MESSAGES = {
   welcome: (schoolName: string): string =>
-    `Welcome to Elimcrown! Your school ${schoolName} is set up. Log in to your dashboard to get started.`,
+    `Welcome to Zawadi SMS! Your school ${schoolName} is set up. Log in to your dashboard to get started.`,
 
   assessmentReportHeader: (schoolName: string): string =>
     `FROM ${schoolName}`,
@@ -74,7 +74,7 @@ export const SMS_MESSAGES = {
   },
 
   otp: (otpCode: string, expiryMinutes: number = 10): string =>
-    `Your Elimcrown login OTP is: ${otpCode}. Valid for ${expiryMinutes} minutes. Do not share this code.`,
+    `Your Zawadi SMS login OTP is: ${otpCode}. Valid for ${expiryMinutes} minutes. Do not share this code.`,
 
   birthdayStandard: (learnerName: string, schoolName: string, gradeName: string): string =>
     `Happy Birthday ${learnerName}! Best wishes from ${schoolName}. We are proud of your progress in ${gradeName}. Have a wonderful day!`,
@@ -124,40 +124,41 @@ export const SMS_MESSAGES = {
 // Email Message Templates
 export const EMAIL_MESSAGES = {
   welcome: {
-    subject: (schoolName: string): string => `Welcome to ${schoolName} on Elimcrown!`,
-    preheader: 'Your school is set up and ready to go',
-    headingText: 'Welcome to Elimcrown!',
-    mainText: (schoolName: string): string =>
-      `Congratulations! Your school, <strong>${schoolName}</strong>, has been successfully registered on Elimcrown.`
-  },
+    welcome: {
+      subject: (schoolName: string): string => `Welcome to ${schoolName} on Zawadi SMS!`,
+      preheader: 'Your school is set up and ready to go',
+      headingText: 'Welcome to Zawadi SMS!',
+      mainText: (schoolName: string): string =>
+        `Congratulations! Your school, <strong>${schoolName}</strong>, has been successfully registered on Zawadi SMS.`
+    },
 
-  onboarding: {
-    subject: 'Get Started with Elimcrown',
-    preheader: 'Your onboarding guide is here',
-    headingText: 'Welcome Aboard!',
-    mainText: (schoolName: string): string =>
-      `Here's everything you need to know to get started with Elimcrown at ${schoolName}.`
-  },
+    onboarding: {
+      subject: 'Get Started with Zawadi SMS',
+      preheader: 'Your onboarding guide is here',
+      headingText: 'Welcome Aboard!',
+      mainText: (schoolName: string): string =>
+        `Here's everything you need to know to get started with Zawadi SMS at ${schoolName}.`
+    },
 
-  footer: (schoolName: string, year: number): string =>
-    `&copy; ${year} ${schoolName} via Elimcrown. All rights reserved.<br/>You received this email because you signed up for an Elimcrown account.`
-};
+    footer: (schoolName: string, year: number): string =>
+      `&copy; ${year} ${schoolName} via Zawadi SMS. All rights reserved.<br/>You received this email because you signed up for an Zawadi SMS account.`
+  };
 
-// Learning Area Abbreviations for SMS
-export const LEARNING_AREA_ABBREVIATIONS: Record<string, string> = {
-  'MATHEMATICS': 'MAT',
-  'ENGLISH': 'ENG',
-  'KISWAHILI': 'KIS',
-  'SCIENCE AND TECHNOLOGY': 'SCITECH',
-  'SOCIAL STUDIES': 'SST',
-  'CHRISTIAN RELIGIOUS EDUCATION': 'CRE',
-  'ISLAMIC RELIGIOUS EDUCATION': 'IRE',
-  'CREATIVE ARTS AND SPORTS': 'CREATIVE',
-  'AGRICULTURE AND NUTRITION': 'AGRNT',
-  'ENVIRONMENTAL ACTIVITIES': 'ENV',
-  'MATHEMATICAL ACTIVITIES': 'MAT',
-  'ENGLISH LANGUAGE ACTIVITIES': 'ENG',
-  'KISWAHILI LANGUAGE ACTIVITIES': 'KIS'
+  // Learning Area Abbreviations for SMS
+  export const LEARNING_AREA_ABBREVIATIONS: Record<string, string> = {
+    'MATHEMATICS': 'MAT',
+    'ENGLISH': 'ENG',
+    'KISWAHILI': 'KIS',
+    'SCIENCE AND TECHNOLOGY': 'SCITECH',
+    'SOCIAL STUDIES': 'SST',
+    'CHRISTIAN RELIGIOUS EDUCATION': 'CRE',
+    'ISLAMIC RELIGIOUS EDUCATION': 'IRE',
+    'CREATIVE ARTS AND SPORTS': 'CREATIVE',
+    'AGRICULTURE AND NUTRITION': 'AGRNT',
+    'ENVIRONMENTAL ACTIVITIES': 'ENV',
+    'MATHEMATICAL ACTIVITIES': 'MAT',
+    'ENGLISH LANGUAGE ACTIVITIES': 'ENG',
+    'KISWAHILI LANGUAGE ACTIVITIES': 'KIS'
 };
 
 // Error Messages
@@ -205,13 +206,13 @@ export const SUCCESS_MESSAGES = {
 
 // Brand Information
 export const BRAND = {
-  name: 'Elimcrown',
-  email: process.env.BRAND_EMAIL || 'hello@elimcrown.com',
-  phone: process.env.BRAND_PHONE || '+254 700 000 000',
-  website: process.env.BRAND_WEBSITE || 'elimcrown.com',
-  logo: process.env.BRAND_LOGO_URL || 'https://elimcrown.com/logo.png',
-  displayName: 'Elimcrown Academy',
-  tagline: 'CBC-Native Education Platform'
+  name: 'Zawadi SMS',
+  email: process.env.BRAND_EMAIL || 'hello@zawadijunioracademy.co.ke',
+  phone: process.env.BRAND_PHONE || '+254713612141',
+  website: process.env.BRAND_WEBSITE || 'zawadijrn.vercel.app',
+  logo: process.env.BRAND_LOGO_URL || 'https://zawadijrn.vercel.app/logo.png',
+  displayName: 'Zawadi SMS Academy',
+  tagline: 'Advanced School Management System'
 };
 
 // OTP Configuration

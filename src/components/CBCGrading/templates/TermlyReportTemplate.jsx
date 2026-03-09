@@ -28,7 +28,7 @@ const TermlyReportTemplate = ({ reportData, id = "termly-report-content" }) => {
             <div className="flex justify-between items-start mb-6 border-b-2 pb-6" style={{ borderColor: brandColor }}>
                 <div className="flex items-center gap-5">
                     <div className="w-24 h-24 flex items-center justify-center rounded bg-white shadow-sm border border-gray-100 overflow-hidden">
-                        {reportData.logoUrl && reportData.logoUrl !== '/logo-elimcrown.png' ? (
+                        {reportData.logoUrl && reportData.logoUrl !== '/logo-new.png' ? (
                             <img src={reportData.logoUrl} alt="Logo" className="max-w-full max-h-full object-contain" />
                         ) : (
                             <img src="/logo-new.png" alt="Logo" className="max-w-full max-h-full object-contain" />

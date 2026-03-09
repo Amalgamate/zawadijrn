@@ -43,11 +43,11 @@ async function startServer() {
       console.log('[DEBUG] Listen callback FIRED');
       // Determine API URL based on environment
       const apiUrl = process.env.NODE_ENV === 'production'
-        ? 'https://elimcrown-api.onrender.com/api'
+        ? 'https://zawadi-sms-api.onrender.com/api'
         : `http://localhost:${PORT}/api`;
 
       const healthUrl = process.env.NODE_ENV === 'production'
-        ? 'https://elimcrown-api.onrender.com/api/health'
+        ? 'https://zawadi-sms-api.onrender.com/api/health'
         : `http://localhost:${PORT}/api/health`;
 
       console.log('🚀 Server started successfully!');

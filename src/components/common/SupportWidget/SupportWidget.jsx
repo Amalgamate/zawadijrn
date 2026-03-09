@@ -146,7 +146,7 @@ const SupportWidget = () => {
                         </button>
                     )}
                     <div>
-                        <h3 className="font-bold text-xl">{isGuest ? 'ElimCrown Support' : 'Support Details'}</h3>
+                        <h3 className="font-bold text-xl">{isGuest ? 'Zawadi SMS Support' : 'Support Details'}</h3>
                         <p className="text-teal-50 text-xs opacity-80">Typically replies in minutes</p>
                     </div>
                 </div>

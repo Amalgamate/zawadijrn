@@ -44,9 +44,8 @@ export const TEST_MESSAGES = {
   }
 };
 
-export const SMS_TEMPLATES = {
-  welcome: (schoolName) =>
-    `Welcome to Elimcrown! Your school ${schoolName} is set up. Log in to your dashboard to get started.`,
+export const SMS_MESSAGES = {
+  welcome: (schoolName) => `Welcome to Zawadi SMS! Your school ${schoolName} is set up. Log in to your dashboard to get started.`,
 
   assessmentReport: {
     header: (schoolName) => `FROM ${schoolName}`,

@@ -8,7 +8,7 @@ import { toast } from 'react-hot-toast';
 import { useNotifications } from '../../hooks/useNotifications';
 
 const BrandingSettings = ({ brandingSettings, setBrandingSettings }) => {
-  const {} = useNotifications();
+  const { } = useNotifications();
 
   // State for branding messages only
   const [localSettings, setLocalSettings] = useState({
@@ -82,7 +82,7 @@ const BrandingSettings = ({ brandingSettings, setBrandingSettings }) => {
 
   const handleReset = () => {
     setLocalSettings({
-      welcomeTitle: `Welcome to ${brandingSettings?.schoolName || 'Elimcrown'}`,
+      welcomeTitle: `Welcome to ${brandingSettings?.schoolName || 'Zawadi SMS'}`,
       welcomeMessage: 'Empowering education through innovative learning management.',
       onboardingTitle: 'Join Our Community',
       onboardingMessage: 'Start your journey with us today. Create an account to access powerful tools for managing learning and assessment with ease.'

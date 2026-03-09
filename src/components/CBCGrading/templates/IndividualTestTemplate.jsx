@@ -28,7 +28,7 @@ const IndividualTestTemplate = ({ testData, learner, reportData = {}, id = "indi
             <div className="flex justify-between items-start mb-10 border-b-2 pb-6" style={{ borderColor: brandColor }}>
                 <div className="flex items-center gap-5">
                     <div className="w-24 h-24 flex items-center justify-center rounded bg-white shadow-sm border border-gray-100 overflow-hidden">
-                        {testData.logoUrl && testData.logoUrl !== '/logo-elimcrown.png' ? (
+                        {testData.logoUrl && testData.logoUrl !== '/logo-new.png' ? (
                             <img src={testData.logoUrl} alt="Logo" className="max-w-full max-h-full object-contain" />
                         ) : (
                             <img src="/logo-new.png" alt="Logo" className="max-w-full max-h-full object-contain" />

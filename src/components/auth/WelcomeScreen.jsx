@@ -24,7 +24,7 @@ export default function WelcomeScreen({ user, onGetStarted, brandingSettings }) 
               />
             )}
             <span className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tighter text-white whitespace-nowrap uppercase">
-              {brandingSettings?.schoolName || 'ELIMCROWN'}
+              {brandingSettings?.schoolName || 'ZAWADI SMS'}
             </span>
           </div>
         </div>
@@ -53,7 +53,7 @@ export default function WelcomeScreen({ user, onGetStarted, brandingSettings }) 
 
         {/* Footer */}
         <p className="text-white/40 text-sm mt-12 font-medium tracking-wide">
-          © {new Date().getFullYear()} {brandingSettings?.schoolName || 'Elimcrown Academy'} • CBC Grading System
+          © {new Date().getFullYear()} {brandingSettings?.schoolName || 'Zawadi SMS'} • CBC Grading System
         </p>
       </div>
     </div>

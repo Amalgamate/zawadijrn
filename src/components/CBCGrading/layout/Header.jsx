@@ -294,10 +294,10 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
         </div>
         <div className="hidden sm:block">
           <h1 className="text-base lg:text-lg font-black text-gray-900 leading-none tracking-tight uppercase">
-            {title || brandingSettings?.schoolName || 'ELIMCROWN'}
+            {title || brandingSettings?.schoolName || 'ZAWADI SMS'}
           </h1>
           <p className="text-[9px] text-gray-400 font-bold uppercase tracking-[0.2em] mt-1">
-            {title ? (brandingSettings?.schoolName || 'Elimcrown') : 'School Management System'}
+            {title ? (brandingSettings?.schoolName || 'Zawadi SMS') : 'School Management System'}
           </p>
         </div>
       </div>

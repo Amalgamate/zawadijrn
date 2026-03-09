@@ -432,7 +432,7 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess, brand
               />
             )}
             <CardTitle className="text-xl md:text-2xl font-black tracking-tighter text-gray-900 uppercase">
-              {brandingSettings?.schoolName || 'ZAWADI JUNIOR ACADEMY'}
+              {brandingSettings?.schoolName || 'ZAWADI SMS ACADEMY'}
             </CardTitle>
           </div>
           <CardTitle className="text-2xl font-bold text-gray-900 mt-2">Create Account</CardTitle>
@@ -711,7 +711,7 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess, brand
                           {fieldStatus.subdomain === 'invalid' && <XCircle className="h-5 w-5 text-red-500 animate-in fade-in zoom-in" />}
                         </div>
                         <div className="bg-gray-100/50 h-full px-4 flex items-center border-l border-gray-200 text-gray-500 text-[10px] font-black uppercase tracking-tighter">
-                          .{brandingSettings?.schoolName ? brandingSettings.schoolName.toLowerCase().replace(/\s+/g, '') : 'elimcrown'}.co.ke
+                          .{brandingSettings?.schoolName ? brandingSettings.schoolName.toLowerCase().replace(/\s+/g, '') : 'zawadi-sms'}.co.ke
                         </div>
                       </div>
                       {showErrors && errors.subdomain && <p className="text-[10px] text-red-600 font-bold uppercase ml-1">{errors.subdomain}</p>}

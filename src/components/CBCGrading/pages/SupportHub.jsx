@@ -54,7 +54,7 @@ const SupportHub = () => {
         },
         {
           title: 'SMS Integration Setup',
-          content: 'Go to Settings → Communication Settings → SMS tab. Select provider (Africa\'s Talking for Kenya at KES 0.80/SMS recommended). For Africa\'s Talking: Use "sandbox" as username for free testing, or create account for production. Enter API key and set Sender ID (max 11 characters, e.g., ELIMCROWN). Save and test with a phone number in format 254712345678.'
+          content: 'Go to Settings → Communication Settings → SMS tab. Select provider (Africa\'s Talking for Kenya at KES 0.80/SMS recommended). For Africa\'s Talking: Use "sandbox" as username for free testing, or create account for production. Enter API key and set Sender ID (max 11 characters, e.g., ZAWADI SMS). Save and test with a phone number in format 254712345678.'
         },
         {
           title: 'M-Pesa Integration Setup',
@@ -318,7 +318,7 @@ const SupportHub = () => {
         </a>
 
         <a
-          href="mailto:support@elimcrown.ac.ke"
+          href="mailto:support@zawadijunioracademy.co.ke"
           className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl p-6 hover:from-green-600 hover:to-green-700 transition cursor-pointer"
         >
           <Mail size={32} className="mb-3" />
@@ -391,7 +391,7 @@ const SupportHub = () => {
         </p>
         <div className="flex flex-wrap gap-3">
           <a
-            href="mailto:support@elimcrown.ac.ke"
+            href="mailto:support@zawadijunioracademy.co.ke"
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold flex items-center gap-2"
           >
             <Mail size={16} />
@@ -408,8 +408,8 @@ const SupportHub = () => {
         <div className="mt-4 p-4 bg-white rounded-lg border border-blue-200">
           <p className="text-sm text-gray-700">
             <strong>Support Hours:</strong> Monday - Friday, 8:00 AM - 5:00 PM EAT<br />
-            <strong>Email:</strong> support@elimcrown.ac.ke<br />
-            <strong>Phone:</strong> 0700 000 000<br />
+            <strong>Email:</strong> support@zawadijunioracademy.co.ke<br />
+            <strong>Phone:</strong> 0713 612 141<br />
             <strong>Response Time:</strong> Within 24 hours
           </p>
         </div>
