@@ -7,7 +7,7 @@
 
 import React, { useMemo, useState } from 'react';
 import {
-  Home, Menu, X, Users, Settings,
+  Home, Menu, X, Users, Settings, Mail,
   TrendingUp, ChevronDown, GraduationCap, CheckSquare, MessageCircle, UserCheck, HelpCircle, Receipt,
   Users2, BookOpen, Truck, Fingerprint, Calendar,
   CreditCard, PieChart, Package, Building2, FileText, Zap, School, Boxes
@@ -21,14 +21,14 @@ const focusModules = ['dashboard', 'communications', 'planner', 'learners', 'tea
 const allNavSections = [
   {
     id: 'dashboard',
-    label: 'Dashboard',
+    label: 'Overview',
     icon: Home,
     items: [],
     permission: null // Always visible
   },
   {
     id: 'communications',
-    label: 'Messages',
+    label: 'Inbox',
     icon: Mail,
     permission: null, // All roles can access communications
     items: [
@@ -49,7 +49,7 @@ const allNavSections = [
   },
   {
     id: 'learners',
-    label: 'Students',
+    label: 'Scholars',
     icon: Users,
     permission: null, // Section visible to TEACHER, ADMIN, etc.
     items: [
@@ -69,7 +69,7 @@ const allNavSections = [
   },
   {
     id: 'parents',
-    label: 'Parents',
+    label: 'Guardians',
     icon: UserCheck,
     permission: 'VIEW_ALL_USERS', // Teachers can view parents
     items: [
@@ -117,7 +117,7 @@ const allNavSections = [
   },
   {
     id: 'learning-hub',
-    label: 'Learning Hub',
+    label: 'Resource Center',
     icon: BookOpen,
     permission: 'ACCESS_LEARNING_HUB', // Accountants should not access this
     items: [
@@ -277,7 +277,7 @@ const allNavSections = [
   },
   {
     id: 'facilities',
-    label: 'Facilities',
+    label: 'The Campus',
     icon: Building2,
     permission: 'MANAGE_FACILITIES', // Head teachers can manage facilities
     items: [
@@ -741,7 +741,7 @@ const Sidebar = React.memo(({
                     <div className="min-w-[20px] flex justify-center group-hover:scale-110 transition-transform">
                       <School size={18} className="opacity-70 group-hover:opacity-100" />
                     </div>
-                    <span className="uppercase tracking-wider font-bold text-brand-teal">Back Office</span>
+                    <span className="uppercase tracking-wider font-bold text-brand-teal">Back Office Management</span>
                   </div>
                   <ChevronDown size={14} className={`transition-transform duration-300 ${activeCategory === 'school' ? 'rotate-180' : ''}`} />
                 </button>

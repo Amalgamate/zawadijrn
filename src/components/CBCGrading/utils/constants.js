@@ -146,20 +146,20 @@ export const USER_ROLES = [
 
 // Page Titles Mapping
 export const PAGE_TITLES = {
-  'dashboard': 'Dashboard',
+  'dashboard': 'Overview',
 
   // Learners
-  'learners-list': 'All Students',
+  'learners-list': 'Scholars List',
   'learners-admissions': 'Admissions',
   'learners-transfers-in': 'Incoming Transfers',
-  'learners-exited': 'Exited Students',
+  'learners-exited': 'Exited Scholars',
   'learners-promotion': 'Promotion',
   'learners-transfer-out': 'Transfer Out',
 
   // Teachers/Parents
-  'teachers-list': 'Tutors List',
-  'add-teacher': 'Add/Edit Tutor',
-  'parents-list': 'Parents List',
+  'teachers-list': 'Faculty List',
+  'add-teacher': 'Add/Edit Faculty',
+  'parents-list': 'Guardians List',
 
   // Timetable
   'timetable': 'School Timetable',
@@ -170,7 +170,7 @@ export const PAGE_TITLES = {
 
   // Messages
   'comm-notices': 'Notices & Announcements',
-  'comm-messages': 'Messages',
+  'comm-messages': 'Inbox',
   'comm-history': 'Message History',
 
   // Assessment
@@ -185,14 +185,14 @@ export const PAGE_TITLES = {
   'assess-performance-scale': 'Performance Scale',
 
   // Learning Hub
-  'learning-hub-materials': 'Class Materials',
+  'learning-hub-materials': 'Resource Center',
   'learning-hub-assignments': 'Assignments',
   'learning-hub-lesson-plans': 'Lesson Plans',
   'learning-hub-library': 'Resource Library',
   'inventory-books': 'Inventory Management',
 
   // Facilities
-  'facilities-classes': 'Classes & Streams',
+  'facilities-classes': 'Campus Configuration',
 
   // Fees
   'fees-structure': 'Fee Structure',
