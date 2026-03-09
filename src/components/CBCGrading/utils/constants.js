@@ -168,7 +168,7 @@ export const PAGE_TITLES = {
   'attendance-daily': 'Daily Attendance',
   'attendance-reports': 'Attendance Reports',
 
-  // Communications
+  // Messages
   'comm-notices': 'Notices & Announcements',
   'comm-messages': 'Messages',
   'comm-history': 'Message History',
@@ -209,7 +209,7 @@ export const PAGE_TITLES = {
   'settings-users': 'System Users',
   'settings-branding': 'Branding & Customization',
   'settings-backup': 'Backup & Restore',
-  'settings-communication': 'Communication Settings',
+  'settings-communication': 'Message Settings',
   'settings-payment': 'Payment Settings',
   'settings-profile': 'My Profile'
 };

@@ -199,33 +199,11 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
     const schoolId = (user && (user.school?.id || user.schoolId)) || localStorage.getItem('currentSchoolId');
     const lastSchoolId = localStorage.getItem('cbc_last_school_id');
     if (!schoolId) return;
-    const token = localStorage.getItem('token') || localStorage.getItem('authToken');
-    const onEnterNewSchool = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/schools/${schoolId}`, {
-          headers: {
-            Authorization: token ? `Bearer ${token}` : '',
-            'X-School-Id': schoolId,
-          },
-        });
-        const json = await res.json();
-        const school = json?.data || json;
-        const branches = Array.isArray(school?.branches) ? school.branches : [];
-        const learnersCount = (school?._count && school._count.learners) || 0;
-        const isBlank = (branches.length === 0) && learnersCount === 0;
-        if (isBlank && (user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN')) {
-          setCurrentPage('settings-school');
-          setExpandedSections(prev => ({ ...prev, settings: true }));
-          try {
-            localStorage.setItem('cbc_current_page', 'settings-school');
-          } catch { }
-        }
-      } catch { }
-    };
     // Redirect to settings if switching to a different or fresh school
     if (lastSchoolId !== schoolId) {
       localStorage.setItem('cbc_last_school_id', schoolId);
-      onEnterNewSchool();
+      // Removed automatic redirection to settings-school for fresh schools
+      // Users should always land on the dashboard now.
     }
   }, [user]);
 

@@ -28,8 +28,8 @@ const allNavSections = [
   },
   {
     id: 'communications',
-    label: 'Communications',
-    icon: MessageCircle,
+    label: 'Messages',
+    icon: Mail,
     permission: null, // All roles can access communications
     items: [
       { id: 'comm-notices', label: 'Notices & Announcements', path: 'comm-notices', permission: null },
@@ -583,7 +583,7 @@ const Sidebar = React.memo(({
 
   const dashboardSection = navSections.find(s => s.id === 'dashboard');
 
-  // For teachers, filter communications to only show Inbox (Messages)
+  // For teachers, filter messages to only show Inbox (Messages)
   const communicationSection = useMemo(() => {
     const section = navSections.find(s => s.id === 'communications');
     if (!section) return null;
