@@ -46,6 +46,7 @@ router.use('/diagnostics', diagnosticsRoutes);
 router.use('/migrations', migrationRoutes);
 router.use('/auth', authRoutes);
 router.use('/books', bookRoutes);
+router.use('/schools', schoolRoutes); // PUBLIC (internally partial)
 router.get('/auth/csrf', issueCsrfToken);
 
 // ============================================
@@ -55,7 +56,6 @@ router.use(authenticate);
 
 router.use('/admin', adminRoutes);
 router.use('/support', supportRoutes);
-router.use('/schools', schoolRoutes);
 router.use('/users', userRoutes);
 router.use('/learners', learnerRoutes);
 router.use('/classes', classRoutes);

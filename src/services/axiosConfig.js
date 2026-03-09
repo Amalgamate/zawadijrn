@@ -82,7 +82,10 @@ axiosInstance.interceptors.response.use(
                     localStorage.removeItem('refreshToken');
                     localStorage.removeItem('user');
                     localStorage.removeItem('currentSchoolId');
-                    window.location.href = '/';
+                    // Avoid redirecting if it's already a public request to prevent loops
+                    if (!originalRequest.url.includes('/public/')) {
+                        window.location.href = '/';
+                    }
                 }
             } else {
                 // No refresh token - logout user
@@ -90,7 +93,10 @@ axiosInstance.interceptors.response.use(
                 localStorage.removeItem('refreshToken');
                 localStorage.removeItem('user');
                 localStorage.removeItem('currentSchoolId');
-                window.location.href = '/';
+                // Avoid redirecting if it's already a public request to prevent loops
+                if (!originalRequest.url?.includes('/public/')) {
+                    window.location.href = '/';
+                }
             }
         }
         return Promise.reject(error);

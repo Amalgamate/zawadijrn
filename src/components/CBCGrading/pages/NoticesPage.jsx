@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, X, Eye, Cake, Bell, Megaphone, RefreshCw, Send, Save, CheckCircle, Loader, User, Smartphone, MessageCircle, Archive, Share2 } from 'lucide-react';
+import { Plus, Edit, Trash2, X, Eye, Gift, Bell, Megaphone, RefreshCw, Send, Save, CheckCircle, Loader, User, Smartphone, MessageCircle, Archive, Share2 } from 'lucide-react';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription, Button, Input, Label, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, Tabs, TabsList, TabsTrigger, TabsContent, Badge } from '../../../components/ui';
 import { useNotifications } from '../hooks/useNotifications';
 import api, { communicationAPI } from '../../../services/api';
@@ -484,7 +484,7 @@ const NoticesPage = ({ initialTab }) => {
               value="birthdays"
               className="rounded-none border-b-2 border-transparent data-[state=active]:border-brand-purple data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-4 flex items-center gap-2"
             >
-              <Cake size={16} />
+              <Gift size={16} />
               <span className="font-bold">This Week's Birthdays</span>
               {birthdays.length > 0 && (
                 <Badge variant="purple" className="ml-2">
@@ -526,103 +526,103 @@ const NoticesPage = ({ initialTab }) => {
                     const canDelete = !!isOwner && isSystemAdmin;
 
                     return (
-                  <Card
-                    key={notice.id}
-                    id={`notice-card-${notice.id}`}
-                    className={`border-l-4 border-l-brand-teal hover:shadow-lg transition ${focusedNoticeId === notice.id ? 'ring-2 ring-brand-teal/60 shadow-lg' : ''}`}
-                  >
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-3">
-                            <h3 className="text-lg font-bold text-gray-800">{notice.title}</h3>
-                            <Badge variant={notice.priority === 'High' ? 'destructive' : 'secondary'}>
-                              {notice.priority}
-                            </Badge>
-                            <Badge variant="outline">
-                              {notice.category}
-                            </Badge>
+                      <Card
+                        key={notice.id}
+                        id={`notice-card-${notice.id}`}
+                        className={`border-l-4 border-l-brand-teal hover:shadow-lg transition ${focusedNoticeId === notice.id ? 'ring-2 ring-brand-teal/60 shadow-lg' : ''}`}
+                      >
+                        <CardContent className="p-6">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-3">
+                                <h3 className="text-lg font-bold text-gray-800">{notice.title}</h3>
+                                <Badge variant={notice.priority === 'High' ? 'destructive' : 'secondary'}>
+                                  {notice.priority}
+                                </Badge>
+                                <Badge variant="outline">
+                                  {notice.category}
+                                </Badge>
+                              </div>
+                              <p className="text-gray-600 text-sm mb-3">{notice.content}</p>
+                              <div className="flex items-center gap-4 text-xs text-gray-500">
+                                <span className="font-medium">By {notice.author}</span>
+                                <span>•</span>
+                                <span>{notice.date}</span>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-brand-teal hover:bg-brand-teal/10"
+                                onClick={() => setSelectedNotice(notice)}
+                                title="View notice"
+                              >
+                                <Eye size={18} />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-indigo-600 hover:bg-indigo-50"
+                                onClick={() => setSharingNotice(notice)}
+                                title="Share notice"
+                              >
+                                <Share2 size={18} />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-green-600 hover:bg-green-50"
+                                onClick={() => handleEditClick(notice)}
+                              >
+                                <Edit size={18} />
+                              </Button>
+                              {canArchive && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={async () => {
+                                    if (window.confirm('Archive this notice?')) {
+                                      try {
+                                        await api.notices.delete(notice.id);
+                                        showSuccess('Notice archived');
+                                        fetchNotices();
+                                      } catch (err) {
+                                        showError(err.message || 'Failed to archive notice');
+                                      }
+                                    }
+                                  }}
+                                  className="text-amber-600 hover:bg-amber-50"
+                                  title="Archive notice"
+                                >
+                                  <Archive size={18} />
+                                </Button>
+                              )}
+                              {canDelete && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={async () => {
+                                    if (window.confirm('Delete this notice permanently?')) {
+                                      try {
+                                        await api.notices.delete(notice.id);
+                                        showSuccess('Notice deleted permanently');
+                                        fetchNotices();
+                                      } catch (err) {
+                                        showError(err.message || 'Failed to delete notice');
+                                      }
+                                    }
+                                  }}
+                                  className="text-red-600 hover:bg-red-50"
+                                  title="Delete notice permanently"
+                                >
+                                  <Trash2 size={18} />
+                                </Button>
+                              )}
+                            </div>
                           </div>
-                          <p className="text-gray-600 text-sm mb-3">{notice.content}</p>
-                          <div className="flex items-center gap-4 text-xs text-gray-500">
-                            <span className="font-medium">By {notice.author}</span>
-                            <span>•</span>
-                            <span>{notice.date}</span>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-brand-teal hover:bg-brand-teal/10"
-                            onClick={() => setSelectedNotice(notice)}
-                            title="View notice"
-                          >
-                            <Eye size={18} />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-indigo-600 hover:bg-indigo-50"
-                            onClick={() => setSharingNotice(notice)}
-                            title="Share notice"
-                          >
-                            <Share2 size={18} />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-green-600 hover:bg-green-50"
-                            onClick={() => handleEditClick(notice)}
-                          >
-                            <Edit size={18} />
-                          </Button>
-                          {canArchive && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={async () => {
-                                if (window.confirm('Archive this notice?')) {
-                                  try {
-                                    await api.notices.delete(notice.id);
-                                    showSuccess('Notice archived');
-                                    fetchNotices();
-                                  } catch (err) {
-                                    showError(err.message || 'Failed to archive notice');
-                                  }
-                                }
-                              }}
-                              className="text-amber-600 hover:bg-amber-50"
-                              title="Archive notice"
-                            >
-                              <Archive size={18} />
-                            </Button>
-                          )}
-                          {canDelete && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={async () => {
-                                if (window.confirm('Delete this notice permanently?')) {
-                                  try {
-                                    await api.notices.delete(notice.id);
-                                    showSuccess('Notice deleted permanently');
-                                    fetchNotices();
-                                  } catch (err) {
-                                    showError(err.message || 'Failed to delete notice');
-                                  }
-                                }
-                              }}
-                              className="text-red-600 hover:bg-red-50"
-                              title="Delete notice permanently"
-                            >
-                              <Trash2 size={18} />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                        </CardContent>
+                      </Card>
                     );
                   })()
                 ))}
@@ -644,7 +644,7 @@ const NoticesPage = ({ initialTab }) => {
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-brand-purple/10 rounded-lg">
-                    <Cake size={24} className="text-brand-purple" />
+                    <Gift size={24} className="text-brand-purple" />
                   </div>
                   <div>
                     <h2 className="text-xl font-bold text-gray-800">Birthday Celebrations</h2>
@@ -685,7 +685,7 @@ const NoticesPage = ({ initialTab }) => {
                   <CardContent className="p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-brand-purple text-white rounded-full">
-                        <Cake size={18} />
+                        <Gift size={18} />
                       </div>
                       <div>
                         <p className="font-bold text-brand-purple">{birthdaysToday.length} Celebrations Today!</p>
@@ -837,7 +837,7 @@ const NoticesPage = ({ initialTab }) => {
               ) : (
                 <div className="flex items-center justify-center py-20">
                   <div className="text-center">
-                    <Cake size={48} className="mx-auto text-gray-300 mb-4" />
+                    <Gift size={48} className="mx-auto text-gray-300 mb-4" />
                     <h3 className="text-lg font-bold text-gray-600 mb-2">No Birthdays This Week</h3>
                     <p className="text-gray-400 max-w-sm">Check back next week for upcoming celebrations</p>
                   </div>
@@ -853,7 +853,7 @@ const NoticesPage = ({ initialTab }) => {
         <DialogContent className="max-w-lg">
           <DialogHeader className="bg-pink-600 text-white px-6 py-4 -m-6 mb-4 rounded-t-lg">
             <DialogTitle className="text-lg font-bold flex items-center gap-2 text-white">
-              <Cake size={20} />
+              <Gift size={20} />
               Birthday Settings
             </DialogTitle>
           </DialogHeader>

@@ -1,9 +1,14 @@
 import React, { useState, useCallback } from 'react';
-import { User, Mail, Lock, Eye, EyeOff, CheckCircle, Loader2, XCircle, Globe, Building2 } from 'lucide-react';
+import { User, Mail, Lock, Eye, EyeOff, CheckCircle, Loader2, XCircle, Globe, Building2, MapPin } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { onboardingAPI, authAPI } from '../../services/api';
 import { useSubdomainCheck } from '../../hooks/useSubdomain';
 import debounce from 'lodash/debounce';
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
+import { cn } from "../../utils/cn";
 
 export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess, brandingSettings }) {
   const [countryCode, setCountryCode] = useState('+254'); // Default to Kenya
@@ -402,388 +407,436 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess, brand
 
   const passwordStrength = getPasswordStrength(formData.password);
 
-  // Single Page Layout
-  return (
-    <div className="min-h-screen bg-white flex flex-col items-center py-6 px-4">
-      {/* Container - Constrained Width but Flat */}
-      <div className="w-full max-w-5xl">
+  const brandColor = brandingSettings?.brandColor || '#520050';
 
-        {/* Header Section */}
-        <div className="pt-8 pb-4 text-center">
-          <div className="inline-flex flex-col items-center justify-center transform scale-90 mb-2">
+  return (
+    <div
+      className="w-full min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
+      style={{
+        background: `linear-gradient(135deg, ${brandColor}, ${brandColor}dd, ${brandColor}bb)`
+      }}
+    >
+      {/* Dynamic Background Elements */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-white/5 rounded-full blur-3xl animate-pulse-slow" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-black/10 rounded-full blur-3xl" />
+
+      <Card className="w-full max-w-5xl border-white/20 bg-white/95 backdrop-blur-xl shadow-2xl relative z-10 animate-fade-up overflow-hidden">
+        <CardHeader className="pt-10 pb-6 text-center border-b border-gray-100/50">
+          <div className="inline-flex flex-col items-center justify-center transform scale-90 mb-2 group">
             {brandingSettings?.logoUrl && (
               <img
                 src={brandingSettings.logoUrl}
                 alt="Logo"
-                className="w-28 h-28 object-contain mb-6 drop-shadow-md"
+                className="w-24 h-24 object-contain mb-4 transition-transform duration-500 group-hover:scale-110 drop-shadow-xl"
                 onError={(e) => { e.target.style.display = 'none'; }}
               />
             )}
-            <h2 className="text-lg sm:text-xl md:text-2xl font-black tracking-tighter text-gray-900 whitespace-nowrap uppercase">
-              {brandingSettings?.schoolName || 'ELIMCROWN ACADEMY'}
-            </h2>
+            <CardTitle className="text-xl md:text-2xl font-black tracking-tighter text-gray-900 uppercase">
+              {brandingSettings?.schoolName || 'ZAWADI JUNIOR ACADEMY'}
+            </CardTitle>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Create Account</h1>
-          <p className="text-gray-600 text-sm mt-1">Join the community to get started</p>
-        </div>
+          <CardTitle className="text-2xl font-bold text-gray-900 mt-2">Create Account</CardTitle>
+          <CardDescription className="text-gray-500 font-bold uppercase tracking-tight text-xs mt-1">
+            Join our modern school management community
+          </CardDescription>
+        </CardHeader>
 
-        <form onSubmit={handleSubmit} className="px-8 pb-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <CardContent className="p-0">
+          <form onSubmit={handleSubmit} className="p-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
-            {/* Left Column: Personal & Security */}
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 border-b pb-2">
-                  Personal Details
-                </h3>
-                <div className="space-y-4">
-                  {/* Name */}
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">Full Name</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <User className="h-4 w-4 text-gray-400" />
-                      </div>
-                      <input
-                        type="text"
-                        name="fullName"
-                        value={formData.fullName}
-                        onChange={handleChange}
-                        className={`w-full pl-9 pr-9 py-2 text-sm border rounded-md focus:ring-1 focus:ring-[#520050] focus:border-transparent transition ${fieldStatus.fullName === 'invalid' || (showErrors && errors.fullName) ? 'border-red-500' :
-                          fieldStatus.fullName === 'valid' ? 'border-green-500' : 'border-gray-300'
-                          }`}
-                        placeholder="John Doe"
-                      />
-                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                        {fieldStatus.fullName === 'valid' && <CheckCircle className="h-4 w-4 text-green-500" />}
-                      </div>
-                    </div>
-                    {showErrors && errors.fullName && <p className="text-xs text-red-500 mt-1">{errors.fullName}</p>}
-                  </div>
-
-                  {/* Email */}
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">Email Address</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Mail className="h-4 w-4 text-gray-400" />
-                      </div>
-                      <input
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        className={`w-full pl-9 pr-9 py-2 text-sm border rounded-md focus:ring-1 focus:ring-[#520050] focus:border-transparent transition ${fieldStatus.email === 'invalid' || (showErrors && errors.email) ? 'border-red-500' :
-                          fieldStatus.email === 'valid' ? 'border-green-500' : 'border-gray-300'
-                          }`}
-                        placeholder="you@school.com"
-                      />
-                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                        {fieldStatus.email === 'loading' && <Loader2 className="animate-spin h-4 w-4 text-gray-400" />}
-                        {fieldStatus.email === 'valid' && <CheckCircle className="h-4 w-4 text-green-500" />}
-                        {fieldStatus.email === 'invalid' && <XCircle className="h-4 w-4 text-red-500" />}
-                      </div>
-                    </div>
-                    {showErrors && errors.email && <p className="text-xs text-red-500 mt-1">{errors.email}</p>}
-                  </div>
-
-                  {/* Phone */}
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">Mobile Number</label>
-                    <div className="flex gap-2">
-                      <select
-                        value={countryCode}
-                        onChange={handleCountryCodeChange}
-                        className="w-24 px-2 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#520050] focus:border-transparent bg-gray-50"
-                      >
-                        {africanCountries.map(country => (
-                          <option key={country.code} value={country.code}>
-                            {country.flag} {country.code}
-                          </option>
-                        ))}
-                      </select>
-                      <div className="relative flex-1">
-                        <input
-                          type="tel"
-                          value={phoneNumber}
-                          onChange={handlePhoneChange}
-                          className={`w-full px-3 py-2 text-sm border rounded-md focus:ring-1 focus:ring-[#520050] focus:border-transparent transition ${errors.phone ? 'border-red-500' : 'border-gray-300'
-                            }`}
-                          placeholder="712345678"
+              {/* Left Column: Personal & Security */}
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                    <div className="h-[1px] w-8 bg-gray-200" />
+                    Personal Details
+                  </h3>
+                  <div className="space-y-5">
+                    {/* Name */}
+                    <div className="space-y-2">
+                      <Label htmlFor="fullName" className="text-gray-700 font-bold ml-1">Full Name</Label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-brand-purple transition-colors">
+                          <User size={18} />
+                        </div>
+                        <Input
+                          id="fullName"
+                          name="fullName"
+                          value={formData.fullName}
+                          onChange={handleChange}
+                          className={cn(
+                            "h-12 pl-12 pr-12 border-gray-200 focus:border-brand-purple focus:ring-brand-purple/20 transition-all",
+                            (fieldStatus.fullName === 'invalid' || (showErrors && errors.fullName)) && "border-red-500 bg-red-50"
+                          )}
+                          placeholder="John Doe"
                         />
-                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                          {fieldStatus.phone === 'loading' && <Loader2 className="animate-spin h-4 w-4 text-gray-400" />}
-                          {fieldStatus.phone === 'valid' && <CheckCircle className="h-4 w-4 text-green-500" />}
+                        <div className="absolute inset-y-0 right-0 pr-4 flex items-center">
+                          {fieldStatus.fullName === 'valid' && <CheckCircle className="h-5 w-5 text-green-500 animate-in fade-in zoom-in" />}
                         </div>
                       </div>
+                      {showErrors && errors.fullName && <p className="text-[10px] text-red-600 font-bold uppercase ml-1">{errors.fullName}</p>}
                     </div>
-                    {showErrors && errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone}</p>}
-                  </div>
-                </div>
-              </div>
 
-              <div>
-                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 border-b pb-2">
-                  Security
-                </h3>
-                <div className="space-y-4">
-                  {/* Password */}
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">Password</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Lock className="h-4 w-4 text-gray-400" />
+                    {/* Email */}
+                    <div className="space-y-2">
+                      <Label htmlFor="email" className="text-gray-700 font-bold ml-1">Email Address</Label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-brand-purple transition-colors">
+                          <Mail size={18} />
+                        </div>
+                        <Input
+                          id="email"
+                          type="email"
+                          name="email"
+                          value={formData.email}
+                          onChange={handleChange}
+                          className={cn(
+                            "h-12 pl-12 pr-12 border-gray-200 focus:border-brand-purple focus:ring-brand-purple/20 transition-all",
+                            (fieldStatus.email === 'invalid' || (showErrors && errors.email)) && "border-red-500 bg-red-50"
+                          )}
+                          placeholder="you@school.com"
+                        />
+                        <div className="absolute inset-y-0 right-0 pr-4 flex items-center">
+                          {fieldStatus.email === 'loading' && <Loader2 className="animate-spin h-5 w-5 text-gray-400" />}
+                          {fieldStatus.email === 'valid' && <CheckCircle className="h-5 w-5 text-green-500 animate-in fade-in zoom-in" />}
+                          {fieldStatus.email === 'invalid' && <XCircle className="h-5 w-5 text-red-500 animate-in fade-in zoom-in" />}
+                        </div>
                       </div>
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        name="password"
-                        value={formData.password}
-                        onChange={handleChange}
-                        className={`w-full pl-9 pr-9 py-2 text-sm border rounded-md focus:ring-1 focus:ring-[#520050] focus:border-transparent transition ${errors.password ? 'border-red-500' : 'border-gray-300'
-                          }`}
-                        placeholder="Min. 8 chars"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                      >
-                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </button>
+                      {showErrors && errors.email && <p className="text-[10px] text-red-600 font-bold uppercase ml-1">{errors.email}</p>}
                     </div>
-                    {/* Strength meter - Fixed height to prevent layout shift & align with right column */}
-                    <div className="mt-1 min-h-[18px]">
-                      {formData.password && (
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 h-1 bg-gray-200 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full transition-all duration-300 ${passwordStrength.color}`}
-                              style={{ width: `${(passwordStrength.strength / 4) * 100}%` }}
-                            />
+
+                    {/* Phone */}
+                    <div className="space-y-2">
+                      <Label className="text-gray-700 font-bold ml-1">Mobile Number</Label>
+                      <div className="flex gap-2">
+                        <select
+                          value={countryCode}
+                          onChange={handleCountryCodeChange}
+                          className="w-28 h-12 px-3 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-brand-purple/20 focus:border-brand-purple outline-none bg-white font-bold transition-all"
+                        >
+                          {africanCountries.map(country => (
+                            <option key={country.code} value={country.code}>
+                              {country.flag} {country.code}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="relative flex-1 group">
+                          <Input
+                            type="tel"
+                            value={phoneNumber}
+                            onChange={handlePhoneChange}
+                            className={cn(
+                              "h-12 border-gray-200 focus:border-brand-purple focus:ring-brand-purple/20 transition-all",
+                              errors.phone && "border-red-500 bg-red-50"
+                            )}
+                            placeholder="712345678"
+                          />
+                          <div className="absolute inset-y-0 right-0 pr-4 flex items-center">
+                            {fieldStatus.phone === 'loading' && <Loader2 className="animate-spin h-5 w-5 text-gray-400" />}
+                            {fieldStatus.phone === 'valid' && <CheckCircle className="h-5 w-5 text-green-500 animate-in fade-in zoom-in" />}
                           </div>
-                          <span className="text-[10px] text-gray-500 font-medium">{passwordStrength.label}</span>
                         </div>
-                      )}
-                    </div>
-                    {showErrors && errors.password && <p className="text-xs text-red-500 mt-1">{errors.password}</p>}
-                  </div>
-
-                  {/* Confirm Password */}
-                  <div>
-
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">Confirm Password</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Lock className="h-4 w-4 text-gray-400" />
                       </div>
-                      <input
-                        type={showConfirmPassword ? 'text' : 'password'}
-                        name="confirmPassword"
-                        value={formData.confirmPassword}
-                        onChange={handleChange}
-                        className={`w-full pl-9 pr-9 py-2 text-sm border rounded-md focus:ring-1 focus:ring-[#520050] focus:border-transparent transition ${errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
-                          }`}
-                        placeholder="Confirm password"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                      >
-                        {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </button>
+                      {showErrors && errors.phone && <p className="text-[10px] text-red-600 font-bold uppercase ml-1">{errors.phone}</p>}
                     </div>
-                    {showErrors && errors.confirmPassword && <p className="text-xs text-red-500 mt-1">{errors.confirmPassword}</p>}
                   </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Right Column: School & Location */}
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 border-b pb-2">
-                  School Details
-                </h3>
-                <div className="space-y-4">
-                  {/* School Name */}
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">School Name</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Building2 className="h-4 w-4 text-gray-400" />
+                <div className="pt-2">
+                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                    <div className="h-[1px] w-8 bg-gray-200" />
+                    Security
+                  </h3>
+                  <div className="space-y-5">
+                    {/* Password */}
+                    <div className="space-y-2">
+                      <Label htmlFor="password" className="text-gray-700 font-bold ml-1">Password</Label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-brand-purple transition-colors">
+                          <Lock size={18} />
+                        </div>
+                        <Input
+                          id="password"
+                          type={showPassword ? 'text' : 'password'}
+                          name="password"
+                          value={formData.password}
+                          onChange={handleChange}
+                          className={cn(
+                            "h-12 pl-12 pr-12 border-gray-200 focus:border-brand-purple focus:ring-brand-purple/20 transition-all",
+                            (showErrors && errors.password) && "border-red-500 bg-red-50"
+                          )}
+                          placeholder="Min. 8 characters"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-brand-purple transition-colors"
+                        >
+                          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
                       </div>
-                      <input
-                        type="text"
-                        name="schoolName"
-                        value={formData.schoolName}
-                        onChange={handleChange}
-                        onBlur={handleSchoolNameBlur}
-                        className={`w-full pl-9 pr-3 py-2 text-sm border rounded-md focus:ring-1 focus:ring-[#520050] focus:border-transparent transition ${fieldStatus.schoolName === 'invalid' || (showErrors && errors.schoolName) ? 'border-red-500' :
-                          fieldStatus.schoolName === 'valid' ? 'border-green-500' : 'border-gray-300'
-                          }`}
-                        placeholder="School Name"
-                      />
+                      {/* Strength meter */}
+                      <div className="mt-2 px-1">
+                        {formData.password && (
+                          <div className="space-y-1.5">
+                            <div className="flex justify-between items-center px-0.5">
+                              <span className="text-[10px] text-gray-500 font-black uppercase tracking-wider">Strength: {passwordStrength.label}</span>
+                            </div>
+                            <div className="flex gap-1 h-1.5">
+                              {[1, 2, 3, 4].map((step) => (
+                                <div
+                                  key={step}
+                                  className={cn(
+                                    "flex-1 rounded-full transition-all duration-500",
+                                    step <= passwordStrength.strength ? passwordStrength.color : "bg-gray-100"
+                                  )}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      {showErrors && errors.password && <p className="text-[10px] text-red-600 font-bold uppercase ml-1">{errors.password}</p>}
                     </div>
-                    {showErrors && errors.schoolName && <p className="text-xs text-red-500 mt-1">{errors.schoolName}</p>}
-                  </div>
 
-                  {/* School Type - Stacked below Name */}
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">School Type</label>
-                    <select
-                      name="schoolType"
-                      value={formData.schoolType}
-                      onChange={handleChange}
-                      className={`w-full px-3 py-2 text-sm border rounded-md focus:ring-1 focus:ring-[#520050] focus:border-transparent transition ${showErrors && errors.schoolType ? 'border-red-500' : 'border-gray-300'
-                        }`}
-                    >
-                      <option value="">Select Type</option>
-                      <option>Public Primary</option>
-                      <option>Public Secondary</option>
-                      <option>Private Primary</option>
-                      <option>Private Secondary</option>
-                    </select>
-                    {showErrors && errors.schoolType && <p className="text-xs text-red-500 mt-1">{errors.schoolType}</p>}
-                  </div>
-
-                  {/* Domain */}
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">School Domain (Optional)</label>
-                    <div className={`relative flex items-center border rounded-md overflow-hidden text-sm transition ${fieldStatus.subdomain === 'invalid' ? 'border-red-500' :
-                      fieldStatus.subdomain === 'valid' ? 'border-green-500' : 'border-gray-300'
-                      }`}>
-                      <div className="bg-gray-50 px-3 py-2 border-r text-gray-500">
-                        <Globe size={16} />
+                    {/* Confirm Password */}
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword" className="text-gray-700 font-bold ml-1">Confirm Password</Label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-brand-purple transition-colors">
+                          <Lock size={18} />
+                        </div>
+                        <Input
+                          id="confirmPassword"
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          name="confirmPassword"
+                          value={formData.confirmPassword}
+                          onChange={handleChange}
+                          className={cn(
+                            "h-12 pl-12 pr-12 border-gray-200 focus:border-brand-purple focus:ring-brand-purple/20 transition-all",
+                            (showErrors && errors.confirmPassword) && "border-red-500 bg-red-50"
+                          )}
+                          placeholder="Repeat password"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-brand-purple transition-colors"
+                        >
+                          {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
                       </div>
-                      <input
-                        type="text"
-                        value={formData.subdomain || suggestedSubdomain}
-                        onChange={handleSubdomainChange}
-                        className="flex-1 px-3 py-2 outline-none text-gray-600 placeholder-gray-400"
-                        placeholder="your-school"
-                      />
-                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center bg-white">
-                        {fieldStatus.subdomain === 'loading' && <Loader2 className="animate-spin h-4 w-4 text-brand-teal" />}
-                        {fieldStatus.subdomain === 'valid' && <CheckCircle className="h-4 w-4 text-green-500" />}
-                        {fieldStatus.subdomain === 'invalid' && <XCircle className="h-4 w-4 text-red-500" />}
-                      </div>
-                      <div className="bg-gray-50 px-3 py-2 border-l text-gray-500 text-xs">
-                        .{brandingSettings?.schoolName ? brandingSettings.schoolName.toLowerCase().replace(/\s+/g, '') : 'elimcrown'}.co.ke
-                      </div>
+                      {showErrors && errors.confirmPassword && <p className="text-[10px] text-red-600 font-bold uppercase ml-1">{errors.confirmPassword}</p>}
                     </div>
-                    {showErrors && errors.subdomain && <p className="text-xs text-red-500 mt-1">{errors.subdomain}</p>}
                   </div>
                 </div>
               </div>
 
-              <div>
-                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 border-b pb-2">
-                  Location
-                </h3>
-                <div className="space-y-4">
-                  {/* Location Manual Entry Only */}
+              {/* Right Column: School & Location */}
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                    <div className="h-[1px] w-8 bg-gray-200" />
+                    School Details
+                  </h3>
+                  <div className="space-y-5">
+                    {/* School Name */}
+                    <div className="space-y-2">
+                      <Label htmlFor="schoolName" className="text-gray-700 font-bold ml-1">School Name</Label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-brand-purple transition-colors">
+                          <Building2 size={18} />
+                        </div>
+                        <Input
+                          id="schoolName"
+                          name="schoolName"
+                          value={formData.schoolName}
+                          onChange={handleChange}
+                          onBlur={handleSchoolNameBlur}
+                          className={cn(
+                            "h-12 pl-12 pr-12 border-gray-200 focus:border-brand-purple focus:ring-brand-purple/20 transition-all",
+                            (fieldStatus.schoolName === 'invalid' || (showErrors && errors.schoolName)) && "border-red-500 bg-red-50"
+                          )}
+                          placeholder="School Name"
+                        />
+                      </div>
+                      {showErrors && errors.schoolName && <p className="text-[10px] text-red-600 font-bold uppercase ml-1">{errors.schoolName}</p>}
+                    </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-700 mb-1">County</label>
+                    {/* School Type */}
+                    <div className="space-y-2">
+                      <Label htmlFor="schoolType" className="text-gray-700 font-bold ml-1">School Type</Label>
                       <select
-                        name="county"
-                        value={formData.county}
+                        id="schoolType"
+                        name="schoolType"
+                        value={formData.schoolType}
                         onChange={handleChange}
-                        className={`w-full px-3 py-2 text-sm border rounded-md focus:ring-1 focus:ring-[#520050] focus:border-transparent transition ${showErrors && errors.county ? 'border-red-500' : 'border-gray-300'
-                          }`}
+                        className={cn(
+                          "w-full h-12 px-4 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-brand-purple/20 focus:border-brand-purple outline-none bg-white font-bold transition-all",
+                          (showErrors && errors.schoolType) && "border-red-500 bg-red-50"
+                        )}
                       >
-                        <option value="">Select County</option>
-                        {Object.keys(kenyaCounties).sort().map(c => (
-                          <option key={c} value={c}>{c}</option>
-                        ))}
+                        <option value="">Select Type</option>
+                        <option>Public Primary</option>
+                        <option>Public Secondary</option>
+                        <option>Private Primary</option>
+                        <option>Private Secondary</option>
                       </select>
+                      {showErrors && errors.schoolType && <p className="text-[10px] text-red-600 font-bold uppercase ml-1">{errors.schoolType}</p>}
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-700 mb-1">Sub-County</label>
-                      <input
-                        type="text"
-                        name="subCounty"
-                        value={formData.subCounty}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#520050] focus:border-transparent"
-                        placeholder="e.g. Westlands"
-                      />
+
+                    {/* Domain */}
+                    <div className="space-y-2">
+                      <Label htmlFor="subdomain" className="text-gray-700 font-bold ml-1">School Domain (Optional)</Label>
+                      <div className={cn(
+                        "relative flex items-center border border-gray-200 rounded-md overflow-hidden h-12 transition-all focus-within:ring-2 focus-within:ring-brand-purple/20 focus-within:border-brand-purple",
+                        fieldStatus.subdomain === 'invalid' && "border-red-500 bg-red-50",
+                        fieldStatus.subdomain === 'valid' && "border-green-500"
+                      )}>
+                        <div className="bg-gray-50 h-full px-4 flex items-center border-r border-gray-200 text-gray-500 group-focus-within:text-brand-purple">
+                          <Globe size={18} />
+                        </div>
+                        <input
+                          id="subdomain"
+                          type="text"
+                          value={formData.subdomain || suggestedSubdomain}
+                          onChange={handleSubdomainChange}
+                          className="flex-1 px-4 h-full outline-none text-gray-900 font-bold placeholder-gray-400 bg-transparent"
+                          placeholder="your-school"
+                        />
+                        <div className="absolute inset-y-0 right-32 pr-4 flex items-center">
+                          {fieldStatus.subdomain === 'loading' && <Loader2 className="animate-spin h-5 w-5 text-gray-400" />}
+                          {fieldStatus.subdomain === 'valid' && <CheckCircle className="h-5 w-5 text-green-500 animate-in fade-in zoom-in" />}
+                          {fieldStatus.subdomain === 'invalid' && <XCircle className="h-5 w-5 text-red-500 animate-in fade-in zoom-in" />}
+                        </div>
+                        <div className="bg-gray-100/50 h-full px-4 flex items-center border-l border-gray-200 text-gray-500 text-[10px] font-black uppercase tracking-tighter">
+                          .{brandingSettings?.schoolName ? brandingSettings.schoolName.toLowerCase().replace(/\s+/g, '') : 'elimcrown'}.co.ke
+                        </div>
+                      </div>
+                      {showErrors && errors.subdomain && <p className="text-[10px] text-red-600 font-bold uppercase ml-1">{errors.subdomain}</p>}
                     </div>
                   </div>
+                </div>
 
-                  {/* Spacer to align with password strength meter on the left */}
-                  <div className="mt-1 min-h-[18px] hidden lg:block"></div>
+                <div>
+                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                    <div className="h-[1px] w-8 bg-gray-200" />
+                    Location
+                  </h3>
+                  <div className="space-y-5">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="county" className="text-gray-700 font-bold ml-1">County</Label>
+                        <select
+                          id="county"
+                          name="county"
+                          value={formData.county}
+                          onChange={handleChange}
+                          className={cn(
+                            "w-full h-12 px-4 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-brand-purple/20 focus:border-brand-purple outline-none bg-white font-bold transition-all",
+                            (showErrors && errors.county) && "border-red-500 bg-red-50"
+                          )}
+                        >
+                          <option value="">Select County</option>
+                          {Object.keys(kenyaCounties).sort().map(c => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="subCounty" className="text-gray-700 font-bold ml-1">Sub-County</Label>
+                        <Input
+                          id="subCounty"
+                          type="text"
+                          name="subCounty"
+                          value={formData.subCounty}
+                          onChange={handleChange}
+                          className="h-12 border-gray-200 focus:border-brand-purple focus:ring-brand-purple/20 transition-all font-bold"
+                          placeholder="e.g. Westlands"
+                        />
+                      </div>
+                    </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">Physical Address</label>
-                    <input
-                      type="text"
-                      name="address"
-                      value={formData.address}
-                      onChange={handleChange}
-                      className={`w-full px-3 py-2 text-sm border rounded-md focus:ring-1 focus:ring-[#520050] focus:border-transparent transition ${showErrors && errors.address ? 'border-red-500' : 'border-gray-300'
-                        }`}
-                      placeholder="Street, Road, or Landmark"
-                    />
-                    {showErrors && errors.address && <p className="text-xs text-red-500 mt-1">{errors.address}</p>}
+                    <div className="space-y-2">
+                      <Label htmlFor="address" className="text-gray-700 font-bold ml-1">Physical Address</Label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-brand-purple transition-colors">
+                          <MapPin size={18} />
+                        </div>
+                        <Input
+                          id="address"
+                          type="text"
+                          name="address"
+                          value={formData.address}
+                          onChange={handleChange}
+                          className={cn(
+                            "h-12 pl-12 border-gray-200 focus:border-brand-purple focus:ring-brand-purple/20 transition-all font-bold",
+                            (showErrors && errors.address) && "border-red-500 bg-red-50"
+                          )}
+                          placeholder="Street, Road, or Landmark"
+                        />
+                      </div>
+                      {showErrors && errors.address && <p className="text-[10px] text-red-600 font-bold uppercase ml-1">{errors.address}</p>}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Terms & Submit */}
-          <div className="mt-8 pt-6 border-t">
+            {/* Terms & Submit */}
+            <div className="mt-12 pt-10 border-t border-gray-100/50">
+              <div className="flex items-center justify-center mb-10 group">
+                <label className="flex items-center gap-3 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    id="terms"
+                    name="termsAccepted"
+                    checked={formData.termsAccepted}
+                    onChange={handleChange}
+                    className="w-5 h-5 rounded border-gray-300 text-brand-purple focus:ring-brand-purple accent-brand-purple cursor-pointer transition-transform group-active:scale-95"
+                  />
+                  <span className="text-sm text-gray-600 font-bold group-hover:text-gray-900 transition-colors">
+                    I agree to the <a href="#" className="text-brand-purple hover:underline underline-offset-4">Terms of Service</a> & <a href="#" className="text-brand-purple hover:underline underline-offset-4">Privacy Policy</a>
+                  </span>
+                </label>
+              </div>
+              {showErrors && errors.termsAccepted && <p className="text-[10px] text-red-600 font-bold uppercase text-center -mt-6 mb-6 animate-shake">{errors.termsAccepted}</p>}
 
-            <div className="flex items-center justify-center mb-6">
-              <input
-                type="checkbox"
-                id="terms"
-                name="termsAccepted"
-                checked={formData.termsAccepted}
-                onChange={handleChange}
-                className="h-4 w-4 text-[#520050] focus:ring-[#520050] border-gray-300 rounded"
-              />
-              <label htmlFor="terms" className="ml-2 block text-sm text-gray-900">
-                I agree to the <a href="#" className="text-[#520050] hover:text-[#3D0038] underline">Terms of Service</a> & <a href="#" className="text-[#520050] hover:text-[#3D0038] underline">Privacy Policy</a>
-              </label>
-            </div>
-            {showErrors && errors.termsAccepted && <p className="text-xs text-red-500 text-center -mt-4 mb-4">{errors.termsAccepted}</p>}
-
-            <div className="flex justify-center">
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-64 bg-[#520050] text-white py-3 rounded-lg font-bold hover:bg-[#3D0038] focus:ring-4 focus:ring-[#520050]/20 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    <span>Creating Account...</span>
-                  </>
-                ) : (
-                  'Create Account'
-                )}
-              </button>
-            </div>
-
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-600">
-                Already have an account?{' '}
-                <button
-                  type="button"
-                  onClick={onSwitchToLogin}
-                  className="font-semibold text-[#520050] hover:text-[#3D0038] transition"
+              <div className="flex flex-col items-center gap-8">
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full max-w-md h-14 text-sm font-black uppercase tracking-[0.2em] shadow-2xl transition-all duration-300 transform active:scale-[0.98] bg-brand-purple hover:bg-brand-purple/90 group"
                 >
-                  Sign in
-                </button>
-              </p>
+                  {isLoading ? (
+                    <div className="flex items-center gap-3">
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>Processing...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span>Create Account</span>
+                      <CheckCircle className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-1 group-hover:translate-x-0" />
+                    </div>
+                  )}
+                </Button>
+
+                <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">
+                  Already have an account?{' '}
+                  <button
+                    type="button"
+                    onClick={onSwitchToLogin}
+                    className="text-brand-purple hover:underline font-black ml-2"
+                  >
+                    Sign in
+                  </button>
+                </p>
+              </div>
             </div>
-          </div>
-        </form>
-      </div >
-    </div >
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

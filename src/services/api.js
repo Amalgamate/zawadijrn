@@ -168,8 +168,19 @@ export const authAPI = {
    * @returns {Promise} Confirmation message
    */
   sendOTP: async (data) => {
-    const response = await axiosInstance.post('/auth/otp/send', data);
-    return response.data;
+    try {
+      const response = await axiosInstance.post('/auth/otp/send', data);
+      return response.data;
+    } catch (error) {
+      if (error.response?.data) {
+        const data = error.response?.data;
+        let msg = data.message || data.error;
+        if (!msg) msg = `HTTP ${error.response.status}`;
+        if (typeof msg === 'object') msg = JSON.stringify(msg);
+        throw new Error(msg);
+      }
+      throw error;
+    }
   },
 
   /**
@@ -178,8 +189,19 @@ export const authAPI = {
    * @returns {Promise} User data and token
    */
   verifyOTP: async (data) => {
-    const response = await axiosInstance.post('/auth/otp/verify', data);
-    return response.data;
+    try {
+      const response = await axiosInstance.post('/auth/otp/verify', data);
+      return response.data;
+    } catch (error) {
+      if (error.response?.data) {
+        const data = error.response?.data;
+        let msg = data.message || data.error;
+        if (!msg) msg = `HTTP ${error.response.status}`;
+        if (typeof msg === 'object') msg = JSON.stringify(msg);
+        throw new Error(msg);
+      }
+      throw error;
+    }
   },
 
   /**
@@ -1018,12 +1040,6 @@ export const learnerAPI = {
     const queryString = new URLSearchParams(params).toString();
     return fetchWithAuth(`/learners${queryString ? `?${queryString}` : ''}`);
   },
-  /**
-   * Get upcoming birthdays
-   */
-  getBirthdays: async () => {
-    return fetchWithAuth('/learners/birthdays/upcoming');
-  },
 
   /**
    * Get learner statistics
@@ -1142,6 +1158,15 @@ export const learnerAPI = {
       method: 'POST',
       body: JSON.stringify(promotionData),
     });
+  },
+
+  /**
+   * Get learners with birthdays today
+   * @param {string} schoolId - Optional school ID
+   * @returns {Promise} List of learners
+   */
+  getBirthdays: async (schoolId) => {
+    return communicationAPI.getBirthdaysToday(schoolId);
   },
 };
 

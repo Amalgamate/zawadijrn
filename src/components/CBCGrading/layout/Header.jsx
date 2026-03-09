@@ -1,9 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bell, LogOut, Zap, ChevronDown, ClipboardList, BarChart3, MessageSquare, Calendar, Cake } from 'lucide-react';
+import { Bell, LogOut, Zap, ChevronDown, ClipboardList, BarChart3, MessageSquare, Calendar, Gift, User as UserIcon } from 'lucide-react';
 import { usePermissions } from '../../../hooks/usePermissions';
 import api from '../../../services/api';
 import { getReminderDelay, shouldScheduleReminder } from './notificationReminder';
 import { clockInTeacher, clockOutTeacher, getCurrentUserClockInStatus, syncCurrentUserClockInStatus } from '../../../utils/teacherClockIn';
+import { Button } from "../../ui/button";
+import { Badge } from "../../ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "../../ui/popover";
+import { cn } from "../../../utils/cn";
 
 const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate }) => {
   const [showQuickActions, setShowQuickActions] = useState(false);
@@ -272,247 +276,236 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
     setClockInState(getCurrentUserClockInStatus(user));
   };
 
+  const brandColor = brandingSettings?.brandColor || '#520050';
+
   return (
-    <div className="h-20 border-b border-brand-purple/20 shadow-xl px-8 py-5 flex items-center justify-between">
-      <div className="flex items-center gap-4">
-        {brandingSettings?.logoUrl && (
-          <img
-            src={brandingSettings.logoUrl}
-            alt="Logo"
-            className="w-14 h-14 object-contain drop-shadow-md"
-            onError={(e) => { e.target.style.display = 'none'; }}
-          />
-        )}
-        <div>
-          <h1 className="text-lg sm:text-xl font-bold text-gray-900 leading-tight whitespace-nowrap uppercase">
+    <header className="h-20 bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm px-4 lg:px-8 flex items-center justify-between sticky top-0 z-50">
+      <div className="flex items-center gap-4 group cursor-pointer" onClick={() => onNavigate?.('dashboard')}>
+        <div className="relative">
+          {brandingSettings?.logoUrl && (
+            <img
+              src={brandingSettings.logoUrl}
+              alt="Logo"
+              className="w-12 h-12 object-contain transition-transform duration-500 group-hover:scale-110 drop-shadow-sm"
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
+          )}
+          <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
+        </div>
+        <div className="hidden sm:block">
+          <h1 className="text-base lg:text-lg font-black text-gray-900 leading-none tracking-tight uppercase">
             {title || brandingSettings?.schoolName || 'ELIMCROWN'}
           </h1>
-          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">
-            {title ? (brandingSettings?.schoolName || 'Elimcrown') : 'CBC Assessment & Grading System'}
+          <p className="text-[9px] text-gray-400 font-bold uppercase tracking-[0.2em] mt-1">
+            {title ? (brandingSettings?.schoolName || 'Elimcrown') : 'School Management System'}
           </p>
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        {/* Quick Actions Dropdown */}
-        <div className="relative" ref={dropdownRef}>
-          <button
-            onClick={() => setShowQuickActions(!showQuickActions)}
-            className="flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-gray-900 bg-slate-200 hover:bg-slate-300 border border-gray-300 hover:border-gray-400 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg group"
-          >
-            <Zap size={18} className="text-yellow-400 group-hover:scale-110 transition-transform duration-300" />
-            <span>Quick Actions</span>
-            <ChevronDown size={16} className={`transition-transform duration-300 opacity-60 ${showQuickActions ? 'rotate-180' : ''}`} />
-          </button>
-
-          {showQuickActions && (
-            <div className="absolute right-0 mt-3 w-64 bg-slate-100 rounded-lg shadow-2xl border border-gray-300 py-2 z-50">
-              <div className="px-4 py-2 border-b border-gray-300">
-                <p className="text-[10px] font-bold text-brand-purple uppercase tracking-widest">Available Actions</p>
-              </div>
-              {quickActions.map((action, index) => (
-                <button
-                  key={index}
-                  onClick={() => {
-                    action.action();
-                    setShowQuickActions(false);
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-800 hover:bg-slate-200/50 hover:border-l-3 hover:border-brand-purple transition-all duration-300 border-l-3 border-transparent group"
-                >
-                  <action.icon size={18} className="text-brand-purple/70 group-hover:text-brand-purple group-hover:scale-110 transition-all duration-300" />
-                  <span className="font-semibold group-hover:text-white transition-colors">{action.label}</span>
-                </button>
-              ))}
+      <div className="flex items-center gap-2 lg:gap-4">
+        {/* Quick Actions Popover */}
+        <Popover open={showQuickActions} onOpenChange={setShowQuickActions}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className="hidden md:flex items-center gap-2 h-10 px-4 border-gray-200 hover:border-brand-purple/30 hover:bg-brand-purple/5 transition-all text-gray-700 font-bold"
+            >
+              <Zap size={16} className="text-yellow-500 fill-yellow-500 animate-pulse" />
+              <span>Quick Actions</span>
+              <ChevronDown size={14} className={cn("transition-transform duration-300 opacity-50", showQuickActions && "rotate-180")} />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-64 p-2" align="end">
+            <div className="px-3 py-2 border-b border-gray-50 mb-1">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Available Actions</p>
             </div>
-          )}
-        </div>
+            {quickActions.map((action, index) => (
+              <Button
+                key={index}
+                variant="ghost"
+                onClick={() => {
+                  action.action();
+                  setShowQuickActions(false);
+                }}
+                className="w-full justify-start gap-3 h-11 text-sm font-bold text-gray-700 hover:text-brand-purple hover:bg-brand-purple/5 group"
+              >
+                <action.icon size={18} className="text-gray-400 group-hover:text-brand-purple group-hover:scale-110 transition-all" />
+                <span>{action.label}</span>
+              </Button>
+            ))}
+          </PopoverContent>
+        </Popover>
 
-        <div className="relative" ref={notificationRef}>
-          <button
-            onClick={() => {
-              const next = !showNotifications;
-              setShowNotifications(next);
-              if (next) {
-                markAllNotificationsAsRead();
-              }
-            }}
-            className="text-gray-900 hover:text-brand-purple bg-slate-200 hover:bg-slate-300 p-3 rounded-lg transition-all duration-300 border border-gray-300 hover:border-brand-purple/60 shadow-md hover:shadow-lg group relative"
-          >
-            <Bell size={20} className="opacity-75 group-hover:scale-110 transition-transform duration-300" />
-            {unreadCount > 0 && (
-              <>
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-rose-500 rounded-full animate-ping"></span>
-                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-rose-600 text-white rounded-full text-[10px] font-black flex items-center justify-center border border-slate-100 shadow-lg">
+        {/* Notifications Popover */}
+        <Popover open={showNotifications} onOpenChange={(open) => {
+          setShowNotifications(open);
+          if (open) markAllNotificationsAsRead();
+        }}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative h-10 w-10 text-gray-600 hover:text-brand-purple hover:bg-brand-purple/5 transition-all"
+            >
+              <Bell size={20} className={cn(unreadCount > 0 && "animate-wiggle")} />
+              {unreadCount > 0 && (
+                <Badge
+                  variant="destructive"
+                  className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 flex items-center justify-center font-black text-[10px] border-2 border-white"
+                >
                   {unreadCount > 99 ? '99+' : unreadCount}
-                </span>
-              </>
-            )}
-          </button>
-
-          {showNotifications && (
-            <div className="absolute right-0 mt-3 w-96 bg-slate-100 rounded-lg shadow-2xl border border-gray-300 z-[110] overflow-hidden">
-              <div className="p-4 border-b border-gray-300 bg-slate-50 flex justify-between items-center">
-                <h3 className="text-sm font-bold text-gray-900">Notifications</h3>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-white bg-brand-purple px-3 py-1 rounded-lg shadow-md">
-                  Updates
-                </span>
-              </div>
-
-              <div className="max-h-[400px] overflow-y-auto">
-                {notificationItems.length > 0 ? (
-                  <div className="p-3">
-                    {birthdayNotificationItems.length > 0 && (
-                      <>
-                        <div
-                          onClick={() => handleNotificationClick('birthday')}
-                          className="px-4 py-2.5 bg-slate-200 border border-pink-300 rounded-lg mb-3 flex items-center gap-2.5 cursor-pointer hover:bg-slate-300 transition-colors"
-                        >
-                          <Cake size={16} className="text-pink-400 shrink-0" />
-                          <span className="text-[10px] font-bold uppercase text-pink-700 tracking-wider">Birthday Reminders</span>
-                        </div>
-                        {birthdayNotificationItems.map((b) => (
-                          <div
-                            key={b.id}
-                            onClick={() => handleNotificationClick('birthday')}
-                            className="p-3.5 hover:bg-slate-200 rounded-lg transition-all duration-300 flex items-start gap-4 border-b border-gray-300 last:border-0 group cursor-pointer"
-                          >
-                            <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm shrink-0 shadow-md transition-all duration-300 group-hover:scale-110 border-2 ${b.isToday ? 'bg-gradient-to-r from-pink-600 to-red-600 text-white border-pink-400 animate-bounce' : 'bg-slate-200 text-gray-700 border-gray-300'}`}>
-                              {b.name.split(' ').map(n => n[0]).join('')}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-bold text-gray-900 group-hover:text-brand-purple transition-colors">
-                                {b.isToday ? '🎂 Today: ' : ''}{b.name}
-                              </p>
-                              <p className="text-xs text-gray-600 font-semibold">
-                                Turns {b.turningAge} • {b.grade.replace('_', ' ')}
-                              </p>
-                              <p className={`text-[10px] font-bold mt-1.5 uppercase tracking-wider ${b.isToday ? 'text-pink-700 bg-pink-200 px-2 py-1 rounded-lg inline-block' : 'text-slate-600'}`}>
-                                {b.isToday ? 'HAPPENING TODAY 🎉' : `In ${b.daysUntil} days`}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </>
-                    )}
-
-                    {noticeNotificationItems.length > 0 && (
-                      <>
-                        <div
-                          onClick={() => handleNotificationClick('comm-notices', { activeTab: 'notices' })}
-                          className="px-4 py-2.5 bg-slate-200 border border-brand-purple/30 rounded-lg mt-3 mb-3 flex items-center gap-2.5 cursor-pointer hover:bg-slate-300 transition-colors"
-                        >
-                          <Bell size={16} className="text-brand-purple shrink-0" />
-                          <span className="text-[10px] font-bold uppercase text-brand-purple tracking-wider">New Notices</span>
-                        </div>
-                        {noticeNotificationItems.map((n) => (
-                          <div
-                            key={n.id}
-                            onClick={() => handleNotificationClick('comm-notices', { activeTab: 'notices', noticeId: n.id })}
-                            className="p-3.5 hover:bg-slate-200 rounded-lg transition-all duration-300 border-b border-gray-300 last:border-0 group cursor-pointer"
-                          >
-                            <p className="text-sm font-bold text-gray-900 group-hover:text-brand-purple transition-colors line-clamp-1">{n.title}</p>
-                            <p className="text-xs text-gray-600 mt-1 line-clamp-2">{n.content}</p>
-                            <p className="text-[10px] text-gray-500 mt-1 uppercase tracking-wider">
-                              {(n.priority || 'NORMAL')} • {(n.category || 'General')}
-                            </p>
-                          </div>
-                        ))}
-                      </>
-                    )}
-                  </div>
-                ) : (
-                  <div className="p-8 text-center">
-                    <Bell size={24} className="text-gray-400 mx-auto mb-2 opacity-50" />
-                    <p className="text-xs text-gray-600 font-semibold">No new notifications</p>
-                  </div>
-                )}
-              </div>
-
-              <div className="p-4 bg-slate-50 border-t border-gray-300 text-center">
-                <button
-                  onClick={() => setShowNotifications(false)}
-                  className="text-[10px] font-bold uppercase tracking-widest text-brand-purple hover:text-brand-purple/80 transition-colors"
-                >
-                  Close Notifications
-                </button>
-              </div>
+                </Badge>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-96 p-0 overflow-hidden" align="end">
+            <div className="p-4 border-b border-gray-50 bg-gray-50/50 flex justify-between items-center">
+              <h3 className="text-sm font-black text-gray-900 uppercase tracking-tight">Notifications</h3>
+              <Badge variant="purple" className="font-black">UPDATES</Badge>
             </div>
-          )}
-        </div>
 
+            <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+              {notificationItems.length > 0 ? (
+                <div className="p-2 space-y-1">
+                  {birthdayNotificationItems.length > 0 && (
+                    <div className="space-y-1">
+                      <div className="px-3 py-2 text-[10px] font-black text-pink-500 uppercase tracking-widest flex items-center gap-2">
+                        <Gift size={14} /> Birthdays
+                      </div>
+                      {birthdayNotificationItems.map((b) => (
+                        <button
+                          key={b.id}
+                          onClick={() => handleNotificationClick('birthday')}
+                          className="w-full text-left p-3 hover:bg-gray-50 rounded-lg transition-all flex items-start gap-3 group"
+                        >
+                          <div className={cn(
+                            "w-10 h-10 rounded-full flex items-center justify-center font-black text-xs shrink-0 shadow-sm border-2 transition-transform group-hover:scale-105",
+                            b.isToday ? "bg-gradient-to-tr from-pink-500 to-rose-500 text-white border-pink-200" : "bg-gray-100 text-gray-600 border-gray-200"
+                          )}>
+                            {b.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-gray-900 line-clamp-1">
+                              {b.isToday ? '🎂 ' : ''}{b.name}
+                            </p>
+                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-tight">
+                              Turns {b.turningAge} • {b.grade.replace('_', ' ')}
+                            </p>
+                            <Badge variant={b.isToday ? "destructive" : "secondary"} className="mt-1.5 h-4 text-[8px] font-black px-1.5">
+                              {b.isToday ? "TODAY" : `IN ${b.daysUntil} DAYS`}
+                            </Badge>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {noticeNotificationItems.length > 0 && (
+                    <div className="space-y-1 pt-2 border-t border-gray-50 mt-2">
+                      <div className="px-3 py-2 text-[10px] font-black text-brand-purple uppercase tracking-widest flex items-center gap-2">
+                        <Bell size={14} /> New Notices
+                      </div>
+                      {noticeNotificationItems.map((n) => (
+                        <button
+                          key={n.id}
+                          onClick={() => handleNotificationClick('comm-notices', { activeTab: 'notices', noticeId: n.id })}
+                          className="w-full text-left p-3 hover:bg-gray-50 rounded-lg transition-all group"
+                        >
+                          <p className="text-sm font-bold text-gray-900 group-hover:text-brand-purple transition-colors line-clamp-1">{n.title}</p>
+                          <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{n.content}</p>
+                          <div className="flex gap-2 mt-2">
+                            <Badge variant="outline" className="text-[8px] h-4 font-bold uppercase">{n.priority || 'NORMAL'}</Badge>
+                            <Badge variant="outline" className="text-[8px] h-4 font-bold uppercase">{n.category || 'GENERAL'}</Badge>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="py-12 text-center text-gray-400">
+                  <Bell size={32} className="mx-auto mb-3 opacity-20" />
+                  <p className="text-xs font-bold uppercase tracking-widest">No notifications</p>
+                </div>
+              )}
+            </div>
+
+            <Button
+              variant="ghost"
+              onClick={() => setShowNotifications(false)}
+              className="w-full h-12 border-t border-gray-50 rounded-none text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 hover:text-brand-purple hover:bg-brand-purple/5"
+            >
+              Close
+            </Button>
+          </PopoverContent>
+        </Popover>
+
+        {/* Clock In/Out */}
         {String(user?.role || '').toUpperCase() === 'TEACHER' && (
-          <button
+          <Button
             onClick={clockInState.clockedIn ? handleClockOut : handleClockIn}
-            className={`px-4 py-2.5 rounded-lg border font-bold text-xs uppercase tracking-wider transition-all duration-300 shadow-sm ${clockInState.clockedIn
-              ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
-              : 'bg-white text-brand-purple border-brand-purple/40 hover:bg-brand-purple/5'
-              }`}
-            title={clockInState.clockedIn ? 'Clock out for today' : 'Clock in for today'}
+            variant={clockInState.clockedIn ? "secondary" : "outline"}
+            className={cn(
+              "hidden sm:flex h-10 px-4 font-black text-[10px] uppercase tracking-widest transition-all",
+              clockInState.clockedIn ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100" : "border-brand-purple/20 text-brand-purple hover:bg-brand-purple/5"
+            )}
           >
             {clockInState.clockedIn ? 'Clock Out' : 'Clock In'}
-          </button>
+          </Button>
         )}
 
-        <div className="flex items-center gap-4 pl-6 border-l border-brand-purple/20">
-          <div className="text-right">
-            <p className="text-sm font-bold text-gray-900">{user?.name || 'Admin User'}</p>
-            <p className="text-xs text-gray-600 font-semibold uppercase tracking-wider">
-              {user?.role || 'System Admin'}
+        <div className="flex items-center gap-3 pl-4 border-l border-gray-100 ml-2">
+          <div className="hidden lg:block text-right pr-1">
+            <p className="text-sm font-black text-gray-900 leading-none">{user?.name || 'User'}</p>
+            <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mt-1">
+              {user?.role || 'Guest'}
             </p>
           </div>
-          <div className="w-12 h-12 bg-brand-purple rounded-full flex items-center justify-center text-white font-bold text-lg border-2 border-brand-purple/50 shadow-lg group hover:scale-110 transition-transform duration-300">
-            {(user?.name || 'AU').substring(0, 2).toUpperCase()}
+          <div className="relative group">
+            <div className="w-10 h-10 bg-brand-purple rounded-full flex items-center justify-center text-white font-black text-sm border-2 border-white shadow-md transition-transform group-hover:scale-105">
+              {(user?.name || 'U').substring(0, 2).toUpperCase()}
+            </div>
           </div>
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={onLogout}
-            className="text-gray-900 hover:text-red-600 bg-slate-200 hover:bg-red-100 border border-gray-300 hover:border-red-400 p-3 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg group"
+            className="h-10 w-10 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all"
             title="Logout"
           >
-            <LogOut size={18} className="opacity-75 group-hover:scale-110 transition-transform duration-300" />
-          </button>
+            <LogOut size={18} />
+          </Button>
         </div>
       </div>
 
+      {/* Unread Reminder Toast (Styled) */}
       {showUnreadReminder && unreadCount > 0 && (
-        <div className="fixed top-24 right-8 z-[140] w-80 bg-white border border-gray-200 rounded-xl shadow-2xl p-4">
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5 p-2 rounded-full bg-brand-purple/10 text-brand-purple">
-              <Bell size={16} />
+        <div className="fixed top-24 right-8 z-[140] w-80 bg-white/95 backdrop-blur-xl border border-gray-200 rounded-2xl shadow-2xl p-5 animate-in slide-in-from-right-10 duration-500">
+          <div className="flex items-start gap-4">
+            <div className="p-2.5 rounded-full bg-brand-purple/10 text-brand-purple shadow-inner">
+              <Bell size={20} className="animate-wiggle" />
             </div>
             <div className="flex-1">
-              <p className="text-sm font-bold text-gray-900">Gentle Reminder</p>
-              <p className="text-xs text-gray-600 mt-1 leading-relaxed">
-                You have {unreadCount} unread notification{unreadCount === 1 ? '' : 's'}. Please review them when convenient.
+              <p className="text-sm font-black text-gray-900 uppercase tracking-tight">Gentle Reminder</p>
+              <p className="text-xs text-gray-500 mt-1 font-medium leading-relaxed">
+                You have <span className="text-brand-purple font-black">{unreadCount}</span> unread notification{unreadCount === 1 ? '' : 's'}. Review them when convenient.
               </p>
-              <div className="mt-3 flex justify-end gap-2">
-                <button
-                  onClick={() => setShowUnreadReminder(false)}
-                  className="px-3 py-1.5 text-xs font-bold border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
-                >
+              <div className="mt-5 flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" onClick={() => setShowUnreadReminder(false)} className="h-8 text-[9px] font-black uppercase flex-1 border-gray-200">
                   Later
-                </button>
-                <button
-                  onClick={snoozeReminder}
-                  className="px-3 py-1.5 text-xs font-bold border border-brand-purple/30 text-brand-purple rounded-lg hover:bg-brand-purple/5 transition-colors"
-                >
-                  Snooze 30m
-                </button>
-                <button
-                  onClick={() => {
-                    setShowUnreadReminder(false);
-                    setShowNotifications(true);
-                    markAllNotificationsAsRead();
-                  }}
-                  className="px-3 py-1.5 text-xs font-bold bg-brand-purple text-white rounded-lg hover:bg-brand-purple/90 transition-colors"
-                >
+                </Button>
+                <Button variant="outline" size="sm" onClick={snoozeReminder} className="h-8 text-[9px] font-black uppercase flex-1 border-gray-200">
+                  Snooze
+                </Button>
+                <Button size="sm" onClick={() => { setShowUnreadReminder(false); setShowNotifications(true); markAllNotificationsAsRead(); }} className="h-8 text-[9px] font-black uppercase w-full bg-brand-purple hover:bg-brand-purple/90 shadow-lg">
                   Review Now
-                </button>
+                </Button>
               </div>
             </div>
           </div>
         </div>
       )}
-    </div>
+    </header>
   );
 });
 

@@ -66,10 +66,22 @@ export const useNotifications = () => {
     setShowToast(false);
   }, []);
 
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  /**
+   * Mark all notifications as read
+   */
+  const markAllNotificationsAsRead = useCallback(() => {
+    setUnreadCount(0);
+  }, []);
+
   return {
     showToast,
     toastMessage,
     toastType,
+    unreadCount,
+    setUnreadCount,
+    markAllNotificationsAsRead,
     showNotification,
     showSuccess,
     showError,

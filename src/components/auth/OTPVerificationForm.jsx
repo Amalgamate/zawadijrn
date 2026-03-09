@@ -137,11 +137,11 @@ export default function OTPVerificationForm({
                 onChange={(e) => handleOtpChange(index, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(index, e)}
                 disabled={isLoading || success}
-                className={`w-12 h-14 sm:w-14 sm:h-16 text-3xl font-bold text-center border-2 rounded-xl transition-all ${success
+                className={`w-10 h-12 sm:w-12 sm:h-14 text-2xl font-bold text-center border-2 rounded-xl transition-all ${success
                   ? 'border-green-500 bg-green-50 text-green-600'
                   : error
                     ? 'border-red-500 bg-red-50'
-                    : 'border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100'
+                    : 'border-brand-purple/20 focus:border-brand-purple focus:ring-4 focus:ring-brand-purple/10'
                   } shadow-sm`}
               />
             ))}

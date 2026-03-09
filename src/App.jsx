@@ -9,9 +9,9 @@ import api from './services/api';
 import axiosInstance from './services/axiosConfig';
 
 const DEFAULT_BRANDING = {
-  logoUrl: '/logo-new.png',
+  logoUrl: '/logo-zawadi.png',
   faviconUrl: '/favicon.png',
-  stampUrl: '/stamp.svg',
+  stampUrl: '/ZawadiStamp.svg',
   brandColor: '#520050',
   welcomeTitle: 'Welcome to Zawadi',
   welcomeMessage: 'Sign in to access your school portal.',
@@ -19,7 +19,7 @@ const DEFAULT_BRANDING = {
 };
 
 function AppContent() {
-  const { isAuthenticated, user, login, logout } = useAuth();
+  const { isAuthenticated, user, loading, login, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const pathname = location.pathname;
@@ -88,17 +88,20 @@ function AppContent() {
       document.title = brandingSettings.schoolName || 'School Management';
     }
   }, [isAuthenticated, user, brandingSettings.schoolName]);
-
   // Navigation guards
   useEffect(() => {
+    if (loading) return; // Wait for initial auth check
+
     if (isAuthenticated) {
-      if (!pathname.startsWith('/app')) navigate('/app', { replace: true });
+      if (!pathname.startsWith('/app')) {
+        navigate('/app', { replace: true });
+      }
     } else {
       if (pathname.startsWith('/app')) {
         navigate('/auth/login', { replace: true });
       }
     }
-  }, [isAuthenticated, user?.role, pathname, navigate]);
+  }, [isAuthenticated, loading, pathname, navigate]);
 
   const handleAuthSuccess = (userData, token, refreshToken) => {
     localStorage.removeItem('cbc_current_page');
@@ -114,49 +117,43 @@ function AppContent() {
     navigate('/auth/login', { replace: true });
   };
 
+  // Show splash while auth is initializing or app is warming up
+  if (loading || !appReady) {
+    return <SplashScreen isLoading={true} />;
+  }
+
   if (isAuthenticated) {
     return (
-      <>
-        <SplashScreen isLoading={!appReady} />
-        {appReady && (
-          <Routes>
-            <Route
-              path="/app/*"
-              element={
-                <SchoolDataProvider>
-                  <CBCGradingSystem
-                    user={user}
-                    onLogout={handleLogout}
-                    brandingSettings={brandingSettings}
-                    setBrandingSettings={setBrandingSettings}
-                  />
-                </SchoolDataProvider>
-              }
-            />
-            <Route path="*" element={<Navigate to="/app" replace />} />
-          </Routes>
-        )}
-      </>
+      <Routes>
+        <Route
+          path="/app/*"
+          element={
+            <SchoolDataProvider>
+              <CBCGradingSystem
+                user={user}
+                onLogout={handleLogout}
+                brandingSettings={brandingSettings}
+                setBrandingSettings={setBrandingSettings}
+              />
+            </SchoolDataProvider>
+          }
+        />
+        <Route path="*" element={<Navigate to="/app" replace />} />
+      </Routes>
     );
   }
 
   return (
-    <>
-      <SplashScreen isLoading={!appReady} />
-      {appReady && (
-        <Routes>
-          <Route path="/" element={<Navigate to="/auth/login" replace />} />
-          <Route path="/auth" element={<Navigate to="/auth/login" replace />} />
-          <Route path="/auth/login" element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} basePath="/auth" />} />
-          <Route path="/auth/register" element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} basePath="/auth" />} />
-          <Route path="/auth/forgot-password" element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} basePath="/auth" />} />
-          <Route path="/auth/reset-password" element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} basePath="/auth" />} />
-          <Route path="/auth/verify-email" element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} basePath="/auth" />} />
-          <Route path="/auth/welcome" element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} basePath="/auth" />} />
-          <Route path="*" element={<Navigate to="/auth/login" replace />} />
-        </Routes>
-      )}
-    </>
+    <Routes>
+      <Route path="/" element={<Navigate to="/auth/login" replace />} />
+      <Route path="/auth/login" element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} basePath="/auth" />} />
+      <Route path="/auth/register" element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} basePath="/auth" />} />
+      <Route path="/auth/forgot-password" element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} basePath="/auth" />} />
+      <Route path="/auth/reset-password" element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} />} />
+      <Route path="/auth/verify-email" element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} />} />
+      <Route path="/auth/welcome" element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} />} />
+      <Route path="*" element={<Navigate to="/auth/login" replace />} />
+    </Routes>
   );
 }
 
