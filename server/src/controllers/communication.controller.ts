@@ -330,7 +330,7 @@ export const sendTestEmail = async (req: AuthRequest, res: Response) => {
         const schoolName = school?.name || 'Your School';
         const adminName = req.user?.userId ? (await prisma.user.findUnique({ where: { id: req.user.userId } }))?.firstName || 'Admin' : 'Admin';
 
-        const frontendUrl = process.env.FRONTEND_URL || 'https://elimcrown-v1.up.railway.app';
+        const frontendUrl = process.env.FRONTEND_URL || 'https://zawadi-sms.up.railway.app';
         const loginUrl = `${frontendUrl}/t/${schoolId}/login`;
 
         // Send Email based on template selection

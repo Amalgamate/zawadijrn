@@ -202,10 +202,10 @@ const BrandingSettings = ({ brandingSettings, setBrandingSettings }) => {
             >
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
               <img
-                src={brandingSettings?.logoUrl || '/logo-elimcrown.png'}
+                src={brandingSettings?.logoUrl || '/logo-new.png'}
                 alt="Logo"
                 className="w-20 h-20 object-contain mb-6 drop-shadow-lg"
-                onError={(e) => e.target.src = '/logo-elimcrown.png'}
+                onError={(e) => e.target.src = '/logo-new.png'}
               />
               <h3 className="text-xl font-black mb-2 tracking-tight">{localSettings.welcomeTitle || 'Welcome'}</h3>
               <p className="text-sm text-blue-50/80 leading-relaxed max-w-xs">{localSettings.welcomeMessage}</p>
@@ -224,10 +224,10 @@ const BrandingSettings = ({ brandingSettings, setBrandingSettings }) => {
             >
               <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2"></div>
               <img
-                src={brandingSettings?.logoUrl || '/logo-elimcrown.png'}
+                src={brandingSettings?.logoUrl || '/logo-new.png'}
                 alt="Logo"
                 className="w-20 h-20 object-contain mb-6 drop-shadow-lg"
-                onError={(e) => e.target.src = '/logo-elimcrown.png'}
+                onError={(e) => e.target.src = '/logo-new.png'}
               />
               <h3 className="text-xl font-black mb-2 tracking-tight">{localSettings.onboardingTitle || 'Get Started'}</h3>
               <p className="text-sm text-blue-50/80 leading-relaxed max-w-xs">{localSettings.onboardingMessage}</p>

@@ -34,7 +34,7 @@ async function main() {
 
   const school = await prisma.school.create({
     data: {
-      name: 'Elimcrown Academy',
+      name: 'Zawadi SMS Academy',
       admissionFormatType: 'NO_BRANCH',
       branchSeparator: '-',
       curriculumType: 'CBC_AND_EXAM',

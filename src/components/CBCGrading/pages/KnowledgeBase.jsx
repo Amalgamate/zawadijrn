@@ -11,7 +11,7 @@ const KnowledgeBase = () => {
         {
             title: "Getting Started",
             icon: PlayCircle,
-            description: "New to EDucore? Start here for a quick tour.",
+            description: "New to Zawadi SMS? Start here for a quick tour.",
             articles: [
                 "Dashboard Overview",
                 "Navigating the System",
@@ -41,7 +41,7 @@ const KnowledgeBase = () => {
         {
             title: "Advanced Features",
             icon: Lightbulb,
-            description: "Master the power-user tools of EDucore.",
+            description: "Master the power-user tools of Zawadi SMS.",
             articles: [
                 "Custom Assessment Scales",
                 "Bulk Student Promotion",

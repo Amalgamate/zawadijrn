@@ -307,10 +307,10 @@ export class LearnerController {
           const nameParts = guardianName ? guardianName.split(' ') : ['Parent'];
           const pFirstName = nameParts[0];
           const pLastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Guardian';
-          const pEmail = guardianEmail && guardianEmail.includes('@') ? guardianEmail : `${guardianPhone.replace(/\D/g, '')}@elimcrown.com`;
+          const pEmail = guardianEmail && guardianEmail.includes('@') ? guardianEmail : `${guardianPhone.replace(/\D/g, '')}@zawadisms.com`;
 
           const existingEmail = await prisma.user.findUnique({ where: { email: pEmail } });
-          const finalEmail = existingEmail ? `${guardianPhone.replace(/\D/g, '')}-${Date.now()}@elimcrown.com` : pEmail;
+          const finalEmail = existingEmail ? `${guardianPhone.replace(/\D/g, '')}-${Date.now()}@zawadisms.com` : pEmail;
 
           const hashedPassword = await bcrypt.hash('ChangeMe123!', 12);
 
@@ -386,7 +386,7 @@ export class LearnerController {
           where: {
             OR: [
               { username: studentUsername },
-              { email: `${studentUsername}@zawadi.com` }
+              { email: `${studentUsername}@zawadisms.com` }
             ]
           }
         });
@@ -396,7 +396,7 @@ export class LearnerController {
           await prisma.user.create({
             data: {
               username: studentUsername,
-              email: `${studentUsername}@zawadi.com`,
+              email: `${studentUsername}@zawadisms.com`,
               password: hashedPassword,
               firstName,
               lastName,
@@ -404,7 +404,7 @@ export class LearnerController {
               phone: guardianPhone || null,
               role: 'STUDENT',
               status: 'ACTIVE',
-              schoolId: req.headers['x-school-id'] as string || null
+              schoolId: (req.headers['x-school-id'] as string) || null
             }
           });
         }
@@ -425,7 +425,8 @@ export class LearnerController {
         message: 'Learner created successfully'
       });
     } catch (createError: any) {
-      throw new ApiError(500, `Creation Failed: ${createError.message}`);
+      console.error('Creation Failed:', createError);
+      res.status(500).json({ success: false, message: `Creation Failed: ${createError.message}` });
     }
   }
 

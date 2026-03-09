@@ -29,7 +29,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
     latitude: null,
     longitude: null,
     brandColor: brandingSettings?.brandColor || '#520050',
-    logoUrl: brandingSettings?.logoUrl || '/logo-elimcrown.png',
+    logoUrl: brandingSettings?.logoUrl || '/logo-new.png',
     faviconUrl: brandingSettings?.faviconUrl || '/favicon.png',
     stampUrl: brandingSettings?.stampUrl || '/stamp.svg',
     welcomeTitle: brandingSettings?.welcomeTitle || '',
@@ -39,7 +39,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
   });
 
   const [previews, setPreviews] = useState({
-    logo: brandingSettings?.logoUrl || '/logo-elimcrown.png',
+    logo: brandingSettings?.logoUrl || '/logo-new.png',
     favicon: brandingSettings?.faviconUrl || '/favicon.png',
     stamp: brandingSettings?.stampUrl || '/stamp.svg'
   });
@@ -60,7 +60,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
       latitude: null,
       longitude: null,
       brandColor: brandingSettings?.brandColor || '#520050',
-      logoUrl: brandingSettings?.logoUrl || '/logo-elimcrown.png',
+      logoUrl: brandingSettings?.logoUrl || '/logo-new.png',
       faviconUrl: brandingSettings?.faviconUrl || '/favicon.png',
       stampUrl: brandingSettings?.stampUrl || '/stamp.svg',
       welcomeTitle: brandingSettings?.welcomeTitle || '',
@@ -69,7 +69,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
       onboardingMessage: brandingSettings?.onboardingMessage || ''
     },
     previews: {
-      logo: brandingSettings?.logoUrl || '/logo-elimcrown.png',
+      logo: brandingSettings?.logoUrl || '/logo-new.png',
       favicon: brandingSettings?.faviconUrl || '/favicon.png',
       stamp: brandingSettings?.stampUrl || '/stamp.svg'
     }
@@ -125,7 +125,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
               latitude: school.latitude || null,
               longitude: school.longitude || null,
               brandColor: school.brandColor || '#520050',
-              logoUrl: school.logoUrl || '/logo-elimcrown.png',
+              logoUrl: school.logoUrl || '/logo-new.png',
               faviconUrl: school.faviconUrl || '/favicon.png',
               stampUrl: school.stampUrl || '/stamp.svg',
               welcomeTitle: school.welcomeTitle || '',
@@ -395,7 +395,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
                     value={settings.schoolName}
                     onChange={(e) => handleChange('schoolName', e.target.value)}
                     className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition"
-                    placeholder="e.g. Elimcrown Academy"
+                    placeholder="e.g. Zawadi SMS Academy"
                   />
                 </div>
 
@@ -541,9 +541,9 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
                 <div className="text-center group">
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">School Logo</label>
                   <div className="relative mx-auto w-40 h-40 border-2 border-dashed border-gray-200 rounded-2xl flex items-center justify-center bg-gray-50 overflow-hidden transition-colors hover:border-blue-400 group-hover:bg-white shadow-inner">
-                    <img src={previews.logo} alt="Logo" className="max-w-[85%] max-h-[85%] object-contain drop-shadow-sm" onError={(e) => e.target.src = '/logo-elimcrown.png'} />
-                    {previews.logo !== '/logo-elimcrown.png' && (
-                      <button onClick={() => handleRemoveImage('logo', '/logo-elimcrown.png')} className="absolute top-2 right-2 w-7 h-7 bg-red-100 text-red-600 rounded-lg opacity-0 group-hover:opacity-100 transition shadow-sm flex items-center justify-center">
+                    <img src={previews.logo} alt="Logo" className="max-w-[85%] max-h-[85%] object-contain drop-shadow-sm" onError={(e) => e.target.src = '/logo-new.png'} />
+                    {previews.logo !== '/logo-new.png' && (
+                      <button onClick={() => handleRemoveImage('logo', '/logo-new.png')} className="absolute top-2 right-2 w-7 h-7 bg-red-100 text-red-600 rounded-lg opacity-0 group-hover:opacity-100 transition shadow-sm flex items-center justify-center">
                         <X size={16} />
                       </button>
                     )}
@@ -608,7 +608,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
                     value={settings.welcomeTitle}
                     onChange={(e) => handleChange('welcomeTitle', e.target.value)}
                     className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition"
-                    placeholder="e.g. Welcome to Elimcrown"
+                    placeholder="e.g. Welcome to Zawadi SMS"
                   />
                 </div>
                 <div>

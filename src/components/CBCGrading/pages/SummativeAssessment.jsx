@@ -655,7 +655,7 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
         phone: user?.school?.phone || brandingSettings?.phone || 'Phone Number',
         email: user?.school?.email || brandingSettings?.email || 'email@school.com',
         website: user?.school?.website || brandingSettings?.website || 'www.school.com',
-        logoUrl: brandingSettings?.logoUrl || user?.school?.logo || '/logo-elimcrown.png',
+        logoUrl: brandingSettings?.logoUrl || user?.school?.logo || '/logo-new.png',
         brandColor: brandingSettings?.brandColor || '#1e3a8a',
         skipLetterhead: true
       };
@@ -1086,7 +1086,7 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
                       {/* Logo Column - Left */}
                       <div className="flex-shrink-0 pr-6">
                         <img
-                          src={brandingSettings?.logoUrl || user?.school?.logo || '/logo-elimcrown.png'}
+                          src={brandingSettings?.logoUrl || user?.school?.logo || '/logo-new.png'}
                           alt="School Logo"
                           className="h-24 w-24 object-contain"
                           onError={(e) => { e.target.src = '/logo-new.png'; }}

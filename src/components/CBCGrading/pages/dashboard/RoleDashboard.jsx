@@ -11,9 +11,16 @@ import TeacherDashboard from './TeacherDashboard';
 import ParentDashboard from './ParentDashboard';
 import AccountantDashboard from './AccountantDashboard';
 import ReceptionistDashboard from './ReceptionistDashboard';
+import MobileDashboard from './MobileDashboard';
+import useMediaQuery from '../../hooks/useMediaQuery';
 
-const RoleDashboard = ({ learners, pagination, teachers, user, onNavigate }) => {
+const RoleDashboard = ({ learners, pagination, teachers, user, onNavigate, brandingSettings }) => {
   const { role } = usePermissions();
+  const isMobile = useMediaQuery('(max-width: 767px)');
+
+  if (isMobile) {
+    return <MobileDashboard user={user} onNavigate={onNavigate} brandingSettings={brandingSettings} />;
+  }
 
   // Render dashboard based on user role
   switch (role) {

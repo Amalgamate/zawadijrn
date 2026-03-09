@@ -21,7 +21,7 @@ export const OnboardingEmail = ({
 }: OnboardingEmailProps) => {
     return (
         <EmailLayout
-            previewText={`Welcome to Elimcrown - Setup ${schoolName}`}
+            previewText={`Welcome to Zawadi SMS - Setup ${schoolName}`}
             schoolName={schoolName}
             heading={customHeading || "Welcome to your new school Operating System"}
         >
@@ -34,7 +34,7 @@ export const OnboardingEmail = ({
             ) : (
                 <>
                     <Text style={text}>
-                        Thank you for choosing <strong>Elimcrown</strong>. We have set up a secure environment for <strong>{schoolName}</strong>.
+                        Thank you for choosing <strong>Zawadi SMS</strong>. We have set up a secure environment for <strong>{schoolName}</strong>.
                         <br />
                         You are now ready to modernize your school operations with the most advanced CBC-native assessment and finance platform.
                     </Text>

@@ -24,9 +24,9 @@ interface EmailLayoutProps {
     children: React.ReactNode;
 }
 
-const baseUrl = process.env.FRONTEND_URL || 'https://elimcrown.netlify.app';
-const brandColor = '#520050'; // Elimcrown Purple
-const tealColor = '#017E84'; // Elimcrown Teal
+const baseUrl = process.env.FRONTEND_URL || 'https://zawadi-sms.netlify.app';
+const brandColor = '#520050'; // Zawadi SMS Purple
+const tealColor = '#017E84'; // Zawadi SMS Teal
 
 // For testing purposes, we use a public icon that won't break in Gmail
 const publicLogoUrl = 'https://img.icons8.com/fluency-systems-filled/96/714B67/graduation-cap.png';
@@ -34,7 +34,7 @@ const publicLogoUrl = 'https://img.icons8.com/fluency-systems-filled/96/714B67/g
 export const EmailLayout = ({
     previewText,
     heading,
-    schoolName = 'Elimcrown Platform',
+    schoolName = 'Zawadi SMS Platform',
     children,
 }: EmailLayoutProps) => {
     return (
@@ -56,7 +56,7 @@ export const EmailLayout = ({
                                 />
                             </Column>
                             <Column>
-                                <Text style={brandName}>Elimcrown</Text>
+                                <Text style={brandName}>Zawadi SMS</Text>
                             </Column>
                         </Row>
                     </Section>
@@ -72,7 +72,7 @@ export const EmailLayout = ({
                     {/* Footer */}
                     <Section style={footer}>
                         <Text style={footerText}>
-                            &copy; {new Date().getFullYear()} Elimcrown Inc. All rights reserved.
+                            &copy; {new Date().getFullYear()} Zawadi SMS Inc. All rights reserved.
                         </Text>
                         <Text style={footerText}>
                             <Link href={`${baseUrl}/support`} style={link}>Help Center</Link> •{' '}

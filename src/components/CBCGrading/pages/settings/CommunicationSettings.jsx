@@ -341,7 +341,7 @@ const CommunicationSettings = () => {
                     value={emailSettings.fromName}
                     onChange={(e) => setEmailSettings({ ...emailSettings, fromName: e.target.value })}
                     className="w-full px-4 py-2 border rounded-lg"
-                    placeholder="Elimcrown / Your School Name"
+                    placeholder="Zawadi SMS / Your School Name"
                   />
                 </div>
               </div>

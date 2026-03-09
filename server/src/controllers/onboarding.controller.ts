@@ -214,7 +214,7 @@ export class OnboardingController {
       }
 
       // 7. Trigger Welcome Notifications
-      const frontendUrl = process.env.FRONTEND_URL || 'https://elimcrown-v1.up.railway.app';
+      const frontendUrl = process.env.FRONTEND_URL || 'https://zawadi-sms.up.railway.app';
       const loginUrl = `${frontendUrl}/login`;
 
       EmailService.sendOnboardingEmail({

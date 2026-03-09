@@ -7,18 +7,17 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting database seed...');
 
-  console.log('\n🏫 Ensuring EDucore Template school exists...');
-  console.log('\n🏫 Ensuring EDucore Template school exists...');
+  console.log('\n🏫 Ensuring Zawadi SMS Template school exists...');
   const templateSchoolData = {
-    name: 'EDucore Template',
-    registrationNo: 'EDUCORE-TEMPLATE-001',
+    name: 'Zawadi SMS Template',
+    registrationNo: 'ZAWADI-TEMPLATE-001',
     address: 'Nairobi, Kenya',
     county: 'Nairobi',
     subCounty: 'Westlands',
-    phone: '+254712345000',
-    email: 'template@educore.local',
+    phone: '+254712345678',
+    email: 'template@zawadisms.com',
     principalName: 'Template Principal',
-    principalPhone: '+254712345010',
+    principalPhone: '+254712345678',
     active: true,
     status: 'TEMPLATE',
     admissionFormatType: AdmissionFormatType.BRANCH_PREFIX_START,
@@ -27,13 +26,13 @@ async function main() {
 
   // Try find by name first
   let templateSchool = await prisma.school.findFirst({
-    where: { name: 'EDucore Template' }
+    where: { name: 'Zawadi SMS Template' }
   });
 
   // If not found by name, try find by registration number
   if (!templateSchool) {
     templateSchool = await prisma.school.findFirst({
-      where: { registrationNo: 'EDUCORE-TEMPLATE-001' }
+      where: { registrationNo: 'ZAWADI-TEMPLATE-001' }
     });
   }
 

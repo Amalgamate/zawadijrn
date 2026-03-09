@@ -1,5 +1,5 @@
 {
-  "name": "educore-v1-backend",
+  "name": "zawadi-sms-backend",
   "version": "1.0.0",
   "description": "Zawadi JRN Academy - CBC Grading System Backend API",
   "main": "dist/index.js",

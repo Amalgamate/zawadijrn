@@ -252,7 +252,7 @@ export default function EmailVerificationForm({ email, phone, onVerifySuccess, b
                     />
                   )}
                   <span className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tighter text-white whitespace-nowrap uppercase">
-                    {brandingSettings?.schoolName || 'ELIMCROWN'}
+                    {brandingSettings?.schoolName || 'ZAWADI SMS'}
                   </span>
                 </div>
               </div>
@@ -307,7 +307,7 @@ export default function EmailVerificationForm({ email, phone, onVerifySuccess, b
           {/* Footer Copyright */}
           <div className="relative z-10 text-center">
             <p className="text-white/60 text-sm">
-              © {new Date().getFullYear()} {brandingSettings?.schoolName || 'ElimCrown'}. All rights reserved.
+              © {new Date().getFullYear()} {brandingSettings?.schoolName || 'Zawadi SMS'}. All rights reserved.
             </p>
           </div>
         </div>

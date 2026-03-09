@@ -1,5 +1,5 @@
 /**
- * EDucore Admin Overview (Deprecated)
+ * Zawadi SMS Legacy Overview (Deprecated)
  * Stub component (not used in single-school implementation)
  */
 

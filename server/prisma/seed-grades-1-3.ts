@@ -114,7 +114,7 @@ async function seedGrade(fileName: string, gradeEnum: Grade, parentMap: Record<s
         let parentId = null;
         if (parentInfo.phone1) {
             const parentUser = await prisma.user.upsert({
-                where: { email: `${parentInfo.phone1}@educore.com` },
+                where: { email: `${parentInfo.phone1}@zawadisms.com` },
                 update: {
                     firstName: parentInfo.guardianName?.split(' ')[0] || 'Parent',
                     lastName: parentInfo.guardianName?.split(' ').slice(1).join(' ') || 'User',
@@ -123,7 +123,7 @@ async function seedGrade(fileName: string, gradeEnum: Grade, parentMap: Record<s
                     status: 'ACTIVE'
                 },
                 create: {
-                    email: `${parentInfo.phone1}@educore.com`,
+                    email: `${parentInfo.phone1}@zawadisms.com`,
                     password: '$2a$10$7/O6jMvA1m98v0tYI8E/8u9z6n5z6n5z6n5z6n5z6n5z6n5z6n5z', // dummy hash for 'password123'
                     firstName: parentInfo.guardianName?.split(' ')[0] || 'Parent',
                     lastName: parentInfo.guardianName?.split(' ').slice(1).join(' ') || 'User',
@@ -140,10 +140,7 @@ async function seedGrade(fileName: string, gradeEnum: Grade, parentMap: Record<s
         // 2b. Upsert Learner
         const learner = await prisma.learner.upsert({
             where: {
-                schoolId_admissionNumber: {
-                    schoolId: SCHOOL_ID,
-                    admissionNumber: parentInfo.admNo || `TEMP-${gradeEnum}-${nameKey.slice(0, 10)}`
-                }
+                admissionNumber: parentInfo.admNo || `TEMP-${gradeEnum}-${nameKey.slice(0, 10)}`
             },
             update: {
                 firstName,

@@ -27,9 +27,9 @@ async function main() {
     });
 
     if (!school) {
-        console.log('⚠️ "ZAWADI JUNIOR ACADEMY" not found, trying "EDucore Template"...');
+        console.log('⚠️ "ZAWADI JUNIOR ACADEMY" not found, trying "Zawadi SMS Template"...');
         school = await prisma.school.findFirst({
-            where: { name: 'EDucore Template' }
+            where: { name: 'Zawadi SMS Template' }
         });
     }
 
@@ -41,7 +41,7 @@ async function main() {
     }
 
     if (!school) {
-        console.error('❌ "EDucore Template" school not found. Please run "npm run seed" first.');
+        console.error('❌ "Zawadi SMS Template" school not found. Please run "npm run seed" first.');
         return;
     }
 
@@ -158,12 +158,12 @@ async function main() {
                 // Find the class for this grade/stream
                 const studentClass = await prisma.class.findUnique({
                     where: {
-                        branchId_grade_stream_academicYear_term: {
-                            branchId: branch.id,
+                        grade_stream_academicYear_term_schoolId: {
                             grade: fileInfo.grade,
                             stream: 'A',
                             academicYear: ACADEMIC_YEAR,
-                            term: 'TERM_1' // derived enum check might be needed if strictly typed
+                            term: 'TERM_1', // derived enum check might be needed if strictly typed
+                            schoolId: school.id
                         }
                     }
                 });

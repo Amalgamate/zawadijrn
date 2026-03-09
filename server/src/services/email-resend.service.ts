@@ -60,7 +60,7 @@ export class EmailService {
         return {
           apiKey: decrypt(config.emailApiKey),
           from: config.emailFrom || this.defaultFrom,
-          fromName: config.emailFromName || 'Elimcrown',
+          fromName: config.emailFromName || 'Zawadi SMS',
           emailTemplates: config.emailTemplates as any
         };
       }
@@ -76,7 +76,7 @@ export class EmailService {
     const config = await this.getGlobalConfig();
     const client = this.getResendClient(config?.apiKey);
     const fromEmail = config?.from || this.defaultFrom;
-    const fromName = config?.fromName || 'Elimcrown';
+    const fromName = config?.fromName || 'Zawadi SMS';
 
     if (!client) {
       console.warn(`⚠️ Skipped Welcome Email to ${to}: No Resend API Key configured.`);
@@ -98,7 +98,7 @@ export class EmailService {
       const response = await client.emails.send({
         from: fromName ? `${fromName} <${fromEmail}>` : fromEmail,
         to: [to],
-        subject: `Welcome to ${schoolName} on Elimcrown!`,
+        subject: `Welcome to ${schoolName} on Zawadi SMS!`,
         html,
       });
 
@@ -118,7 +118,7 @@ export class EmailService {
     const config = await this.getGlobalConfig();
     const client = this.getResendClient(config?.apiKey);
     const fromEmail = config?.from || this.defaultFrom;
-    const fromName = config?.fromName || 'Elimcrown';
+    const fromName = config?.fromName || 'Zawadi SMS';
 
     if (!client) {
       console.warn(`⚠️ Skipped Onboarding Email to ${to}: No Resend API Key configured.`);
@@ -160,7 +160,7 @@ export class EmailService {
     const config = await this.getGlobalConfig();
     const client = this.getResendClient(config?.apiKey);
     const fromEmail = config?.from || this.defaultFrom;
-    const fromName = config?.fromName || 'Elimcrown';
+    const fromName = config?.fromName || 'Zawadi SMS';
 
     if (!client) {
       console.warn(`⚠️ Skipped Password Reset Email to ${to}: No Resend API Key configured.`);
@@ -197,7 +197,7 @@ export class EmailService {
   static async sendTicketCreated(data: TicketCreatedEmailData): Promise<void> {
     const client = this.getResendClient();
     const fromEmail = this.defaultFrom;
-    const toEmail = process.env.SUPPORT_EMAIL || 'support@elimcrown.com';
+    const toEmail = process.env.SUPPORT_EMAIL || 'support@zawadisms.com';
 
     if (!client) {
       console.warn(`⚠️ Skipped Ticket Notification: No Resend API Key configured.`);
@@ -217,7 +217,7 @@ export class EmailService {
       );
 
       const response = await client.emails.send({
-        from: `Elimcrown Support <${fromEmail}>`,
+        from: `Zawadi SMS Support <${fromEmail}>`,
         to: [toEmail],
         subject: `[${data.ticketPriority}] New Ticket: ${data.ticketSubject}`,
         html,

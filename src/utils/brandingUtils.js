@@ -33,7 +33,7 @@ export const getSchoolBranding = () => {
     return {
         name: 'ZAWADI JUNIOR ACADEMY',
         phone: '+254712345000',
-        email: 'template@educore.local',
+        email: 'template@zawadisms.com',
         address: 'Isiolo Central, Kenya',
         motto: 'Rise & Shine',
         logo: '/logo.png',

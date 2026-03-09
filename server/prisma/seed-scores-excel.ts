@@ -34,8 +34,8 @@ async function main() {
     });
 
     if (!school) {
-        console.log('⚠️ School not found, trying EDucore Template...');
-        school = await prisma.school.findFirst({ where: { name: 'EDucore Template' } });
+        console.log('⚠️ School not found, trying Zawadi SMS Template...');
+        school = await prisma.school.findFirst({ where: { name: 'Zawadi SMS Template' } });
     }
 
     if (!school) {

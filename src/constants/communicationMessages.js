@@ -8,8 +8,8 @@ export const COMMUNICATION_DEFAULTS = {
   // Email Defaults
   email: {
     provider: 'resend',
-    fromEmail: process.env.REACT_APP_EMAIL_FROM || 'noreply@elimcrown.ac.ke',
-    fromName: process.env.REACT_APP_EMAIL_FROM_NAME || 'Elimcrown Academy',
+    fromEmail: process.env.REACT_APP_EMAIL_FROM || 'noreply@zawadisms.com',
+    fromName: process.env.REACT_APP_EMAIL_FROM_NAME || 'Zawadi SMS Academy',
     enabled: false
   },
 
@@ -31,10 +31,10 @@ export const COMMUNICATION_DEFAULTS = {
 };
 
 export const TEST_MESSAGES = {
-  sms: process.env.REACT_APP_TEST_SMS_MESSAGE || 'This is a test message from Elimcrown.',
+  sms: process.env.REACT_APP_TEST_SMS_MESSAGE || 'This is a test message from Zawadi SMS.',
   email: {
     welcome: {
-      subject: 'Welcome to Elimcrown',
+      subject: 'Welcome to Zawadi SMS',
       preview: 'Welcome email template'
     },
     onboarding: {
@@ -66,7 +66,7 @@ TOTAL MARKS: ${totalMarks || 0} / ${maxPossibleMarks || 0}`)
   },
 
   otp: (otpCode, expiryMinutes = 10) =>
-    `Your Elimcrown login OTP is: ${otpCode}. Valid for ${expiryMinutes} minutes. Do not share this code.`,
+    `Your Zawadi SMS login OTP is: ${otpCode}. Valid for ${expiryMinutes} minutes. Do not share this code.`,
 
   birthday: {
     standard: (learnerName, schoolName, gradeName, ageOrdinal, bdayDate) =>
@@ -78,11 +78,11 @@ TOTAL MARKS: ${totalMarks || 0} / ${maxPossibleMarks || 0}`)
 
 export const EMAIL_TEMPLATES = {
   welcome: {
-    subject: 'Welcome to Elimcrown!',
+    subject: 'Welcome to Zawadi SMS!',
     preheader: 'Your school is set up and ready to go'
   },
   onboarding: {
-    subject: 'Get Started with Elimcrown',
+    subject: 'Get Started with Zawadi SMS',
     preheader: 'Your onboarding guide is here'
   },
   assessmentReport: {
@@ -139,11 +139,11 @@ export const SUCCESS_MESSAGES = {
 
 // Brand/Organization Info
 export const BRAND = {
-  name: 'Elimcrown',
-  email: process.env.REACT_APP_BRAND_EMAIL || 'hello@elimcrown.com',
-  phone: process.env.REACT_APP_BRAND_PHONE || '+254 700 000 000',
-  website: process.env.REACT_APP_BRAND_WEBSITE || 'elimcrown.com',
-  logo: process.env.REACT_APP_BRAND_LOGO || 'https://elimcrown.com/logo.png',
-  displayName: 'Elimcrown Academy',
+  name: 'Zawadi SMS',
+  email: process.env.REACT_APP_BRAND_EMAIL || 'hello@zawadisms.com',
+  phone: process.env.REACT_APP_BRAND_PHONE || '+254 712 345 678',
+  website: process.env.REACT_APP_BRAND_WEBSITE || 'zawadisms.com',
+  logo: process.env.REACT_APP_BRAND_LOGO || 'https://zawadisms.com/logo.png',
+  displayName: 'Zawadi SMS Academy',
   tagline: 'CBC-Native Education Platform'
 };

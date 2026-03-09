@@ -21,7 +21,7 @@ export const WelcomeEmail = ({
 }: WelcomeEmailProps) => {
     return (
         <EmailLayout
-            previewText={`Welcome to Elimcrown, ${schoolName}!`}
+            previewText={`Welcome to Zawadi SMS, ${schoolName}!`}
             schoolName={schoolName}
             heading={customHeading || "Welcome to your new School Management System"}
         >
@@ -31,13 +31,13 @@ export const WelcomeEmail = ({
                 <Text style={text} dangerouslySetInnerHTML={{ __html: customBody.replace(/\n/g, '<br/>') }} />
             ) : (
                 <Text style={text}>
-                    Congratulations! Your school, <strong>{schoolName}</strong>, has been successfully registered on Elimcrown.
+                    Congratulations! Your school, <strong>{schoolName}</strong>, has been successfully registered on Zawadi SMS.
                     We are thrilled to have you on board.
                 </Text>
             )}
 
             <Text style={text}>
-                Elimcrown is designed to simplify your administrative tasks, from CBC assessment tracking to generating complex report cards instantly.
+                Zawadi SMS is designed to simplify your administrative tasks, from CBC assessment tracking to generating complex report cards instantly.
             </Text>
 
             <Section style={btnContainer}>
