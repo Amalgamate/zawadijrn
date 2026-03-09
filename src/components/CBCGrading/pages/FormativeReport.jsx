@@ -218,7 +218,7 @@ const FormativeReport = ({ learners, brandingSettings, user }) => {
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap justify-center md:justify-end items-center gap-2 md:gap-3 w-full md:w-auto">
               <div className="hidden md:block">
                 <select
                   value={selectedArea}
@@ -245,7 +245,7 @@ const FormativeReport = ({ learners, brandingSettings, user }) => {
               <DownloadReportButton
                 onDownload={handleDownloadPDF}
                 label="PDF"
-                className="px-4 py-2 bg-brand-teal text-white rounded-lg hover:bg-brand-teal/90 transition shadow-sm font-semibold text-sm flex items-center gap-2"
+                className="px-4 py-2 bg-brand-teal text-white rounded-lg hover:bg-brand-teal/90 transition shadow-sm font-semibold text-sm flex items-center justify-center gap-2 flex-1 md:flex-none"
               />
 
               <button
@@ -339,7 +339,7 @@ const FormativeReport = ({ learners, brandingSettings, user }) => {
                 ) : (
                   filteredAssessments.map((assessment, index) => (
                     <div key={index} className="border border-gray-200 rounded-xl p-4 hover:border-blue-200 transition-colors break-inside-avoid">
-                      <div className="flex justify-between items-start mb-3">
+                      <div className="flex flex-col md:flex-row md:justify-between items-start mb-3 gap-2 md:gap-0">
                         <div>
                           <h4 className="font-bold text-sm text-gray-900">{assessment.learningArea}</h4>
                           {assessment.strand && (
@@ -349,8 +349,8 @@ const FormativeReport = ({ learners, brandingSettings, user }) => {
                             </p>
                           )}
                         </div>
-                        <div className="text-right">
-                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${getRatingColor(assessment.detailedRating)}`}>
+                        <div className="text-left md:text-right w-full md:w-auto">
+                          <span className={`inline-flex max-w-max px-3 py-1 rounded-full text-xs font-bold ${getRatingColor(assessment.detailedRating)}`}>
                             {assessment.detailedRating} - {assessment.percentage}%
                           </span>
                           <p className="text-[10px] text-gray-500 mt-1 font-medium uppercase">{getRatingLabel(assessment.detailedRating)}</p>

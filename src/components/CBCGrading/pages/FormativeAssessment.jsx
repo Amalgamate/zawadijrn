@@ -601,26 +601,27 @@ const FormativeAssessment = ({ learners }) => {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 md:gap-3 mt-3 md:mt-0">
               <button
                 onClick={() => setViewMode('setup')}
-                className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium"
+                className="flex items-center gap-2 px-3 md:px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium"
               >
                 <Edit3 size={16} />
-                Edit Context
+                <span className="hidden md:inline">Edit Context</span>
+                <span className="md:hidden">Edit</span>
               </button>
               <div className="h-8 w-px bg-gray-200 mx-2 hidden md:block"></div>
               <button
                 onClick={handleSaveAll}
                 disabled={saving}
-                className="flex items-center gap-2 px-6 py-2 bg-brand-teal text-white rounded-lg hover:bg-brand-teal/90 transition shadow-sm font-bold disabled:opacity-70"
+                className="flex items-center gap-2 px-4 md:px-6 py-2 bg-brand-teal text-white rounded-lg hover:bg-brand-teal/90 transition shadow-sm font-bold disabled:opacity-70 text-sm md:text-base flex-1 md:flex-none justify-center"
               >
-                {saving ? 'Saving...' : 'Save Progress'}
+                {saving ? 'Saving...' : 'Save'}
                 <Save size={18} />
               </button>
               <button
                 onClick={goToNextStep}
-                className="flex items-center gap-2 px-6 py-2 bg-brand-purple text-white rounded-lg hover:bg-brand-purple/90 transition shadow-sm font-bold"
+                className="flex items-center gap-2 px-4 md:px-6 py-2 bg-brand-purple text-white rounded-lg hover:bg-brand-purple/90 transition shadow-sm font-bold text-sm md:text-base flex-1 md:flex-none justify-center"
               >
                 Review
                 <ArrowRight size={18} />

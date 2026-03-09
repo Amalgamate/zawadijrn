@@ -20,7 +20,7 @@ import EmptyState from '../shared/EmptyState';
 import { useSchoolData } from '../../../contexts/SchoolDataContext';
 import { getLearningAreasByGrade } from '../../../constants/learningAreas';
 
-const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSettings }) => {
+const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSettings, embedded }) => {
   const { showSuccess, showError } = useNotifications();
   const setup = useAssessmentSetup({ defaultTerm: 'TERM_1' });
   const teacherWorkload = useTeacherWorkload();
@@ -451,7 +451,7 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
   // Loading state
   if (loading) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-gray-50">
+      <div className={`${embedded ? 'flex items-center justify-center min-h-full py-16' : 'fixed z-50 inset-0 flex items-center justify-center bg-gray-50'}`}>
         <div className="flex flex-col items-center gap-3">
           <Loader size={32} className="animate-spin text-teal-600" />
           <p className="text-gray-600">Loading...</p>
@@ -463,26 +463,28 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
   // STEP 1: SETUP - Mobile App Style
   if (step === 1) {
     return (
-      <div className="fixed inset-0 flex flex-col bg-gradient-to-b from-slate-50 to-white">
-        {/* Premium Header */}
-        <div className="bg-white border-b border-slate-200 px-4 pt-4 pb-3 shadow-sm">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleBackToSidebar}
-              className="p-2 hover:bg-slate-100 rounded-full transition-colors"
-              title="Back"
-            >
-              <ArrowLeft size={20} />
-            </button>
-            <div>
-              <h1 className="text-xl font-black text-slate-900">Summative Assessment</h1>
-              <p className="text-xs text-slate-500 font-medium">Quick Setup</p>
+      <div className={`${embedded ? 'flex flex-col min-h-full bg-gradient-to-b from-slate-50 to-white' : 'fixed z-50 inset-0 flex flex-col bg-gradient-to-b from-slate-50 to-white'}`}>
+        {/* Premium Header — hidden in embedded mode (dash already has its own header) */}
+        {!embedded && (
+          <div className="bg-white border-b border-slate-200 px-4 pt-4 pb-3 shadow-sm">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleBackToSidebar}
+                className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+                title="Back"
+              >
+                <ArrowLeft size={20} />
+              </button>
+              <div>
+                <h1 className="text-xl font-black text-slate-900">Summative Assessment</h1>
+                <p className="text-xs text-slate-500 font-medium">Quick Setup</p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3 pb-32">
+        <div className={`${embedded ? 'flex-1 p-4 space-y-3 pb-4' : 'flex-1 overflow-y-auto p-4 space-y-3 pb-32'}`}>
           {/* Grade Card */}
           <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
             <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-3">
@@ -557,8 +559,8 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
                     key={test.id}
                     onClick={() => setSelectedTestId(test.id)}
                     className={`w-full p-3 rounded-xl border-2 transition-all text-left ${selectedTestId === test.id
-                        ? 'border-brand-teal bg-brand-teal/5'
-                        : 'border-slate-200 hover:border-slate-300'
+                      ? 'border-brand-teal bg-brand-teal/5'
+                      : 'border-slate-200 hover:border-slate-300'
                       }`}
                   >
                     <p className="font-bold text-sm">{test.title}</p>
@@ -582,8 +584,8 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
           )}
         </div>
 
-        {/* Sticky Action Footer */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 space-y-2 shadow-lg">
+        {/* Action Footer */}
+        <div className={`${embedded ? 'sticky bottom-0 bg-white border-t border-slate-200 p-4 space-y-2 shadow-lg' : 'fixed z-50 bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 space-y-2 shadow-lg'}`}>
           <button
             onClick={() => {
               if (!selectedTestId || !setup.selectedGrade) {
@@ -611,7 +613,7 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
   // STEP 2: GRADING - Mobile App Optimized
   if (step === 2 && selectedTest) {
     return (
-      <div className="fixed inset-0 flex flex-col bg-slate-50">
+      <div className={`${embedded ? 'flex flex-col min-h-full bg-slate-50' : 'fixed z-50 inset-0 flex flex-col bg-slate-50'}`}>
         {/* Sticky Header - Score Progress */}
         <div className="sticky top-0 z-20 bg-gradient-to-r from-brand-teal to-teal-500 text-white shadow-lg">
           <div className="px-4 pt-4 pb-3">
@@ -668,7 +670,7 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
         )}
 
         {/* Learner Score Cards - Streamlined */}
-        <div className="flex-1 overflow-y-auto px-3 pt-3 pb-32 space-y-2">
+        <div className={`${embedded ? 'px-3 pt-3 pb-4 space-y-2' : 'flex-1 overflow-y-auto px-3 pt-3 pb-32 space-y-2'}`}>
           {loadingLearners ? (
             <div className="flex flex-col items-center justify-center py-12">
               <Loader size={32} className="animate-spin text-brand-teal mb-2" />
@@ -695,10 +697,10 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
                 <div
                   key={learnerId}
                   className={`bg-white rounded-xl p-4 border-2 transition-all transform ${isSaved
-                      ? 'border-green-400 bg-green-50/30 shadow-sm'
-                      : isMarked
-                        ? 'border-brand-teal bg-brand-teal/3 shadow-sm'
-                        : 'border-slate-200 shadow-xs hover:shadow-sm'
+                    ? 'border-green-400 bg-green-50/30 shadow-sm'
+                    : isMarked
+                      ? 'border-brand-teal bg-brand-teal/3 shadow-sm'
+                      : 'border-slate-200 shadow-xs hover:shadow-sm'
                     }`}
                 >
                   {/* Learner Info */}
@@ -738,10 +740,10 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
                     onChange={(e) => handleMarkChange(learnerId, e.target.value)}
                     disabled={isSaved}
                     className={`w-full px-4 py-3 text-center text-lg font-bold border-2 rounded-xl focus:outline-none transition-colors ${isSaved
-                        ? 'border-green-400 bg-green-100/50 text-green-700 cursor-not-allowed opacity-75'
-                        : isMarked
-                          ? 'border-brand-teal bg-white text-brand-teal'
-                          : 'border-slate-300 bg-slate-50 text-slate-900 focus:bg-white focus:border-brand-teal'
+                      ? 'border-green-400 bg-green-100/50 text-green-700 cursor-not-allowed opacity-75'
+                      : isMarked
+                        ? 'border-brand-teal bg-white text-brand-teal'
+                        : 'border-slate-300 bg-slate-50 text-slate-900 focus:bg-white focus:border-brand-teal'
                       }`}
                     max={selectedTest?.totalMarks || 100}
                     autoComplete="off"
@@ -753,7 +755,7 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
         </div>
 
         {/* Bottom Action Bar */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-slate-200 p-4 pb-6 shadow-xl">
+        <div className={`${embedded ? 'sticky bottom-0 bg-white border-t-2 border-slate-200 p-4 pb-4 shadow-xl' : 'fixed z-50 bottom-0 left-0 right-0 bg-white border-t-2 border-slate-200 p-4 pb-6 shadow-xl'}`}>
           <div className="space-y-2">
             {/* Calculate unsaved marks */}
             {(() => {
@@ -770,8 +772,8 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
                     onClick={handleSaveMarks}
                     disabled={saving || unsavedCount === 0}
                     className={`w-full py-4 font-black rounded-xl transition-all flex items-center justify-center gap-2 text-white text-sm ${unsavedCount === 0
-                        ? 'bg-gray-400 cursor-not-allowed opacity-50'
-                        : 'bg-gradient-to-r from-brand-teal to-teal-500 hover:shadow-lg active:scale-95'
+                      ? 'bg-gray-400 cursor-not-allowed opacity-50'
+                      : 'bg-gradient-to-r from-brand-teal to-teal-500 hover:shadow-lg active:scale-95'
                       }`}
                   >
                     {saving ? (
@@ -819,9 +821,9 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
     );
   }
 
-  // Fallback - should not reach here if component structure is correct
+  // Fallback
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-slate-50">
+    <div className={`${embedded ? 'flex items-center justify-center min-h-full py-16' : 'fixed z-50 inset-0 flex items-center justify-center bg-slate-50'}`}>
       <EmptyState message="Invalid state" />
     </div>
   );

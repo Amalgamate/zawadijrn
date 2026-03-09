@@ -2058,12 +2058,12 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
         </div>
 
         {/* Single Row Filter Bar */}
-        <div className="border-t border-slate-200 px-6 py-3.5 flex flex-wrap justify-center gap-3 items-center w-full max-w-[1200px] mx-auto">
+        <div className="border-t border-slate-200 px-4 md:px-6 py-3.5 flex flex-wrap justify-center gap-3 items-center w-full max-w-[1200px] mx-auto">
           {/* Type Selector */}
           <select
             value={stagedType}
             onChange={(e) => setStagedType(e.target.value)}
-            className="h-9 px-2.5 py-1.5 border border-slate-300 rounded text-xs focus:ring-1 focus:ring-brand-teal focus:border-brand-teal outline-none"
+            className="h-9 px-2.5 py-1.5 border border-slate-300 rounded text-xs focus:ring-1 focus:ring-brand-teal focus:border-brand-teal outline-none flex-1 md:flex-none min-w-[140px]"
           >
             {reportTypes.map(t => (
               <option key={t.value} value={t.value}>
@@ -2079,7 +2079,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
               setStagedGrade(e.target.value);
               setStagedStream('');
             }}
-            className="h-9 px-2.5 py-1.5 border border-slate-300 rounded text-xs focus:ring-1 focus:ring-brand-teal focus:border-brand-teal outline-none w-28"
+            className="h-9 px-2.5 py-1.5 border border-slate-300 rounded text-xs focus:ring-1 focus:ring-brand-teal focus:border-brand-teal outline-none flex-1 md:flex-none md:w-28 min-w-[100px]"
           >
             <option value="">Grade</option>
             <option value="all">All Grades</option>
@@ -2110,7 +2110,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
           <select
             value={stagedStream}
             onChange={(e) => setStagedStream(e.target.value)}
-            className="h-9 px-2.5 py-1.5 border border-slate-300 rounded text-xs focus:ring-1 focus:ring-brand-teal focus:border-brand-teal outline-none w-20"
+            className="h-9 px-2.5 py-1.5 border border-slate-300 rounded text-xs focus:ring-1 focus:ring-brand-teal focus:border-brand-teal outline-none flex-1 md:flex-none md:w-20 min-w-[100px]"
           >
             <option value="">Stream</option>
             <option value="all">All</option>
@@ -2125,7 +2125,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
           <select
             value={stagedTerm}
             onChange={(e) => setStagedTerm(e.target.value)}
-            className="h-9 px-2.5 py-1.5 border border-slate-300 rounded text-xs focus:ring-1 focus:ring-brand-teal focus:border-brand-teal outline-none w-20"
+            className="h-9 px-2.5 py-1.5 border border-slate-300 rounded text-xs focus:ring-1 focus:ring-brand-teal focus:border-brand-teal outline-none flex-1 md:flex-none md:w-20 min-w-[100px]"
           >
             {terms?.map(t => (
               <option key={t.value} value={t.value}>
@@ -2136,10 +2136,10 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
 
           {/* Learner Selector */}
           {(stagedType === 'LEARNER_REPORT' || stagedType === 'LEARNER_TERMLY_REPORT') && (
-            <div className="relative" ref={learnerOptionsRef}>
+            <div className="relative w-full md:w-auto flex-1 md:flex-none" ref={learnerOptionsRef}>
               <button
                 onClick={() => setShowLearnerOptions(!showLearnerOptions)}
-                className="h-9 px-3 py-1.5 border border-slate-300 rounded text-xs focus:ring-1 focus:ring-brand-teal focus:border-brand-teal outline-none flex items-center justify-between min-w-[180px] max-w-[280px] bg-white text-gray-700 w-full"
+                className="h-9 px-3 py-1.5 border border-slate-300 rounded text-xs focus:ring-1 focus:ring-brand-teal focus:border-brand-teal outline-none flex items-center justify-between min-w-[180px] md:max-w-[280px] bg-white text-gray-700 w-full"
               >
                 <span className="truncate">
                   {stagedLearnerIds.length === 0 ? 'Select Learner(s)'
@@ -2201,10 +2201,10 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
           )}
 
           {/* Test Group Selector */}
-          <div className="relative" ref={testGroupRef}>
+          <div className="relative w-full md:w-auto flex-1 md:flex-none md:min-w-[140px]" ref={testGroupRef}>
             <button
               onClick={() => setShowTestGroupOptions(!showTestGroupOptions)}
-              className="h-9 px-3 py-1.5 border border-slate-300 rounded text-xs focus:ring-1 focus:ring-brand-teal focus:border-brand-teal outline-none flex items-center justify-between min-w-[140px] max-w-[200px] bg-white text-gray-700"
+              className="h-9 px-3 py-1.5 border border-slate-300 rounded text-xs focus:ring-1 focus:ring-brand-teal focus:border-brand-teal outline-none flex items-center justify-between min-w-full md:min-w-[140px] md:max-w-[200px] bg-white text-gray-700"
             >
               <span className="truncate">
                 {stagedTestGroups.length === 0 ? 'All Test Groups' : `${stagedTestGroups.length} Groups Selected`}
@@ -2212,7 +2212,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
               <span className="text-gray-400 ml-2 text-[10px]">▼</span>
             </button>
             {showTestGroupOptions && (
-              <div className="absolute top-full left-0 mt-1 w-56 bg-white border border-slate-200 rounded-md shadow-lg z-50 py-1">
+              <div className="absolute top-full left-0 mt-1 w-full md:w-56 bg-white border border-slate-200 rounded-md shadow-lg z-50 py-1">
                 {availableTestGroups.length === 0 ? (
                   <div className="p-3 text-center text-xs text-gray-500">No test groups found for this grade/term</div>
                 ) : (
@@ -2250,10 +2250,10 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
           </div>
 
           {/* Specific Test Selector */}
-          <div className="relative" ref={testOptionsRef}>
+          <div className="relative w-full md:w-auto flex-1 md:flex-none md:min-w-[140px]" ref={testOptionsRef}>
             <button
               onClick={() => setShowTestOptions(!showTestOptions)}
-              className="h-9 px-3 py-1.5 border border-slate-300 rounded text-xs focus:ring-1 focus:ring-brand-teal focus:border-brand-teal outline-none flex items-center justify-between min-w-[140px] max-w-[240px] bg-white text-gray-700"
+              className="h-9 px-3 py-1.5 border border-slate-300 rounded text-xs focus:ring-1 focus:ring-brand-teal focus:border-brand-teal outline-none flex items-center justify-between min-w-full md:min-w-[140px] md:max-w-[240px] bg-white text-gray-700"
             >
               <span className="truncate">
                 {stagedTestIds.length === 0
@@ -2263,7 +2263,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
               <span className="text-gray-400 ml-2 text-[10px]">▼</span>
             </button>
             {showTestOptions && (
-              <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-slate-200 rounded-md shadow-lg z-50 py-1 max-h-60 overflow-y-auto">
+              <div className="absolute top-full left-0 mt-1 w-full md:w-64 bg-white border border-slate-200 rounded-md shadow-lg z-50 py-1 max-h-60 overflow-y-auto w-[calc(100vw-48px)] md:w-64 max-w-[calc(100vw-48px)]">
                 {testsInGroups.length === 0 ? (
                   <div className="p-3 text-center text-xs text-gray-500">No specific tests found</div>
                 ) : (
@@ -2306,7 +2306,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
           <button
             onClick={applyFilters}
             disabled={loading}
-            className="h-9 px-3 rounded bg-brand-teal text-white flex items-center gap-1.5 hover:bg-brand-teal/90 disabled:opacity-50 transition text-xs font-medium whitespace-nowrap"
+            className="h-9 px-3 rounded bg-brand-teal text-white flex items-center justify-center gap-1.5 hover:bg-brand-teal/90 disabled:opacity-50 transition text-xs font-medium whitespace-nowrap w-full md:w-auto mt-2 md:mt-0"
           >
             <FileText size={16} />
             <span>Generate</span>
@@ -2408,18 +2408,18 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                 </div>
 
                 {/* ACTION BAR FOR BULK PREVIEW */}
-                <div className="flex justify-between items-center mb-6 bg-indigo-50 p-4 rounded-xl border border-indigo-100 no-print">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 bg-indigo-50 p-4 rounded-xl border border-indigo-100 no-print gap-4 md:gap-0">
                   <div>
                     <p className="text-sm font-bold text-indigo-900">Combined Actions</p>
                     <p className="text-[10px] text-indigo-600 font-bold uppercase tracking-wider">
                       {selectedReportRows.length > 0 ? `${selectedReportRows.length} learners selected` : `Apply to all ${reportData.rows.length} learners`}
                     </p>
                   </div>
-                  <div className="flex gap-3">
+                  <div className="flex flex-wrap md:flex-nowrap gap-3 w-full md:w-auto">
                     <button
                       onClick={handleBulkSMS}
                       disabled={bulkProgress.active}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-md flex items-center gap-2 font-bold uppercase text-[10px]"
+                      className="flex-1 md:flex-none justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-md flex items-center gap-2 font-bold uppercase text-[10px]"
                     >
                       {bulkProgress.active ? <Loader className="animate-spin" size={14} /> : <MessageSquare size={14} />}
                       {bulkProgress.active ? 'Sending SMS...' : 'Bulk Send SMS'}
@@ -2427,22 +2427,22 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                     <button
                       onClick={() => setShowWhatsAppConfirm(true)}
                       disabled={isSendingWhatsApp}
-                      className="px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition shadow-md flex items-center gap-2 font-bold uppercase text-[10px]"
+                      className="flex-1 md:flex-none justify-center px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition shadow-md flex items-center gap-2 font-bold uppercase text-[10px]"
                     >
                       {isSendingWhatsApp ? <Loader className="animate-spin" size={14} /> : <MessageCircle size={14} />}
                       {isSendingWhatsApp ? 'Sending...' : 'Bulk WhatsApp'}
                     </button>
-                    <div className="relative">
+                    <div className="relative w-full md:w-auto mt-2 md:mt-0">
                       <button
                         onClick={handleBulkPrint}
                         disabled={isBulkPrinting}
-                        className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-md flex items-center gap-2 font-bold uppercase text-[10px]"
+                        className="w-full justify-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-md flex items-center gap-2 font-bold uppercase text-[10px]"
                       >
                         {isBulkPrinting ? <Loader className="animate-spin" size={14} /> : <Printer size={14} />}
                         {isBulkPrinting ? 'Processing...' : 'Download Combined PDF'}
                       </button>
                       {isBulkPrinting && pdfProgress && (
-                        <div className="absolute top-full right-0 mt-1.5 text-[10px] font-bold text-indigo-600 animate-pulse whitespace-nowrap">
+                        <div className="absolute top-full left-0 md:left-auto md:right-0 mt-1.5 text-[10px] font-bold text-indigo-600 animate-pulse whitespace-nowrap">
                           {pdfProgress}
                         </div>
                       )}
@@ -2451,7 +2451,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                 </div>
 
                 <div className="mb-8 border rounded-xl overflow-hidden shadow-sm bg-white">
-                  <div className="bg-slate-50 border-b p-3 grid grid-cols-12 text-[10px] font-black text-slate-500 uppercase tracking-widest items-center">
+                  <div className="bg-slate-50 border-b p-3 hidden md:grid grid-cols-12 text-[10px] font-black text-slate-500 uppercase tracking-widest items-center">
                     <div className="col-span-1 flex items-center gap-3">
                       <input
                         type="checkbox"
@@ -2466,26 +2466,47 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                     <div className="col-span-2 text-center">Status</div>
                     <div className="col-span-4 text-right">Individual Actions</div>
                   </div>
+                  {/* Mobile Select All row */}
+                  <div className="md:hidden bg-slate-50 border-b p-3 flex items-center justify-between text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                        checked={selectedReportRows.length === reportData.rows.length && reportData.rows.length > 0}
+                        onChange={() => handleSelectAll(reportData.rows.length)}
+                      />
+                      <span>Select All ({reportData.rows.length})</span>
+                    </div>
+                  </div>
+
                   <div className="max-h-[450px] overflow-y-auto">
                     {reportData.rows.map((row, idx) => (
-                      <div key={idx} className={`grid grid-cols-12 items-center p-3 border-b border-slate-50 transition-colors ${selectedReportRows.includes(idx) ? 'bg-indigo-50/50' : 'hover:bg-slate-50'}`}>
-                        <div className="col-span-1 flex items-center gap-3">
-                          <input
-                            type="checkbox"
-                            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                            checked={selectedReportRows.includes(idx)}
-                            onChange={() => handleToggleSelectRow(idx)}
-                          />
-                          <span className="text-[10px] font-bold text-slate-400">{idx + 1}</span>
+                      <div key={idx} className={`flex flex-col md:grid md:grid-cols-12 md:items-center p-4 md:p-3 border-b border-slate-100 transition-colors gap-3 md:gap-0 ${selectedReportRows.includes(idx) ? 'bg-indigo-50/50' : 'hover:bg-slate-50'}`}>
+                        {/* Header for mobile / Col 1 & 4 for desktop */}
+                        <div className="flex justify-between items-start md:contents">
+                          <div className="md:col-span-1 flex items-center gap-3">
+                            <input
+                              type="checkbox"
+                              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                              checked={selectedReportRows.includes(idx)}
+                              onChange={() => handleToggleSelectRow(idx)}
+                            />
+                            <span className="text-[10px] font-bold text-slate-400">{idx + 1}</span>
+                          </div>
+                          <div className="md:col-span-4 flex-1 ml-3 md:ml-0">
+                            <p className="font-bold text-slate-800 text-sm md:text-sm">{row.learner.firstName} {row.learner.lastName}</p>
+                            <p className="text-[10px] text-slate-500 uppercase font-semibold">{row.learner.admissionNumber || 'ADM: N/A'}</p>
+                          </div>
+                          {/* Avg on mobile goes to top right */}
+                          <div className="md:col-span-1 text-right md:text-center shrink-0">
+                            <div className="md:hidden text-[10px] text-slate-500 uppercase font-black mb-0.5">Avg</div>
+                            <div className="font-black text-blue-600 text-sm">{row.averageScore}%</div>
+                          </div>
                         </div>
-                        <div className="col-span-4">
-                          <p className="font-bold text-slate-800 text-sm">{row.learner.firstName} {row.learner.lastName}</p>
-                          <p className="text-[10px] text-slate-500 uppercase font-semibold">{row.learner.admissionNumber || 'ADM: N/A'}</p>
-                        </div>
-                        <div className="col-span-1 text-center font-black text-blue-600 text-sm">{row.averageScore}%</div>
 
                         {/* STATUS INDICATORS */}
-                        <div className="col-span-2 flex justify-center gap-1">
+                        <div className="md:col-span-2 flex justify-start md:justify-center gap-2 md:gap-1 mt-1 md:mt-0 pl-7 md:pl-0">
+                          <span className="md:hidden text-[10px] text-slate-500 font-bold uppercase self-center mr-1">Status:</span>
                           {row.communication?.hasSentSms && (
                             <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[8px] font-black uppercase flex items-center gap-1" title="SMS Sent">
                               <CheckCircle size={8} /> SMS
@@ -2501,7 +2522,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                           )}
                         </div>
 
-                        <div className="col-span-4 flex justify-end gap-2">
+                        <div className="md:col-span-4 flex justify-between md:justify-end gap-2 mt-3 md:mt-0 pt-3 md:pt-0 border-t border-slate-100 md:border-0 pl-0 md:pl-0">
                           <button
                             onClick={() => {
                               // Switch to single view for this learner
@@ -2514,36 +2535,36 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                                 communication: row.communication
                               });
                             }}
-                            className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded transition shadow-sm"
+                            className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded transition shadow-sm flex-1 md:flex-none flex justify-center items-center gap-1 text-[10px] font-bold uppercase"
                             title="View Full Report"
                           >
-                            <Printer size={12} />
+                            <Printer size={12} /> <span className="md:hidden">View</span>
                           </button>
                           <button
                             onClick={() => handleSingleDownload(row)}
-                            className="p-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded transition shadow-sm"
+                            className="p-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded transition shadow-sm flex-1 md:flex-none flex justify-center items-center gap-1 text-[10px] font-bold uppercase"
                             title="Download PDF"
                           >
-                            <Download size={12} />
+                            <Download size={12} /> <span className="md:hidden">PDF</span>
                           </button>
                           <button
                             disabled={isSendingSMS}
-                            className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded transition shadow-sm disabled:opacity-30"
+                            className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded transition shadow-sm disabled:opacity-30 flex-1 md:flex-none flex justify-center items-center gap-1 text-[10px] font-bold uppercase"
                             title="Send SMS"
                             onClick={() => handleSendSMS(row)}
                           >
-                            <MessageSquare size={12} />
+                            <MessageSquare size={12} /> <span className="md:hidden">SMS</span>
                           </button>
                           <button
                             disabled={!(row.learner.parent?.phone || row.learner.parentPhone || row.learner.parentPhoneNumber || row.learner.guardianPhone)}
-                            className={`p-2 rounded transition shadow-sm disabled:opacity-30 ${row.communication?.hasSentWhatsApp ? 'bg-green-600 text-white' : 'bg-green-50 text-green-600 hover:bg-green-600 hover:text-white'}`}
+                            className={`p-2 rounded transition shadow-sm disabled:opacity-30 flex-1 md:flex-none flex justify-center items-center gap-1 text-[10px] font-bold uppercase ${row.communication?.hasSentWhatsApp ? 'bg-green-600 text-white' : 'bg-green-50 text-green-600 hover:bg-green-600 hover:text-white'}`}
                             title={row.communication?.hasSentWhatsApp ? "WhatsApp Sent - Click to resend" : "Send WhatsApp"}
                             onClick={() => {
                               const currentLearner = row.learner;
                               handleSendWhatsApp(row); // Update this function to handle direct send
                             }}
                           >
-                            <MessageCircle size={12} />
+                            <MessageCircle size={12} /> <span className="md:hidden">WA</span>
                           </button>
                         </div>
                       </div>

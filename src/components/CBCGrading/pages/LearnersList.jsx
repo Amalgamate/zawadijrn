@@ -13,6 +13,7 @@ import BulkOperationsModal from '../shared/bulk/BulkOperationsModal';
 import VirtualizedTable from '../shared/VirtualizedTable';
 import { formatPhoneNumber } from '../../../utils/phoneFormatter';
 import { useSchoolData } from '../../../contexts/SchoolDataContext';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 
 const LearnersList = ({
   learners,
@@ -45,6 +46,7 @@ const LearnersList = ({
   const { can, isRole } = usePermissions();
   const { user } = useAuth();
   const { grades } = useSchoolData();
+  const isMobile = useMediaQuery('(max-width: 767px)');
 
   // Check if user can create learners (only admins, head teachers, super admins)
   const canCreateLearner = can('CREATE_LEARNER');
@@ -324,7 +326,7 @@ const LearnersList = ({
           </div>
 
           {/* Action Buttons & Metrics */}
-          <div className="flex gap-3 w-full xl:w-auto justify-end items-center">
+          <div className="flex gap-2 w-full xl:w-auto justify-end items-center mt-2 md:mt-0 border-t border-gray-100 md:border-0 pt-3 md:pt-0">
             {/* Metrics */}
             <div className="hidden lg:flex items-center gap-4 mr-2 border-r pr-4 border-gray-200 h-10">
               <div className="text-right">
@@ -367,18 +369,17 @@ const LearnersList = ({
 
                 <button
                   onClick={onAddLearner}
-                  className="flex items-center gap-2 px-4 py-2 bg-brand-teal text-white rounded-lg hover:bg-brand-teal/90 transition shadow-sm font-bold"
+                  className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-brand-teal text-white rounded-lg hover:bg-brand-teal/90 transition shadow-sm font-bold"
                 >
                   <Plus size={18} />
-                  <span className="hidden sm:inline">Add Student</span>
-                  <span className="inline sm:hidden">Add</span>
+                  <span className="inline">Add Student</span>
                 </button>
               </>
             ) : (
-              <div className="relative group">
+              <div className="relative group w-full md:w-auto">
                 <button
                   disabled
-                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-400 border border-gray-200 rounded-lg cursor-not-allowed"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-400 border border-gray-200 rounded-lg cursor-not-allowed"
                 >
                   <Lock size={18} />
                   <span>Add Student</span>
@@ -455,7 +456,7 @@ const LearnersList = ({
         </div>
       )}
 
-      {/* Learners Table */}
+      {/* Learners List/Table */}
       {loading && displayLearners.length === 0 ? (
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-teal"></div>
@@ -470,7 +471,141 @@ const LearnersList = ({
           actionText={!searchTerm && filterGrade === 'all' && filterStatus === 'all' && canCreateLearner ? "Add Your First Student" : null}
           onAction={canCreateLearner ? onAddLearner : undefined}
         />
+      ) : isMobile ? (
+        // ******************** MOBILE CARDS VIEW ********************
+        <div className="space-y-3 pb-8">
+          {displayLearners.map(learner => (
+            <div
+              key={learner.id}
+              onClick={() => onViewLearner(learner)}
+              className={`bg-white p-4 rounded-xl shadow-sm border ${selectedLearners.includes(learner.id) ? 'border-brand-purple bg-brand-purple/5' : 'border-gray-100'} cursor-pointer active:scale-[0.99] transition-transform`}
+            >
+              <div className="flex items-start gap-3">
+                {/* Checkbox (if needed for bulk on mobile) & Avatar */}
+                <div onClick={(e) => e.stopPropagation()} className="pt-1">
+                  <input
+                    type="checkbox"
+                    checked={selectedLearners.includes(learner.id)}
+                    onChange={(e) => { e.stopPropagation(); handleSelectLearner(learner.id); }}
+                    className="w-4 h-4 text-brand-teal border-gray-300 rounded focus:ring-brand-teal"
+                  />
+                </div>
+                <div className="text-3xl bg-gray-50 p-2 rounded-xl border border-gray-100 flex-shrink-0">
+                  {learner.avatar || '👨‍🎓'}
+                </div>
+
+                {/* Primary Student Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-start gap-2">
+                    <h3 className="font-bold text-gray-900 truncate">{learner.firstName} {learner.lastName}</h3>
+                    <StatusBadge status={learner.status} size="sm" />
+                  </div>
+                  <div className="flex items-center gap-2 mt-1 text-xs font-semibold text-gray-500">
+                    <span className="bg-gray-100 px-2 py-0.5 rounded text-gray-700">{learner.admNo}</span>
+                    <span>•</span>
+                    <span>{learner.grade.replace('GRADE_', 'G')} {learner.stream}</span>
+                    <span>•</span>
+                    <span>{learner.gender === 'MALE' ? 'M' : 'F'}</span>
+                  </div>
+
+                  {/* Guardian Info Compact */}
+                  <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-50">
+                    {learner.primaryContactType && (
+                      <span className={`text-[10px] uppercase font-black px-1.5 py-0.5 rounded flex-shrink-0 ${learner.primaryContactType === 'FATHER' ? 'bg-blue-100 text-blue-800' :
+                        learner.primaryContactType === 'MOTHER' ? 'bg-amber-100 text-amber-800' :
+                          'bg-rose-100 text-rose-800'
+                        }`}>
+                        {learner.primaryContactType.substring(0, 1)}
+                      </span>
+                    )}
+                    <span className="text-xs font-semibold truncate text-gray-700">
+                      {learner.primaryContactName || learner.guardianName || (learner.parent ? `${learner.parent.firstName} ${learner.parent.lastName}` : '-')}
+                    </span>
+                    <div className="ml-auto flex gap-1">
+                      {/* Contact Quick Actions on Mobile Card */}
+                      {(learner.primaryContactPhone || learner.guardianPhone || (learner.parent && learner.parent.phone)) && (
+                        <>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenQuickContact({
+                                name: learner.primaryContactName || learner.guardianName || (learner.parent ? `${learner.parent.firstName} ${learner.parent.lastName}` : ''),
+                                phone: learner.primaryContactPhone || learner.guardianPhone || (learner.parent ? learner.parent.phone : '')
+                              });
+                            }}
+                            className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg"
+                          >
+                            <MessageCircle size={14} />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const phoneNumber = learner.primaryContactPhone || learner.guardianPhone || (learner.parent ? learner.parent.phone : '');
+                              const formattedPhone = formatPhoneNumber(phoneNumber);
+                              window.open(`https://wa.me/${formattedPhone.replace(/\D/g, '')}`, '_blank');
+                            }}
+                            className="p-1.5 bg-green-50 text-green-600 rounded-lg"
+                          >
+                            <MessageSquare size={14} />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Actions mobile */}
+                  {!isTeacher && (
+                    <div className="flex gap-2 mt-3 justify-end items-center">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onEditLearner(learner); }}
+                        className="px-3 py-1.5 text-xs font-bold text-gray-600 bg-gray-50 border border-gray-200 rounded-lg shadow-sm"
+                      >
+                        Edit
+                      </button>
+
+                      <div className="relative" onClick={e => e.stopPropagation()}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (window.confirm('Delete this student?')) { handleIndividualDelete(learner.id); }
+                          }}
+                          className="px-3 py-1.5 text-xs font-bold text-red-600 bg-red-50 border border-red-100 rounded-lg"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {/* Mobile Pagination Controls */}
+          {pagination && pagination.pages > 1 && (
+            <div className="pt-4 flex justify-between items-center px-1">
+              <button
+                onClick={() => handlePageChange(pagination.page - 1)}
+                disabled={pagination.page === 1}
+                className="p-2 bg-white border border-gray-300 rounded-lg shadow-sm disabled:opacity-50"
+              >
+                <ChevronLeft size={20} />
+              </button>
+              <div className="text-xs font-bold text-gray-500">
+                Pg {pagination.page} of {pagination.pages}
+              </div>
+              <button
+                onClick={() => handlePageChange(pagination.page + 1)}
+                disabled={pagination.page === pagination.pages}
+                className="p-2 bg-white border border-gray-300 rounded-lg shadow-sm disabled:opacity-50"
+              >
+                <ChevronRight size={20} />
+              </button>
+            </div>
+          )}
+        </div>
       ) : (
+        // ******************** DESKTOP TABLE VIEW ********************
         <div className={`bg-white rounded-xl shadow-md overflow-hidden ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
           <VirtualizedTable
             data={displayLearners}
@@ -507,14 +642,14 @@ const LearnersList = ({
                 </td>
                 <td className="px-3 py-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-xl">{learner.avatar}</span>
+                    <span className="text-xl">{learner.avatar || '👨‍🎓'}</span>
                     <div>
                       <p className="font-semibold text-sm">{learner.firstName} {learner.lastName}</p>
                       <p className="text-xs text-gray-500">{learner.gender}</p>
                     </div>
                   </div>
                 </td>
-                <td className="px-3 py-2 text-sm text-gray-600">{learner.admNo}</td>
+                <td className="px-3 py-2 text-sm text-gray-600">{learner.admNo || learner.admissionNumber}</td>
                 <td className="px-3 py-2 text-sm font-semibold">{learner.grade} {learner.stream}</td>
                 <td className="px-3 py-2">
                   <div className="flex items-center gap-2">
@@ -525,7 +660,7 @@ const LearnersList = ({
                         }`}>
                         {learner.primaryContactType === 'FATHER' ? '👨 Father' :
                           learner.primaryContactType === 'MOTHER' ? '👩 Mother' :
-                            '👤 Parent/Guardian'}
+                            '👤 Guardian'}
                       </span>
                     )}
                     <div className="flex-1">
@@ -535,17 +670,21 @@ const LearnersList = ({
                         {(learner.primaryContactPhone || learner.guardianPhone || (learner.parent && learner.parent.phone)) && (
                           <div className="flex gap-1">
                             <button
-                              onClick={() => handleOpenQuickContact({
-                                name: learner.primaryContactName || learner.guardianName || (learner.parent ? `${learner.parent.firstName} ${learner.parent.lastName}` : ''),
-                                phone: learner.primaryContactPhone || learner.guardianPhone || (learner.parent ? learner.parent.phone : '')
-                              })}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenQuickContact({
+                                  name: learner.primaryContactName || learner.guardianName || (learner.parent ? `${learner.parent.firstName} ${learner.parent.lastName}` : ''),
+                                  phone: learner.primaryContactPhone || learner.guardianPhone || (learner.parent ? learner.parent.phone : '')
+                                });
+                              }}
                               className="p-1 text-emerald-600 hover:bg-emerald-50 rounded transition"
                               title="Send SMS"
                             >
                               <MessageCircle size={14} />
                             </button>
                             <button
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 const phoneNumber = learner.primaryContactPhone || learner.guardianPhone || (learner.parent ? learner.parent.phone : '');
                                 const formattedPhone = formatPhoneNumber(phoneNumber);
                                 window.open(`https://wa.me/${formattedPhone.replace(/\D/g, '')}`, '_blank');
@@ -606,7 +745,7 @@ const LearnersList = ({
             )}
           />
 
-          {/* Pagination Controls */}
+          {/* Desktop Pagination Controls */}
           {pagination && pagination.pages > 1 && (
             <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
               <div className="text-sm text-gray-500">

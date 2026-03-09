@@ -10,10 +10,12 @@ import { useAuth } from '../../../hooks/useAuth';
 import { configAPI, schoolAPI } from '../../../services/api';
 import { toInputDate } from '../utils/dateHelpers';
 import ParentGuardianStep from './steps/ParentGuardianStep';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 
 const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
   const { showSuccess, showError } = useNotifications();
   const { user } = useAuth();
+  const isMobile = useMediaQuery('(max-width: 767px)');
   const isEdit = !!learner;
   const [currentStep, setCurrentStep] = useState(1);
   const [availableStreams, setAvailableStreams] = useState([]);
@@ -434,14 +436,14 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
                 className="flex items-center gap-2 px-3 py-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-all text-sm font-medium border border-red-200 shadow-sm"
                 title="Delete this student record"
               >
-                <Trash2 size={16} /> Delete
+                <Trash2 size={16} /> <span className="hidden sm:inline">Delete</span>
               </button>
             )}
             <button
               onClick={onCancel}
               className="flex items-center gap-2 px-3 py-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-all text-sm font-medium border border-gray-200"
             >
-              <ArrowLeft size={16} /> Back to List
+              <ArrowLeft size={16} /> <span className="hidden sm:inline">Back to List</span>
             </button>
           </div>
         </div>
@@ -449,23 +451,37 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
         <div className="space-y-6 max-w-4xl mx-auto">
           {/* Progress Steps - More Compact */}
           <div className="flex items-center justify-between bg-gray-50/50 rounded-lg p-3 border border-gray-100">
-            {steps.map((step, index) => {
-              const StepIcon = step.icon;
-              const isActive = currentStep >= step.number;
-              return (
-                <React.Fragment key={step.number}>
-                  <div className="flex items-center gap-2">
-                    <div className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold transition-colors ${isActive ? 'bg-brand-purple text-white shadow-md shadow-brand-purple/20' : 'bg-gray-200 text-gray-500'}`}>
-                      {isActive ? <StepIcon size={14} /> : step.number}
+            {isMobile ? (
+              <div className="flex w-full items-center justify-between px-2">
+                <div className="flex flex-col">
+                  <h4 className="text-sm font-bold text-gray-800">Step {currentStep} of {steps.length}</h4>
+                  <p className="text-xs text-brand-purple font-semibold">{steps[currentStep - 1].title}</p>
+                </div>
+                <div className="flex gap-1.5">
+                  {steps.map(step => (
+                    <div key={step.number} className={`h-2 rounded-full transition-all ${currentStep === step.number ? 'w-6 bg-brand-purple' : 'w-2 bg-gray-300'}`} />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              steps.map((step, index) => {
+                const StepIcon = step.icon;
+                const isActive = currentStep >= step.number;
+                return (
+                  <React.Fragment key={step.number}>
+                    <div className="flex items-center gap-2">
+                      <div className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold transition-colors ${isActive ? 'bg-brand-purple text-white shadow-md shadow-brand-purple/20' : 'bg-gray-200 text-gray-500'}`}>
+                        {isActive ? <StepIcon size={14} /> : step.number}
+                      </div>
+                      <div className="hidden sm:block">
+                        <p className={`text-xs font-black uppercase tracking-widest ${isActive ? 'text-brand-purple' : 'text-gray-400'}`}>{step.title}</p>
+                      </div>
                     </div>
-                    <div className="hidden sm:block">
-                      <p className={`text-xs font-black uppercase tracking-widest ${isActive ? 'text-brand-purple' : 'text-gray-400'}`}>{step.title}</p>
-                    </div>
-                  </div>
-                  {index < steps.length - 1 && <div className={`flex-1 h-px mx-2 ${currentStep > step.number ? 'bg-brand-purple' : 'bg-gray-200'}`} />}
-                </React.Fragment>
-              );
-            })}
+                    {index < steps.length - 1 && <div className={`flex-1 h-px mx-2 ${currentStep > step.number ? 'bg-brand-purple' : 'bg-gray-200'}`} />}
+                  </React.Fragment>
+                );
+              })
+            )}
           </div>
 
           <form onSubmit={handleSubmit}>
@@ -783,31 +799,31 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
 
             {/* Navigation Buttons */}
             <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-100">
-              <button type="button" onClick={handlePrevious} disabled={currentStep === 1} className={`flex items-center gap-2 px-5 py-2.5 rounded-md transition-all text-sm font-bold ${currentStep === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
-                <ArrowLeft size={16} /> Previous
+              <button type="button" onClick={handlePrevious} disabled={currentStep === 1} className={`flex items-center gap-2 px-4 md:px-5 py-2.5 rounded-md transition-all text-sm font-bold ${currentStep === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+                <ArrowLeft size={16} /> <span className="hidden sm:inline">Previous</span>
               </button>
-              <div className="flex items-center gap-3">
-                <button type="button" onClick={() => { setFormData(initialFormData); setCurrentStep(1); }} className="flex items-center gap-2 px-5 py-2.5 bg-gray-50 text-gray-600 rounded-md hover:bg-gray-100 transition-all text-sm font-bold border border-gray-200">
-                  <X size={16} /> Clear
+              <div className="flex items-center gap-2 md:gap-3">
+                <button type="button" onClick={() => { setFormData(initialFormData); setCurrentStep(1); }} className="flex items-center gap-2 px-3 md:px-5 py-2.5 bg-gray-50 text-gray-600 rounded-md hover:bg-gray-100 transition-all text-sm font-bold border border-gray-200">
+                  <X size={16} /> <span className="hidden sm:inline">Clear</span>
                 </button>
                 {currentStep < 4 ? (
-                  <button type="button" onClick={handleNext} disabled={Object.keys(stepErrors).length > 0} className={`flex items-center gap-2 px-5 py-2.5 rounded-md transition-all shadow-sm text-sm font-bold ${Object.keys(stepErrors).length > 0
+                  <button type="button" onClick={handleNext} disabled={Object.keys(stepErrors).length > 0} className={`flex items-center gap-2 px-4 md:px-5 py-2.5 rounded-md transition-all shadow-sm text-sm font-bold ${Object.keys(stepErrors).length > 0
                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                     : 'bg-brand-teal text-white hover:bg-brand-teal/90'
                     }`}>
-                    Next Step <ArrowRight size={16} />
+                    <span className="hidden sm:inline">Next Step</span><span className="inline sm:hidden">Next</span> <ArrowRight size={16} />
                   </button>
                 ) : (
-                  <button type="submit" className="flex items-center gap-2 px-6 py-3 bg-brand-teal text-white rounded-md hover:bg-brand-teal/90 transition-all shadow-md text-sm font-bold">
-                    <Save size={18} /> {isEdit ? 'Update Student' : 'Complete Admission'}
+                  <button type="submit" className="flex items-center gap-2 px-4 md:px-5 py-2.5 bg-brand-purple text-white rounded-md hover:bg-brand-purple/90 transition-all shadow-md text-sm font-bold">
+                    <Save size={16} /> {isEdit ? 'Save Changes' : 'Complete Admission'}
                   </button>
                 )}
               </div>
             </div>
           </form>
         </div>
-      </div >
-    </div >
+      </div>
+    </div>
   );
 };
 

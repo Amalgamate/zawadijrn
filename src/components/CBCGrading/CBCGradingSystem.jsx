@@ -40,6 +40,7 @@ const TransfersInPage = lazy(() => import('./pages/TransfersInPage'));
 const ExitedLearnersPage = lazy(() => import('./pages/ExitedLearnersPage'));
 const FormativeAssessment = lazy(() => import('./pages/FormativeAssessment'));
 const FormativeReport = lazy(() => import('./pages/FormativeReport'));
+const MobileAssessmentsDashboard = lazy(() => import('./pages/MobileAssessmentsDashboard'));
 const SummativeTestsRouter = lazy(() => import('./pages/SummativeTestsRouter'));
 const SummativeAssessmentRouter = lazy(() => import('./pages/SummativeAssessmentRouter'));
 const SummativeReport = lazy(() => import('./pages/SummativeReport'));
@@ -801,6 +802,14 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
         return <AttendanceReports learners={learners} />;
 
       // Assessment Module
+      case 'assess-mobile-dashboard':
+        return (
+          <MobileAssessmentsDashboard
+            learners={learners}
+            brandingSettings={brandingSettings}
+            onNavigate={handleNavigate}
+          />
+        );
       case 'assess-formative':
         return <FormativeAssessment learners={learners} />;
       case 'assess-formative-report':
@@ -1025,39 +1034,55 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
 
       {/* Mobile Layout */}
       {isMobile && (
-        <MobileAppShell
-          user={user}
-          onLogout={handleLogout}
-          onNavigate={setCurrentPage}
-          currentPage={currentPage}
-        >
-          <Suspense fallback={<LoadingOverlay />}>
-            {renderPage()}
-          </Suspense>
+        <>
+          <MobileAppShell
+            user={user}
+            onLogout={handleLogout}
+            onNavigate={setCurrentPage}
+            currentPage={currentPage}
+            brandingSettings={brandingSettings}
+          >
+            <Suspense fallback={<LoadingOverlay />}>
+              {/* Don't render page content inside shell when showing the full-screen assessment dashboard */}
+              {currentPage !== 'assess-mobile-dashboard' && renderPage()}
+            </Suspense>
 
-          {/* Toast Notification */}
-          <Toast
-            show={showToast}
-            message={toastMessage}
-            type={toastType}
-            onClose={hideNotification}
-          />
+            {/* Toast Notification */}
+            <Toast
+              show={showToast}
+              message={toastMessage}
+              type={toastType}
+              onClose={hideNotification}
+            />
 
-          {/* Confirmation Dialog */}
-          <ConfirmDialog
-            show={showConfirmDialog}
-            title="Confirm Action"
-            message={
-              currentPage === 'dashboard' && confirmAction
-                ? "Are you sure you want to logout?"
-                : "Are you sure you want to proceed with this action?"
-            }
-            confirmText="Confirm"
-            cancelText="Cancel"
-            onConfirm={() => confirmAction && confirmAction()}
-            onCancel={() => setShowConfirmDialog(false)}
-          />
-        </MobileAppShell>
+            {/* Confirmation Dialog */}
+            <ConfirmDialog
+              show={showConfirmDialog}
+              title="Confirm Action"
+              message={
+                currentPage === 'dashboard' && confirmAction
+                  ? "Are you sure you want to logout?"
+                  : "Are you sure you want to proceed with this action?"
+              }
+              confirmText="Confirm"
+              cancelText="Cancel"
+              onConfirm={() => confirmAction && confirmAction()}
+              onCancel={() => setShowConfirmDialog(false)}
+            />
+          </MobileAppShell>
+
+          {/* Assessment Dashboard: renders outside MobileAppShell to avoid overflow:hidden clipping */}
+          {currentPage === 'assess-mobile-dashboard' && (
+            <Suspense fallback={<LoadingOverlay />}>
+              <MobileAssessmentsDashboard
+                learners={learners}
+                brandingSettings={brandingSettings}
+                onNavigate={setCurrentPage}
+                onBack={() => setCurrentPage('dashboard')}
+              />
+            </Suspense>
+          )}
+        </>
       )}
     </>
   );

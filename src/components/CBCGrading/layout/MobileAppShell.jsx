@@ -8,7 +8,7 @@ const MobileAppShell = ({ children, user, onLogout, onNavigate, currentPage, bra
   return (
     <div className="flex flex-col h-screen bg-gray-50 overflow-hidden relative">
       {/* Mobile Top App Bar */}
-      <div className="h-16 bg-[#520050] text-white flex items-center justify-between px-4 z-40 shadow-md">
+      <div className="h-16 bg-[#520050] text-white flex items-center justify-between px-4 z-50 shadow-md">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0">
             <img src="/logo.svg" alt="Logo" className="w-full h-full object-cover" onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; }} />
@@ -42,7 +42,7 @@ const MobileAppShell = ({ children, user, onLogout, onNavigate, currentPage, bra
       {/* Drawer Removed: Replaced by Mobile Dashboard Grid */}
 
       {/* Mobile Bottom Navigation Bar for quick access */}
-      <div className="fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgb(0,0,0,0.05)] z-40 flex items-center justify-around px-2 pb-safe">
+      <div className="fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgb(0,0,0,0.05)] z-50 flex items-center justify-around px-2 pb-safe">
         <button
           onClick={() => onNavigate('dashboard')}
           className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${currentPage === 'dashboard' ? 'text-brand-purple' : 'text-gray-500 hover:text-gray-900'}`}
@@ -53,29 +53,21 @@ const MobileAppShell = ({ children, user, onLogout, onNavigate, currentPage, bra
 
         {role !== 'ACCOUNTANT' && (
           <button
-            onClick={() => onNavigate('learners-list')}
-            className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${currentPage?.includes('learners') ? 'text-brand-purple' : 'text-gray-500 hover:text-gray-900'}`}
+            onClick={() => onNavigate('assess-mobile-dashboard')}
+            className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${currentPage?.includes('assess') && !currentPage?.includes('report') ? 'text-brand-purple' : 'text-gray-500 hover:text-gray-900'}`}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
-            <span className="text-[10px] font-bold">Students</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg>
+            <span className="text-[10px] font-bold">Assessment</span>
           </button>
         )}
 
-        {role === 'TEACHER' ? (
+        {role !== 'ACCOUNTANT' && (
           <button
-            onClick={() => onNavigate('assess-summative-assessment')}
-            className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${currentPage?.includes('assess') ? 'text-brand-purple' : 'text-gray-500 hover:text-gray-900'}`}
+            onClick={() => onNavigate('assess-summative-report')}
+            className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${currentPage?.includes('report') ? 'text-brand-purple' : 'text-gray-500 hover:text-gray-900'}`}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg>
-            <span className="text-[10px] font-bold">Assess</span>
-          </button>
-        ) : (
-          <button
-            onClick={() => onNavigate('teachers-list')}
-            className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${currentPage?.includes('teacher') ? 'text-brand-purple' : 'text-gray-500 hover:text-gray-900'}`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c3 3 9 3 12 0v-5" /></svg>
-            <span className="text-[10px] font-bold">Tutors</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>
+            <span className="text-[10px] font-bold">Reports</span>
           </button>
         )}
 
