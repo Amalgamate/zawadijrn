@@ -34,6 +34,7 @@ async function main() {
             password: hashedPassword,
             status: 'ACTIVE',
             role: 'SUPER_ADMIN',
+            phone: '0713612141',
             schoolId: school.id,
         },
         create: {
@@ -43,6 +44,7 @@ async function main() {
             lastName: 'Administrator',
             role: 'SUPER_ADMIN',
             status: 'ACTIVE',
+            phone: '0713612141',
             schoolId: school.id,
         },
     });
