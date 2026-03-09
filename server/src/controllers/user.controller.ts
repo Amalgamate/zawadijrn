@@ -173,7 +173,7 @@ export class UserController {
     if (!targetUser) throw new ApiError(404, 'User not found');
 
     const isSelfUpdate = currentUserId === id;
-    const canUpdate = isSelfUpdate || ['SUPER_ADMIN', 'ADMIN'].includes(currentUserRole);
+    const canUpdate = isSelfUpdate || canManageRole(currentUserRole, targetUser.role as Role);
     if (!canUpdate) throw new ApiError(403, 'Permission denied');
 
     const updateData: any = {};
@@ -334,6 +334,14 @@ export class UserController {
   async resetPassword(req: AuthRequest, res: Response) {
     const { id } = req.params;
     const { newPassword } = req.body;
+    const currentUserRole = req.user!.role;
+
+    const targetUser = await prisma.user.findUnique({ where: { id } });
+    if (!targetUser) throw new ApiError(404, 'User not found');
+
+    if (!canManageRole(currentUserRole, targetUser.role as Role)) {
+      throw new ApiError(403, 'You do not have permission to reset this user\'s password');
+    }
 
     const hashedPassword = await bcrypt.hash(newPassword, 12);
     await prisma.user.update({
