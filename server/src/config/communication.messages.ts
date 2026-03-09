@@ -142,23 +142,24 @@ export const EMAIL_MESSAGES = {
 
     footer: (schoolName: string, year: number): string =>
       `&copy; ${year} ${schoolName} via Zawadi SMS. All rights reserved.<br/>You received this email because you signed up for an Zawadi SMS account.`
-  };
+  }
+};
 
-  // Learning Area Abbreviations for SMS
-  export const LEARNING_AREA_ABBREVIATIONS: Record<string, string> = {
-    'MATHEMATICS': 'MAT',
-    'ENGLISH': 'ENG',
-    'KISWAHILI': 'KIS',
-    'SCIENCE AND TECHNOLOGY': 'SCITECH',
-    'SOCIAL STUDIES': 'SST',
-    'CHRISTIAN RELIGIOUS EDUCATION': 'CRE',
-    'ISLAMIC RELIGIOUS EDUCATION': 'IRE',
-    'CREATIVE ARTS AND SPORTS': 'CREATIVE',
-    'AGRICULTURE AND NUTRITION': 'AGRNT',
-    'ENVIRONMENTAL ACTIVITIES': 'ENV',
-    'MATHEMATICAL ACTIVITIES': 'MAT',
-    'ENGLISH LANGUAGE ACTIVITIES': 'ENG',
-    'KISWAHILI LANGUAGE ACTIVITIES': 'KIS'
+// Learning Area Abbreviations for SMS
+export const LEARNING_AREA_ABBREVIATIONS: Record<string, string> = {
+  'MATHEMATICS': 'MAT',
+  'ENGLISH': 'ENG',
+  'KISWAHILI': 'KIS',
+  'SCIENCE AND TECHNOLOGY': 'SCITECH',
+  'SOCIAL STUDIES': 'SST',
+  'CHRISTIAN RELIGIOUS EDUCATION': 'CRE',
+  'ISLAMIC RELIGIOUS EDUCATION': 'IRE',
+  'CREATIVE ARTS AND SPORTS': 'CREATIVE',
+  'AGRICULTURE AND NUTRITION': 'AGRNT',
+  'ENVIRONMENTAL ACTIVITIES': 'ENV',
+  'MATHEMATICAL ACTIVITIES': 'MAT',
+  'ENGLISH LANGUAGE ACTIVITIES': 'ENG',
+  'KISWAHILI LANGUAGE ACTIVITIES': 'KIS'
 };
 
 // Error Messages
