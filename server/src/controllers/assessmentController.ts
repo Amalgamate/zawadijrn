@@ -270,6 +270,7 @@ export const createSummativeTest = async (req: AuthRequest, res: Response) => {
     } = req.body;
 
     const teacherId = req.user?.userId;
+    const schoolId = req.user?.schoolId;
 
     const normalizedTerm = String(term || '')
       .toUpperCase()
@@ -308,7 +309,8 @@ export const createSummativeTest = async (req: AuthRequest, res: Response) => {
         grade,
         curriculum,
         scaleId,
-        createdBy: teacherId
+        createdBy: teacherId,
+        schoolId
       }
     });
 
@@ -355,6 +357,7 @@ export const generateTestsBulk = async (req: AuthRequest, res: Response) => {
     } = req.body;
 
     const teacherId = req.user?.userId;
+    const schoolId = req.user?.schoolId;
 
     if (!learningAreas || !Array.isArray(learningAreas) || !grade || !term || !academicYear || !teacherId) {
       return res.status(400).json({
@@ -362,6 +365,10 @@ export const generateTestsBulk = async (req: AuthRequest, res: Response) => {
         message: 'Missing required configuration'
       });
     }
+
+    const normalizedTerm = String(term || '')
+      .toUpperCase()
+      .replace(/\s+/g, '_') as 'TERM_1' | 'TERM_2' | 'TERM_3';
 
     const createdTests = [];
 
@@ -371,14 +378,15 @@ export const generateTestsBulk = async (req: AuthRequest, res: Response) => {
           title: `${area} - ${testType} - ${term} ${academicYear}`,
           learningArea: area,
           testType,
-          term,
+          term: normalizedTerm,
           academicYear: parseInt(academicYear),
           testDate: testDate ? new Date(testDate) : new Date(),
           totalMarks: parseInt(totalMarks),
           passMarks: parseInt(passMarks),
           grade,
           curriculum,
-          createdBy: teacherId
+          createdBy: teacherId,
+          schoolId
         }
       });
       createdTests.push(test);
@@ -726,7 +734,8 @@ export const recordSummativeResult = async (req: AuthRequest, res: Response) => 
         status,
         recordedBy,
         remarks: finalRemarks,
-        teacherComment
+        teacherComment,
+        schoolId: req.user?.schoolId
       },
       create: {
         testId,
@@ -737,7 +746,8 @@ export const recordSummativeResult = async (req: AuthRequest, res: Response) => 
         status,
         recordedBy,
         remarks: finalRemarks,
-        teacherComment
+        teacherComment,
+        schoolId: req.user?.schoolId
       }
     });
 
@@ -889,19 +899,27 @@ export const getTestResults = async (req: Request, res: Response) => {
 export const getBulkSummativeResults = async (req: AuthRequest, res: Response) => {
   try {
     const { grade, stream, academicYear, term } = req.query;
+    const schoolId = req.user?.schoolId;
 
     if (!grade || !academicYear || !term) {
       return res.status(400).json({ success: false, message: 'Missing required filters: grade, academicYear, term' });
     }
 
+    const normalizedTerm = String(term || '')
+      .toUpperCase()
+      .replace(/\s+/g, '_');
+
     const whereClause: any = {
+      schoolId,
       learner: {
         grade: grade as Grade,
+        schoolId,
         ...(stream ? { stream: stream as string } : {})
       },
       test: {
         academicYear: parseInt(academicYear as string),
-        term: term as string,
+        term: normalizedTerm,
+        schoolId,
         archived: false
       }
     };
@@ -1027,7 +1045,8 @@ export const recordSummativeResultsBulk = async (req: AuthRequest, res: Response
             status,
             recordedBy,
             remarks,
-            teacherComment: item.teacherComment
+            teacherComment: item.teacherComment,
+            schoolId: req.user?.schoolId
           },
           create: {
             testId,
@@ -1038,7 +1057,8 @@ export const recordSummativeResultsBulk = async (req: AuthRequest, res: Response
             status,
             recordedBy,
             remarks,
-            teacherComment: item.teacherComment
+            teacherComment: item.teacherComment,
+            schoolId: req.user?.schoolId
           }
         });
 

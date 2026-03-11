@@ -13,6 +13,8 @@ import { useAssessmentSetup } from '../hooks/useAssessmentSetup';
 import { getLearningAreasByGrade, getAllLearningAreas } from '../../../constants/learningAreas';
 import { useSchoolData } from '../../../contexts/SchoolDataContext';
 import { generateHighFidelityPDF } from '../../../utils/simplePdfGenerator';
+import { getAcademicYearOptions, getCurrentAcademicYear } from '../utils/academicYear';
+import Toast from '../shared/Toast';
 
 
 const LEARNING_AREA_ABBREVIATIONS = {
@@ -143,7 +145,8 @@ const resolveTestGroup = (item) => {
   const title = item?.title;
   if (title && title.includes(' - ')) {
     const prefix = title.split(' - ')[0]?.trim();
-    if (prefix && prefix.length < 12) return prefix;
+    // Increase limit from 12 to 40 to accommodate longer exam names like "Term 1 2026 Opener Exam"
+    if (prefix && prefix.length < 40) return prefix;
   }
 
   return 'General';
@@ -542,7 +545,7 @@ const LearnerReportTemplate = ({ learner, results, term, academicYear, brandingS
 
 
 const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) => {
-  const { showSuccess, showError } = useNotifications();
+  const { showSuccess, showError, showInfo, showToast, toastMessage, toastType, hideNotification } = useNotifications();
 
   // Use centralized hooks for assessment state management
   const setup = useAssessmentSetup({ defaultTerm: 'TERM_1' });
@@ -726,6 +729,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
   const [stagedGrade, setStagedGrade] = useState('');
   const [stagedStream, setStagedStream] = useState('');
   const [stagedTerm, setStagedTerm] = useState('TERM_1');
+  const [stagedAcademicYear, setStagedAcademicYear] = useState(getCurrentAcademicYear());
   const [stagedTestGroups, setStagedTestGroups] = useState([]);
   const [stagedTestIds, setStagedTestIds] = useState([]);
   const [stagedLearnerIds, setStagedLearnerIds] = useState([]);
@@ -1027,7 +1031,8 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
           onProgress: (msg) => {
             setPdfProgress(msg);
             console.log(`📑 PDF Progress: ${msg}`);
-          }
+          },
+          includeLetterhead: false
         }
       );
 
@@ -1055,7 +1060,8 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
         'Report_Print.pdf',
         {
           action: 'print',
-          onProgress: (msg) => setPdfProgress(msg)
+          onProgress: (msg) => setPdfProgress(msg),
+          includeLetterhead: false
         }
       );
       if (result?.success) {
@@ -1438,7 +1444,8 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
           type: selectedType === 'LEARNER_REPORT' ? 'SUMMATIVE REPORT' : 'TERMLY REPORT',
           ref: `BATCH-${selectedGrade}-${selectedTerm}`
         },
-        brandingSettings // Pass current branding
+        brandingSettings, // Pass current branding
+        includeLetterhead: false
       });
 
       if (result.success) {
@@ -1461,8 +1468,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
    */
 
   const handleSingleDownload = async (row) => {
-    if (isSingleDownloading || !row) return;
-
+    showInfo(`Downloading report for ${row.learner.firstName}...`);
     setSingleDownloadData(row);
     setIsSingleDownloading(true);
 
@@ -1476,7 +1482,8 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
           type: selectedType === 'LEARNER_REPORT' ? 'SUMMATIVE REPORT' : 'TERMLY REPORT',
           ref: row.learner.admissionNumber
         },
-        brandingSettings // Pass current branding
+        brandingSettings, // Pass current branding
+        includeLetterhead: false
       });
 
       if (result.success) {
@@ -1691,10 +1698,10 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
     setSelectedReportRows([]); // Reset selection on new report
 
     const queryParams = {
-      term: selectedTerm,
-      academicYear: setup.academicYear
+      term: normalize(stagedTerm),
+      academicYear: stagedAcademicYear || setup.academicYear
     };
-    if (selectedGrade && selectedGrade !== 'all') queryParams.grade = selectedGrade;
+    if (stagedGrade && stagedGrade !== 'all') queryParams.grade = normalize(stagedGrade);
     if (selectedStream && selectedStream !== 'all') queryParams.stream = selectedStream;
 
     try {
@@ -2130,6 +2137,19 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
             {terms?.map(t => (
               <option key={t.value} value={t.value}>
                 {t.label}
+              </option>
+            ))}
+          </select>
+
+          {/* Academic Year Selector */}
+          <select
+            value={stagedAcademicYear}
+            onChange={(e) => setStagedAcademicYear(parseInt(e.target.value))}
+            className="h-9 px-2.5 py-1.5 border border-slate-300 rounded text-xs focus:ring-1 focus:ring-brand-teal focus:border-brand-teal outline-none flex-1 md:flex-none md:w-20 min-w-[100px]"
+          >
+            {getAcademicYearOptions().map(y => (
+              <option key={y.value} value={y.value}>
+                {y.label}
               </option>
             ))}
           </select>
@@ -2587,325 +2607,329 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
       </div>
 
       {/* GRADE / STREAM REPORT DISPLAY - BROADSHEET */}
-      {(reportData?.type === 'GRADE_REPORT' || reportData?.type === 'STREAM_REPORT' || reportData?.type === 'STREAM_RANKING_REPORT') && reportData?.rows && (
-        <div className="px-6 py-8">
-          <div className="bg-gray-100 py-12 px-4 rounded-xl shadow-inner mb-8 no-print">
-            <div
-              id="summative-report-content"
-              className="bg-white mx-auto shadow-2xl overflow-hidden"
-              style={{
-                fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-                lineHeight: '1.2',
-                width: '297mm', // Landscape for broadsheet
-                minHeight: '210mm',
-                padding: '10mm',
-                boxSizing: 'border-box'
-              }}
-            >
-              {/* Professional Letterhead - Matching Learner's Report Flow */}
-              <div className="mb-6 flex flex-col items-center text-center">
-                {/* Logo Middle */}
-                <div className="mb-4">
-                  <img
-                    src={brandingSettings?.logoUrl || user?.school?.logo || "/logo-new.png"}
-                    alt="Logo"
-                    style={{ height: '100px', width: 'auto', objectFit: 'contain' }}
-                    onError={(e) => { e.target.src = '/logo-new.png'; }}
+      {
+        (reportData?.type === 'GRADE_REPORT' || reportData?.type === 'STREAM_REPORT' || reportData?.type === 'STREAM_RANKING_REPORT') && reportData?.rows && (
+          <div className="px-6 py-8">
+            <div className="bg-gray-100 py-12 px-4 rounded-xl shadow-inner mb-8 no-print">
+              <div
+                id="summative-report-content"
+                className="bg-white mx-auto shadow-2xl overflow-hidden"
+                style={{
+                  fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+                  lineHeight: '1.2',
+                  width: '297mm', // Landscape for broadsheet
+                  minHeight: '210mm',
+                  padding: '10mm',
+                  boxSizing: 'border-box'
+                }}
+              >
+                {/* Professional Letterhead - Matching Learner's Report Flow */}
+                <div className="mb-6 flex flex-col items-center text-center">
+                  {/* Logo Middle */}
+                  <div className="mb-4">
+                    <img
+                      src={brandingSettings?.logoUrl || user?.school?.logo || "/logo-new.png"}
+                      alt="Logo"
+                      style={{ height: '100px', width: 'auto', objectFit: 'contain' }}
+                      onError={(e) => { e.target.src = '/logo-new.png'; }}
+                    />
+                  </div>
+
+                  {/* School Info */}
+                  <h1 style={{ fontSize: '28px', fontWeight: '900', color: brandingSettings?.brandColor || '#1E3A8A', margin: '0', textTransform: 'uppercase', letterSpacing: '1px', lineHeight: '1.1' }}>
+                    {user?.school?.name || brandingSettings?.schoolName || 'ACADEMIC SCHOOL'}
+                  </h1>
+
+                  {user?.school?.motto && (
+                    <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginTop: '2px', textTransform: 'uppercase', fontStyle: 'italic' }}>
+                      "{user.school.motto}"
+                    </div>
+                  )}
+
+                  {/* Contact Details */}
+                  <div style={{ fontSize: '11px', color: '#444', marginTop: '6px', fontWeight: '500', opacity: '0.8' }}>
+                    {user?.school?.location && <span>{user.school.location}</span>}
+                    {user?.school?.email && <span> • {user.school.email}</span>}
+                  </div>
+
+                  {/* Separator Line */}
+                  <div className="w-full h-1 mt-4 mb-4" style={{ backgroundColor: brandingSettings?.brandColor || '#1e3a8a' }}></div>
+
+                  {/* Bold Report Title */}
+                  <h2 style={{ fontSize: '22px', fontWeight: '900', color: '#000', margin: '0', textTransform: 'uppercase', letterSpacing: '2px' }}>
+                    {reportData?.title}
+                  </h2>
+
+                  {/* Term/Academic Year Details In Pill */}
+                  <div className="flex justify-between items-center w-full mt-4">
+                    <div style={{ fontSize: '12px', fontWeight: '800', color: '#1E3A8A', textTransform: 'uppercase', backgroundColor: '#eff6ff', padding: '6px 20px', borderRadius: '40px', border: '1px solid #dbeafe' }}>
+                      {setup.academicYear} | {reportData.meta?.term?.replace(/_/g, ' ')}
+                    </div>
+
+                    <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>
+                      CLASS: {reportData.meta?.grade?.replace(/_/g, ' ')} {reportData.meta?.stream !== 'all' ? reportData.meta?.stream : ''} | GENERATED: {new Date().toLocaleDateString()}
+                    </div>
+                  </div>
+                </div>
+
+
+                {/* Broadsheet Table */}
+                <div className="overflow-x-auto">
+                  <VirtualizedTable
+                    data={reportData.rows}
+                    rowHeight={28} // Compact broadsheet row height
+                    visibleHeight={500}
+                    className="no-print border border-gray-200"
+                    header={
+                      <tr style={{ backgroundColor: '#1e3a8a', color: 'white' }}>
+                        <th style={{ padding: '6px', border: '1px solid #ccc', textAlign: 'center', width: '30px' }}>#</th>
+                        <th style={{ padding: '6px', border: '1px solid #ccc', textAlign: 'left', minWidth: '150px' }}>LEARNER NAME</th>
+                        {reportData.subjects.map(subj => (
+                          <th key={subj} style={{ padding: '6px', border: '1px solid #ccc', textAlign: 'center', writingMode: 'vertical-rl', transform: 'rotate(180deg)', minHeight: '80px' }}>
+                            {getAbbreviatedName(subj)}
+                          </th>
+                        ))}
+                        <th style={{ padding: '6px', border: '1px solid #ccc', textAlign: 'center' }}>TOTAL</th>
+                        <th style={{ padding: '6px', border: '1px solid #ccc', textAlign: 'center' }}>AVG %</th>
+                        <th style={{ padding: '6px', border: '1px solid #ccc', textAlign: 'center' }}>GRD</th>
+                        <th className="no-print" style={{ padding: '6px', border: '1px solid #ccc', textAlign: 'center', width: '40px' }}>ACT</th>
+                      </tr>
+                    }
+                    renderRow={(row, idx) => (
+                      <tr key={row.learner.id} style={{ backgroundColor: idx % 2 === 0 ? 'white' : '#f8fafc' }}>
+                        <td style={{ padding: '4px', border: '1px solid #e2e8f0', textAlign: 'center' }}>{row.position}</td>
+                        <td style={{ padding: '4px', border: '1px solid #e2e8f0', fontWeight: 'bold' }}>
+                          {row.learner.firstName} {row.learner.lastName}
+                        </td>
+                        {reportData.subjects.map(subj => (
+                          <td key={subj} style={{ padding: '4px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+                            {row.subjectScores[subj] || '-'}
+                          </td>
+                        ))}
+                        <td style={{ padding: '4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: 'bold' }}>{Math.round(row.totalScore)}</td>
+                        <td style={{ padding: '4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: 'bold' }}>{row.averagePct}%</td>
+                        <td style={{ padding: '4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: 'bold', color: row.grade?.includes('EE') ? 'green' : row.grade?.includes('ME') ? 'blue' : 'orange' }}>
+                          {row.grade}
+                        </td>
+                        <td className="no-print" style={{ padding: '4px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+                          <button
+                            title="Share via WhatsApp"
+                            onClick={() => {
+                              const learner = row.learner;
+                              const parentPhone = getLearnerPhone(learner);
+                              if (!parentPhone) {
+                                alert('No parent phone number');
+                                return;
+                              }
+                              const msg = `*${brandingSettings?.schoolName || 'SCHOOL'} REPORT*\nName: ${learner.firstName}\nMean: ${row.averagePct}%\nGrade: ${row.grade}`;
+                              let cleanPhone = parentPhone.replace(/\D/g, '');
+                              if (cleanPhone.startsWith('0')) cleanPhone = '254' + cleanPhone.substring(1);
+                              window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+                            }}
+                            className="p-1 bg-green-100 text-green-600 rounded hover:bg-green-200"
+                          >
+                            <MessageCircle size={14} />
+                          </button>
+                        </td>
+                      </tr>
+                    )}
                   />
                 </div>
 
-                {/* School Info */}
-                <h1 style={{ fontSize: '28px', fontWeight: '900', color: brandingSettings?.brandColor || '#1E3A8A', margin: '0', textTransform: 'uppercase', letterSpacing: '1px', lineHeight: '1.1' }}>
-                  {user?.school?.name || brandingSettings?.schoolName || 'ACADEMIC SCHOOL'}
-                </h1>
+                {/* BULK ACTIONS & CONTROLS */}
+                <div className="no-print mt-8 flex flex-wrap justify-center items-center gap-3 bg-blue-50/50 p-4 rounded-lg border border-blue-100 mb-4">
+                  <button
+                    onClick={() => setReportData(null)}
+                    className="px-4 py-2 text-gray-700 bg-white hover:bg-gray-50 border border-gray-200 rounded text-sm font-semibold transition shadow-sm"
+                  >
+                    ← Back
+                  </button>
 
-                {user?.school?.motto && (
-                  <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginTop: '2px', textTransform: 'uppercase', fontStyle: 'italic' }}>
-                    "{user.school.motto}"
-                  </div>
-                )}
+                  <button
+                    onClick={handleBulkPrint}
+                    disabled={isBulkPrinting}
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition shadow-sm font-semibold text-sm"
+                  >
+                    {isBulkPrinting ? <Loader className="animate-spin" size={16} /> : <Printer size={16} />}
+                    {isBulkPrinting ? 'Generating...' : 'Print All'}
+                  </button>
 
-                {/* Contact Details */}
-                <div style={{ fontSize: '11px', color: '#444', marginTop: '6px', fontWeight: '500', opacity: '0.8' }}>
-                  {user?.school?.location && <span>{user.school.location}</span>}
-                  {user?.school?.email && <span> • {user.school.email}</span>}
+                  <button
+                    onClick={handleBulkSMS}
+                    disabled={bulkProgress.active}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition shadow-sm font-semibold text-sm"
+                  >
+                    {bulkProgress.active ? <Loader className="animate-spin" size={16} /> : <MessageSquare size={16} />}
+                    {bulkProgress.active ? `Sending (${bulkProgress.current}/${bulkProgress.total})` : 'Send SMS All'}
+                  </button>
+
+                  <button
+                    onClick={() => setShowWhatsAppConfirm(true)}
+                    disabled={isSendingWhatsApp}
+                    className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded hover:bg-emerald-600 transition shadow-sm font-semibold text-sm"
+                    title="Send via WhatsApp (Batched)"
+                  >
+                    {isSendingWhatsApp ? <Loader className="animate-spin" size={16} /> : <MessageCircle size={16} />}
+                    {isSendingWhatsApp ? 'Wait...' : 'Bulk WhatsApp'}
+                  </button>
+
+                  <button
+                    onClick={handleExportPDF}
+                    disabled={isExporting}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition shadow-sm font-semibold text-sm"
+                  >
+                    {isExporting ? <Loader size={16} className="animate-spin" /> : <Download size={16} />}
+                    {isExporting ? 'Exporting...' : 'Export Broadsheet'}
+                  </button>
+
+                  {(bulkProgress.active || isSendingWhatsApp) && (
+                    <div className="w-full text-center mt-2 text-sm font-medium text-gray-700">
+                      {isSendingWhatsApp ? (
+                        <span className="text-green-600 flex items-center justify-center gap-2 font-bold animate-pulse">
+                          <Loader className="animate-spin" size={12} />
+                          WhatsApp Batch: {whatsAppProgress.current}/{whatsAppProgress.total}
+                        </span>
+                      ) : (
+                        <div className="flex justify-center gap-3 font-bold">
+                          <span className="text-green-600">SUCCESS: {bulkProgress.success}</span>
+                          <span className="text-gray-300">|</span>
+                          <span className="text-red-500">FAILED: {bulkProgress.failed}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
+              </div>
+            </div>
+          </div>
+        )
+      }
 
-                {/* Separator Line */}
-                <div className="w-full h-1 mt-4 mb-4" style={{ backgroundColor: brandingSettings?.brandColor || '#1e3a8a' }}></div>
+      {/* ANALYSIS REPORT DISPLAY */}
+      {
+        reportData?.type?.includes('ANALYSIS') && (
+          <div className="px-6 py-8">
+            <div className="bg-gray-100 py-12 px-4 rounded-xl shadow-inner mb-8 no-print">
+              <div
+                id="summative-report-content"
+                className="bg-white mx-auto shadow-2xl overflow-hidden"
+                style={{
+                  fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+                  lineHeight: '1.2',
+                  width: '210mm',
+                  minHeight: '297mm',
+                  padding: '12mm',
+                  boxSizing: 'border-box'
+                }}
+              >
+                {/* Professional Letterhead - Consistency across reports */}
+                <div className="mb-6 flex flex-col items-center text-center">
+                  {/* Logo Middle */}
+                  <div className="mb-4">
+                    <img
+                      src={brandingSettings?.logoUrl || user?.school?.logo || ""}
+                      alt="Logo"
+                      style={{ height: '80px', width: 'auto', objectFit: 'contain', display: brandingSettings?.logoUrl || user?.school?.logo ? 'block' : 'none' }}
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                  </div>
 
-                {/* Bold Report Title */}
-                <h2 style={{ fontSize: '22px', fontWeight: '900', color: '#000', margin: '0', textTransform: 'uppercase', letterSpacing: '2px' }}>
-                  {reportData?.title}
-                </h2>
+                  {/* School Info */}
+                  <h1 style={{ fontSize: '24px', fontWeight: '900', color: brandingSettings?.brandColor || '#1E3A8A', margin: '0', textTransform: 'uppercase', letterSpacing: '1px', lineHeight: '1.2' }}>
+                    {user?.school?.name || brandingSettings?.schoolName || 'ACADEMIC SCHOOL'}
+                  </h1>
 
-                {/* Term/Academic Year Details In Pill */}
-                <div className="flex justify-between items-center w-full mt-4">
-                  <div style={{ fontSize: '12px', fontWeight: '800', color: '#1E3A8A', textTransform: 'uppercase', backgroundColor: '#eff6ff', padding: '6px 20px', borderRadius: '40px', border: '1px solid #dbeafe' }}>
+                  {user?.school?.motto && (
+                    <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', marginTop: '2px', textTransform: 'uppercase', fontStyle: 'italic' }}>
+                      "{user.school.motto}"
+                    </div>
+                  )}
+
+                  {/* Separator Line */}
+                  <div className="w-full h-0.5 mt-3 mb-3" style={{ backgroundColor: brandingSettings?.brandColor || '#1e3a8a' }}></div>
+
+                  {/* Bold Report Title */}
+                  <h2 style={{ fontSize: '18px', fontWeight: '900', color: '#000', margin: '0', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                    {reportData?.title}
+                  </h2>
+
+                  <div style={{ fontSize: '12px', fontWeight: '700', color: '#1E3A8A', marginTop: '4px', textTransform: 'uppercase', backgroundColor: '#eff6ff', padding: '4px 16px', borderRadius: '40px' }}>
                     {setup.academicYear} | {reportData.meta?.term?.replace(/_/g, ' ')}
                   </div>
+                </div>
 
-                  <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>
-                    CLASS: {reportData.meta?.grade?.replace(/_/g, ' ')} {reportData.meta?.stream !== 'all' ? reportData.meta?.stream : ''} | GENERATED: {new Date().toLocaleDateString()}
+                {/* Subject Performance Table */}
+                <div className="mb-8">
+                  <h2 className="text-lg font-bold text-gray-800 mb-4 border-l-4 border-blue-600 pl-2">Subject Performance Analysis</h2>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
+                    <thead>
+                      <tr style={{ backgroundColor: '#f1f5f9', color: '#1e293b' }}>
+                        <th style={{ padding: '8px', textAlign: 'left', borderBottom: '2px solid #cbd5e1' }}>SUBJECT</th>
+                        <th style={{ padding: '8px', textAlign: 'center', borderBottom: '2px solid #cbd5e1' }}>LEARNERS</th>
+                        <th style={{ padding: '8px', textAlign: 'center', borderBottom: '2px solid #cbd5e1' }}>MEAN SCORE</th>
+                        <th style={{ padding: '8px', textAlign: 'center', borderBottom: '2px solid #cbd5e1' }}>HIGHEST</th>
+                        <th style={{ padding: '8px', textAlign: 'center', borderBottom: '2px solid #cbd5e1' }}>LOWEST</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {reportData.subjectStats.map((stat, idx) => (
+                        <tr key={stat.subject} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                          <td style={{ padding: '8px', fontWeight: '600' }}>{stat.subject}</td>
+                          <td style={{ padding: '8px', textAlign: 'center' }}>{stat.count}</td>
+                          <td style={{ padding: '8px', textAlign: 'center', fontWeight: 'bold', color: '#2563eb' }}>{stat.mean}%</td>
+                          <td style={{ padding: '8px', textAlign: 'center', color: '#16a34a' }}>{stat.highest}%</td>
+                          <td style={{ padding: '8px', textAlign: 'center', color: '#dc2626' }}>{stat.lowest}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Grade Distribution */}
+                <div className="mb-8">
+                  <h2 className="text-lg font-bold text-gray-800 mb-4 border-l-4 border-blue-600 pl-2">Grade Distribution</h2>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px' }}>
+                    <div className="p-4 bg-green-50 rounded border border-green-200 text-center">
+                      <div className="text-2xl font-bold text-green-700">{reportData.gradeDist['EE'] || 0}</div>
+                      <div className="text-xs font-bold text-green-800 uppercase mt-1">Exceeding Exp.</div>
+                    </div>
+                    <div className="p-4 bg-blue-50 rounded border border-blue-200 text-center">
+                      <div className="text-2xl font-bold text-blue-700">{reportData.gradeDist['ME'] || 0}</div>
+                      <div className="text-xs font-bold text-blue-800 uppercase mt-1">Meeting Exp.</div>
+                    </div>
+                    <div className="p-4 bg-yellow-50 rounded border border-yellow-200 text-center">
+                      <div className="text-2xl font-bold text-yellow-700">{reportData.gradeDist['AE'] || 0}</div>
+                      <div className="text-xs font-bold text-yellow-800 uppercase mt-1">Approaching Exp.</div>
+                    </div>
+                    <div className="p-4 bg-red-50 rounded border border-red-200 text-center">
+                      <div className="text-2xl font-bold text-red-700">{reportData.gradeDist['BE'] || 0}</div>
+                      <div className="text-xs font-bold text-red-800 uppercase mt-1">Below Exp.</div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-
-              {/* Broadsheet Table */}
-              <div className="overflow-x-auto">
-                <VirtualizedTable
-                  data={reportData.rows}
-                  rowHeight={28} // Compact broadsheet row height
-                  visibleHeight={500}
-                  className="no-print border border-gray-200"
-                  header={
-                    <tr style={{ backgroundColor: '#1e3a8a', color: 'white' }}>
-                      <th style={{ padding: '6px', border: '1px solid #ccc', textAlign: 'center', width: '30px' }}>#</th>
-                      <th style={{ padding: '6px', border: '1px solid #ccc', textAlign: 'left', minWidth: '150px' }}>LEARNER NAME</th>
-                      {reportData.subjects.map(subj => (
-                        <th key={subj} style={{ padding: '6px', border: '1px solid #ccc', textAlign: 'center', writingMode: 'vertical-rl', transform: 'rotate(180deg)', minHeight: '80px' }}>
-                          {getAbbreviatedName(subj)}
-                        </th>
-                      ))}
-                      <th style={{ padding: '6px', border: '1px solid #ccc', textAlign: 'center' }}>TOTAL</th>
-                      <th style={{ padding: '6px', border: '1px solid #ccc', textAlign: 'center' }}>AVG %</th>
-                      <th style={{ padding: '6px', border: '1px solid #ccc', textAlign: 'center' }}>GRD</th>
-                      <th className="no-print" style={{ padding: '6px', border: '1px solid #ccc', textAlign: 'center', width: '40px' }}>ACT</th>
-                    </tr>
-                  }
-                  renderRow={(row, idx) => (
-                    <tr key={row.learner.id} style={{ backgroundColor: idx % 2 === 0 ? 'white' : '#f8fafc' }}>
-                      <td style={{ padding: '4px', border: '1px solid #e2e8f0', textAlign: 'center' }}>{row.position}</td>
-                      <td style={{ padding: '4px', border: '1px solid #e2e8f0', fontWeight: 'bold' }}>
-                        {row.learner.firstName} {row.learner.lastName}
-                      </td>
-                      {reportData.subjects.map(subj => (
-                        <td key={subj} style={{ padding: '4px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
-                          {row.subjectScores[subj] || '-'}
-                        </td>
-                      ))}
-                      <td style={{ padding: '4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: 'bold' }}>{Math.round(row.totalScore)}</td>
-                      <td style={{ padding: '4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: 'bold' }}>{row.averagePct}%</td>
-                      <td style={{ padding: '4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: 'bold', color: row.grade?.includes('EE') ? 'green' : row.grade?.includes('ME') ? 'blue' : 'orange' }}>
-                        {row.grade}
-                      </td>
-                      <td className="no-print" style={{ padding: '4px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
-                        <button
-                          title="Share via WhatsApp"
-                          onClick={() => {
-                            const learner = row.learner;
-                            const parentPhone = getLearnerPhone(learner);
-                            if (!parentPhone) {
-                              alert('No parent phone number');
-                              return;
-                            }
-                            const msg = `*${brandingSettings?.schoolName || 'SCHOOL'} REPORT*\nName: ${learner.firstName}\nMean: ${row.averagePct}%\nGrade: ${row.grade}`;
-                            let cleanPhone = parentPhone.replace(/\D/g, '');
-                            if (cleanPhone.startsWith('0')) cleanPhone = '254' + cleanPhone.substring(1);
-                            window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
-                          }}
-                          className="p-1 bg-green-100 text-green-600 rounded hover:bg-green-200"
-                        >
-                          <MessageCircle size={14} />
-                        </button>
-                      </td>
-                    </tr>
-                  )}
-                />
-              </div>
-
-              {/* BULK ACTIONS & CONTROLS */}
-              <div className="no-print mt-8 flex flex-wrap justify-center items-center gap-3 bg-blue-50/50 p-4 rounded-lg border border-blue-100 mb-4">
+              {/* Controls */}
+              <div className="no-print mt-8 flex gap-4 justify-center">
                 <button
                   onClick={() => setReportData(null)}
-                  className="px-4 py-2 text-gray-700 bg-white hover:bg-gray-50 border border-gray-200 rounded text-sm font-semibold transition shadow-sm"
+                  className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded text-sm font-semibold transition"
                 >
                   ← Back
                 </button>
-
-                <button
-                  onClick={handleBulkPrint}
-                  disabled={isBulkPrinting}
-                  className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition shadow-sm font-semibold text-sm"
-                >
-                  {isBulkPrinting ? <Loader className="animate-spin" size={16} /> : <Printer size={16} />}
-                  {isBulkPrinting ? 'Generating...' : 'Print All'}
-                </button>
-
-                <button
-                  onClick={handleBulkSMS}
-                  disabled={bulkProgress.active}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition shadow-sm font-semibold text-sm"
-                >
-                  {bulkProgress.active ? <Loader className="animate-spin" size={16} /> : <MessageSquare size={16} />}
-                  {bulkProgress.active ? `Sending (${bulkProgress.current}/${bulkProgress.total})` : 'Send SMS All'}
-                </button>
-
-                <button
-                  onClick={() => setShowWhatsAppConfirm(true)}
-                  disabled={isSendingWhatsApp}
-                  className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded hover:bg-emerald-600 transition shadow-sm font-semibold text-sm"
-                  title="Send via WhatsApp (Batched)"
-                >
-                  {isSendingWhatsApp ? <Loader className="animate-spin" size={16} /> : <MessageCircle size={16} />}
-                  {isSendingWhatsApp ? 'Wait...' : 'Bulk WhatsApp'}
-                </button>
-
                 <button
                   onClick={handleExportPDF}
                   disabled={isExporting}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition shadow-sm font-semibold text-sm"
+                  className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm font-semibold transition flex items-center gap-2"
                 >
-                  {isExporting ? <Loader size={16} className="animate-spin" /> : <Download size={16} />}
-                  {isExporting ? 'Exporting...' : 'Export Broadsheet'}
+                  {isExporting ? <Loader size={18} className="animate-spin" /> : <Download size={18} />}
+                  {isExporting ? 'Exporting...' : 'Export Analysis PDF'}
                 </button>
-
-                {(bulkProgress.active || isSendingWhatsApp) && (
-                  <div className="w-full text-center mt-2 text-sm font-medium text-gray-700">
-                    {isSendingWhatsApp ? (
-                      <span className="text-green-600 flex items-center justify-center gap-2 font-bold animate-pulse">
-                        <Loader className="animate-spin" size={12} />
-                        WhatsApp Batch: {whatsAppProgress.current}/{whatsAppProgress.total}
-                      </span>
-                    ) : (
-                      <div className="flex justify-center gap-3 font-bold">
-                        <span className="text-green-600">SUCCESS: {bulkProgress.success}</span>
-                        <span className="text-gray-300">|</span>
-                        <span className="text-red-500">FAILED: {bulkProgress.failed}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* ANALYSIS REPORT DISPLAY */}
-      {reportData?.type?.includes('ANALYSIS') && (
-        <div className="px-6 py-8">
-          <div className="bg-gray-100 py-12 px-4 rounded-xl shadow-inner mb-8 no-print">
-            <div
-              id="summative-report-content"
-              className="bg-white mx-auto shadow-2xl overflow-hidden"
-              style={{
-                fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-                lineHeight: '1.2',
-                width: '210mm',
-                minHeight: '297mm',
-                padding: '12mm',
-                boxSizing: 'border-box'
-              }}
-            >
-              {/* Professional Letterhead - Consistency across reports */}
-              <div className="mb-6 flex flex-col items-center text-center">
-                {/* Logo Middle */}
-                <div className="mb-4">
-                  <img
-                    src={brandingSettings?.logoUrl || user?.school?.logo || ""}
-                    alt="Logo"
-                    style={{ height: '80px', width: 'auto', objectFit: 'contain', display: brandingSettings?.logoUrl || user?.school?.logo ? 'block' : 'none' }}
-                    onError={(e) => { e.target.style.display = 'none'; }}
-                  />
-                </div>
-
-                {/* School Info */}
-                <h1 style={{ fontSize: '24px', fontWeight: '900', color: brandingSettings?.brandColor || '#1E3A8A', margin: '0', textTransform: 'uppercase', letterSpacing: '1px', lineHeight: '1.2' }}>
-                  {user?.school?.name || brandingSettings?.schoolName || 'ACADEMIC SCHOOL'}
-                </h1>
-
-                {user?.school?.motto && (
-                  <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', marginTop: '2px', textTransform: 'uppercase', fontStyle: 'italic' }}>
-                    "{user.school.motto}"
-                  </div>
-                )}
-
-                {/* Separator Line */}
-                <div className="w-full h-0.5 mt-3 mb-3" style={{ backgroundColor: brandingSettings?.brandColor || '#1e3a8a' }}></div>
-
-                {/* Bold Report Title */}
-                <h2 style={{ fontSize: '18px', fontWeight: '900', color: '#000', margin: '0', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                  {reportData?.title}
-                </h2>
-
-                <div style={{ fontSize: '12px', fontWeight: '700', color: '#1E3A8A', marginTop: '4px', textTransform: 'uppercase', backgroundColor: '#eff6ff', padding: '4px 16px', borderRadius: '40px' }}>
-                  {setup.academicYear} | {reportData.meta?.term?.replace(/_/g, ' ')}
-                </div>
-              </div>
-
-              {/* Subject Performance Table */}
-              <div className="mb-8">
-                <h2 className="text-lg font-bold text-gray-800 mb-4 border-l-4 border-blue-600 pl-2">Subject Performance Analysis</h2>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
-                  <thead>
-                    <tr style={{ backgroundColor: '#f1f5f9', color: '#1e293b' }}>
-                      <th style={{ padding: '8px', textAlign: 'left', borderBottom: '2px solid #cbd5e1' }}>SUBJECT</th>
-                      <th style={{ padding: '8px', textAlign: 'center', borderBottom: '2px solid #cbd5e1' }}>LEARNERS</th>
-                      <th style={{ padding: '8px', textAlign: 'center', borderBottom: '2px solid #cbd5e1' }}>MEAN SCORE</th>
-                      <th style={{ padding: '8px', textAlign: 'center', borderBottom: '2px solid #cbd5e1' }}>HIGHEST</th>
-                      <th style={{ padding: '8px', textAlign: 'center', borderBottom: '2px solid #cbd5e1' }}>LOWEST</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {reportData.subjectStats.map((stat, idx) => (
-                      <tr key={stat.subject} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                        <td style={{ padding: '8px', fontWeight: '600' }}>{stat.subject}</td>
-                        <td style={{ padding: '8px', textAlign: 'center' }}>{stat.count}</td>
-                        <td style={{ padding: '8px', textAlign: 'center', fontWeight: 'bold', color: '#2563eb' }}>{stat.mean}%</td>
-                        <td style={{ padding: '8px', textAlign: 'center', color: '#16a34a' }}>{stat.highest}%</td>
-                        <td style={{ padding: '8px', textAlign: 'center', color: '#dc2626' }}>{stat.lowest}%</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Grade Distribution */}
-              <div className="mb-8">
-                <h2 className="text-lg font-bold text-gray-800 mb-4 border-l-4 border-blue-600 pl-2">Grade Distribution</h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px' }}>
-                  <div className="p-4 bg-green-50 rounded border border-green-200 text-center">
-                    <div className="text-2xl font-bold text-green-700">{reportData.gradeDist['EE'] || 0}</div>
-                    <div className="text-xs font-bold text-green-800 uppercase mt-1">Exceeding Exp.</div>
-                  </div>
-                  <div className="p-4 bg-blue-50 rounded border border-blue-200 text-center">
-                    <div className="text-2xl font-bold text-blue-700">{reportData.gradeDist['ME'] || 0}</div>
-                    <div className="text-xs font-bold text-blue-800 uppercase mt-1">Meeting Exp.</div>
-                  </div>
-                  <div className="p-4 bg-yellow-50 rounded border border-yellow-200 text-center">
-                    <div className="text-2xl font-bold text-yellow-700">{reportData.gradeDist['AE'] || 0}</div>
-                    <div className="text-xs font-bold text-yellow-800 uppercase mt-1">Approaching Exp.</div>
-                  </div>
-                  <div className="p-4 bg-red-50 rounded border border-red-200 text-center">
-                    <div className="text-2xl font-bold text-red-700">{reportData.gradeDist['BE'] || 0}</div>
-                    <div className="text-xs font-bold text-red-800 uppercase mt-1">Below Exp.</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Controls */}
-            <div className="no-print mt-8 flex gap-4 justify-center">
-              <button
-                onClick={() => setReportData(null)}
-                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded text-sm font-semibold transition"
-              >
-                ← Back
-              </button>
-              <button
-                onClick={handleExportPDF}
-                disabled={isExporting}
-                className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm font-semibold transition flex items-center gap-2"
-              >
-                {isExporting ? <Loader size={18} className="animate-spin" /> : <Download size={18} />}
-                {isExporting ? 'Exporting...' : 'Export Analysis PDF'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+        )
+      }
 
       {/* CONSOLIDATED HIDDEN CONTAINERS FOR PDF GENERATION */}
       <div className="fixed -left-[10000px] top-0 no-print" style={{ pointerEvents: 'none', visibility: 'hidden' }}>
@@ -3276,8 +3300,14 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
         )
       }
 
-
-    </div >
+      {/* Toast Notification for local feedback */}
+      <Toast
+        show={showToast}
+        message={toastMessage}
+        type={toastType}
+        onClose={hideNotification}
+      />
+    </div>
   );
 };
 

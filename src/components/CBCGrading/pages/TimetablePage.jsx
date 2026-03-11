@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, BookOpen, MapPin, Download, Plus, Edit, Trash2, X, Loader2, AlertTriangle, Share2 } from 'lucide-react';
 import EmptyState from '../shared/EmptyState';
 import { useNotifications } from '../hooks/useNotifications';
+import Toast from '../shared/Toast';
 import api from '../../../services/api';
 import { getCurrentWeekday, isTeacherClockedIn } from '../../../utils/teacherClockIn';
 import { generateHighFidelityPDF } from '../../../utils/simplePdfGenerator';
@@ -89,7 +90,7 @@ const TimetablePage = () => {
     localStorage.setItem('cbc_timetable_selected_class', selectedClassId);
   }, [selectedClassId]);
 
-  const { showSuccess, showError, showInfo } = useNotifications();
+  const { showSuccess, showError, showInfo, showToast, toastMessage, toastType, hideNotification } = useNotifications();
 
   // Form state
   const [viewMode, setViewMode] = useState(() => {
@@ -397,7 +398,8 @@ const TimetablePage = () => {
       showInfo('Generating Week at a Glance PDF...');
       setIsDownloadingWeekPdf(true);
       const result = await generateHighFidelityPDF('week-at-a-glance-content', getWeekPdfFilename(), {
-        action: 'download'
+        action: 'download',
+        includeLetterhead: false
       });
 
       if (result?.success) showSuccess('Week at a Glance downloaded as PDF.');
@@ -425,7 +427,8 @@ const TimetablePage = () => {
       setIsSharingWeekPdf(true);
       const fileName = getWeekPdfFilename();
       const result = await generateHighFidelityPDF('week-at-a-glance-content', fileName, {
-        action: 'blob'
+        action: 'blob',
+        includeLetterhead: false
       });
 
       if (!result?.success || !result?.blob) {
@@ -451,7 +454,7 @@ const TimetablePage = () => {
         return;
       }
 
-      await generateHighFidelityPDF('week-at-a-glance-content', fileName, { action: 'download' });
+      await generateHighFidelityPDF('week-at-a-glance-content', fileName, { action: 'download', includeLetterhead: false });
       showSuccess('Sharing is not supported on this browser. PDF downloaded instead.');
     } finally {
       setIsSharingWeekPdf(false);
@@ -812,6 +815,14 @@ const TimetablePage = () => {
           </div>
         </div>
       )}
+
+      {/* Toast Notification */}
+      <Toast
+        show={showToast}
+        message={toastMessage}
+        type={toastType}
+        onClose={hideNotification}
+      />
     </div>
   );
 };

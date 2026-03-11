@@ -17,6 +17,7 @@ import { useLearningAreas } from '../hooks/useLearningAreas';
 import { useTeacherWorkload } from '../hooks/useTeacherWorkload';
 import { useSchoolData } from '../../../contexts/SchoolDataContext';
 import { getLearningAreasByGrade } from '../../../constants/learningAreas';
+import { getAcademicYearOptions, getCurrentAcademicYear } from '../utils/academicYear';
 
 const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
   const { showSuccess, showError } = useNotifications();
@@ -25,7 +26,8 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
   const setup = useAssessmentSetup({
     defaultTerm: localStorage.getItem('cbc_summative_appliedTerm') || 'TERM_1',
     defaultGrade: localStorage.getItem('cbc_summative_appliedGrade') || '',
-    defaultStream: localStorage.getItem('cbc_summative_appliedStream') || ''
+    defaultStream: localStorage.getItem('cbc_summative_appliedStream') || '',
+    defaultAcademicYear: parseInt(localStorage.getItem('cbc_summative_appliedYear')) || getCurrentAcademicYear()
   });
   const learningAreasMgr = useLearningAreas(setup.selectedGrade);
   const teacherWorkload = useTeacherWorkload();
@@ -59,6 +61,7 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
   const [stagedGrade, setStagedGrade] = useState(() => localStorage.getItem('cbc_summative_stagedGrade') || '');
   const [stagedStream, setStagedStream] = useState(() => localStorage.getItem('cbc_summative_stagedStream') || '');
   const [stagedTerm, setStagedTerm] = useState(() => localStorage.getItem('cbc_summative_stagedTerm') || '');
+  const [stagedAcademicYear, setStagedAcademicYear] = useState(() => parseInt(localStorage.getItem('cbc_summative_stagedYear')) || getCurrentAcademicYear());
   const [stagedLearningArea, setStagedLearningArea] = useState(() => localStorage.getItem('cbc_summative_stagedLearningArea') || '');
   const [stagedTestId, setStagedTestId] = useState(() => localStorage.getItem('cbc_summative_stagedTestId') || '');
 
@@ -67,18 +70,20 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
     localStorage.setItem('cbc_summative_stagedGrade', stagedGrade);
     localStorage.setItem('cbc_summative_stagedStream', stagedStream);
     localStorage.setItem('cbc_summative_stagedTerm', stagedTerm);
+    localStorage.setItem('cbc_summative_stagedYear', stagedAcademicYear);
     localStorage.setItem('cbc_summative_stagedLearningArea', stagedLearningArea);
     localStorage.setItem('cbc_summative_stagedTestId', stagedTestId);
     if (!initialTestId) {
       localStorage.setItem('cbc_summative_step', step);
     }
-  }, [stagedGrade, stagedStream, stagedTerm, stagedLearningArea, stagedTestId, step, initialTestId]);
+  }, [stagedGrade, stagedStream, stagedTerm, stagedAcademicYear, stagedLearningArea, stagedTestId, step, initialTestId]);
 
   // Handler to apply filters when green button clicked
   const applyFilters = useCallback(() => {
     setup.updateGrade(stagedGrade);
     setup.updateStream(stagedStream);
     setup.updateTerm(stagedTerm);
+    setup.updateAcademicYear(stagedAcademicYear);
     setSelectedLearningArea(stagedLearningArea);
     setSelectedTestId(stagedTestId);
 
@@ -86,6 +91,7 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
     localStorage.setItem('cbc_summative_appliedGrade', stagedGrade);
     localStorage.setItem('cbc_summative_appliedStream', stagedStream);
     localStorage.setItem('cbc_summative_appliedTerm', stagedTerm);
+    localStorage.setItem('cbc_summative_appliedYear', stagedAcademicYear);
     localStorage.setItem('cbc_summative_appliedLearningArea', stagedLearningArea);
     localStorage.setItem('cbc_summative_appliedTestId', stagedTestId);
 
@@ -93,7 +99,7 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
     if (stagedTestId !== selectedTestId) {
       setMarks({});
     }
-  }, [stagedGrade, stagedStream, stagedTerm, stagedLearningArea, stagedTestId, selectedTestId, setup]);
+  }, [stagedGrade, stagedStream, stagedTerm, stagedAcademicYear, stagedLearningArea, stagedTestId, selectedTestId, setup]);
 
   // User Context
   const { user } = useAuth();
@@ -978,6 +984,23 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
               <option value="">Term</option>
               {availableTerms.map(t => (
                 <option key={t} value={t}>{t.replace('_', ' ')}</option>
+              ))}
+            </select>
+
+            {/* Academic Year - Compact */}
+            <select
+              value={stagedAcademicYear}
+              onChange={(e) => {
+                setStagedAcademicYear(parseInt(e.target.value));
+                setStagedLearningArea('');
+                setStagedTestId('');
+              }}
+              className="h-9 px-2.5 py-1.5 border border-slate-300 rounded text-xs bg-white text-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-purple appearance-none cursor-pointer hover:border-slate-400 transition-colors w-24"
+              title="Select Academic Year"
+            >
+              <option value="">Year</option>
+              {getAcademicYearOptions().map(y => (
+                <option key={y.value} value={y.value}>{y.label}</option>
               ))}
             </select>
 

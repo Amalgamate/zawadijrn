@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { generateDocument } from '../../../utils/simplePdfGenerator';
 import EmptyState from '../shared/EmptyState';
+import Toast from '../shared/Toast';
 import LoadingSpinner from '../shared/LoadingSpinner';
 import { useNotifications } from '../hooks/useNotifications';
 import { useAuth } from '../../../hooks/useAuth';
@@ -28,7 +29,7 @@ const FeeCollectionPage = ({ learnerId }) => {
   const [allLearners, setAllLearners] = useState([]);
   const [searchLearnerId, setSearchLearnerId] = useState(learnerId || null);
   const [statusFilter, setStatusFilter] = useState('all');
-  const { showSuccess, showError } = useNotifications();
+  const { showSuccess, showError, showToast, toastMessage, toastType, hideNotification } = useNotifications();
   const { user } = useAuth();
 
   // Payment form state
@@ -173,7 +174,8 @@ const FeeCollectionPage = ({ learnerId }) => {
       stampOptions: {
         status: isPaid ? 'PAID' : 'APPROVED',
         dept: 'FINANCE OFFICE'
-      }
+      },
+      includeLetterhead: false
     });
   };
   const getStatusBadge = (status) => {
@@ -1046,6 +1048,14 @@ const FeeCollectionPage = ({ learnerId }) => {
           </div>
         </div>
       )}
+
+      {/* Toast Notification */}
+      <Toast
+        show={showToast}
+        message={toastMessage}
+        type={toastType}
+        onClose={hideNotification}
+      />
     </div>
   );
 };
