@@ -14,7 +14,7 @@ import ProfilePhotoModal from '../../shared/ProfilePhotoModal';
 import ResetPasswordModal from '../../shared/ResetPasswordModal';
 import AssignClassModal from '../../shared/AssignClassModal';
 
-const TeacherProfile = ({ teacher, onBack }) => {
+const TeacherProfile = ({ teacher, onBack, onEdit }) => {
     const [activeTab, setActiveTab] = useState('overview');
     const { showSuccess, showError } = useNotifications();
     const [showPhotoModal, setShowPhotoModal] = useState(false);
@@ -150,7 +150,7 @@ const TeacherProfile = ({ teacher, onBack }) => {
             }}
             primaryAction={{
                 label: "Edit Profile",
-                onClick: () => console.log('Edit Profile')
+                onClick: () => onEdit && onEdit(teacher)
             }}
         >
             <ProfileHeader

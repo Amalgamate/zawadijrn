@@ -753,6 +753,7 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
           <TeacherProfile
             teacher={pageParams.teacher}
             onBack={() => handleNavigate('teachers-list')}
+            onEdit={handleEditTeacher}
           />
         );
       case 'add-teacher':
