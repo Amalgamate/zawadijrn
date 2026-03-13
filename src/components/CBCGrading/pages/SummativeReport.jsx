@@ -155,7 +155,7 @@ const resolveTestGroup = (item) => {
 // ============================================================================
 // LEARNER REPORT TEMPLATE COMPONENT (Reusable for Bulk Print)
 // ============================================================================
-const LearnerReportTemplate = ({ learner, results, term, academicYear, brandingSettings, user, streamConfigs }) => {
+const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, academicYear, brandingSettings, user, streamConfigs }) => {
   // --- DATA PREPARATION LOGIC ---
   const standardAreas = getLearningAreasByGrade(learner.grade);
   const resultAreas = new Set(results?.map(r => r.learningArea || 'General') || []);
@@ -312,17 +312,19 @@ const LearnerReportTemplate = ({ learner, results, term, academicYear, brandingS
         width: '210mm',
         minHeight: '297mm',
         padding: '8mm',
-        boxSizing: 'border-box'
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column'
       }}
     >
       {/* Header Section - Centered Professional Redesign */}
-      <div className="mb-6 flex flex-col items-center text-center">
+      <div className="mb-6" style={{ textAlign: 'center' }}>
         {/* Logo Middle */}
         <div className="mb-4">
           <img
             src={brandingSettings?.logoUrl || user?.school?.logo || ""}
             alt="Logo"
-            style={{ height: '100px', width: 'auto', objectFit: 'contain', display: brandingSettings?.logoUrl || user?.school?.logo ? 'block' : 'none' }}
+            style={{ height: '100px', width: 'auto', objectFit: 'contain', display: brandingSettings?.logoUrl || user?.school?.logo ? 'inline-block' : 'none', margin: '0 auto' }}
             onError={(e) => { e.target.style.display = 'none'; }} // Hide if logo is broken
           />
         </div>
@@ -353,186 +355,178 @@ const LearnerReportTemplate = ({ learner, results, term, academicYear, brandingS
         </h2>
 
         {/* Exam Name / Termly Details */}
-        <div style={{ fontSize: '12px', fontWeight: '700', color: '#1E3A8A', marginTop: '4px', textTransform: 'uppercase', backgroundColor: '#eff6ff', padding: '4px 16px', borderRadius: '40px' }}>
+        <div style={{ display: 'inline-block', fontSize: '12px', fontWeight: '700', color: '#1E3A8A', marginTop: '4px', marginBottom: '15px', textTransform: 'uppercase', backgroundColor: '#eff6ff', padding: '4px 16px', borderRadius: '40px' }}>
           {Array.from(testTypesFound).map(t => t.replace(/_/g, ' ')).join(', ')} | {term ? (typeof term === 'string' ? term.replace(/_/g, ' ') : (term.label || '')) : 'TERM'} | {academicYear || new Date().getFullYear()} ACADEMIC YEAR
         </div>
       </div>
 
-      {/* Student Info Table (Compact) */}
-      <div className="mb-10 text-xs">
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '11px', border: '1px solid #e2e8f0', padding: '8px', borderRadius: '4px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 8px' }}>
-            <div style={{ fontWeight: 'bold', color: '#444' }}>NAME:</div>
-            <div style={{ fontWeight: 'bold', color: '#000', textTransform: 'uppercase' }}>{learner.firstName} {learner.lastName}</div>
 
-            <div style={{ fontWeight: 'bold', color: '#444' }}>ADM NO:</div>
-            <div style={{ fontWeight: 'bold' }}>{learner.admissionNumber || '—'}</div>
+      {/* Student Info + Summary Stats — 2-col header */}
+      {(() => {
+        const totalTests = tableRows.reduce((acc, r) => acc + r.testCount, 0);
+        const totalMax = tableRows.reduce((acc, r) => acc + r.totalMarks, 0);
+        const avgPct = totalMax > 0 ? (tableRows.reduce((acc, r) => acc + r.totalScore, 0) / totalMax * 100).toFixed(0) : 0;
+        let overallGrade = 'BE2';
+        if (avgPct >= 90) overallGrade = 'EE1';
+        else if (avgPct >= 75) overallGrade = 'EE2';
+        else if (avgPct >= 58) overallGrade = 'ME1';
+        else if (avgPct >= 41) overallGrade = 'ME2';
+        else if (avgPct >= 31) overallGrade = 'AE1';
+        else if (avgPct >= 21) overallGrade = 'AE2';
+        else if (avgPct >= 11) overallGrade = 'BE1';
+        return (
+          <div className="mb-6" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', border: '1px solid #e2e8f0', borderRadius: '4px', overflow: 'hidden', fontSize: '14px' }}>
+            {/* LEFT: Learner Info */}
+            <div style={{ padding: '10px 12px', display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 10px', alignContent: 'start' }}>
+              <div style={{ fontWeight: '900', color: '#444' }}>NAME:</div>
+              <div style={{ fontWeight: '900', color: '#000', textTransform: 'uppercase' }}>{learner.firstName} {learner.lastName}</div>
+              <div style={{ fontWeight: '900', color: '#444' }}>ADM NO:</div>
+              <div style={{ fontWeight: '900', color: '#000' }}>{learner.admissionNumber || '—'}</div>
+              <div style={{ fontWeight: '900', color: '#444' }}>GRADE:</div>
+              <div style={{ fontWeight: '900', textTransform: 'uppercase', color: '#000' }}>{learner.grade?.replace(/_/g, ' ')}</div>
+              <div style={{ fontWeight: '900', color: '#444' }}>STREAM:</div>
+              <div style={{ fontWeight: '900', textTransform: 'uppercase', color: '#000' }}>{learner.stream || 'A'}</div>
+            </div>
+            {/* RIGHT: Assessment Summary */}
+            <div style={{ borderLeft: '1px solid #e2e8f0', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0' }}>
+              <div style={{ padding: '10px 12px', textAlign: 'center', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
+                <div style={{ fontSize: '10px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '2px' }}>Subjects Assessed</div>
+                <div style={{ fontSize: '20px', fontWeight: '900', color: '#0f172a' }}>{tableRows.length}</div>
+              </div>
+              <div style={{ padding: '10px 12px', textAlign: 'center', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
+                <div style={{ fontSize: '10px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '2px' }}>Total Assessments</div>
+                <div style={{ fontSize: '20px', fontWeight: '900', color: '#0f172a' }}>{totalTests}</div>
+              </div>
+              <div style={{ padding: '10px 12px', textAlign: 'center', borderRight: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
+                <div style={{ fontSize: '10px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '2px' }}>Average Score</div>
+                <div style={{ fontSize: '20px', fontWeight: '900', color: '#0f172a' }}>{avgPct}%</div>
+              </div>
+              <div style={{ padding: '10px 12px', textAlign: 'center', backgroundColor: '#eff6ff' }}>
+                <div style={{ fontSize: '10px', fontWeight: '800', color: '#1e40af', textTransform: 'uppercase', marginBottom: '2px' }}>Overall Grade</div>
+                <div style={{ fontSize: '20px', fontWeight: '900', color: '#1e3a8a' }}>{overallGrade}</div>
+              </div>
+            </div>
           </div>
+        );
+      })()}
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 8px' }}>
-            <div style={{ fontWeight: 'bold', color: '#444' }}>GRADE:</div>
-            <div style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>{learner.grade?.replace(/_/g, ' ')}</div>
+      {/* === CONTENT BODY — grows to fill available space === */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '18px' }}>
 
-            <div style={{ fontWeight: 'bold', color: '#444' }}>STREAM:</div>
-            <div style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>{learner.stream || 'A'}</div>
-          </div>
+
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px', marginBottom: '20px' }}>
+          <thead>
+            <tr style={{ backgroundColor: '#1e3a8a', color: 'white' }}>
+              <th style={{ padding: '8px 4px', textAlign: 'left', fontWeight: 'bold' }}>SUBJECT</th>
+              {testColumns.map(col => (
+                <th key={col} style={{ padding: '8px 4px', textAlign: 'center', fontWeight: 'bold', borderLeft: '1px solid rgba(255,255,255,0.2)' }}>
+                  {formatTestName(col)}
+                </th>
+              ))}
+              <th style={{ padding: '8px 4px', textAlign: 'center', fontWeight: 'bold', borderLeft: '1px solid rgba(255,255,255,0.2)' }}>AVG %</th>
+              <th style={{ padding: '8px 4px', textAlign: 'left', fontWeight: 'bold', borderLeft: '1px solid rgba(255,255,255,0.2)' }}>GRADE</th>
+              <th style={{ padding: '8px 4px', textAlign: 'left', fontWeight: 'bold', borderLeft: '1px solid rgba(255,255,255,0.2)' }}>REMARKS</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tableRows.map((row, idx) => (
+              <tr key={row.area} style={{ backgroundColor: idx % 2 === 0 ? '#f8fafc' : 'white', borderBottom: '1px solid #e2e8f0' }}>
+                <td style={{ padding: '6px 4px', fontWeight: '700', fontSize: '16px', color: '#000000', letterSpacing: '-0.2px' }}>{row.area}</td>
+                {testColumns.map(col => (
+                  <td key={col} style={{ padding: '6px 4px', textAlign: 'center', color: '#000000', fontWeight: '700', fontSize: '16px' }}>
+                    {row.scoresByCol[col] !== null ? row.scoresByCol[col] : '—'}
+                  </td>
+                ))}
+                <td style={{ padding: '6px 4px', textAlign: 'center', fontWeight: '700', fontSize: '16px', color: '#000000' }}>{row.percentage}%</td>
+                <td style={{ padding: '6px 4px', textAlign: 'left', fontWeight: '700', fontSize: '16px', color: row.color }}>{row.grade}</td>
+                <td style={{ padding: '6px 4px', fontSize: '11px', fontStyle: 'italic', fontWeight: '700', color: '#000000', lineHeight: '1.2' }}>{row.remark}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+      {/* Performance Chart Row - 100% Width */}
+      <div className="mb-4 page-break-inside-avoid" style={{ marginTop: '16px' }}>
+        <h3 className="text-[10px] font-bold text-gray-800 uppercase border-b border-gray-200 mb-2 pb-1">Subject Performance</h3>
+        <div style={{ height: '120px', width: '100%' }}>
+          {tableRows && tableRows.length > 0 && BarChart ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={tableRows.map(r => ({ ...r, area: getAbbreviatedName(r.area) }))} margin={{ top: 5, right: 10, left: -25, bottom: 0 }} barCategoryGap="20%">
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis dataKey="area" interval={0} axisLine={{ stroke: '#e2e8f0' }} tickLine={false} tick={{ fontSize: 8, fontWeight: 'bold' }} />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 8, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                <Bar dataKey="percentage" fill="#1E3A8A" />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-full bg-gray-50 text-[10px] text-gray-400 font-bold uppercase">No data for chart</div>
+          )}
         </div>
       </div>
 
-      {/* Results Table */}
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px', marginBottom: '20px' }}>
-        <thead>
-          <tr style={{ backgroundColor: '#1e3a8a', color: 'white' }}>
-            <th style={{ padding: '8px 4px', textAlign: 'left', fontWeight: 'bold' }}>SUBJECT</th>
-            {testColumns.map(col => (
-              <th key={col} style={{ padding: '8px 4px', textAlign: 'center', fontWeight: 'bold', borderLeft: '1px solid rgba(255,255,255,0.2)' }}>
-                {formatTestName(col)}
-              </th>
-            ))}
-            <th style={{ padding: '8px 4px', textAlign: 'center', fontWeight: 'bold', borderLeft: '1px solid rgba(255,255,255,0.2)' }}>AVG %</th>
-            <th style={{ padding: '8px 4px', textAlign: 'left', fontWeight: 'bold', borderLeft: '1px solid rgba(255,255,255,0.2)' }}>GRADE</th>
-            <th style={{ padding: '8px 4px', textAlign: 'left', fontWeight: 'bold', borderLeft: '1px solid rgba(255,255,255,0.2)' }}>REMARKS</th>
-          </tr>
-        </thead>
+      {/* Pathways & Grading Key Row — 1 table row 2 columns */}
+      <table className="w-full page-break-inside-avoid" style={{ borderCollapse: 'collapse', tableLayout: 'fixed', marginBottom: '20px' }}>
         <tbody>
-          {tableRows.map((row, idx) => (
-            <tr key={row.area} style={{ backgroundColor: idx % 2 === 0 ? '#f8fafc' : 'white', borderBottom: '1px solid #e2e8f0' }}>
-              <td style={{ padding: '6px 4px', fontWeight: '700', fontSize: '16px', color: '#000000', letterSpacing: '-0.2px' }}>{row.area}</td>
-              {testColumns.map(col => (
-                <td key={col} style={{ padding: '6px 4px', textAlign: 'center', color: '#000000', fontWeight: '700', fontSize: '16px' }}>
-                  {row.scoresByCol[col] !== null ? row.scoresByCol[col] : '—'}
-                </td>
-              ))}
-              <td style={{ padding: '6px 4px', textAlign: 'center', fontWeight: '700', fontSize: '16px', color: '#000000' }}>{row.percentage}%</td>
-              <td style={{ padding: '6px 4px', textAlign: 'left', fontWeight: '700', fontSize: '16px', color: row.color }}>{row.grade}</td>
-              <td style={{ padding: '6px 4px', fontSize: '11px', fontStyle: 'italic', fontWeight: '700', color: '#000000', lineHeight: '1.2' }}>{row.remark}</td>
-            </tr>
-          ))}
+          <tr>
+            {/* 1st Column: Pathways */}
+            <td style={{ width: '40%', verticalAlign: 'top', paddingRight: '12px' }}>
+              <h3 style={{ fontSize: '10px', fontWeight: '800', color: '#111827', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', marginBottom: '6px', paddingBottom: '2px' }}>Pathways Insight</h3>
+              {pathwayPrediction ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <div>
+                    <div style={{ fontSize: '9px', fontWeight: '800', color: '#374151', textTransform: 'uppercase', marginBottom: '2px' }}>Predicted Pathway</div>
+                    <div style={{ fontSize: '16px', fontWeight: '900', color: '#16a34a', textTransform: 'uppercase', lineHeight: '1.2' }}>{pathwayPrediction.predictedPathway}</div>
+                  </div>
+                  <div style={{ fontSize: '11px', fontWeight: '700', color: '#111827' }}>
+                    <span style={{ fontWeight: '900' }}>Confidence:</span> {pathwayPrediction.confidence}%
+                  </div>
+                  {pathwayPrediction.careerRecommendations?.length > 0 && (
+                    <div style={{ fontSize: '11px', color: '#111827' }}>
+                      <span style={{ fontWeight: '900' }}>Careers: </span>
+                      <span style={{ fontWeight: '600', fontStyle: 'italic' }}>
+                        {pathwayPrediction.careerRecommendations.slice(0, 3).join(', ')}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div style={{ fontSize: '11px', color: '#6b7280', fontStyle: 'italic', marginTop: '6px' }}>No AI pathway prediction generated.</div>
+              )}
+            </td>
+
+            {/* 2nd Column: Grading Key */}
+            <td style={{ width: '60%', verticalAlign: 'top', borderLeft: '1px solid #e2e8f0', paddingLeft: '12px' }}>
+              <h3 style={{ fontSize: '10px', fontWeight: '800', color: '#374151', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', marginBottom: '4px', paddingBottom: '2px' }}>Grading Key</h3>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
+                <tbody>
+                  {[
+                    [{ code: 'EE1', range: '90–100%', label: 'Outstanding' }, { code: 'AE1', range: '31–40%', label: 'Low Average' }],
+                    [{ code: 'EE2', range: '75–89%', label: 'Very High' }, { code: 'AE2', range: '21–30%', label: 'Below Average' }],
+                    [{ code: 'ME1', range: '58–74%', label: 'High Average' }, { code: 'BE1', range: '11–20%', label: 'Low' }],
+                    [{ code: 'ME2', range: '41–57%', label: 'Average' }, { code: 'BE2', range: '0–10%', label: 'Very Low' }],
+                  ].map((rowPairs, idx) => (
+                    <tr key={idx}>
+                      {rowPairs.map(g => (
+                        <td key={g.code} style={{ border: '1px solid #cbd5e1', padding: '4px 6px', textAlign: 'left', backgroundColor: idx % 2 === 0 ? '#f8fafc' : '#f1f5f9' }}>
+                          <span style={{ display: 'inline-block', fontWeight: '900', color: '#111827', marginRight: '5px', fontSize: '11px', width: '22px' }}>{g.code}</span>
+                          <span style={{ fontWeight: '800', color: '#374151', fontSize: '10px', display: 'inline-block', width: '45px' }}>{g.range}</span>
+                          <span style={{ fontWeight: '600', color: '#6b7280', marginLeft: '2px', fontSize: '10px' }}>({g.label})</span>
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </td>
+          </tr>
         </tbody>
       </table>
 
-      {/* Summary Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '20px' }}>
-        {(() => {
-          const totalTests = tableRows.reduce((acc, r) => acc + r.testCount, 0);
-          const totalMax = tableRows.reduce((acc, r) => acc + r.totalMarks, 0);
-          const avgPct = totalMax > 0 ? (tableRows.reduce((acc, r) => acc + r.totalScore, 0) / totalMax * 100).toFixed(0) : 0;
+      </div> {/* END CONTENT BODY */}
 
-          let overallGrade = 'E';
-          if (avgPct >= 90) overallGrade = 'EE1';
-          else if (avgPct >= 75) overallGrade = 'EE2';
-          else if (avgPct >= 58) overallGrade = 'ME1';
-          else if (avgPct >= 41) overallGrade = 'ME2';
-          else if (avgPct >= 31) overallGrade = 'AE1';
-          else if (avgPct >= 21) overallGrade = 'AE2';
-          else if (avgPct >= 11) overallGrade = 'BE1';
-          else overallGrade = 'BE2';
 
-          const cardStyle = { padding: '8px', border: '1px solid #e2e8f0', borderRadius: '4px', textAlign: 'center', backgroundColor: '#f8fafc' };
-          const labelStyle = { fontSize: '10px', fontWeight: 'bold', color: '#64748b', marginBottom: '2px', textTransform: 'uppercase' };
-          const valueStyle = { fontSize: '18px', fontWeight: '700', color: '#0f172a' };
 
-          return (
-            <>
-              <div style={cardStyle}>
-                <div style={labelStyle}>Subjects Assessed</div>
-                <div style={valueStyle}>{tableRows.length}</div>
-              </div>
-              <div style={cardStyle}>
-                <div style={labelStyle}>Total Assessments</div>
-                <div style={valueStyle}>{totalTests}</div>
-              </div>
-              <div style={cardStyle}>
-                <div style={labelStyle}>Average Score</div>
-                <div style={valueStyle}>{avgPct}%</div>
-              </div>
-              <div style={{ ...cardStyle, backgroundColor: '#eff6ff', borderColor: '#bfdbfe' }}>
-                <div style={{ ...labelStyle, color: '#1e40af' }}>Overall Grade</div>
-                <div style={{ ...valueStyle, color: '#1e3a8a' }}>{overallGrade}</div>
-              </div>
-            </>
-          );
-        })()}
-      </div>
 
-      {/* Performance Chart & Grading Key Row */}
-      <div className="flex gap-4 mb-4 page-break-inside-avoid">
-        {/* Performance Chart - 65% */}
-        <div className="w-[65%]">
-          <h3 className="text-[10px] font-bold text-gray-800 uppercase border-b border-gray-200 mb-2 pb-1">Subject Performance</h3>
-          <div style={{ height: '140px', width: '100%' }}>
-            {tableRows && tableRows.length > 0 && BarChart ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={tableRows.map(r => ({ ...r, area: getAbbreviatedName(r.area) }))} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                  <XAxis dataKey="area" interval={0} axisLine={{ stroke: '#e2e8f0' }} tickLine={false} tick={{ fontSize: 8, fontWeight: 'bold' }} />
-                  <YAxis domain={[0, 100]} tick={{ fontSize: 9, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                  <Bar dataKey="percentage" fill="#1E3A8A" barSize={30} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex items-center justify-center h-full bg-gray-50 text-[10px] text-gray-400 font-bold uppercase">No data for chart</div>
-            )}
-          </div>
-        </div>
-
-        {/* Grading Key - 35% */}
-        <div className="w-[35%] border-l border-gray-100 pl-4">
-          <h3 className="text-[10px] font-bold text-gray-800 uppercase border-b border-gray-200 mb-2 pb-1">Grading Key</h3>
-          <div className="flex flex-col gap-1 text-[8px]">
-            <div className="flex items-center gap-1"><span className="w-5 h-3 bg-[#15803d] text-white flex items-center justify-center font-bold rounded-sm">EE1</span> <span>90-100% (Outstanding)</span></div>
-            <div className="flex items-center gap-1"><span className="w-5 h-3 bg-[#166534] text-white flex items-center justify-center font-bold rounded-sm">EE2</span> <span>75-89% (Very High)</span></div>
-            <div className="flex items-center gap-1"><span className="w-5 h-3 bg-[#22c55e] text-white flex items-center justify-center font-bold rounded-sm">ME1</span> <span>58-74% (High Avg)</span></div>
-            <div className="flex items-center gap-1"><span className="w-5 h-3 bg-[#4ade80] text-gray-900 flex items-center justify-center font-bold rounded-sm">ME2</span> <span>41-57% (Average)</span></div>
-            <div className="flex items-center gap-1"><span className="w-5 h-3 bg-[#eab308] text-white flex items-center justify-center font-bold rounded-sm">AE1</span> <span>31-40% (Low Avg)</span></div>
-            <div className="flex items-center gap-1"><span className="w-5 h-3 bg-[#facc15] text-gray-900 flex items-center justify-center font-bold rounded-sm">AE2</span> <span>21-30% (Below Avg)</span></div>
-            <div className="flex items-center gap-1"><span className="w-5 h-3 bg-[#f97316] text-white flex items-center justify-center font-bold rounded-sm">BE1</span> <span>11-20% (Low)</span></div>
-            <div className="flex items-center gap-1"><span className="w-5 h-3 bg-[#dc2626] text-white flex items-center justify-center font-bold rounded-sm">BE2</span> <span>0-10% (Very Low)</span></div>
-          </div>
-        </div>
-      </div>
-
-      {/* Signatures & Remarks Section */}
-      <div className="mt-4 pt-3 border-t-2 border-gray-100 flex justify-between items-start page-break-inside-avoid">
-        {/* Class Teacher Remarks Area — read-only */}
-        <div className="flex flex-col gap-1 w-[60%] pr-4">
-          <div className="text-[10px] font-extrabold text-[#1E3A8A] uppercase mb-1">
-            Class Teacher's Remarks:
-          </div>
-          <div className="min-h-[75px] border-b-2 border-slate-300 border-dotted pb-1 text-[12px] font-semibold text-slate-800 italic leading-snug">
-            {commentData?.classTeacherComment || ''}
-          </div>
-        </div>
-
-        {/* Principal / Head Teacher Section */}
-        <div className="w-[40%]"></div>
-      </div>
-
-      {/* Signature & Stamp Area - Bottom Anchored - Adjusted for breathing room above footer (18mm) */}
-      <div className="absolute bottom-[18mm] right-[8mm] w-[40%] flex flex-col items-center">
-        {/* Stamp Area - Reduced further (w-80 -> w-68) */}
-        <div className="mb-[-12px] z-10 flex justify-center">
-          <img
-            src={user?.school?.stampUrl || brandingSettings?.stampUrl || "/stamp.svg"}
-            alt="School Stamp"
-            className="w-48 h-auto opacity-95"
-            style={{ mixBlendMode: 'multiply' }}
-            onError={(e) => {
-              if (e.target.src.includes('/stamp.svg')) {
-                e.target.src = '/ZawadiStamp.svg';
-              } else if (e.target.src.includes('/ZawadiStamp.svg')) {
-                e.target.style.display = 'none';
-              } else {
-                e.target.src = '/stamp.svg';
-              }
-            }}
-          />
-        </div>
-
-        {/* Signature Line Area - Thin line below stamp */}
-        <div className="w-full border-b border-slate-900 mb-1"></div>
-        <div className="text-[11px] font-bold uppercase text-slate-900 tracking-wider">Principal's Signature & Stamp</div>
-      </div>
 
       {/* Footer Disclaimer - Absolute Bottom */}
       <div style={{ position: 'absolute', bottom: '8mm', left: '8mm', right: '8mm', paddingTop: '10px', borderTop: '2px solid #f1f5f9', fontSize: '10px', textAlign: 'center', color: '#64748b', fontWeight: '800' }}>
@@ -1129,7 +1123,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
       `${subjectsList}\n\n` +
       `AVERAGE: ${averageScore}% ${overallGrade.replace(/\d+/g, '')}\n` +
       `Total Marks: ${totalMarks} / ${maxPossibleMarks}\n` +
-      `Overall Status: ${overallGrade.replace(/\d+/g, '')}`;
+      `Overall Status: ${overallGrade.replace(/\d+/g, '')}${row.pathwayPrediction ? `\n\nPathways Insight:\nPredicted: ${row.pathwayPrediction.predictedPathway}\nConfidence: ${row.pathwayPrediction.confidence}%` : ''}`;
   };
 
   const handleSendSMS = async (directRow = null) => {
@@ -1286,6 +1280,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
       `\`\`\`\n\n` +
       `*Total Marks:* ${totalMarks} / ${maxPossibleMarks}\n` +
       `*Overall Status:* ${overallGrade.replace(/\d+/g, '')}\n\n` +
+      `${row.pathwayPrediction ? `*Pathways Insight:*\n- Recommended: *${row.pathwayPrediction.predictedPathway}*\n- Confidence: ${row.pathwayPrediction.confidence}%\n- Careers: ${row.pathwayPrediction.careerRecommendations.slice(0, 2).join(', ')}\n\n` : ''}` +
       `_Generated on ${new Date().toLocaleDateString()}_`;
 
     // 3.5 Open WhatsApp immediately (before async logs to prevent browser blocking)
@@ -1627,7 +1622,8 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
             totalTests: row.results?.length || 0,
             averageScore: row.averageScore,
             overallGrade: row.grade,
-            subjects: subjects
+            subjects: subjects,
+            pathwayPrediction: row.pathwayPrediction
           });
           successCount++;
         } else {
@@ -1712,10 +1708,11 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
 
         // OPTIMIZED: Fetch all results and communication history for the whole group in one hit
         const bulkRes = await api.assessments.getBulkResults(queryParams);
-        const allResults = bulkRes.success ? bulkRes.data : [];
+        const allResults = bulkRes.success ? (bulkRes.data || bulkRes.results || []) : [];
         const allCommunications = bulkRes.success ? (bulkRes.communications || []) : [];
+        const allPredictions = bulkRes.success ? (bulkRes.predictions || {}) : {};
 
-        console.log(`[Report] Bulk fetch returned ${allResults.length} results and ${allCommunications.length} comm histories`);
+        console.log(`[Report] Bulk fetch returned ${allResults.length} results, ${allCommunications.length} comm histories, and ${Object.keys(allPredictions).length} predictions`);
 
         for (const learnerId of selectedLearnerIds) {
           const learner = filteredLearners?.find(l => l.id === learnerId);
@@ -1777,6 +1774,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
             learner,
             results: processedResults,
             communication,
+            pathwayPrediction: allPredictions[learnerId] || null,
             averageScore: processedResults.length > 0
               ? (processedResults.reduce((sum, r) => sum + (r.score || r.percentage || 0), 0) / processedResults.length).toFixed(1)
               : 0
@@ -2269,58 +2267,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
             )}
           </div>
 
-          {/* Specific Test Selector */}
-          <div className="relative w-full md:w-auto flex-1 md:flex-none md:min-w-[140px]" ref={testOptionsRef}>
-            <button
-              onClick={() => setShowTestOptions(!showTestOptions)}
-              className="h-9 px-3 py-1.5 border border-slate-300 rounded text-xs focus:ring-1 focus:ring-brand-teal focus:border-brand-teal outline-none flex items-center justify-between min-w-full md:min-w-[140px] md:max-w-[240px] bg-white text-gray-700"
-            >
-              <span className="truncate">
-                {stagedTestIds.length === 0
-                  ? 'All Tests in Group'
-                  : `${stagedTestIds.length} Tests Selected`}
-              </span>
-              <span className="text-gray-400 ml-2 text-[10px]">▼</span>
-            </button>
-            {showTestOptions && (
-              <div className="absolute top-full left-0 mt-1 w-full md:w-64 bg-white border border-slate-200 rounded-md shadow-lg z-50 py-1 max-h-60 overflow-y-auto w-[calc(100vw-48px)] md:w-64 max-w-[calc(100vw-48px)]">
-                {testsInGroups.length === 0 ? (
-                  <div className="p-3 text-center text-xs text-gray-500">No specific tests found</div>
-                ) : (
-                  <>
-                    <div className="p-2 border-b bg-slate-50 flex gap-2 shrink-0">
-                      <button
-                        onClick={() => setStagedTestIds([])}
-                        className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded hover:bg-slate-200 w-full transition-colors"
-                      >
-                        Clear Specific Tests
-                      </button>
-                    </div>
-                    {testsInGroups.map(test => (
-                      <label key={test.id} className="flex items-start gap-2 p-2 px-3 hover:bg-slate-50 cursor-pointer text-xs">
-                        <input
-                          type="checkbox"
-                          checked={stagedTestIds.includes(test.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setStagedTestIds([...stagedTestIds, test.id]);
-                            } else {
-                              setStagedTestIds(stagedTestIds.filter(id => id !== test.id));
-                            }
-                          }}
-                          className="rounded border-slate-300 text-brand-teal focus:ring-brand-teal mt-0.5"
-                        />
-                        <div className="flex flex-col min-w-0">
-                          <span className="font-semibold text-slate-800 truncate">{test.title}</span>
-                          <span className="text-[10px] text-slate-500 truncate">{test.learningArea} | Type: {test.testType}</span>
-                        </div>
-                      </label>
-                    ))}
-                  </>
-                )}
-              </div>
-            )}
-          </div>
+          {/* Specific Test Selector hidden per user request */}
 
           {/* Generate Button with Icon */}
           <button
@@ -2365,6 +2312,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                   <LearnerReportTemplate
                     learner={reportData.learner || reportData.rows[0].learner}
                     results={reportData.results?.length > 0 ? reportData.results : reportData.rows[0].results}
+                    pathwayPrediction={reportData.pathwayPrediction || reportData.rows[0].pathwayPrediction}
                     term={reportData.term}
                     academicYear={reportData.academicYear}
                     brandingSettings={brandingSettings}
@@ -2382,7 +2330,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                     ← Back
                   </button>
                   <button
-                    onClick={handleSendSMS}
+                    onClick={() => handleSendSMS(reportData.rows?.[0] || reportData)}
                     disabled={isSendingSMS}
                     className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-semibold transition disabled:opacity-50"
                     title="Send report summary via SMS"
@@ -2390,7 +2338,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                     {isSendingSMS ? '📤 Sending...' : '📱 Send SMS'}
                   </button>
                   <button
-                    onClick={handleSendWhatsApp}
+                    onClick={() => handleSendWhatsApp(reportData.rows?.[0] || reportData)}
                     className="px-6 py-2 bg-emerald-500 text-white rounded hover:bg-emerald-600 text-sm font-semibold transition flex items-center gap-2"
                   >
                     <MessageCircle size={18} />
@@ -2483,7 +2431,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                     </div>
                     <div className="col-span-4">Learner Name</div>
                     <div className="col-span-1 text-center">Avg</div>
-                    <div className="col-span-2 text-center">Status</div>
+                    <div className="col-span-2 text-left pl-6">Pathway</div>
                     <div className="col-span-4 text-right">Individual Actions</div>
                   </div>
                   {/* Mobile Select All row */}
@@ -2524,22 +2472,30 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                           </div>
                         </div>
 
-                        {/* STATUS INDICATORS */}
-                        <div className="md:col-span-2 flex justify-start md:justify-center gap-2 md:gap-1 mt-1 md:mt-0 pl-7 md:pl-0">
-                          <span className="md:hidden text-[10px] text-slate-500 font-bold uppercase self-center mr-1">Status:</span>
-                          {row.communication?.hasSentSms && (
-                            <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[8px] font-black uppercase flex items-center gap-1" title="SMS Sent">
-                              <CheckCircle size={8} /> SMS
-                            </span>
+                        <div className="md:col-span-2 flex flex-wrap justify-start items-center gap-2 mt-1 md:mt-0 pl-7 md:pl-6">
+                          <span className="md:hidden text-[10px] text-slate-500 font-bold uppercase self-center mr-1">Pathway:</span>
+                          {row.pathwayPrediction ? (
+                            <div
+                              className="flex items-center cursor-help"
+                              title={`Pathway: ${row.pathwayPrediction.predictedPathway}\nConfidence: ${row.pathwayPrediction.confidence}%\n\nJustification: ${row.pathwayPrediction.justification}\n\nRecommended Careers:\n${(row.pathwayPrediction.careerRecommendations || []).map(c => '• ' + c).join('\n')}\n\nGrowth Areas:\n${(row.pathwayPrediction.growthAreas || []).map(g => '• ' + g).join('\n')}\n\n💡 Hint: Good fit for Kenyan Secondary Schools strong in ${row.pathwayPrediction.predictedPathway === 'STEM' ? 'Sciences & Math (e.g., Kenya High, Alliance High)' : row.pathwayPrediction.predictedPathway === 'Social Sciences' ? 'Humanities & Languages (e.g., Pangani Girls, Alliance Girls)' : 'Sports & Arts (e.g., Laiser Hill, Dagoretti High)'}.`}
+                            >
+                              <span className="px-2 py-0.5 bg-brand-teal/10 hover:bg-brand-teal/20 transition-colors text-brand-teal rounded text-[9px] font-black uppercase border border-brand-teal/30">
+                                {row.pathwayPrediction.predictedPathway === 'Arts and Sports Science' ? 'Arts & Sports' : row.pathwayPrediction.predictedPathway}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-[9px] text-slate-400 font-bold uppercase italic">-</span>
                           )}
-                          {row.communication?.hasSentWhatsApp && (
-                            <span className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-[8px] font-black uppercase flex items-center gap-1" title="WhatsApp Sent">
-                              <CheckCircle size={8} /> WA
-                            </span>
-                          )}
-                          {!row.communication?.hasSentSms && !row.communication?.hasSentWhatsApp && (
-                            <span className="text-[8px] text-slate-300 font-bold uppercase italic">Not Sent</span>
-                          )}
+
+                          {/* Keep mini-indicators for communication if they exist */}
+                          <div className="flex gap-0.5 ml-1">
+                            {row.communication?.hasSentSms && (
+                              <div className="w-2 h-2 rounded-full bg-blue-500" title="SMS Sent" />
+                            )}
+                            {row.communication?.hasSentWhatsApp && (
+                              <div className="w-2 h-2 rounded-full bg-green-500" title="WhatsApp Sent" />
+                            )}
+                          </div>
                         </div>
 
                         <div className="md:col-span-4 flex justify-between md:justify-end gap-2 mt-3 md:mt-0 pt-3 md:pt-0 border-t border-slate-100 md:border-0 pl-0 md:pl-0">
@@ -2552,7 +2508,8 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                                 learner: row.learner,
                                 results: row.results,
                                 averageScore: row.averageScore,
-                                communication: row.communication
+                                communication: row.communication,
+                                pathwayPrediction: row.pathwayPrediction
                               });
                             }}
                             className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded transition shadow-sm flex-1 md:flex-none flex justify-center items-center gap-1 text-[10px] font-bold uppercase"
@@ -2945,6 +2902,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                 <LearnerReportTemplate
                   learner={row.learner}
                   results={row.results}
+                  pathwayPrediction={row.pathwayPrediction}
                   term={stagedTerm || selectedTerm}
                   academicYear={academicYear || setup.academicYear}
                   brandingSettings={brandingSettings}
@@ -2962,6 +2920,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
             <LearnerReportTemplate
               learner={singleDownloadData.learner}
               results={singleDownloadData.results}
+              pathwayPrediction={singleDownloadData.pathwayPrediction}
               term={stagedTerm || selectedTerm}
               academicYear={academicYear || setup.academicYear}
               brandingSettings={brandingSettings}

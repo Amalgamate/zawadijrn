@@ -7,6 +7,7 @@ import { PrismaClient, Term, DetailedRubricRating, SummativeGrade } from '@prism
 import * as rubricUtil from '../utils/rubric.util';
 import { gradingService } from './grading.service';
 import { calculationService } from './calculation.service';
+import { aiAssistantService } from './ai-assistant.service';
 
 const prisma = new PrismaClient();
 
@@ -136,6 +137,7 @@ export interface TermlyReportData {
   coCurricular: CoCurricularData[];
   comments: any;
   overallPerformance: any;
+  pathwayPrediction?: any;
   generatedDate: Date;
 }
 
@@ -205,6 +207,21 @@ export async function generateTermlyReport(
     attendanceSummary
   );
 
+  // Fetch AI Pathway Prediction for Grade 7 and up
+  let pathwayPrediction = null;
+  const juniorSeniorGrades = ['GRADE_7', 'GRADE_8', 'GRADE_9', 'GRADE_10', 'GRADE_11', 'GRADE_12'];
+  if (juniorSeniorGrades.includes(learner.grade)) {
+    try {
+      pathwayPrediction = await aiAssistantService.generatePathwayPrediction(
+        learnerId,
+        term,
+        academicYear
+      );
+    } catch (e) {
+      console.warn('Pathway prediction failed to generate:', e);
+    }
+  }
+
   return {
     learner,
     term,
@@ -231,6 +248,7 @@ export async function generateTermlyReport(
       nextTermOpens: reportComments.nextTermOpens
     } : null,
     overallPerformance,
+    pathwayPrediction,
     generatedDate: new Date()
   };
 }

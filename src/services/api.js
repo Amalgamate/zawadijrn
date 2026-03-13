@@ -2801,3 +2801,34 @@ const api = {
 };
 
 export default api;
+// ============================================
+// AI & ANALYTICS API
+// ============================================
+
+export const aiAPI = {
+  /**
+   * Generate AI Feedback for a learner
+   * @param {string} learnerId
+   * @param {string} term
+   * @param {number} academicYear
+   */
+  generateFeedback: async (learnerId, term, academicYear) => {
+    return fetchWithAuth(`/ai/feedback/${learnerId}?term=${term}&academicYear=${academicYear}`);
+  },
+
+  /**
+   * Analyze learner risk levels
+   * @param {string} learnerId
+   */
+  analyzeRisk: async (learnerId) => {
+    return fetchWithAuth(`/ai/analyze-risk/${learnerId}`);
+  },
+
+  /**
+   * Get learner performance trend
+   * @param {string} learnerId
+   */
+  getTrend: async (learnerId) => {
+    return fetchWithAuth(`/ai/trend/${learnerId}`);
+  },
+};

@@ -336,6 +336,7 @@ export class NotificationController {
       totalMarks,
       maxPossibleMarks,
       subjects,
+      pathwayPrediction,
     } = req.body;
 
     // Validate required fields
@@ -364,6 +365,7 @@ export class NotificationController {
       totalMarks,
       maxPossibleMarks,
       subjects,
+      pathwayPrediction,
       sentByUserId: req.user?.userId,
     });
 
@@ -398,6 +400,7 @@ export class NotificationController {
       averageScore,
       overallGrade,
       subjects,
+      pathwayPrediction,
     } = req.body;
 
     // Validate required fields
@@ -416,6 +419,7 @@ export class NotificationController {
       averageScore,
       overallGrade,
       subjects,
+      pathwayPrediction,
       schoolName: 'School'
     } as any);
 

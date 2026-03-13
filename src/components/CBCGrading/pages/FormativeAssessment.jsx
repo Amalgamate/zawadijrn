@@ -4,10 +4,10 @@
  */
 
 import React, { useState } from 'react';
-import { CheckCircle, Check, Send, Save, ArrowRight, Edit3, FileText, Users, BarChart2 } from 'lucide-react';
+import { CheckCircle, Check, Send, Save, ArrowRight, Edit3, FileText, Users, BarChart2, Sparkles, Loader2 } from 'lucide-react';
 import RatingSelector from '../shared/RatingSelector';
 import { useNotifications } from '../hooks/useNotifications';
-import api, { workflowAPI } from '../../../services/api';
+import api, { workflowAPI, aiAPI } from '../../../services/api';
 import SmartLearnerSearch from '../shared/SmartLearnerSearch';
 import { useAssessmentSetup } from '../hooks/useAssessmentSetup';
 import { useLearnerSelection } from '../hooks/useLearnerSelection';
@@ -43,6 +43,7 @@ const FormativeAssessment = ({ learners }) => {
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [sendingWhatsApp, setSendingWhatsApp] = useState({});
+  const [generatingAI, setGeneratingAI] = useState({});
 
   // Use grades and selection from setup hook
   const grades = setup.grades || [];
@@ -331,6 +332,31 @@ const FormativeAssessment = ({ learners }) => {
       showError(error.message || 'Failed to send WhatsApp notification');
     } finally {
       setSendingWhatsApp(prev => ({ ...prev, [learnerId]: false }));
+    }
+  };
+
+  const handleGenerateAIFeedback = async (learnerId) => {
+    try {
+      setGeneratingAI(prev => ({ ...prev, [learnerId]: true }));
+      const response = await aiAPI.generateFeedback(learnerId, selectedTerm, academicYear);
+
+      if (response.success && response.data) {
+        // AI returns a single block of feedback. Let's put it in Strengths and maybe clear Areas for Improvement or split it.
+        // For now, let's just populate the recommendations or strengths.
+        setAssessments(prev => ({
+          ...prev,
+          [learnerId]: {
+            ...prev[learnerId],
+            recommendations: response.data
+          }
+        }));
+        showSuccess('AI feedback generated based on learner history!');
+      }
+    } catch (error) {
+      console.error('AI Generation Error:', error);
+      showError(error.message || 'Failed to generate AI feedback. Check if AI_API_KEY is set.');
+    } finally {
+      setGeneratingAI(prev => ({ ...prev, [learnerId]: false }));
     }
   };
 
@@ -732,9 +758,11 @@ const FormativeAssessment = ({ learners }) => {
                         {assessment?.detailedRating && (
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-200/50 animate-in fade-in slide-in-from-top-2">
                             <div>
-                              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                                Strengths
-                              </label>
+                              <div className="flex items-center justify-between mb-2">
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                  Strengths
+                                </label>
+                              </div>
                               <textarea
                                 value={assessment.strengths || ''}
                                 onChange={(e) => handleFeedbackChange(learner.id, 'strengths', e.target.value)}
@@ -744,15 +772,29 @@ const FormativeAssessment = ({ learners }) => {
                               />
                             </div>
                             <div>
-                              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                                Areas for Improvement
-                              </label>
+                              <div className="flex items-center justify-between mb-2">
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                  Recommendations (AI Enhanced)
+                                </label>
+                                <button
+                                  onClick={() => handleGenerateAIFeedback(learner.id)}
+                                  disabled={generatingAI[learner.id]}
+                                  className="flex items-center gap-1.5 text-[10px] font-bold text-brand-purple hover:text-brand-purple/80 transition-all bg-purple-50 px-2 py-1 rounded border border-purple-200"
+                                >
+                                  {generatingAI[learner.id] ? (
+                                    <Loader2 size={12} className="animate-spin" />
+                                  ) : (
+                                    <Sparkles size={12} />
+                                  )}
+                                  AI Suggester
+                                </button>
+                              </div>
                               <textarea
-                                value={assessment.areasImprovement || ''}
-                                onChange={(e) => handleFeedbackChange(learner.id, 'areasImprovement', e.target.value)}
+                                value={assessment.recommendations || ''}
+                                onChange={(e) => handleFeedbackChange(learner.id, 'recommendations', e.target.value)}
                                 rows="2"
                                 className="w-full px-4 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-purple focus:border-transparent text-sm"
-                                placeholder="Areas to improve..."
+                                placeholder="Final recommendations..."
                               />
                             </div>
                           </div>

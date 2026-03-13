@@ -23,6 +23,7 @@ interface AssessmentReportData {
     totalMarks?: number;
     maxPossibleMarks?: number;
     subjects?: Record<string, string | { score: number, grade: string }>;
+    pathwayPrediction?: { predictedPathway: string, confidence: number };
     sentByUserId?: string;
 }
 
@@ -103,6 +104,8 @@ export class SmsService {
                 subjectsSummary = `\n\n${subArray.join('\n')}`;
             }
 
+            const pathwaySnippet = data.pathwayPrediction ? `\n\nAI Insight: ${data.pathwayPrediction.predictedPathway} (${data.pathwayPrediction.confidence}% confidence)` : '';
+
             // 3. Construct the message using config template
             const message = SMS_MESSAGES.assessmentReport({
                 schoolName,
@@ -114,7 +117,7 @@ export class SmsService {
                 averageScore: data.averageScore,
                 totalMarks: data.totalMarks,
                 maxPossibleMarks: data.maxPossibleMarks
-            }) + subjectsSummary;
+            }) + subjectsSummary + pathwaySnippet;
 
             console.log(`📱 SMS Service: Sending structured multiline SMS to ${formattedPhone}`);
             console.log(`📝 Message:\n${message}`);

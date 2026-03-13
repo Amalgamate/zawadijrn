@@ -4,6 +4,7 @@ import { AuthRequest } from '../middleware/auth.middleware';
 import { gradingService } from '../services/grading.service';
 import { auditService } from '../services/audit.service';
 import { AssessmentStatus, CurriculumType, Grade } from '@prisma/client';
+import { aiAssistantService } from '../services/ai-assistant.service';
 
 // ============================================
 // FORMATIVE ASSESSMENT CONTROLLERS
@@ -892,6 +893,7 @@ export const getTestResults = async (req: Request, res: Response) => {
   }
 };
 
+
 /**
  * Get Bulk Summative Results for a class/grade/stream
  * GET /api/assessments/summative/results/bulk?grade=...&stream=...&academicYear=...&term=...
@@ -965,11 +967,34 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
       };
     });
 
+    // 4. Fetch AI Pathway Predictions for candidates (Grade 7/8)
+    const isCandidateGrade = ['GRADE_7', 'GRADE_8'].includes(grade as string);
+    const predictions: Record<string, any> = {};
+
+    if (isCandidateGrade && learnerIds.length > 0) {
+      console.log(`[AI] Generating/fetching pathway predictions for ${learnerIds.length} learners...`);
+      // For performance in bulk view, we'll generate them in parallel but capped or pre-checked
+      // In a real production environment, queste would be background jobs or cached
+      await Promise.all(learnerIds.map(async (id) => {
+        try {
+          // We pass the term and year to make it specific
+          predictions[id] = await aiAssistantService.generatePathwayPrediction(
+            id,
+            normalizedTerm,
+            parseInt(academicYear as string)
+          );
+        } catch (e) {
+          console.warn(`Failed to predict pathway for learner ${id}:`, e);
+        }
+      }));
+    }
+
     res.json({
       success: true,
       data: results,
       count: results.length,
-      communications
+      communications,
+      predictions // Include predictions in the response
     });
 
   } catch (error: any) {

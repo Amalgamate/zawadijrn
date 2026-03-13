@@ -191,13 +191,14 @@ class WhatsAppService {
     totalMarks?: number;
     maxPossibleMarks?: number;
     subjects?: Record<string, string | { score: number, grade: string }>;
+    pathwayPrediction?: { predictedPathway: string, confidence: number };
     schoolName?: string;
   }): Promise<{
     success: boolean;
     message: string;
     error?: string;
   }> {
-    const { parentPhone, parentName, learnerName, learnerGrade, term, averageScore, overallGrade, subjects } = data;
+    const { parentPhone, parentName, learnerName, learnerGrade, term, averageScore, overallGrade, subjects, pathwayPrediction } = data;
 
     const greeting = parentName ? `Dear *${parentName.trim()}*,` : 'Dear *Parent*,';
     const schoolNameHeader = data.schoolName ? `*${data.schoolName.toUpperCase()}*` : '*SCHOOL REPORT*';
@@ -244,12 +245,15 @@ class WhatsAppService {
       subjectsSummary = `\n\`\`\`\n${tableHeader}\n${separator}\n${subRows.join('\n')}\n${separator}\n${avgRow}\n\`\`\``;
     }
 
+    const pathwaySnippet = pathwayPrediction ? `\n*AI Pathway Insight:* ${pathwayPrediction.predictedPathway} (${pathwayPrediction.confidence}% confidence)\n` : '';
+
     const message = `${schoolNameHeader}\n` +
       `Official Assessment Report\n\n` +
       `${greeting}\n` +
       `Here is the assessment summary for\n` +
       `*${learnerName}* for *${term}*:\n` +
-      `${subjectsSummary}\n\n` +
+      `${subjectsSummary}\n` +
+      `${pathwaySnippet}\n` +
       `*Total Marks:* ${data.totalMarks || 'N/A'} / ${data.maxPossibleMarks || 'N/A'}\n` +
       `*Overall Status:* ${overallGrade?.replace(/\d+/g, '') || 'N/A'}\n\n` +
       `_Generated on ${new Date().toLocaleDateString()}_`;

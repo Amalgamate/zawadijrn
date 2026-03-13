@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
-  Save, Search, Loader, ArrowLeft, Printer, UploadCloud, Database, ChevronRight, FileSpreadsheet, Download, PlayCircle
+  Save, Search, Loader, ArrowLeft, Printer, UploadCloud, Database, ChevronRight, FileSpreadsheet, Download, PlayCircle, Sparkles, Loader2
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import VirtualizedTable from '../shared/VirtualizedTable';
-import { assessmentAPI, gradingAPI, classAPI, configAPI, learnerAPI } from '../../../services/api';
+import { assessmentAPI, gradingAPI, classAPI, configAPI, learnerAPI, aiAPI } from '../../../services/api';
 import { useNotifications } from '../hooks/useNotifications';
 import EmptyState from '../shared/EmptyState';
 import { useAuth } from '../../../hooks/useAuth';
@@ -100,6 +100,30 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
       setMarks({});
     }
   }, [stagedGrade, stagedStream, stagedTerm, stagedAcademicYear, stagedLearningArea, stagedTestId, selectedTestId, setup]);
+
+  const [generatingAI, setGeneratingAI] = useState({});
+
+  const handleGenerateAIComment = async (learnerId) => {
+    try {
+      setGeneratingAI(prev => ({ ...prev, [learnerId]: true }));
+      const response = await aiAPI.generateFeedback(learnerId, setup.selectedTerm, setup.selectedAcademicYear);
+
+      if (response.success && response.data) {
+        setMarks(prev => ({
+          ...prev,
+          [learnerId]: {
+            ...(prev[learnerId] || { mark: '' }),
+            comment: response.data
+          }
+        }));
+        showSuccess('AI comment generated successfully!');
+      }
+    } catch (error) {
+      showError(error.message || 'Failed to generate AI comment');
+    } finally {
+      setGeneratingAI(prev => ({ ...prev, [learnerId]: false }));
+    }
+  };
 
   // User Context
   const { user } = useAuth();
@@ -376,7 +400,7 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
   const assessmentProgress = useMemo(() => {
     const totalLearners = fetchedLearners.length;
     const assessedCount = Object.keys(marks).filter(learnerId => {
-      const mark = marks[learnerId];
+      const mark = marks[learnerId]?.mark;
       return mark !== null && mark !== undefined && mark !== '';
     }).length;
 
@@ -388,7 +412,7 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
 
   // Calculate Statistics for PDF
   const statistics = useMemo(() => {
-    const validMarks = Object.values(marks).filter(m => m !== null && m !== undefined && m !== '');
+    const validMarks = Object.values(marks).map(m => m?.mark).filter(m => m !== null && m !== undefined && m !== '');
     const numericMarks = validMarks.map(m => parseFloat(m));
 
     if (numericMarks.length === 0) {
@@ -501,7 +525,10 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
           const existingMarks = {};
           results.forEach(r => {
             if (r.learnerId) {
-              existingMarks[r.learnerId] = r.marksObtained;
+              existingMarks[r.learnerId] = {
+                mark: r.marksObtained,
+                comment: r.teacherComment || ''
+              };
             }
           });
           setMarks(existingMarks);
@@ -606,20 +633,35 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
   const handleMarkChange = (learnerId, value) => {
     const numValue = parseFloat(value);
     if (value === '') {
-      setMarks(prev => {
-        const newMarks = { ...prev };
-        delete newMarks[learnerId];
-        return newMarks;
-      });
+      setMarks(prev => ({
+        ...prev,
+        [learnerId]: {
+          ...(prev[learnerId] || {}),
+          mark: ''
+        }
+      }));
       return;
     }
 
     if (!isNaN(numValue)) {
       setMarks(prev => ({
         ...prev,
-        [learnerId]: Math.min(Math.max(0, numValue), selectedTest?.totalMarks || 100)
+        [learnerId]: {
+          ...(prev[learnerId] || {}),
+          mark: Math.min(Math.max(0, numValue), selectedTest?.totalMarks || 100)
+        }
       }));
     }
+  };
+
+  const handleCommentChange = (learnerId, value) => {
+    setMarks(prev => ({
+      ...prev,
+      [learnerId]: {
+        ...(prev[learnerId] || { mark: '' }),
+        comment: value
+      }
+    }));
   };
 
   const getDescriptionForGrade = (mark, total, learnerName) => {
@@ -717,7 +759,8 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
     const exportData = filteredLearners.map(l => ({
       'Admission Number': l.admissionNumber,
       'Student Name': `${l.firstName} ${l.lastName}`,
-      'Mark': marks[l.id] || ''
+      'Mark': marks[l.id]?.mark || '',
+      'Teacher Comment': marks[l.id]?.comment || ''
     }));
 
     const ws = XLSX.utils.json_to_sheet(exportData);
@@ -776,11 +819,14 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
       }
 
       // Prepare bulk payload
-      const resultsToSave = Object.entries(currentMarksToSave).map(([learnerId, mark]) => {
+      const resultsToSave = Object.entries(currentMarksToSave).map(([learnerId, markData]) => {
+        const mark = markData.mark;
         // Find existing result to preserve remarks if not new mark
         const existingResult = existingResults.find(r => r.learnerId === learnerId);
         let remarks = existingResult?.remarks || '-'; // Use existing remarks if available
-        let teacherComment = existingResult?.teacherComment || `Score: ${mark}/${selectedTest?.totalMarks}`;
+        // Remove the automatic fallback that saves "Score: X/Y" as a comment.
+        // This prevents desynchronized score data in the comment field.
+        let teacherComment = markData.comment || existingResult?.teacherComment || '';
 
         if (selectedTest?.totalMarks && mark !== null && mark !== undefined && mark !== '') {
           const percentage = (mark / selectedTest.totalMarks) * 100;
@@ -811,7 +857,10 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
       const updatedMarks = {};
       updatedResults.forEach(r => {
         if (r.learnerId) {
-          updatedMarks[r.learnerId] = r.marksObtained;
+          updatedMarks[r.learnerId] = {
+            mark: r.marksObtained,
+            comment: r.teacherComment || ''
+          };
         }
       });
       setMarks(updatedMarks);
@@ -1169,11 +1218,11 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
                             </td>
                             <td className="px-2 py-1.5 text-center border-r border-gray-200">
                               <span className="inline-block font-bold text-sm text-gray-900">
-                                {score ?? '-'}
+                                {score?.mark ?? '-'}
                               </span>
                             </td>
                             <td className="px-2 py-1.5 text-[10px] text-[#475569] italic leading-snug">
-                              {getDescriptionForGrade(marks[learner.id], selectedTest?.totalMarks, learner.firstName)}
+                              {getDescriptionForGrade(marks[learner.id]?.mark, selectedTest?.totalMarks, learner.firstName)}
                             </td>
                           </tr>
                         );
@@ -1246,7 +1295,8 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
                     <th className="px-3 py-2 text-[9px] font-bold uppercase tracking-wide text-center w-32 border-r border-brand-purple/20">Adm No</th>
                     <th className="px-3 py-2 text-[9px] font-bold uppercase tracking-wide border-r border-brand-purple/20 w-1/3">Student Name</th>
                     <th className="px-3 py-2 text-[9px] font-bold uppercase tracking-wide text-center w-20 border-r border-brand-purple/20">Score</th>
-                    <th className="px-3 py-2 text-[9px] font-bold uppercase tracking-wide">Performance Descriptor</th>
+                    <th className="px-3 py-2 text-[9px] font-bold uppercase tracking-wide border-r border-brand-purple/20 w-1/4">Comments ✨</th>
+                    <th className="px-3 py-2 text-[9px] font-bold uppercase tracking-wide">Descriptor</th>
                   </tr>
                 }
                 renderRow={(learner, index) => {
@@ -1263,14 +1313,33 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
                           type="number"
                           min="0"
                           max={selectedTest?.totalMarks}
-                          value={marks[learner.id] ?? ''}
+                          value={marks[learner.id]?.mark ?? ''}
                           onChange={(e) => handleMarkChange(learner.id, e.target.value)}
                           className="w-full px-2 py-1 border border-gray-300 bg-white rounded focus:ring-2 focus:ring-brand-purple outline-none transition text-center font-semibold text-xs"
                           placeholder="-"
                         />
                       </td>
+                      <td className="px-3 py-1.5 border-r border-gray-200">
+                        <div className="flex items-center gap-2">
+                          <textarea
+                            value={marks[learner.id]?.comment ?? ''}
+                            onChange={(e) => handleCommentChange(learner.id, e.target.value)}
+                            className="flex-1 px-2 py-1 border border-gray-300 bg-white rounded focus:ring-2 focus:ring-brand-purple outline-none transition text-xs"
+                            rows="1"
+                            placeholder="Add narrative feedback..."
+                          />
+                          <button
+                            onClick={() => handleGenerateAIComment(learner.id)}
+                            disabled={generatingAI[learner.id]}
+                            className="p-1 text-brand-purple hover:bg-purple-100 rounded transition"
+                            title="AI Suggester"
+                          >
+                            {generatingAI[learner.id] ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                          </button>
+                        </div>
+                      </td>
                       <td className="px-3 py-1.5 text-[10px] text-[#475569] italic leading-snug">
-                        {getDescriptionForGrade(marks[learner.id], selectedTest?.totalMarks, learner.firstName)}
+                        {getDescriptionForGrade(marks[learner.id]?.mark, selectedTest?.totalMarks, learner.firstName)}
                       </td>
                     </tr>
                   );
@@ -1284,8 +1353,13 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
             show={showBulkImportModal}
             onClose={() => setShowBulkImportModal(false)}
             onImport={(importedMarks) => {
-              setMarks(prevMarks => ({ ...prevMarks, ...importedMarks }));
-              handleSave(importedMarks);
+              // Wrap simple values into the expected object structure
+              const formattedMarks = {};
+              Object.entries(importedMarks).forEach(([id, val]) => {
+                formattedMarks[id] = { mark: val, comment: '' };
+              });
+              setMarks(prevMarks => ({ ...prevMarks, ...formattedMarks }));
+              handleSave(formattedMarks);
               setShowBulkImportModal(false);
             }}
             learners={fetchedLearners}
