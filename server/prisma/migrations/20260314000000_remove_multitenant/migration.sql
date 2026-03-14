@@ -117,27 +117,32 @@ ALTER TABLE "fixed_assets" DROP COLUMN IF EXISTS "schoolId";
 -- Drop Branches Table
 DROP TABLE IF EXISTS "branches";
 
--- Rebuild Unique Constraints (without schoolId)
 -- Example: core_competencies
 ALTER TABLE "core_competencies" DROP CONSTRAINT IF EXISTS "core_competencies_learnerId_term_academicYear_schoolId_key";
+ALTER TABLE "core_competencies" DROP CONSTRAINT IF EXISTS "core_competencies_learnerId_term_academicYear_key";
 ALTER TABLE "core_competencies" ADD CONSTRAINT "core_competencies_learnerId_term_academicYear_key" UNIQUE ("learnerId", "term", "academicYear");
 
 -- Example: values_assessments
 ALTER TABLE "values_assessments" DROP CONSTRAINT IF EXISTS "values_assessments_learnerId_term_academicYear_schoolId_key";
+ALTER TABLE "values_assessments" DROP CONSTRAINT IF EXISTS "values_assessments_learnerId_term_academicYear_key";
 ALTER TABLE "values_assessments" ADD CONSTRAINT "values_assessments_learnerId_term_academicYear_key" UNIQUE ("learnerId", "term", "academicYear");
 
 -- Example: termly_report_comments
 ALTER TABLE "termly_report_comments" DROP CONSTRAINT IF EXISTS "termly_report_comments_learnerId_term_academicYear_schoolId_key";
+ALTER TABLE "termly_report_comments" DROP CONSTRAINT IF EXISTS "termly_report_comments_learnerId_term_academicYear_key";
 ALTER TABLE "termly_report_comments" ADD CONSTRAINT "termly_report_comments_learnerId_term_academicYear_key" UNIQUE ("learnerId", "term", "academicYear");
 
 -- Example: formative_assessments
 ALTER TABLE "formative_assessments" DROP CONSTRAINT IF EXISTS "formative_assessments_learnerId_term_academicYear_learni_key";
+ALTER TABLE "formative_assessments" DROP CONSTRAINT IF EXISTS "formative_assessments_learnerId_term_academicYear_learningArea_type_title_key";
 ALTER TABLE "formative_assessments" ADD CONSTRAINT "formative_assessments_learnerId_term_academicYear_learningArea_type_title_key" UNIQUE ("learnerId", "term", "academicYear", "learningArea", "type", "title");
 
 -- Example: classes
 ALTER TABLE "classes" DROP CONSTRAINT IF EXISTS "classes_grade_stream_academicYear_term_schoolId_key";
+ALTER TABLE "classes" DROP CONSTRAINT IF EXISTS "classes_grade_stream_academicYear_term_key";
 ALTER TABLE "classes" ADD CONSTRAINT "classes_grade_stream_academicYear_term_key" UNIQUE ("grade", "stream", "academicYear", "term");
 
 -- Example: summative_results
 ALTER TABLE "summative_results" DROP CONSTRAINT IF EXISTS "summative_results_testId_learnerId_schoolId_key";
+ALTER TABLE "summative_results" DROP CONSTRAINT IF EXISTS "summative_results_testId_learnerId_key";
 ALTER TABLE "summative_results" ADD CONSTRAINT "summative_results_testId_learnerId_key" UNIQUE ("testId", "learnerId");
