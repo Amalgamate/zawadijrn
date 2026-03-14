@@ -5,6 +5,7 @@ import Auth from './pages/Auth';
 import CBCGradingSystem from './components/CBCGrading/CBCGradingSystem';
 import SplashScreen from './components/mobile/SplashScreen';
 import { SchoolDataProvider } from './contexts/SchoolDataContext';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import api from './services/api';
 import axiosInstance from './services/axiosConfig';
 
@@ -161,6 +162,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AppContent />
+      <SpeedInsights />
     </BrowserRouter>
   );
 }

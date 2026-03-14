@@ -81,13 +81,7 @@ export async function provisionNewSchool(data: SchoolProvisioningData): Promise<
       }
     });
 
-    // Simple single branch
-    await tx.branch.create({
-      data: {
-        schoolId: school.id,
-        name: 'Main Campus'
-      }
-    });
+    // Branch model is removed in single-tenant mode
 
     const currentYear = new Date().getFullYear();
     const admissionSequence = await tx.admissionSequence.create({

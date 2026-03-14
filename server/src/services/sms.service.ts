@@ -36,7 +36,8 @@ export class SmsService {
      * Normalize phone number to 254 format
      */
     private static formatPhoneNumber(phone: string): string {
-        // Remove all non-digits
+        // Remove all non-digits except leading +
+        const hasPlus = phone.trim().startsWith('+');
         let p = phone.replace(/\D/g, '');
 
         // Handle standard Kenyan formats
@@ -44,14 +45,19 @@ export class SmsService {
             return '+254' + p.substring(1);
         }
 
-        // If it's already 254...
+        // Already 254...
         if (p.startsWith('254') && p.length === 12) {
             return '+' + p;
         }
 
-        // If it's just 9 digits (712345678), add 254
+        // 9-digit local number (e.g. 712345678) — assume Kenyan
         if (p.length === 9) {
             return '+254' + p;
+        }
+
+        // International number already had a + prefix — keep as-is
+        if (hasPlus) {
+            return '+' + p;
         }
 
         return '+' + p;
@@ -177,6 +183,50 @@ export class SmsService {
                 error: error.message
             };
         }
+    }
+
+    /**
+     * Send bulk SMS with batching
+     */
+    static async sendBulkSms(recipients: Array<{ phone: string, message: string }>): Promise<{
+        success: boolean;
+        results: Array<{ phone: string, success: boolean, messageId?: string, error?: string }>;
+        sent: number;
+        failed: number;
+    }> {
+        const results = [];
+        let sent = 0;
+        let failed = 0;
+
+        console.log(`📱 [SmsService] Starting bulk SMS send to ${recipients.length} recipients`);
+
+        for (const recipient of recipients) {
+            try {
+                const result = await this.sendSms(recipient.phone, recipient.message);
+                results.push({
+                    phone: recipient.phone,
+                    success: result.success,
+                    messageId: result.messageId,
+                    error: result.error
+                });
+                if (result.success) sent++;
+                else failed++;
+
+                // Small delay to prevent overwhelming the local rate limiter if any, 
+                // and to be kind to the provider API
+                await new Promise(resolve => setTimeout(resolve, 50));
+            } catch (err: any) {
+                results.push({ phone: recipient.phone, success: false, error: err.message });
+                failed++;
+            }
+        }
+
+        return {
+            success: sent > 0,
+            results,
+            sent,
+            failed
+        };
     }
 
     /**
@@ -407,13 +457,5 @@ export class SmsService {
     static clearConfigCache(): void {
         cachedConfig = null;
         console.log(`[SmsService] Cleared config cache`);
-    }
-
-    /**
-     * Clear all cached configurations
-     */
-    static clearAllConfigCache(): void {
-        cachedConfig = null;
-        console.log(`[SmsService] Cleared all config cache`);
     }
 }

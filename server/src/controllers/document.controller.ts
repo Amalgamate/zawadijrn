@@ -16,19 +16,14 @@ export class DocumentController {
     async uploadDocument(req: AuthRequest, res: Response) {
         try {
             const { category, name } = req.body;
-            const schoolId = (req as any).schoolContext?.schoolId;
-            const userId = req.user?.userId; // Fixed property name
-
-            if (!schoolId) {
-                throw new ApiError(403, 'School context required');
-            }
+            const userId = req.user?.userId;
 
             if (!req.file) {
                 throw new ApiError(400, 'No file uploaded');
             }
 
             // Determine folder based on category
-            const folder = `schools/${schoolId}/${category || 'general'}`;
+            const folder = `schools/global/${category || 'general'}`;
 
             // Upload to Cloudinary
             const uploadResult = await documentService.uploadFile(req.file, {
@@ -46,7 +41,6 @@ export class DocumentController {
                     type: uploadResult.format,
                     size: uploadResult.size,
                     category: category || 'general',
-                    schoolId,
                     uploadedById: userId
                 }
             });
@@ -78,18 +72,13 @@ export class DocumentController {
     async uploadMultipleDocuments(req: AuthRequest, res: Response) {
         try {
             const { category } = req.body;
-            const schoolId = (req as any).schoolContext?.schoolId;
             const userId = req.user?.userId;
-
-            if (!schoolId) {
-                throw new ApiError(403, 'School context required');
-            }
 
             if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
                 throw new ApiError(400, 'No files uploaded');
             }
 
-            const folder = `schools/${schoolId}/${category || 'general'}`;
+            const folder = `schools/global/${category || 'general'}`;
 
             // Upload all files to Cloudinary
             const uploadResults = await documentService.uploadMultipleFiles(req.files, {
@@ -109,7 +98,6 @@ export class DocumentController {
                             type: result.format,
                             size: result.size,
                             category: category || 'general',
-                            schoolId,
                             uploadedById: userId
                         }
                     })
@@ -142,16 +130,11 @@ export class DocumentController {
      */
     async getDocuments(req: AuthRequest, res: Response) {
         try {
-            const schoolId = (req as any).schoolContext?.schoolId;
             const { category, search, page = 1, limit = 20 } = req.query;
-
-            if (!schoolId) {
-                throw new ApiError(403, 'School context required');
-            }
 
             const skip = (Number(page) - 1) * Number(limit);
 
-            const where: any = { schoolId };
+            const where: any = {};
 
             if (category) {
                 where.category = category;
@@ -216,16 +199,10 @@ export class DocumentController {
     async getDocument(req: AuthRequest, res: Response) {
         try {
             const { id } = req.params;
-            const schoolId = (req as any).schoolContext?.schoolId;
-
-            if (!schoolId) {
-                throw new ApiError(403, 'School context required');
-            }
 
             const document = await prisma.document.findFirst({
                 where: {
-                    id,
-                    schoolId
+                    id
                 },
                 include: {
                     uploadedBy: {
@@ -269,16 +246,10 @@ export class DocumentController {
     async deleteDocument(req: AuthRequest, res: Response) {
         try {
             const { id } = req.params;
-            const schoolId = (req as any).schoolContext?.schoolId;
-
-            if (!schoolId) {
-                throw new ApiError(403, 'School context required');
-            }
 
             const document = await prisma.document.findFirst({
                 where: {
-                    id,
-                    schoolId
+                    id
                 }
             });
 
@@ -323,16 +294,10 @@ export class DocumentController {
         try {
             const { id } = req.params;
             const { name, category } = req.body;
-            const schoolId = (req as any).schoolContext?.schoolId;
-
-            if (!schoolId) {
-                throw new ApiError(403, 'School context required');
-            }
 
             const document = await prisma.document.findFirst({
                 where: {
-                    id,
-                    schoolId
+                    id
                 }
             });
 
@@ -374,14 +339,9 @@ export class DocumentController {
      */
     async getCategories(req: AuthRequest, res: Response) {
         try {
-            const schoolId = (req as any).schoolContext?.schoolId;
-
-            if (!schoolId) {
-                throw new ApiError(403, 'School context required');
-            }
 
             const categories = await prisma.document.findMany({
-                where: { schoolId },
+                where: { },
                 select: { category: true },
                 distinct: ['category']
             });

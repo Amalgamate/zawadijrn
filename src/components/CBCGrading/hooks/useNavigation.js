@@ -94,6 +94,18 @@ export const allNavSections = [
                 ]
             },
             {
+                id: 'group-holistic',
+                label: 'CBC Holistic',
+                type: 'group',
+                icon: BookOpen,
+                items: [
+                    { id: 'assess-core-competencies', label: 'Core Competencies', path: 'assess-core-competencies', permission: 'ACCESS_ASSESSMENT_MODULE' },
+                    { id: 'assess-values', label: 'National Values', path: 'assess-values', permission: 'ACCESS_ASSESSMENT_MODULE' },
+                    { id: 'assess-cocurricular', label: 'Co-Curricular', path: 'assess-cocurricular', permission: 'ACCESS_ASSESSMENT_MODULE' },
+                    { id: 'assess-termly-report', label: 'Termly Report', path: 'assess-termly-report', permission: 'ACCESS_ASSESSMENT_MODULE' },
+                ]
+            },
+            {
                 id: 'group-general',
                 label: 'Configuration',
                 type: 'group',

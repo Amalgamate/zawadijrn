@@ -9,18 +9,11 @@ import { ApiError } from '../utils/error.util';
 import { COMMUNICATION_CONFIG, ERROR_MESSAGES, SMS_MESSAGES } from '../config/communication.messages';
 
 /**
- * Get Communication Configuration for a School
- * GET /api/communication/config/:schoolId
+ * Get Communication Configuration
+ * GET /api/communication/config
  */
 export const getCommunicationConfig = async (req: AuthRequest, res: Response) => {
     try {
-        // Get schoolId from URL params or school context
-        const { schoolId } = req.params;
-
-        if (!schoolId) {
-            throw new ApiError(400, 'School ID is required');
-        }
-
         const config = await prisma.communicationConfig.findFirst();
 
         if (!config) {
@@ -107,12 +100,6 @@ export const getCommunicationConfig = async (req: AuthRequest, res: Response) =>
 export const saveCommunicationConfig = async (req: AuthRequest, res: Response) => {
     try {
         const { sms, email, mpesa, birthdays } = req.body;
-        // Get schoolId from school context (set by middleware) or fallback to body
-        const schoolId = (req as any).schoolContext?.schoolId || req.body.schoolId;
-
-        if (!schoolId) {
-            throw new ApiError(403, 'School context required');
-        }
 
         // Prepare data for upsert
         const data: any = {};
@@ -214,7 +201,7 @@ export const saveCommunicationConfig = async (req: AuthRequest, res: Response) =
         // Clear SMS config cache so changes take effect immediately
         const { SmsService } = await import('../services/sms.service');
         (SmsService as any).clearConfigCache();
-        console.log(`✅ Communication config saved and cache cleared for school: ${schoolId}`);
+        console.log(`✅ Communication config saved and cache cleared`);
 
         res.status(200).json({
             success: true,
@@ -237,18 +224,7 @@ export const saveCommunicationConfig = async (req: AuthRequest, res: Response) =
  */
 export const sendTestSms = async (req: AuthRequest, res: Response) => {
     try {
-        const { phoneNumber, message, schoolId: bodySchoolId } = req.body;
-
-        // Get schoolId from school middleware (preferred) or request body (fallback)
-        let schoolId = (req as any).schoolContext?.schoolId || bodySchoolId;
-
-        if (!schoolId) {
-            console.error('❌ School ID not found in school context or request body');
-            return res.status(400).json({
-                success: false,
-                error: 'School context required. Please ensure you are authenticated.'
-            });
-        }
+        const { phoneNumber, message } = req.body;
 
         if (!phoneNumber || !message) {
             return res.status(400).json({
@@ -257,11 +233,7 @@ export const sendTestSms = async (req: AuthRequest, res: Response) => {
             });
         }
 
-        console.log('📞 Test SMS Request:', {
-            schoolId,
-            phoneNumber,
-            messageLength: message.length
-        });
+        console.log('📞 Test SMS Request:', { phoneNumber, messageLength: message.length });
 
         // Send SMS
         const result = await SmsService.sendSms(phoneNumber, message);
@@ -298,16 +270,7 @@ export const sendTestSms = async (req: AuthRequest, res: Response) => {
  */
 export const sendTestEmail = async (req: AuthRequest, res: Response) => {
     try {
-        const { email, template = 'welcome', schoolId: bodySchoolId } = req.body;
-        let schoolId = (req as any).schoolContext?.schoolId || bodySchoolId;
-
-        if (!schoolId) {
-            console.error('❌ School ID not found in school context or request body');
-            return res.status(400).json({
-                success: false,
-                error: 'School context required. Please ensure you are authenticated.'
-            });
-        }
+        const { email, template = 'welcome' } = req.body;
 
         if (!email) {
             return res.status(400).json({
@@ -316,22 +279,15 @@ export const sendTestEmail = async (req: AuthRequest, res: Response) => {
             });
         }
 
-        console.log('📧 Test Email Request:', {
-            schoolId,
-            email,
-            template
-        });
+        console.log('📧 Test Email Request:', { email, template });
 
-        // Fetch School Name for context
-        const school = await prisma.school.findUnique({
-            where: { id: schoolId },
-            select: { name: true }
-        });
+        // Fetch School Name
+        const school = await prisma.school.findFirst({ select: { name: true } });
         const schoolName = school?.name || 'Your School';
         const adminName = req.user?.userId ? (await prisma.user.findUnique({ where: { id: req.user.userId } }))?.firstName || 'Admin' : 'Admin';
 
-        const frontendUrl = process.env.FRONTEND_URL || 'https://zawadi-sms.up.railway.app';
-        const loginUrl = `${frontendUrl}/t/${schoolId}/login`;
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const loginUrl = `${frontendUrl}/login`;
 
         // Send Email based on template selection
         if (template === 'onboarding') {
@@ -368,25 +324,15 @@ export const sendTestEmail = async (req: AuthRequest, res: Response) => {
 
 /**
  * Get Learners with Birthdays Today
- * GET /api/communication/birthdays/today/:schoolId
+ * GET /api/communication/birthdays/today
  */
 export const getBirthdaysToday = async (req: AuthRequest, res: Response) => {
     try {
-        const schoolId = (req as any).schoolContext?.schoolId;
-
-        if (!schoolId) {
-            throw new ApiError(403, 'School context required');
-        }
-
-        // Get current date MM-DD
         const now = new Date();
         const monthDay = `${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
 
-        // Fetch all learners for the school
-        // Note: Prisma doesn't have a direct "month-day" comparison for DateTime easily without raw query
-        // so we fetch and filter or use a raw query. For reliability across diff DBs, filtering is safer if count is manageable.
         const learners = await prisma.learner.findMany({
-            where: { schoolId, status: 'ACTIVE' },
+            where: { status: 'ACTIVE' },
             select: {
                 id: true,
                 firstName: true,
@@ -426,26 +372,16 @@ export const getBirthdaysToday = async (req: AuthRequest, res: Response) => {
 export const sendBirthdayWishes = async (req: AuthRequest, res: Response) => {
     try {
         const { learnerIds, template, channel = 'sms' } = req.body;
-        const schoolId = (req as any).schoolContext?.schoolId;
 
-        if (!schoolId || !learnerIds || !Array.isArray(learnerIds)) {
-            throw new ApiError(400, 'learnerIds array is required in a valid school context');
+        if (!learnerIds || !Array.isArray(learnerIds)) {
+            throw new ApiError(400, 'learnerIds array is required');
         }
 
-        // Fetch school name for template
-        const school = await prisma.school.findUnique({
-            where: { id: schoolId },
-            select: { name: true }
-        });
-
+        const school = await prisma.school.findFirst({ select: { name: true } });
         const schoolName = school?.name || 'Your School';
 
-        // Fetch learners
         const learners = await prisma.learner.findMany({
-            where: {
-                id: { in: learnerIds },
-                schoolId
-            }
+            where: { id: { in: learnerIds } }
         });
 
         const results = [];
@@ -517,7 +453,6 @@ export const sendBirthdayWishes = async (req: AuthRequest, res: Response) => {
                     result = await whatsappService.sendMessage({
                         to: phoneNumber,
                         message: finalMessage,
-                        schoolId
                     } as any);
                 } else {
                     // Use standard SMS birthday message
@@ -569,18 +504,8 @@ export const sendBirthdayWishes = async (req: AuthRequest, res: Response) => {
 export const getBroadcastRecipients = async (req: AuthRequest, res: Response) => {
     try {
         const { grade } = req.query;
-        // Check req.user.schoolId first (standard), fallback to school context if available
-        const schoolId = req.user?.schoolId || (req as any).schoolContext?.schoolId;
 
-        if (!schoolId) {
-            console.error('getBroadcastRecipients: No schoolId found in request context', { user: req.user, schoolContext: (req as any).schoolContext });
-            throw new ApiError(403, 'School context required');
-        }
-
-        let whereClause: any = {
-            schoolId,
-            status: 'ACTIVE'
-        };
+        let whereClause: any = { status: 'ACTIVE' };
 
         // Handle Grade Filtering
         if (grade && grade !== 'All Grades') {
@@ -636,12 +561,9 @@ export const getBroadcastRecipients = async (req: AuthRequest, res: Response) =>
             }
         });
 
-        // Fallback: If 0 results and we had a specific grade, maybe the normalization failed or wasn't needed.
-        // Let's try fetching ALL active students and filtering in JS if the specific query returned nothing but a grade was requested.
-        // This makes it robust against Enum mismatches.
         if (learners.length === 0 && grade && grade !== 'All Grades') {
             const allLearners = await prisma.learner.findMany({
-                where: { schoolId, status: 'ACTIVE' },
+                where: { status: 'ACTIVE' },
                 select: {
                     id: true,
                     firstName: true,
@@ -753,16 +675,8 @@ export const getBroadcastRecipients = async (req: AuthRequest, res: Response) =>
  */
 export const getStaffContacts = async (req: AuthRequest, res: Response) => {
     try {
-        const schoolId = req.user?.schoolId || (req as any).schoolContext?.schoolId;
-
-        if (!schoolId) {
-            throw new ApiError(403, 'School context required');
-        }
-
-        // Fetch all staff/teachers with phone numbers
         const staff = await prisma.user.findMany({
             where: {
-                schoolId,
                 status: 'ACTIVE',
                 phone: { not: null },
                 role: {
@@ -808,12 +722,9 @@ export const getStaffContacts = async (req: AuthRequest, res: Response) => {
 export const createContactGroup = async (req: AuthRequest, res: Response) => {
     try {
         const { name, description, recipients } = req.body;
-        const schoolId = req.user?.schoolId || (req as any).schoolContext?.schoolId;
         const createdById = req.user?.userId;
 
-        if (!schoolId || !createdById) {
-            throw new ApiError(403, 'School context and user authentication required');
-        }
+        if (!createdById) throw new ApiError(401, 'Authentication required');
 
         if (!name || !recipients || !Array.isArray(recipients)) {
             throw new ApiError(400, 'Name and recipients array are required');
@@ -823,9 +734,8 @@ export const createContactGroup = async (req: AuthRequest, res: Response) => {
             data: {
                 name,
                 description: description || null,
-                schoolId,
                 createdById,
-                recipients: recipients // JSON array
+                recipients
             }
         });
 
@@ -847,14 +757,8 @@ export const createContactGroup = async (req: AuthRequest, res: Response) => {
  */
 export const getContactGroups = async (req: AuthRequest, res: Response) => {
     try {
-        const schoolId = req.user?.schoolId || (req as any).schoolContext?.schoolId;
-
-        if (!schoolId) {
-            throw new ApiError(403, 'School context required');
-        }
-
         const groups = await prisma.contactGroup.findMany({
-            where: { schoolId },
+            where: {},
             include: {
                 createdBy: {
                     select: {
@@ -892,13 +796,8 @@ export const getContactGroups = async (req: AuthRequest, res: Response) => {
 export const getContactGroupById = async (req: AuthRequest, res: Response) => {
     try {
         const { id } = req.params;
-        const schoolId = req.user?.schoolId || (req as any).schoolContext?.schoolId;
 
-        if (!schoolId) {
-            throw new ApiError(403, 'School context required');
-        }
-
-        // Fallback for older frontend that might send a Grade string instead of a UUID
+        // Fallback for older frontend that might send a Grade string
         if (id.startsWith('GRADE_') || id.startsWith('PP') || id === 'PLAYGROUP') {
             console.log(`[CommunicationController] Legacy frontend requested grade recipients via getContactGroupById: ${id}`);
 
@@ -908,9 +807,8 @@ export const getContactGroupById = async (req: AuthRequest, res: Response) => {
                 targetGrade = targetGrade.toUpperCase().replace(' ', '_');
             }
 
-            // Fetch learners for this grade
             const learners = await prisma.learner.findMany({
-                where: { schoolId, grade: targetGrade as any, status: 'ACTIVE' },
+                where: { grade: targetGrade as any, status: 'ACTIVE' },
                 select: {
                     id: true,
                     firstName: true,
@@ -956,10 +854,7 @@ export const getContactGroupById = async (req: AuthRequest, res: Response) => {
         }
 
         const group = await prisma.contactGroup.findFirst({
-            where: {
-                id,
-                schoolId // Ensure user can only access groups from their school
-            },
+            where: { id },
             include: {
                 createdBy: {
                     select: {
@@ -995,15 +890,9 @@ export const updateContactGroup = async (req: AuthRequest, res: Response) => {
     try {
         const { id } = req.params;
         const { name, description, recipients } = req.body;
-        const schoolId = req.user?.schoolId || (req as any).schoolContext?.schoolId;
 
-        if (!schoolId) {
-            throw new ApiError(403, 'School context required');
-        }
-
-        // Verify group exists and belongs to school
         const existing = await prisma.contactGroup.findFirst({
-            where: { id, schoolId }
+            where: { id }
         });
 
         if (!existing) {
@@ -1040,15 +929,9 @@ export const updateContactGroup = async (req: AuthRequest, res: Response) => {
 export const deleteContactGroup = async (req: AuthRequest, res: Response) => {
     try {
         const { id } = req.params;
-        const schoolId = req.user?.schoolId || (req as any).schoolContext?.schoolId;
 
-        if (!schoolId) {
-            throw new ApiError(403, 'School context required');
-        }
-
-        // Verify group exists and belongs to school
         const existing = await prisma.contactGroup.findFirst({
-            where: { id, schoolId }
+            where: { id }
         });
 
         if (!existing) {

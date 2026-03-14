@@ -57,8 +57,6 @@ const FormativeAssessment = ({ learners }) => {
   const searchLearnerId = selection.selectedLearnerId;
   const setSearchLearnerId = selection.selectLearner;
 
-  // Fetch Grades from DB
-  // Grades are now managed by setup hook (but we might need to filter them)
   const filteredGrades = React.useMemo(() => {
     if (!teacherWorkload.isTeacher) return grades;
     return grades.filter(g => teacherWorkload.assignedGrades.includes(g.value));
@@ -71,24 +69,44 @@ const FormativeAssessment = ({ learners }) => {
     const assignedSubjects = teacherWorkload.getAssignedSubjectsForGrade(selectedGrade);
     if (!assignedSubjects) return areas;
 
+    // Robust normalization for cross-matching (handles: case, spaces, special chars like '&' vs 'and')
+    const normalize = (val) => String(val || '')
+      .toLowerCase()
+      .replace(/&/g, 'and')
+      .replace(/\s+/g, '')
+      .trim();
+
     return areas.filter(area =>
-      assignedSubjects.some(as => as.toLowerCase().trim() === area.toLowerCase().trim())
+      assignedSubjects.some(as => normalize(as) === normalize(area))
     );
   }, [learningAreas.flatLearningAreas, teacherWorkload.isTeacher, selectedGrade, teacherWorkload]);
 
-  // Alert teacher if they have no assignments
+  // Reset selected area when grade changes or current selection is no longer valid
+  React.useEffect(() => {
+    if (selectedGrade && filteredLearningAreasByWorkload.length > 0) {
+      // If current selectedArea is not in the new list, clear it or pick first
+      const isValid = filteredLearningAreasByWorkload.includes(selectedArea);
+      if (!isValid) {
+        setSelectedArea('');
+        learningAreas.setSelectedLearningArea('');
+      }
+    } else if (!selectedGrade) {
+      setSelectedArea('');
+      learningAreas.setSelectedLearningArea('');
+    }
+  }, [selectedGrade, filteredLearningAreasByWorkload]);
+
   React.useEffect(() => {
     if (!teacherWorkload.loading && teacherWorkload.isTeacher && !teacherWorkload.hasAnyAssignments) {
       showError('You are not currently assigned to any classes or subjects. Please consult with the Head Teacher.');
     }
   }, [teacherWorkload.loading, teacherWorkload.isTeacher, teacherWorkload.hasAnyAssignments, showError]);
 
-  // NEW: Fetch existing assessments when entering 'assess' mode
+  // Fetch existing assessments when entering 'assess' mode
   React.useEffect(() => {
     if (viewMode === 'assess' && selectedGrade && selectedTerm && selectedArea && strand) {
       const fetchData = async () => {
         try {
-          // console.log('Fetching/Syncing assessments for:', { selectedGrade, selectedTerm, selectedArea, strand });
           const response = await api.assessments.getFormativeAssessments({
             grade: selectedGrade,
             term: selectedTerm,
@@ -103,30 +121,24 @@ const FormativeAssessment = ({ learners }) => {
 
             response.data.forEach(item => {
               if (item.learnerId) {
-                // Populate UI state
                 loadedAssessments[item.learnerId] = {
                   detailedRating: item.detailedRating,
                   points: item.points,
                   percentage: item.percentage,
                   strengths: item.strengths,
                   areasImprovement: item.areasImprovement,
-                  recommendations: item.recommendations
+                  recommendations: item.remarks
                 };
-                // Populate Saved state (for status checks)
                 loadedSaved[item.learnerId] = {
-                  ...item,
-                  status: item.status || 'SAVED'
+                  id: item.id,
+                  learnerId: item.learnerId,
+                  status: item.status || 'DRAFT'
                 };
               }
             });
 
             setAssessments(prev => ({ ...prev, ...loadedAssessments }));
             setSavedAssessments(prev => ({ ...prev, ...loadedSaved }));
-
-            // If we found data, show a subtle toast? Maybe not to avoid spam.
-            if (Object.keys(loadedAssessments).length > 0) {
-              // Optional: console.log(`Loaded ${Object.keys(loadedAssessments).length} existing records`);
-            }
           }
         } catch (err) {
           console.error('Failed to load existing assessments:', err);
@@ -136,8 +148,6 @@ const FormativeAssessment = ({ learners }) => {
       fetchData();
     }
   }, [viewMode, selectedGrade, selectedTerm, selectedArea, strand, academicYear]);
-
-  // Filter learners by selected grade
 
   // Filter learners by selected grade
   const classLearners = learners?.filter(l =>
@@ -152,26 +162,17 @@ const FormativeAssessment = ({ learners }) => {
   // Navigation Handlers
   const goToNextStep = () => {
     if (viewMode === 'setup') {
-      if (!assessmentTitle) {
-        showError('Please enter an Assessment Title');
-        return;
-      }
-      if (!strand) {
-        showError('Please enter a Strand to continue');
-        return;
-      }
+      if (!assessmentTitle) { showError('Please enter an Assessment Title'); return; }
+      if (!strand) { showError('Please enter a Strand to continue'); return; }
     }
-
     if (viewMode === 'setup') setViewMode('assess');
     else if (viewMode === 'assess') setViewMode('review');
-
     window.scrollTo(0, 0);
   };
 
   const goToPrevStep = () => {
     if (viewMode === 'assess') setViewMode('setup');
     else if (viewMode === 'review') setViewMode('assess');
-
     window.scrollTo(0, 0);
   };
 
@@ -207,10 +208,7 @@ const FormativeAssessment = ({ learners }) => {
   const handleFeedbackChange = (learnerId, field, value) => {
     setAssessments(prev => ({
       ...prev,
-      [learnerId]: {
-        ...prev[learnerId],
-        [field]: value
-      }
+      [learnerId]: { ...prev[learnerId], [field]: value }
     }));
   };
 
@@ -219,47 +217,54 @@ const FormativeAssessment = ({ learners }) => {
       setSaving(true);
 
       const resultsToSave = Object.entries(assessments)
-        .filter(([learnerId, assessment]) => assessment.detailedRating && !savedAssessments[learnerId])
+        .filter(([, assessment]) => assessment.detailedRating)
         .map(([learnerId, assessment]) => ({
           learnerId,
           detailedRating: assessment.detailedRating,
           percentage: assessment.percentage,
+          points: assessment.points,
           strengths: assessment.strengths,
           areasImprovement: assessment.areasImprovement,
           recommendations: assessment.recommendations
         }));
 
       if (resultsToSave.length === 0) {
-        showSuccess('No new assessments to save.');
+        showSuccess('No assessments to save — rate at least one learner first.');
         return;
       }
 
       const response = await api.assessments.recordFormativeBulk({
         results: resultsToSave,
         term: selectedTerm,
-        academicYear: academicYear,
+        academicYear,
         learningArea: selectedArea,
         strand,
         subStrand,
         title: assessmentTitle,
         type: assessmentType,
         weight: assessmentWeight,
-        maxScore: maxScore
+        maxScore
       });
 
       if (response.success) {
         showSuccess(response.message || `Successfully saved ${resultsToSave.length} assessments!`);
 
-        // Update local state with DRAFT status for saved items
         const newSaved = {};
-        resultsToSave.forEach(r => {
-          newSaved[r.learnerId] = { ...r, status: 'DRAFT', id: 'temp-' + Date.now() }; // Temporary ID until re-fetch
+        const savedMap = response.saved || [];
+        savedMap.forEach(item => {
+          newSaved[item.learnerId] = { id: item.id, learnerId: item.learnerId, status: item.status || 'DRAFT' };
         });
+
+        if (savedMap.length === 0 && response.data?.length > 0) {
+          response.data.forEach(item => {
+            newSaved[item.learnerId] = { id: item.id, learnerId: item.learnerId, status: item.status || 'DRAFT' };
+          });
+        }
+
         setSavedAssessments(prev => ({ ...prev, ...newSaved }));
       } else {
         showError(response.message || 'Failed to save assessments');
       }
-
     } catch (error) {
       console.error('Error saving assessments:', error);
       showError('Failed to save assessments');
@@ -273,11 +278,11 @@ const FormativeAssessment = ({ learners }) => {
       setSubmitting(true);
 
       const idsToSubmit = Object.values(savedAssessments)
-        .filter(a => a && a.id && a.status === 'DRAFT' && !String(a.id).startsWith('temp-'))
+        .filter(a => a && a.id && a.status === 'DRAFT')
         .map(a => a.id);
 
       if (idsToSubmit.length === 0) {
-        showError('No draft assessments ready to submit. Please ensure assessments are saved and synchronized.');
+        showError('No draft assessments to submit. Save at least one learner\'s rating first.');
         return;
       }
 
@@ -289,18 +294,16 @@ const FormativeAssessment = ({ learners }) => {
 
       if (response.success) {
         showSuccess(response.message || `Successfully submitted ${idsToSubmit.length} assessment(s) for approval!`);
-
-        const updatedSavedAssessments = { ...savedAssessments };
-        Object.keys(updatedSavedAssessments).forEach(learnerId => {
-          if (idsToSubmit.includes(updatedSavedAssessments[learnerId]?.id)) {
-            updatedSavedAssessments[learnerId] = { ...updatedSavedAssessments[learnerId], status: 'SUBMITTED' };
+        const updatedSaved = { ...savedAssessments };
+        Object.keys(updatedSaved).forEach(learnerId => {
+          if (idsToSubmit.includes(updatedSaved[learnerId]?.id)) {
+            updatedSaved[learnerId] = { ...updatedSaved[learnerId], status: 'SUBMITTED' };
           }
         });
-        setSavedAssessments(updatedSavedAssessments);
+        setSavedAssessments(updatedSaved);
       } else {
         showError(response.message || 'Failed to submit assessments');
       }
-
     } catch (error) {
       console.error('Error submitting assessments:', error);
       showError('Failed to submit assessments');
@@ -312,7 +315,6 @@ const FormativeAssessment = ({ learners }) => {
   const handleSendWhatsApp = async (learnerId) => {
     try {
       setSendingWhatsApp(prev => ({ ...prev, [learnerId]: true }));
-
       const response = await api.notifications.sendAssessmentNotification({
         learnerId,
         assessmentType: 'Formative',
@@ -320,13 +322,11 @@ const FormativeAssessment = ({ learners }) => {
         grade: selectedGrade,
         term: selectedTerm
       });
-
       if (response.success) {
         showSuccess('Assessment results sent to parent via WhatsApp!');
       } else {
         showError('Failed to send WhatsApp notification');
       }
-
     } catch (error) {
       console.error('Error sending WhatsApp:', error);
       showError(error.message || 'Failed to send WhatsApp notification');
@@ -339,16 +339,10 @@ const FormativeAssessment = ({ learners }) => {
     try {
       setGeneratingAI(prev => ({ ...prev, [learnerId]: true }));
       const response = await aiAPI.generateFeedback(learnerId, selectedTerm, academicYear);
-
       if (response.success && response.data) {
-        // AI returns a single block of feedback. Let's put it in Strengths and maybe clear Areas for Improvement or split it.
-        // For now, let's just populate the recommendations or strengths.
         setAssessments(prev => ({
           ...prev,
-          [learnerId]: {
-            ...prev[learnerId],
-            recommendations: response.data
-          }
+          [learnerId]: { ...prev[learnerId], recommendations: response.data }
         }));
         showSuccess('AI feedback generated based on learner history!');
       }
@@ -360,7 +354,7 @@ const FormativeAssessment = ({ learners }) => {
     }
   };
 
-  // Statistics
+  // Statistics — full 8-level breakdown
   const stats = {
     total: classLearners.length,
     assessed: Object.keys(assessments).filter(id => assessments[id]?.detailedRating).length,
@@ -379,29 +373,20 @@ const FormativeAssessment = ({ learners }) => {
   const StepIndicator = () => (
     <div className="flex items-center justify-center mb-8">
       <div className="flex items-center">
-        {/* Step 1 */}
         <div className={`flex flex-col items-center relative z-10 ${viewMode !== 'setup' ? 'text-brand-purple' : 'text-brand-purple'}`}>
           <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${viewMode === 'setup' || viewMode === 'assess' || viewMode === 'review' ? 'bg-brand-purple border-brand-purple text-white' : 'bg-white border-gray-300'}`}>
             {viewMode !== 'setup' ? <Check size={20} /> : <FileText size={20} />}
           </div>
           <span className="text-xs font-semibold mt-2">Setup</span>
         </div>
-
-        {/* Connector */}
         <div className={`w-24 h-1 -mt-6 mx-2 ${viewMode === 'assess' || viewMode === 'review' ? 'bg-brand-purple' : 'bg-gray-200'}`} />
-
-        {/* Step 2 */}
         <div className={`flex flex-col items-center relative z-10 ${viewMode === 'assess' || viewMode === 'review' ? 'text-brand-purple' : 'text-gray-400'}`}>
           <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${viewMode === 'assess' || viewMode === 'review' ? 'bg-brand-purple border-brand-purple text-white' : 'bg-white border-gray-300'}`}>
             {viewMode === 'review' ? <Check size={20} /> : <Users size={20} />}
           </div>
           <span className="text-xs font-semibold mt-2">Assess</span>
         </div>
-
-        {/* Connector */}
         <div className={`w-24 h-1 -mt-6 mx-2 ${viewMode === 'review' ? 'bg-brand-purple' : 'bg-gray-200'}`} />
-
-        {/* Step 3 */}
         <div className={`flex flex-col items-center relative z-10 ${viewMode === 'review' ? 'text-brand-purple' : 'text-gray-400'}`}>
           <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${viewMode === 'review' ? 'bg-brand-purple border-brand-purple text-white' : 'bg-white border-gray-300'}`}>
             <BarChart2 size={20} />
@@ -426,9 +411,7 @@ const FormativeAssessment = ({ learners }) => {
               <h2 className="text-lg font-bold text-gray-800">Assessment Configuration</h2>
               <p className="text-xs text-gray-500">Configure the class, subject, and assessment details</p>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-semibold">Step 1 of 3</span>
-            </div>
+            <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-semibold">Step 1 of 3</span>
           </div>
 
           <div className="p-6">
@@ -445,11 +428,7 @@ const FormativeAssessment = ({ learners }) => {
                     <label className="block text-xs font-semibold text-gray-600 mb-1.5">Grade / Class</label>
                     <select
                       value={selectedGrade}
-                      onChange={(e) => {
-                        setSelectedGrade(e.target.value);
-                        setAssessments({}); // Clear assessments when grade changes
-                        setSavedAssessments({});
-                      }}
+                      onChange={(e) => { setSelectedGrade(e.target.value); setAssessments({}); setSavedAssessments({}); }}
                       disabled={loadingGrades}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-purple focus:border-brand-purple transition-all text-sm bg-white disabled:bg-gray-100 disabled:text-gray-400"
                     >
@@ -484,10 +463,7 @@ const FormativeAssessment = ({ learners }) => {
                   <label className="block text-xs font-semibold text-gray-600 mb-1.5">Learning Area</label>
                   <select
                     value={selectedArea}
-                    onChange={(e) => {
-                      setSelectedArea(e.target.value);
-                      learningAreas.selectLearningArea(e.target.value);
-                    }}
+                    onChange={(e) => { setSelectedArea(e.target.value); learningAreas.selectLearningArea(e.target.value); }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-purple focus:border-brand-purple transition-all text-sm bg-white"
                     disabled={!setup.selectedGrade}
                   >
@@ -754,21 +730,31 @@ const FormativeAssessment = ({ learners }) => {
                           )}
                         </div>
 
-                        {/* Feedback Fields (Collapsed unless rated) */}
+                        {/* Feedback Fields — 3 columns: Strengths | Areas for Improvement | Recommendations */}
                         {assessment?.detailedRating && (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-200/50 animate-in fade-in slide-in-from-top-2">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-200/50 animate-in fade-in slide-in-from-top-2">
                             <div>
-                              <div className="flex items-center justify-between mb-2">
-                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
-                                  Strengths
-                                </label>
-                              </div>
+                              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                                Strengths
+                              </label>
                               <textarea
                                 value={assessment.strengths || ''}
                                 onChange={(e) => handleFeedbackChange(learner.id, 'strengths', e.target.value)}
                                 rows="2"
                                 className="w-full px-4 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-purple focus:border-transparent text-sm"
                                 placeholder="Key strengths..."
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                                Areas for Improvement
+                              </label>
+                              <textarea
+                                value={assessment.areasImprovement || ''}
+                                onChange={(e) => handleFeedbackChange(learner.id, 'areasImprovement', e.target.value)}
+                                rows="2"
+                                className="w-full px-4 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-purple focus:border-transparent text-sm"
+                                placeholder="Areas that need more work..."
                               />
                             </div>
                             <div>
@@ -817,8 +803,8 @@ const FormativeAssessment = ({ learners }) => {
             <p className="text-gray-500">Review your progress for {grades.find(g => g.value === selectedGrade)?.label} - {selectedArea}</p>
           </div>
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          {/* Top-level stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-brand-purple/10 rounded-xl p-4 text-center">
               <p className="text-sm text-brand-purple font-bold uppercase">Total Learners</p>
               <p className="text-3xl font-black text-brand-purple">{stats.total}</p>
@@ -836,6 +822,31 @@ const FormativeAssessment = ({ learners }) => {
               <p className="text-3xl font-bold text-gray-900">{stats.total - stats.assessed}</p>
             </div>
           </div>
+
+          {/* 8-level rubric breakdown */}
+          {stats.assessed > 0 && (
+            <div className="mb-8">
+              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Rubric Distribution</h3>
+              <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
+                {[
+                  { code: 'EE1', label: 'Outstanding', count: stats.ee1, color: 'bg-green-100 text-green-800 border-green-300' },
+                  { code: 'EE2', label: 'Very High',   count: stats.ee2, color: 'bg-green-50  text-green-700 border-green-200' },
+                  { code: 'ME1', label: 'High Avg',    count: stats.me1, color: 'bg-blue-100  text-blue-800  border-blue-300' },
+                  { code: 'ME2', label: 'Average',     count: stats.me2, color: 'bg-blue-50   text-blue-700  border-blue-200' },
+                  { code: 'AE1', label: 'Low Avg',     count: stats.ae1, color: 'bg-yellow-100 text-yellow-800 border-yellow-300' },
+                  { code: 'AE2', label: 'Below Avg',   count: stats.ae2, color: 'bg-orange-100 text-orange-800 border-orange-300' },
+                  { code: 'BE1', label: 'Low',         count: stats.be1, color: 'bg-red-100   text-red-800   border-red-300' },
+                  { code: 'BE2', label: 'Very Low',    count: stats.be2, color: 'bg-red-50    text-red-700   border-red-200' },
+                ].map(({ code, label, count, color }) => (
+                  <div key={code} className={`border rounded-xl p-3 text-center ${color}`}>
+                    <p className="text-xs font-black">{code}</p>
+                    <p className="text-2xl font-black mt-1">{count}</p>
+                    <p className="text-[10px] font-medium mt-1 leading-tight">{label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="flex flex-col md:flex-row gap-4 justify-center mt-8">
             <button

@@ -2,7 +2,6 @@ import { SmsService } from './sms.service';
 import prisma from '../config/database';
 import { SMS_MESSAGES, OTP_CONFIG } from '../config/communication.messages';
 import crypto from 'crypto';
-import fs from 'fs';
 
 interface OtpResult {
     success: boolean;
@@ -19,7 +18,7 @@ interface OtpVerifyResult {
 export class OtpService {
     // OTP Configuration
     private static readonly OTP_LENGTH = 6;
-    private static readonly OTP_EXPIRY_MINUTES = 5;
+    private static readonly OTP_EXPIRY_MINUTES = 10;
 
     /**
      * Generate a 6-digit OTP code
@@ -33,10 +32,7 @@ export class OtpService {
      */
     static async sendOTP(email: string): Promise<OtpResult> {
         try {
-            const logMsg = `[${new Date().toISOString()}] OTP Request for: ${email}\n`;
-            fs.appendFileSync('otp-debug.log', logMsg);
-
-            console.log(`📱 OTP Request for: ${email}`);
+            console.log(`📱 OTP request received`);
 
             // 1. Find user by email
             const user = await prisma.user.findUnique({
@@ -66,11 +62,9 @@ export class OtpService {
 
             // 2. Generate OTP
             const otpCode = this.generateOTP();
-            const expiresAt = new Date(Date.now() + this.OTP_EXPIRY_MINUTES * 60 * 1000);
+            const expiresAt = new Date(Date.now() + OTP_CONFIG.expiryMinutes * 60 * 1000);
 
-            // Log OTP for development/testing
-            fs.appendFileSync('otp-debug.log', `[${new Date().toISOString()}] GENERATED OTP FOR ${email}: ${otpCode}\n`);
-            console.log(`🔑 Generated OTP for ${email}: ${otpCode}`);
+            // OTP generated — not logged for security
 
             // 3. Store OTP in database
             await prisma.user.update({
@@ -88,8 +82,7 @@ export class OtpService {
                 user.phone,
                 message
             ).catch((error: any) => {
-                console.warn(`⚠️ SMS failed for ${email}: ${error.message}`);
-                fs.appendFileSync('otp-debug.log', `SMS FAILED: ${error.message}\n`);
+                console.warn(`⚠️ OTP SMS delivery failed: ${error.message}`);
             });
 
             return {
@@ -123,7 +116,7 @@ export class OtpService {
 
             // 3. Check if OTP has expired
             const sentAt = new Date(user.phoneVerificationSentAt);
-            const expiryTime = new Date(sentAt.getTime() + this.OTP_EXPIRY_MINUTES * 60 * 1000);
+            const expiryTime = new Date(sentAt.getTime() + OTP_CONFIG.expiryMinutes * 60 * 1000);
 
             if (new Date() > expiryTime) {
                 await prisma.user.update({

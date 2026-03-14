@@ -10,8 +10,6 @@ declare global {
         userId: string;
         email: string;
         role: Role;
-        schoolId?: string;
-        branchId?: string;
       };
     }
   }
@@ -26,8 +24,6 @@ export interface AuthRequest extends Request {
     userId: string;
     email: string;
     role: Role;
-    schoolId?: string;
-    branchId?: string;
   };
   file?: any;
   files?: any;

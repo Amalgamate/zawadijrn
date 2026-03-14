@@ -6,7 +6,7 @@
  */
 
 import React, { createContext, useState, useEffect, useCallback } from 'react';
-import { clearCurrentSchoolId, clearBranchId } from '../services/schoolContext';
+import { logout as apiLogout } from '../services/api';
 
 export const AuthContext = createContext({
   isAuthenticated: false,
@@ -33,12 +33,8 @@ export const AuthProvider = ({ children }) => {
           setUser(parsedUser);
           setIsAuthenticated(true);
 
-          // Ensure currentSchoolId is set if user has a school
-          const schoolId = parsedUser.schoolId || (parsedUser.school && parsedUser.school.id);
-          if (schoolId && !localStorage.getItem('currentSchoolId')) {
-            localStorage.setItem('currentSchoolId', schoolId);
-          }
-          // Note: Super Admins can have currentSchoolId when they use the school switcher
+          setUser(parsedUser);
+          setIsAuthenticated(true);
         }
       } catch (error) {
         console.error('Error restoring auth state:', error);
@@ -46,7 +42,6 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('token');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
-        localStorage.removeItem('currentSchoolId');
       } finally {
         setLoading(false);
       }
@@ -66,13 +61,6 @@ export const AuthProvider = ({ children }) => {
       // Store user data
       localStorage.setItem('user', JSON.stringify(userData));
 
-      // Store current school ID for easy access
-      const schoolId = userData.schoolId || (userData.school && userData.school.id);
-      if (schoolId) {
-        localStorage.setItem('currentSchoolId', schoolId);
-      }
-      // Note: Super Admins can switch schools using the school switcher
-
       setUser(userData);
       setIsAuthenticated(true);
     } catch (error) {
@@ -87,9 +75,6 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('user');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('authToken'); // Also clear legacy authToken if present
-    clearCurrentSchoolId();
-    clearBranchId();
-
     setUser(null);
     setIsAuthenticated(false);
   }, []);

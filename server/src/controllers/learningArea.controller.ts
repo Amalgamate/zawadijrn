@@ -15,30 +15,7 @@ const router = Router();
  */
 export const getLearningAreas = async (req: AuthRequest, res: Response) => {
   try {
-    const querySchoolIdRaw = req.query.schoolId as string | undefined;
-    const querySchoolId = querySchoolIdRaw && querySchoolIdRaw !== 'undefined' && querySchoolIdRaw !== 'null'
-      ? querySchoolIdRaw
-      : undefined;
-
-    let schoolId = querySchoolId || req.user?.schoolId;
-
-    if (!schoolId) {
-      const learningAreas = await prisma.learningArea.findMany({
-        orderBy: [
-          { gradeLevel: 'asc' },
-          { name: 'asc' }
-        ]
-      });
-      return res.json({ success: true, data: learningAreas });
-    }
-
     const learningAreas = await prisma.learningArea.findMany({
-      where: {
-        OR: [
-          { schoolId },
-          { schoolId: null } // Include global learning areas
-        ]
-      },
       orderBy: [
         { gradeLevel: 'asc' },
         { name: 'asc' }
@@ -68,11 +45,6 @@ export const getLearningArea = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ success: false, error: 'Learning area not found' });
     }
 
-    // Phase 5: Tenant Check
-    if (req.user?.role !== 'SUPER_ADMIN' && req.user?.schoolId && learningArea.schoolId && learningArea.schoolId !== req.user.schoolId) {
-      return res.status(403).json({ success: false, error: 'Unauthorized access to learning area' });
-    }
-
     res.json({ success: true, data: learningArea });
   } catch (error: any) {
     console.error('Error fetching learning area:', error);
@@ -87,7 +59,6 @@ export const getLearningArea = async (req: AuthRequest, res: Response) => {
 export const createLearningArea = async (req: AuthRequest, res: Response) => {
   try {
     const { name, shortName, gradeLevel, icon, color, description } = req.body;
-    const schoolId = req.user?.schoolId;
 
     if (!name || !gradeLevel) {
       return res.status(400).json({ success: false, error: 'Name and grade level are required' });
@@ -97,12 +68,12 @@ export const createLearningArea = async (req: AuthRequest, res: Response) => {
     const existing = await prisma.learningArea.findFirst({
       where: {
         name,
-        schoolId
+        gradeLevel
       }
     });
 
     if (existing) {
-      return res.status(409).json({ success: false, error: 'Learning area already exists for this school' });
+      return res.status(409).json({ success: false, error: 'Learning area already exists' });
     }
 
     const learningArea = await prisma.learningArea.create({
@@ -112,8 +83,7 @@ export const createLearningArea = async (req: AuthRequest, res: Response) => {
         gradeLevel,
         icon: icon || '📚',
         color: color || '#3b82f6',
-        description,
-        schoolId
+        description
       }
     });
 
@@ -141,17 +111,12 @@ export const updateLearningArea = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ success: false, error: 'Learning area not found' });
     }
 
-    // Phase 5: Tenant Check
-    if (req.user?.role !== 'SUPER_ADMIN' && req.user?.schoolId && learningArea.schoolId !== req.user.schoolId) {
-      return res.status(403).json({ success: false, error: 'Unauthorized: Cannot update learning areas from another school' });
-    }
-
-    // Check if name already exists for this school (excluding current record)
+    // Check if name already exists (excluding current record)
     if (name && name !== learningArea.name) {
       const existing = await prisma.learningArea.findFirst({
         where: {
           name,
-          schoolId: learningArea.schoolId,
+          gradeLevel: gradeLevel || learningArea.gradeLevel,
           NOT: { id }
         }
       });
@@ -196,11 +161,6 @@ export const deleteLearningArea = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ success: false, error: 'Learning area not found' });
     }
 
-    // Phase 5: Tenant Check
-    if (req.user?.role !== 'SUPER_ADMIN' && req.user?.schoolId && learningArea.schoolId !== req.user.schoolId) {
-      return res.status(403).json({ success: false, error: 'Unauthorized: Cannot delete learning areas from another school' });
-    }
-
     await prisma.learningArea.delete({
       where: { id }
     });
@@ -218,11 +178,6 @@ export const deleteLearningArea = async (req: AuthRequest, res: Response) => {
  */
 export const seedLearningAreas = async (req: AuthRequest, res: Response) => {
   try {
-    const schoolId = req.user?.schoolId;
-
-    if (!schoolId) {
-      return res.status(400).json({ success: false, error: 'School ID is required' });
-    }
 
     // Official CBC Per-Grade Mapping
     const gradeMappings: { [key: string]: string[] } = {
@@ -235,12 +190,12 @@ export const seedLearningAreas = async (req: AuthRequest, res: Response) => {
       'GRADE_1': ['English', 'Kiswahili', 'Indigenous Language', 'Mathematical Activities', 'Environmental Activities', 'Religious Education', 'Creative Activities'],
       'GRADE_2': ['English', 'Kiswahili', 'Indigenous Language', 'Mathematical Activities', 'Environmental Activities', 'Religious Education', 'Creative Activities'],
       'GRADE_3': ['English', 'Kiswahili', 'Indigenous Language', 'Mathematical Activities', 'Environmental Activities', 'Religious Education', 'Creative Activities'],
-      'GRADE_4': ['English', 'Kiswahili', 'Science and Technology', 'Social Studies', 'Mathematics', 'Agriculture & Nutrition', 'Creative Arts', 'Religious Education'],
-      'GRADE_5': ['English', 'Kiswahili', 'Science and Technology', 'Social Studies', 'Mathematics', 'Agriculture & Nutrition', 'Creative Arts', 'Religious Education'],
-      'GRADE_6': ['English', 'Kiswahili', 'Science and Technology', 'Social Studies', 'Mathematics', 'Agriculture & Nutrition', 'Creative Arts', 'Religious Education'],
-      'GRADE_7': ['English', 'Kiswahili', 'Mathematics', 'Integrated Science', 'Social Studies', 'Religious Education', 'Pre-Technical Studies', 'Agriculture & Nutrition', 'Creative Arts & Sports'],
-      'GRADE_8': ['English', 'Kiswahili', 'Mathematics', 'Integrated Science', 'Social Studies', 'Religious Education', 'Pre-Technical Studies', 'Agriculture & Nutrition', 'Creative Arts & Sports'],
-      'GRADE_9': ['English', 'Kiswahili', 'Mathematics', 'Integrated Science', 'Social Studies', 'Religious Education', 'Pre-Technical Studies', 'Agriculture & Nutrition', 'Creative Arts & Sports']
+      'GRADE_4': ['English', 'Kiswahili', 'Science and Technology', 'Social Studies', 'Mathematics', 'Agriculture', 'Creative Arts', 'Religious Education'],
+      'GRADE_5': ['English', 'Kiswahili', 'Science and Technology', 'Social Studies', 'Mathematics', 'Agriculture', 'Creative Arts', 'Religious Education'],
+      'GRADE_6': ['English', 'Kiswahili', 'Science and Technology', 'Social Studies', 'Mathematics', 'Agriculture', 'Creative Arts', 'Religious Education'],
+      'GRADE_7': ['English', 'Kiswahili', 'Mathematics', 'Integrated Science', 'Social Studies', 'Religious Education', 'Pre-Technical Studies', 'Agriculture', 'Creative Arts & Sports'],
+      'GRADE_8': ['English', 'Kiswahili', 'Mathematics', 'Integrated Science', 'Social Studies', 'Religious Education', 'Pre-Technical Studies', 'Agriculture', 'Creative Arts & Sports'],
+      'GRADE_9': ['English', 'Kiswahili', 'Mathematics', 'Integrated Science', 'Social Studies', 'Religious Education', 'Pre-Technical Studies', 'Agriculture', 'Creative Arts & Sports']
     };
 
     const colors: { [key: string]: string } = {
@@ -263,7 +218,7 @@ export const seedLearningAreas = async (req: AuthRequest, res: Response) => {
       'Religious Activities': 'REL',
       'Science and Technology': 'SCI',
       'Social Studies': 'SOC',
-      'Agriculture & Nutrition': 'AGRI',
+      'Agriculture': 'AGRI',
       'Creative Arts': 'ARTS',
       'Integrated Science': 'INT_SCI',
       'Pre-Technical Studies': 'PRE-TECH',
@@ -276,7 +231,6 @@ export const seedLearningAreas = async (req: AuthRequest, res: Response) => {
       gradeLevel: string;
       icon: string;
       color: string;
-      schoolId: string;
     }> = [];
 
     for (const [grade, areas] of Object.entries(gradeMappings)) {
@@ -291,8 +245,7 @@ export const seedLearningAreas = async (req: AuthRequest, res: Response) => {
           shortName: shortNameMapping[area] || area.substring(0, 5).toUpperCase(),
           gradeLevel: grade,
           icon: icons[visualGroup] || '📚',
-          color: colors[visualGroup] || '#3b82f6',
-          schoolId
+          color: colors[visualGroup] || '#3b82f6'
         });
       }
     }

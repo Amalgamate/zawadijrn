@@ -4,9 +4,18 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, ChevronRight, BookOpen, Edit, Trash2, Plus, Trash } from 'lucide-react';
+import { ChevronDown, ChevronRight, BookOpen, Edit, Trash2, Plus } from 'lucide-react';
 import { getStrandsForArea } from '../../../../constants/strandsConfig';
-import { useSchoolData } from '../../../../contexts/SchoolDataContext';
+
+// Canonical CBC grade order — used for sorting regardless of what classes exist
+const GRADE_ORDER = [
+  'CRECHE', 'PLAYGROUP', 'RECEPTION', 'TRANSITION',
+  'PP1', 'PP2',
+  'GRADE_1', 'GRADE_2', 'GRADE_3',
+  'GRADE_4', 'GRADE_5', 'GRADE_6',
+  'GRADE_7', 'GRADE_8', 'GRADE_9',
+  'GRADE_10', 'GRADE_11', 'GRADE_12',
+];
 
 const HierarchicalLearningAreas = ({
   learningAreas = [],
@@ -20,31 +29,24 @@ const HierarchicalLearningAreas = ({
 }) => {
   const [expandedGrades, setExpandedGrades] = useState({});
   const [expandedAreas, setExpandedAreas] = useState({});
-  const { grades: dynamicGrades } = useSchoolData();
 
   // Group learning areas by grade level
   const groupedByGrade = learningAreas.reduce((acc, area) => {
     const grade = area.gradeLevel || 'Other';
-    if (!acc[grade]) {
-      acc[grade] = [];
-    }
+    if (!acc[grade]) acc[grade] = [];
     acc[grade].push(area);
     return acc;
   }, {});
 
-  // Sort grades based on the single source of truth order
-  const gradeOrder = dynamicGrades;
-
-  const sortedGrades = Object.keys(groupedByGrade).sort(
-    (a, b) => {
-      const indexA = gradeOrder.indexOf(a);
-      const indexB = gradeOrder.indexOf(b);
-      if (indexA === -1 && indexB === -1) return a.localeCompare(b);
-      if (indexA === -1) return 1;
-      if (indexB === -1) return -1;
-      return indexA - indexB;
-    }
-  );
+  // Sort by canonical CBC grade order — independent of classes table
+  const sortedGrades = Object.keys(groupedByGrade).sort((a, b) => {
+    const indexA = GRADE_ORDER.indexOf(a);
+    const indexB = GRADE_ORDER.indexOf(b);
+    if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+    if (indexA === -1) return 1;
+    if (indexB === -1) return -1;
+    return indexA - indexB;
+  });
 
   const toggleGrade = (grade) => {
     setExpandedGrades(prev => ({

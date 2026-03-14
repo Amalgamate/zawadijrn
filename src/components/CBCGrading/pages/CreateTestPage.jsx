@@ -274,6 +274,51 @@ const CreateTestPage = ({ onSave, onCancel, initialData, availableGrades }) => {
                   </div>
                 </div>
               </div>
+
+              {/* Total Marks */}
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                  Total Marks<span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  value={formData.totalMarks}
+                  onChange={(e) => handleChange('totalMarks', e.target.value)}
+                  className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-semibold text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all"
+                  required
+                />
+              </div>
+
+              {/* Pass Marks */}
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                  Pass Marks
+                </label>
+                <input
+                  type="number"
+                  value={formData.passMarks}
+                  onChange={(e) => handleChange('passMarks', e.target.value)}
+                  className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-semibold text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all"
+                />
+              </div>
+
+              {/* Assessment Weight */}
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                  Assessment Weight (Multiplier)<span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="100"
+                  value={formData.weight}
+                  onChange={(e) => handleChange('weight', e.target.value)}
+                  className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-semibold text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all"
+                  required
+                />
+                <p className="text-[10px] text-gray-400">Default is 1.0. Use decimals (e.g., 0.5) to reduce contribution.</p>
+              </div>
             </div>
 
             {/* Subject / Learning Area */}

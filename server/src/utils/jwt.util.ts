@@ -6,16 +6,12 @@ interface JWTPayload {
   userId: string;
   email: string;
   role: Role;
-  schoolId?: string;
-  branchId?: string;
 }
 
 interface User {
   id: string;
   email: string;
   role: UserRole;
-  schoolId?: string | null;
-  branchId?: string | null;
 }
 
 export const generateAccessToken = (user: User): string => {
@@ -23,8 +19,6 @@ export const generateAccessToken = (user: User): string => {
     userId: user.id,
     email: user.email,
     role: user.role as Role,
-    ...(user.schoolId && { schoolId: user.schoolId }),
-    ...(user.branchId && { branchId: user.branchId })
   };
 
   return jwt.sign(

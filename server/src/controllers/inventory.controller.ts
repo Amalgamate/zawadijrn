@@ -5,8 +5,7 @@ export class InventoryController {
     // CATEGORIES
     async createCategory(req: Request, res: Response) {
         try {
-            const { schoolId } = req.params;
-            const category = await inventoryService.createCategory(schoolId, req.body);
+            const category = await inventoryService.createCategory(req.body);
             res.json({ success: true, data: category });
         } catch (error: any) {
             res.status(500).json({ success: false, error: error.message });
@@ -15,8 +14,7 @@ export class InventoryController {
 
     async getCategories(req: Request, res: Response) {
         try {
-            const { schoolId } = req.params;
-            const categories = await inventoryService.getCategories(schoolId);
+            const categories = await inventoryService.getCategories();
             res.json({ success: true, data: categories });
         } catch (error: any) {
             res.status(500).json({ success: false, error: error.message });
@@ -26,8 +24,7 @@ export class InventoryController {
     // STORES
     async createStore(req: Request, res: Response) {
         try {
-            const { schoolId } = req.params;
-            const store = await inventoryService.createStore(schoolId, req.body);
+            const store = await inventoryService.createStore(req.body);
             res.json({ success: true, data: store });
         } catch (error: any) {
             res.status(500).json({ success: false, error: error.message });
@@ -36,8 +33,7 @@ export class InventoryController {
 
     async getStores(req: Request, res: Response) {
         try {
-            const { schoolId } = req.params;
-            const stores = await inventoryService.getStores(schoolId);
+            const stores = await inventoryService.getStores();
             res.json({ success: true, data: stores });
         } catch (error: any) {
             res.status(500).json({ success: false, error: error.message });
@@ -47,8 +43,7 @@ export class InventoryController {
     // ITEMS
     async createItem(req: Request, res: Response) {
         try {
-            const { schoolId } = req.params;
-            const item = await inventoryService.createItem(schoolId, req.body);
+            const item = await inventoryService.createItem(req.body);
             res.json({ success: true, data: item });
         } catch (error: any) {
             res.status(500).json({ success: false, error: error.message });
@@ -57,9 +52,8 @@ export class InventoryController {
 
     async getItems(req: Request, res: Response) {
         try {
-            const { schoolId } = req.params;
             const { categoryId } = req.query;
-            const items = await inventoryService.getItems(schoolId, categoryId as string);
+            const items = await inventoryService.getItems(categoryId as string);
             res.json({ success: true, data: items });
         } catch (error: any) {
             res.status(500).json({ success: false, error: error.message });
@@ -69,8 +63,7 @@ export class InventoryController {
     // MOVEMENTS
     async recordMovement(req: Request, res: Response) {
         try {
-            const { schoolId } = req.params;
-            const movement = await inventoryService.recordMovement(schoolId, {
+            const movement = await inventoryService.recordMovement({
                 ...req.body,
                 performedById: (req as any).user?.id
             });
@@ -82,8 +75,7 @@ export class InventoryController {
 
     async getMovements(req: Request, res: Response) {
         try {
-            const { schoolId } = req.params;
-            const movements = await inventoryService.getMovements(schoolId);
+            const movements = await inventoryService.getMovements();
             res.json({ success: true, data: movements });
         } catch (error: any) {
             res.status(500).json({ success: false, error: error.message });
@@ -93,9 +85,8 @@ export class InventoryController {
     // REQUISITIONS
     async createRequisition(req: Request, res: Response) {
         try {
-            const { schoolId } = req.params;
             const userId = (req as any).user?.id;
-            const requisition = await inventoryService.createRequisition(schoolId, userId, req.body);
+            const requisition = await inventoryService.createRequisition(userId, req.body);
             res.json({ success: true, data: requisition });
         } catch (error: any) {
             res.status(500).json({ success: false, error: error.message });
@@ -116,8 +107,7 @@ export class InventoryController {
 
     async getRequisitions(req: Request, res: Response) {
         try {
-            const { schoolId } = req.params;
-            const requisitions = await inventoryService.getRequisitions(schoolId);
+            const requisitions = await inventoryService.getRequisitions();
             res.json({ success: true, data: requisitions });
         } catch (error: any) {
             res.status(500).json({ success: false, error: error.message });
@@ -127,8 +117,7 @@ export class InventoryController {
     // ASSETS
     async registerAsset(req: Request, res: Response) {
         try {
-            const { schoolId } = req.params;
-            const asset = await inventoryService.registerFixedAsset(schoolId, req.body);
+            const asset = await inventoryService.registerFixedAsset(req.body);
             res.json({ success: true, data: asset });
         } catch (error: any) {
             res.status(500).json({ success: false, error: error.message });
@@ -146,8 +135,7 @@ export class InventoryController {
 
     async getAssetRegister(req: Request, res: Response) {
         try {
-            const { schoolId } = req.params;
-            const register = await inventoryService.getAssetRegister(schoolId);
+            const register = await inventoryService.getAssetRegister();
             res.json({ success: true, data: register });
         } catch (error: any) {
             res.status(500).json({ success: false, error: error.message });

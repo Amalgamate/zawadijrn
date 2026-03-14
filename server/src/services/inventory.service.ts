@@ -15,28 +15,27 @@ export class InventoryService {
     // CATEGORIES & STORES
     // ============================================
 
-    async createCategory(schoolId: string, data: { name: string; description?: string; parentId?: string }) {
+    async createCategory(data: { name: string; description?: string; parentId?: string }) {
         return (prisma as any).inventoryCategory.create({
-            data: { ...data, schoolId }
+            data: { ...data }
         });
     }
 
-    async getCategories(schoolId: string) {
+    async getCategories() {
         return (prisma as any).inventoryCategory.findMany({
-            where: { schoolId },
             include: { children: true }
         });
     }
 
-    async createStore(schoolId: string, data: { name: string; code?: string; location?: string }) {
+    async createStore(data: { name: string; code?: string; location?: string }) {
         return (prisma as any).inventoryStore.create({
-            data: { ...data, schoolId }
+            data: { ...data }
         });
     }
 
-    async getStores(schoolId: string) {
+    async getStores() {
         return (prisma as any).inventoryStore.findMany({
-            where: { schoolId, isActive: true }
+            where: { isActive: true }
         });
     }
 
@@ -44,7 +43,7 @@ export class InventoryService {
     // ITEMS & STOCK MOVEMENTS
     // ============================================
 
-    async createItem(schoolId: string, data: {
+    async createItem(data: {
         name: string;
         sku?: string;
         categoryId?: string;
@@ -53,14 +52,13 @@ export class InventoryService {
         reorderLevel?: number;
     }) {
         return (prisma as any).inventoryItem.create({
-            data: { ...data, schoolId }
+            data: { ...data }
         });
     }
 
-    async getItems(schoolId: string, categoryId?: string) {
+    async getItems(categoryId?: string) {
         return (prisma as any).inventoryItem.findMany({
             where: {
-                schoolId,
                 isActive: true,
                 ...(categoryId ? { categoryId } : {})
             },
@@ -71,7 +69,7 @@ export class InventoryService {
         });
     }
 
-    async recordMovement(schoolId: string, data: {
+    async recordMovement(data: {
         itemId: string;
         quantity: number;
         type: StockMovementType;
@@ -99,7 +97,7 @@ export class InventoryService {
         });
     }
 
-    async getStockLevels(schoolId: string, itemId: string) {
+    async getStockLevels(itemId: string) {
         const movements = await (prisma as any).stockMovement.findMany({
             where: { itemId }
         });
@@ -114,16 +112,8 @@ export class InventoryService {
         return balance;
     }
 
-    async getMovements(schoolId: string) {
-        // Find all items for this school
-        const items = await (prisma as any).inventoryItem.findMany({
-            where: { schoolId },
-            select: { id: true }
-        });
-        const itemIds = items.map((i: any) => i.id);
-
+    async getMovements() {
         return (prisma as any).stockMovement.findMany({
-            where: { itemId: { in: itemIds } },
             include: {
                 item: true,
                 fromStore: true,
@@ -138,7 +128,7 @@ export class InventoryService {
     // REQUISITIONS
     // ============================================
 
-    async createRequisition(schoolId: string, requestedById: string, data: {
+    async createRequisition(requestedById: string, data: {
         department?: string;
         priority?: string;
         requiredDate?: Date;
@@ -151,7 +141,6 @@ export class InventoryService {
             data: {
                 requisitionNo,
                 requestedById,
-                schoolId,
                 department: data.department,
                 priority: data.priority,
                 requiredDate: data.requiredDate,
@@ -178,9 +167,8 @@ export class InventoryService {
         });
     }
 
-    async getRequisitions(schoolId: string) {
+    async getRequisitions() {
         return (prisma as any).stockRequisition.findMany({
-            where: { schoolId },
             include: {
                 requestedBy: true,
                 approvedBy: true,
@@ -194,7 +182,7 @@ export class InventoryService {
     // FIXED ASSETS & ASSIGNMENTS
     // ============================================
 
-    async registerFixedAsset(schoolId: string, data: {
+    async registerFixedAsset(data: {
         assetCode: string;
         name: string;
         itemId?: string;
@@ -204,7 +192,7 @@ export class InventoryService {
         currentStoreId?: string;
     }) {
         return (prisma as any).fixedAsset.create({
-            data: { ...data, schoolId }
+            data: { ...data }
         });
     }
 
@@ -232,9 +220,8 @@ export class InventoryService {
         });
     }
 
-    async getAssetRegister(schoolId: string) {
+    async getAssetRegister() {
         return (prisma as any).fixedAsset.findMany({
-            where: { schoolId },
             include: {
                 assignments: {
                     where: { returnedAt: null },

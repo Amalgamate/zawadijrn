@@ -44,7 +44,6 @@ export const reportController = {
         throw new ApiError(404, 'Learner not found');
       }
 
-      // Get all formative assessments for this term
       const assessments = await prisma.formativeAssessment.findMany({
         where: {
           learnerId,
@@ -53,21 +52,14 @@ export const reportController = {
         },
         include: {
           teacher: {
-            select: {
-              firstName: true,
-              lastName: true
-            }
+            select: { firstName: true, lastName: true }
           }
         },
-        orderBy: {
-          learningArea: 'asc'
-        }
+        orderBy: { learningArea: 'asc' }
       });
 
-      // Calculate summary statistics
       const summary = calculateFormativeSummary(assessments);
 
-      // Get class teacher comment
       const teacherComment = await prisma.termlyReportComment.findFirst({
         where: {
           learnerId,
@@ -130,11 +122,9 @@ export const reportController = {
         throw new ApiError(404, 'Learner not found');
       }
 
-      // Fetch grading system
       const gradingSystem = await gradingService.getGradingSystem('SUMMATIVE');
       const ranges = gradingSystem?.ranges || [];
 
-      // Get all summative results for this term
       const results = await prisma.summativeResult.findMany({
         where: {
           learnerId,
@@ -154,10 +144,7 @@ export const reportController = {
             }
           },
           recorder: {
-            select: {
-              firstName: true,
-              lastName: true
-            }
+            select: { firstName: true, lastName: true }
           }
         },
         orderBy: {
@@ -253,7 +240,7 @@ export const reportController = {
         }),
         prisma.summativeResult.findMany({
           where: { learnerId: { in: learnerIds }, test: { term: term as Term, academicYear: yearValue } },
-          include: { test: true }
+          include: { test: { select: { learningArea: true, totalMarks: true } } }
         })
       ]);
 
@@ -261,6 +248,7 @@ export const reportController = {
         success: true,
         data: {
           class: classInfo,
+          learnerCount: learnerIds.length,
           formative: analyzeFormativePerformance(formative),
           summative: analyzeSummativePerformance(summative)
         }
@@ -276,7 +264,7 @@ export const reportController = {
   },
 
   /**
-   * Get Individual Learner Analytics
+   * Get Individual Learner Analytics (cross-term trends)
    */
   getLearnerAnalytics: async (req: AuthRequest, res: Response) => {
     try {
@@ -287,14 +275,95 @@ export const reportController = {
         throw new ApiError(400, 'Academic year is required');
       }
 
+      const yearValue = parseInt(academicYear as string);
+
+      const learner = await prisma.learner.findUnique({
+        where: { id: learnerId },
+        select: {
+          id: true, firstName: true, lastName: true,
+          admissionNumber: true, grade: true, stream: true
+        }
+      });
+
+      if (!learner) throw new ApiError(404, 'Learner not found');
+
+      // Fetch all summative results for the year across all 3 terms
+      const summativeResults = await prisma.summativeResult.findMany({
+        where: {
+          learnerId,
+          test: { academicYear: yearValue, archived: false }
+        },
+        include: {
+          test: {
+            select: { learningArea: true, term: true, totalMarks: true, testType: true }
+          }
+        },
+        orderBy: { test: { term: 'asc' } }
+      });
+
+      // Fetch all formative results for the year
+      const formativeResults = await prisma.formativeAssessment.findMany({
+        where: { learnerId, academicYear: yearValue, archived: false },
+        orderBy: { term: 'asc' }
+      });
+
+      // Cross-term trend per learning area
+      const subjectTrends: Record<string, any> = {};
+      for (const r of summativeResults) {
+        const area = r.test.learningArea;
+        if (!subjectTrends[area]) {
+          subjectTrends[area] = { learningArea: area, termResults: [] };
+        }
+        subjectTrends[area].termResults.push({
+          term: r.test.term,
+          testType: r.test.testType,
+          marksObtained: r.marksObtained,
+          totalMarks: r.test.totalMarks,
+          percentage: r.percentage,
+          grade: r.grade,
+          status: r.status
+        });
+      }
+
+      // Overall term averages
+      const termAverages: Record<string, { totalPercentage: number; count: number; average?: number }> = {};
+      for (const r of summativeResults) {
+        const term = r.test.term;
+        if (!termAverages[term]) termAverages[term] = { totalPercentage: 0, count: 0 };
+        termAverages[term].totalPercentage += r.percentage;
+        termAverages[term].count++;
+      }
+      for (const term of Object.keys(termAverages)) {
+        const t = termAverages[term];
+        t.average = t.count > 0 ? Math.round((t.totalPercentage / t.count) * 100) / 100 : 0;
+      }
+
+      // Formative summary per term
+      const formativeSummary: Record<string, any> = {};
+      for (const f of formativeResults) {
+        const term = f.term;
+        if (!formativeSummary[term]) {
+          formativeSummary[term] = { EE: 0, ME: 0, AE: 0, BE: 0, total: 0 };
+        }
+        if (f.overallRating) {
+          formativeSummary[term][f.overallRating] = (formativeSummary[term][f.overallRating] || 0) + 1;
+        }
+        formativeSummary[term].total++;
+      }
+
       res.json({
         success: true,
         data: {
-          learnerId,
-          academicYear: parseInt(academicYear as string),
-          message: 'Learner analytics coming soon'
+          learner,
+          academicYear: yearValue,
+          subjectTrends: Object.values(subjectTrends),
+          termAverages,
+          formativeSummary,
+          totalSummativeResults: summativeResults.length,
+          totalFormativeResults: formativeResults.length
         }
       });
+
     } catch (error: any) {
       res.status(error.statusCode || 500).json({
         success: false,
@@ -317,12 +386,10 @@ export const reportController = {
       const pdfBuffer = await pdfService.generatePdf(html, options);
       const outputName = fileName || filename || 'report.pdf';
 
-      // Set headers for PDF download
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename=${outputName}`);
       res.setHeader('Content-Length', pdfBuffer.length);
 
-      // Send the buffer directly
       res.end(pdfBuffer);
     } catch (error: any) {
       console.error('Error generating PDF:', error);
@@ -339,48 +406,136 @@ export const reportController = {
 // ============================================
 
 function calculateFormativeSummary(assessments: any[]) {
-  const distribution: any = { EE: 0, ME: 0, AE: 0, BE: 0 };
+  const distribution: Record<string, number> = { EE: 0, ME: 0, AE: 0, BE: 0 };
   let totalPoints = 0;
+  const byLearningArea: Record<string, { EE: number; ME: number; AE: number; BE: number; count: number }> = {};
 
-  assessments.forEach(a => {
+  for (const a of assessments) {
     if (a.overallRating) {
       distribution[a.overallRating] = (distribution[a.overallRating] || 0) + 1;
     }
     if (a.points) totalPoints += a.points;
-  });
+
+    const area = a.learningArea;
+    if (!byLearningArea[area]) {
+      byLearningArea[area] = { EE: 0, ME: 0, AE: 0, BE: 0, count: 0 };
+    }
+    if (a.overallRating) {
+      byLearningArea[area][a.overallRating as keyof typeof byLearningArea[string]]++;
+    }
+    byLearningArea[area].count++;
+  }
+
+  // Determine predominant rating per area
+  const dominantRatingByArea: Record<string, string> = {};
+  for (const [area, counts] of Object.entries(byLearningArea)) {
+    const { count, ...ratings } = counts;
+    dominantRatingByArea[area] = Object.entries(ratings).sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'ME';
+  }
 
   return {
     distribution,
-    averagePoints: assessments.length > 0 ? totalPoints / assessments.length : 0
+    averagePoints: assessments.length > 0 ? Math.round((totalPoints / assessments.length) * 100) / 100 : 0,
+    byLearningArea,
+    dominantRatingByArea
   };
 }
 
 function calculateSubjectSummary(results: any[], ranges: any[]) {
-  const summary: any = {};
+  const summary: Record<string, any> = {};
 
-  results.forEach(r => {
+  for (const r of results) {
     const area = r.test.learningArea;
     if (!summary[area]) {
-      summary[area] = { tests: [], averagePercentage: 0 };
+      summary[area] = { learningArea: area, tests: [], averagePercentage: 0, grade: 'E', passCount: 0, failCount: 0 };
     }
     summary[area].tests.push(r);
-  });
+    if (r.status === 'PASS') summary[area].passCount++;
+    else summary[area].failCount++;
+  }
 
-  Object.keys(summary).forEach(area => {
-    const tests = summary[area].tests;
-    summary[area].averagePercentage = tests.reduce((sum: number, t: any) => sum + t.percentage, 0) / tests.length;
-    summary[area].grade = gradingService.calculateGradeSync(summary[area].averagePercentage, ranges);
-  });
+  for (const area of Object.keys(summary)) {
+    const tests = summary[area].tests as any[];
+    const avg = tests.reduce((sum: number, t: any) => sum + t.percentage, 0) / tests.length;
+    summary[area].averagePercentage = Math.round(avg * 100) / 100;
+    summary[area].grade = gradingService.calculateGradeSync(avg, ranges);
+    summary[area].passRate = tests.length > 0 ? Math.round((summary[area].passCount / tests.length) * 100) : 0;
+  }
 
   return summary;
 }
 
 function analyzeFormativePerformance(assessments: any[]) {
-  // Implementation of formative analysis
-  return { count: assessments.length };
+  const distribution: Record<string, number> = { EE: 0, ME: 0, AE: 0, BE: 0 };
+  const byLearningArea: Record<string, Record<string, number>> = {};
+
+  for (const a of assessments) {
+    if (a.overallRating) {
+      distribution[a.overallRating] = (distribution[a.overallRating] || 0) + 1;
+    }
+
+    const area = a.learningArea;
+    if (!byLearningArea[area]) {
+      byLearningArea[area] = { EE: 0, ME: 0, AE: 0, BE: 0, total: 0 };
+    }
+    if (a.overallRating) {
+      byLearningArea[area][a.overallRating] = (byLearningArea[area][a.overallRating] || 0) + 1;
+    }
+    byLearningArea[area].total = (byLearningArea[area].total || 0) + 1;
+  }
+
+  const eeRate = assessments.length > 0
+    ? Math.round(((distribution.EE + distribution.ME) / assessments.length) * 100)
+    : 0;
+
+  return {
+    count: assessments.length,
+    distribution,
+    byLearningArea,
+    meetingOrExceedingRate: eeRate   // % learners rated EE or ME
+  };
 }
 
 function analyzeSummativePerformance(results: any[]) {
-  // Implementation of summative analysis
-  return { count: results.length };
+  if (results.length === 0) {
+    return { count: 0, averagePercentage: 0, passRate: 0, byLearningArea: {}, gradeDistribution: {} };
+  }
+
+  const byLearningArea: Record<string, any> = {};
+  const gradeDistribution: Record<string, number> = {};
+
+  let totalPercentage = 0;
+  let passCount = 0;
+
+  for (const r of results) {
+    totalPercentage += r.percentage ?? 0;
+    if (r.status === 'PASS') passCount++;
+
+    if (r.grade) {
+      gradeDistribution[r.grade] = (gradeDistribution[r.grade] || 0) + 1;
+    }
+
+    const area = r.test?.learningArea ?? 'Unknown';
+    if (!byLearningArea[area]) {
+      byLearningArea[area] = { totalPercentage: 0, count: 0, passCount: 0, average: 0, passRate: 0 };
+    }
+    byLearningArea[area].totalPercentage += r.percentage ?? 0;
+    byLearningArea[area].count++;
+    if (r.status === 'PASS') byLearningArea[area].passCount++;
+  }
+
+  for (const area of Object.keys(byLearningArea)) {
+    const a = byLearningArea[area];
+    a.average = Math.round((a.totalPercentage / a.count) * 100) / 100;
+    a.passRate = Math.round((a.passCount / a.count) * 100);
+    delete a.totalPercentage;
+  }
+
+  return {
+    count: results.length,
+    averagePercentage: Math.round((totalPercentage / results.length) * 100) / 100,
+    passRate: Math.round((passCount / results.length) * 100),
+    byLearningArea,
+    gradeDistribution
+  };
 }

@@ -14,7 +14,6 @@ export interface DeletionResult {
     stats: {
         usersAffected: number;
         learnersAffected: number;
-        branchesDeleted: number;
     };
 }
 
@@ -42,7 +41,6 @@ export async function deleteSchoolSafely(
     const stats = await prisma.$transaction(async (tx) => {
         const learnersCount = await tx.learner.count();
         const usersCount = await tx.user.count({ where: { role: { not: 'SUPER_ADMIN' } } });
-        const branchesCount = await tx.branch.count();
 
         // Delete dependent data using deleteMany (since no schoolId relation)
         await tx.feePayment.deleteMany({});
@@ -59,7 +57,6 @@ export async function deleteSchoolSafely(
             where: { role: { not: 'SUPER_ADMIN' } }
         });
 
-        await tx.branch.deleteMany({});
         await tx.admissionSequence.deleteMany({});
         await tx.termConfig.deleteMany({});
         await tx.aggregationConfig.deleteMany({});
@@ -77,8 +74,7 @@ export async function deleteSchoolSafely(
 
         return {
             usersAffected: usersCount,
-            learnersAffected: learnersCount,
-            branchesDeleted: branchesCount
+            learnersAffected: learnersCount
         };
     });
 

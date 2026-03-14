@@ -20,7 +20,6 @@ interface CreateTermConfigInput {
   formativeWeight: number;
   summativeWeight: number;
   isActive?: boolean;
-  schoolId: string;
   createdBy: string;
 }
 
@@ -66,7 +65,6 @@ interface UpsertClassInput {
   academicYear?: number;
   term?: Term;
   active?: boolean;
-  schoolId?: string;
 }
 
 interface TermConfiguration {
@@ -85,7 +83,6 @@ export class ConfigService {
    * Creates default if it doesn't exist
    */
   async getTermConfig(params: {
-    schoolId?: string;
     term: Term;
     academicYear: number;
   }): Promise<any> {
@@ -93,10 +90,9 @@ export class ConfigService {
 
     let config = await prisma.termConfig.findUnique({
       where: {
-        academicYear_term_schoolId: {
+        academicYear_term: {
           academicYear,
-          term,
-          schoolId: params.schoolId || ''
+          term
         }
       },
       include: {
@@ -212,10 +208,9 @@ export class ConfigService {
 
     return await prisma.termConfig.upsert({
       where: {
-        academicYear_term_schoolId: {
+        academicYear_term: {
           academicYear,
-          term,
-          schoolId: data.schoolId
+          term
         }
       },
       update: updateData,
@@ -286,7 +281,7 @@ export class ConfigService {
     }
   }
 
-  async getTermConfigs(schoolId?: string): Promise<any[]> {
+  async getTermConfigs(): Promise<any[]> {
     return await prisma.termConfig.findMany({
       orderBy: [
         { academicYear: 'desc' },
@@ -304,7 +299,7 @@ export class ConfigService {
     });
   }
 
-  async getActiveTermConfig(schoolId?: string): Promise<any | null> {
+  async getActiveTermConfig(): Promise<any | null> {
     return await prisma.termConfig.findFirst({
       where: { isActive: true },
       include: {
@@ -352,9 +347,9 @@ export class ConfigService {
     });
   }
 
-  async getClasses(schoolId?: string): Promise<any[]> {
+  async getClasses(): Promise<any[]> {
     return await prisma.class.findMany({
-      where: { schoolId, archived: false },
+      where: { archived: false },
       include: {
         teacher: { select: { id: true, firstName: true, lastName: true } }
       },
@@ -384,10 +379,6 @@ export class ConfigService {
     };
 
     if (id) {
-      if (!normalizedData.schoolId) {
-        delete (normalizedData as any).schoolId;
-      }
-
       return await prisma.class.update({
         where: { id },
         data: normalizedData,
@@ -396,10 +387,6 @@ export class ConfigService {
         }
       });
     } else {
-      if (!normalizedData.schoolId) {
-        throw new Error('School ID is required to create a class');
-      }
-
       const totalClasses = await prisma.class.count();
       const classCode = `CLS-${String(totalClasses + 1).padStart(5, '0')}`;
 
@@ -427,7 +414,7 @@ export class ConfigService {
     }
   }
 
-  async getStreamConfigs(schoolId?: string): Promise<any[]> {
+  async getStreamConfigs(): Promise<any[]> {
     return await prisma.stream.findMany({
       where: { archived: false },
       orderBy: { name: 'asc' }
@@ -450,9 +437,9 @@ export class ConfigService {
     });
   }
 
-  async getAggregationConfigs(schoolId?: string): Promise<any[]> {
+  async getAggregationConfigs(): Promise<any[]> {
     return await prisma.aggregationConfig.findMany({
-      where: { schoolId, archived: false },
+      where: { archived: false },
       include: {
         creator: {
           select: { id: true, firstName: true, lastName: true }
@@ -461,12 +448,11 @@ export class ConfigService {
     });
   }
 
-  async getSpecificAggregationConfig(params: { type: FormativeAssessmentType; schoolId?: string; grade?: Grade }): Promise<any> {
-    const { type, schoolId, grade } = params;
+  async getSpecificAggregationConfig(params: { type: FormativeAssessmentType; grade?: Grade }): Promise<any> {
+    const { type, grade } = params;
     return await prisma.aggregationConfig.findFirst({
       where: {
         type,
-        schoolId,
         grade,
         archived: false
       }

@@ -690,27 +690,24 @@ export class FeeController {
 
     const learner = await prisma.learner.findUnique({
       where: { id: learnerId },
-      include: {
-        school: true,
-        parent: true
-      }
+      include: { parent: true }
     });
 
     if (!learner) throw new ApiError(404, 'Learner not found');
 
-    // Get parent email
     const contactEmail = learner.guardianEmail || learner.parent?.email || (learner as any).email;
     if (!contactEmail) {
       throw new ApiError(400, 'Student has no linked email address to send the statement to');
     }
 
-    // Convert base64 to buffer
     const base64Data = pdfBase64.replace(/^data:application\/pdf;base64,/, '');
     const pdfBuffer = Buffer.from(base64Data, 'base64');
 
+    const school = await prisma.school.findFirst({ select: { name: true } });
+
     await EmailService.sendFeeStatementEmail({
       to: contactEmail,
-      schoolName: learner.school?.name || 'School',
+      schoolName: school?.name || 'School',
       parentName: learner.guardianName || learner.parent?.firstName || 'Parent/Guardian',
       learnerName: `${learner.firstName} ${learner.lastName}`,
       pdfBuffer

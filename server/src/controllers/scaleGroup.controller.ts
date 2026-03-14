@@ -15,12 +15,12 @@ const OFFICIAL_CBC_MAPPING: { [key: string]: string[] } = {
   'TRANSITION': ['Language Activities', 'Mathematical Activities', 'Environmental Activities', 'Creative Activities', 'Religious Activities', 'Pastoral Programme of Instruction (PPI)'],
   'PP1': ['Language Activities', 'Mathematical Activities', 'Environmental Activities', 'Creative Activities', 'Religious Activities', 'Pastoral Programme of Instruction (PPI)'],
   'PP2': ['Language Activities', 'Mathematical Activities', 'Environmental Activities', 'Creative Activities', 'Religious Activities', 'Pastoral Programme of Instruction (PPI)'],
-  'GRADE_1': ['Mathematics', 'English', 'Kiswahili', 'Indigenous Language / Kenyan Sign Language', 'Environmental Activities', 'Creative Activities', 'Religious Education'],
-  'GRADE_2': ['Mathematics', 'English', 'Kiswahili', 'Indigenous Language / Kenyan Sign Language', 'Environmental Activities', 'Creative Activities', 'Religious Education'],
-  'GRADE_3': ['Mathematics', 'English', 'Kiswahili', 'Indigenous Language / Kenyan Sign Language', 'Environmental Activities', 'Creative Activities', 'Religious Education'],
-  'GRADE_4': ['Mathematics', 'English', 'Kiswahili', 'Indigenous Language / KSL', 'Science and Technology', 'Social Studies', 'Agriculture & Nutrition', 'Creative Arts', 'Religious Education'],
-  'GRADE_5': ['Mathematics', 'English', 'Kiswahili', 'Indigenous Language / KSL', 'Science and Technology', 'Social Studies', 'Agriculture & Nutrition', 'Creative Arts', 'Religious Education'],
-  'GRADE_6': ['Mathematics', 'English', 'Kiswahili', 'Indigenous Language / KSL', 'Science and Technology', 'Social Studies', 'Agriculture & Nutrition', 'Creative Arts', 'Religious Education'],
+  'GRADE_1': ['English', 'Kiswahili', 'Indigenous Language', 'Mathematical Activities', 'Environmental Activities', 'Religious Education', 'Creative Activities'],
+  'GRADE_2': ['English', 'Kiswahili', 'Indigenous Language', 'Mathematical Activities', 'Environmental Activities', 'Religious Education', 'Creative Activities'],
+  'GRADE_3': ['English', 'Kiswahili', 'Indigenous Language', 'Mathematical Activities', 'Environmental Activities', 'Religious Education', 'Creative Activities'],
+  'GRADE_4': ['English', 'Kiswahili', 'Science and Technology', 'Social Studies', 'Mathematics', 'Agriculture', 'Creative Arts', 'Religious Education'],
+  'GRADE_5': ['English', 'Kiswahili', 'Science and Technology', 'Social Studies', 'Mathematics', 'Agriculture', 'Creative Arts', 'Religious Education'],
+  'GRADE_6': ['English', 'Kiswahili', 'Science and Technology', 'Social Studies', 'Mathematics', 'Agriculture', 'Creative Arts', 'Religious Education'],
   'GRADE_7': ['English', 'Kiswahili', 'Mathematics', 'Integrated Science', 'Social Studies', 'Religious Education', 'Pre-Technical Studies', 'Agriculture', 'Creative Arts & Sports'],
   'GRADE_8': ['English', 'Kiswahili', 'Mathematics', 'Integrated Science', 'Social Studies', 'Religious Education', 'Pre-Technical Studies', 'Agriculture', 'Creative Arts & Sports'],
   'GRADE_9': ['English', 'Kiswahili', 'Mathematics', 'Integrated Science', 'Social Studies', 'Religious Education', 'Pre-Technical Studies', 'Agriculture', 'Creative Arts & Sports']
@@ -407,7 +407,7 @@ export const generateGradesForScaleGroup = async (req: AuthRequest, res: Respons
       });
     }
 
-    // Identify existing systems to avoid duplicates
+    // Identify existing systems for this school to avoid duplicates
     const existingSystems = await prisma.gradingSystem.findMany({
       where: {
         scaleGroupId: id,

@@ -13,47 +13,91 @@ import { auditLog } from '../middleware/permissions.middleware';
 
 const router = express.Router();
 
-// Validation Schemas
+// ============================================
+// VALIDATION SCHEMAS
+// ============================================
+
+const DETAILED_RATING = z.enum(['EE1', 'EE2', 'ME1', 'ME2', 'AE1', 'AE2', 'BE1', 'BE2']);
+const TERM_ENUM = z.preprocess((v) => {
+  const raw = String(v || '').toUpperCase().trim();
+  if (raw === 'TERM 1') return 'TERM_1';
+  if (raw === 'TERM 2') return 'TERM_2';
+  if (raw === 'TERM 3') return 'TERM_3';
+  return raw;
+}, z.enum(['TERM_1', 'TERM_2', 'TERM_3']));
+
 const competenciesSchema = z.object({
   learnerId: z.string().min(1),
-  competencies: z.object({
-    criticalThinking: z.number().min(0).max(5).optional(),
-    creativity: z.number().min(0).max(5).optional(),
-    communication: z.number().min(0).max(5).optional(),
-    collaboration: z.number().min(0).max(5).optional(),
-    citizenship: z.number().min(0).max(5).optional(),
-    digitalLiteracy: z.number().min(0).max(5).optional(),
-  }).optional(),
+  term: TERM_ENUM,
+  academicYear: z.coerce.number().int().min(2020).max(2100),
+  communication: DETAILED_RATING,
+  communicationComment: z.string().max(500).optional(),
+  criticalThinking: DETAILED_RATING,
+  criticalThinkingComment: z.string().max(500).optional(),
+  creativity: DETAILED_RATING,
+  creativityComment: z.string().max(500).optional(),
+  collaboration: DETAILED_RATING,
+  collaborationComment: z.string().max(500).optional(),
+  citizenship: DETAILED_RATING,
+  citizenshipComment: z.string().max(500).optional(),
+  learningToLearn: DETAILED_RATING,
+  learningToLearnComment: z.string().max(500).optional(),
+});
+
+const competenciesBulkSchema = z.object({
+  records: z.array(competenciesSchema).min(1, 'At least one record is required')
 });
 
 const valuesSchema = z.object({
   learnerId: z.string().min(1),
-  values: z.object({
-    respect: z.number().min(0).max(5).optional(),
-    responsibility: z.number().min(0).max(5).optional(),
-    integrity: z.number().min(0).max(5).optional(),
-    inclusivity: z.number().min(0).max(5).optional(),
-  }).optional(),
+  term: TERM_ENUM,
+  academicYear: z.coerce.number().int().min(2020).max(2100),
+  love: DETAILED_RATING,
+  responsibility: DETAILED_RATING,
+  respect: DETAILED_RATING,
+  unity: DETAILED_RATING,
+  peace: DETAILED_RATING,
+  patriotism: DETAILED_RATING,
+  integrity: DETAILED_RATING,
+  comment: z.string().max(1000).optional(),
+});
+
+const valuesBulkSchema = z.object({
+  records: z.array(valuesSchema).min(1, 'At least one record is required')
 });
 
 const coCurricularSchema = z.object({
   learnerId: z.string().min(1),
+  term: TERM_ENUM,
+  academicYear: z.coerce.number().int().min(2020).max(2100),
   activityName: z.string().min(1).max(255),
-  category: z.string().min(1).max(100),
-  description: z.string().max(1000).optional(),
-  level: z.enum(['BEGINNER', 'INTERMEDIATE', 'ADVANCED']).optional(),
-  duration: z.string().optional(),
+  activityType: z.string().min(1).max(100),
+  performance: DETAILED_RATING,
+  achievements: z.string().max(1000).optional(),
+  remarks: z.string().max(1000).optional(),
+});
+
+const coCurricularBulkSchema = z.object({
+  records: z.array(coCurricularSchema).min(1, 'At least one record is required')
 });
 
 const reportCommentsSchema = z.object({
   learnerId: z.string().min(1),
-  term: z.enum(['TERM_1', 'TERM_2', 'TERM_3']),
-  academicYear: z.number().int().min(2020).max(2100),
-  classTeacherComments: z.string().max(2000).optional(),
-  principalComments: z.string().max(2000).optional(),
+  term: TERM_ENUM,
+  academicYear: z.coerce.number().int().min(2020).max(2100),
+  classTeacherComment: z.string().min(1).max(2000),
+  classTeacherName: z.string().min(1).max(255),
+  classTeacherSignature: z.string().max(500).optional(),
+  headTeacherComment: z.string().max(2000).optional(),
+  headTeacherName: z.string().max(255).optional(),
+  headTeacherSignature: z.string().max(500).optional(),
+  nextTermOpens: z.string().min(1),
 });
 
-// Core Competencies
+// ============================================
+// CORE COMPETENCIES
+// ============================================
+
 router.post(
   '/competencies',
   authenticate,
@@ -63,6 +107,16 @@ router.post(
   cbcController.createOrUpdateCompetencies
 );
 
+// FIX: bulk-save for whole-class competency entry
+router.post(
+  '/competencies/bulk',
+  authenticate,
+  rateLimit({ windowMs: 60_000, maxRequests: 10 }),
+  validate(competenciesBulkSchema),
+  auditLog('SAVE_COMPETENCIES_BULK'),
+  cbcController.createOrUpdateCompetenciesBulk
+);
+
 router.get(
   '/competencies/:learnerId',
   authenticate,
@@ -70,7 +124,10 @@ router.get(
   cbcController.getCompetenciesByLearner
 );
 
-// Values Assessment
+// ============================================
+// VALUES ASSESSMENT
+// ============================================
+
 router.post(
   '/values',
   authenticate,
@@ -80,6 +137,16 @@ router.post(
   cbcController.createOrUpdateValues
 );
 
+// FIX: bulk-save for whole-class values entry
+router.post(
+  '/values/bulk',
+  authenticate,
+  rateLimit({ windowMs: 60_000, maxRequests: 10 }),
+  validate(valuesBulkSchema),
+  auditLog('SAVE_VALUES_BULK'),
+  cbcController.createOrUpdateValuesBulk
+);
+
 router.get(
   '/values/:learnerId',
   authenticate,
@@ -87,7 +154,10 @@ router.get(
   cbcController.getValuesByLearner
 );
 
-// Co-Curricular Activities
+// ============================================
+// CO-CURRICULAR ACTIVITIES
+// ============================================
+
 router.post(
   '/cocurricular',
   authenticate,
@@ -97,6 +167,16 @@ router.post(
   cbcController.createCoCurricular
 );
 
+// FIX: bulk-create for whole-class CCA entry
+router.post(
+  '/cocurricular/bulk',
+  authenticate,
+  rateLimit({ windowMs: 60_000, maxRequests: 10 }),
+  validate(coCurricularBulkSchema),
+  auditLog('CREATE_COCURRICULAR_BULK'),
+  cbcController.createCoCurricularBulk
+);
+
 router.get(
   '/cocurricular/:learnerId',
   authenticate,
@@ -104,11 +184,12 @@ router.get(
   cbcController.getCoCurricularByLearner
 );
 
+// Note: bulk update of CCA is intentionally not provided — activities are per-learner
+// and updating them individually preserves the ownership/audit trail.
 router.put(
   '/cocurricular/:id',
   authenticate,
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
-  validate(coCurricularSchema),
   auditLog('UPDATE_COCURRICULAR'),
   cbcController.updateCoCurricular
 );
@@ -121,7 +202,10 @@ router.delete(
   cbcController.deleteCoCurricular
 );
 
-// Termly Report Comments
+// ============================================
+// TERMLY REPORT COMMENTS
+// ============================================
+
 router.post(
   '/comments',
   authenticate,

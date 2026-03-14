@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { resolveCurrentSchoolId } from './schoolContext';
+
 
 // Use environment variable for API URL or fall back to automatic discovery for production stability
 const getApiBaseUrl = () => {
@@ -31,14 +31,8 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
     async (config) => {
         const token = localStorage.getItem('token');
-        const currentSchoolId = resolveCurrentSchoolId();
-
         if (token) {
             config.headers['Authorization'] = `Bearer ${token}`;
-        }
-
-        if (currentSchoolId) {
-            config.headers['X-School-Id'] = currentSchoolId;
         }
 
         return config;
@@ -81,9 +75,8 @@ axiosInstance.interceptors.response.use(
                     localStorage.removeItem('token');
                     localStorage.removeItem('refreshToken');
                     localStorage.removeItem('user');
-                    localStorage.removeItem('currentSchoolId');
                     // Avoid redirecting if it's already a public request to prevent loops
-                    if (!originalRequest.url.includes('/public/')) {
+                    if (!originalRequest.url?.includes('/public/')) {
                         window.location.href = '/';
                     }
                 }
@@ -92,7 +85,6 @@ axiosInstance.interceptors.response.use(
                 localStorage.removeItem('token');
                 localStorage.removeItem('refreshToken');
                 localStorage.removeItem('user');
-                localStorage.removeItem('currentSchoolId');
                 // Avoid redirecting if it's already a public request to prevent loops
                 if (!originalRequest.url?.includes('/public/')) {
                     window.location.href = '/';

@@ -396,6 +396,7 @@ export class NotificationController {
       parentPhone,
       parentName,
       term,
+      academicYear,
       totalTests,
       averageScore,
       overallGrade,
@@ -405,8 +406,12 @@ export class NotificationController {
 
     // Validate required fields
     if (!learnerId || !learnerName || !learnerGrade || !parentPhone || !term) {
-      throw new ApiError(400, 'Missing required fields');
+      throw new ApiError(400, 'Missing required fields: learnerId, learnerName, learnerGrade, parentPhone, term');
     }
+
+    // Get school name from School model or fallback
+    const school = await prisma.school.findFirst();
+    const schoolName = school?.name || 'Zawadi Academy';
 
     const result = await whatsappService.sendAssessmentReport({
       learnerId,
@@ -420,7 +425,7 @@ export class NotificationController {
       overallGrade,
       subjects,
       pathwayPrediction,
-      schoolName: 'School'
+      schoolName
     } as any);
 
     // Audit log
@@ -429,7 +434,7 @@ export class NotificationController {
         learnerId,
         assessmentType: 'SUMMATIVE',
         term,
-        academicYear: new Date().getFullYear(),
+        academicYear: academicYear ? parseInt(academicYear) : new Date().getFullYear(),
         parentPhone: parentPhone,
         parentName: parentName || 'Unknown',
         learnerName: learnerName,
@@ -541,7 +546,6 @@ export class NotificationController {
    */
   async getAuditLogs(req: AuthRequest, res: Response) {
     const {
-      schoolId,
       startDate,
       endDate,
       channel,
@@ -554,8 +558,8 @@ export class NotificationController {
     try {
       const skip = (parseInt(page) - 1) * parseInt(limit);
       const take = parseInt(limit);
+      const safetyBuffer = skip + take + 500; // Limit DB fetch to what we likely need
 
-      const resolvedSchoolId = (schoolId as string) || req.user?.schoolId;
       const searchText = (search || '').toString().trim().toLowerCase();
       const normalizedChannel = channel ? String(channel).toUpperCase() : undefined;
       const normalizedStatus = status ? String(status).toUpperCase() : undefined;
@@ -579,29 +583,9 @@ export class NotificationController {
         return 'FAILED';
       };
 
-      const matchesDate = (dateValue: any) => {
-        const date = dateValue ? new Date(dateValue) : null;
-        if (!date) return false;
-        if (start && date < start) return false;
-        if (end && date > end) return false;
-        return true;
-      };
-
-      const matchesSearch = (values: any[]) => {
-        if (!searchText) return true;
-        return values.some(value => (value || '').toString().toLowerCase().includes(searchText));
-      };
-
       const auditWhere: any = {};
-      if (resolvedSchoolId) {
-        auditWhere.schoolId = resolvedSchoolId;
-      }
-      if (normalizedChannel) {
-        auditWhere.channel = normalizedChannel;
-      }
-      if (normalizedStatus && normalizedStatus !== 'BOUNCED') {
-        auditWhere.smsStatus = normalizedStatus;
-      }
+      if (normalizedChannel) auditWhere.channel = normalizedChannel;
+      if (normalizedStatus && normalizedStatus !== 'BOUNCED') auditWhere.smsStatus = normalizedStatus;
       if (start || end) {
         auditWhere.sentAt = {};
         if (start) auditWhere.sentAt.gte = start;
@@ -619,25 +603,19 @@ export class NotificationController {
       const auditLogs = wantsOnlyBounced
         ? []
         : await prisma.assessmentSmsAudit.findMany({
-          where: auditWhere,
-          include: {
-            learner: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                admissionNumber: true,
-                grade: true,
+            where: auditWhere,
+            include: {
+              learner: {
+                select: { id: true, firstName: true, lastName: true, admissionNumber: true, grade: true }
               }
-            }
-          },
-          orderBy: { sentAt: 'desc' },
-        });
+            },
+            orderBy: { sentAt: 'desc' },
+            take: safetyBuffer, // SCALE FIX: Don't load everything
+          });
 
+      const canUseBroadcast = (!normalizedChannel || normalizedChannel === 'SMS') && !wantsOnlyBounced;
+      
       const broadcastWhere: any = {};
-      if (resolvedSchoolId) {
-        broadcastWhere.campaign = { schoolId: resolvedSchoolId };
-      }
       if (start || end) {
         broadcastWhere.sentAt = {};
         if (start) broadcastWhere.sentAt.gte = start;
@@ -650,30 +628,20 @@ export class NotificationController {
         ];
       }
 
-      const canUseBroadcast = (!normalizedChannel || normalizedChannel === 'SMS') && !wantsOnlyBounced;
       const broadcastRecipients = canUseBroadcast
         ? await (prisma as any).broadcastRecipient.findMany({
-          where: broadcastWhere,
-          include: {
-            campaign: {
-              select: {
-                id: true,
-                senderId: true,
-                messageChannel: true,
-                messagePreview: true,
-                schoolId: true,
-                sentAt: true,
+            where: broadcastWhere,
+            include: {
+              campaign: {
+                select: { id: true, senderId: true, messageChannel: true, messagePreview: true, sentAt: true }
               }
-            }
-          },
-          orderBy: { sentAt: 'desc' }
-        })
+            },
+            orderBy: { sentAt: 'desc' },
+            take: safetyBuffer, // SCALE FIX
+          })
         : [];
 
       const deliveryWhere: any = {};
-      if (resolvedSchoolId) {
-        deliveryWhere.campaign = { schoolId: resolvedSchoolId };
-      }
       if (start || end) {
         deliveryWhere.sentAt = {};
         if (start) deliveryWhere.sentAt.gte = start;
@@ -688,19 +656,15 @@ export class NotificationController {
 
       const deliveryLogs = canUseBroadcast
         ? await (prisma as any).smsDeliveryLog.findMany({
-          where: deliveryWhere,
-          include: {
-            campaign: {
-              select: {
-                id: true,
-                senderId: true,
-                schoolId: true,
-                sentAt: true,
+            where: deliveryWhere,
+            include: {
+              campaign: {
+                select: { id: true, senderId: true, sentAt: true }
               }
-            }
-          },
-          orderBy: { sentAt: 'desc' }
-        })
+            },
+            orderBy: { sentAt: 'desc' },
+            take: safetyBuffer, // SCALE FIX
+          })
         : [];
 
       const normalizedAudit = auditLogs.map((log: any) => ({
@@ -721,12 +685,7 @@ export class NotificationController {
         id: `broadcast_${recipient.id}`,
         createdAt: recipient.sentAt || recipient.createdAt || recipient.campaign?.sentAt,
         sentAt: recipient.sentAt || recipient.createdAt || recipient.campaign?.sentAt,
-        learner: {
-          firstName: recipient.recipientName || 'Recipient',
-          lastName: '',
-          admissionNumber: null,
-          grade: null,
-        },
+        learner: { firstName: recipient.recipientName || 'Recipient', lastName: '', admissionNumber: null, grade: null },
         phoneNumber: recipient.recipientPhone,
         channel: recipient.campaign?.messageChannel || 'SMS',
         status: normalizeStatus(recipient.status),
@@ -740,12 +699,7 @@ export class NotificationController {
         id: `delivery_${delivery.id}`,
         createdAt: delivery.sentAt || delivery.createdAt,
         sentAt: delivery.sentAt || delivery.createdAt,
-        learner: {
-          firstName: 'Recipient',
-          lastName: '',
-          admissionNumber: null,
-          grade: null,
-        },
+        learner: { firstName: 'Recipient', lastName: '', admissionNumber: null, grade: null },
         phoneNumber: delivery.recipientPhone,
         channel: 'SMS',
         status: normalizeStatus(delivery.status),
@@ -755,6 +709,7 @@ export class NotificationController {
         messageContent: delivery.message,
       }));
 
+      // Dedupe and merge
       const dedupeMap = new Map<string, any>();
       for (const entry of [...normalizedAudit, ...normalizedBroadcastRecipients, ...normalizedDeliveryLogs]) {
         const key = `${entry.phoneNumber || 'unknown'}|${entry.createdAt ? new Date(entry.createdAt).toISOString() : 'no-date'}|${entry.channel || 'unknown'}|${entry.status}`;
@@ -763,45 +718,21 @@ export class NotificationController {
           dedupeMap.set(key, entry);
           continue;
         }
-
-        // Prefer richer records (assessment audit), then broadcast recipient, then delivery log
         const score = (record: any) => {
           if (record.source === 'ASSESSMENT_AUDIT') return 3;
           if (record.source === 'BROADCAST_RECIPIENT') return 2;
           return 1;
         };
-
-        if (score(entry) > score(existing)) {
-          dedupeMap.set(key, entry);
-        }
+        if (score(entry) > score(existing)) dedupeMap.set(key, entry);
       }
 
       let allLogs = Array.from(dedupeMap.values());
 
-      allLogs = allLogs.filter((entry: any) => {
-        if (normalizedChannel && String(entry.channel || '').toUpperCase() !== normalizedChannel) {
-          return false;
-        }
-        if (normalizedStatus && String(entry.status || '').toUpperCase() !== normalizedStatus) {
-          return false;
-        }
-        if (!matchesDate(entry.createdAt)) {
-          return false;
-        }
-        return matchesSearch([
-          entry.phoneNumber,
-          entry.messageContent,
-          entry.learner?.firstName,
-          entry.learner?.lastName,
-          entry.sentBy?.firstName,
-          entry.sentBy?.lastName,
-        ]);
-      });
+      allLogs.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-      allLogs.sort((a: any, b: any) => {
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      });
-
+      // Get counts for stats from total rows in DB conceptually, 
+      // but for accuracy on the filtered set we need the full count.
+      // Since we limited DB fetch, these stats reflect the recent safety buffer.
       const total = allLogs.length;
       const paginatedLogs = allLogs.slice(skip, skip + take);
       const successfulSent = allLogs.filter(log => log.status === 'SENT').length;

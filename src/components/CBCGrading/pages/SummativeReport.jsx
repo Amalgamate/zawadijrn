@@ -26,7 +26,7 @@ const LEARNING_AREA_ABBREVIATIONS = {
   'CHRISTIAN RELIGIOUS EDUCATION': 'CRE',
   'ISLAMIC RELIGIOUS EDUCATION': 'IRE',
   'CREATIVE ARTS AND SPORTS': 'CREATIVE',
-  'AGRICULTURE AND NUTRITION': 'AGRNT',
+  'AGRICULTURE': 'AGRI',
   'ENVIRONMENTAL ACTIVITIES': 'ENV',
   'HOMESCIENCE': 'H SCI',
   'MUSIC': 'MUSIC',
@@ -37,8 +37,7 @@ const LEARNING_AREA_ABBREVIATIONS = {
   'ENGLISH LANGUAGE ACTIVITIES': 'ENG',
   'KISWAHILI LANGUAGE ACTIVITIES': 'KIS',
   'SCIENCE & TECHNOLOGY': 'SCITECH',
-  'AGRICULTURE': 'AGRNT',
-  'NUTRITION': 'NUTR',
+  'AGRICULTURE': 'AGRI',
   'PRE-TECHNICAL STUDIES': 'PRE-TECH',
   'INTEGRATED SCIENCE': 'INT SCI',
   'SOCIAL STUDIES & LIFE SKILLS': 'SST',
@@ -423,7 +422,9 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
                   {formatTestName(col)}
                 </th>
               ))}
-              <th style={{ padding: '8px 4px', textAlign: 'center', fontWeight: 'bold', borderLeft: '1px solid rgba(255,255,255,0.2)' }}>AVG %</th>
+              {testColumns.length > 1 && (
+                <th style={{ padding: '8px 4px', textAlign: 'center', fontWeight: 'bold', borderLeft: '1px solid rgba(255,255,255,0.2)' }}>AVG %</th>
+              )}
               <th style={{ padding: '8px 4px', textAlign: 'left', fontWeight: 'bold', borderLeft: '1px solid rgba(255,255,255,0.2)' }}>GRADE</th>
               <th style={{ padding: '8px 4px', textAlign: 'left', fontWeight: 'bold', borderLeft: '1px solid rgba(255,255,255,0.2)' }}>REMARKS</th>
             </tr>
@@ -437,7 +438,9 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
                     {row.scoresByCol[col] !== null ? row.scoresByCol[col] : '—'}
                   </td>
                 ))}
-                <td style={{ padding: '6px 4px', textAlign: 'center', fontWeight: '700', fontSize: '16px', color: '#000000' }}>{row.percentage}%</td>
+                {testColumns.length > 1 && (
+                  <td style={{ padding: '6px 4px', textAlign: 'center', fontWeight: '700', fontSize: '16px', color: '#000000' }}>{row.percentage}%</td>
+                )}
                 <td style={{ padding: '6px 4px', textAlign: 'left', fontWeight: '700', fontSize: '16px', color: row.color }}>{row.grade}</td>
                 <td style={{ padding: '6px 4px', fontSize: '11px', fontStyle: 'italic', fontWeight: '700', color: '#000000', lineHeight: '1.2' }}>{row.remark}</td>
               </tr>
@@ -704,13 +707,13 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
   const [notificationModal, setNotificationModal] = useState({ show: false, title: '', message: '', type: 'info' });
 
   const reportTypes = [
-    { value: 'GRADE_REPORT', label: 'Grade Report' },
-    { value: 'STREAM_REPORT', label: 'Stream Report' },
-    { value: 'LEARNER_REPORT', label: 'Learner Report' },
-    { value: 'LEARNER_TERMLY_REPORT', label: 'Learner Termly Report' },
-    { value: 'STREAM_RANKING_REPORT', label: 'Stream Ranking Report' },
-    { value: 'STREAM_ANALYSIS_REPORT', label: 'Stream Analysis Report' },
-    { value: 'GRADE_ANALYSIS_REPORT', label: 'Grade Analysis Report' }
+    { value: 'GRADE_REPORT', label: 'Grade Sheet' },
+    { value: 'STREAM_REPORT', label: 'Stream Sheet' },
+    { value: 'LEARNER_REPORT', label: 'Learner Sheet' },
+    { value: 'LEARNER_TERMLY_REPORT', label: 'Learner Termly Sheet' },
+    { value: 'STREAM_RANKING_REPORT', label: 'Stream Ranking Sheet' },
+    { value: 'STREAM_ANALYSIS_REPORT', label: 'Stream Analysis Sheet' },
+    { value: 'GRADE_ANALYSIS_REPORT', label: 'Grade Analysis Sheet' }
   ];
 
   // Local state for grade, stream, term selections (instead of relying on setup hook)

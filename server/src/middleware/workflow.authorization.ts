@@ -81,7 +81,8 @@ export const checkNotLocked = async (
 ) => {
   try {
     const { id, assessmentId, testId } = req.params;
-    const entityId = id || assessmentId || testId;
+    // Also check body for bulk endpoints where the ID is in the request body
+    const entityId = id || assessmentId || testId || req.body?.testId;
     const userRole = req.user?.role;
 
     if (!entityId) {

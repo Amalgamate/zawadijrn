@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import api from '../services/api';
-import { getCurrentSchoolId } from '../services/schoolContext';
 import { GRADES } from '../constants/grades'; // For sorting
 
 const SchoolDataContext = createContext();
@@ -34,13 +33,6 @@ export const SchoolDataProvider = ({ children }) => {
             setLoading(true);
             setError(null);
 
-            const schoolId = getCurrentSchoolId();
-            if (!schoolId) {
-                // Might not be logged in or school not selected yet
-                setLoading(false);
-                return;
-            }
-
             const response = await api.classes.getAll();
             const fetchedClasses = response.data || [];
 
@@ -60,14 +52,6 @@ export const SchoolDataProvider = ({ children }) => {
 
     useEffect(() => {
         fetchSchoolData();
-
-        // Optional: listen for school change event if multi-tenant UI switches
-        const handleSchoolSwitch = () => {
-            fetchSchoolData();
-        };
-
-        window.addEventListener('schoolChanged', handleSchoolSwitch);
-        return () => window.removeEventListener('schoolChanged', handleSchoolSwitch);
     }, []);
 
     const value = useMemo(() => ({

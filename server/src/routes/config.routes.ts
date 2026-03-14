@@ -22,36 +22,36 @@ router.use(authenticate);
 // ============================================
 
 /**
- * @route   GET /api/config/term/:schoolId
- * @desc    Get all term configurations for school
+ * @route   GET /api/config/term
+ * @desc    Get all term configurations
  * @access  ADMIN, SUPER_ADMIN
  */
 router.get(
-  '/term/:schoolId',
+  '/term',
   requireRole(['ADMIN', 'SUPER_ADMIN']),
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   configController.getTermConfigs
 );
 
 /**
- * @route   GET /api/config/term/:schoolId/active
+ * @route   GET /api/config/term/active
  * @desc    Get active term configuration
  * @access  ADMIN, SUPER_ADMIN, TEACHER
  */
 router.get(
-  '/term/:schoolId/active',
+  '/term/active',
   requireRole(['ADMIN', 'SUPER_ADMIN', 'TEACHER']),
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   configController.getActiveTermConfig
 );
 
 /**
- * @route   GET /api/config/term/:schoolId/:term/:year
+ * @route   GET /api/config/term/:term/:year
  * @desc    Get specific term configuration
  * @access  ADMIN, SUPER_ADMIN
  */
 router.get(
-  '/term/:schoolId/:term/:year',
+  '/term/:term/:year',
   requireRole(['ADMIN', 'SUPER_ADMIN']),
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   configController.getSpecificTermConfig
@@ -159,12 +159,12 @@ router.delete(
 // ============================================
 
 /**
- * @route   GET /api/config/streams/:schoolId
+ * @route   GET /api/config/streams
  * @desc    Get stream configurations
  * @access  ADMIN, SUPER_ADMIN, HEAD_TEACHER, TEACHER
  */
 router.get(
-  '/streams/:schoolId',
+  '/streams',
   requireRole(['ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER', 'TEACHER']),
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   configController.getStreamConfigs
@@ -214,12 +214,12 @@ router.post(
 // ============================================
 
 /**
- * @route   GET /api/config/classes/:schoolId
- * @desc    Get classes for school
+ * @route   GET /api/config/classes
+ * @desc    Get classes
  * @access  ADMIN, SUPER_ADMIN, HEAD_TEACHER, TEACHER
  */
 router.get(
-  '/classes/:schoolId',
+  '/classes',
   requireRole(['ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER', 'TEACHER']),
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   configController.getClasses

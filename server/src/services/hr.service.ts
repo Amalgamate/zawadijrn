@@ -224,7 +224,7 @@ export class HRService {
         });
     }
 
-    async clockInStaff(userId: string, schoolId?: string, payload: any = {}) {
+    async clockInStaff(userId: string, payload: any = {}) {
         const timestamp = payload?.timestamp ? new Date(payload.timestamp) : new Date();
         const dateOnly = this.toDateOnly(timestamp);
 
@@ -242,7 +242,6 @@ export class HRService {
             },
             create: {
                 userId,
-                schoolId: schoolId || null,
                 date: dateOnly,
                 clockInAt: timestamp,
                 source: payload?.source || 'web',
@@ -253,8 +252,7 @@ export class HRService {
         const user = await prisma.user.findUnique({
             where: { id: userId },
             select: {
-                basicSalary: true,
-                schoolId: true
+                basicSalary: true
             }
         });
 
@@ -279,7 +277,6 @@ export class HRService {
                     userId,
                     month,
                     year,
-                    schoolId: user.schoolId || schoolId || null,
                     basicSalary,
                     netSalary: basicSalary,
                     workedMinutes: 0,
@@ -299,7 +296,7 @@ export class HRService {
         };
     }
 
-    async clockOutStaff(userId: string, schoolId?: string, payload: any = {}) {
+    async clockOutStaff(userId: string, payload: any = {}) {
         const timestamp = payload?.timestamp ? new Date(payload.timestamp) : new Date();
         const dateOnly = this.toDateOnly(timestamp);
 

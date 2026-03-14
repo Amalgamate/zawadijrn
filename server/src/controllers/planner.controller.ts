@@ -9,14 +9,9 @@ export class PlannerController {
      * Get all events for the school
      */
     async getEvents(req: AuthRequest, res: Response) {
-        const schoolId = req.user!.schoolId;
         const { start, end, type } = req.query;
 
-        if (!schoolId) {
-            throw new ApiError(400, 'School ID is required');
-        }
-
-        const where: any = { schoolId };
+        const where: any = {};
 
         if (start && end) {
             where.startDate = {
@@ -50,11 +45,9 @@ export class PlannerController {
      * Create a new event
      */
     async createEvent(req: AuthRequest, res: Response) {
-        const schoolId = req.user!.schoolId;
         const userId = req.user!.userId;
         const { title, description, startDate, endDate, allDay, type, location, meetingLink } = req.body;
 
-        if (!schoolId) throw new ApiError(400, 'School ID is required');
         if (!title) throw new ApiError(400, 'Title is required');
         if (!startDate || !endDate) throw new ApiError(400, 'Start and End dates are required');
 
@@ -74,7 +67,6 @@ export class PlannerController {
                 type: (type as EventType) || 'GENERAL',
                 location,
                 meetingLink,
-                schoolId,
                 creatorId: userId,
             },
         });
@@ -87,13 +79,11 @@ export class PlannerController {
      */
     async updateEvent(req: AuthRequest, res: Response) {
         const { id } = req.params;
-        const schoolId = req.user!.schoolId;
         const { title, description, startDate, endDate, allDay, type, location, meetingLink } = req.body;
 
         const existingEvent = await prisma.event.findUnique({ where: { id } });
 
         if (!existingEvent) throw new ApiError(404, 'Event not found');
-        if (existingEvent.schoolId !== schoolId) throw new ApiError(403, 'Unauthorized access to this event');
 
         const event = await prisma.event.update({
             where: { id },
@@ -117,12 +107,10 @@ export class PlannerController {
      */
     async deleteEvent(req: AuthRequest, res: Response) {
         const { id } = req.params;
-        const schoolId = req.user!.schoolId;
 
         const existingEvent = await prisma.event.findUnique({ where: { id } });
 
         if (!existingEvent) throw new ApiError(404, 'Event not found');
-        if (existingEvent.schoolId !== schoolId) throw new ApiError(403, 'Unauthorized access to this event');
 
         await prisma.event.delete({ where: { id } });
 

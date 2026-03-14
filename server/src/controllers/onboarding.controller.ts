@@ -20,14 +20,7 @@ export class OnboardingController {
       // but if we do, we just create the singleton configuration.
 
       const result = await prisma.$transaction(async (tx) => {
-        // 1. Create Default Branch
-        const branch = await tx.branch.create({
-          data: {
-            name: 'Main Campus',
-          },
-        });
-
-        // 2. Create Admission Sequence
+        // 1. Create Admission Sequence
         await tx.admissionSequence.create({
           data: {
             academicYear: new Date().getFullYear(),
@@ -58,7 +51,7 @@ export class OnboardingController {
           }
         });
 
-        return { branch };
+        return {};
       });
 
       // 5. Initialize Grading Systems
@@ -136,14 +129,7 @@ export class OnboardingController {
       }
 
       const result = await prisma.$transaction(async (tx) => {
-        // 1. Create Default Branch
-        const branch = await tx.branch.create({
-          data: {
-            name: 'Main Campus',
-          },
-        });
-
-        // 2. Create Admission Sequence
+        // 1. Create Admission Sequence
         await tx.admissionSequence.create({
           data: {
             academicYear: new Date().getFullYear(),
@@ -151,7 +137,7 @@ export class OnboardingController {
           },
         });
 
-        // 3. Create Default Streams (A, B, C, D)
+        // 2. Create Default Streams (A, B, C, D)
         const streamNames = ['A', 'B', 'C', 'D'];
         for (const streamName of streamNames) {
           await tx.streamConfig.create({
@@ -162,7 +148,7 @@ export class OnboardingController {
           });
         }
 
-        // 4. Create Default Communication Config
+        // 3. Create Default Communication Config
         await tx.communicationConfig.create({
           data: {
             smsEnabled: true,
@@ -173,7 +159,7 @@ export class OnboardingController {
           }
         });
 
-        // 5. Create Admin User
+        // 4. Create Admin User
         const [firstName, ...rest] = fullName.trim().split(' ');
         const lastName = rest.join(' ') || ' ';
         const hashed = await bcrypt.hash(password, 12);
@@ -292,18 +278,8 @@ export class OnboardingController {
     }
   }
 
-  async getBranchOptionsByEmail(req: Request, res: Response) {
-    try {
-      const email = String((req.query as any).email || '').trim().toLowerCase();
-      if (!email) {
-        return res.status(400).json({ success: false, error: 'Email is required' });
-      }
-      const branches = await prisma.branch.findMany({
-        select: { id: true, name: true }
-      });
-      res.json({ success: true, branches });
-    } catch {
-      res.status(500).json({ success: false, error: 'Failed to fetch branch options' });
-    }
+  async getBranchOptionsByEmail(_req: Request, res: Response) {
+    // Branches removed in single-tenant mode
+    res.json({ success: true, branches: [] });
   }
 }

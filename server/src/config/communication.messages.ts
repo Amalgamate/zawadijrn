@@ -7,8 +7,8 @@
 export const COMMUNICATION_CONFIG = {
   // Email Provider Defaults
   email: {
-    fromEmail: process.env.EMAIL_FROM || 'noreply@zawadijunioracademy.co.ke',
-    fromName: process.env.EMAIL_FROM_NAME || 'Zawadi SMS Academy',
+    fromEmail: process.env.EMAIL_FROM || 'noreply@school-academy.co.ke',
+    fromName: process.env.EMAIL_FROM_NAME || 'School Academy',
     provider: process.env.EMAIL_PROVIDER || 'resend'
   },
 
@@ -21,7 +21,7 @@ export const COMMUNICATION_CONFIG = {
 
   // Frontend Configuration
   frontend: {
-    url: process.env.FRONTEND_URL || 'https://zawadijrn.vercel.app'
+    url: process.env.FRONTEND_URL || 'https://school-academy.app'
   }
 };
 
@@ -42,6 +42,7 @@ export const SMS_MESSAGES = {
     learnerName: string;
     learnerGrade: string;
     term: string;
+    assessmentType?: string;
     overallGrade?: string;
     averageScore?: string;
     totalMarks?: number;
@@ -53,6 +54,7 @@ export const SMS_MESSAGES = {
       learnerName,
       learnerGrade,
       term,
+      assessmentType = 'Term Assessment',
       overallGrade = 'N/A',
       averageScore = '0',
       totalMarks = 0,
@@ -64,7 +66,7 @@ export const SMS_MESSAGES = {
     return (
       `FROM ${schoolName}\n\n` +
       `${greeting},\n\n` +
-      `Midterm Assessment, ${term}, ${new Date().getFullYear()}\n\n` +
+      `${assessmentType}, ${term}, ${new Date().getFullYear()}\n\n` +
       `NAME: ${learnerName}\n` +
       `GRADE: ${learnerGrade}\n\n` +
       `GRADE: ${overallGrade}\n` +
@@ -155,7 +157,7 @@ export const LEARNING_AREA_ABBREVIATIONS: Record<string, string> = {
   'CHRISTIAN RELIGIOUS EDUCATION': 'CRE',
   'ISLAMIC RELIGIOUS EDUCATION': 'IRE',
   'CREATIVE ARTS AND SPORTS': 'CREATIVE',
-  'AGRICULTURE AND NUTRITION': 'AGRNT',
+  'AGRICULTURE': 'AGRI',
   'ENVIRONMENTAL ACTIVITIES': 'ENV',
   'MATHEMATICAL ACTIVITIES': 'MAT',
   'ENGLISH LANGUAGE ACTIVITIES': 'ENG',
@@ -208,11 +210,11 @@ export const SUCCESS_MESSAGES = {
 // Brand Information
 export const BRAND = {
   name: 'Zawadi SMS',
-  email: process.env.BRAND_EMAIL || 'hello@zawadijunioracademy.co.ke',
-  phone: process.env.BRAND_PHONE || '+254713612141',
-  website: process.env.BRAND_WEBSITE || 'zawadijrn.vercel.app',
-  logo: process.env.BRAND_LOGO_URL || 'https://zawadijrn.vercel.app/logo.png',
-  displayName: 'Zawadi SMS Academy',
+  email: process.env.BRAND_EMAIL || 'hello@school-academy.app',
+  phone: process.env.BRAND_PHONE || '+254700000000',
+  website: process.env.BRAND_WEBSITE || 'school-academy.app',
+  logo: process.env.BRAND_LOGO_URL || 'https://school-academy.app/logo.png',
+  displayName: 'School Academy',
   tagline: 'Advanced School Management System'
 };
 

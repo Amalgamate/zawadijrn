@@ -9,9 +9,9 @@ import fs from 'fs';
  */
 export const sendOTP = async (req: Request, res: Response) => {
     try {
-        const { email, schoolId } = req.body;
+        const { email } = req.body;
 
-        const logMsg = `[${new Date().toISOString()}] CONTROLLER: OTP Request for: ${email}, schoolId: ${schoolId || 'not provided'}\n`;
+        const logMsg = `[${new Date().toISOString()}] CONTROLLER: OTP Request for: ${email}\n`;
         fs.appendFileSync('otp-debug.log', logMsg);
 
         if (!email) {

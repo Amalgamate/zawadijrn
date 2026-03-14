@@ -81,7 +81,7 @@ const sendTestEmailSchema = z.object({
 const createContactGroupSchema = z.object({
     name: z.string().min(2).max(100),
     description: z.string().max(500).optional(),
-    members: z.array(z.string()).optional()
+    recipients: z.array(z.string()).optional()
 });
 
 /**
@@ -92,7 +92,7 @@ const createContactGroupSchema = z.object({
 // Get Configuration
 // Allowed: Admin, Super Admin, Head Teacher
 router.get(
-    '/config/:schoolId',
+    '/config',
     requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER']),
     rateLimit({ windowMs: 60_000, maxRequests: 50 }),
     getCommunicationConfig
@@ -132,7 +132,7 @@ router.post(
 // Birthday Birthdays Today
 // Allowed: Admin, Super Admin, Head Teacher
 router.get(
-    '/birthdays/today/:schoolId',
+    '/birthdays/today',
     requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER']),
     rateLimit({ windowMs: 60_000, maxRequests: 100 }),
     getBirthdaysToday

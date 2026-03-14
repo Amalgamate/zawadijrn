@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Plus, Trash2, Edit2, Check, X, BookOpen, Search, Filter, RefreshCw, Layers, AlertTriangle } from 'lucide-react';
-import api, { configAPI } from '../../../services/api';
-import { useAuth } from '../../../hooks/useAuth';
+import { configAPI } from '../../../services/api';
 import { useNotifications } from '../hooks/useNotifications';
 import toast from 'react-hot-toast';
 import HierarchicalLearningAreas from './settings/HierarchicalLearningAreas';
@@ -14,7 +13,6 @@ import { LEARNING_AREA_GRADES, getGradeLabel } from '../../../constants/grades';
  * This version is accessible to Head Teachers and Administrators.
  */
 const LearningAreasManagement = () => {
-  const { user } = useAuth();
   const { showSuccess, showError } = useNotifications();
 
   // States
@@ -41,7 +39,7 @@ const LearningAreasManagement = () => {
     try {
       setLoading(true);
       setError('');
-      const data = await api.getLearningAreas(user?.schoolId);
+      const data = await configAPI.getLearningAreas();
       setLearningAreas(Array.isArray(data) ? data : (data?.data || []));
     } catch (err) {
       setError('Failed to load learning areas: ' + (err.message || 'Unknown error'));
@@ -49,13 +47,11 @@ const LearningAreasManagement = () => {
     } finally {
       setLoading(false);
     }
-  }, [user?.schoolId]);
+  }, []);
 
   useEffect(() => {
-    if (user?.schoolId) {
-      fetchLearningAreas();
-    }
-  }, [user?.schoolId, fetchLearningAreas]);
+    fetchLearningAreas();
+  }, [fetchLearningAreas]);
 
   const handleSeedAreas = async () => {
     try {
@@ -113,13 +109,10 @@ const LearningAreasManagement = () => {
       }
 
       if (editingArea) {
-        await api.updateLearningArea(editingArea.id, formData);
+        await configAPI.updateLearningArea(editingArea.id, formData);
         showSuccess('Learning area updated');
       } else {
-        await api.createLearningArea({
-          ...formData,
-          schoolId: user?.schoolId
-        });
+        await configAPI.createLearningArea(formData);
         showSuccess('Learning area created');
       }
 
@@ -133,7 +126,7 @@ const LearningAreasManagement = () => {
   const handleDelete = async (area) => {
     if (!window.confirm(`Are you sure you want to delete "${area.name}"?`)) return;
     try {
-      await api.deleteLearningArea(area.id);
+      await configAPI.deleteLearningArea(area.id);
       showSuccess('Deleted successfully');
       fetchLearningAreas();
     } catch (err) {
@@ -154,7 +147,7 @@ const LearningAreasManagement = () => {
       
       // Delete each area
       for (const area of areasToDelete) {
-        await api.deleteLearningArea(area.id);
+        await configAPI.deleteLearningArea(area.id);
       }
       
       showSuccess(`Deleted ${selectedAreas.length} learning area(s) successfully`);

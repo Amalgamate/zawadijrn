@@ -2,22 +2,15 @@ import { Response } from 'express';
 import prisma from '../config/database';
 import { AuthRequest } from '../middleware/permissions.middleware';
 
-const resolveSchoolId = (req: AuthRequest): string | undefined => {
-  return req.user?.schoolId || req.schoolContext?.schoolId;
-};
+
 
 export class NoticeController {
   async getNotices(req: AuthRequest, res: Response) {
     try {
-      const schoolId = resolveSchoolId(req);
-      if (!schoolId) {
-        return res.status(403).json({ success: false, error: 'School context required' });
-      }
 
       const { status, category, includeArchived } = req.query;
       const notices = await prisma.notice.findMany({
         where: {
-          schoolId,
           ...(includeArchived === 'true' ? {} : { archived: false }),
           ...(status ? { status: String(status) } : {}),
           ...(category ? { category: String(category) } : {})
@@ -43,15 +36,10 @@ export class NoticeController {
 
   async getNoticeById(req: AuthRequest, res: Response) {
     try {
-      const schoolId = resolveSchoolId(req);
-      if (!schoolId) {
-        return res.status(403).json({ success: false, error: 'School context required' });
-      }
 
       const notice = await prisma.notice.findFirst({
         where: {
           id: req.params.id,
-          schoolId,
           archived: false
         },
         include: {
@@ -78,10 +66,9 @@ export class NoticeController {
 
   async createNotice(req: AuthRequest, res: Response) {
     try {
-      const schoolId = resolveSchoolId(req);
       const userId = req.user?.userId;
-      if (!schoolId || !userId) {
-        return res.status(403).json({ success: false, error: 'School context and authentication required' });
+      if (!userId) {
+        return res.status(403).json({ success: false, error: 'Authentication required' });
       }
 
       const { title, content, category, priority, status, targetAudience, publishedAt, expiresAt } = req.body;
@@ -91,7 +78,6 @@ export class NoticeController {
 
       const notice = await prisma.notice.create({
         data: {
-          schoolId,
           createdById: userId,
           title,
           content,
@@ -112,12 +98,8 @@ export class NoticeController {
 
   async updateNotice(req: AuthRequest, res: Response) {
     try {
-      const schoolId = resolveSchoolId(req);
-      if (!schoolId) {
-        return res.status(403).json({ success: false, error: 'School context required' });
-      }
 
-      const existing = await prisma.notice.findFirst({ where: { id: req.params.id, schoolId, archived: false } });
+      const existing = await prisma.notice.findFirst({ where: { id: req.params.id, archived: false } });
       if (!existing) {
         return res.status(404).json({ success: false, error: 'Notice not found' });
       }
@@ -145,15 +127,14 @@ export class NoticeController {
 
   async deleteNotice(req: AuthRequest, res: Response) {
     try {
-      const schoolId = resolveSchoolId(req);
       const userId = req.user?.userId;
       const userRole = req.user?.role;
-      if (!schoolId || !userId) {
-        return res.status(403).json({ success: false, error: 'School context and authentication required' });
+      if (!userId) {
+        return res.status(403).json({ success: false, error: 'Authentication required' });
       }
 
       const existing = await prisma.notice.findFirst({
-        where: { id: req.params.id, schoolId, archived: false },
+        where: { id: req.params.id, archived: false },
         include: {
           createdBy: {
             select: {

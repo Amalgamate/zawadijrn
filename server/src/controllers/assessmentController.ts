@@ -5,6 +5,7 @@ import { gradingService } from '../services/grading.service';
 import { auditService } from '../services/audit.service';
 import { AssessmentStatus, CurriculumType, Grade } from '@prisma/client';
 import { aiAssistantService } from '../services/ai-assistant.service';
+import { detailedToGeneralRating } from '../utils/rubric.util';
 
 // ============================================
 // FORMATIVE ASSESSMENT CONTROLLERS
@@ -16,20 +17,21 @@ import { aiAssistantService } from '../services/ai-assistant.service';
  */
 export const getFormativeAssessments = async (req: AuthRequest, res: Response) => {
   try {
-    const { grade, term, academicYear, learningArea } = req.query;
+    const { grade, term, academicYear, learningArea, strand } = req.query;
 
     const whereClause: any = { archived: false };
 
-    if (grade) whereClause.grade = grade;
+    if (grade) whereClause.learner = { grade };
     if (term) whereClause.term = term;
     if (academicYear) whereClause.academicYear = parseInt(academicYear as string);
     if (learningArea) whereClause.learningArea = learningArea;
+    if (strand) whereClause.strand = strand;
 
     const assessments = await prisma.formativeAssessment.findMany({
       where: whereClause,
       include: {
         learner: {
-          select: { firstName: true, lastName: true, admissionNumber: true }
+          select: { firstName: true, lastName: true, admissionNumber: true, grade: true }
         },
         teacher: {
           select: { firstName: true, lastName: true }
@@ -54,6 +56,71 @@ export const getFormativeAssessments = async (req: AuthRequest, res: Response) =
 };
 
 /**
+ * Get Bulk Formative Results for a class/grade/stream
+ * GET /api/assessments/formative/bulk?grade=...&stream=...&academicYear=...&term=...
+ */
+export const getBulkFormativeResults = async (req: AuthRequest, res: Response) => {
+  try {
+    const { grade, stream, academicYear, term, learningArea } = req.query;
+
+    if (!grade || !academicYear || !term) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required filters: grade, academicYear, term'
+      });
+    }
+
+    const whereClause: any = {
+      archived: false,
+      learner: {
+        grade: grade as Grade,
+        ...(stream ? { stream: stream as string } : {})
+      },
+      term: String(term).toUpperCase().replace(/\s+/g, '_'),
+      academicYear: parseInt(academicYear as string)
+    };
+
+    if (learningArea) whereClause.learningArea = learningArea;
+
+    const assessments = await prisma.formativeAssessment.findMany({
+      where: whereClause,
+      include: {
+        learner: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            admissionNumber: true,
+            grade: true,
+            stream: true
+          }
+        },
+        teacher: {
+          select: { firstName: true, lastName: true }
+        }
+      },
+      orderBy: [
+        { learner: { firstName: 'asc' } },
+        { learningArea: 'asc' }
+      ]
+    });
+
+    res.json({
+      success: true,
+      data: assessments,
+      count: assessments.length
+    });
+  } catch (error: any) {
+    console.error('Error fetching bulk formative results:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch bulk formative results',
+      error: error.message
+    });
+  }
+};
+
+/**
  * Create a new Formative Assessment
  * POST /api/assessments/formative
  */
@@ -64,14 +131,15 @@ export const createFormativeAssessment = async (req: AuthRequest, res: Response)
       learningArea,
       strand,
       subStrand,
-      grade,
       term,
       academicYear,
       overallRating,
       detailedRating,
       teacherComment,
       nextSteps,
-      weight = 0
+      weight = 0,
+      title = '',
+      type = 'OTHER'
     } = req.body;
 
     const teacherId = req.user?.userId;
@@ -79,7 +147,7 @@ export const createFormativeAssessment = async (req: AuthRequest, res: Response)
     if (!teacherId || !learnerId || !learningArea || !overallRating) {
       return res.status(400).json({
         success: false,
-        message: 'Missing required fields'
+        message: 'Missing required fields: learnerId, learningArea, overallRating'
       });
     }
 
@@ -94,7 +162,9 @@ export const createFormativeAssessment = async (req: AuthRequest, res: Response)
         academicYear: parseInt(academicYear),
         overallRating,
         detailedRating,
-        weight: Number(weight)
+        weight: Number(weight),
+        title,
+        type
       }
     });
 
@@ -127,30 +197,139 @@ export const createFormativeAssessment = async (req: AuthRequest, res: Response)
  */
 export const recordFormativeResultsBulk = async (req: AuthRequest, res: Response) => {
   try {
-    const { assessments } = req.body;
     const teacherId = req.user?.userId;
-
-    if (!teacherId || !Array.isArray(assessments)) {
-      return res.status(400).json({ success: false, message: 'Invalid payload' });
+    if (!teacherId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
-    const created = await prisma.$transaction(
-      assessments.map((a: any) =>
-        prisma.formativeAssessment.create({
-          data: {
-            ...a,
+    let assessments: any[];
+
+    if (Array.isArray(req.body.assessments)) {
+      assessments = req.body.assessments;
+    } else if (Array.isArray(req.body.results)) {
+      const {
+        results,
+        term,
+        academicYear,
+        learningArea,
+        strand,
+        subStrand,
+        title = '',
+        type = 'OTHER',
+        weight = 1.0,
+        maxScore
+      } = req.body;
+
+      assessments = results.map((r: any) => ({
+        learnerId: r.learnerId,
+        term,
+        academicYear,
+        learningArea,
+        strand,
+        subStrand,
+        title,
+        type,
+        weight,
+        maxScore,
+        detailedRating: r.detailedRating,
+        overallRating: r.overallRating ?? (r.detailedRating ? detailedToGeneralRating(r.detailedRating) : undefined),
+        percentage: r.percentage,
+        points: r.points,
+        strengths: r.strengths,
+        areasImprovement: r.areasImprovement,
+        recommendations: r.recommendations,
+        remarks: r.remarks
+      }));
+    } else {
+      return res.status(400).json({ success: false, message: 'Invalid payload: expected assessments[] or results[]' });
+    }
+
+    if (assessments.length === 0) {
+      return res.status(400).json({ success: false, message: 'No assessments provided' });
+    }
+
+    // Validate each entry and collect any issues
+    const invalid: Array<{ learnerId: string; reason: string }> = [];
+    const valid: any[] = [];
+
+    for (const a of assessments) {
+      if (!a.learnerId) {
+        invalid.push({ learnerId: 'unknown', reason: 'Missing learnerId' });
+        continue;
+      }
+      if (!a.overallRating && !a.detailedRating) {
+        invalid.push({ learnerId: a.learnerId, reason: 'Missing rating (overallRating or detailedRating required)' });
+        continue;
+      }
+      valid.push(a);
+    }
+
+    const saved = await prisma.$transaction(
+      valid.map((a: any) =>
+        prisma.formativeAssessment.upsert({
+          where: {
+            learnerId_term_academicYear_learningArea_type_title: {
+              learnerId: a.learnerId,
+              term: a.term,
+              academicYear: parseInt(a.academicYear),
+              learningArea: a.learningArea,
+              type: a.type ?? 'OTHER',
+              title: a.title ?? ''
+            }
+          },
+          update: {
+            overallRating: a.overallRating,
+            detailedRating: a.detailedRating,
+            percentage: a.percentage,
+            points: a.points,
+            strengths: a.strengths,
+            areasImprovement: a.areasImprovement,
+            remarks: a.remarks ?? a.recommendations,
+            weight: a.weight != null ? Number(a.weight) : undefined
+          },
+          create: {
+            learnerId: a.learnerId,
             teacherId,
-            academicYear: parseInt(a.academicYear)
+            term: a.term,
+            academicYear: parseInt(a.academicYear),
+            learningArea: a.learningArea,
+            strand: a.strand,
+            subStrand: a.subStrand,
+            title: a.title ?? '',
+            type: a.type ?? 'OTHER',
+            weight: a.weight != null ? Number(a.weight) : 1.0,
+            maxScore: a.maxScore ? Number(a.maxScore) : undefined,
+            overallRating: a.overallRating,
+            detailedRating: a.detailedRating,
+            percentage: a.percentage,
+            points: a.points,
+            strengths: a.strengths,
+            areasImprovement: a.areasImprovement,
+            remarks: a.remarks ?? a.recommendations
           }
         })
       )
     );
 
-    res.status(201).json({
+    const savedMap = saved.map((s: any) => ({
+      id: s.id,
+      learnerId: s.learnerId,
+      status: s.status ?? 'DRAFT'
+    }));
+
+    const response: any = {
       success: true,
-      message: `Successfully recorded ${created.length} assessments`,
-      data: created
-    });
+      message: `Successfully recorded ${saved.length} assessments`,
+      data: saved,
+      saved: savedMap
+    };
+
+    if (invalid.length > 0) {
+      response.warnings = `${invalid.length} entries were skipped due to validation errors`;
+      response.skipped = invalid;
+    }
+
+    res.status(201).json(response);
 
   } catch (error: any) {
     console.error('Error bulk recording formative assessments:', error);
@@ -264,14 +443,16 @@ export const createSummativeTest = async (req: AuthRequest, res: Response) => {
       totalMarks = 100,
       passMarks = 40,
       description,
+      instructions,
       grade,
       stream,
       curriculum = 'CBC',
-      scaleId
+      scaleId,
+      weight = 1.0,
+      duration          // FIX: now persisted to DB
     } = req.body;
 
     const teacherId = req.user?.userId;
-    const schoolId = req.user?.schoolId;
 
     const normalizedTerm = String(term || '')
       .toUpperCase()
@@ -307,11 +488,13 @@ export const createSummativeTest = async (req: AuthRequest, res: Response) => {
         totalMarks: parseInt(String(resolvedTotalMarks)),
         passMarks: parseInt(passMarks),
         description,
+        instructions,
         grade,
         curriculum,
         scaleId,
-        createdBy: teacherId,
-        schoolId
+        weight: parseFloat(String(weight || 1.0)),
+        duration: duration ? parseInt(String(duration)) : undefined,  // FIX: persist duration
+        createdBy: teacherId
       }
     });
 
@@ -354,11 +537,12 @@ export const generateTestsBulk = async (req: AuthRequest, res: Response) => {
       totalMarks = 100,
       passMarks = 40,
       stream,
-      curriculum = 'CBC'
+      curriculum = 'CBC',
+      weight = 1.0,
+      scaleGroupId   // FIX: accept explicit scaleGroupId for reliable scale linking
     } = req.body;
 
     const teacherId = req.user?.userId;
-    const schoolId = req.user?.schoolId;
 
     if (!learningAreas || !Array.isArray(learningAreas) || !grade || !term || !academicYear || !teacherId) {
       return res.status(400).json({
@@ -371,9 +555,47 @@ export const generateTestsBulk = async (req: AuthRequest, res: Response) => {
       .toUpperCase()
       .replace(/\s+/g, '_') as 'TERM_1' | 'TERM_2' | 'TERM_3';
 
+    // Pre-fetch scales for the grade so we can match reliably
+    const gradingSystems = await prisma.gradingSystem.findMany({
+      where: {
+        grade: grade as any,
+        type: 'SUMMATIVE',
+        active: true,
+        archived: false,
+        ...(scaleGroupId ? { scaleGroupId } : {})
+      },
+      select: { id: true, name: true, learningArea: true }
+    });
+
+    // Build an exact-match map (normalised lower-case) then fall back to partial
+    const scaleByArea = new Map<string, string>();
+    for (const sys of gradingSystems) {
+      if (sys.learningArea) {
+        scaleByArea.set(sys.learningArea.trim().toLowerCase(), sys.id);
+      }
+    }
+
     const createdTests = [];
+    const scaleWarnings: string[] = [];
 
     for (const area of learningAreas) {
+      const areaKey = String(area).trim().toLowerCase();
+
+      // FIX: prefer exact match, fall back to includes only as last resort
+      let resolvedScaleId: string | undefined =
+        scaleByArea.get(areaKey) ??
+        gradingSystems.find(s =>
+          s.learningArea && (
+            s.learningArea.toLowerCase() === areaKey ||
+            s.learningArea.toLowerCase().includes(areaKey) ||
+            areaKey.includes(s.learningArea.toLowerCase())
+          )
+        )?.id;
+
+      if (!resolvedScaleId) {
+        scaleWarnings.push(`No scale found for "${area}" — test created without a scale`);
+      }
+
       const test = await prisma.summativeTest.create({
         data: {
           title: `${area} - ${testType} - ${term} ${academicYear}`,
@@ -386,17 +608,20 @@ export const generateTestsBulk = async (req: AuthRequest, res: Response) => {
           passMarks: parseInt(passMarks),
           grade,
           curriculum,
-          createdBy: teacherId,
-          schoolId
+          weight: parseFloat(String(weight || 1.0)),
+          scaleId: resolvedScaleId ?? null,
+          createdBy: teacherId
         }
       });
+
       createdTests.push(test);
     }
 
     res.status(201).json({
       success: true,
       message: `Successfully generated ${createdTests.length} tests`,
-      data: createdTests
+      data: createdTests,
+      ...(scaleWarnings.length > 0 ? { warnings: scaleWarnings } : {})
     });
 
   } catch (error: any) {
@@ -523,6 +748,7 @@ export const updateSummativeTest = async (req: AuthRequest, res: Response) => {
         academicYear: updateData.academicYear ? parseInt(updateData.academicYear) : undefined,
         totalMarks: updateData.totalMarks ? parseInt(updateData.totalMarks) : undefined,
         passMarks: updateData.passMarks ? parseInt(updateData.passMarks) : undefined,
+        duration: updateData.duration != null ? parseInt(String(updateData.duration)) : undefined,
         testDate: updateData.testDate ? new Date(updateData.testDate) : undefined
       }
     });
@@ -735,8 +961,7 @@ export const recordSummativeResult = async (req: AuthRequest, res: Response) => 
         status,
         recordedBy,
         remarks: finalRemarks,
-        teacherComment,
-        schoolId: req.user?.schoolId
+        teacherComment
       },
       create: {
         testId,
@@ -747,8 +972,7 @@ export const recordSummativeResult = async (req: AuthRequest, res: Response) => 
         status,
         recordedBy,
         remarks: finalRemarks,
-        teacherComment,
-        schoolId: req.user?.schoolId
+        teacherComment
       }
     });
 
@@ -893,7 +1117,6 @@ export const getTestResults = async (req: Request, res: Response) => {
   }
 };
 
-
 /**
  * Get Bulk Summative Results for a class/grade/stream
  * GET /api/assessments/summative/results/bulk?grade=...&stream=...&academicYear=...&term=...
@@ -901,7 +1124,6 @@ export const getTestResults = async (req: Request, res: Response) => {
 export const getBulkSummativeResults = async (req: AuthRequest, res: Response) => {
   try {
     const { grade, stream, academicYear, term } = req.query;
-    const schoolId = req.user?.schoolId;
 
     if (!grade || !academicYear || !term) {
       return res.status(400).json({ success: false, message: 'Missing required filters: grade, academicYear, term' });
@@ -912,16 +1134,13 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
       .replace(/\s+/g, '_');
 
     const whereClause: any = {
-      schoolId,
       learner: {
         grade: grade as Grade,
-        schoolId,
         ...(stream ? { stream: stream as string } : {})
       },
       test: {
         academicYear: parseInt(academicYear as string),
         term: normalizedTerm,
-        schoolId,
         archived: false
       }
     };
@@ -967,26 +1186,31 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
       };
     });
 
-    // 4. Fetch AI Pathway Predictions for candidates (Grade 7/8)
+    // AI pathway predictions: only run synchronously when explicitly requested
+    // and the class is small (≤10 learners). For larger classes, trigger a background
+    // job via a separate endpoint — never block the bulk results response.
     const isCandidateGrade = ['GRADE_7', 'GRADE_8'].includes(grade as string);
     const predictions: Record<string, any> = {};
 
-    if (isCandidateGrade && learnerIds.length > 0) {
-      console.log(`[AI] Generating/fetching pathway predictions for ${learnerIds.length} learners...`);
-      // For performance in bulk view, we'll generate them in parallel but capped or pre-checked
-      // In a real production environment, queste would be background jobs or cached
-      await Promise.all(learnerIds.map(async (id) => {
-        try {
-          // We pass the term and year to make it specific
-          predictions[id] = await aiAssistantService.generatePathwayPrediction(
-            id,
-            normalizedTerm,
-            parseInt(academicYear as string)
-          );
-        } catch (e) {
-          console.warn(`Failed to predict pathway for learner ${id}:`, e);
-        }
-      }));
+    if (isCandidateGrade && learnerIds.length > 0 && req.query.includePredictions === 'true') {
+      const CAP = 10;
+      if (learnerIds.length > CAP) {
+        // Signal to the frontend that predictions must be fetched separately
+        (predictions as any).__tooLarge = true;
+        (predictions as any).__count = learnerIds.length;
+      } else {
+        await Promise.all(learnerIds.slice(0, CAP).map(async (id) => {
+          try {
+            predictions[id] = await aiAssistantService.generatePathwayPrediction(
+              id,
+              normalizedTerm,
+              parseInt(academicYear as string)
+            );
+          } catch (e) {
+            console.warn(`Failed to predict pathway for learner ${id}:`, e);
+          }
+        }));
+      }
     }
 
     res.json({
@@ -994,7 +1218,7 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
       data: results,
       count: results.length,
       communications,
-      predictions // Include predictions in the response
+      predictions
     });
 
   } catch (error: any) {
@@ -1039,12 +1263,31 @@ export const recordSummativeResultsBulk = async (req: AuthRequest, res: Response
     }
     const ranges = gradingSystem?.ranges;
 
+    // FIX: collect skipped rows and return them in the response
+    const skipped: Array<{ learnerId: string; reason: string }> = [];
+    let savedCount = 0;
+
     await prisma.$transaction(async (tx) => {
       for (const item of results) {
-        if (item.marksObtained === undefined || item.marksObtained === null || item.marksObtained === '') continue;
+        if (item.marksObtained === undefined || item.marksObtained === null || item.marksObtained === '') {
+          skipped.push({ learnerId: item.learnerId ?? 'unknown', reason: 'Marks not provided' });
+          continue;
+        }
 
         const marks = Number(item.marksObtained);
-        if (isNaN(marks) || marks < 0 || marks > test.totalMarks) continue;
+
+        if (isNaN(marks)) {
+          skipped.push({ learnerId: item.learnerId ?? 'unknown', reason: 'Marks are not a valid number' });
+          continue;
+        }
+
+        if (marks < 0 || marks > test.totalMarks) {
+          skipped.push({
+            learnerId: item.learnerId ?? 'unknown',
+            reason: `Marks ${marks} out of valid range 0–${test.totalMarks}`
+          });
+          continue;
+        }
 
         const percentage = (marks / test.totalMarks) * 100;
         const grade = ranges ? gradingService.calculateGradeSync(percentage, ranges) : 'E';
@@ -1070,8 +1313,7 @@ export const recordSummativeResultsBulk = async (req: AuthRequest, res: Response
             status,
             recordedBy,
             remarks,
-            teacherComment: item.teacherComment,
-            schoolId: req.user?.schoolId
+            teacherComment: item.teacherComment
           },
           create: {
             testId,
@@ -1082,8 +1324,7 @@ export const recordSummativeResultsBulk = async (req: AuthRequest, res: Response
             status,
             recordedBy,
             remarks,
-            teacherComment: item.teacherComment,
-            schoolId: req.user?.schoolId
+            teacherComment: item.teacherComment
           }
         });
 
@@ -1098,28 +1339,28 @@ export const recordSummativeResultsBulk = async (req: AuthRequest, res: Response
             reason: `Summative result recorded via bulk API`
           }
         });
+
+        savedCount++;
       }
     });
 
-    const allResults = await prisma.summativeResult.findMany({
-      where: { testId },
-      orderBy: { marksObtained: 'desc' },
-      select: { id: true }
-    });
+    // FIX: Re-rank positions in a separate, async-safe operation outside the
+    // per-save transaction so it doesn't run on every partial update unnecessarily.
+    // We trigger it unconditionally here for correctness; a background job would
+    // be the production solution for large classes.
+    await _rerankTestResults(testId);
 
-    const updatePromises = allResults.map((r, index) =>
-      prisma.summativeResult.update({
-        where: { id: r.id },
-        data: { position: index + 1, outOf: allResults.length }
-      })
-    );
-
-    await Promise.all(updatePromises);
-
-    res.json({
+    const response: any = {
       success: true,
-      message: `Successfully recorded ${results.length} results`
-    });
+      message: `Successfully recorded ${savedCount} of ${results.length} results`
+    };
+
+    if (skipped.length > 0) {
+      response.warnings = `${skipped.length} entries were skipped due to validation errors`;
+      response.skipped = skipped;
+    }
+
+    res.json(response);
 
   } catch (error: any) {
     console.error('Error bulk recording summative results:', error);
@@ -1130,3 +1371,26 @@ export const recordSummativeResultsBulk = async (req: AuthRequest, res: Response
     });
   }
 };
+
+/**
+ * Re-rank all results for a test by marks descending.
+ * Extracted from bulk save so it can be called independently (e.g. after deletion).
+ */
+async function _rerankTestResults(testId: string) {
+  const allResults = await prisma.summativeResult.findMany({
+    where: { testId },
+    orderBy: { marksObtained: 'desc' },
+    select: { id: true }
+  });
+
+  if (allResults.length === 0) return;
+
+  await prisma.$transaction(
+    allResults.map((r, index) =>
+      prisma.summativeResult.update({
+        where: { id: r.id },
+        data: { position: index + 1, outOf: allResults.length }
+      })
+    )
+  );
+}

@@ -12,43 +12,48 @@ import { requireSchoolContext } from '../middleware/school.middleware';
 import { rateLimit } from '../middleware/enhanced-rateLimit.middleware';
 import { validate } from '../middleware/validation.middleware';
 import { auditLog } from '../middleware/permissions.middleware';
+import { checkNotLocked } from '../middleware/workflow.authorization';
 
 const router = express.Router();
 
-// Validation Schemas
-const createFormativeAssessmentSchema = z.object({
-  name: z.string().min(1).max(255),
-  description: z.string().max(1000).optional(),
-  date: z.string().datetime(),
-  classId: z.string().min(1),
-  learningAreaId: z.string().min(1),
-  maxScore: z.number().int().min(1).max(1000),
-});
+// ============================================
+// VALIDATION SCHEMAS
+// ============================================
 
-const recordFormativeResultsSchema = z.object({
-  assessmentId: z.string().min(1),
-  results: z.array(z.object({
-    learnerId: z.string().min(1),
-    score: z.number().min(0),
-  })).min(1),
+// FIX: schema now matches what the controller actually expects
+const createFormativeAssessmentSchema = z.object({
+  learnerId: z.string().min(1, 'learnerId is required'),
+  learningArea: z.string().min(1, 'learningArea is required'),
+  strand: z.string().optional(),
+  subStrand: z.string().optional(),
+  term: z.preprocess((v) => {
+    const raw = String(v || '').toUpperCase().trim();
+    if (raw === 'TERM 1') return 'TERM_1';
+    if (raw === 'TERM 2') return 'TERM_2';
+    if (raw === 'TERM 3') return 'TERM_3';
+    return raw;
+  }, z.enum(['TERM_1', 'TERM_2', 'TERM_3'])),
+  academicYear: z.coerce.number().int().min(2020).max(2100),
+  overallRating: z.enum(['EE', 'ME', 'AE', 'BE']),
+  detailedRating: z.enum(['EE1', 'EE2', 'ME1', 'ME2', 'AE1', 'AE2', 'BE1', 'BE2']).optional(),
+  teacherComment: z.string().max(1000).optional(),
+  nextSteps: z.string().max(1000).optional(),
+  weight: z.coerce.number().min(0).max(100).optional(),
+  title: z.string().max(255).optional(),
+  type: z.enum([
+    'OPENER', 'WEEKLY', 'MONTHLY', 'CAT', 'MID_TERM',
+    'ASSIGNMENT', 'PROJECT', 'PRACTICAL', 'QUIZ',
+    'OBSERVATION', 'ORAL', 'EXAM', 'OTHER'
+  ]).optional()
 });
 
 const createSummativeTestSchema = z.object({
   title: z.string().min(1).max(255).optional(),
   name: z.string().min(1).max(255).optional(),
   grade: z.enum([
-    'PLAYGROUP',
-    'PP1',
-    'PP2',
-    'GRADE_1',
-    'GRADE_2',
-    'GRADE_3',
-    'GRADE_4',
-    'GRADE_5',
-    'GRADE_6',
-    'GRADE_7',
-    'GRADE_8',
-    'GRADE_9',
+    'PLAYGROUP', 'PP1', 'PP2',
+    'GRADE_1', 'GRADE_2', 'GRADE_3', 'GRADE_4',
+    'GRADE_5', 'GRADE_6', 'GRADE_7', 'GRADE_8', 'GRADE_9',
   ]).optional(),
   term: z.preprocess((value) => {
     const raw = String(value || '').toUpperCase().trim();
@@ -62,13 +67,16 @@ const createSummativeTestSchema = z.object({
   totalMarks: z.coerce.number().int().min(1).max(1000).optional(),
   maxScore: z.coerce.number().int().min(1).max(1000).optional(),
   passMarks: z.coerce.number().int().min(0).max(1000).optional(),
+  duration: z.coerce.number().int().min(1).max(600).optional(),  // minutes, max 10 h
   learningArea: z.string().min(1).optional(),
   learningAreaId: z.string().min(1).optional(),
   testType: z.string().optional(),
   description: z.string().optional(),
+  instructions: z.string().optional(),
   stream: z.string().optional(),
   curriculum: z.string().optional(),
   scaleId: z.string().nullable().optional(),
+  weight: z.coerce.number().min(0).max(100).optional(),
 }).refine((data) => Boolean(data.title || data.name), {
   message: 'title is required',
 }).refine((data) => Boolean(data.learningArea || data.learningAreaId), {
@@ -80,30 +88,32 @@ const createSummativeTestSchema = z.object({
 const recordSummativeResultSchema = z.object({
   testId: z.string().min(1),
   learnerId: z.string().min(1),
-  score: z.number().min(0),
+  marksObtained: z.coerce.number().min(0),
   remarks: z.string().max(500).optional(),
+  teacherComment: z.string().max(1000).optional(),
 });
 
 // ============================================
 // FORMATIVE ASSESSMENT ROUTES
 // ============================================
 
+// FIX: POST uses corrected schema that matches the controller
 router.post(
   '/formative',
   authenticate,
-  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
   validate(createFormativeAssessmentSchema),
+  checkNotLocked,                             // FIX: lock check added
   auditLog('CREATE_FORMATIVE_ASSESSMENT'),
   assessmentController.createFormativeAssessment
 );
 
+// FIX: checkNotLocked added — consistent with summative bulk
 router.post(
   '/formative/bulk',
   authenticate,
-  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 10 }),
-  validate(recordFormativeResultsSchema),
+  checkNotLocked,
   auditLog('RECORD_FORMATIVE_BULK'),
   assessmentController.recordFormativeResultsBulk
 );
@@ -111,15 +121,21 @@ router.post(
 router.get(
   '/formative',
   authenticate,
-  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   assessmentController.getFormativeAssessments
+);
+
+// FIX: new bulk-GET for class/grade view — eliminates N+1 fetches
+router.get(
+  '/formative/bulk',
+  authenticate,
+  rateLimit({ windowMs: 60_000, maxRequests: 60 }),
+  assessmentController.getBulkFormativeResults
 );
 
 router.get(
   '/formative/learner/:learnerId',
   authenticate,
-  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   assessmentController.getFormativeByLearner
 );
@@ -127,7 +143,6 @@ router.get(
 router.delete(
   '/formative/:id',
   authenticate,
-  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 10 }),
   auditLog('DELETE_FORMATIVE_ASSESSMENT'),
   assessmentController.deleteFormativeAssessment
@@ -140,7 +155,6 @@ router.delete(
 router.post(
   '/tests',
   authenticate,
-  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 20 }),
   validate(createSummativeTestSchema),
   auditLog('CREATE_SUMMATIVE_TEST'),
@@ -150,7 +164,6 @@ router.post(
 router.post(
   '/tests/bulk',
   authenticate,
-  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 10 }),
   auditLog('GENERATE_TESTS_BULK'),
   assessmentController.generateTestsBulk
@@ -159,7 +172,6 @@ router.post(
 router.get(
   '/tests',
   authenticate,
-  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   assessmentController.getSummativeTests
 );
@@ -167,7 +179,6 @@ router.get(
 router.get(
   '/tests/:id',
   authenticate,
-  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   assessmentController.getSummativeTest
 );
@@ -175,7 +186,6 @@ router.get(
 router.put(
   '/tests/:id',
   authenticate,
-  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
   auditLog('UPDATE_SUMMATIVE_TEST'),
   assessmentController.updateSummativeTest
@@ -184,7 +194,6 @@ router.put(
 router.delete(
   '/tests/bulk',
   authenticate,
-  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 5 }),
   auditLog('DELETE_TESTS_BULK'),
   assessmentController.deleteSummativeTestsBulk
@@ -193,7 +202,6 @@ router.delete(
 router.delete(
   '/tests/:id',
   authenticate,
-  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 10 }),
   auditLog('DELETE_SUMMATIVE_TEST'),
   assessmentController.deleteSummativeTest
@@ -206,9 +214,9 @@ router.delete(
 router.post(
   '/summative/results',
   authenticate,
-  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 50 }),
   validate(recordSummativeResultSchema),
+  checkNotLocked,
   auditLog('RECORD_SUMMATIVE_RESULT'),
   assessmentController.recordSummativeResult
 );
@@ -216,8 +224,8 @@ router.post(
 router.post(
   '/summative/results/bulk',
   authenticate,
-  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 10 }),
+  checkNotLocked,
   auditLog('RECORD_SUMMATIVE_BULK'),
   assessmentController.recordSummativeResultsBulk
 );
@@ -225,7 +233,6 @@ router.post(
 router.get(
   '/summative/results/bulk',
   authenticate,
-  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   assessmentController.getBulkSummativeResults
 );
@@ -233,7 +240,6 @@ router.get(
 router.get(
   '/summative/results/learner/:learnerId',
   authenticate,
-  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   assessmentController.getSummativeByLearner
 );
@@ -241,21 +247,17 @@ router.get(
 router.get(
   '/summative/results/test/:testId',
   authenticate,
-  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   assessmentController.getTestResults
 );
 
 // ============================================
-// SCHOOL SETUP ROUTES - BULK OPERATIONS
+// SCHOOL SETUP ROUTES — BULK OPERATIONS
 // ============================================
-// These endpoints help administrators quickly set up grading scales and tests for the entire school
-// WARNING: These are powerful operations that should only be available to admins/principals
 
 router.post(
   '/setup/create-scales',
   authenticate,
-  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 5 }),
   auditLog('SETUP_CREATE_SCALES'),
   setupController.bulkCreateGradingScales
@@ -264,7 +266,6 @@ router.post(
 router.post(
   '/setup/create-tests',
   authenticate,
-  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 5 }),
   auditLog('SETUP_CREATE_TESTS'),
   setupController.bulkCreateSummativeTests
@@ -273,7 +274,6 @@ router.post(
 router.post(
   '/setup/complete',
   authenticate,
-  requireSchoolContext,
   rateLimit({ windowMs: 60_000, maxRequests: 5 }),
   auditLog('SETUP_COMPLETE_SCHOOL'),
   setupController.completeSchoolSetup

@@ -35,7 +35,6 @@ async function main() {
             status: 'ACTIVE',
             role: 'SUPER_ADMIN',
             phone: '0713612141',
-            schoolId: school.id,
         },
         create: {
             email,
@@ -45,7 +44,6 @@ async function main() {
             role: 'SUPER_ADMIN',
             status: 'ACTIVE',
             phone: '0713612141',
-            schoolId: school.id,
         },
     });
     console.log(`✅ SuperAdmin ready: ${admin.email} (ID: ${admin.id})`);

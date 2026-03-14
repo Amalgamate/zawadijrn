@@ -613,17 +613,19 @@ const CommunicationSettings = () => {
                     setSmsSettings({
                       ...smsSettings,
                       provider: newProvider,
-                      apiKey: '', // Clear API key on switch to avoid saving wrong provider's defaults
+                      apiKey: '', // Clear API key on switch
                       hasApiKey: false, // Force user to re-enter
-                      username: '' // Clear AT username too
+                      username: '' // Clear AT username
                     });
                   }}
                   className="w-full px-4 py-2 border rounded-lg font-semibold"
                 >
                   <option value="africastalking">🌍 Africa's Talking</option>
+                  <option value="mobilesasa">📱 MobileSasa</option>
                 </select>
                 <p className="text-xs text-gray-600 mt-1">
                   {smsSettings.provider === 'africastalking' && "You will need Africa's Talking API Key and Username to proceed"}
+                  {smsSettings.provider === 'mobilesasa' && "You will need MobileSasa API Key to proceed"}
                 </p>
               </div>
 
@@ -675,6 +677,47 @@ const CommunicationSettings = () => {
                         onChange={(e) => setSmsSettings({ ...smsSettings, senderId: e.target.value.toUpperCase() })}
                         className="w-full px-4 py-2 border rounded-lg"
                         placeholder="Your registered AT Sender ID"
+                      />
+                      <p className="text-xs text-gray-600 mt-1">Leave blank if not configured</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* MobileSasa Fields */}
+              {smsSettings.provider === 'mobilesasa' && (
+                <div className="border-l-4 border-blue-400 bg-blue-50 p-4 rounded text-gray-900">
+                  <p className="text-sm font-semibold text-blue-800 mb-3">MobileSasa Configuration</p>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-semibold mb-2">
+                        API Key <span className="text-red-600">*</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="password"
+                          value={smsSettings.apiKey}
+                          onChange={(e) => setSmsSettings({ ...smsSettings, apiKey: e.target.value })}
+                          className={`w-full px-4 py-2 border rounded-lg pr-24 ${!smsSettings.apiKey && smsSettings.hasApiKey ? 'bg-green-50 border-green-300' : ''}`}
+                          placeholder={smsSettings.hasApiKey && !smsSettings.apiKey ? 'Saved (Edit to change)' : 'Enter your MobileSasa API Key'}
+                        />
+                        {smsSettings.hasApiKey && !smsSettings.apiKey && (
+                          <span className="absolute right-3 top-2 text-xs text-green-600 font-medium bg-green-50 px-3 py-1 rounded border border-green-300">
+                            ✓ Saved
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-600 mt-1">From your MobileSasa portal</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold mb-2">Sender ID (Optional)</label>
+                      <input
+                        type="text"
+                        value={smsSettings.senderId}
+                        onChange={(e) => setSmsSettings({ ...smsSettings, senderId: e.target.value.toUpperCase() })}
+                        className="w-full px-4 py-2 border rounded-lg"
+                        placeholder="Your registered MobileSasa Sender ID"
                       />
                       <p className="text-xs text-gray-600 mt-1">Leave blank if not configured</p>
                     </div>

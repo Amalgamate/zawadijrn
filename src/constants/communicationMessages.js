@@ -9,7 +9,7 @@ export const COMMUNICATION_DEFAULTS = {
   email: {
     provider: 'resend',
     fromEmail: process.env.REACT_APP_EMAIL_FROM || 'noreply@zawadisms.com',
-    fromName: process.env.REACT_APP_EMAIL_FROM_NAME || 'Zawadi SMS Academy',
+    fromName: process.env.REACT_APP_EMAIL_FROM_NAME || 'School Academy',
     enabled: false
   },
 
@@ -17,9 +17,9 @@ export const COMMUNICATION_DEFAULTS = {
   sms: {
     provider: 'africastalking',
     baseUrl: 'https://api.africastalking.com/version1/messaging',
-    apiKey: process.env.REACT_APP_SMS_API_KEY || 'atsk_a84afb54bb77f8fe05bf8aab8846332b6b42678aa592f2ec016a8a659b3b79f8b6b89248',
-    username: process.env.REACT_APP_SMS_USERNAME || 'zawadijnr',
-    senderId: process.env.REACT_APP_SMS_SENDER_ID || 'ZAWADI_JR',
+    apiKey: process.env.REACT_APP_SMS_API_KEY || '',
+    username: process.env.REACT_APP_SMS_USERNAME || '',
+    senderId: process.env.REACT_APP_SMS_SENDER_ID || '',
     enabled: false
   },
 
@@ -50,12 +50,12 @@ export const SMS_MESSAGES = {
   assessmentReport: {
     header: (schoolName) => `FROM ${schoolName}`,
     greeting: (parentName) => parentName ? `Dear ${parentName}` : 'Dear Parent',
-    structure: (schoolName, parentName, learnerName, learnerGrade, term, overallGrade, averageScore, totalMarks, maxPossibleMarks) => (`
+    structure: (schoolName, parentName, learnerName, learnerGrade, term, overallGrade, averageScore, totalMarks, maxPossibleMarks, assessmentType) => (`
 ${`FROM ${schoolName}`}
 
 ${parentName ? `Dear ${parentName}` : 'Dear Parent'},
 
-Midterm Assessment, ${term}, ${new Date().getFullYear()}
+${assessmentType || 'Assessment'}, ${term}, ${new Date().getFullYear()}
 
 NAME: ${learnerName}
 GRADE: ${learnerGrade}
@@ -100,7 +100,7 @@ export const LEARNING_AREA_ABBREVIATIONS = {
   'CHRISTIAN RELIGIOUS EDUCATION': 'CRE',
   'ISLAMIC RELIGIOUS EDUCATION': 'IRE',
   'CREATIVE ARTS AND SPORTS': 'CREATIVE',
-  'AGRICULTURE AND NUTRITION': 'AGRNT',
+  'AGRICULTURE': 'AGRI',
   'ENVIRONMENTAL ACTIVITIES': 'ENV',
   'MATHEMATICAL ACTIVITIES': 'MAT',
   'ENGLISH LANGUAGE ACTIVITIES': 'ENG',
@@ -144,6 +144,6 @@ export const BRAND = {
   phone: process.env.REACT_APP_BRAND_PHONE || '+254 712 345 678',
   website: process.env.REACT_APP_BRAND_WEBSITE || 'zawadisms.com',
   logo: process.env.REACT_APP_BRAND_LOGO || 'https://zawadisms.com/logo.png',
-  displayName: 'Zawadi SMS Academy',
-  tagline: 'CBC-Native Education Platform'
+  displayName: 'School Academy',
+  tagline: 'Advanced School Management System'
 };

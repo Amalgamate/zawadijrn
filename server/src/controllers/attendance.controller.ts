@@ -12,13 +12,12 @@ import { AuthRequest } from '../middleware/permissions.middleware';
 import { AttendanceStatus } from '@prisma/client';
 
 export class AttendanceController {
-  private async getTeacherAssignedClassIds(userId: string, schoolId?: string): Promise<string[]> {
+  private async getTeacherAssignedClassIds(userId: string): Promise<string[]> {
     const assignedClasses = await prisma.class.findMany({
       where: {
         teacherId: userId,
         active: true,
         archived: false,
-        ...(schoolId ? { schoolId } : {}),
       },
       select: { id: true },
       orderBy: { createdAt: 'asc' },
@@ -27,10 +26,10 @@ export class AttendanceController {
     return assignedClasses.map((classItem) => classItem.id);
   }
 
-  private async ensureTeacherClassScope(userId: string, role: string, schoolId?: string): Promise<string[]> {
+  private async ensureTeacherClassScope(userId: string, role: string): Promise<string[]> {
     if (role !== 'TEACHER') return [];
 
-    const assignedClassIds = await this.getTeacherAssignedClassIds(userId, schoolId);
+    const assignedClassIds = await this.getTeacherAssignedClassIds(userId);
     if (assignedClassIds.length === 0) {
       throw new ApiError(403, 'You are not assigned as class teacher to any active class');
     }
@@ -45,7 +44,6 @@ export class AttendanceController {
   async markAttendance(req: AuthRequest, res: Response) {
     const currentUserId = req.user!.userId;
     const currentUserRole = req.user!.role;
-    const currentSchoolId = req.user!.schoolId;
     const { learnerId, date, status, classId, remarks } = req.body;
 
     if (!learnerId || !date || !status) {
@@ -64,7 +62,7 @@ export class AttendanceController {
 
     let resolvedClassId: string | undefined = classId;
     if (currentUserRole === 'TEACHER') {
-      const assignedClassIds = await this.ensureTeacherClassScope(currentUserId, currentUserRole, currentSchoolId);
+      const assignedClassIds = await this.ensureTeacherClassScope(currentUserId, currentUserRole);
 
       if (!resolvedClassId) {
         resolvedClassId = assignedClassIds[0];
@@ -111,7 +109,6 @@ export class AttendanceController {
           classId: resolvedClassId || existing.classId,
           remarks,
           markedBy: currentUserId,
-          schoolId: currentSchoolId || existing.schoolId || learner.schoolId,
           markedAt: new Date(),
         },
         include: {
@@ -140,7 +137,6 @@ export class AttendanceController {
         date: attendanceDate,
         status: status as AttendanceStatus,
         classId: resolvedClassId,
-        schoolId: currentSchoolId || learner.schoolId,
         remarks,
         markedBy: currentUserId,
       },
@@ -170,7 +166,6 @@ export class AttendanceController {
   async markBulkAttendance(req: AuthRequest, res: Response) {
     const currentUserId = req.user!.userId;
     const currentUserRole = req.user!.role;
-    const currentSchoolId = req.user!.schoolId;
     const { attendanceRecords, attendance, date, classId } = req.body;
     const records = Array.isArray(attendanceRecords) ? attendanceRecords : attendance;
 
@@ -184,7 +179,7 @@ export class AttendanceController {
     let resolvedClassId: string | undefined = classId;
     let teacherClassIds: string[] = [];
     if (currentUserRole === 'TEACHER') {
-      teacherClassIds = await this.ensureTeacherClassScope(currentUserId, currentUserRole, currentSchoolId);
+      teacherClassIds = await this.ensureTeacherClassScope(currentUserId, currentUserRole);
 
       if (!resolvedClassId) {
         resolvedClassId = teacherClassIds[0];
@@ -256,7 +251,6 @@ export class AttendanceController {
               status: status as AttendanceStatus,
               classId: resolvedClassId || existing.classId,
               remarks,
-              schoolId: currentSchoolId || existing.schoolId,
               markedBy: currentUserId,
               markedAt: new Date(),
             },
@@ -270,7 +264,6 @@ export class AttendanceController {
               date: attendanceDate,
               status: status as AttendanceStatus,
               classId: resolvedClassId,
-              schoolId: currentSchoolId,
               remarks,
               markedBy: currentUserId,
             },
@@ -298,16 +291,11 @@ export class AttendanceController {
     const { date, startDate, endDate, learnerId, classId, status } = req.query;
     const currentUserId = req.user!.userId;
     const currentUserRole = req.user!.role;
-    const currentSchoolId = req.user!.schoolId;
 
     const whereClause: any = {};
 
-    if (currentSchoolId) {
-      whereClause.schoolId = currentSchoolId;
-    }
-
     if (currentUserRole === 'TEACHER') {
-      const assignedClassIds = await this.ensureTeacherClassScope(currentUserId, currentUserRole, currentSchoolId);
+      const assignedClassIds = await this.ensureTeacherClassScope(currentUserId, currentUserRole);
       const requestedClassId = typeof classId === 'string' ? classId : undefined;
 
       if (requestedClassId && !assignedClassIds.includes(requestedClassId)) {
@@ -386,16 +374,11 @@ export class AttendanceController {
     const { startDate, endDate, classId, learnerId } = req.query;
     const currentUserId = req.user!.userId;
     const currentUserRole = req.user!.role;
-    const currentSchoolId = req.user!.schoolId;
 
     const whereClause: any = {};
 
-    if (currentSchoolId) {
-      whereClause.schoolId = currentSchoolId;
-    }
-
     if (currentUserRole === 'TEACHER') {
-      const assignedClassIds = await this.ensureTeacherClassScope(currentUserId, currentUserRole, currentSchoolId);
+      const assignedClassIds = await this.ensureTeacherClassScope(currentUserId, currentUserRole);
       const requestedClassId = typeof classId === 'string' ? classId : undefined;
 
       if (requestedClassId && !assignedClassIds.includes(requestedClassId)) {
@@ -488,7 +471,6 @@ export class AttendanceController {
       const teacherClasses = await prisma.class.findMany({
         where: {
           teacherId: currentUserId,
-          ...(req.user?.schoolId ? { schoolId: req.user.schoolId } : {}),
         },
         select: { id: true, grade: true, stream: true }
       });
@@ -563,7 +545,6 @@ export class AttendanceController {
     const { classId, date } = req.query;
     const currentUserId = req.user!.userId;
     const currentUserRole = req.user!.role;
-    const currentSchoolId = req.user!.schoolId;
 
     if (!classId || !date) {
       throw new ApiError(400, 'Missing required parameters: classId, date');
@@ -577,14 +558,10 @@ export class AttendanceController {
           teacherId: currentUserId,
           active: true,
           archived: false,
-          ...(currentSchoolId ? { schoolId: currentSchoolId } : {}),
         }
       })
       : await prisma.class.findFirst({
-        where: {
-          id: classId as string,
-          ...(currentSchoolId ? { schoolId: currentSchoolId } : {}),
-        }
+        where: { id: classId as string }
       });
 
     if (!classObj) {
@@ -601,7 +578,6 @@ export class AttendanceController {
     const learners = await prisma.learner.findMany({
       where: {
         status: 'ACTIVE',
-        ...(currentSchoolId ? { schoolId: currentSchoolId } : {}),
         OR: [
           {
             enrollments: {
@@ -632,7 +608,6 @@ export class AttendanceController {
       where: {
         classId: classId as string,
         date: queryDate,
-        ...(currentSchoolId ? { schoolId: currentSchoolId } : {}),
       },
     });
 

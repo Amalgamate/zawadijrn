@@ -7,10 +7,9 @@ export class HRController {
     async clockIn(req: AuthRequest, res: Response) {
         try {
             const userId = req.user?.userId;
-            const schoolId = req.user?.schoolId;
             if (!userId) throw new ApiError(401, 'Unauthorized');
 
-            const result = await hrService.clockInStaff(userId, schoolId, req.body || {});
+            const result = await hrService.clockInStaff(userId, req.body || {});
             res.status(201).json({ success: true, message: 'Clock-in recorded', data: result });
         } catch (error: any) {
             res.status(error.statusCode || 500).json({ success: false, message: error.message });
@@ -32,10 +31,9 @@ export class HRController {
     async clockOut(req: AuthRequest, res: Response) {
         try {
             const userId = req.user?.userId;
-            const schoolId = req.user?.schoolId;
             if (!userId) throw new ApiError(401, 'Unauthorized');
 
-            const result = await hrService.clockOutStaff(userId, schoolId, req.body || {});
+            const result = await hrService.clockOutStaff(userId, req.body || {});
             res.status(200).json({ success: true, message: 'Clock-out recorded', data: result });
         } catch (error: any) {
             const message = error?.message || 'Failed to clock out';

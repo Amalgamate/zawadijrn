@@ -10,15 +10,18 @@ import prisma from '../config/database';
 
 // Define learning areas for each grade
 const LEARNING_AREAS_CONFIG: Record<string, string[]> = {
-  'PLAYGROUP': ['Child Development Activity', 'Language Activity', 'Mathematical Activity', 'Environmental Activity', 'Creative Activity'],
-  'PP1': ['Mathematical Activities', 'Language Activities', 'Literacy & Reading', 'Environmental Activities', 'Creative Activities'],
-  'PP2': ['Mathematical Activities', 'Language Activities', 'Literacy & Reading', 'Environmental Activities', 'Creative Activities'],
-  'GRADE_1': ['English', 'Mathematics', 'Environmental Activities', 'Creative Activities', 'Physical Education'],
-  'GRADE_2': ['English', 'Mathematics', 'Science & Technology', 'Social Studies', 'Creative Activities'],
-  'GRADE_3': ['English', 'Mathematics', 'Science & Technology', 'Social Studies', 'Creative Activities'],
-  'GRADE_4': ['English', 'Mathematics', 'Science & Technology', 'Social Studies', 'Kenya Sign Language'],
-  'GRADE_5': ['English', 'Mathematics', 'Science & Technology', 'Social Studies', 'Kenya Sign Language'],
-  'GRADE_6': ['English', 'Mathematics', 'Science & Technology', 'Social Studies', 'Kenya Sign Language'],
+  'PLAYGROUP': ['Language Activities', 'Mathematical Activities', 'Environmental Activities', 'Creative Activities', 'Religious Activities', 'Pastoral Programme of Instruction (PPI)'],
+  'PP1': ['Language Activities', 'Mathematical Activities', 'Environmental Activities', 'Creative Activities', 'Religious Activities', 'Pastoral Programme of Instruction (PPI)'],
+  'PP2': ['Language Activities', 'Mathematical Activities', 'Environmental Activities', 'Creative Activities', 'Religious Activities', 'Pastoral Programme of Instruction (PPI)'],
+  'GRADE_1': ['English', 'Kiswahili', 'Indigenous Language', 'Mathematical Activities', 'Environmental Activities', 'Religious Education', 'Creative Activities'],
+  'GRADE_2': ['English', 'Kiswahili', 'Indigenous Language', 'Mathematical Activities', 'Environmental Activities', 'Religious Education', 'Creative Activities'],
+  'GRADE_3': ['English', 'Kiswahili', 'Indigenous Language', 'Mathematical Activities', 'Environmental Activities', 'Religious Education', 'Creative Activities'],
+  'GRADE_4': ['English', 'Kiswahili', 'Science and Technology', 'Social Studies', 'Mathematics', 'Agriculture', 'Creative Arts', 'Religious Education'],
+  'GRADE_5': ['English', 'Kiswahili', 'Science and Technology', 'Social Studies', 'Mathematics', 'Agriculture', 'Creative Arts', 'Religious Education'],
+  'GRADE_6': ['English', 'Kiswahili', 'Science and Technology', 'Social Studies', 'Mathematics', 'Agriculture', 'Creative Arts', 'Religious Education'],
+  'GRADE_7': ['English', 'Kiswahili', 'Mathematics', 'Integrated Science', 'Social Studies', 'Religious Education', 'Pre-Technical Studies', 'Agriculture', 'Creative Arts & Sports'],
+  'GRADE_8': ['English', 'Kiswahili', 'Mathematics', 'Integrated Science', 'Social Studies', 'Religious Education', 'Pre-Technical Studies', 'Agriculture', 'Creative Arts & Sports'],
+  'GRADE_9': ['English', 'Kiswahili', 'Mathematics', 'Integrated Science', 'Social Studies', 'Religious Education', 'Pre-Technical Studies', 'Agriculture', 'Creative Arts & Sports']
 };
 
 /**
@@ -33,17 +36,7 @@ export const bulkCreateGradingScales = async (req: AuthRequest, res: Response) =
     let scaleSSkipped = 0;
     const logs: string[] = [];
 
-    const gradeRange = [
-      'PLAYGROUP',
-      'PP1',
-      'PP2',
-      'GRADE_1',
-      'GRADE_2',
-      'GRADE_3',
-      'GRADE_4',
-      'GRADE_5',
-      'GRADE_6'
-    ] as const;
+    const gradeRange = Object.keys(LEARNING_AREAS_CONFIG);
 
     // Standard grading ranges for all scales
     const gradingRanges = [
@@ -81,7 +74,7 @@ export const bulkCreateGradingScales = async (req: AuthRequest, res: Response) =
         }
 
         // Create new scale
-        const newScale = await prisma.gradingSystem.create({
+        await prisma.gradingSystem.create({
           data: {
             name: scaleName,
             grade: grade as Grade,
@@ -135,6 +128,7 @@ export const bulkCreateGradingScales = async (req: AuthRequest, res: Response) =
 export const bulkCreateSummativeTests = async (req: AuthRequest, res: Response) => {
   try {
     const createdBy = req.user?.userId;
+    const schoolId = req.schoolContext?.schoolId;
 
     if (!createdBy) {
       return res.status(401).json({
@@ -147,7 +141,8 @@ export const bulkCreateSummativeTests = async (req: AuthRequest, res: Response) 
       term = 'TERM_1',
       academicYear = new Date().getFullYear(),
       testType = 'SUMMATIVE',
-      overwrite = false
+      overwrite = false,
+      weight = 1.0
     } = req.body;
 
     let testsCreated = 0;
@@ -165,7 +160,7 @@ export const bulkCreateSummativeTests = async (req: AuthRequest, res: Response) 
     if (scales.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'No grading scales found'
+        message: 'No grading scales found for your school. Please create scales first.'
       });
     }
 
@@ -221,6 +216,7 @@ export const bulkCreateSummativeTests = async (req: AuthRequest, res: Response) 
           createdBy,
           scaleId: scale.id,
           status: 'PUBLISHED',
+          weight: parseFloat(String(weight || 1.0)),
           published: true,
           active: true,
           description: `Summative assessment for ${scale.learningArea}`
@@ -258,6 +254,7 @@ export const bulkCreateSummativeTests = async (req: AuthRequest, res: Response) 
 export const completeSchoolSetup = async (req: AuthRequest, res: Response) => {
   try {
     const createdBy = req.user?.userId;
+    const schoolId = req.schoolContext?.schoolId;
 
     if (!createdBy) {
       return res.status(401).json({
@@ -269,7 +266,8 @@ export const completeSchoolSetup = async (req: AuthRequest, res: Response) => {
     const {
       term = 'TERM_1',
       academicYear = new Date().getFullYear(),
-      overwrite = false
+      overwrite = false,
+      weight = 1.0
     } = req.body;
 
     const logs: string[] = [];
@@ -294,7 +292,7 @@ export const completeSchoolSetup = async (req: AuthRequest, res: Response) => {
 
     // STEP 1: Create Grading Scales
     let scalesCreated = 0;
-    const gradeRange = ['PLAYGROUP', 'PP1', 'PP2', 'GRADE_1', 'GRADE_2', 'GRADE_3', 'GRADE_4', 'GRADE_5', 'GRADE_6'] as const;
+    const gradeRange = Object.keys(LEARNING_AREAS_CONFIG);
     const gradingRanges = [
       { minPercentage: 80, maxPercentage: 100, minMarks: 80, maxMarks: 100, points: 4, grade: 'A', label: 'Excellent', color: '#10b981' },
       { minPercentage: 60, maxPercentage: 79, minMarks: 60, maxMarks: 79, points: 3, grade: 'B', label: 'Good', color: '#3b82f6' },
@@ -309,7 +307,9 @@ export const completeSchoolSetup = async (req: AuthRequest, res: Response) => {
       for (const learningArea of learningAreas) {
         const scaleName = `${grade} - ${learningArea}`;
         const existing = await prisma.gradingSystem.findFirst({
-          where: { name: scaleName }
+          where: { 
+            name: scaleName
+          }
         });
 
         if (existing && !overwrite) continue;
@@ -349,7 +349,10 @@ export const completeSchoolSetup = async (req: AuthRequest, res: Response) => {
     // STEP 2: Create Tests
     let testsCreated = 0;
     const scales = await prisma.gradingSystem.findMany({
-      where: { active: true, type: 'SUMMATIVE' }
+      where: { 
+        active: true, 
+        type: 'SUMMATIVE'
+      }
     });
 
     for (const scale of scales) {
@@ -393,6 +396,7 @@ export const completeSchoolSetup = async (req: AuthRequest, res: Response) => {
           passMarks: 40,
           createdBy,
           scaleId: scale.id,
+          weight: parseFloat(String(weight || 1.0)),
           status: 'PUBLISHED',
           published: true,
           active: true

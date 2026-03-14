@@ -91,6 +91,12 @@ const REQUIREMENTS: EnvRequirement[] = [
         required: false,
         description: 'Use secure cookies (true/false)',
         validation: (val) => ['true', 'false'].includes(val.toLowerCase()) || 'SECURE_COOKIES must be true or false'
+    },
+    {
+        key: 'ENCRYPTION_KEY',
+        required: true,
+        description: 'Key for sensitive data encryption (32 chars hex)',
+        validation: (val) => val.length >= 32 || 'ENCRYPTION_KEY must be at least 32 characters long'
     }
 ];
 

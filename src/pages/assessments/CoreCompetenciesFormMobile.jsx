@@ -15,6 +15,7 @@ const CoreCompetenciesFormMobile = ({ onBack, onSuccess }) => {
     academicYears,
     handleInputChange,
     handleCompetencyChange,
+    competencyFields,
     handleSubmit: originalHandleSubmit
   } = useCoreCompetencies();
 
@@ -84,35 +85,35 @@ const CoreCompetenciesFormMobile = ({ onBack, onSuccess }) => {
 
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">
-                Student ID<span className="text-red-500">*</span>
+                Learner ID<span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
-                value={formData.studentId}
-                onChange={(e) => handleInputChange('studentId', e.target.value)}
-                className={`w-full px-3 py-2.5 border rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition ${errors.studentId ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                value={formData.learnerId}
+                onChange={(e) => handleInputChange('learnerId', e.target.value)}
+                className={`w-full px-3 py-2.5 border rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition ${errors.learnerId ? 'border-red-500 bg-red-50' : 'border-gray-300'
                   }`}
-                placeholder="e.g., STU001"
+                placeholder="Learner ID"
               />
-              {errors.studentId && (
-                <p className="text-red-600 text-xs mt-1">{errors.studentId}</p>
+              {errors.learnerId && (
+                <p className="text-red-600 text-xs mt-1">{errors.learnerId}</p>
               )}
             </div>
 
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">
-                Student Name<span className="text-red-500">*</span>
+                Learner Name<span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
-                value={formData.studentName}
-                onChange={(e) => handleInputChange('studentName', e.target.value)}
-                className={`w-full px-3 py-2.5 border rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition ${errors.studentName ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                value={formData.learnerName}
+                onChange={(e) => handleInputChange('learnerName', e.target.value)}
+                className={`w-full px-3 py-2.5 border rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition ${errors.learnerName ? 'border-red-500 bg-red-50' : 'border-gray-300'
                   }`}
                 placeholder="Full name"
               />
-              {errors.studentName && (
-                <p className="text-red-600 text-xs mt-1">{errors.studentName}</p>
+              {errors.learnerName && (
+                <p className="text-red-600 text-xs mt-1">{errors.learnerName}</p>
               )}
             </div>
 
@@ -195,34 +196,33 @@ const CoreCompetenciesFormMobile = ({ onBack, onSuccess }) => {
             <h2 className="text-sm font-semibold text-gray-900 px-4">Core Competencies</h2>
             <p className="text-xs text-gray-600 px-4 mb-2">Tap to expand and rate each competency</p>
 
-            {formData.competencies.map((competency) => (
-              <div key={competency.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+            {competencyFields.map((field) => (
+              <div key={field.key} className="bg-white border border-gray-200 rounded-lg overflow-hidden">
                 {/* Competency Header - Clickable to expand */}
                 <button
                   type="button"
-                  onClick={() => toggleCompetency(competency.id)}
+                  onClick={() => toggleCompetency(field.key)}
                   className="w-full px-4 py-3 flex items-start justify-between hover:bg-gray-50 transition-colors text-left"
                 >
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-semibold text-gray-900">{competency.name}</h3>
-                    <p className="text-xs text-gray-600 mt-1">{competency.descriptor}</p>
+                    <h3 className="text-sm font-semibold text-gray-900">{field.label}</h3>
 
                     {/* Show selected rating */}
-                    {competency.rating && (
+                    {formData[field.key] && (
                       <div className="mt-2">
-                        <span className={`text-xs font-medium px-2 py-1 rounded inline-block ${competency.rating === 'EE' ? 'bg-green-100 text-green-800' :
-                            competency.rating === 'ME' ? 'bg-blue-100 text-blue-800' :
-                              competency.rating === 'AP' ? 'bg-yellow-100 text-yellow-800' :
+                        <span className={`text-xs font-medium px-2 py-1 rounded inline-block ${formData[field.key].startsWith('EE') ? 'bg-green-100 text-green-800' :
+                            formData[field.key].startsWith('ME') ? 'bg-blue-100 text-blue-800' :
+                              formData[field.key].startsWith('AE') ? 'bg-yellow-100 text-yellow-800' :
                                 'bg-red-100 text-red-800'
                           }`}>
-                          {ratingScale.find(r => r.value === competency.rating)?.label}
+                          {ratingScale.find(r => r.value === formData[field.key])?.label}
                         </span>
                       </div>
                     )}
                   </div>
 
                   <div className="flex-shrink-0 ml-2 mt-0.5">
-                    {expandedCompetency === competency.id ? (
+                    {expandedCompetency === field.key ? (
                       <ChevronUp size={18} className="text-gray-400" />
                     ) : (
                       <ChevronDown size={18} className="text-gray-400" />
@@ -231,7 +231,7 @@ const CoreCompetenciesFormMobile = ({ onBack, onSuccess }) => {
                 </button>
 
                 {/* Expanded Content */}
-                {expandedCompetency === competency.id && (
+                {expandedCompetency === field.key && (
                   <div className="px-4 pb-4 space-y-3 border-t border-gray-200 bg-gray-50 animate-in fade-in slide-in-from-top-1 duration-200">
                     {/* Rating */}
                     <div>
@@ -243,8 +243,8 @@ const CoreCompetenciesFormMobile = ({ onBack, onSuccess }) => {
                           <button
                             key={rating.value}
                             type="button"
-                            onClick={() => handleCompetencyChange(competency.id, 'rating', rating.value)}
-                            className={`p-2.5 rounded-lg text-xs font-medium text-center border-2 transition ${competency.rating === rating.value
+                            onClick={() => handleCompetencyChange(field.key, rating.value)}
+                            className={`p-2.5 rounded-lg text-xs font-medium text-center border-2 transition ${formData[field.key] === rating.value
                                 ? `${rating.color} border-current shadow-sm`
                                 : 'border-gray-300 hover:border-gray-400 bg-white'
                               }`}
@@ -254,39 +254,26 @@ const CoreCompetenciesFormMobile = ({ onBack, onSuccess }) => {
                           </button>
                         ))}
                       </div>
-                      {errors[`competency_${competency.id}_rating`] && (
-                        <p className="text-red-600 text-xs mt-1">{errors[`competency_${competency.id}_rating`]}</p>
+                      {errors[field.key] && (
+                        <p className="text-red-600 text-xs mt-1">{errors[field.key]}</p>
                       )}
                     </div>
 
-                    {/* Evidence */}
+                    {/* Evidence/Comment */}
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Evidence<span className="text-red-500">*</span>
+                        Evidence & Comments<span className="text-red-500">*</span>
                       </label>
                       <textarea
-                        value={competency.evidence}
-                        onChange={(e) => handleCompetencyChange(competency.id, 'evidence', e.target.value)}
+                        value={formData[field.commentKey]}
+                        onChange={(e) => handleCompetencyChange(field.commentKey, e.target.value)}
                         placeholder="Describe evidence supporting this rating..."
-                        className={`w-full px-3 py-2.5 border rounded-lg text-base resize-none h-24 focus:ring-2 focus:ring-blue-500 transition ${errors[`competency_${competency.id}_evidence`] ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                        className={`w-full px-3 py-2.5 border rounded-lg text-base resize-none h-24 focus:ring-2 focus:ring-blue-500 transition ${errors[field.commentKey] ? 'border-red-500 bg-red-50' : 'border-gray-300'
                           }`}
                       />
-                      {errors[`competency_${competency.id}_evidence`] && (
-                        <p className="text-red-600 text-xs mt-1">{errors[`competency_${competency.id}_evidence`]}</p>
+                      {errors[field.commentKey] && (
+                        <p className="text-red-600 text-xs mt-1">{errors[field.commentKey]}</p>
                       )}
-                    </div>
-
-                    {/* Teacher Comment */}
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Teacher Comment <span className="text-gray-500 font-normal">(Optional)</span>
-                      </label>
-                      <textarea
-                        value={competency.teacherComment}
-                        onChange={(e) => handleCompetencyChange(competency.id, 'teacherComment', e.target.value)}
-                        placeholder="Additional comments..."
-                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-base resize-none h-20 focus:ring-2 focus:ring-blue-500 transition"
-                      />
                     </div>
                   </div>
                 )}

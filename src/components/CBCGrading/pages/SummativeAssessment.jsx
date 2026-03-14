@@ -892,16 +892,7 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
                   <span className="capitalize">{setup.selectedTerm?.replace(/_/g, ' ').toLowerCase()}</span>
                 </div>
 
-                <a
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    alert("Standard CBC Headers Required:\n- Mathematical Activities\n- Language Activities\n- Literacy & Reading\n- Environmental Activities\n- Creative Activities\n- Religious Education\n\nPlease ensure your Excel headers match these exactly.");
-                  }}
-                  className="text-[11px] text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  Template Guide
-                </a>
+
               </div>
 
               {/* Bottom Row: Title & Actions */}
@@ -916,6 +907,12 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
                     }`}>
                     {assessmentProgress.percentage}% Complete
                   </span>
+
+                  {selectedTest?.weight !== undefined && (
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wide border bg-amber-50 text-amber-700 border-amber-200">
+                      Weight: {selectedTest.weight}
+                    </span>
+                  )}
 
                   {isDraft && (
                     <span className="text-[10px] text-gray-400 font-medium italic flex items-center gap-1.5 ml-1">
@@ -1178,7 +1175,7 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
                           {selectedTest?.learningArea} | {selectedTest?.grade?.replace('_', ' ')} | {setup.selectedStream || 'All Streams'}
                         </p>
                         <p className="text-sm text-gray-600 leading-tight mt-0.5">
-                          {selectedTest?.term?.replace('_', ' ')} {selectedTest?.academicYear || new Date().getFullYear()} | Total Marks: {selectedTest?.totalMarks} | Test Date: {selectedTest?.testDate ? new Date(selectedTest.testDate).toLocaleDateString('en-GB') : 'N/A'}
+                          {selectedTest?.term?.replace('_', ' ')} {selectedTest?.academicYear || new Date().getFullYear()} | Total Marks: {selectedTest?.totalMarks} | Weight: {selectedTest?.weight || '1.0'} | Test Date: {selectedTest?.testDate ? new Date(selectedTest.testDate).toLocaleDateString('en-GB') : 'N/A'}
                         </p>
                       </div>
                     </div>

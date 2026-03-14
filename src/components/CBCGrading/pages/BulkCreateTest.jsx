@@ -85,7 +85,8 @@ const BulkCreateTest = ({ onBack, onSuccess }) => {
         duration: '120',
         description: '',
         instructions: '',
-        scaleGroupId: ''
+        scaleGroupId: '',
+        weight: '1.0'
     });
 
     const [selectedGrades, setSelectedGrades] = useState(['GRADE_6']);
@@ -394,6 +395,26 @@ const BulkCreateTest = ({ onBack, onSuccess }) => {
                                         </div>
                                         <span className="text-slate-400 font-medium">min</span>
                                     </div>
+                                </div>
+
+                                <div className="space-y-2 p-4 bg-slate-50/50 rounded-xl border border-slate-100">
+                                    <Label className="text-slate-500 text-xs font-black uppercase tracking-wider">Assessment Weight</Label>
+                                    <div className="flex items-center gap-3">
+                                        <div className="relative flex-1">
+                                            <Input
+                                                type="number"
+                                                step="0.1"
+                                                min="0"
+                                                max="100"
+                                                value={formData.weight}
+                                                onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                                                className="h-10 text-lg font-bold border-slate-200 bg-white pl-9"
+                                            />
+                                            <Zap className="absolute left-3 top-2.5 text-slate-400" size={16} />
+                                        </div>
+                                        <span className="text-slate-400 font-medium">mult</span>
+                                    </div>
+                                    <p className="text-[10px] text-slate-400">Default 1.0. Decimals permitted.</p>
                                 </div>
                             </CardContent>
                         </Card>

@@ -62,19 +62,6 @@ router.post(
 
     const forceCreate = req.query.forceCreate === 'true';
 
-    // In single-tenant, we just get the main branch or first branch
-    let branch = await prisma.branch.findFirst({
-      orderBy: { name: 'asc' },
-    });
-
-    if (!branch) {
-      branch = await prisma.branch.create({
-        data: { name: 'Main Campus' }
-      });
-    }
-
-    const branchId = branch.id;
-
     const results: any[] = [];
     const errors: any[] = [];
     let lineNumber = 1;

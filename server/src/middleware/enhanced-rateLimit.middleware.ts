@@ -22,6 +22,11 @@ interface RateLimitStore {
   };
 }
 
+/**
+ * In-memory store for rate limiting. 
+ * NOTE: This resets on server restart and does not share state across multi-instance clusters.
+ * TODO: Move to Redis for distributed rate limiting in production.
+ */
 const store: RateLimitStore = {};
 
 /**

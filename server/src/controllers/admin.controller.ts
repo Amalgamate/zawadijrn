@@ -9,10 +9,6 @@ export class AdminController {
   async listSchools(_req: Request, res: Response) {
     try {
       const schools = await prisma.school.findMany({
-        include: {
-          branches: { select: { id: true, name: true, code: true } },
-          _count: { select: { branches: true } }
-        },
         orderBy: { name: 'asc' },
       });
       res.json({ success: true, data: schools, count: schools.length });
@@ -116,8 +112,6 @@ export class AdminController {
         id: user.userId || user.id,
         email: user.email,
         role: 'SUPER_ADMIN' as any,
-        schoolId: schoolId,
-        branchId: null,
       });
       return res.json({ success: true, token: newToken, data: { school: { id: school.id, name: school.name } } });
     } catch (error) {

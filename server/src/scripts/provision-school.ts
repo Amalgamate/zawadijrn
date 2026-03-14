@@ -8,7 +8,6 @@ async function purgeAllData() {
   await prisma.classEnrollment.deleteMany({})
   await prisma.class.deleteMany({})
   await prisma.learner.deleteMany({})
-  await prisma.branch.deleteMany({})
   await prisma.gradingRange.deleteMany({})
   await prisma.gradingSystem.deleteMany({})
   await prisma.aggregationConfig.deleteMany({})

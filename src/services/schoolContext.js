@@ -3,7 +3,7 @@
  * Helpers for reading and writing school/branch context in local storage.
  */
 
-export const getCurrentSchoolId = () => localStorage.getItem('currentSchoolId') || null;
+export const getCurrentSchoolId = () => null;
 
 export const getStoredUser = () => {
     try {
@@ -20,17 +20,12 @@ export const isSuperAdminUser = () => {
     return user?.role === 'SUPER_ADMIN';
 };
 
-export const resolveCurrentSchoolId = () => getCurrentSchoolId();
+export const resolveCurrentSchoolId = () => null;
 
-export const setCurrentSchoolId = (id) => {
-    if (id) localStorage.setItem('currentSchoolId', id);
-};
+export const setCurrentSchoolId = (id) => { };
+export const setBranchId = (id) => { };
 
-export const setBranchId = (id) => {
-    if (id) localStorage.setItem('currentBranchId', id);
-};
+export const clearCurrentSchoolId = () => { };
+export const clearBranchId = () => { };
 
-export const clearCurrentSchoolId = () => localStorage.removeItem('currentSchoolId');
-export const clearBranchId = () => localStorage.removeItem('currentBranchId');
-
-export const getBranchId = () => localStorage.getItem('currentBranchId') || null;
+export const getBranchId = () => null;

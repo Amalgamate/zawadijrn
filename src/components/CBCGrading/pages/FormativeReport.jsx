@@ -136,10 +136,31 @@ const FormativeReport = ({ learners, brandingSettings, user }) => {
     return labels[rating] || rating;
   };
 
+  // Derive learningAreasAssessed from the assessments array (backend sends byLearningArea
+  // as an object but doesn't send a flat array — build it here)
+  const learningAreasAssessed = reportData
+    ? [...new Set((reportData.assessments || []).map(a => a.learningArea))].sort()
+    : [];
+
+  // Distribution helpers — backend uses EE/ME/AE/BE (rubric groups),
+  // frontend stat cards want EE1+EE2, ME1+ME2, AE1+AE2 (detailed ratings).
+  // The detailed ratings live on each assessment as detailedRating.
+  const detailedDist = (reportData?.assessments || []).reduce((acc, a) => {
+    if (a.detailedRating) acc[a.detailedRating] = (acc[a.detailedRating] || 0) + 1;
+    return acc;
+  }, {});
+
+  // averagePercentage — backend sends averagePoints (points scale) and individual
+  // assessment percentages; compute mean from assessments directly.
+  const averagePercentage = (() => {
+    const percs = (reportData?.assessments || []).map(a => a.percentage).filter(p => p != null);
+    return percs.length > 0 ? Math.round(percs.reduce((a, b) => a + b, 0) / percs.length) : 0;
+  })();
+
   // Filter assessments by learning area
   const filteredAssessments = selectedArea === 'all'
     ? reportData?.assessments || []
-    : reportData?.assessments.filter(a => a.learningArea === selectedArea) || [];
+    : (reportData?.assessments || []).filter(a => a.learningArea === selectedArea);
 
   const handleReset = () => {
     selection.clearSelection();
@@ -226,7 +247,7 @@ const FormativeReport = ({ learners, brandingSettings, user }) => {
                   className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="all">All Learning Areas</option>
-                  {reportData?.summary.learningAreasAssessed.map(a => (
+                  {learningAreasAssessed.map(a => (
                     <option key={a} value={a}>{a}</option>
                   ))}
                 </select>
@@ -294,28 +315,28 @@ const FormativeReport = ({ learners, brandingSettings, user }) => {
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                   <div className="bg-gray-50 rounded-lg p-3 text-center border border-gray-100">
                     <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Total Assessments</p>
-                    <p className="text-2xl font-bold text-gray-800">{reportData.summary.totalAssessments}</p>
+                    <p className="text-2xl font-bold text-gray-800">{reportData.totalAssessments}</p>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-3 text-center border border-gray-100">
                     <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Average %</p>
-                    <p className="text-2xl font-bold text-purple-600">{reportData.summary.averagePercentage}%</p>
+                    <p className="text-2xl font-bold text-purple-600">{averagePercentage}%</p>
                   </div>
                   <div className="bg-green-50 rounded-lg p-3 text-center border border-green-100">
                     <p className="text-[10px] text-green-600 font-bold uppercase mb-1">Exceeding</p>
                     <p className="text-2xl font-bold text-green-700">
-                      {(reportData.summary.distribution.EE1 || 0) + (reportData.summary.distribution.EE2 || 0)}
+                      {(detailedDist.EE1 || 0) + (detailedDist.EE2 || 0)}
                     </p>
                   </div>
                   <div className="bg-blue-50 rounded-lg p-3 text-center border border-blue-100">
                     <p className="text-[10px] text-blue-600 font-bold uppercase mb-1">Meeting</p>
                     <p className="text-2xl font-bold text-blue-700">
-                      {(reportData.summary.distribution.ME1 || 0) + (reportData.summary.distribution.ME2 || 0)}
+                      {(detailedDist.ME1 || 0) + (detailedDist.ME2 || 0)}
                     </p>
                   </div>
                   <div className="bg-yellow-50 rounded-lg p-3 text-center border border-yellow-100">
                     <p className="text-[10px] text-yellow-600 font-bold uppercase mb-1">Approaching</p>
                     <p className="text-2xl font-bold text-yellow-700">
-                      {(reportData.summary.distribution.AE1 || 0) + (reportData.summary.distribution.AE2 || 0)}
+                      {(detailedDist.AE1 || 0) + (detailedDist.AE2 || 0)}
                     </p>
                   </div>
                 </div>

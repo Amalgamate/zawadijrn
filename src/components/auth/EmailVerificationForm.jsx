@@ -276,7 +276,7 @@ export default function EmailVerificationForm({ email, phone, onVerifySuccess, b
                     </div>
                     <div>
                       <h4 className="font-semibold text-white">Secure Verification</h4>
-                      <p className="text-white/70 text-sm">Your code is valid for 5 minutes</p>
+                      <p className="text-white/70 text-sm">Your code is valid for 10 minutes</p>
                     </div>
                   </div>
 

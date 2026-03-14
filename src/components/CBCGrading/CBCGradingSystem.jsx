@@ -45,6 +45,9 @@ const SummativeTestsRouter = lazy(() => import('./pages/SummativeTestsRouter'));
 const SummativeAssessmentRouter = lazy(() => import('./pages/SummativeAssessmentRouter'));
 const SummativeReport = lazy(() => import('./pages/SummativeReport'));
 const TermlyReport = lazy(() => import('./pages/TermlyReport'));
+const ValuesAssessment = lazy(() => import('./pages/ValuesAssessment'));
+const CoCurricularActivities = lazy(() => import('./pages/CoCurricularActivities'));
+const CoreCompetenciesAssessment = lazy(() => import('./pages/CoreCompetenciesAssessment'));
 const SummaryReportPage = lazy(() => import('./pages/reports/SummaryReportPage'));
 const PerformanceScale = lazy(() => import('./pages/PerformanceScale'));
 const LearningAreasManagement = lazy(() => import('./pages/LearningAreasManagement'));
@@ -825,6 +828,12 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
         return <SummaryReportPage />;
       case 'assess-termly-report':
         return <TermlyReport learners={learners} brandingSettings={brandingSettings} user={user} />;
+      case 'assess-values':
+        return <ValuesAssessment learners={learners} />;
+      case 'assess-cocurricular':
+        return <CoCurricularActivities learners={learners} />;
+      case 'assess-core-competencies':
+        return <CoreCompetenciesAssessment learners={learners} />;
       case 'assess-learning-areas':
         return <LearningAreasManagement />;
       case 'assess-performance-scale':

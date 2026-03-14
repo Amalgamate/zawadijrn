@@ -146,6 +146,7 @@ const SummativeTestsMobile = ({ onNavigate, onBack }) => {
             </button>
             <h1 className="text-lg font-bold text-gray-900">Tests</h1>
           </div>
+          {/* 
           <button
             onClick={() => {
               setSelectedTest(null);
@@ -155,6 +156,7 @@ const SummativeTestsMobile = ({ onNavigate, onBack }) => {
           >
             <Plus size={20} />
           </button>
+          */}
         </div>
 
         {/* Search */}

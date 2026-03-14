@@ -10,6 +10,11 @@ import qrcode from 'qrcode-terminal';
 
 const SINGLE_TENANT_ID = 'default';
 
+/** Delay between bulk WhatsApp messages to avoid rate limiting */
+const WHATSAPP_BULK_DELAY_MS = 2500;
+/** Delay between announcement messages */
+const WHATSAPP_ANNOUNCEMENT_DELAY_MS = 100;
+
 interface WhatsAppMessage {
   to: string; // Phone number in international format (+254...)
   message: string;
@@ -128,11 +133,28 @@ class WhatsAppService {
    * Format phone number to WhatsApp format
    */
   private formatPhoneNumber(phone: string): string {
+    const hasPlus = phone.trim().startsWith('+');
     let formatted = phone.replace(/[\s\-\(\)]/g, '');
-    if (formatted.startsWith('0')) formatted = '254' + formatted.substring(1);
-    if (formatted.startsWith('+254')) formatted = formatted.substring(1);
+    // Strip leading + for processing
     if (formatted.startsWith('+')) formatted = formatted.substring(1);
-    if (!formatted.startsWith('254')) formatted = '254' + formatted;
+
+    // Kenyan local: 07... or 01...
+    if (formatted.startsWith('07') || formatted.startsWith('01')) {
+      formatted = '254' + formatted.substring(1);
+    }
+    // Already 254...
+    else if (!formatted.startsWith('254') && formatted.length === 9) {
+      formatted = '254' + formatted; // 9-digit local assumed Kenyan
+    }
+    // Non-Kenyan international number (had a + prefix) — keep as-is
+    else if (hasPlus && !formatted.startsWith('254')) {
+      // formatted is already digits-only, return as-is with @c.us
+    }
+    // Default: ensure starts with country code
+    else if (!formatted.startsWith('254') && !hasPlus) {
+      formatted = '254' + formatted;
+    }
+
     return `${formatted}@c.us`;
   }
 
@@ -207,7 +229,7 @@ class WhatsAppService {
       'MATHEMATICS': 'MAT', 'ENGLISH': 'ENG', 'KISWAHILI': 'KIS',
       'SCIENCE AND TECHNOLOGY': 'SCITECH', 'SOCIAL STUDIES': 'SST',
       'CHRISTIAN RELIGIOUS EDUCATION': 'CRE', 'ISLAMIC RELIGIOUS EDUCATION': 'IRE',
-      'CREATIVE ARTS AND SPORTS': 'CREATIVE', 'AGRICULTURE AND NUTRITION': 'AGRNT',
+      'CREATIVE ARTS AND SPORTS': 'CREATIVE', 'AGRICULTURE': 'AGRI',
       'ENVIRONMENTAL ACTIVITIES': 'ENV', 'MATHEMATICAL ACTIVITIES': 'MAT',
       'ENGLISH LANGUAGE ACTIVITIES': 'ENG', 'KISWAHILI LANGUAGE ACTIVITIES': 'KIS',
       'RELIGIOUS EDUCATION': 'RE'
@@ -313,7 +335,7 @@ class WhatsAppService {
         const result = await this.sendAssessmentNotification({ ...notification });
         if (result.success) sent++;
         else failed++;
-        await new Promise(resolve => setTimeout(resolve, 2500));
+        await new Promise(resolve => setTimeout(resolve, WHATSAPP_BULK_DELAY_MS));
       } catch (error) {
         failed++;
       }
@@ -324,6 +346,49 @@ class WhatsAppService {
       sent,
       failed,
       message: `Sent ${sent} messages, ${failed} failed`
+    };
+  }
+
+  /**
+   * Send bulk custom messages with batching
+   */
+  async sendBulkMessages(recipients: Array<{ phone: string, message: string }>): Promise<{
+    success: boolean;
+    sent: number;
+    failed: number;
+    results: Array<{ phone: string, success: boolean, messageId?: string, error?: string }>;
+  }> {
+    let sent = 0;
+    let failed = 0;
+    const results = [];
+
+    console.log(`📱 [WhatsApp Service] Starting bulk message send to ${recipients.length} recipients`);
+
+    for (const recipient of recipients) {
+      try {
+        const result = await this.sendMessage({ to: recipient.phone, message: recipient.message });
+        results.push({
+          phone: recipient.phone,
+          success: result.success,
+          messageId: result.messageId,
+          error: result.error
+        });
+        if (result.success) sent++;
+        else failed++;
+
+        // Add a delay between messages to avoid being flagged as spam by WhatsApp
+        await new Promise(resolve => setTimeout(resolve, WHATSAPP_BULK_DELAY_MS));
+      } catch (error: any) {
+        results.push({ phone: recipient.phone, success: false, error: error.message });
+        failed++;
+      }
+    }
+
+    return {
+      success: sent > 0,
+      sent,
+      failed,
+      results
     };
   }
 

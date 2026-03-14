@@ -122,8 +122,6 @@ export class AuthController {
           firstName: true,
           lastName: true,
           phone: true,
-          schoolId: true,
-          branchId: true,
           lastLogin: true
         }
       });

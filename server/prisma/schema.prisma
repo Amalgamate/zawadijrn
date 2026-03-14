@@ -17,8 +17,6 @@ model User {
   middleName                String?
   lastName                  String
   phone                     String?
-  schoolId                  String?
-  branchId                  String?
   role                      UserRole                 @default(TEACHER)
   status                    UserStatus               @default(ACTIVE)
   archived                  Boolean                  @default(false)
@@ -88,12 +86,10 @@ model User {
   assignedTickets           SupportTicket[]          @relation("AssignedTickets")
   tickets                   SupportTicket[]          @relation("UserTickets")
   createdTermConfigs        TermConfig[]
-  school                    School?                  @relation(fields: [schoolId], references: [id])
   assessedValues            ValuesAssessment[]       @relation("AssessorValues")
 
   @@map("users")
 }
-
 model School {
   id                     String                 @id @default(uuid())
   name                   String                 @unique
@@ -133,74 +129,9 @@ model School {
   updatedAt              DateTime               @updatedAt
   onboardingMessage      String?
   onboardingTitle        String?
-  events                 Event[]
-  accounts               Account[]
-  aggregationConfigs     AggregationConfig[]
-  attendances            Attendance[]
-  bankStatements         BankStatement[]
-  books                  Book[]
-  branches               Branch[]               @relation("SchoolBranches")
-  broadcastCampaigns     BroadcastCampaign[]
-  broadcastRecipients    BroadcastRecipient[]
-  changeHistories        ChangeHistory[]
-  classEnrollments       ClassEnrollment[]
-  classSchedules         ClassSchedule[]
-  classes                Class[]
-  coCurricularActivities CoCurricularActivity[]
-  communicationConfigs   CommunicationConfig[]
-  contactGroups          ContactGroup[]
-  coreCompetencies       CoreCompetency[]
-  documents              Document[]
-  expenses               Expense[]
-  feeInvoices            FeeInvoice[]
-  feeStructures          FeeStructure[]
-  feeTypes               FeeType[]
-  fixedAssets            FixedAsset[]
-  formativeAssessments   FormativeAssessment[]
-  gradingSystems         GradingSystem[]
-  inventoryItems         InventoryItem[]
-  inventoryStores        InventoryStore[]
-  journalEntries         JournalEntry[]
-  journals               Journal[]
-  learners               Learner[]
-  learningAreas          LearningArea[]
-  messageReceipts        MessageReceipt[]
-  messages               Message[]
-  notices                Notice[]
-  payrollRecords         PayrollRecord[]
-  performanceReviews     PerformanceReview[]
-  staffAttendanceLogs    StaffAttendanceLog[]
-  smsDeliveryLogs        SmsDeliveryLog[]
-  staffDocuments         StaffDocument[]
-  stockMovements         StockMovement[]
-  stockRequisitions      StockRequisition[]
-  subjectAssignments     SubjectAssignment[]
-  summativeResults       SummativeResult[]
-  summativeTests         SummativeTest[]
-  supportTickets         SupportTicket[]
-  termConfigs            TermConfig[]
-  termlyReportComments   TermlyReportComment[]
-  users                  User[]
-  valuesAssessments      ValuesAssessment[]
-  vendors                Vendor[]
 
   @@index([county])
   @@map("schools")
-}
-
-model Branch {
-  id        String   @id @default(uuid())
-  schoolId  String?
-  name      String?
-  code      String?
-  address   String?
-  phone     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  school    School?  @relation("SchoolBranches", fields: [schoolId], references: [id], onDelete: Cascade)
-
-  @@index([schoolId])
-  @@map("branches")
 }
 
 model AdmissionSequence {
@@ -245,7 +176,6 @@ model Stream {
 
 model Notice {
   id             String    @id @default(uuid())
-  schoolId       String
   createdById    String?
   title          String
   content        String
@@ -260,11 +190,10 @@ model Notice {
   archived       Boolean   @default(false)
   archivedAt     DateTime?
   archivedBy     String?
-  school         School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   createdBy      User?     @relation("NoticeAuthor", fields: [createdById], references: [id], onDelete: SetNull)
 
-  @@index([schoolId, status, publishedAt])
-  @@index([schoolId, archived])
+  @@index([status, publishedAt])
+  @@index([archived])
   @@map("notices")
 }
 
@@ -275,8 +204,6 @@ model Class {
   grade        Grade
   stream       String?
   teacherId    String?
-  schoolId     String?
-  branchId     String?
   academicYear Int               @default(2025)
   term         Term              @default(TERM_1)
   capacity     Int               @default(40)
@@ -292,13 +219,11 @@ model Class {
   enrollments  ClassEnrollment[]
   facilities   ClassFacility[]
   schedules    ClassSchedule[]
-  school       School?           @relation(fields: [schoolId], references: [id])
   teacher      User?             @relation("ClassTeacher", fields: [teacherId], references: [id])
 
-  @@unique([grade, stream, academicYear, term, schoolId])
+  @@unique([grade, stream, academicYear, term])
   @@index([teacherId])
   @@index([grade, stream])
-  @@index([schoolId])
   @@map("classes")
 }
 
@@ -311,8 +236,6 @@ model ClassSchedule {
   endTime        String
   room           String?
   teacherId      String?
-  schoolId       String?
-  branchId       String?
   semester       String?
   academicYear   Int           @default(2025)
   notes          String?
@@ -325,12 +248,10 @@ model ClassSchedule {
   learningAreaId String?
   class          Class         @relation(fields: [classId], references: [id], onDelete: Cascade)
   learningArea   LearningArea? @relation(fields: [learningAreaId], references: [id])
-  school         School?       @relation(fields: [schoolId], references: [id])
   teacher        User?         @relation("TeacherSchedules", fields: [teacherId], references: [id])
 
   @@index([classId])
   @@index([day])
-  @@index([schoolId])
   @@index([subject])
   @@map("class_schedules")
 }
@@ -363,8 +284,6 @@ model ClassEnrollment {
   id         String    @id @default(uuid())
   classId    String
   learnerId  String
-  schoolId   String?
-  branchId   String?
   enrolledAt DateTime  @default(now())
   active     Boolean   @default(true)
   archived   Boolean   @default(false)
@@ -372,14 +291,12 @@ model ClassEnrollment {
   archivedBy String?
   class      Class     @relation(fields: [classId], references: [id], onDelete: Cascade)
   learner    Learner   @relation(fields: [learnerId], references: [id], onDelete: Cascade)
-  school     School?   @relation(fields: [schoolId], references: [id])
 
   @@unique([classId, learnerId])
   @@index([classId])
   @@index([learnerId])
   @@index([learnerId, active])
   @@index([classId, active])
-  @@index([schoolId])
   @@map("class_enrollments")
 }
 
@@ -393,8 +310,6 @@ model Learner {
   gender                 Gender
   photoUrl               String?
   photoPublicId          String?
-  schoolId               String?
-  branchId               String?
   grade                  Grade
   stream                 String?
   parentId               String?
@@ -447,7 +362,6 @@ model Learner {
   feeInvoices            FeeInvoice[]           @relation("LearnerInvoices")
   formativeAssessments   FormativeAssessment[]
   parent                 User?                  @relation("ParentLearners", fields: [parentId], references: [id])
-  school                 School?                @relation(fields: [schoolId], references: [id])
   summativeResults       SummativeResult[]
   reportComments         TermlyReportComment[]  @relation("LearnerReportComments")
   valuesAssessments      ValuesAssessment[]     @relation("LearnerValues")
@@ -458,7 +372,6 @@ model Learner {
   @@index([grade, stream])
   @@index([status])
   @@index([lastName, firstName])
-  @@index([schoolId])
   @@map("learners")
 }
 
@@ -466,8 +379,6 @@ model Attendance {
   id         String           @id @default(uuid())
   learnerId  String
   classId    String?
-  schoolId   String?
-  branchId   String?
   date       DateTime         @db.Date
   status     AttendanceStatus @default(PRESENT)
   remarks    String?
@@ -479,22 +390,18 @@ model Attendance {
   class      Class?           @relation(fields: [classId], references: [id])
   learner    Learner          @relation(fields: [learnerId], references: [id], onDelete: Cascade)
   teacher    User             @relation("AttendanceMarker", fields: [markedBy], references: [id])
-  school     School?          @relation(fields: [schoolId], references: [id])
 
   @@unique([learnerId, date])
   @@index([date])
   @@index([learnerId])
   @@index([classId])
   @@index([status])
-  @@index([schoolId])
   @@map("attendances")
 }
 
 model FormativeAssessment {
   id               String                  @id @default(uuid())
   learnerId        String
-  schoolId         String?
-  branchId         String?
   term             Term                    @default(TERM_1)
   academicYear     Int                     @default(2026)
   learningArea     String
@@ -528,7 +435,6 @@ model FormativeAssessment {
   createdAt        DateTime                @default(now())
   updatedAt        DateTime                @updatedAt
   learner          Learner                 @relation(fields: [learnerId], references: [id], onDelete: Cascade)
-  school           School?                 @relation(fields: [schoolId], references: [id])
   teacher          User                    @relation("TeacherFormativeAssessments", fields: [teacherId], references: [id])
 
   @@unique([learnerId, term, academicYear, learningArea, type, title])
@@ -537,7 +443,6 @@ model FormativeAssessment {
   @@index([term, academicYear])
   @@index([learningArea])
   @@index([learnerId, learningArea, term, academicYear])
-  @@index([schoolId])
   @@map("formative_assessments")
 }
 
@@ -545,8 +450,6 @@ model SummativeTest {
   id              String            @id @default(uuid())
   title           String
   learningArea    String
-  schoolId        String?
-  branchId        String?
   term            Term              @default(TERM_1)
   academicYear    Int               @default(2026)
   grade           Grade
@@ -581,13 +484,11 @@ model SummativeTest {
   approvedByUser  User?             @relation("ApprovedTests", fields: [approvedBy], references: [id])
   creator         User              @relation("CreatedTests", fields: [createdBy], references: [id])
   scale           GradingSystem?    @relation(fields: [scaleId], references: [id])
-  school          School?           @relation(fields: [schoolId], references: [id])
   submittedByUser User?             @relation("SubmittedTests", fields: [submittedBy], references: [id])
 
   @@index([testType])
   @@index([grade, learningArea, term])
   @@index([grade, term, academicYear])
-  @@index([schoolId])
   @@map("summative_tests")
 }
 
@@ -607,11 +508,9 @@ model TermConfig {
   archived        Boolean   @default(false)
   archivedAt      DateTime?
   archivedBy      String?
-  schoolId        String?
   creator         User      @relation(fields: [createdBy], references: [id])
-  school          School?   @relation(fields: [schoolId], references: [id])
 
-  @@unique([academicYear, term, schoolId])
+  @@unique([academicYear, term])
   @@map("term_configs")
 }
 
@@ -629,9 +528,7 @@ model AggregationConfig {
   archived     Boolean                 @default(false)
   archivedAt   DateTime?
   archivedBy   String?
-  schoolId     String?
   creator      User                    @relation(fields: [createdBy], references: [id])
-  school       School?                 @relation(fields: [schoolId], references: [id])
 
   @@map("aggregation_configs")
 }
@@ -647,9 +544,7 @@ model ChangeHistory {
   changedBy  String
   changedAt  DateTime @default(now())
   reason     String?
-  schoolId   String?
   changer    User     @relation(fields: [changedBy], references: [id])
-  school     School?  @relation(fields: [schoolId], references: [id])
 
   @@index([entityType, entityId])
   @@map("change_history")
@@ -659,8 +554,6 @@ model SummativeResult {
   id               String                   @id @default(uuid())
   testId           String
   learnerId        String
-  schoolId         String?
-  branchId         String?
   marksObtained    Int
   percentage       Float
   grade            SummativeGrade
@@ -679,7 +572,6 @@ model SummativeResult {
   resultHistory    SummativeResultHistory[]
   learner          Learner                  @relation(fields: [learnerId], references: [id], onDelete: Cascade)
   recorder         User                     @relation("RecordedResults", fields: [recordedBy], references: [id])
-  school           School?                  @relation(fields: [schoolId], references: [id])
   test             SummativeTest            @relation(fields: [testId], references: [id], onDelete: Cascade)
 
   @@unique([testId, learnerId])
@@ -689,7 +581,6 @@ model SummativeResult {
   @@index([grade])
   @@index([status])
   @@index([testId, grade, marksObtained])
-  @@index([schoolId])
   @@map("summative_results")
 }
 
@@ -715,8 +606,6 @@ model SummativeResultHistory {
 model CoreCompetency {
   id                      String               @id @default(uuid())
   learnerId               String
-  schoolId                String?
-  branchId                String?
   term                    Term
   academicYear            Int
   communication           DetailedRubricRating
@@ -739,20 +628,16 @@ model CoreCompetency {
   archivedBy              String?
   assessor                User                 @relation("AssessorCoreCompetencies", fields: [assessedBy], references: [id])
   learner                 Learner              @relation("LearnerCoreCompetencies", fields: [learnerId], references: [id], onDelete: Cascade)
-  school                  School?              @relation(fields: [schoolId], references: [id])
 
-  @@unique([schoolId, learnerId, term, academicYear])
+  @@unique([learnerId, term, academicYear])
   @@index([learnerId])
   @@index([term, academicYear])
-  @@index([schoolId])
   @@map("core_competencies")
 }
 
 model ValuesAssessment {
   id             String               @id @default(uuid())
   learnerId      String
-  schoolId       String?
-  branchId       String?
   term           Term
   academicYear   Int
   love           DetailedRubricRating
@@ -771,20 +656,16 @@ model ValuesAssessment {
   archivedBy     String?
   assessor       User                 @relation("AssessorValues", fields: [assessedBy], references: [id])
   learner        Learner              @relation("LearnerValues", fields: [learnerId], references: [id], onDelete: Cascade)
-  school         School?              @relation(fields: [schoolId], references: [id])
 
-  @@unique([schoolId, learnerId, term, academicYear])
+  @@unique([learnerId, term, academicYear])
   @@index([learnerId])
   @@index([term, academicYear])
-  @@index([schoolId])
   @@map("values_assessments")
 }
 
 model CoCurricularActivity {
   id           String               @id @default(uuid())
   learnerId    String
-  schoolId     String?
-  branchId     String?
   term         Term
   academicYear Int
   activityName String
@@ -800,20 +681,16 @@ model CoCurricularActivity {
   archivedBy   String?
   learner      Learner              @relation("LearnerCoCurricular", fields: [learnerId], references: [id], onDelete: Cascade)
   recorder     User                 @relation("RecorderCoCurricular", fields: [recordedBy], references: [id])
-  school       School?              @relation(fields: [schoolId], references: [id])
 
   @@index([learnerId])
   @@index([term, academicYear])
   @@index([activityType])
-  @@index([schoolId])
   @@map("co_curricular_activities")
 }
 
 model TermlyReportComment {
   id                    String    @id @default(uuid())
   learnerId             String
-  schoolId              String?
-  branchId              String?
   term                  Term
   academicYear          Int
   classTeacherComment   String
@@ -834,9 +711,8 @@ model TermlyReportComment {
   archivedAt            DateTime?
   archivedBy            String?
   learner               Learner   @relation("LearnerReportComments", fields: [learnerId], references: [id], onDelete: Cascade)
-  school                School?   @relation(fields: [schoolId], references: [id])
 
-  @@unique([schoolId, learnerId, term, academicYear])
+  @@unique([learnerId, term, academicYear])
   @@index([learnerId])
   @@index([term, academicYear])
   @@map("termly_report_comments")
@@ -876,12 +752,10 @@ model FeeType {
   name              String
   description       String?
   category          FeeCategory        @default(ACADEMIC)
-  schoolId          String?
   isActive          Boolean            @default(true)
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   feeStructureItems FeeStructureItem[]
-  school            School?            @relation(fields: [schoolId], references: [id])
 
   @@map("fee_types")
 }
@@ -890,8 +764,6 @@ model FeeStructure {
   id           String             @id @default(uuid())
   name         String
   description  String?
-  schoolId     String?
-  branchId     String?
   grade        Grade
   term         Term
   academicYear Int
@@ -906,11 +778,9 @@ model FeeStructure {
   invoices     FeeInvoice[]
   feeItems     FeeStructureItem[]
   creator      User?              @relation("CreatedFeeStructures", fields: [createdBy], references: [id])
-  school       School?            @relation(fields: [schoolId], references: [id])
 
-  @@unique([schoolId, grade, term, academicYear])
+  @@unique([grade, term, academicYear])
   @@index([academicYear])
-  @@index([schoolId])
   @@map("fee_structures")
 }
 
@@ -934,8 +804,6 @@ model FeeInvoice {
   invoiceNumber  String        @unique
   learnerId      String
   feeStructureId String
-  schoolId       String?
-  branchId       String?
   term           Term
   academicYear   Int
   dueDate        DateTime
@@ -951,14 +819,12 @@ model FeeInvoice {
   archivedBy     String?
   feeStructure   FeeStructure  @relation(fields: [feeStructureId], references: [id])
   learner        Learner       @relation("LearnerInvoices", fields: [learnerId], references: [id], onDelete: Cascade)
-  school         School?       @relation(fields: [schoolId], references: [id])
   payments       FeePayment[]
 
   @@index([learnerId])
   @@index([term, academicYear])
   @@index([status])
   @@index([dueDate])
-  @@index([schoolId])
   @@map("fee_invoices")
 }
 
@@ -991,8 +857,6 @@ model Message {
   senderType    UserRole
   recipientType RecipientType
   recipientIds  String[]
-  schoolId      String?
-  branchId      String?
   subject       String?
   body          String
   messageType   MessageType      @default(IN_APP)
@@ -1003,13 +867,11 @@ model Message {
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
   receipts      MessageReceipt[]
-  school        School?          @relation(fields: [schoolId], references: [id])
 
   @@index([senderId])
   @@index([status])
   @@index([messageType])
   @@index([scheduledFor])
-  @@index([schoolId])
   @@map("messages")
 }
 
@@ -1017,8 +879,6 @@ model MessageReceipt {
   id             String        @id @default(uuid())
   messageId      String
   recipientId    String
-  schoolId       String?
-  branchId       String?
   recipientEmail String?
   recipientPhone String?
   status         MessageStatus @default(SENT)
@@ -1028,20 +888,16 @@ model MessageReceipt {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   message        Message       @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  school         School?       @relation(fields: [schoolId], references: [id])
 
   @@index([messageId])
   @@index([recipientId])
   @@index([status])
-  @@index([schoolId])
   @@map("message_receipts")
 }
 
 model BroadcastCampaign {
   id              String               @id @default(uuid())
   senderId        String
-  schoolId        String?
-  branchId        String?
   messagePreview  String
   messageTemplate String
   totalRecipients Int
@@ -1053,22 +909,18 @@ model BroadcastCampaign {
   sentAt          DateTime
   createdAt       DateTime             @default(now())
   updatedAt       DateTime             @updatedAt
-  school          School?              @relation(fields: [schoolId], references: [id])
   recipients      BroadcastRecipient[]
   deliveryLogs    SmsDeliveryLog[]
 
   @@index([senderId])
   @@index([status])
   @@index([sentAt])
-  @@index([schoolId])
   @@map("broadcast_campaigns")
 }
 
 model BroadcastRecipient {
   id             String            @id @default(uuid())
   campaignId     String
-  schoolId       String?
-  branchId       String?
   recipientPhone String
   recipientName  String?
   status         MessageStatus     @default(SENT)
@@ -1079,20 +931,16 @@ model BroadcastRecipient {
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
   campaign       BroadcastCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  school         School?           @relation(fields: [schoolId], references: [id])
 
   @@index([campaignId])
   @@index([status])
   @@index([recipientPhone])
-  @@index([schoolId])
   @@map("broadcast_recipients")
 }
 
 model SmsDeliveryLog {
   id             String            @id @default(uuid())
   campaignId     String
-  schoolId       String?
-  branchId       String?
   recipientPhone String
   message        String
   messageLength  Int
@@ -1105,12 +953,10 @@ model SmsDeliveryLog {
   deliveredAt    DateTime?
   createdAt      DateTime          @default(now())
   campaign       BroadcastCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  school         School?           @relation(fields: [schoolId], references: [id])
 
   @@index([campaignId])
   @@index([status])
   @@index([sentAt])
-  @@index([schoolId])
   @@map("sms_delivery_logs")
 }
 
@@ -1137,7 +983,6 @@ model GradingSystem {
   scaleGroupId   String?
   grade          Grade?
   learningArea   String?
-  schoolId       String?
   active         Boolean         @default(true)
   archived       Boolean         @default(false)
   archivedAt     DateTime?
@@ -1147,7 +992,6 @@ model GradingSystem {
   updatedAt      DateTime        @updatedAt
   ranges         GradingRange[]
   scaleGroup     ScaleGroup?     @relation("ScaleGroupSystems", fields: [scaleGroupId], references: [id])
-  school         School?         @relation(fields: [schoolId], references: [id])
   summativeTests SummativeTest[]
 
   @@index([scaleGroupId])
@@ -1218,8 +1062,6 @@ model CommunicationConfig {
   birthdayMessageTemplate String?  @default("Happy Birthday {learnerName}! Best wishes from {schoolName}.")
   emailTemplates          Json?
   smsUsername             String?
-  schoolId                String?
-  school                  School?  @relation(fields: [schoolId], references: [id])
 
   @@map("communication_configs")
 }
@@ -1268,20 +1110,16 @@ model LearningArea {
   name               String
   shortName          String?
   gradeLevel         String
-  schoolId           String?
-  branchId           String?
   icon               String              @default("📚")
   color              String              @default("#3b82f6")
   description        String?
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   schedules          ClassSchedule[]
-  school             School?             @relation(fields: [schoolId], references: [id])
   subjectAssignments SubjectAssignment[]
 
   @@unique([name, gradeLevel])
   @@index([gradeLevel])
-  @@index([schoolId])
   @@map("learning_areas")
 }
 
@@ -1290,20 +1128,16 @@ model SubjectAssignment {
   teacherId      String
   learningAreaId String
   grade          Grade
-  schoolId       String?
-  branchId       String?
   active         Boolean      @default(true)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   learningArea   LearningArea @relation(fields: [learningAreaId], references: [id])
-  school         School?      @relation(fields: [schoolId], references: [id])
   teacher        User         @relation(fields: [teacherId], references: [id])
 
   @@unique([teacherId, learningAreaId, grade])
   @@index([teacherId])
   @@index([learningAreaId])
   @@index([grade])
-  @@index([schoolId])
   @@map("subject_assignments")
 }
 
@@ -1318,10 +1152,8 @@ model SupportTicket {
   updatedAt    DateTime         @updatedAt
   guestEmail   String?
   guestName    String?
-  schoolId     String?
   messages     SupportMessage[]
   assignedTo   User?            @relation("AssignedTickets", fields: [assignedToId], references: [id])
-  school       School?          @relation(fields: [schoolId], references: [id])
   user         User?            @relation("UserTickets", fields: [userId], references: [id])
 
   @@index([userId])
@@ -1353,16 +1185,12 @@ model Document {
   type         String
   size         Int?
   category     String   @default("general")
-  schoolId     String?
-  branchId     String?
   uploadedById String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-  school       School?  @relation(fields: [schoolId], references: [id])
   uploadedBy   User?    @relation(fields: [uploadedById], references: [id])
 
   @@index([category])
-  @@index([schoolId])
   @@map("documents")
 }
 
@@ -1372,8 +1200,6 @@ model Book {
   author       String?
   isbn         String?
   category     String?
-  schoolId     String?
-  branchId     String?
   assignedToId String?
   assignedAt   DateTime?
   returnDate   DateTime?
@@ -1381,10 +1207,8 @@ model Book {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   assignedTo   User?     @relation("AssignedBooks", fields: [assignedToId], references: [id])
-  school       School?   @relation(fields: [schoolId], references: [id])
 
   @@index([assignedToId])
-  @@index([schoolId])
   @@index([status])
   @@map("books")
 }
@@ -1401,31 +1225,24 @@ model Event {
   googleEventId String?
   meetingLink   String?
   creatorId     String
-  schoolId      String?
-  branchId      String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   creator       User      @relation("EventCreator", fields: [creatorId], references: [id])
-  school        School?   @relation(fields: [schoolId], references: [id])
 
-  @@index([schoolId])
+  @@map("events")
 }
 
 model ContactGroup {
   id          String   @id @default(uuid())
   name        String
   description String?
-  schoolId    String?
-  branchId    String?
   createdById String
   recipients  Json
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   createdBy   User     @relation("CreatedContactGroups", fields: [createdById], references: [id])
-  school      School?  @relation(fields: [schoolId], references: [id])
 
   @@index([createdById])
-  @@index([schoolId])
   @@map("contact_groups")
 }
 
@@ -1470,8 +1287,6 @@ model PayrollRecord {
   userId      String
   month       Int
   year        Int
-  schoolId    String?
-  branchId    String?
   basicSalary Decimal       @db.Decimal(10, 2)
   allowances  Json?
   deductions  Json?
@@ -1484,7 +1299,6 @@ model PayrollRecord {
   paidAt      DateTime?
   reference   String?
   notes       String?
-  school      School?       @relation(fields: [schoolId], references: [id])
   user        User          @relation(fields: [userId], references: [id])
 
   @@unique([userId, month, year])
@@ -1496,7 +1310,6 @@ model PayrollRecord {
 model StaffAttendanceLog {
   id         String   @id @default(uuid())
   userId     String
-  schoolId   String?
   date       DateTime @db.Date
   clockInAt  DateTime
   clockOutAt DateTime?
@@ -1504,11 +1317,9 @@ model StaffAttendanceLog {
   metadata   Json?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-  school     School?  @relation(fields: [schoolId], references: [id])
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, date])
-  @@index([schoolId, date])
   @@index([userId, clockInAt])
   @@map("staff_attendance_logs")
 }
@@ -1516,19 +1327,15 @@ model StaffAttendanceLog {
 model StaffDocument {
   id        String   @id @default(uuid())
   userId    String
-  schoolId  String?
-  branchId  String?
   name      String
   url       String
   type      String
   category  String   @default("CONTRACT")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  school    School?  @relation(fields: [schoolId], references: [id])
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([schoolId])
   @@map("staff_documents")
 }
 
@@ -1536,8 +1343,6 @@ model PerformanceReview {
   id                  String   @id @default(uuid())
   userId              String
   reviewerId          String
-  schoolId            String?
-  branchId            String?
   reviewDate          DateTime @default(now())
   periodStart         DateTime
   periodEnd           DateTime
@@ -1551,12 +1356,10 @@ model PerformanceReview {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
   reviewer            User     @relation("ConductedReviews", fields: [reviewerId], references: [id])
-  school              School?  @relation(fields: [schoolId], references: [id])
   user                User     @relation("StaffReviews", fields: [userId], references: [id])
 
   @@index([userId])
   @@index([reviewerId])
-  @@index([schoolId])
   @@map("performance_reviews")
 }
 
@@ -1565,20 +1368,16 @@ model Account {
   code           String          @unique
   name           String
   type           AccountType
-  schoolId       String?
-  branchId       String?
   parentId       String?
   isActive       Boolean         @default(true)
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   parent         Account?        @relation("AccountHierarchy", fields: [parentId], references: [id])
   children       Account[]       @relation("AccountHierarchy")
-  school         School?         @relation(fields: [schoolId], references: [id])
   bankStatements BankStatement[]
   expenses       Expense[]
   journalItems   JournalItem[]
 
-  @@index([schoolId])
   @@map("accounts")
 }
 
@@ -1587,15 +1386,11 @@ model Journal {
   name      String
   code      String         @unique
   type      JournalType
-  schoolId  String?
-  branchId  String?
   isActive  Boolean        @default(true)
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
   entries   JournalEntry[]
-  school    School?        @relation(fields: [schoolId], references: [id])
 
-  @@index([schoolId])
   @@map("journals")
 }
 
@@ -1604,18 +1399,14 @@ model JournalEntry {
   date      DateTime      @default(now())
   reference String?
   journalId String
-  schoolId  String?
-  branchId  String?
   status    String        @default("DRAFT")
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
   journal   Journal       @relation(fields: [journalId], references: [id])
-  school    School?       @relation(fields: [schoolId], references: [id])
   items     JournalItem[]
 
   @@index([journalId])
   @@index([date])
-  @@index([schoolId])
   @@map("journal_entries")
 }
 
@@ -1651,8 +1442,6 @@ model FiscalYear {
 model Vendor {
   id        String    @id @default(uuid())
   name      String    @unique
-  schoolId  String?
-  branchId  String?
   contact   String?
   email     String?
   phone     String?
@@ -1661,9 +1450,7 @@ model Vendor {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   expenses  Expense[]
-  school    School?   @relation(fields: [schoolId], references: [id])
 
-  @@index([schoolId])
   @@map("vendors")
 }
 
@@ -1673,8 +1460,6 @@ model Expense {
   amount        Decimal       @db.Decimal(15, 2)
   description   String
   category      String
-  schoolId      String?
-  branchId      String?
   vendorId      String?
   accountId     String
   paymentMethod PaymentMethod @default(CASH)
@@ -1683,12 +1468,10 @@ model Expense {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   account       Account       @relation(fields: [accountId], references: [id])
-  school        School?       @relation(fields: [schoolId], references: [id])
   vendor        Vendor?       @relation(fields: [vendorId], references: [id])
 
   @@index([vendorId])
   @@index([accountId])
-  @@index([schoolId])
   @@map("expenses")
 }
 
@@ -1696,8 +1479,6 @@ model BankStatement {
   id              String              @id @default(uuid())
   accountId       String
   dateRange       String?
-  schoolId        String?
-  branchId        String?
   startingBalance Decimal             @db.Decimal(15, 2)
   endingBalance   Decimal             @db.Decimal(15, 2)
   status          String              @default("DRAFT")
@@ -1705,9 +1486,7 @@ model BankStatement {
   updatedAt       DateTime            @updatedAt
   lines           BankStatementLine[]
   account         Account             @relation(fields: [accountId], references: [id])
-  school          School?             @relation(fields: [schoolId], references: [id])
 
-  @@index([schoolId])
   @@map("bank_statements")
 }
 
@@ -1748,17 +1527,13 @@ model InventoryStore {
   name          String          @unique
   code          String?
   location      String?
-  schoolId      String?
-  branchId      String?
   isActive      Boolean         @default(true)
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
   fixedAssets   FixedAsset[]
-  school        School?         @relation(fields: [schoolId], references: [id])
   movementsFrom StockMovement[] @relation("FromStore")
   movementsTo   StockMovement[] @relation("ToStore")
 
-  @@index([schoolId])
   @@map("inventory_stores")
 }
 
@@ -1768,8 +1543,6 @@ model InventoryItem {
   sku              String?
   description      String?
   categoryId       String?
-  schoolId         String?
-  branchId         String?
   type             InventoryItemType      @default(CONSUMABLE)
   unitOfMeasure    String                 @default("PCS")
   reorderLevel     Decimal                @default(0) @db.Decimal(10, 2)
@@ -1778,20 +1551,16 @@ model InventoryItem {
   updatedAt        DateTime               @updatedAt
   fixedAssets      FixedAsset[]
   category         InventoryCategory?     @relation(fields: [categoryId], references: [id])
-  school           School?                @relation(fields: [schoolId], references: [id])
   movements        StockMovement[]
   requisitionItems StockRequisitionItem[]
 
   @@index([sku])
-  @@index([schoolId])
   @@map("inventory_items")
 }
 
 model StockMovement {
   id            String            @id @default(uuid())
   itemId        String
-  schoolId      String?
-  branchId      String?
   fromStoreId   String?
   toStoreId     String?
   quantity      Decimal           @db.Decimal(10, 2)
@@ -1803,22 +1572,18 @@ model StockMovement {
   createdAt     DateTime          @default(now())
   fromStore     InventoryStore?   @relation("FromStore", fields: [fromStoreId], references: [id])
   item          InventoryItem     @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  school        School?           @relation(fields: [schoolId], references: [id])
   toStore       InventoryStore?   @relation("ToStore", fields: [toStoreId], references: [id])
 
   @@index([itemId])
   @@index([fromStoreId])
   @@index([toStoreId])
   @@index([date])
-  @@index([schoolId])
   @@map("stock_movements")
 }
 
 model StockRequisition {
   id            String                 @id @default(uuid())
   requisitionNo String                 @unique
-  schoolId      String?
-  branchId      String?
   requestedById String
   department    String?
   priority      String                 @default("NORMAL")
@@ -1832,10 +1597,8 @@ model StockRequisition {
   items         StockRequisitionItem[]
   approvedBy    User?                  @relation("ApprovedBy", fields: [approvedById], references: [id])
   requestedBy   User                   @relation("RequestedBy", fields: [requestedById], references: [id])
-  school        School?                @relation(fields: [schoolId], references: [id])
 
   @@index([status])
-  @@index([schoolId])
   @@map("stock_requisitions")
 }
 
@@ -1855,8 +1618,6 @@ model FixedAsset {
   id             String            @id @default(uuid())
   assetCode      String            @unique
   itemId         String?
-  schoolId       String?
-  branchId       String?
   name           String
   description    String?
   serialNumber   String?
@@ -1874,10 +1635,8 @@ model FixedAsset {
   assignments    AssetAssignment[]
   currentStore   InventoryStore?   @relation(fields: [currentStoreId], references: [id])
   item           InventoryItem?    @relation(fields: [itemId], references: [id])
-  school         School?           @relation(fields: [schoolId], references: [id])
 
   @@index([assetCode])
-  @@index([schoolId])
   @@map("fixed_assets")
 }
 

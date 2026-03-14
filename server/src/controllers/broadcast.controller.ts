@@ -22,17 +22,15 @@ export const saveBroadcastCampaign = async (req: AuthRequest, res: Response) => 
       recipients // Array of {phone, name, status, messageId, sentAt}
     } = req.body;
 
-    const schoolId = (req as any).schoolContext?.schoolId || req.user?.schoolId;
     const senderId = req.user?.userId || (req as any).user?.id;
 
-    if (!schoolId || !senderId) {
-      throw new ApiError(400, 'School and user context required');
+    if (!senderId) {
+      throw new ApiError(400, 'User context required');
     }
 
     // Create broadcast campaign
     const campaign = await broadcastPrisma.broadcastCampaign.create({
       data: {
-        schoolId,
         senderId,
         messagePreview: messagePreview.substring(0, 150),
         messageTemplate,
@@ -63,7 +61,6 @@ export const saveBroadcastCampaign = async (req: AuthRequest, res: Response) => 
       if (recipients && recipients.length > 0) {
         await prisma.assessmentSmsAudit.createMany({
           data: recipients.map((r: any) => ({
-            schoolId,
             learnerId: r.id, // This is the learner ID passed from frontend
             parentPhone: r.phone,
             parentName: r.name || 'Parent',
@@ -107,15 +104,10 @@ export const saveBroadcastCampaign = async (req: AuthRequest, res: Response) => 
  */
 export const getBroadcastHistory = async (req: AuthRequest, res: Response) => {
   try {
-    const schoolId = (req as any).schoolContext?.schoolId || req.user?.schoolId;
     const { limit = 50, offset = 0 } = req.query;
 
-    if (!schoolId) {
-      throw new ApiError(400, 'School context required');
-    }
-
     const campaigns = await broadcastPrisma.broadcastCampaign.findMany({
-      where: { schoolId },
+      where: { },
       orderBy: { sentAt: 'desc' },
       take: parseInt(limit as string) || 50,
       skip: parseInt(offset as string) || 0,
@@ -134,7 +126,7 @@ export const getBroadcastHistory = async (req: AuthRequest, res: Response) => {
     });
 
     const total = await broadcastPrisma.broadcastCampaign.count({
-      where: { schoolId }
+      where: { }
     });
 
     res.status(200).json({
@@ -161,12 +153,7 @@ export const getBroadcastHistory = async (req: AuthRequest, res: Response) => {
  */
 export const getBroadcastDetails = async (req: AuthRequest, res: Response) => {
   try {
-    const schoolId = (req as any).schoolContext?.schoolId || req.user?.schoolId;
     const { campaignId } = req.params;
-
-    if (!schoolId) {
-      throw new ApiError(400, 'School context required');
-    }
 
     const campaign = await broadcastPrisma.broadcastCampaign.findUnique({
       where: { id: campaignId },
@@ -185,10 +172,6 @@ export const getBroadcastDetails = async (req: AuthRequest, res: Response) => {
       throw new ApiError(404, 'Broadcast campaign not found');
     }
 
-    if (campaign.schoolId !== schoolId) {
-      throw new ApiError(403, 'Not authorized to view this broadcast');
-    }
-
     res.status(200).json({
       success: true,
       data: campaign
@@ -203,37 +186,32 @@ export const getBroadcastDetails = async (req: AuthRequest, res: Response) => {
 
 /**
  * Get Broadcast Statistics
- * GET /api/broadcasts/stats/:schoolId
+ * GET /api/broadcasts/stats
  */
 export const getBroadcastStats = async (req: AuthRequest, res: Response) => {
   try {
-    const schoolId = (req as any).schoolContext?.schoolId || req.user?.schoolId;
-
-    if (!schoolId) {
-      throw new ApiError(400, 'School context required');
-    }
 
     const totalBroadcasts = await broadcastPrisma.broadcastCampaign.count({
-      where: { schoolId }
+      where: { }
     });
 
     const totalRecipients = await broadcastPrisma.broadcastCampaign.aggregate({
-      where: { schoolId },
+      where: { },
       _sum: { totalRecipients: true }
     });
 
     const totalSuccessful = await broadcastPrisma.broadcastCampaign.aggregate({
-      where: { schoolId },
+      where: { },
       _sum: { successCount: true }
     });
 
     const totalFailed = await broadcastPrisma.broadcastCampaign.aggregate({
-      where: { schoolId },
+      where: { },
       _sum: { failedCount: true }
     });
 
     const recentCampaigns = await broadcastPrisma.broadcastCampaign.findMany({
-      where: { schoolId },
+      where: { },
       orderBy: { sentAt: 'desc' },
       take: 5,
       select: {
@@ -288,20 +266,14 @@ export const saveSmsDeliveryLog = async (req: AuthRequest, res: Response) => {
       errorDetails
     } = req.body;
 
-    const schoolId = (req as any).schoolContext?.schoolId || req.user?.schoolId;
-
-    if (!schoolId || !campaignId) {
+    if (!campaignId) {
       throw new ApiError(400, 'Missing required fields');
     }
 
-    // Verify campaign exists and belongs to school
+    // Verify campaign exists
     const campaign = await broadcastPrisma.broadcastCampaign.findUniqueOrThrow({
       where: { id: campaignId }
     });
-
-    if (campaign.schoolId !== schoolId) {
-      throw new ApiError(403, 'Not authorized');
-    }
 
     const log = await broadcastPrisma.smsDeliveryLog.create({
       data: {
@@ -337,11 +309,6 @@ export const saveSmsDeliveryLog = async (req: AuthRequest, res: Response) => {
 export const deleteBroadcastCampaign = async (req: AuthRequest, res: Response) => {
   try {
     const { campaignId } = req.params;
-    const schoolId = (req as any).schoolContext?.schoolId || req.user?.schoolId;
-
-    if (!schoolId) {
-      throw new ApiError(400, 'School context required');
-    }
 
     const campaign = await broadcastPrisma.broadcastCampaign.findUnique({
       where: { id: campaignId }
@@ -349,10 +316,6 @@ export const deleteBroadcastCampaign = async (req: AuthRequest, res: Response) =
 
     if (!campaign) {
       throw new ApiError(404, 'Campaign not found');
-    }
-
-    if (campaign.schoolId !== schoolId) {
-      throw new ApiError(403, 'Not authorized');
     }
 
     await broadcastPrisma.broadcastCampaign.delete({
@@ -369,6 +332,120 @@ export const deleteBroadcastCampaign = async (req: AuthRequest, res: Response) =
     console.error('❌ Delete Broadcast Error:', error);
     res.status(error.statusCode || 500).json({
       error: error.message || 'Failed to delete broadcast campaign'
+    });
+  }
+};
+
+/**
+ * Send Bulk Broadcast
+ * POST /api/broadcasts/send-bulk
+ */
+export const sendBulkBroadcast = async (req: AuthRequest, res: Response) => {
+  try {
+    const {
+      channel = 'sms',
+      recipients, // Array of { phone, name, message, studentName, grade, id (learnerId) }
+      messageTemplate,
+      messagePreview
+    } = req.body;
+
+    const senderId = req.user?.userId || (req as any).user?.id;
+
+    if (!recipients || !Array.isArray(recipients) || recipients.length === 0) {
+      throw new ApiError(400, 'Recipients array is required');
+    }
+
+    console.log(`🚀 [BroadcastController] Starting bulk ${channel} send to ${recipients.length} recipients`);
+
+    let sentCount = 0;
+    let failedCount = 0;
+    let results: any[] = [];
+
+    if (channel.toLowerCase() === 'whatsapp') {
+      const { whatsappService } = await import('../services/whatsapp.service');
+      const bulkResult = await whatsappService.sendBulkMessages(
+        recipients.map(r => ({ phone: r.phone, message: r.message }))
+      );
+      sentCount = bulkResult.sent;
+      failedCount = bulkResult.failed;
+      results = bulkResult.results;
+    } else {
+      const { SmsService } = await import('../services/sms.service');
+      const bulkResult = await SmsService.sendBulkSms(
+        recipients.map(r => ({ phone: r.phone, message: r.message }))
+      );
+      sentCount = bulkResult.sent;
+      failedCount = bulkResult.failed;
+      results = bulkResult.results;
+    }
+
+    // Prepare campaign data
+    const campaign = await broadcastPrisma.broadcastCampaign.create({
+      data: {
+        senderId,
+        messagePreview: (messagePreview || recipients[0].message).substring(0, 150),
+        messageTemplate: messageTemplate || 'Bulk Send',
+        totalRecipients: recipients.length,
+        successCount: sentCount,
+        failedCount: failedCount,
+        recipientSource: 'BULK_API',
+        sentAt: new Date(),
+        status: failedCount === 0 ? 'DELIVERED' : 'PARTIAL',
+        recipients: {
+          createMany: {
+            data: recipients.map((r, idx) => {
+              const res = results.find(res => res.phone === r.phone) || results[idx];
+              return {
+                recipientPhone: r.phone,
+                recipientName: r.name || 'Recipient',
+                status: res.success ? 'DELIVERED' : 'FAILED',
+                messageId: res.messageId || null,
+                sentAt: new Date(),
+                failureReason: res.error || null
+              };
+            })
+          }
+        }
+      }
+    });
+
+    // Sync to Audit logs
+    try {
+      await prisma.assessmentSmsAudit.createMany({
+        data: recipients.map((r, idx) => {
+          const res = results.find(res => res.phone === r.phone) || results[idx];
+          return {
+            learnerId: r.id || null,
+            parentPhone: r.phone,
+            parentName: r.name || 'Parent',
+            learnerName: r.studentName || r.name || 'Student',
+            learnerGrade: r.grade || 'N/A',
+            assessmentType: 'BROADCAST',
+            templateType: 'GENERAL',
+            messageContent: r.message,
+            smsStatus: res.success ? 'SENT' : 'FAILED',
+            sentByUserId: senderId,
+            channel: channel.toUpperCase() as any,
+            sentAt: new Date()
+          };
+        })
+      });
+    } catch (auditError) {
+      console.error('❌ Failed to sync bulk broadcast to audit logs:', auditError);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Bulk ${channel} processed: ${sentCount} sent, ${failedCount} failed`,
+      campaignId: campaign.id,
+      sentCount,
+      failedCount
+    });
+
+  } catch (error: any) {
+    console.error('❌ Bulk Broadcast Error:', error);
+    res.status(500).json({
+      error: error.message || 'Failed to process bulk broadcast'
     });
   }
 };

@@ -14,19 +14,31 @@ export const OFFICIAL_CBC_MAPPING = {
   'GRADE_1': ['English', 'Kiswahili', 'Indigenous Language', 'Mathematical Activities', 'Environmental Activities', 'Religious Education', 'Creative Activities'],
   'GRADE_2': ['English', 'Kiswahili', 'Indigenous Language', 'Mathematical Activities', 'Environmental Activities', 'Religious Education', 'Creative Activities'],
   'GRADE_3': ['English', 'Kiswahili', 'Indigenous Language', 'Mathematical Activities', 'Environmental Activities', 'Religious Education', 'Creative Activities'],
-  'GRADE_4': ['English', 'Kiswahili', 'Science and Technology', 'Social Studies', 'Mathematics', 'Agriculture & Nutrition', 'Creative Arts', 'Religious Education'],
-  'GRADE_5': ['English', 'Kiswahili', 'Science and Technology', 'Social Studies', 'Mathematics', 'Agriculture & Nutrition', 'Creative Arts', 'Religious Education'],
-  'GRADE_6': ['English', 'Kiswahili', 'Science and Technology', 'Social Studies', 'Mathematics', 'Agriculture & Nutrition', 'Creative Arts', 'Religious Education'],
-  'GRADE_7': ['English', 'Kiswahili', 'Mathematics', 'Integrated Science', 'Social Studies', 'Religious Education', 'Pre-Technical Studies', 'Agriculture & Nutrition', 'Creative Arts & Sports'],
-  'GRADE_8': ['English', 'Kiswahili', 'Mathematics', 'Integrated Science', 'Social Studies', 'Religious Education', 'Pre-Technical Studies', 'Agriculture & Nutrition', 'Creative Arts & Sports'],
-  'GRADE_9': ['English', 'Kiswahili', 'Mathematics', 'Integrated Science', 'Social Studies', 'Religious Education', 'Pre-Technical Studies', 'Agriculture & Nutrition', 'Creative Arts & Sports']
+  'GRADE_4': ['English', 'Kiswahili', 'Science and Technology', 'Social Studies', 'Mathematics', 'Agriculture', 'Creative Arts', 'Religious Education'],
+  'GRADE_5': ['English', 'Kiswahili', 'Science and Technology', 'Social Studies', 'Mathematics', 'Agriculture', 'Creative Arts', 'Religious Education'],
+  'GRADE_6': ['English', 'Kiswahili', 'Science and Technology', 'Social Studies', 'Mathematics', 'Agriculture', 'Creative Arts', 'Religious Education'],
+  'GRADE_7': ['English', 'Kiswahili', 'Mathematics', 'Integrated Science', 'Social Studies', 'Religious Education', 'Pre-Technical Studies', 'Agriculture', 'Creative Arts & Sports'],
+  'GRADE_8': ['English', 'Kiswahili', 'Mathematics', 'Integrated Science', 'Social Studies', 'Religious Education', 'Pre-Technical Studies', 'Agriculture', 'Creative Arts & Sports'],
+  'GRADE_9': ['English', 'Kiswahili', 'Mathematics', 'Integrated Science', 'Social Studies', 'Religious Education', 'Pre-Technical Studies', 'Agriculture', 'Creative Arts & Sports'],
+  'GRADE_10': ['English', 'Kiswahili', 'Mathematics', 'Integrated Science', 'Agriculture', 'Social Studies', 'Religious Education', 'Creative Arts & Sports'],
+  'GRADE_11': ['English', 'Kiswahili', 'Mathematics', 'Integrated Science', 'Agriculture', 'Social Studies', 'Religious Education', 'Creative Arts & Sports'],
+  'GRADE_12': ['English', 'Kiswahili', 'Mathematics', 'Integrated Science', 'Agriculture', 'Social Studies', 'Religious Education', 'Creative Arts & Sports']
 };
 
 /**
  * Returns learning areas for a specific grade
+ * Robust against case variations and underscores/spaces
  */
 export const getLearningAreasByGrade = (grade) => {
-  return OFFICIAL_CBC_MAPPING[grade] || [];
+  if (!grade) return [];
+  
+  // Normalize grade name (e.g., "Grade 1" -> "GRADE_1", "Playgroup" -> "PLAYGROUP")
+  const normalizedGrade = String(grade)
+    .trim()
+    .replace(/\s+/g, '_')
+    .toUpperCase();
+    
+  return OFFICIAL_CBC_MAPPING[normalizedGrade] || [];
 };
 
 /**

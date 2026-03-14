@@ -303,39 +303,17 @@ const SummativeTests = ({ onNavigate }) => {
       };
 
       // Try API first, fall back to localStorage
-      try {
-        if (viewMode === 'create') {
+      if (viewMode === 'create') {
           const newStatus = user?.role === 'SUPER_ADMIN' ? 'APPROVED' : 'DRAFT';
           const newTest = await assessmentAPI.createTest({ ...payload, status: newStatus });
-          setTests(prev => [...prev, newTest]);
+          setTests(prev => [...prev, newTest.data || newTest]);
           showSuccess(newStatus === 'APPROVED' ? 'Test created and approved!' : 'Test created successfully!');
         } else {
           const updatedTest = await assessmentAPI.updateTest(selectedTest.id, payload);
-          setTests(prev => prev.map(t => t.id === selectedTest.id ? updatedTest : t));
+          setTests(prev => prev.map(t => t.id === selectedTest.id ? (updatedTest.data || updatedTest) : t));
           showSuccess('Test updated successfully!');
         }
-        fetchTests(); // Refresh after save
-      } catch (apiError) {
-        console.log('API not available, saving to localStorage');
-
-        // Fallback to localStorage
-        const localTests = localStorage.getItem('summative-tests-local');
-        let tests = localTests ? JSON.parse(localTests) : [];
-
-        if (viewMode === 'create') {
-          const newStatus = user?.role === 'SUPER_ADMIN' ? 'APPROVED' : 'DRAFT';
-          const newTest = { ...payload, status: newStatus };
-          tests.push(newTest);
-          setTests(prev => [...prev, newTest]);
-          showSuccess(newStatus === 'APPROVED' ? 'Test created and approved locally!' : 'Test created in localStorage!');
-        } else {
-          tests = tests.map(t => t.id === selectedTest.id ? payload : t);
-          setTests(prev => prev.map(t => t.id === selectedTest.id ? payload : t));
-          showSuccess('Test updated in localStorage!');
-        }
-
-        localStorage.setItem('summative-tests-local', JSON.stringify(tests));
-      }
+        fetchTests();
 
       console.log('✅ Save completed');
       setViewMode('list');
@@ -541,7 +519,8 @@ const SummativeTests = ({ onNavigate }) => {
             </div>
           )}
 
-          {/* Actions */}
+          {/* Actions - Hidden as per user request to favor automated setup */}
+          {/* 
           <div className="flex-shrink-0">
             <div className="flex items-center gap-2">
               {canApproveAll && (
@@ -571,6 +550,7 @@ const SummativeTests = ({ onNavigate }) => {
               </button>
             </div>
           </div>
+          */}
         </div>
       </div>
 

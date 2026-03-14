@@ -15,10 +15,9 @@ export class BookController {
      * Get all books for a school
      */
     async getAllBooks(req: AuthRequest, res: Response) {
-        const schoolId = req.user!.schoolId;
         const { assignedToId, status } = req.query;
 
-        const whereClause: any = { schoolId };
+        const whereClause: any = {};
 
         if (assignedToId) {
             whereClause.assignedToId = assignedToId as string;
@@ -52,7 +51,6 @@ export class BookController {
      * Create a new book
      */
     async createBook(req: AuthRequest, res: Response) {
-        const schoolId = req.user!.schoolId;
         const { title, author, isbn, category } = req.body;
 
         if (!title) {
@@ -64,8 +62,7 @@ export class BookController {
                 title,
                 author,
                 isbn,
-                category,
-                schoolId: schoolId!
+                category
             }
         });
 
@@ -80,12 +77,11 @@ export class BookController {
      */
     async updateBook(req: AuthRequest, res: Response) {
         const { id } = req.params;
-        const schoolId = req.user!.schoolId;
         const updateData = req.body;
 
         const book = await prisma.book.findUnique({ where: { id } });
 
-        if (!book || book.schoolId !== schoolId) {
+        if (!book) {
             throw new ApiError(404, 'Book not found');
         }
 
@@ -106,17 +102,16 @@ export class BookController {
     async assignBook(req: AuthRequest, res: Response) {
         const { id } = req.params;
         const { userId } = req.body;
-        const schoolId = req.user!.schoolId;
 
         const book = await prisma.book.findUnique({ where: { id } });
 
-        if (!book || book.schoolId !== schoolId) {
+        if (!book) {
             throw new ApiError(404, 'Book not found');
         }
 
         const targetUser = await prisma.user.findUnique({ where: { id: userId } });
-        if (!targetUser || targetUser.schoolId !== schoolId) {
-            throw new ApiError(404, 'User not found in this school');
+        if (!targetUser) {
+            throw new ApiError(404, 'User not found');
         }
 
         const updatedBook = await prisma.book.update({
@@ -140,11 +135,10 @@ export class BookController {
      */
     async returnBook(req: AuthRequest, res: Response) {
         const { id } = req.params;
-        const schoolId = req.user!.schoolId;
 
         const book = await prisma.book.findUnique({ where: { id } });
 
-        if (!book || book.schoolId !== schoolId) {
+        if (!book) {
             throw new ApiError(404, 'Book not found');
         }
 
@@ -170,11 +164,10 @@ export class BookController {
      */
     async deleteBook(req: AuthRequest, res: Response) {
         const { id } = req.params;
-        const schoolId = req.user!.schoolId;
 
         const book = await prisma.book.findUnique({ where: { id } });
 
-        if (!book || book.schoolId !== schoolId) {
+        if (!book) {
             throw new ApiError(404, 'Book not found');
         }
 

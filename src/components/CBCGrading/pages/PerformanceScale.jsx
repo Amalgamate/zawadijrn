@@ -76,7 +76,6 @@ const PerformanceScale = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [creatingTests, setCreatingTests] = useState(false);
-  const [showCreateTestsOption, setShowCreateTestsOption] = useState(false);
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'create'
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedGrades, setExpandedGrades] = useState([]);
@@ -199,15 +198,15 @@ const PerformanceScale = () => {
       });
 
       showSuccess(`✓ Created "${scaleName}" performance scale successfully!`);
-      setScaleName('');
-      setSelectedGrades(['GRADE_1']);
-      setShowCreateTestsOption(true);
-      await loadData();
+      
+      // AUTO-TRIGGER TEST CREATION (SILENT STEP)
+      showSuccess(`Creating summative tests for all subjects...`);
+      await handleCreateTests(true); // Signal it's an auto-trigger
+      
     } catch (err) {
       console.error('Error creating scale:', err);
       showError('Failed to create scale: ' + (err.message || 'Internal error'));
-    } finally {
-      setSaving(false);
+      setSaving(false); // Reset state only on error since success chains to test creation
     }
   };
 
@@ -234,7 +233,7 @@ const PerformanceScale = () => {
   };
 
   // Create tests for all grades after scales are created
-  const handleCreateTests = async () => {
+  const handleCreateTests = async (isAutoTrigger = false) => {
     setCreatingTests(true);
     try {
       const response = await gradingAPI.createTestsForScales({
@@ -244,13 +243,15 @@ const PerformanceScale = () => {
       });
       
       showSuccess(`✓ Created ${response.data.created} summative tests! All tests are now pre-linked to their grading scales.`);
-      setShowCreateTestsOption(false);
       setViewMode('list');
+      setScaleName('');
+      setSelectedGrades(['GRADE_1']);
       await loadData();
     } catch (err) {
       showError('Failed to create tests: ' + (err.message || 'Unknown error'));
     } finally {
       setCreatingTests(false);
+      setSaving(false); // Ensure both loaders are cleared
     }
   };
 
@@ -332,51 +333,30 @@ const PerformanceScale = () => {
                 onClick={() => {
                   setScaleName('');
                   setSelectedGrades(['GRADE_1']);
-                  setShowCreateTestsOption(false);
                   setViewMode('list');
                 }}
                 className="hidden md:flex text-slate-500 font-bold"
               >
-                {showCreateTestsOption ? 'Skip' : 'Cancel'}
+                Cancel
               </Button>
 
-              {!showCreateTestsOption ? (
-                <Button
-                  onClick={handleCreateScale}
-                  disabled={saving || !scaleName.trim() || selectedGrades.length === 0}
-                  className="bg-brand-purple hover:bg-brand-purple/90 text-white px-8 rounded-full shadow-lg shadow-brand-purple/20 transition-all active:scale-95 disabled:opacity-50"
-                >
-                  {saving ? (
-                    <>
-                      <RefreshCw className="animate-spin mr-2" size={18} />
-                      <span>Deploying Scales...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="mr-2" size={18} />
-                      <span>Generate & Apply Logic</span>
-                    </>
-                  )}
-                </Button>
-              ) : (
-                <Button
-                  onClick={handleCreateTests}
-                  disabled={creatingTests}
-                  className="bg-brand-teal hover:bg-brand-teal/90 text-white px-8 rounded-full shadow-lg shadow-brand-teal/20 transition-all active:scale-95 disabled:opacity-50"
-                >
-                  {creatingTests ? (
-                    <>
-                      <RefreshCw className="animate-spin mr-2" size={18} />
-                      <span>Creating Tests...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="mr-2" size={18} />
-                      <span>Also Create Tests</span>
-                    </>
-                  )}
-                </Button>
-              )}
+              <Button
+                onClick={handleCreateScale}
+                disabled={saving || creatingTests || !scaleName.trim() || selectedGrades.length === 0}
+                className="bg-brand-purple hover:bg-brand-purple/90 text-white px-8 rounded-full shadow-lg shadow-brand-purple/20 transition-all active:scale-95 disabled:opacity-50"
+              >
+                {saving || creatingTests ? (
+                  <>
+                    <RefreshCw className="animate-spin mr-2" size={18} />
+                    <span>{saving ? 'Deploying Scales...' : 'Creating Tests...'}</span>
+                  </>
+                ) : (
+                  <>
+                    <Zap className="mr-2" size={18} />
+                    <span>Initialize All Assessments</span>
+                  </>
+                )}
+              </Button>
             </div>
           </div>
         </div>

@@ -104,10 +104,9 @@ export const authAPI = {
   },
   /**
    * Fetch public school branding info.
-   * @param {string} schoolId
    */
-  schoolPublic: async (schoolId) => {
-    const response = await axiosInstance.get(`/tenants/public/${schoolId}`);
+  schoolPublic: async () => {
+    const response = await axiosInstance.get('/schools/public/branding');
     return response.data;
   },
 
@@ -267,10 +266,10 @@ export const dashboardAPI = {
 
 export const configAPI = {
   /**
-   * Get Term Configurations for a school
+   * Get Term Configurations
    */
-  getTermConfigs: async (schoolId) => {
-    return fetchCached(`/config/term/${schoolId}`);
+  getTermConfigs: async () => {
+    return fetchCached('/config/term');
   },
 
   /**
@@ -286,8 +285,8 @@ export const configAPI = {
   /**
    * Get Aggregation Configurations
    */
-  getAggregationConfigs: async (schoolId) => {
-    return fetchCached(`/config/aggregation/${schoolId}`);
+  getAggregationConfigs: async () => {
+    return fetchCached('/config/aggregation');
   },
 
   /**
@@ -322,12 +321,8 @@ export const configAPI = {
   /**
    * Get Stream Configurations
    */
-  getStreamConfigs: async (schoolId) => {
-    return fetchCached(`/config/streams/${schoolId}`, {
-      headers: {
-        'X-School-Id': schoolId,
-      },
-    });
+  getStreamConfigs: async () => {
+    return fetchCached('/config/streams');
   },
 
   /**
@@ -336,9 +331,6 @@ export const configAPI = {
   upsertStreamConfig: async (data) => {
     return fetchWithAuth('/config/streams', {
       method: 'POST',
-      headers: {
-        'X-School-Id': data.schoolId,
-      },
       body: JSON.stringify(data),
     });
   },
@@ -368,11 +360,10 @@ export const configAPI = {
   },
 
   /**
-   * Get Learning Areas for a school
+   * Get Learning Areas
    */
-  getLearningAreas: async (schoolId) => {
-    const query = schoolId ? `?schoolId=${schoolId}` : '';
-    return fetchWithAuth(`/learning-areas${query}`);
+  getLearningAreas: async () => {
+    return fetchWithAuth('/learning-areas');
   },
 
   /**
@@ -423,32 +414,26 @@ export const configAPI = {
   /**
    * Seed default classes
    */
-  seedClasses: async (schoolId) => {
+  seedClasses: async () => {
     return fetchWithAuth('/config/classes/seed', {
       method: 'POST',
-      headers: {
-        'X-School-Id': schoolId,
-      },
     });
   },
 
   /**
    * Seed default streams
    */
-  seedStreams: async (schoolId) => {
+  seedStreams: async () => {
     return fetchWithAuth('/config/streams/seed', {
       method: 'POST',
-      headers: {
-        'X-School-Id': schoolId,
-      },
     });
   },
 
   /**
-   * Get classes for school
+   * Get classes
    */
-  getClasses: async (schoolId) => {
-    return fetchCached(`/config/classes/${schoolId}`);
+  getClasses: async () => {
+    return fetchCached('/config/classes');
   },
 
   /**
@@ -479,8 +464,8 @@ export const communicationAPI = {
   /**
    * Get Communication Config
    */
-  getConfig: async (schoolId) => {
-    return fetchWithAuth(`/communication/config/${schoolId}`);
+  getConfig: async () => {
+    return fetchWithAuth('/communication/config');
   },
 
   /**
@@ -516,8 +501,8 @@ export const communicationAPI = {
   /**
    * Get Birthdays Today
    */
-  getBirthdaysToday: async (schoolId) => {
-    return fetchWithAuth(`/communication/birthdays/today/${schoolId}`);
+  getBirthdaysToday: async () => {
+    return fetchWithAuth('/communication/birthdays/today');
   },
 
   /**
@@ -630,8 +615,8 @@ export const broadcastAPI = {
   /**
    * Get broadcast statistics
    */
-  getStats: async (schoolId) => {
-    return fetchWithAuth(`/broadcasts/stats/${schoolId}`);
+  getStats: async () => {
+    return fetchWithAuth('/broadcasts/stats');
   },
 
   /**
@@ -652,6 +637,16 @@ export const broadcastAPI = {
       method: 'DELETE',
     });
   },
+
+  /**
+   * Send bulk broadcast via backend (avoids browser-side rate limiting)
+   */
+  sendBulk: async (data) => {
+    return fetchWithAuth('/broadcasts/send-bulk', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
 };
 
 // ============================================
@@ -661,12 +656,10 @@ export const broadcastAPI = {
 export const userAPI = {
   /**
    * Get all users
-   * @param {string} schoolId - Optional school ID to filter users (for Super Admin)
    * @returns {Promise} List of all users
    */
-  getAll: async (schoolId) => {
-    const params = schoolId ? `?schoolId=${schoolId}` : '';
-    return fetchWithAuth(`/users${params}`);
+  getAll: async () => {
+    return fetchWithAuth('/users');
   },
 
   /**
@@ -791,14 +784,7 @@ export const schoolAPI = {
     return fetchWithAuth(`/schools/${id}`);
   },
 
-  /**
-   * Get branches for a school
-   * @param {string} schoolId - School ID
-   * @returns {Promise} List of branches
-   */
-  getBranches: async (schoolId) => {
-    return fetchWithAuth(`/schools/${schoolId}/branches`);
-  },
+  // getBranches removed — branches table was dropped in the remove_multitenant migration.
   /**
    * Create a new school
    */
@@ -823,9 +809,6 @@ export const schoolAPI = {
   deactivate: async (id) => {
     return fetchWithAuth(`/schools/${id}/deactivate`, {
       method: 'POST',
-      headers: {
-        'X-School-Id': id,
-      },
     });
   },
   /**
@@ -834,9 +817,6 @@ export const schoolAPI = {
   delete: async (id) => {
     return fetchWithAuth(`/schools/${id}`, {
       method: 'DELETE',
-      headers: {
-        'X-School-Id': id,
-      },
     });
   },
 
@@ -850,13 +830,8 @@ export const schoolAPI = {
     });
   },
 
-  /**
-   * Get preview of next admission number(s) for a school
-   * @param {string} schoolId
-   * @param {number} academicYear
-   */
-  getAdmissionNumberPreview: async (schoolId, academicYear) => {
-    return fetchWithAuth(`/schools/${schoolId}/admission-number-preview/${academicYear}`);
+  getAdmissionNumberPreview: async (academicYear) => {
+    return fetchWithAuth(`/schools/admission-number-preview/${academicYear}`);
   },
 };
 
@@ -865,12 +840,8 @@ export const schoolAPI = {
 // ============================================
 
 export const facilityAPI = {
-  /**
-   * Get streams by branch
-   * @param {string} branchId
-   */
-  getStreamsByBranch: async (branchId) => {
-    return fetchWithAuth(`/facility/streams?branchId=${branchId}`);
+  getStreamsByBranch: async () => {
+    return fetchWithAuth('/facility/streams');
   },
 
   /**
@@ -881,10 +852,6 @@ export const facilityAPI = {
     return fetchWithAuth(`/facility/streams/${streamId}`);
   },
 
-  /**
-   * Create stream
-   * @param {Object} data - { branchId, name }
-   */
   createStream: async (data) => {
     return fetchWithAuth('/facility/streams', {
       method: 'POST',
@@ -914,12 +881,8 @@ export const facilityAPI = {
     });
   },
 
-  /**
-   * Get available stream names for a branch
-   * @param {string} branchId
-   */
-  getAvailableStreamNames: async (branchId) => {
-    return fetchWithAuth(`/facility/streams/branch/${branchId}/available`);
+  getAvailableStreamNames: async () => {
+    return fetchWithAuth('/facility/streams/available');
   },
 };
 
@@ -1160,13 +1123,8 @@ export const learnerAPI = {
     });
   },
 
-  /**
-   * Get learners with birthdays today
-   * @param {string} schoolId - Optional school ID
-   * @returns {Promise} List of learners
-   */
-  getBirthdays: async (schoolId) => {
-    return communicationAPI.getBirthdaysToday(schoolId);
+  getBirthdays: async () => {
+    return communicationAPI.getBirthdaysToday();
   },
 };
 
@@ -2242,7 +2200,8 @@ export const workflowAPI = {
 // ============================================
 
 export const gradingAPI = {
-  getSystems: async (schoolId) => {
+  getSystems: async (
+) => {
     return fetchWithAuth(`/grading/systems`);
   },
 
@@ -2370,13 +2329,13 @@ export const adminAPI = {
   listPlans: async () => {
     return fetchWithAuth('/admin/plans');
   },
-  reactivateSchool: async (schoolId) => {
-    return fetchWithAuth(`/admin/schools/${schoolId}/reactivate`, {
+  reactivateSchool: async () => {
+    return fetchWithAuth('/admin/school/reactivate', {
       method: 'PATCH',
     });
   },
-  approvePayment: async (schoolId, payload) => {
-    return fetchWithAuth(`/admin/schools/${schoolId}/approve-payment`, {
+  approvePayment: async (payload) => {
+    return fetchWithAuth('/admin/school/approve-payment', {
       method: 'PATCH',
       body: JSON.stringify(payload || {}),
     });
@@ -2384,24 +2343,24 @@ export const adminAPI = {
   trialMetrics: async () => {
     return fetchWithAuth('/admin/trials/metrics');
   },
-  getSchoolModules: async (schoolId) => {
-    return fetchWithAuth(`/admin/schools/${schoolId}/modules`);
+  getSchoolModules: async () => {
+    return fetchWithAuth('/admin/school/modules');
   },
-  setSchoolModule: async (schoolId, moduleKey, active) => {
-    return fetchWithAuth(`/admin/schools/${schoolId}/modules/${moduleKey}`, {
+  setSchoolModule: async (moduleKey, active) => {
+    return fetchWithAuth(`/admin/school/modules/${moduleKey}`, {
       method: 'PATCH',
       body: JSON.stringify({ active }),
     });
   },
-  switchSchool: async (schoolId) => {
-    const resp = await fetchWithAuth(`/admin/switch-school/${schoolId}`, { method: 'POST', headers: { 'X-School-Id': schoolId } });
+  switchSchool: async () => {
+    const resp = await fetchWithAuth('/admin/switch-school', { method: 'POST' });
     return resp;
   },
-  getSchoolCommunication: async (schoolId) => {
-    return fetchWithAuth(`/admin/schools/${schoolId}/communication`);
+  getSchoolCommunication: async () => {
+    return fetchWithAuth('/admin/school/communication');
   },
-  updateSchoolCommunication: async (schoolId, data) => {
-    return fetchWithAuth(`/admin/schools/${schoolId}/communication`, {
+  updateSchoolCommunication: async (data) => {
+    return fetchWithAuth('/admin/school/communication', {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -2604,20 +2563,20 @@ export const hrAPI = {
 // ============================================
 
 export const accountingAPI = {
-  initializeCoA: async (schoolId) => {
+  initializeCoA: async () => {
     return fetchWithAuth('/accounting/initialize', {
       method: 'POST',
-      body: JSON.stringify({ schoolId }),
+      body: JSON.stringify({}),
     });
   },
-  getAccounts: async (schoolId) => {
-    return fetchWithAuth(`/accounting/accounts?schoolId=${schoolId}`);
+  getAccounts: async () => {
+    return fetchWithAuth('/accounting/accounts');
   },
-  getBalances: async (schoolId) => {
-    return fetchWithAuth(`/accounting/balances?schoolId=${schoolId}`);
+  getBalances: async () => {
+    return fetchWithAuth('/accounting/balances');
   },
-  getJournals: async (schoolId) => {
-    return fetchWithAuth(`/accounting/journals?schoolId=${schoolId}`);
+  getJournals: async () => {
+    return fetchWithAuth('/accounting/journals');
   },
   createJournalEntry: async (data) => {
     return fetchWithAuth('/accounting/entries', {

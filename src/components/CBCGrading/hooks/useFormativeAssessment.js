@@ -19,13 +19,11 @@ export const useFormativeAssessment = (initialAssessments = []) => {
    * @returns {Object} Result with success flag and data/errors
    */
   const addAssessment = useCallback((assessmentData) => {
-    // Validate assessment data
     const validation = validateAssessment(assessmentData);
     if (!validation.valid) {
       return { success: false, errors: validation.errors };
     }
 
-    // Create new assessment with ID and timestamp
     const newAssessment = {
       ...assessmentData,
       id: Date.now(),
@@ -44,9 +42,9 @@ export const useFormativeAssessment = (initialAssessments = []) => {
    * @returns {Object} Result with success flag
    */
   const updateAssessment = useCallback((assessmentId, updates) => {
-    setFormativeAssessments(prev => 
-      prev.map(assessment => 
-        assessment.id === assessmentId 
+    setFormativeAssessments(prev =>
+      prev.map(assessment =>
+        assessment.id === assessmentId
           ? { ...assessment, ...updates, updatedAt: new Date().toISOString() }
           : assessment
       )
@@ -84,12 +82,10 @@ export const useFormativeAssessment = (initialAssessments = []) => {
    */
   const getLearnerAssessments = useCallback((learnerId, filters = {}) => {
     return formativeAssessments.filter(assessment => {
-      // Check if learner has a mark in this assessment
       const learnerMark = assessment.marks?.find(mark => mark.learnerId === learnerId);
       if (!learnerMark) return false;
 
-      // Apply filters
-      const matchesArea = !filters.learningArea || filters.learningArea === 'all' || 
+      const matchesArea = !filters.learningArea || filters.learningArea === 'all' ||
                          assessment.learningArea === filters.learningArea;
       const matchesTerm = !filters.term || assessment.term === filters.term;
       const matchesGrade = !filters.grade || assessment.grade === filters.grade;
@@ -112,7 +108,7 @@ export const useFormativeAssessment = (initialAssessments = []) => {
     return formativeAssessments.filter(assessment => {
       const matchesGrade = assessment.grade === grade;
       const matchesStream = !stream || assessment.stream === stream;
-      const matchesArea = !filters.learningArea || filters.learningArea === 'all' || 
+      const matchesArea = !filters.learningArea || filters.learningArea === 'all' ||
                          assessment.learningArea === filters.learningArea;
       const matchesTerm = !filters.term || assessment.term === filters.term;
 
@@ -128,12 +124,10 @@ export const useFormativeAssessment = (initialAssessments = []) => {
    */
   const calculateLearnerAverage = useCallback((learnerId, filters = {}) => {
     const learnerAssessments = getLearnerAssessments(learnerId, filters);
-    
     if (learnerAssessments.length === 0) return 0;
 
     const scores = learnerAssessments.map(assessment => {
-      const percentage = (assessment.learnerMark.score / assessment.totalMarks) * 100;
-      return percentage;
+      return (assessment.learnerMark.score / assessment.totalMarks) * 100;
     });
 
     return Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length);
@@ -147,8 +141,7 @@ export const useFormativeAssessment = (initialAssessments = []) => {
    */
   const calculateStrandPerformanceByLearner = useCallback((learnerId, learningArea) => {
     const learnerAssessments = getLearnerAssessments(learnerId, { learningArea });
-    
-    // Group by strand
+
     const byStrand = {};
     learnerAssessments.forEach(assessment => {
       if (!byStrand[assessment.strand]) {
@@ -158,7 +151,6 @@ export const useFormativeAssessment = (initialAssessments = []) => {
       byStrand[assessment.strand].push({ percentage });
     });
 
-    // Calculate stats for each strand
     const strandStats = {};
     Object.entries(byStrand).forEach(([strand, assessments]) => {
       strandStats[strand] = calculateStrandPerformance(assessments);
@@ -168,24 +160,44 @@ export const useFormativeAssessment = (initialAssessments = []) => {
   }, [getLearnerAssessments]);
 
   /**
-   * Get learner's rubric distribution
+   * Get learner's rubric distribution across all 8 detailed levels.
+   *
+   * The rubric stored per-mark is the detailed 8-level code (detailedRating).
+   * A 4-level summary rollup is also returned for convenience.
+   *
    * @param {number} learnerId - Learner ID
    * @param {Object} filters - Optional filters
-   * @returns {Object} Count of each rubric level
+   * @returns {{ detailed: Object, summary: Object }}
    */
   const getLearnerRubricDistribution = useCallback((learnerId, filters = {}) => {
     const learnerAssessments = getLearnerAssessments(learnerId, filters);
-    
-    const distribution = { EE: 0, ME: 0, AE: 0, BE: 0, NY: 0 };
-    
+
+    const detailed = { EE1: 0, EE2: 0, ME1: 0, ME2: 0, AE1: 0, AE2: 0, BE1: 0, BE2: 0 };
+    const summary  = { EE: 0, ME: 0, AE: 0, BE: 0 };
+
+    const parentOf = (code) => {
+      if (!code) return null;
+      if (code.startsWith('EE')) return 'EE';
+      if (code.startsWith('ME')) return 'ME';
+      if (code.startsWith('AE')) return 'AE';
+      if (code.startsWith('BE')) return 'BE';
+      return null;
+    };
+
     learnerAssessments.forEach(assessment => {
-      const rubric = assessment.learnerMark.rubric;
-      if (distribution.hasOwnProperty(rubric)) {
-        distribution[rubric]++;
+      // Prefer detailedRating; fall back to rubric for legacy records
+      const code = assessment.learnerMark.detailedRating || assessment.learnerMark.rubric;
+      if (!code) return;
+
+      if (Object.prototype.hasOwnProperty.call(detailed, code)) {
+        detailed[code]++;
       }
+
+      const parent = parentOf(code);
+      if (parent) summary[parent]++;
     });
 
-    return distribution;
+    return { detailed, summary };
   }, [getLearnerAssessments]);
 
   /**
@@ -199,7 +211,7 @@ export const useFormativeAssessment = (initialAssessments = []) => {
     }
 
     const term = searchTerm.toLowerCase();
-    return formativeAssessments.filter(assessment => 
+    return formativeAssessments.filter(assessment =>
       assessment.learningArea?.toLowerCase().includes(term) ||
       assessment.strand?.toLowerCase().includes(term) ||
       assessment.subStrand?.toLowerCase().includes(term) ||
@@ -217,7 +229,7 @@ export const useFormativeAssessment = (initialAssessments = []) => {
     return formativeAssessments.filter(assessment => {
       const matchesGrade = !filters.grade || filters.grade === 'all' || assessment.grade === filters.grade;
       const matchesStream = !filters.stream || filters.stream === 'all' || assessment.stream === filters.stream;
-      const matchesArea = !filters.learningArea || filters.learningArea === 'all' || 
+      const matchesArea = !filters.learningArea || filters.learningArea === 'all' ||
                          assessment.learningArea === filters.learningArea;
       const matchesTerm = !filters.term || assessment.term === filters.term;
       const matchesType = !filters.type || filters.type === 'all' || assessment.type === filters.type;
@@ -227,7 +239,7 @@ export const useFormativeAssessment = (initialAssessments = []) => {
   }, [formativeAssessments]);
 
   // Computed values
-  const totalAssessments = useMemo(() => 
+  const totalAssessments = useMemo(() =>
     formativeAssessments.length,
     [formativeAssessments]
   );

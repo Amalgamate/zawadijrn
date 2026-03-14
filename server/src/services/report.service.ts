@@ -23,7 +23,6 @@ export interface LearnerInfo {
   admissionNumber: string;
   grade: string;
   stream: string | null;
-  schoolId: string;
   dateOfBirth: Date | null;
   gender: string;
   parent?: {
@@ -210,15 +209,25 @@ export async function generateTermlyReport(
   // Fetch AI Pathway Prediction for Grade 7 and up
   let pathwayPrediction = null;
   const juniorSeniorGrades = ['GRADE_7', 'GRADE_8', 'GRADE_9', 'GRADE_10', 'GRADE_11', 'GRADE_12'];
-  if (juniorSeniorGrades.includes(learner.grade)) {
+  if (juniorSeniorGrades.includes(learner.grade as string)) {
     try {
       pathwayPrediction = await aiAssistantService.generatePathwayPrediction(
         learnerId,
-        term,
+        term as string,
         academicYear
       );
-    } catch (e) {
-      console.warn('Pathway prediction failed to generate:', e);
+    } catch (e: any) {
+      console.warn('Pathway prediction failed:', e?.message || e);
+      // Service is fully deterministic — this catch is a last-resort safety net
+      // only for unexpected DB errors. Return a neutral pending state.
+      pathwayPrediction = {
+        predictedPathway: 'Analysis Pending',
+        confidence: 0,
+        justification: 'Could not compute pathway analysis. Please ensure all subject results are recorded for this term.',
+        careerRecommendations: ['Contact the class teacher for guidance'],
+        growthAreas: ['Ensure all subject scores are entered for this term'],
+        clusterBreakdown: { STEM: 0, Social: 0, Arts: 0 }
+      };
     }
   }
 
@@ -268,7 +277,6 @@ async function fetchLearnerInfo(learnerId: string): Promise<LearnerInfo> {
       admissionNumber: true,
       grade: true,
       stream: true,
-      schoolId: true,
       dateOfBirth: true,
       gender: true,
       parent: {

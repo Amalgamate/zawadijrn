@@ -86,7 +86,7 @@ const QuickGuide = () => {
             <div className="ml-10 space-y-2 text-gray-600">
               <p className="flex items-start gap-2">
                 <span className="text-blue-600 font-bold mt-1">→</span>
-                <span><strong>Step 0 (Optional):</strong> Set up learning areas in Configuration → Learning Areas (if available)</span>
+                <span><strong>Step 0 (Optional):</strong> Set up learning areas in Configuration → Learning Areas</span>
               </p>
               <p className="flex items-start gap-2">
                 <span className="text-blue-600 font-bold mt-1">→</span>
@@ -98,11 +98,11 @@ const QuickGuide = () => {
               </p>
               <p className="flex items-start gap-2">
                 <span className="text-blue-600 font-bold mt-1">→</span>
-                <span><strong>Step 3:</strong> Select a scale from the dropdown (populated from your scales)</span>
+                <span><strong>Step 3:</strong> Select a scale from the dropdown (populated from your saved scales)</span>
               </p>
               <p className="flex items-start gap-2">
                 <span className="text-blue-600 font-bold mt-1">→</span>
-                <span><strong>Step 4:</strong> Add sections and questions to build your test</span>
+                <span><strong>Step 4:</strong> Fill in test details and deploy — data is saved to the server database</span>
               </p>
             </div>
           </div>
@@ -121,7 +121,7 @@ const QuickGuide = () => {
                 <li><strong>Values Scale:</strong> CE, FE, OE, RE (for values assessments)</li>
                 <li><strong>Performance Scale:</strong> EX, VG, GO, NI (for co-curricular activities)</li>
               </ul>
-              <p className="mt-3"><strong>Custom Scales:</strong> Create scales specific to your needs (e.g., letter grades A-F, percentage ranges)</p>
+              <p className="mt-3"><strong>Custom Scales:</strong> Create scales specific to your school's needs</p>
             </div>
           </div>
 
@@ -132,26 +132,26 @@ const QuickGuide = () => {
               Creating Tests
             </h3>
             <div className="ml-10 space-y-2 text-gray-600">
-              <p><strong>Test Information:</strong> Title, subject, grade, term, academic year, date</p>
+              <p><strong>Test Information:</strong> Title, subject, grade, term, academic year, date, duration</p>
               <p><strong>Scale Selection:</strong> Choose from available scales (must create scales first)</p>
-              <p><strong>Sections:</strong> Organize test into logical sections (e.g., Multiple Choice, Essay Questions)</p>
-              <p><strong>Questions:</strong> Add individual questions with marks and marking rubrics</p>
-              <p><strong>Validation:</strong> Required fields are marked with (*) and validated on save</p>
+              <p><strong>Scoring:</strong> Set total marks, pass threshold, and optional time limit in minutes</p>
+              <p><strong>Validation:</strong> Required fields are marked with (*) and validated before save</p>
             </div>
           </div>
 
-          {/* Data Storage */}
+          {/* Data Storage — UPDATED to reflect actual DB storage */}
           <div className="border-t pt-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
               <span className="bg-amber-100 text-amber-800 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">4</span>
               Data Storage
             </h3>
             <div className="ml-10 space-y-2 text-gray-600">
-              <p><strong>Storage Method:</strong> localStorage (data persists across browser sessions)</p>
-              <p><strong>Scales Key:</strong> <code className="bg-gray-100 px-2 py-1 rounded">assessment-scales</code></p>
-              <p><strong>Tests Key:</strong> <code className="bg-gray-100 px-2 py-1 rounded">summative-tests</code></p>
-              <p className="text-amber-700 bg-amber-50 p-3 rounded-lg mt-3">
-                <strong>Note:</strong> Data is stored locally in your browser. For production use, integrate with a backend API.
+              <p><strong>Storage:</strong> All scales, tests, and results are saved to the school's central database on the server.</p>
+              <p><strong>Persistence:</strong> Data is available across all devices and browser sessions — clearing your browser does not affect records.</p>
+              <p><strong>Audit trail:</strong> Every create and update is logged with the acting user and timestamp.</p>
+              <p className="text-green-700 bg-green-50 p-3 rounded-lg mt-3">
+                <strong>✓ Server-side storage:</strong> Records are safe even if you close the browser mid-session.
+                Data is tied to your school account, not the local device.
               </p>
             </div>
           </div>
@@ -160,19 +160,17 @@ const QuickGuide = () => {
           <div className="border-t pt-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
               <span className="bg-indigo-100 text-indigo-800 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">5</span>
-              Tips & Best Practices
+              Tips &amp; Best Practices
             </h3>
             <div className="ml-10 space-y-2 text-gray-600">
               <ul className="list-disc list-inside space-y-2">
-                <li>Create learning areas first to organize your curriculum (in Configuration → Learning Areas)</li>
-                <li>Create scales before creating tests - tests require a scale to be selected</li>
-                <li>Use descriptive scale names (e.g., "Grade 5 Mathematics Scale" instead of "Scale 1")</li>
-                <li>Define clear level descriptions to ensure consistent grading</li>
-                <li>Organize test sections logically (e.g., by difficulty or question type)</li>
-                <li>Include detailed marking rubrics for each question</li>
-                <li>Save frequently - data is only persisted when you click "Save"</li>
-                <li>Test forms support all CBC subjects from the dropdown</li>
-                <li>Head teachers have access to manage learning areas to structure school curriculum</li>
+                <li>Create learning areas first to organise your curriculum (Configuration → Learning Areas)</li>
+                <li>Create scales before creating tests — tests require a scale to be selected</li>
+                <li>Use descriptive scale names (e.g., "Grade 5 Mathematics Scale")</li>
+                <li>Define clear level descriptions to ensure consistent grading across teachers</li>
+                <li>Use the bulk-generate feature to create tests for all subjects in one step</li>
+                <li>Head teachers have access to manage learning areas and lock completed terms</li>
+                <li>Locked terms prevent further mark entry — contact an administrator to unlock if needed</li>
               </ul>
             </div>
           </div>

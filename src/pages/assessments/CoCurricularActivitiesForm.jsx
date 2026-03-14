@@ -1,573 +1,269 @@
 import React, { useState } from 'react';
-import { Save, Plus, Trash2, AlertCircle, Award, Users } from 'lucide-react';
-import { DatePicker } from '../../components/ui/date-picker';
+import { Save, Plus, Trash2, AlertCircle, Award } from 'lucide-react';
+import { cbcAPI } from '../../services/api';
 import { useSchoolData } from '../../contexts/SchoolDataContext';
 
-const CoCurricularActivitiesForm = () => {
-  const [formData, setFormData] = useState({
-    studentId: '',
-    studentName: '',
-    grade: '',
-    term: '',
-    academicYear: '',
-    assessmentDate: new Date().toISOString().split('T')[0],
-    activities: [],
-    overallPerformance: '',
-    skillsDeveloped: '',
-    areasForImprovement: '',
-    recommendations: '',
-    teacherName: '',
-    teacherSignature: ''
-  });
+const TERM_OPTIONS = [
+  { value: 'TERM_1', label: 'Term 1' },
+  { value: 'TERM_2', label: 'Term 2' },
+  { value: 'TERM_3', label: 'Term 3' },
+];
 
+const RATING_SCALE = [
+  { value: 'EE1', label: 'EE1', desc: 'Exceeds Expectations (High)' },
+  { value: 'EE2', label: 'EE2', desc: 'Exceeds Expectations' },
+  { value: 'ME1', label: 'ME1', desc: 'Meets Expectations (High)' },
+  { value: 'ME2', label: 'ME2', desc: 'Meets Expectations' },
+  { value: 'AE1', label: 'AE1', desc: 'Approaching Expectations (High)' },
+  { value: 'AE2', label: 'AE2', desc: 'Approaching Expectations' },
+  { value: 'BE1', label: 'BE1', desc: 'Below Expectations (High)' },
+  { value: 'BE2', label: 'BE2', desc: 'Below Expectations' },
+];
+
+const ACTIVITY_TYPES = [
+  'Sports & Athletics', 'Creative Arts', 'Music & Performing Arts',
+  'Clubs & Societies', 'Leadership & Service', 'Academic Competitions',
+  'Technology & Innovation', 'Other',
+];
+
+const makeActivity = () => ({
+  _id: Date.now(),
+  activityName: '',
+  activityType: '',
+  performance: '',
+  achievements: '',
+  remarks: '',
+});
+
+const CoCurricularActivitiesForm = ({ onBack, onSuccess }) => {
+  const [learnerId, setLearnerId] = useState('');
+  const [term, setTerm] = useState('');
+  const [academicYear, setAcademicYear] = useState(new Date().getFullYear());
+  const [activities, setActivities] = useState([makeActivity()]);
   const [errors, setErrors] = useState({});
   const [saveStatus, setSaveStatus] = useState('');
+  const [savedCount, setSavedCount] = useState(0);
 
-  const activityCategories = [
-    { value: 'sports', label: 'Sports & Athletics' },
-    { value: 'arts', label: 'Creative Arts' },
-    { value: 'music', label: 'Music & Performing Arts' },
-    { value: 'clubs', label: 'Clubs & Societies' },
-    { value: 'leadership', label: 'Leadership & Service' },
-    { value: 'academic', label: 'Academic Competitions' },
-    { value: 'technology', label: 'Technology & Innovation' },
-    { value: 'other', label: 'Other Activities' }
-  ];
+  const addActivity = () => setActivities(prev => [...prev, makeActivity()]);
 
-  const performanceLevels = [
-    { value: 'EX', label: 'Excellent', color: 'bg-green-100 border-green-400', description: 'Outstanding performance and dedication' },
-    { value: 'VG', label: 'Very Good', color: 'bg-blue-100 border-blue-400', description: 'Consistently good performance' },
-    { value: 'GO', label: 'Good', color: 'bg-yellow-100 border-yellow-400', description: 'Satisfactory participation' },
-    { value: 'NI', label: 'Needs Improvement', color: 'bg-orange-100 border-orange-400', description: 'Requires more effort' }
-  ];
+  const removeActivity = (id) => setActivities(prev => prev.filter(a => a._id !== id));
 
-  const participationLevels = [
-    'Active participant',
-    'Team member',
-    'Team leader/Captain',
-    'Committee member',
-    'Event organizer',
-    'Regular attendee',
-    'Occasional participant'
-  ];
+  const updateActivity = (id, field, value) =>
+    setActivities(prev => prev.map(a => a._id === id ? { ...a, [field]: value } : a));
 
-  const { grades } = useSchoolData();
-  const terms = ['Term 1', 'Term 2', 'Term 3'];
-
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
-    }
-  };
-
-  const addActivity = () => {
-    const newActivity = {
-      id: Date.now(),
-      category: '',
-      activityName: '',
-      participationLevel: '',
-      performanceRating: '',
-      attendanceRate: '',
-      achievements: '',
-      skillsGained: '',
-      teacherObservations: ''
-    };
-    setFormData(prev => ({
-      ...prev,
-      activities: [...prev.activities, newActivity]
-    }));
-  };
-
-  const removeActivity = (id) => {
-    setFormData(prev => ({
-      ...prev,
-      activities: prev.activities.filter(act => act.id !== id)
-    }));
-  };
-
-  const updateActivity = (id, field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      activities: prev.activities.map(act =>
-        act.id === id ? { ...act, [field]: value } : act
-      )
-    }));
-  };
-
-  const validateForm = () => {
+  const validate = () => {
     const newErrors = {};
-
-    if (!formData.studentId) newErrors.studentId = 'Student ID is required';
-    if (!formData.studentName) newErrors.studentName = 'Student name is required';
-    if (!formData.grade) newErrors.grade = 'Grade is required';
-    if (!formData.term) newErrors.term = 'Term is required';
-    if (!formData.academicYear) newErrors.academicYear = 'Academic year is required';
-    if (!formData.teacherName) newErrors.teacherName = 'Teacher name is required';
-
-    if (formData.activities.length === 0) {
-      newErrors.activities = 'Please add at least one activity';
-    } else {
-      formData.activities.forEach((activity, index) => {
-        if (!activity.category) {
-          newErrors[`activity_${activity.id}_category`] = 'Category is required';
-        }
-        if (!activity.activityName) {
-          newErrors[`activity_${activity.id}_name`] = 'Activity name is required';
-        }
-      });
-    }
-
+    if (!learnerId.trim()) newErrors.learnerId = 'Learner ID is required';
+    if (!term) newErrors.term = 'Term is required';
+    if (!academicYear) newErrors.academicYear = 'Academic year is required';
+    activities.forEach(a => {
+      if (!a.activityName.trim()) newErrors[`name_${a._id}`] = 'Activity name is required';
+      if (!a.activityType) newErrors[`type_${a._id}`] = 'Activity type is required';
+      if (!a.performance) newErrors[`perf_${a._id}`] = 'Performance rating is required';
+    });
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validate()) { setSaveStatus('error'); return; }
 
-    if (!validateForm()) {
-      setSaveStatus('error');
-      return;
+    setSaveStatus('saving');
+    setSavedCount(0);
+
+    const results = { saved: 0, failed: 0, errors: [] };
+
+    for (const activity of activities) {
+      try {
+        await cbcAPI.createCoCurricular({
+          learnerId,
+          term,
+          academicYear: parseInt(academicYear),
+          activityName: activity.activityName,
+          activityType: activity.activityType,
+          performance: activity.performance,
+          achievements: activity.achievements || undefined,
+          remarks: activity.remarks || undefined,
+        });
+        results.saved++;
+        setSavedCount(results.saved);
+      } catch (err) {
+        results.failed++;
+        results.errors.push(`${activity.activityName}: ${err.message}`);
+      }
     }
 
-    try {
-      setSaveStatus('saving');
-      console.log('Saving co-curricular assessment:', formData);
-
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
+    if (results.failed === 0) {
       setSaveStatus('success');
+      if (onSuccess) onSuccess({ saved: results.saved });
       setTimeout(() => setSaveStatus(''), 3000);
-    } catch (error) {
-      console.error('Error saving form:', error);
+    } else {
       setSaveStatus('error');
+      setErrors({ submit: `${results.saved} saved, ${results.failed} failed: ${results.errors.join('; ')}` });
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
+      <div className="max-w-4xl mx-auto">
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex items-center gap-3 mb-2">
-            <Award className="w-8 h-8 text-blue-600" />
-            <h1 className="text-3xl font-bold text-gray-900">
-              Co-Curricular Activities Assessment
-            </h1>
+            <Award size={24} className="text-blue-600" />
+            <h1 className="text-2xl font-bold text-gray-900">Co-Curricular Activities Assessment</h1>
           </div>
-          <p className="text-gray-600">
-            Track and evaluate student participation in extracurricular activities
-          </p>
+          {onBack && (
+            <button onClick={onBack} className="text-blue-600 hover:text-blue-700 text-sm font-medium">← Back</button>
+          )}
+          {saveStatus === 'success' && (
+            <span className="ml-4 text-green-600 text-sm font-medium">✓ {savedCount} activity records saved</span>
+          )}
         </div>
 
+        {saveStatus === 'error' && errors.submit && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 flex items-start gap-3">
+            <AlertCircle size={18} className="text-red-600 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-700">{errors.submit}</p>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Student Information */}
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Student Information</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Learner &amp; Term</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Student ID *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Learner ID *</label>
                 <input
                   type="text"
-                  value={formData.studentId}
-                  onChange={(e) => handleInputChange('studentId', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 ${errors.studentId ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  placeholder="Enter student ID"
+                  value={learnerId}
+                  onChange={e => { setLearnerId(e.target.value); if (errors.learnerId) setErrors(p => { const c = { ...p }; delete c.learnerId; return c; }); }}
+                  className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 ${errors.learnerId ? 'border-red-500' : 'border-gray-300'}`}
+                  placeholder="Learner UUID"
                 />
-                {errors.studentId && <p className="mt-1 text-sm text-red-600">{errors.studentId}</p>}
+                {errors.learnerId && <p className="text-xs text-red-600 mt-1">{errors.learnerId}</p>}
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Student Name *</label>
-                <input
-                  type="text"
-                  value={formData.studentName}
-                  onChange={(e) => handleInputChange('studentName', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 ${errors.studentName ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  placeholder="Enter student name"
-                />
-                {errors.studentName && <p className="mt-1 text-sm text-red-600">{errors.studentName}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Grade *</label>
-                <select
-                  value={formData.grade}
-                  onChange={(e) => handleInputChange('grade', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 ${errors.grade ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                >
-                  <option value="">Select grade</option>
-                  {grades.map(grade => <option key={grade} value={grade}>{grade}</option>)}
-                </select>
-                {errors.grade && <p className="mt-1 text-sm text-red-600">{errors.grade}</p>}
-              </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Term *</label>
                 <select
-                  value={formData.term}
-                  onChange={(e) => handleInputChange('term', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 ${errors.term ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                  value={term}
+                  onChange={e => setTerm(e.target.value)}
+                  className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 ${errors.term ? 'border-red-500' : 'border-gray-300'}`}
                 >
                   <option value="">Select term</option>
-                  {terms.map(term => <option key={term} value={term}>{term}</option>)}
+                  {TERM_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </select>
-                {errors.term && <p className="mt-1 text-sm text-red-600">{errors.term}</p>}
+                {errors.term && <p className="text-xs text-red-600 mt-1">{errors.term}</p>}
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Academic Year *</label>
                 <input
-                  type="text"
-                  value={formData.academicYear}
-                  onChange={(e) => handleInputChange('academicYear', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 ${errors.academicYear ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  placeholder="e.g., 2024-2025"
+                  type="number"
+                  value={academicYear}
+                  onChange={e => setAcademicYear(e.target.value)}
+                  className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 ${errors.academicYear ? 'border-red-500' : 'border-gray-300'}`}
+                  placeholder="e.g. 2026"
                 />
-                {errors.academicYear && <p className="mt-1 text-sm text-red-600">{errors.academicYear}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Assessment Date</label>
-                <DatePicker
-                  value={formData.assessmentDate}
-                  onChange={(date) => handleInputChange('assessmentDate', date ? new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('T')[0] : '')}
-                  className="w-full"
-                />
+                {errors.academicYear && <p className="text-xs text-red-600 mt-1">{errors.academicYear}</p>}
               </div>
             </div>
           </div>
 
-          {/* Performance Rating Scale */}
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Performance Rating Scale</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {performanceLevels.map(level => (
-                <div key={level.value} className={`p-3 border-2 rounded-lg ${level.color}`}>
-                  <div className="font-semibold text-gray-900">{level.value}</div>
-                  <div className="text-sm font-medium text-gray-800">{level.label}</div>
-                  <div className="text-xs text-gray-600 mt-1">{level.description}</div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Activities</h2>
+              <button type="button" onClick={addActivity} className="px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 flex items-center gap-1.5">
+                <Plus size={14} /> Add Activity
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {activities.map((activity, idx) => (
+                <div key={activity._id} className="border border-gray-200 rounded-lg p-4 relative">
+                  <div className="absolute top-3 right-3">
+                    {activities.length > 1 && (
+                      <button type="button" onClick={() => removeActivity(activity._id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded">
+                        <Trash2 size={15} />
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-sm font-medium text-gray-700 mb-3">Activity {idx + 1}</p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Activity Name *</label>
+                      <input
+                        type="text"
+                        value={activity.activityName}
+                        onChange={e => updateActivity(activity._id, 'activityName', e.target.value)}
+                        className={`w-full px-3 py-1.5 border rounded text-sm focus:ring-2 focus:ring-blue-500 ${errors[`name_${activity._id}`] ? 'border-red-500' : 'border-gray-300'}`}
+                        placeholder="e.g. Basketball Team"
+                      />
+                      {errors[`name_${activity._id}`] && <p className="text-xs text-red-600 mt-1">{errors[`name_${activity._id}`]}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Activity Type *</label>
+                      <select
+                        value={activity.activityType}
+                        onChange={e => updateActivity(activity._id, 'activityType', e.target.value)}
+                        className={`w-full px-3 py-1.5 border rounded text-sm focus:ring-2 focus:ring-blue-500 ${errors[`type_${activity._id}`] ? 'border-red-500' : 'border-gray-300'}`}
+                      >
+                        <option value="">Select type</option>
+                        {ACTIVITY_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                      {errors[`type_${activity._id}`] && <p className="text-xs text-red-600 mt-1">{errors[`type_${activity._id}`]}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Performance Rating *</label>
+                      <select
+                        value={activity.performance}
+                        onChange={e => updateActivity(activity._id, 'performance', e.target.value)}
+                        className={`w-full px-3 py-1.5 border rounded text-sm focus:ring-2 focus:ring-blue-500 ${errors[`perf_${activity._id}`] ? 'border-red-500' : 'border-gray-300'}`}
+                      >
+                        <option value="">Select rating</option>
+                        {RATING_SCALE.map(r => <option key={r.value} value={r.value}>{r.label} — {r.desc}</option>)}
+                      </select>
+                      {errors[`perf_${activity._id}`] && <p className="text-xs text-red-600 mt-1">{errors[`perf_${activity._id}`]}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Achievements (optional)</label>
+                      <input
+                        type="text"
+                        value={activity.achievements}
+                        onChange={e => updateActivity(activity._id, 'achievements', e.target.value)}
+                        className="w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
+                        placeholder="Awards, certificates, etc."
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Remarks (optional)</label>
+                      <textarea
+                        value={activity.remarks}
+                        onChange={e => updateActivity(activity._id, 'remarks', e.target.value)}
+                        rows="2"
+                        className="w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
+                        placeholder="Teacher observations..."
+                      />
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Activities List */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">Activities & Participation</h2>
-              <button
-                type="button"
-                onClick={addActivity}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                Add Activity
+          <div className="bg-white rounded-lg shadow-sm p-6 flex justify-end gap-3">
+            {onBack && (
+              <button type="button" onClick={onBack} className="px-5 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50">
+                Cancel
               </button>
-            </div>
-
-            {errors.activities && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-center text-red-800">
-                <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0" />
-                {errors.activities}
-              </div>
             )}
-
-            {formData.activities.length === 0 ? (
-              <div className="text-center py-12 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg">
-                <Users className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-gray-600 mb-4">No activities added yet</p>
-                <button
-                  type="button"
-                  onClick={addActivity}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  Add Your First Activity
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {formData.activities.map((activity, index) => (
-                  <div key={activity.id} className="border border-gray-200 rounded-lg p-5 relative">
-                    <div className="absolute top-4 right-4">
-                      <button
-                        type="button"
-                        onClick={() => removeActivity(activity.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-md"
-                        title="Remove activity"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                    </div>
-
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">
-                      Activity {index + 1}
-                    </h3>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Category *
-                        </label>
-                        <select
-                          value={activity.category}
-                          onChange={(e) => updateActivity(activity.id, 'category', e.target.value)}
-                          className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 ${errors[`activity_${activity.id}_category`] ? 'border-red-500' : 'border-gray-300'
-                            }`}
-                        >
-                          <option value="">Select category</option>
-                          {activityCategories.map(cat => (
-                            <option key={cat.value} value={cat.value}>{cat.label}</option>
-                          ))}
-                        </select>
-                        {errors[`activity_${activity.id}_category`] && (
-                          <p className="mt-1 text-sm text-red-600">{errors[`activity_${activity.id}_category`]}</p>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Activity Name *
-                        </label>
-                        <input
-                          type="text"
-                          value={activity.activityName}
-                          onChange={(e) => updateActivity(activity.id, 'activityName', e.target.value)}
-                          className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 ${errors[`activity_${activity.id}_name`] ? 'border-red-500' : 'border-gray-300'
-                            }`}
-                          placeholder="e.g., Basketball Team, Drama Club"
-                        />
-                        {errors[`activity_${activity.id}_name`] && (
-                          <p className="mt-1 text-sm text-red-600">{errors[`activity_${activity.id}_name`]}</p>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Participation Level
-                        </label>
-                        <select
-                          value={activity.participationLevel}
-                          onChange={(e) => updateActivity(activity.id, 'participationLevel', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="">Select level</option>
-                          {participationLevels.map(level => (
-                            <option key={level} value={level}>{level}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Attendance Rate
-                        </label>
-                        <input
-                          type="text"
-                          value={activity.attendanceRate}
-                          onChange={(e) => updateActivity(activity.id, 'attendanceRate', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                          placeholder="e.g., 90%, Excellent, Regular"
-                        />
-                      </div>
-
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Performance Rating
-                        </label>
-                        <div className="flex flex-wrap gap-2">
-                          {performanceLevels.map(level => (
-                            <button
-                              key={level.value}
-                              type="button"
-                              onClick={() => updateActivity(activity.id, 'performanceRating', level.value)}
-                              className={`px-4 py-2 border-2 rounded-lg font-medium transition-all ${activity.performanceRating === level.value
-                                ? level.color + ' ring-2 ring-blue-500'
-                                : 'bg-white border-gray-300 hover:border-gray-400'
-                                }`}
-                            >
-                              {level.value}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Achievements & Awards
-                        </label>
-                        <textarea
-                          value={activity.achievements}
-                          onChange={(e) => updateActivity(activity.id, 'achievements', e.target.value)}
-                          rows="2"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                          placeholder="List any awards, medals, certificates, or notable achievements..."
-                        />
-                      </div>
-
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Skills Developed
-                        </label>
-                        <textarea
-                          value={activity.skillsGained}
-                          onChange={(e) => updateActivity(activity.id, 'skillsGained', e.target.value)}
-                          rows="2"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                          placeholder="e.g., Teamwork, leadership, time management, creativity..."
-                        />
-                      </div>
-
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Teacher/Coach Observations
-                        </label>
-                        <textarea
-                          value={activity.teacherObservations}
-                          onChange={(e) => updateActivity(activity.id, 'teacherObservations', e.target.value)}
-                          rows="2"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                          placeholder="Additional comments about student's participation and progress..."
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Overall Summary */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Overall Summary</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Overall Performance Assessment
-                </label>
-                <textarea
-                  value={formData.overallPerformance}
-                  onChange={(e) => handleInputChange('overallPerformance', e.target.value)}
-                  rows="3"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                  placeholder="Provide an overall assessment of student's co-curricular participation..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Key Skills Developed
-                </label>
-                <textarea
-                  value={formData.skillsDeveloped}
-                  onChange={(e) => handleInputChange('skillsDeveloped', e.target.value)}
-                  rows="2"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                  placeholder="Summarize the main skills and competencies gained..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Areas for Improvement
-                </label>
-                <textarea
-                  value={formData.areasForImprovement}
-                  onChange={(e) => handleInputChange('areasForImprovement', e.target.value)}
-                  rows="2"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                  placeholder="Identify areas where the student could improve..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Recommendations
-                </label>
-                <textarea
-                  value={formData.recommendations}
-                  onChange={(e) => handleInputChange('recommendations', e.target.value)}
-                  rows="2"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                  placeholder="Suggest new activities or areas for future participation..."
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Teacher Signature */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Teacher Information</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Teacher/Coordinator Name *
-                </label>
-                <input
-                  type="text"
-                  value={formData.teacherName}
-                  onChange={(e) => handleInputChange('teacherName', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 ${errors.teacherName ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  placeholder="Enter teacher/coordinator name"
-                />
-                {errors.teacherName && (
-                  <p className="mt-1 text-sm text-red-600">{errors.teacherName}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Signature
-                </label>
-                <input
-                  type="text"
-                  value={formData.teacherSignature}
-                  onChange={(e) => handleInputChange('teacherSignature', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                  placeholder="Type your name to sign"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-              <div>
-                {saveStatus === 'success' && (
-                  <div className="text-green-600 font-medium">✓ Saved successfully</div>
-                )}
-                {saveStatus === 'error' && (
-                  <div className="text-red-600 font-medium">✗ Please fix errors and try again</div>
-                )}
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saveStatus === 'saving'}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2 disabled:bg-blue-400"
-                >
-                  <Save className="w-4 h-4" />
-                  {saveStatus === 'saving' ? 'Saving...' : 'Save Assessment'}
-                </button>
-              </div>
-            </div>
+            <button
+              type="submit"
+              disabled={saveStatus === 'saving'}
+              className="px-5 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 flex items-center gap-2 disabled:bg-blue-400"
+            >
+              <Save size={15} />
+              {saveStatus === 'saving' ? `Saving ${savedCount}/${activities.length}...` : 'Save Activities'}
+            </button>
           </div>
         </form>
       </div>

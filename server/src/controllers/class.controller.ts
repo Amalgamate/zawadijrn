@@ -54,11 +54,7 @@ export class ClassController {
 
   async getAllClasses(req: AuthRequest, res: Response) {
     const { grade, stream, academicYear, term, active = 'true' } = req.query;
-    const schoolId = req.user?.schoolId || req.schoolContext?.schoolId;
-    if (!schoolId) throw new ApiError(403, 'School context required');
     const whereClause: any = {};
-
-    whereClause.schoolId = schoolId;
 
     if (grade) whereClause.grade = grade as Grade;
     if (stream) whereClause.stream = stream as any;
@@ -88,11 +84,9 @@ export class ClassController {
 
   async getClassById(req: AuthRequest, res: Response) {
     const { id } = req.params;
-    const schoolId = req.user?.schoolId || req.schoolContext?.schoolId;
-    if (!schoolId) throw new ApiError(403, 'School context required');
 
     const classData = await prisma.class.findFirst({
-      where: { id, schoolId },
+      where: { id },
       include: {
         teacher: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
         enrollments: {
@@ -121,8 +115,6 @@ export class ClassController {
 
   async createClass(req: AuthRequest, res: Response) {
     const { name, grade, stream, teacherId, academicYear, term, capacity = 40, room } = req.body;
-    const schoolId = req.user?.schoolId || req.schoolContext?.schoolId;
-    if (!schoolId) throw new ApiError(403, 'School context required');
 
     if (!grade) throw new ApiError(400, 'Grade is required');
 
@@ -143,13 +135,13 @@ export class ClassController {
     const finalName = name || `${grade} ${finalStream}`;
 
     const existingClass = await prisma.class.findFirst({
-      where: { grade: grade as Grade, stream: finalStream as any, academicYear: finalYear, term: finalTerm as Term, schoolId }
+      where: { grade: grade as Grade, stream: finalStream as any, academicYear: finalYear, term: finalTerm as Term }
     });
     if (existingClass) throw new ApiError(409, 'Class already exists for this term');
 
     const classCode = await this.generateClassCode();
     const newClass = await prisma.class.create({
-      data: { classCode, name: finalName, grade: grade as Grade, stream: finalStream as any, teacherId, schoolId, academicYear: finalYear, term: finalTerm as Term, capacity, room },
+      data: { classCode, name: finalName, grade: grade as Grade, stream: finalStream as any, teacherId, academicYear: finalYear, term: finalTerm as Term, capacity, room },
       include: { teacher: { select: { id: true, firstName: true, lastName: true } } }
     });
 
@@ -227,11 +219,6 @@ export class ClassController {
   async getTeacherWorkload(req: AuthRequest, res: Response) {
     const { teacherId } = req.params;
     let { academicYear, term } = req.query;
-    const schoolId = req.user?.schoolId || req.schoolContext?.schoolId;
-
-    if (!schoolId) {
-      throw new ApiError(403, 'School context required');
-    }
 
     if (!academicYear || !term) {
       const context = await this.getActiveContext();
@@ -242,7 +229,6 @@ export class ClassController {
     const classes = await prisma.class.findMany({
       where: {
         teacherId,
-        schoolId,
         academicYear: parseInt(academicYear as string),
         term: term as Term,
         active: true,
@@ -290,11 +276,6 @@ export class ClassController {
   async getTeacherSchedules(req: AuthRequest, res: Response) {
     const { teacherId } = req.params;
     const { academicYear, term } = req.query;
-    const schoolId = req.user?.schoolId || req.schoolContext?.schoolId;
-
-    if (!schoolId) {
-      throw new ApiError(403, 'School context required');
-    }
 
     const parsedYear = academicYear ? parseInt(academicYear as string) : undefined;
     const parsedTerm = term as Term | undefined;
@@ -302,7 +283,6 @@ export class ClassController {
     const schedules = await prisma.classSchedule.findMany({
       where: {
         teacherId,
-        schoolId,
         active: true,
         ...(parsedYear ? { academicYear: parsedYear } : {}),
         ...(parsedTerm ? { class: { term: parsedTerm } } : {}),
@@ -355,7 +335,6 @@ export class ClassController {
   async createClassSchedule(req: AuthRequest, res: Response) {
     const { id } = req.params;
     const { subject, day, startTime, endTime, room, teacherId, learningAreaId, semester, academicYear } = req.body;
-    const schoolId = req.user?.schoolId;
 
     const schedule = await prisma.classSchedule.create({
       data: {
@@ -369,7 +348,6 @@ export class ClassController {
         learningAreaId,
         semester,
         academicYear: parseInt(academicYear as string) || new Date().getFullYear(),
-        schoolId
       },
       include: {
         teacher: { select: { id: true, firstName: true, lastName: true } },

@@ -53,13 +53,13 @@ const SummaryReportPage = () => {
   }, [user?.schoolId]);
 
   const reportTypes = [
-    { value: 'grade-report', label: 'Grade Report' },
-    { value: 'stream-report', label: 'Stream Report' },
-    { value: 'learner-report', label: 'Learner Report' },
-    { value: 'learner-termly-report', label: 'Learner Termly Report' },
-    { value: 'stream-ranking-report', label: 'Stream Ranking Report' },
-    { value: 'stream-analysis-report', label: 'Stream Analysis Report' },
-    { value: 'grade-analysis-report', label: 'Grade Analysis Report' }
+    { value: 'grade-report', label: 'Grade Sheet' },
+    { value: 'stream-report', label: 'Stream Sheet' },
+    { value: 'learner-report', label: 'Learner Sheet' },
+    { value: 'learner-termly-report', label: 'Learner Termly Sheet' },
+    { value: 'stream-ranking-report', label: 'Stream Ranking Sheet' },
+    { value: 'stream-analysis-report', label: 'Stream Analysis Sheet' },
+    { value: 'grade-analysis-report', label: 'Grade Analysis Sheet' }
   ];
 
   const gradesOptions = fetchedGrades.map(g => ({

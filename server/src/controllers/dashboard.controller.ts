@@ -10,11 +10,6 @@ export class DashboardController {
      */
     async getAdminMetrics(req: AuthRequest, res: Response) {
         try {
-            const schoolId = req.user?.schoolId;
-            if (!schoolId) {
-                throw new ApiError(400, 'School ID is required');
-            }
-
             const { filter = 'today' } = req.query;
             const dateFilter = this.getDateFilter(filter as string);
             const prevDateFilter = this.getPreviousDateFilter(filter as string);
@@ -27,11 +22,11 @@ export class DashboardController {
                 prevStudentCount,
                 prevTeacherCount
             ] = await Promise.all([
-                prisma.learner.count({ where: { schoolId, archived: false } }),
-                prisma.user.count({ where: { schoolId, role: 'TEACHER', archived: false } }),
-                prisma.class.count({ where: { schoolId, archived: false } }),
-                prisma.learner.count({ where: { schoolId, archived: false, createdAt: prevDateFilter } }),
-                prisma.user.count({ where: { schoolId, role: 'TEACHER', archived: false, createdAt: prevDateFilter } })
+                prisma.learner.count({ where: { archived: false } }),
+                prisma.user.count({ where: { role: 'TEACHER', archived: false } }),
+                prisma.class.count({ where: { archived: false } }),
+                prisma.learner.count({ where: { archived: false, createdAt: prevDateFilter } }),
+                prisma.user.count({ where: { role: 'TEACHER', archived: false, createdAt: prevDateFilter } })
             ]);
 
             const studentTrend = this.calculateTrend(studentCount, prevStudentCount);
@@ -39,19 +34,16 @@ export class DashboardController {
 
             // 2. Active Counts
             const activeStudents = await prisma.learner.count({
-                where: { schoolId, status: 'ACTIVE', archived: false }
+                where: { status: 'ACTIVE', archived: false }
             });
             const activeTeachers = await prisma.user.count({
-                where: { schoolId, role: 'TEACHER', status: 'ACTIVE', archived: false }
+                where: { role: 'TEACHER', status: 'ACTIVE', archived: false }
             });
 
             // 3. Attendance
             const attendanceSummary = await prisma.attendance.groupBy({
                 by: ['status'],
-                where: {
-                    learner: { schoolId },
-                    date: dateFilter
-                },
+                where: { date: dateFilter },
                 _count: true
             });
 
@@ -69,7 +61,7 @@ export class DashboardController {
             // 4. Students by Grade
             const studentsByGradeData = await prisma.learner.groupBy({
                 by: ['grade'],
-                where: { schoolId, archived: false },
+                where: { archived: false },
                 _count: true
             });
 
@@ -82,7 +74,7 @@ export class DashboardController {
             // 5. Staff Distribution
             const staffByRole = await prisma.user.groupBy({
                 by: ['role'],
-                where: { schoolId, archived: false },
+                where: { archived: false },
                 _count: true
             });
 
@@ -92,25 +84,23 @@ export class DashboardController {
                 color: this.getRoleColor(item.role)
             }));
 
-            // 6. Recent Activity (Latest 5 arrivals/admissions/assessments)
+            // 6. Recent Activity
             const [latestAdmissions, latestAssessments] = await Promise.all([
                 prisma.learner.findMany({
-                    where: { schoolId },
                     orderBy: { createdAt: 'desc' },
                     take: 5,
                     select: { firstName: true, lastName: true, admissionNumber: true, grade: true, createdAt: true }
                 }),
                 prisma.formativeAssessment.findMany({
-                    where: { schoolId },
                     orderBy: { createdAt: 'desc' },
                     take: 5,
                     select: { title: true, learningArea: true, learner: { select: { firstName: true, lastName: true } }, createdAt: true }
                 })
             ]);
 
-            // 7. Financials (Fee Collected, Fee Pending, Stream Breakdown)
+            // 7. Financials
             const feeInvoices = await prisma.feeInvoice.findMany({
-                where: { schoolId, archived: false },
+                where: { archived: false },
                 include: { learner: { select: { grade: true } } }
             });
 
@@ -142,9 +132,9 @@ export class DashboardController {
                 bal: data.bal
             }));
 
-            // 8. Academic Performance (Top Classes & Subject Proficiency)
+            // 8. Academic Performance
             const summativeResults = await prisma.summativeResult.findMany({
-                where: { schoolId, archived: false },
+                where: { archived: false },
                 include: { test: { select: { grade: true } } }
             });
 
@@ -169,7 +159,7 @@ export class DashboardController {
                 .slice(0, 5);
 
             const subjectProficiencyData = await prisma.formativeAssessment.findMany({
-                where: { schoolId, archived: false },
+                where: { archived: false },
                 select: { learningArea: true, overallRating: true }
             });
 
@@ -192,7 +182,7 @@ export class DashboardController {
 
             // 9. Upcoming Events
             const upcomingEventsData = await prisma.event.findMany({
-                where: { schoolId, startDate: { gte: new Date() } },
+                where: { startDate: { gte: new Date() } },
                 orderBy: { startDate: 'asc' },
                 take: 5,
                 include: { creator: { select: { role: true } } }
@@ -222,7 +212,7 @@ export class DashboardController {
                         feePending,
                         studentTrend,
                         teacherTrend,
-                        totalPendingAssessments: await prisma.formativeAssessment.count({ where: { schoolId, status: 'DRAFT', archived: false } }),
+                        totalPendingAssessments: await prisma.formativeAssessment.count({ where: { status: 'DRAFT', archived: false } }),
                         performance: { ee: 0, me: 0, ae: 0, be: 0 }
                     },
                     distributions: {
@@ -255,10 +245,9 @@ export class DashboardController {
     async getTeacherMetrics(req: AuthRequest, res: Response) {
         try {
             const userId = req.user?.userId;
-            const schoolId = req.user?.schoolId;
 
-            if (!userId || !schoolId) {
-                throw new ApiError(400, 'User ID and School ID are required');
+            if (!userId) {
+                throw new ApiError(400, 'User ID is required');
             }
 
             const { filter = 'today' } = req.query;

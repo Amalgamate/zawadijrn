@@ -131,30 +131,61 @@ export const determinePerformanceTrend = (scores) => {
 };
 
 /**
- * Calculate grade distribution
- * @param {Array} learnerScores - Array of learner scores
- * @param {string} rubricKey - Key name for rubric (default: 'rubric')
- * @returns {Object} Count of each rubric level
+ * Calculate grade distribution supporting both 8-level detailed codes (EE1, EE2 …)
+ * and legacy 4-level codes (EE, ME, AE, BE).
+ *
+ * Returns:
+ *   detailed  – counts for all 8 sub-levels  { EE1, EE2, ME1, ME2, AE1, AE2, BE1, BE2 }
+ *   summary   – counts rolled up to 4 bands   { EE, ME, AE, BE }
+ *
+ * @param {Array}  learnerScores - Array of learner score objects
+ * @param {string} rubricKey     - Key holding the rubric code (default: 'detailedRating')
+ * @returns {{ detailed: Object, summary: Object }}
  */
-export const calculateGradeDistribution = (learnerScores, rubricKey = 'rubric') => {
-  const distribution = {
-    EE: 0,
-    ME: 0,
-    AE: 0,
-    BE: 0,
-    NY: 0
+export const calculateGradeDistribution = (learnerScores, rubricKey = 'detailedRating') => {
+  const detailed = { EE1: 0, EE2: 0, ME1: 0, ME2: 0, AE1: 0, AE2: 0, BE1: 0, BE2: 0 };
+  const summary  = { EE: 0, ME: 0, AE: 0, BE: 0 };
+
+  // Derive parent band from any code (EE1, EE2, EE all → 'EE')
+  const parentOf = (code) => {
+    if (!code) return null;
+    if (code.startsWith('EE')) return 'EE';
+    if (code.startsWith('ME')) return 'ME';
+    if (code.startsWith('AE')) return 'AE';
+    if (code.startsWith('BE')) return 'BE';
+    return null;
   };
 
-  if (!learnerScores || learnerScores.length === 0) return distribution;
+  if (!learnerScores || learnerScores.length === 0) return { detailed, summary };
 
-  learnerScores.forEach(learner => {
-    const rubric = learner[rubricKey];
-    if (distribution.hasOwnProperty(rubric)) {
-      distribution[rubric]++;
+  learnerScores.forEach((learner) => {
+    const code = learner[rubricKey];
+    if (!code) return;
+
+    // 8-level detailed count
+    if (Object.prototype.hasOwnProperty.call(detailed, code)) {
+      detailed[code]++;
     }
+
+    // 4-level summary rollup (works for both EE1/EE2 and legacy EE)
+    const parent = parentOf(code);
+    if (parent) summary[parent]++;
   });
 
-  return distribution;
+  return { detailed, summary };
+};
+
+/**
+ * Legacy convenience wrapper — returns only the 4-level summary object.
+ * Existing broadsheet code that destructures { EE, ME, AE, BE } continues
+ * to work without changes.
+ *
+ * @param {Array}  learnerScores
+ * @param {string} rubricKey
+ * @returns {Object} { EE, ME, AE, BE }
+ */
+export const calculateGradeDistributionSummary = (learnerScores, rubricKey = 'detailedRating') => {
+  return calculateGradeDistribution(learnerScores, rubricKey).summary;
 };
 
 /**

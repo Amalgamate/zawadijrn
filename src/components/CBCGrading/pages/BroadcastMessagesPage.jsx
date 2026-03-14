@@ -63,6 +63,7 @@ const BroadcastMessagesPage = () => {
       schoolName: user?.school?.name || 'School'
     }));
     loadMessageHistory();
+    loadHistoryFromDatabase(); // Load from DB too
   }, []);
 
   const { grades: fetchedGrades } = useSchoolData();
@@ -316,70 +317,67 @@ const BroadcastMessagesPage = () => {
     }
 
     const confirmed = window.confirm(
-      `Send to ${recipients.length} recipients?\n\nMessage preview:\n"${messageTemplate.substring(0, 60)}..."`
+      `Send to ${recipients.length} recipients via SMS?\n\nMessage preview:\n"${messageTemplate.substring(0, 60)}..."`
     );
     if (!confirmed) return;
 
     setSending(true);
     setDeliveryReport([]);
     setFailedRecipients([]);
-    const report = [];
-    const failed = [];
-    let successCount = 0;
+    setProgress(0);
 
-    for (let i = 0; i < recipients.length; i++) {
-      const recipient = recipients[i];
-      let status = 'Sent';
-      let error = null;
-      let messageId = null;
+    try {
+      // Use the new bulk API
+      const response = await api.broadcasts.sendBulk({
+        channel: 'sms', // Defaulting to SMS for now as requested
+        messageTemplate: messageTemplate,
+        messagePreview: messageTemplate.substring(0, 150),
+        recipients: recipients.map(r => ({
+          id: r.id,
+          phone: r.phone,
+          name: r.name,
+          message: messageTemplate
+            .replace(/{name}/gi, r.name || 'Friend')
+            .replace(/{grade}/gi, r.grade || '')
+            .replace(/{schoolName}/gi, previewData.schoolName),
+          studentName: r.name,
+          grade: r.grade
+        }))
+      });
 
-      try {
-        const messageToSend = messageTemplate
-          .replace(/{name}/gi, recipient.name || 'Friend')
-          .replace(/{grade}/gi, recipient.grade || '')
-          .replace(/{schoolName}/gi, previewData.schoolName);
+      if (response.success) {
+        showSuccess(`Broadcast sent! ✓ ${response.sentCount} successful, ${response.failedCount} failed`);
 
-        const response = await api.communication.sendTestSMS({
-          phoneNumber: recipient.phone,
-          message: messageToSend,
-          schoolId
+        // Update local results for display
+        const report = response.results || [];
+        // Map backend results back to frontend display format
+        const displayReport = recipients.map((r, idx) => {
+          const res = report.find(res => res.phone === r.phone) || report[idx];
+          return {
+            ...r,
+            status: res.success ? 'Sent' : 'Failed',
+            error: res.error,
+            messageId: res.messageId,
+            sentAt: new Date().toLocaleTimeString()
+          };
         });
 
-        // Extract message ID from response
-        messageId = response?.messageId || response?.id || `MSG-${Date.now()}-${i}`;
-        successCount++;
-        setProgress(Math.round(((i + 1) / recipients.length) * 100));
-      } catch (err) {
-        status = 'Failed';
-        error = err.message;
-        failed.push({ ...recipient, error });
+        setDeliveryReport(displayReport);
+        setFailedRecipients(displayReport.filter(r => r.status === 'Failed'));
+        setProgress(100);
+
+        // Refresh history from DB
+        await loadHistoryFromDatabase();
+      } else {
+        throw new Error(response.message || 'Failed to send bulk broadcast');
       }
-
-      report.push({ ...recipient, status, error, messageId, sentAt: new Date().toLocaleTimeString() });
-      setDeliveryReport([...report]);
-      await new Promise(r => setTimeout(r, 100));
+    } catch (err) {
+      console.error('Broadcast error:', err);
+      showError('Failed to send broadcast: ' + err.message);
+    } finally {
+      setSending(false);
+      setStep('send');
     }
-
-    setSending(false);
-    setFailedRecipients(failed);
-
-    // Save to history (both localStorage and database)
-    const historyItem = {
-      id: `BROADCAST-${Date.now()}`,
-      timestamp: new Date().toLocaleString(),
-      totalRecipients: recipients.length,
-      successCount,
-      failedCount: failed.length,
-      messagePreview: messageTemplate.substring(0, 100),
-      report
-    };
-    saveToHistory(historyItem);
-
-    // Save to database
-    saveBroadcastToDatabase(historyItem, recipients.length);
-
-    showSuccess(`Broadcast complete! ✓ ${successCount}/${recipients.length} sent${failed.length > 0 ? `, ${failed.length} failed` : ''}`);
-    setStep('send');
   };
 
   // Retry sending to failed recipients

@@ -52,12 +52,12 @@ const registerAssetSchema = z.object({
 // ============================================
 
 /**
- * @route   POST /api/inventory/categories/:schoolId
+ * @route   POST /api/inventory/categories
  * @desc    Create item category
  * @access  ADMIN, SUPER_ADMIN
  */
 router.post(
-  '/categories/:schoolId',
+  '/categories',
   authenticate,
   authorize('ADMIN', 'SUPER_ADMIN'),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
@@ -67,12 +67,12 @@ router.post(
 );
 
 /**
- * @route   GET /api/inventory/categories/:schoolId
+ * @route   GET /api/inventory/categories
  * @desc    Get item categories
  * @access  Authenticated
  */
 router.get(
-  '/categories/:schoolId',
+  '/categories',
   authenticate,
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   inventoryController.getCategories
@@ -83,12 +83,12 @@ router.get(
 // ============================================
 
 /**
- * @route   POST /api/inventory/stores/:schoolId
+ * @route   POST /api/inventory/stores
  * @desc    Create store
  * @access  ADMIN, SUPER_ADMIN
  */
 router.post(
-  '/stores/:schoolId',
+  '/stores',
   authenticate,
   authorize('ADMIN', 'SUPER_ADMIN'),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
@@ -98,12 +98,12 @@ router.post(
 );
 
 /**
- * @route   GET /api/inventory/stores/:schoolId
+ * @route   GET /api/inventory/stores
  * @desc    Get stores
  * @access  Authenticated
  */
 router.get(
-  '/stores/:schoolId',
+  '/stores',
   authenticate,
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   inventoryController.getStores
@@ -114,12 +114,12 @@ router.get(
 // ============================================
 
 /**
- * @route   POST /api/inventory/items/:schoolId
+ * @route   POST /api/inventory/items
  * @desc    Create inventory item
  * @access  ADMIN, SUPER_ADMIN
  */
 router.post(
-  '/items/:schoolId',
+  '/items',
   authenticate,
   authorize('ADMIN', 'SUPER_ADMIN'),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
@@ -129,12 +129,12 @@ router.post(
 );
 
 /**
- * @route   GET /api/inventory/items/:schoolId
+ * @route   GET /api/inventory/items
  * @desc    Get inventory items
  * @access  Authenticated
  */
 router.get(
-  '/items/:schoolId',
+  '/items',
   authenticate,
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   inventoryController.getItems
@@ -145,12 +145,12 @@ router.get(
 // ============================================
 
 /**
- * @route   POST /api/inventory/movements/:schoolId
+ * @route   POST /api/inventory/movements
  * @desc    Record stock movement
  * @access  ADMIN, SUPER_ADMIN, LIBRARIAN
  */
 router.post(
-  '/movements/:schoolId',
+  '/movements',
   authenticate,
   authorize('ADMIN', 'SUPER_ADMIN', 'LIBRARIAN'),
   rateLimit({ windowMs: 60_000, maxRequests: 50 }),
@@ -160,12 +160,12 @@ router.post(
 );
 
 /**
- * @route   GET /api/inventory/movements/:schoolId
+ * @route   GET /api/inventory/movements
  * @desc    Get stock movements
  * @access  Authenticated
  */
 router.get(
-  '/movements/:schoolId',
+  '/movements',
   authenticate,
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   inventoryController.getMovements
@@ -176,12 +176,12 @@ router.get(
 // ============================================
 
 /**
- * @route   POST /api/inventory/requisitions/:schoolId
+ * @route   POST /api/inventory/requisitions
  * @desc    Create requisition
  * @access  Authenticated
  */
 router.post(
-  '/requisitions/:schoolId',
+  '/requisitions',
   authenticate,
   rateLimit({ windowMs: 60_000, maxRequests: 50 }),
   validate(createRequisitionSchema),
@@ -190,12 +190,12 @@ router.post(
 );
 
 /**
- * @route   GET /api/inventory/requisitions/:schoolId
+ * @route   GET /api/inventory/requisitions
  * @desc    Get requisitions
  * @access  Authenticated
  */
 router.get(
-  '/requisitions/:schoolId',
+  '/requisitions',
   authenticate,
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   inventoryController.getRequisitions
@@ -220,12 +220,12 @@ router.patch(
 // ============================================
 
 /**
- * @route   POST /api/inventory/assets/:schoolId
+ * @route   POST /api/inventory/assets
  * @desc    Register asset
  * @access  ADMIN, SUPER_ADMIN
  */
 router.post(
-  '/assets/:schoolId',
+  '/assets',
   authenticate,
   authorize('ADMIN', 'SUPER_ADMIN'),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
@@ -249,12 +249,12 @@ router.post(
 );
 
 /**
- * @route   GET /api/inventory/assets/:schoolId
+ * @route   GET /api/inventory/assets
  * @desc    Get asset register
  * @access  Authenticated
  */
 router.get(
-  '/assets/:schoolId',
+  '/assets',
   authenticate,
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   inventoryController.getAssetRegister

@@ -158,7 +158,7 @@ const SupportHub = () => {
         },
         {
           title: 'Grade Level Learning Areas',
-          content: 'Lower Primary (1-3): Mathematics, English, Kiswahili, Environmental Activities, Religious Education (CRE/IRE/HRE), Creative Arts (Art, Music), Physical Education. Upper Primary (4-6): Adds Science, Social Studies, Home Science, Agriculture. Junior School (7-9): Pre-technical Studies, Business Studies, Life Skills.'
+          content: 'Lower Primary (1-3): English, Kiswahili, Indigenous Language, Mathematical Activities, Environmental Activities, Religious Education, Creative Activities. Upper Primary (4-6): English, Kiswahili, Science and Technology, Social Studies, Mathematics, Agriculture, Creative Arts, Religious Education. Junior School (7-9): Integrated Science, Social Studies, Pre-Technical Studies, Agriculture, Creative Arts & Sports.'
         },
         {
           title: 'Parent Report Distribution',
@@ -214,7 +214,7 @@ const SupportHub = () => {
         },
         {
           title: 'Upper Primary (Grades 4-6)',
-          content: 'Expanded Curriculum: Mathematics, English, Kiswahili, Integrated Science, Social Studies, Religious Education, Creative Arts & Sports, Optional: Agriculture, Home Science. Greater emphasis on written work, projects, group activities. Preparation for Junior School transition.'
+          content: 'Expanded Curriculum: Multi-disciplinary approach focusing on Science and Technology, Social Studies, Mathematics, and Agriculture. Emphasis on formative and summative assessments to measure competencies in real-world contexts.'
         },
         {
           title: 'Junior School (Grades 7-9)',

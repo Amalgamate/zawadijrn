@@ -15,6 +15,7 @@ const CoreCompetenciesFormDesktop = ({ onBack, onSuccess }) => {
     academicYears,
     handleInputChange,
     handleCompetencyChange,
+    competencyFields,
     handleSubmit: originalHandleSubmit
   } = useCoreCompetencies();
 
@@ -72,35 +73,35 @@ const CoreCompetenciesFormDesktop = ({ onBack, onSuccess }) => {
           <div className="grid grid-cols-3 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Student ID<span className="text-red-500">*</span>
+                Learner ID<span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
-                value={formData.studentId}
-                onChange={(e) => handleInputChange('studentId', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-teal-500 transition ${errors.studentId ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                value={formData.learnerId}
+                onChange={(e) => handleInputChange('learnerId', e.target.value)}
+                className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-teal-500 transition ${errors.learnerId ? 'border-red-500 bg-red-50' : 'border-gray-300'
                   }`}
-                placeholder="STU001"
+                placeholder="Learner ID"
               />
-              {errors.studentId && (
-                <p className="text-red-600 text-xs mt-1">{errors.studentId}</p>
+              {errors.learnerId && (
+                <p className="text-red-600 text-xs mt-1">{errors.learnerId}</p>
               )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Student Name<span className="text-red-500">*</span>
+                Learner Name<span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
-                value={formData.studentName}
-                onChange={(e) => handleInputChange('studentName', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-teal-500 transition ${errors.studentName ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                value={formData.learnerName}
+                onChange={(e) => handleInputChange('learnerName', e.target.value)}
+                className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-teal-500 transition ${errors.learnerName ? 'border-red-500 bg-red-50' : 'border-gray-300'
                   }`}
                 placeholder="Full name"
               />
-              {errors.studentName && (
-                <p className="text-red-600 text-xs mt-1">{errors.studentName}</p>
+              {errors.learnerName && (
+                <p className="text-red-600 text-xs mt-1">{errors.learnerName}</p>
               )}
             </div>
 
@@ -194,17 +195,16 @@ const CoreCompetenciesFormDesktop = ({ onBack, onSuccess }) => {
                 </tr>
               </thead>
               <tbody>
-                {formData.competencies.map((competency, idx) => (
-                  <tr key={competency.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                {competencyFields.map((field, idx) => (
+                  <tr key={field.key} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                     <td className="px-4 py-3 text-sm">
-                      <div className="font-medium text-gray-900">{competency.name}</div>
-                      <div className="text-xs text-gray-600">{competency.descriptor}</div>
+                      <div className="font-medium text-gray-900">{field.label}</div>
                     </td>
                     <td className="px-4 py-3">
                       <select
-                        value={competency.rating}
-                        onChange={(e) => handleCompetencyChange(competency.id, 'rating', e.target.value)}
-                        className={`px-2 py-1 border rounded text-xs focus:ring-2 focus:ring-teal-500 transition ${errors[`competency_${competency.id}_rating`] ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                        value={formData[field.key]}
+                        onChange={(e) => handleCompetencyChange(field.key, e.target.value)}
+                        className={`px-2 py-1 border rounded text-xs focus:ring-2 focus:ring-teal-500 transition ${errors[field.key] ? 'border-red-500 bg-red-50' : 'border-gray-300'
                           }`}
                       >
                         <option value="">Select</option>
@@ -212,29 +212,21 @@ const CoreCompetenciesFormDesktop = ({ onBack, onSuccess }) => {
                           <option key={r.value} value={r.value}>{r.label}</option>
                         ))}
                       </select>
-                      {errors[`competency_${competency.id}_rating`] && (
-                        <p className="text-red-600 text-xs mt-1">{errors[`competency_${competency.id}_rating`]}</p>
+                      {errors[field.key] && (
+                        <p className="text-red-600 text-xs mt-1">{errors[field.key]}</p>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3" colSpan={2}>
                       <textarea
-                        value={competency.evidence}
-                        onChange={(e) => handleCompetencyChange(competency.id, 'evidence', e.target.value)}
-                        className={`w-full px-2 py-1 border rounded text-xs h-20 resize-none focus:ring-2 focus:ring-teal-500 transition ${errors[`competency_${competency.id}_evidence`] ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                        value={formData[field.commentKey]}
+                        onChange={(e) => handleCompetencyChange(field.commentKey, e.target.value)}
+                        className={`w-full px-2 py-1 border rounded text-xs h-20 resize-none focus:ring-2 focus:ring-teal-500 transition ${errors[field.commentKey] ? 'border-red-500 bg-red-50' : 'border-gray-300'
                           }`}
-                        placeholder="Evidence..."
+                        placeholder="Evidence and observations..."
                       />
-                      {errors[`competency_${competency.id}_evidence`] && (
-                        <p className="text-red-600 text-xs mt-1">{errors[`competency_${competency.id}_evidence`]}</p>
+                      {errors[field.commentKey] && (
+                        <p className="text-red-600 text-xs mt-1">{errors[field.commentKey]}</p>
                       )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <textarea
-                        value={competency.teacherComment}
-                        onChange={(e) => handleCompetencyChange(competency.id, 'teacherComment', e.target.value)}
-                        className="w-full px-2 py-1 border border-gray-300 rounded text-xs h-20 resize-none focus:ring-2 focus:ring-teal-500 transition"
-                        placeholder="Comment..."
-                      />
                     </td>
                   </tr>
                 ))}

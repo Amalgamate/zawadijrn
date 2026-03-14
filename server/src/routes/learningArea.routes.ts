@@ -19,43 +19,51 @@ import { rateLimit } from '../middleware/enhanced-rateLimit.middleware';
 
 const router = Router();
 
-// Validation schemas
+// ── Validation schemas ───────────────────────────────────────────────────────
+
 const createLearningAreaSchema = z.object({
   name: z.string().min(2).max(200),
-  code: z.string().min(2).max(10).optional(),
-  description: z.string().max(500).optional()
+  shortName: z.string().min(1).max(20).optional(),
+  gradeLevel: z.string().min(1).optional(),
+  icon: z.string().optional(),
+  color: z.string().optional(),
+  description: z.string().max(500).optional(),
+  // strip legacy / multi-tenant fields silently
+  code: z.string().optional(),
+  schoolId: z.string().optional(),
 });
 
-// Apply authentication middleware to all routes
+const updateLearningAreaSchema = z.object({
+  name: z.string().min(2).max(200).optional(),
+  shortName: z.string().min(1).max(20).optional(),
+  gradeLevel: z.string().min(1).optional(),
+  icon: z.string().optional(),
+  color: z.string().optional(),
+  description: z.string().max(500).optional(),
+});
+
+// ── Auth applied to all routes ───────────────────────────────────────────────
+
 router.use(authenticate);
 
-/**
- * @route   GET /api/learning-areas
- * @desc    Get all learning areas
- * @access  Authenticated
- */
+// ── GET /api/learning-areas ─────────────────────────────────────────────────
 router.get(
   '/',
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   getLearningAreas
 );
 
-/**
- * @route   GET /api/learning-areas/:id
- * @desc    Get specific learning area
- * @access  Authenticated
- */
-router.get(
-  '/:id',
-  rateLimit({ windowMs: 60_000, maxRequests: 100 }),
-  getLearningArea
+// ── POST /api/learning-areas/seed/default ───────────────────────────────────
+// MUST be declared before /:id routes to avoid Express treating "seed" as an id
+router.post(
+  '/seed/default',
+  requireRole(['ADMIN', 'SUPER_ADMIN']),
+  rateLimit({ windowMs: 60_000, maxRequests: 5 }),
+  auditLog('SEED_LEARNING_AREAS'),
+  seedLearningAreas
 );
 
-/**
- * @route   POST /api/learning-areas
- * @desc    Create learning area
- * @access  ADMIN, SUPER_ADMIN
- */
+// ── POST /api/learning-areas ────────────────────────────────────────────────
 router.post(
   '/',
   requireRole(['ADMIN', 'SUPER_ADMIN']),
@@ -65,38 +73,24 @@ router.post(
   createLearningArea
 );
 
-/**
- * @route   POST /api/learning-areas/seed/default
- * @desc    Seed default learning areas
- * @access  ADMIN, SUPER_ADMIN
- */
-router.post(
-  '/seed/default',
-  requireRole(['ADMIN', 'SUPER_ADMIN']),
-  rateLimit({ windowMs: 60_000, maxRequests: 5 }),
-  auditLog('SEED_LEARNING_AREAS'),
-  seedLearningAreas
+// ── GET /api/learning-areas/:id ─────────────────────────────────────────────
+router.get(
+  '/:id',
+  rateLimit({ windowMs: 60_000, maxRequests: 100 }),
+  getLearningArea
 );
 
-/**
- * @route   PUT /api/learning-areas/:id
- * @desc    Update learning area
- * @access  ADMIN, SUPER_ADMIN
- */
+// ── PUT /api/learning-areas/:id ─────────────────────────────────────────────
 router.put(
   '/:id',
   requireRole(['ADMIN', 'SUPER_ADMIN']),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
-  validate(createLearningAreaSchema),
+  validate(updateLearningAreaSchema),
   auditLog('UPDATE_LEARNING_AREA'),
   updateLearningArea
 );
 
-/**
- * @route   DELETE /api/learning-areas/:id
- * @desc    Delete learning area
- * @access  ADMIN, SUPER_ADMIN
- */
+// ── DELETE /api/learning-areas/:id ──────────────────────────────────────────
 router.delete(
   '/:id',
   requireRole(['ADMIN', 'SUPER_ADMIN']),
