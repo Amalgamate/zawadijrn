@@ -6,18 +6,15 @@ import prisma from '../../src/config/database';
  */
 
 const GRADES = [
-  'CRECHE', 'RECEPTION', 'TRANSITION', 'PLAYGROUP',
+  'PLAYGROUP',
   'PP1', 'PP2', 'GRADE_1', 'GRADE_2', 'GRADE_3',
   'GRADE_4', 'GRADE_5', 'GRADE_6', 'GRADE_7',
-  'GRADE_8', 'GRADE_9', 'GRADE_10', 'GRADE_11', 'GRADE_12'
+  'GRADE_8', 'GRADE_9'
 ];
 
 const TERMS = ['TERM_1', 'TERM_2', 'TERM_3'];
 
 const GRADE_DISPLAY_NAMES: Record<string, string> = {
-  'CRECHE': 'Creche',
-  'RECEPTION': 'Reception',
-  'TRANSITION': 'Transition',
   'PLAYGROUP': 'Playgroup',
   'PP1': 'PP1',
   'PP2': 'PP2',
@@ -29,16 +26,13 @@ const GRADE_DISPLAY_NAMES: Record<string, string> = {
   'GRADE_6': 'Grade 6',
   'GRADE_7': 'Grade 7',
   'GRADE_8': 'Grade 8',
-  'GRADE_9': 'Grade 9',
-  'GRADE_10': 'Grade 10',
-  'GRADE_11': 'Grade 11',
-  'GRADE_12': 'Grade 12'
+  'GRADE_9': 'Grade 9'
 };
 
 // Default fee amounts per grade level
 const getFeeAmounts = (grade: string) => {
   // Early childhood (lower tuition)
-  if (['CRECHE', 'RECEPTION', 'TRANSITION', 'PLAYGROUP', 'PP1', 'PP2'].includes(grade)) {
+  if (['PLAYGROUP', 'PP1', 'PP2'].includes(grade)) {
     return {
       TUITION: 15000,
       ACTIVITY: 500,
@@ -65,31 +59,17 @@ const getFeeAmounts = (grade: string) => {
       MISC: 800
     };
   }
-  // Upper Primary (Grade 7-9, higher tuition)
-  if (['GRADE_7', 'GRADE_8', 'GRADE_9'].includes(grade)) {
-    return {
-      TUITION: 25000,
-      ACTIVITY: 1000,
-      TRANSPORT: 5000,
-      MEALS: 12000,
-      EXAM: 800,
-      LIBRARY: 1000,
-      SPORTS: 1500,
-      TECHNOLOGY: 2000,
-      MISC: 1000
-    };
-  }
-  // Secondary (Grade 10-12, highest tuition)
+  // Junior School (Grade 7-9, higher tuition)
   return {
-    TUITION: 30000,
-    ACTIVITY: 1500,
-    TRANSPORT: 6000,
-    MEALS: 15000,
-    EXAM: 1000,
-    LIBRARY: 1500,
-    SPORTS: 2000,
-    TECHNOLOGY: 2500,
-    MISC: 1500
+    TUITION: 25000,
+    ACTIVITY: 1000,
+    TRANSPORT: 5000,
+    MEALS: 12000,
+    EXAM: 800,
+    LIBRARY: 1000,
+    SPORTS: 1500,
+    TECHNOLOGY: 2000,
+    MISC: 1000
   };
 };
 

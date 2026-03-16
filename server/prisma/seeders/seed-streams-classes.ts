@@ -6,16 +6,14 @@ import prisma from '../../src/config/database';
  */
 
 const GRADES = [
-  'CRECHE', 'RECEPTION', 'TRANSITION', 'PLAYGROUP',
-  'PP1', 'PP2', 'GRADE_1', 'GRADE_2', 'GRADE_3',
+  'PLAYGROUP',
+  'PP1',
+  'PP2', 'GRADE_1', 'GRADE_2', 'GRADE_3',
   'GRADE_4', 'GRADE_5', 'GRADE_6', 'GRADE_7',
-  'GRADE_8', 'GRADE_9', 'GRADE_10', 'GRADE_11', 'GRADE_12'
+  'GRADE_8', 'GRADE_9'
 ];
 
 const GRADE_DISPLAY_NAMES: Record<string, string> = {
-  'CRECHE': 'Creche',
-  'RECEPTION': 'Reception',
-  'TRANSITION': 'Transition',
   'PLAYGROUP': 'Playgroup',
   'PP1': 'PP1',
   'PP2': 'PP2',
@@ -27,10 +25,7 @@ const GRADE_DISPLAY_NAMES: Record<string, string> = {
   'GRADE_6': 'Grade 6',
   'GRADE_7': 'Grade 7',
   'GRADE_8': 'Grade 8',
-  'GRADE_9': 'Grade 9',
-  'GRADE_10': 'Grade 10',
-  'GRADE_11': 'Grade 11',
-  'GRADE_12': 'Grade 12'
+  'GRADE_9': 'Grade 9'
 };
 
 const STREAM_NAMES = ['A', 'B', 'C', 'D'];

@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Plus, Edit, Trash2, Eye, Loader, CheckCircle, Database, ChevronDown, ChevronRight, Search } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, Loader, CheckCircle, Database, ChevronDown, ChevronRight, Search, RefreshCw, ListChecks, GraduationCap } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
 import { useAuth } from '../../../hooks/useAuth';
 import { assessmentAPI, classAPI, workflowAPI } from '../../../services/api';
@@ -12,6 +12,10 @@ import SummativeTestForm from '../../../pages/assessments/SummativeTestForm';
 import BulkCreateTest from './BulkCreateTest';
 import ConfirmDialog from '../shared/ConfirmDialog';
 import EmptyState from '../shared/EmptyState';
+
+// Shadcn UI components
+import { Button } from '../../ui/button';
+import { Badge } from '../../ui/badge';
 
 const SummativeTests = ({ onNavigate }) => {
   const { showSuccess, showError } = useNotifications();
@@ -143,8 +147,15 @@ const SummativeTests = ({ onNavigate }) => {
   };
 
   const [expandedGrades, setExpandedGrades] = useState([]);
+  const [expandedMajorGrades, setExpandedMajorGrades] = useState([]); // High-level grade accordions
   const toggleGrade = (grade) => {
     setExpandedGrades(prev =>
+      prev.includes(grade) ? prev.filter(g => g !== grade) : [...prev, grade]
+    );
+  };
+  
+  const toggleMajorGrade = (grade) => {
+    setExpandedMajorGrades(prev =>
       prev.includes(grade) ? prev.filter(g => g !== grade) : [...prev, grade]
     );
   };
@@ -555,147 +566,187 @@ const SummativeTests = ({ onNavigate }) => {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader className="animate-spin text-brand-teal" size={32} />
+        <div className="flex items-center justify-center py-20">
+          <div className="flex flex-col items-center">
+            <Loader className="animate-spin text-brand-purple mb-4" size={40} />
+            <p className="text-slate-400 font-black uppercase tracking-widest text-[10px]">Synchronizing Assessment Matrix...</p>
+          </div>
         </div>
       ) : Object.keys(groupedData).length > 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="divide-y divide-gray-100">
-            {Object.entries(groupedData).map(([gradeKey, seriesGroups]) => {
-              const isExpanded = expandedGrades.includes(gradeKey);
-              const testCount = Object.values(seriesGroups).reduce((acc, g) => acc + g.tests.length, 0);
+        <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-100">
+                <th className="px-6 py-5 w-10">
+                  <input
+                    type="checkbox"
+                    className="rounded border-slate-200 text-brand-purple focus:ring-brand-purple"
+                    checked={selectedIds.length > 0 && selectedIds.length === tests.length}
+                    onChange={(e) => {
+                      if (e.target.checked) setSelectedIds(tests.map(t => t.id));
+                      else setSelectedIds([]);
+                    }}
+                  />
+                </th>
+                <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Level / Series</th>
+                <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Coverage</th>
+                <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Status Metrics</th>
+                <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {Object.entries(groupedData)
+                .sort((a, b) => {
+                  const grades = ['PLAYGROUP', 'PP1', 'PP2', 'GRADE_1', 'GRADE_2', 'GRADE_3', 'GRADE_4', 'GRADE_5', 'GRADE_6', 'GRADE_7', 'GRADE_8', 'GRADE_9'];
+                  return grades.indexOf(a[0]) - grades.indexOf(b[0]);
+                })
+                .map(([gradeKey, seriesGroups]) => {
+                  const isMajorExpanded = expandedMajorGrades.includes(gradeKey);
+                  const totalTests = Object.values(seriesGroups).reduce((acc, g) => acc + g.tests.length, 0);
+                  const totalSeries = Object.keys(seriesGroups).length;
 
-              return (
-                <div key={gradeKey}>
-                  <div
-                    onClick={() => toggleGrade(gradeKey)}
-                    className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition cursor-pointer"
-                  >
-                    <div className="flex items-center gap-3">
-                      {isExpanded ? <ChevronDown size={20} className="text-gray-400" /> : <ChevronRight size={20} className="text-gray-400" />}
-                      <h3 className="font-bold text-gray-800 text-lg">{formatGradeDisplay(gradeKey)}</h3>
-                      <span className="text-xs font-bold bg-brand-purple/10 text-brand-purple px-2 py-1 rounded-full border border-brand-purple/20">
-                        {testCount} {testCount === 1 ? 'Test' : 'Tests'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {isExpanded && (
-                    <div className="bg-gray-50/50 px-6 pb-4 pt-2">
-                      {Object.entries(seriesGroups).map(([seriesName, data]) => (
-                        <div key={seriesName} className="mb-4 last:mb-0">
-                          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
-                            <div className="px-4 py-3 bg-gradient-to-r from-brand-purple/5 to-brand-teal/5 border-b border-gray-200 flex items-center justify-between">
-                              <div>
-                                <h4 className="font-bold text-gray-800">{seriesName}</h4>
-                                <p className="text-xs text-gray-600 mt-1">
-                                  {data.tests.length} assessment {data.tests.length === 1 ? 'area' : 'areas'}
-                                </p>
+                  return (
+                    <React.Fragment key={gradeKey}>
+                      {/* Grade Header Row (Accordion Trigger) */}
+                      <tr 
+                        onClick={() => toggleMajorGrade(gradeKey)}
+                        className={`cursor-pointer transition-all border-b border-slate-100 ${isMajorExpanded ? 'bg-slate-50/80' : 'bg-white hover:bg-slate-50/50'}`}
+                      >
+                        <td colSpan={5} className="px-6 py-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isMajorExpanded ? 'bg-brand-purple text-white' : 'bg-brand-purple/5 text-brand-purple border border-brand-purple/10'}`}>
+                                <GraduationCap size={16} />
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-sm font-black text-slate-900 uppercase tracking-tight leading-none">
+                                  {formatGradeDisplay(gradeKey)}
+                                </span>
+                                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">
+                                  {totalSeries} Assessment {totalSeries === 1 ? 'Series' : 'Series'} • {totalTests} Total Tests
+                                </span>
                               </div>
                             </div>
-
-                            <div className="p-0">
-                              <table className="w-full text-left">
-                                <thead className="bg-gray-50/50 border-b border-gray-100">
-                                  <tr>
-                                    <th className="px-4 py-2 w-10">
-                                      <input
-                                        type="checkbox"
-                                        className="rounded border-gray-300 text-brand-teal focus:ring-brand-teal"
-                                        onChange={(e) => {
-                                          const testIds = data.tests.map(t => t.id);
-                                          if (e.target.checked) {
-                                            setSelectedIds(prev => [...new Set([...prev, ...testIds])]);
-                                          } else {
-                                            setSelectedIds(prev => prev.filter(id => !testIds.includes(id)));
-                                          }
-                                        }}
-                                        checked={data.tests.every(t => selectedIds.includes(t.id))}
-                                      />
-                                    </th>
-                                    <th className="px-4 py-2 text-[10px] font-bold text-gray-500 uppercase">Learning Area</th>
-                                    <th className="px-4 py-2 text-[10px] font-bold text-gray-500 uppercase">Status</th>
-                                    <th className="px-4 py-2 text-[10px] font-bold text-gray-500 uppercase text-center">Marks</th>
-                                    <th className="px-4 py-2 text-[10px] font-bold text-gray-500 uppercase text-right">Actions</th>
-                                  </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-50">
-                                  {data.tests.map(test => (
-                                    <tr key={test.id} className={`hover:bg-brand-purple/5 transition ${selectedIds.includes(test.id) ? 'bg-brand-purple/10' : ''}`}>
-                                      <td className="px-4 py-3">
-                                        <input
-                                          type="checkbox"
-                                          className="rounded border-gray-300 text-brand-teal focus:ring-brand-teal"
-                                          checked={selectedIds.includes(test.id)}
-                                          onChange={() => toggleSelect(test.id)}
-                                        />
-                                      </td>
-                                      <td className="px-4 py-3">
-                                        <div>
-                                          <p className="font-bold text-gray-800 text-sm">
-                                            {test.learningArea}
-                                          </p>
-                                          {test.testType && (
-                                            <p className="text-[10px] text-gray-500 font-medium">{test.testType}</p>
-                                          )}
-                                        </div>
-                                      </td>
-                                      <td className="px-4 py-3">
-                                        <button
-                                          onClick={() => handleStatusClick(test)}
-                                          className={`px-2 py-1 rounded-full text-[10px] font-bold border transition-colors ${getStatusBadgeStyles(test.status)}`}
-                                        >
-                                          {test.status}
-                                        </button>
-                                      </td>
-                                      <td className="px-4 py-3 text-center">
-                                        <div className="flex flex-col items-center">
-                                          <span className="text-sm font-bold text-gray-700">{test.totalMarks}</span>
-                                          <span className="text-[10px] text-gray-400">marks</span>
-                                        </div>
-                                      </td>
-                                      <td className="px-4 py-3 text-right">
-                                        <div className="flex justify-end gap-1">
-                                          <button
-                                            onClick={() => onNavigate('summative-results', { testId: test.id })}
-                                            className="p-1.5 text-brand-teal hover:bg-brand-teal/10 rounded transition"
-                                            title="View Results"
-                                          >
-                                            <Eye size={16} />
-                                          </button>
-                                          <button
-                                            onClick={() => {
-                                              setSelectedTest(test);
-                                              setViewMode('edit');
-                                            }}
-                                            className="p-1.5 text-green-600 hover:bg-green-50 rounded transition"
-                                            title="Edit Test"
-                                          >
-                                            <Edit size={16} />
-                                          </button>
-                                          <button
-                                            onClick={() => handleDelete(test)}
-                                            className="p-1.5 text-red-600 hover:bg-red-50 rounded transition"
-                                            title="Delete Test"
-                                          >
-                                            <Trash2 size={16} />
-                                          </button>
-                                        </div>
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
+                            <div className={`transition-transform duration-300 ${isMajorExpanded ? 'rotate-180' : ''}`}>
+                              <ChevronDown className="text-slate-300" size={18} />
                             </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                        </td>
+                      </tr>
+
+                      {/* Series Rows (Visible when Grade is expanded) */}
+                      {isMajorExpanded && Object.entries(seriesGroups).map(([seriesName, data], seriesIdx) => {
+                        const groupKey = `${gradeKey}-${seriesName}`;
+                        const isExpanded = expandedGrades.includes(groupKey);
+                        const draftCount = data.tests.filter(t => ['Draft', 'DRAFT'].includes(t.status)).length;
+                        const approvedCount = data.tests.filter(t => ['Approved', 'APPROVED', 'Published', 'PUBLISHED'].includes(t.status)).length;
+                        const submittedCount = data.tests.filter(t => ['Submitted', 'SUBMITTED'].includes(t.status)).length;
+
+                        return (
+                          <React.Fragment key={seriesName}>
+                            <tr className="hover:bg-slate-50/50 transition-all group animate-in slide-in-from-top-2 duration-200">
+                              <td className="px-6 py-5 border-l-4 border-brand-purple/20">
+                                <input
+                                  type="checkbox"
+                                  className="rounded border-slate-200 text-brand-purple focus:ring-brand-purple"
+                                  checked={data.tests.every(t => selectedIds.includes(t.id))}
+                                  onChange={(e) => {
+                                    const testIds = data.tests.map(t => t.id);
+                                    if (e.target.checked) {
+                                      setSelectedIds(prev => [...new Set([...prev, ...testIds])]);
+                                    } else {
+                                      setSelectedIds(prev => prev.filter(id => !testIds.includes(id)));
+                                    }
+                                  }}
+                                />
+                              </td>
+                              <td className="px-6 py-5">
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-bold text-slate-800 leading-tight">{seriesName}</span>
+                                  <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest mt-1">Summative Series</span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-5 text-center">
+                                <Badge className="border-transparent bg-slate-100/50 text-slate-500 px-2 py-0.5 font-black text-[9px] uppercase tracking-widest">
+                                  {data.tests.length} Assessment Areas
+                                </Badge>
+                              </td>
+                              <td className="px-6 py-5">
+                                <div className="flex items-center justify-center gap-2">
+                                  {draftCount > 0 && <span className="w-2 h-2 rounded-full bg-orange-400" title={`${draftCount} Draft`} />}
+                                  {submittedCount > 0 && <span className="w-2 h-2 rounded-full bg-brand-purple" title={`${submittedCount} Submitted`} />}
+                                  {approvedCount > 0 && <span className="w-2 h-2 rounded-full bg-brand-teal" title={`${approvedCount} Approved`} />}
+                                  <span className="text-[10px] font-bold text-slate-400 ml-1 uppercase">{approvedCount}/{data.tests.length} Ready</span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-5 text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => toggleGrade(groupKey)}
+                                    className="h-9 px-4 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-brand-purple rounded-xl"
+                                  >
+                                    {isExpanded ? 'Hide Areas' : 'View Areas'}
+                                  </Button>
+                                  <div className="h-4 w-px bg-slate-100 mx-1" />
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => canApproveAll && setShowApproveAll(true)}
+                                    className="text-brand-teal hover:bg-teal-50 rounded-xl h-9 w-9"
+                                    title="Bulk Process this Group"
+                                  >
+                                    <CheckCircle size={18} />
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                            {isExpanded && (
+                              <tr className="bg-slate-50/30">
+                                <td colSpan={5} className="px-12 py-6 border-l-4 border-brand-purple/20">
+                                  <div className="space-y-2">
+                                    {data.tests.map(test => (
+                                      <div key={test.id} className="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-xl shadow-sm hover:border-brand-purple/20 transition-all">
+                                        <div className="flex items-center gap-4">
+                                          <input
+                                            type="checkbox"
+                                            className="rounded border-slate-200 text-brand-purple focus:ring-brand-purple"
+                                            checked={selectedIds.includes(test.id)}
+                                            onChange={() => toggleSelect(test.id)}
+                                          />
+                                          <div>
+                                            <p className="text-[11px] font-bold text-slate-800">{test.learningArea}</p>
+                                            <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">{test.testType || 'General Assessment'}</p>
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                          <button
+                                            onClick={() => handleStatusClick(test)}
+                                            className={`px-2 py-0.5 rounded-full text-[9px] font-black border uppercase tracking-widest border-transparent ${getStatusBadgeStyles(test.status)}`}
+                                          >
+                                            {test.status}
+                                          </button>
+                                          <div className="flex items-center gap-1">
+                                            <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-brand-teal" onClick={() => onNavigate('summative-results', { testId: test.id })}><Eye size={14} /></Button>
+                                            <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-green-600" onClick={() => { setSelectedTest(test); setViewMode('edit'); }}><Edit size={14} /></Button>
+                                            <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-red-600" onClick={() => handleDelete(test)}><Trash2 size={14} /></Button>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
+                    </React.Fragment>
+                  );
+                })}
+            </tbody>
+          </table>
         </div>
       ) : (
         <EmptyState

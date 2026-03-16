@@ -10,10 +10,7 @@ import prisma from '../src/config/database';
 
 // Grade to learning area mappings (matching gradeStructure from frontend)
 const GRADE_TO_LEARNING_AREA: { [key: string]: string } = {
-  'CRECHE': 'Pre-Primary',
   'PLAYGROUP': 'Pre-Primary',
-  'RECEPTION': 'Pre-Primary',
-  'TRANSITION': 'Pre-Primary',
   'PP1': 'Pre-Primary',
   'PP2': 'Pre-Primary',
   'GRADE_1': 'Lower Primary',
@@ -24,10 +21,7 @@ const GRADE_TO_LEARNING_AREA: { [key: string]: string } = {
   'GRADE_6': 'Upper Primary',
   'GRADE_7': 'Junior School',
   'GRADE_8': 'Junior School',
-  'GRADE_9': 'Junior School',
-  'GRADE_10': 'Senior School',
-  'GRADE_11': 'Senior School',
-  'GRADE_12': 'Senior School'
+  'GRADE_9': 'Junior School'
 };
 
 async function seedLearningAreas() {
@@ -49,11 +43,6 @@ async function seedLearningAreas() {
 
     // Grade level mappings and default areas
     const gradeLevelMappings: { [key: string]: string[] } = {
-      'Early Years': [
-        'Literacy Activities', 'Mathematical Activities', 'English Language Activities',
-        'Environmental Activities', 'Creative Arts Activities', 'Christian Religious Education',
-        'Islamic Religious Education', 'Computer Studies Activities'
-      ],
       'Pre-Primary': [
         'Literacy', 'English Language Activities', 'Mathematical Activities',
         'Environmental Activities', 'Creative Activities', 'Christian Religious Education',
@@ -73,30 +62,21 @@ async function seedLearningAreas() {
         'Social Studies', 'Pre-Technical Studies', 'Agriculture', 'Creative Arts and Sports',
         'Christian Religious Education', 'Islamic Religious Education', 'Computer Studies',
         'Coding and Robotics', 'French'
-      ],
-      'Senior School': [
-        'Community Service Learning', 'Physical Education and Sports', 'ICT / Digital Literacy',
-        'Life Skills Education', 'Biology', 'Chemistry', 'Physics', 'History', 'Geography',
-        'Literature in English'
       ]
     };
 
     const colors: { [key: string]: string } = {
-      'Early Years': '#ec4899',
       'Pre-Primary': '#8b5cf6',
       'Lower Primary': '#3b82f6',
       'Upper Primary': '#10b981',
-      'Junior School': '#f59e0b',
-      'Senior School': '#f43f5e'
+      'Junior School': '#f59e0b'
     };
 
     const icons: { [key: string]: string } = {
-      'Early Years': '🧸',
       'Pre-Primary': '🎨',
       'Lower Primary': '📚',
       'Upper Primary': '🧪',
-      'Junior School': '🧬',
-      'Senior School': '🎓'
+      'Junior School': '🧬'
     };
 
     let totalCreated = 0;

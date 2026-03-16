@@ -104,19 +104,15 @@ router.post(
 
         const gradeStr = (csvData['Class'] || '').toString().toUpperCase().trim();
         const gradeMap: { [key: string]: Grade } = {
-          'CRECHE': 'CRECHE',
-          'RECEPTION': 'RECEPTION',
-          'TRANSITION': 'TRANSITION',
           'PLAYGROUP': 'PLAYGROUP',
           'PP1': 'PP1',
           'PP2': 'PP2',
           'GRADE 1': 'GRADE_1', 'GRADE 2': 'GRADE_2', 'GRADE 3': 'GRADE_3',
           'GRADE 4': 'GRADE_4', 'GRADE 5': 'GRADE_5', 'GRADE 6': 'GRADE_6',
           'GRADE 7': 'GRADE_7', 'GRADE 8': 'GRADE_8', 'GRADE 9': 'GRADE_9',
-          'GRADE 10': 'GRADE_10', 'GRADE 11': 'GRADE_11', 'GRADE 12': 'GRADE_12',
           '1': 'GRADE_1', '2': 'GRADE_2', '3': 'GRADE_3', '4': 'GRADE_4',
           '5': 'GRADE_5', '6': 'GRADE_6', '7': 'GRADE_7', '8': 'GRADE_8',
-          '9': 'GRADE_9', '10': 'GRADE_10', '11': 'GRADE_11', '12': 'GRADE_12',
+          '9': 'GRADE_9',
         };
 
         let grade: Grade = 'GRADE_1';

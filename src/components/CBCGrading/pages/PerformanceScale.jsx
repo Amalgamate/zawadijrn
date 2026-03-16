@@ -27,9 +27,9 @@ import { Label } from '../../ui/label';
 // ---- Constants outside to prevent initialization issues ----
 const GRADE_GROUPS = [
   {
-    id: 'early_years',
-    name: 'Early Years',
-    grades: ['CRECHE', 'PLAYGROUP', 'RECEPTION', 'TRANSITION']
+    id: 'playgroup',
+    name: 'Playgroup (PG)',
+    grades: ['PLAYGROUP']
   },
   {
     id: 'pre_primary',
@@ -50,11 +50,6 @@ const GRADE_GROUPS = [
     id: 'junior_school',
     name: 'Junior School',
     grades: ['GRADE_7', 'GRADE_8', 'GRADE_9']
-  },
-  {
-    id: 'senior_school',
-    name: 'Senior School',
-    grades: ['GRADE_10', 'GRADE_11', 'GRADE_12']
   }
 ];
 
@@ -79,6 +74,7 @@ const PerformanceScale = () => {
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'create'
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedGrades, setExpandedGrades] = useState([]);
+  const [expandedMajorGrades, setExpandedMajorGrades] = useState([]); // Tracks which grades are expanded
 
   // Form State
   const [scaleName, setScaleName] = useState('');
@@ -90,6 +86,8 @@ const PerformanceScale = () => {
     rating: t.rating,
     title: t.title
   })));
+  const [isRubricExpanded, setIsRubricExpanded] = useState(false);
+  const [isGradesExpanded, setIsGradesExpanded] = useState(true);
 
   // Data State
   const [scaleGroups, setScaleGroups] = useState([]);
@@ -210,20 +208,27 @@ const PerformanceScale = () => {
     }
   };
 
-  const handleDeleteScale = async (scaleGroupId, scaleName) => {
+  const handleDeleteScale = async (scaleGroupId, scaleName, force = false) => {
     setConfirmConfig({
-      title: 'Delete Performance Scale',
-      message: `Are you sure you want to delete "${scaleName}"? This will remove the grading configuration for all associated subjects.`,
-      confirmText: 'Delete Scale',
+      title: force ? 'Force Delete Scale Group' : 'Delete Performance Scale',
+      message: force 
+        ? `This scale group has active tests. Deleting it will also archive all associated tests. This action cannot be undone. Are you sure?`
+        : `Are you sure you want to delete "${scaleName}"? This will remove the grading configuration for all associated subjects.`,
+      confirmText: force ? 'Force Delete Everything' : 'Delete Scale',
       onConfirm: async () => {
         setShowConfirm(false);
         setLoading(true);
         try {
-          await gradingAPI.deleteScaleGroup(scaleGroupId);
-          showSuccess('Performance scale deleted successfully');
+          await gradingAPI.deleteScaleGroup(scaleGroupId, force ? { force: true } : {});
+          showSuccess(force ? 'Scale group and associated tests deleted' : 'Performance scale deleted successfully');
           await loadData();
         } catch (err) {
-          showError('Failed to delete scale: ' + err.message);
+          if (err.message.includes('409') || err.message.toLowerCase().includes('using these grading scales')) {
+            // Trigger force delete confirmation
+            handleDeleteScale(scaleGroupId, scaleName, true);
+          } else {
+            showError('Failed to delete scale: ' + err.message);
+          }
         } finally {
           setLoading(false);
         }
@@ -325,6 +330,35 @@ const PerformanceScale = () => {
                   <span>Standardized Assessment</span>
                 </div>
               </div>
+
+              {/* Minimalistic Metrics */}
+              <div className="hidden lg:flex items-center gap-8 ml-8 pl-8 border-l border-slate-100">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Subject Links</span>
+                  <span className="text-xl font-black text-slate-900 tabular-nums">{totalImpactedAreas}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Levels</span>
+                  <span className="text-xl font-black text-slate-900 tabular-nums">{selectedGrades.length}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Rubric Steps</span>
+                  <span className="text-xl font-black text-brand-teal tabular-nums">8-Pt</span>
+                </div>
+                {selectedGrades.length > 0 && (
+                  <div className="flex flex-col max-w-[200px]">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Target Distribution</span>
+                    <div className="flex flex-wrap gap-1 mt-0.5">
+                      {selectedGrades.slice(0, 3).map(grade => (
+                        <span key={grade} className="text-[10px] font-bold text-brand-purple bg-purple-50 px-1.5 py-0.5 rounded-md">
+                          {grade.replace('GRADE_', 'G')}
+                        </span>
+                      ))}
+                      {selectedGrades.length > 3 && <span className="text-[10px] font-bold text-slate-400">+{selectedGrades.length - 3}</span>}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center gap-3">
@@ -343,17 +377,17 @@ const PerformanceScale = () => {
               <Button
                 onClick={handleCreateScale}
                 disabled={saving || creatingTests || !scaleName.trim() || selectedGrades.length === 0}
-                className="bg-brand-purple hover:bg-brand-purple/90 text-white px-8 rounded-full shadow-lg shadow-brand-purple/20 transition-all active:scale-95 disabled:opacity-50"
+                className="bg-brand-purple hover:bg-brand-purple/90 text-white px-6 h-10 rounded-xl shadow-lg shadow-brand-purple/20 transition-all active:scale-95 disabled:opacity-50 text-[11px] font-black uppercase tracking-widest"
               >
                 {saving || creatingTests ? (
                   <>
-                    <RefreshCw className="animate-spin mr-2" size={18} />
-                    <span>{saving ? 'Deploying Scales...' : 'Creating Tests...'}</span>
+                    <RefreshCw className="animate-spin mr-2" size={14} />
+                    <span>{saving ? 'Deploying...' : 'Building...'}</span>
                   </>
                 ) : (
                   <>
-                    <Zap className="mr-2" size={18} />
-                    <span>Initialize All Assessments</span>
+                    <Zap className="mr-2" size={14} />
+                    <span>Deploy Scale Group</span>
                   </>
                 )}
               </Button>
@@ -361,237 +395,150 @@ const PerformanceScale = () => {
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* LEFT: CONFIGURATION */}
-            <div className="lg:col-span-8 space-y-8">
+        <div className="max-w-4xl mx-auto px-6 py-10">
+          <div className="space-y-12">
+            {/* 1. SCALE IDENTITY */}
+            <section className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-1 bg-brand-purple rounded-full" />
+                <h2 className="text-xl font-black text-slate-900 tracking-tight">1. Name your Scale Group</h2>
+              </div>
+              <div className="relative">
+                <Input
+                  placeholder="e.g., End Term 1 2026 Primary Scale"
+                  value={scaleName}
+                  onChange={(e) => setScaleName(e.target.value)}
+                  className="h-14 text-xl font-bold border-slate-200 focus-visible:ring-brand-purple bg-white rounded-2xl pl-6 shadow-sm transition-all placeholder:text-slate-200"
+                />
+                <p className="mt-2 text-slate-400 font-bold uppercase tracking-widest text-[9px] ml-4">
+                  Internal identifier for report generation.
+                </p>
+              </div>
+            </section>
 
-              {/* Identity */}
-              <Card className="border-purple-100 shadow-sm overflow-hidden group">
-                <div className="absolute top-0 left-0 w-1.5 h-full bg-brand-purple group-hover:w-2.5 transition-all" />
-                <CardHeader className="pb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-purple-50 rounded-xl">
-                      <Settings2 className="text-brand-purple" size={20} />
-                    </div>
-                    <div>
-                      <CardTitle className="text-xl">Scale Identity</CardTitle>
-                      <CardDescription>Give this grading logic a recognizable name.</CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-2">
-                  <div className="space-y-2">
-                    <Label className="text-slate-700 font-black text-xs uppercase tracking-wider">Internal Reference Name</Label>
-                    <Input
-                      placeholder="e.g., End Term 1 2026 Primary Scale"
-                      value={scaleName}
-                      onChange={(e) => setScaleName(e.target.value)}
-                      className="h-12 text-lg font-bold border-slate-200 focus-visible:ring-brand-purple"
-                    />
-                    <p className="text-[10px] text-slate-400 font-medium">This name will be used to group these subjects in the system reports.</p>
-                  </div>
-                </CardContent>
-              </Card>
+            {/* 2. RUBRIC CALIBRATION */}
+            <section className="space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-1 bg-brand-teal rounded-full" />
+                <div>
+                  <h2 className="text-xl font-black text-slate-900 tracking-tight">2. Calibrate Performance Levels</h2>
+                  <p className="text-slate-500 font-bold text-[11px] mt-0.5">Map marks to rubric points and expectations.</p>
+                </div>
+              </div>
 
-              {/* Rubric Definition */}
-              <Card className="border-purple-100 shadow-sm">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-teal-50 rounded-xl">
-                      <Gauge className="text-brand-teal" size={20} />
-                    </div>
-                    <div>
-                      <CardTitle className="text-xl">Rubric Calibration</CardTitle>
-                      <CardDescription>Define the point-to-mark mapping for the performance levels.</CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3 pb-8">
-                  <div className="grid grid-cols-12 px-4 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                    <div className="col-span-2">Min Mark %</div>
-                    <div className="col-span-1 text-center">Pts</div>
-                    <div className="col-span-9 pl-4">Expectation / Title</div>
-                  </div>
-                  <div className="space-y-2.5">
-                    {ranges.map((range, index) => (
-                      <div
-                        key={index}
-                        className="grid grid-cols-12 gap-3 p-2 bg-slate-50/50 hover:bg-white border border-slate-100 hover:border-brand-purple/30 rounded-2xl transition-all items-center group/row"
-                      >
-                        <div className="col-span-2">
-                          <Input
-                            type="number"
-                            value={range.mark}
-                            onChange={(e) => {
-                              const newRanges = [...ranges];
-                              newRanges[index].mark = e.target.value;
-                              setRanges(newRanges);
-                            }}
-                            className="h-10 text-center font-black border-slate-200 focus-visible:ring-brand-teal bg-white rounded-xl"
-                          />
-                        </div>
-                        <div className="col-span-1 flex justify-center">
-                          <Badge className="h-8 w-8 rounded-full flex items-center justify-center font-black text-sm border-transparent bg-brand-teal/10 text-brand-teal">
-                            {range.score}
-                          </Badge>
-                        </div>
-                        <div className="col-span-9">
-                          <Input
-                            value={range.title}
-                            onChange={(e) => {
-                              const newRanges = [...ranges];
-                              newRanges[index].title = e.target.value;
-                              setRanges(newRanges);
-                            }}
-                            className="h-10 border-slate-200 focus-visible:ring-brand-purple bg-white rounded-xl font-bold text-slate-700"
-                          />
+              <div className="bg-white border border-slate-100 rounded-[2rem] p-6 shadow-sm space-y-4">
+                <div className="grid grid-cols-12 px-4 pb-1 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                  <div className="col-span-3">Min Mark %</div>
+                  <div className="col-span-2 text-center">Score</div>
+                  <div className="col-span-7 pl-4">Description</div>
+                </div>
+
+                <div className="space-y-2">
+                  {ranges.map((range, index) => (
+                    <div
+                      key={index}
+                      className="grid grid-cols-12 gap-3 p-2 bg-slate-50/50 hover:bg-white border border-transparent hover:border-brand-teal/30 rounded-xl transition-all items-center group"
+                    >
+                      <div className="col-span-3">
+                        <Input
+                          type="number"
+                          value={range.mark}
+                          onChange={(e) => {
+                            const newRanges = [...ranges];
+                            newRanges[index].mark = e.target.value;
+                            setRanges(newRanges);
+                          }}
+                          className="h-11 text-lg text-center font-bold border-slate-200 focus-visible:ring-brand-teal bg-white rounded-xl shadow-sm"
+                        />
+                      </div>
+                      <div className="col-span-2 flex justify-center">
+                        <div className="h-11 w-11 rounded-xl flex flex-col items-center justify-center font-black bg-white border border-slate-100 shadow-sm text-brand-teal">
+                          <span className="text-[10px]">{range.score}</span>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+                      <div className="col-span-7">
+                        <Input
+                          value={range.title}
+                          onChange={(e) => {
+                            const newRanges = [...ranges];
+                            newRanges[index].title = e.target.value;
+                            setRanges(newRanges);
+                          }}
+                          className="h-11 text-sm font-bold border-slate-200 focus-visible:ring-brand-purple bg-white rounded-xl pl-4 shadow-sm"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
 
-              {/* Grade Target Selection */}
-              <Card className="border-purple-100 shadow-sm">
-                <CardHeader className="flex flex-row items-center justify-between pb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-purple-50 rounded-xl">
-                      <GraduationCap className="text-brand-purple" size={20} />
-                    </div>
-                    <div>
-                      <CardTitle className="text-xl">Target Grade Groups</CardTitle>
-                      <CardDescription>Which levels will use this standardized scale?</CardDescription>
-                    </div>
+            {/* 3. TARGET GRADES */}
+            <section className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-1 bg-brand-purple rounded-full" />
+                  <div>
+                    <h2 className="text-xl font-black text-slate-900 tracking-tight">3. Select Target Levels</h2>
+                    <p className="text-slate-500 font-bold text-[11px] mt-0.5">Choose the grades that will adopt this scale.</p>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleSelectAllGrades}
-                    className="rounded-full border-purple-100 text-brand-purple font-bold h-8"
-                  >
-                    {selectedGrades.length === GRADES_FLAT.length ? 'Clear All' : 'Select All Grades'}
-                  </Button>
-                </CardHeader>
-                <CardContent className="space-y-8">
-                  {GRADE_GROUPS.map(group => (
-                    <div key={group.id} className="space-y-4">
-                      <div className="flex items-center justify-between px-1">
-                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{group.name}</h4>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSelectAllGrades}
+                  className="rounded-full border-purple-100 text-brand-purple font-black uppercase tracking-widest text-[9px] h-8 px-4"
+                >
+                  {selectedGrades.length === GRADES_FLAT.length ? 'Reset' : 'Select All'}
+                </Button>
+              </div>
+
+              <div className="bg-white border border-slate-100 rounded-[2rem] p-8 shadow-sm space-y-6">
+                {GRADE_GROUPS.map(group => {
+                  const isGroupFull = group.grades.every(g => selectedGrades.includes(g));
+                  return (
+                    <div key={group.id} className="space-y-3">
+                      <div className="flex items-center justify-between border-b border-slate-50 pb-1.5">
+                        <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">{group.name}</h4>
                         <button
                           onClick={() => handleSelectGroup(group.grades)}
-                          className="text-[9px] font-black text-brand-purple hover:text-brand-purple/80 uppercase tracking-widest outline-none"
+                          className="text-[10px] font-bold text-brand-purple hover:underline"
                         >
-                          {group.grades.every(g => selectedGrades.includes(g)) ? 'Reset Group' : 'Check All'}
+                          {isGroupFull ? 'Remove' : 'Add Group'}
                         </button>
                       </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+
+                      <div className="flex flex-wrap gap-2">
                         {group.grades.map(grade => {
                           const isSelected = selectedGrades.includes(grade);
                           return (
-                            <div
+                            <button
                               key={grade}
                               onClick={() => handleGradeToggle(grade)}
                               className={`
-                                                                relative flex items-center justify-center p-3 rounded-2xl border-2 transition-all cursor-pointer select-none h-12
-                                                                ${isSelected
-                                  ? 'bg-purple-50 border-brand-purple shadow-sm'
-                                  : 'bg-white border-slate-100 hover:border-slate-200'
+                                h-11 min-w-[80px] px-4 rounded-xl text-xs font-black transition-all border-2
+                                ${isSelected
+                                  ? 'bg-brand-purple border-brand-purple text-white shadow-lg shadow-brand-purple/10'
+                                  : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200 hover:text-slate-600'
                                 }
-                                                            `}
+                              `}
                             >
-                              <span className={`text-xs font-black tracking-tight ${isSelected ? 'text-brand-purple' : 'text-slate-500'}`}>
-                                {formatGradeDisplay(grade)}
-                              </span>
-                              {isSelected && (
-                                <div className="absolute top-1 right-1">
-                                  <CheckCircle size={10} className="text-brand-purple fill-brand-purple/10" />
-                                </div>
-                              )}
-                            </div>
+                              {formatGradeDisplay(grade)}
+                            </button>
                           );
                         })}
                       </div>
                     </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* RIGHT: SIDEBAR PREVIEW */}
-            <div className="lg:col-span-4">
-              <div className="sticky top-28 space-y-6">
-                <Card className="border-none bg-slate-900 shadow-2xl shadow-indigo-200/50 overflow-hidden text-white">
-                  <div className="absolute top-0 right-0 p-8 opacity-5">
-                    <RefreshCw size={140} />
-                  </div>
-                  <CardHeader className="border-b border-white/10 pb-4">
-                    <div className="flex items-center gap-2">
-                      <LayoutPanelLeft className="text-brand-teal" size={18} />
-                      <CardTitle className="text-lg">Deployment Summary</CardTitle>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-8 space-y-10">
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-black text-indigo-300 uppercase tracking-widest">Grading Matrix Generation</p>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-6xl font-black tracking-tighter tabular-nums">
-                          {totalImpactedAreas}
-                        </span>
-                        <p className="text-indigo-300 font-bold mb-2">Subject Links</p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="p-3 bg-white/5 rounded-2xl border border-white/10">
-                        <p className="text-[9px] font-black text-indigo-300 uppercase tracking-widest mb-1.5">Levels</p>
-                        <p className="text-2xl font-black text-brand-teal">{selectedGrades.length}</p>
-                      </div>
-                      <div className="p-3 bg-white/5 rounded-2xl border border-white/10">
-                        <p className="text-[9px] font-black text-indigo-300 uppercase tracking-widest mb-1.5">Rubric Steps</p>
-                        <p className="text-2xl font-black text-brand-teal">8-Pt</p>
-                      </div>
-                    </div>
-
-                    {selectedGrades.length > 0 && (
-                      <div className="space-y-4">
-                        <p className="text-[10px] font-black text-indigo-300 uppercase tracking-[0.2em]">Target Distribution</p>
-                        <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pr-1">
-                          {selectedGrades.map(grade => (
-                            <Badge
-                              key={grade}
-                              className="border-transparent bg-brand-purple/20 text-indigo-100 font-black text-[9px] px-2 py-0.5"
-                            >
-                              {formatGradeDisplay(grade)}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                  <CardFooter className="pt-4 border-t border-white/5 bg-black/10">
-                    <div className="flex gap-3 items-start">
-                      <Info className="text-amber-400 shrink-0 mt-0.5" size={14} />
-                      <p className="text-[10px] text-indigo-100/60 font-medium leading-relaxed">
-                        Generating a scale group will create unique grading logic for every subject in the chosen grades at once.
-                      </p>
-                    </div>
-                  </CardFooter>
-                </Card>
-
-                <div className="bg-brand-teal/5 border border-brand-teal/10 rounded-2xl p-5 flex gap-4">
-                  <div className="h-10 w-10 bg-brand-teal/10 rounded-full flex items-center justify-center shrink-0">
-                    <Zap className="text-brand-teal" size={20} />
-                  </div>
-                  <div className="space-y-1">
-                    <h5 className="text-sm font-black text-brand-teal">System Optimizer</h5>
-                    <p className="text-xs text-slate-500 leading-relaxed">
-                      Apply changes to **{selectedGrades.length}** grades efficiently without configuring each subject manually.
-                    </p>
-                  </div>
-                </div>
+                  );
+                })}
               </div>
+            </section>
+
+            {/* FOOTER SPACING */}
+            <div className="pt-10 flex flex-col items-center">
+              <p className="text-slate-400 text-[9px] font-bold text-center max-w-xs leading-relaxed uppercase tracking-widest opacity-50">
+                Standardizes assessment logic school-wide.
+              </p>
             </div>
           </div>
         </div>
@@ -625,6 +572,15 @@ const PerformanceScale = () => {
               />
             </div>
             <Button
+              variant="outline"
+              onClick={() => handleCreateTests()}
+              disabled={creatingTests || loading}
+              className="h-12 px-6 border-purple-100 text-brand-purple hover:bg-purple-50 rounded-2xl font-black transition-all active:scale-95 flex items-center gap-2"
+            >
+              {creatingTests ? <RefreshCw className="animate-spin" size={18} /> : <ListChecks size={20} />}
+              <span>Sync All Tests</span>
+            </Button>
+            <Button
               onClick={() => setViewMode('create')}
               className="h-12 px-6 bg-brand-purple hover:bg-brand-purple/90 text-white rounded-2xl font-black shadow-lg shadow-brand-purple/20 transition-all active:scale-95 flex items-center gap-2"
             >
@@ -651,93 +607,148 @@ const PerformanceScale = () => {
             />
           </div>
         ) : (
-          <div className="space-y-6">
-            {Object.entries(groupedData)
-              .sort((a, b) => {
-                const valA = GRADES_FLAT.findIndex(g => g === a[0]);
-                const valB = GRADES_FLAT.findIndex(g => g === b[0]);
-                return valA - valB;
-              })
-              .map(([gradeValue, groups]) => (
-                <Card key={gradeValue} className="border-slate-100 shadow-sm overflow-hidden bg-white">
-                  <div
-                    className="px-6 py-5 flex items-center justify-between cursor-pointer hover:bg-slate-50/50 transition-colors group"
-                    onClick={() => setExpandedGrades(prev =>
-                      prev.includes(gradeValue) ? prev.filter(g => g !== gradeValue) : [...prev, gradeValue]
-                    )}
-                  >
-                    <div className="flex items-center gap-5">
-                      <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center border border-indigo-100/50">
-                        <Layers className="text-indigo-600" size={28} />
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-black text-slate-800 tracking-tight">{formatGradeDisplay(gradeValue)}</h3>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <Badge className="border-transparent bg-brand-purple/10 text-brand-purple px-1.5 py-0 font-black text-[9px] uppercase tracking-wider">
-                            {Object.keys(groups).length} Group{Object.keys(groups).length !== 1 ? 's' : ''}
-                          </Badge>
-                          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Active Protocols</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className={`p-2 rounded-full transition-all ${expandedGrades.includes(gradeValue) ? 'bg-indigo-50 text-indigo-600' : 'text-slate-300'}`}>
-                      {expandedGrades.includes(gradeValue) ? <ChevronDown size={24} /> : <ChevronRight size={24} />}
-                    </div>
-                  </div>
-
-                  {expandedGrades.includes(gradeValue) && (
-                    <div className="px-6 pb-6 pt-2 divide-y divide-slate-50">
-                      {Object.entries(groups).map(([scaleName, data]) => (
-                        <div key={scaleName} className="py-8 first:pt-4 last:pb-0">
-                          <div className="flex items-center justify-between mb-8">
-                            <div className="flex items-center gap-4">
-                              <div className="h-10 w-1 rounded-full bg-brand-teal"></div>
-                              <div>
-                                <h4 className="font-extrabold text-slate-800 text-lg leading-none">{scaleName}</h4>
-                                <p className="text-[10px] text-slate-400 font-bold mt-1.5 uppercase tracking-widest">{data.learningAreas.length} Associated Subject Matrices</p>
+          <div className="bg-white border border-slate-100 rounded-[2rem] shadow-sm overflow-hidden">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-100">
+                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Level / Grade</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Scaling Logic</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Matrices</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {Object.entries(groupedData)
+                  .sort((a, b) => {
+                    const valA = GRADES_FLAT.findIndex(g => g === a[0]);
+                    const valB = GRADES_FLAT.findIndex(g => g === b[0]);
+                    return valA - valB;
+                  })
+                  .map(([gradeValue, groups]) => {
+                    const isGradeExpanded = expandedMajorGrades.includes(gradeValue);
+                    const totalScales = Object.keys(groups).length;
+                    
+                    return (
+                      <React.Fragment key={gradeValue}>
+                        {/* Grade Header Row (Accordion Trigger) */}
+                        <tr 
+                          onClick={() => setExpandedMajorGrades(prev => 
+                            prev.includes(gradeValue) ? prev.filter(g => g !== gradeValue) : [...prev, gradeValue]
+                          )}
+                          className={`cursor-pointer transition-all border-b border-slate-100 ${isGradeExpanded ? 'bg-slate-50/80' : 'bg-white hover:bg-slate-50/50'}`}
+                        >
+                          <td colSpan={4} className="px-8 py-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4">
+                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isGradeExpanded ? 'bg-indigo-600' : 'bg-indigo-50 border border-indigo-100/50'}`}>
+                                  <GraduationCap className={isGradeExpanded ? 'text-white' : 'text-indigo-600'} size={16} />
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-black text-slate-900 uppercase tracking-tight leading-none group-hover:text-indigo-600 transition-colors">
+                                    {formatGradeDisplay(gradeValue)}
+                                  </span>
+                                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">
+                                    {totalScales} Scaling {totalScales === 1 ? 'Logic' : 'Logics'} Deployed
+                                  </span>
+                                </div>
+                              </div>
+                              <div className={`transition-transform duration-300 ${isGradeExpanded ? 'rotate-180' : ''}`}>
+                                <ChevronDown className="text-slate-300" size={18} />
                               </div>
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDeleteScale(data.scaleGroupId, scaleName)}
-                              className="text-red-400 hover:text-red-600 hover:bg-red-50 rounded-2xl h-10 w-10 transition-colors"
-                            >
-                              <Trash2 size={20} />
-                            </Button>
-                          </div>
+                          </td>
+                        </tr>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                            {data.learningAreas.map((area, idx) => (
-                              <div key={idx} className="group relative flex items-center justify-between p-4 bg-slate-50/50 hover:bg-white rounded-2xl border border-slate-100 hover:border-brand-purple/40 hover:shadow-lg hover:shadow-purple-500/5 transition-all">
-                                <div className="flex-1 overflow-hidden pr-4">
-                                  <p className="text-xs font-black text-slate-700 truncate tracking-tight">{area.learningArea}</p>
-                                  <div className="flex items-center gap-1 mt-2.5">
-                                    {area.ranges?.slice(0, 5).map((r, rIdx) => (
+                        {/* Scale Rows (Visible when Grade is expanded) */}
+                        {isGradeExpanded && Object.entries(groups).map(([scaleName, data], groupIdx) => (
+                          <React.Fragment key={`${gradeValue}-${scaleName}`}>
+                            <tr className="hover:bg-slate-50/30 transition-all group animate-in slide-in-from-top-2 duration-200">
+                              <td className="px-8 py-5 border-l-4 border-indigo-500/20">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 bg-slate-50 rounded-lg flex items-center justify-center border border-slate-100/50">
+                                    <Settings2 className="text-slate-400" size={14} />
+                                  </div>
+                                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Variation {groupIdx + 1}</span>
+                                </div>
+                              </td>
+                              <td className="px-8 py-5">
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-bold text-slate-800 leading-none">{scaleName}</span>
+                                  <div className="flex items-center gap-1 mt-2">
+                                    {data.learningAreas[0]?.ranges?.slice(0, 5).map((r, rIdx) => (
                                       <div
                                         key={rIdx}
-                                        className="w-1.5 h-1.5 rounded-full ring-2 ring-white"
+                                        className="w-1.5 h-1.5 rounded-full"
                                         style={{ backgroundColor: getColorForScore(r.points) }}
-                                        title={`${r.label}`}
+                                        title={r.label}
                                       />
                                     ))}
-                                    <span className="text-[10px] text-slate-400 font-bold ml-1">
-                                      +{area.ranges?.length - 5 > 0 ? area.ranges.length - 5 : 0}
-                                    </span>
+                                    <span className="text-[9px] text-slate-400 font-bold ml-1 uppercase">8-Pt Logic</span>
                                   </div>
                                 </div>
-                                <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <LayoutPanelLeft size={16} />
+                              </td>
+                              <td className="px-8 py-5 text-center">
+                                <Badge className="border-transparent bg-brand-purple/10 text-brand-purple px-2 py-0.5 font-black text-[10px] uppercase tracking-wider">
+                                  {data.learningAreas.length} Subjects
+                                </Badge>
+                              </td>
+                              <td className="px-8 py-5 text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleCreateTests()}
+                                    disabled={creatingTests}
+                                    title="Regenerate tests for this scale"
+                                    className="h-9 w-9 p-0 text-brand-purple hover:bg-purple-50 rounded-xl"
+                                  >
+                                    {creatingTests ? <RefreshCw className="animate-spin" size={16} /> : <Zap size={16} />}
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setExpandedGrades(prev => 
+                                      prev.includes(`${gradeValue}-${scaleName}`) ? prev.filter(g => g !== `${gradeValue}-${scaleName}`) : [...prev, `${gradeValue}-${scaleName}`]
+                                    )}
+                                    className="h-9 px-4 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-brand-purple rounded-xl"
+                                  >
+                                    {expandedGrades.includes(`${gradeValue}-${scaleName}`) ? 'Hide Areas' : 'View Areas'}
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleDeleteScale(data.scaleGroupId, scaleName)}
+                                    className="text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl h-9 w-9"
+                                  >
+                                    <Trash2 size={18} />
+                                  </Button>
                                 </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </Card>
-              ))}
+                              </td>
+                            </tr>
+                            {/* Expanded View for Learning Areas */}
+                            {expandedGrades.includes(`${gradeValue}-${scaleName}`) && (
+                              <tr key={`${gradeValue}-${scaleName}-expanded`} className="bg-slate-50/10">
+                                <td colSpan={4} className="px-12 py-6 border-l-4 border-indigo-500/20">
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    {data.learningAreas.map((area, idx) => (
+                                      <div key={idx} className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
+                                        <span className="text-[11px] font-bold text-slate-600 truncate mr-2">{area.learningArea}</span>
+                                        <div className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
+                                          <LayoutPanelLeft size={12} />
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        ))}
+                      </React.Fragment>
+                    );
+                  })}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

@@ -9,10 +9,7 @@ import { AuthRequest } from '../middleware/permissions.middleware';
 
 // Official CBC Grade-Based Mapping
 const OFFICIAL_CBC_MAPPING: { [key: string]: string[] } = {
-  'CRECHE': ['Language Activities', 'Mathematical Activities', 'Environmental Activities', 'Creative Activities', 'Religious Activities', 'Pastoral Programme of Instruction (PPI)'],
   'PLAYGROUP': ['Language Activities', 'Mathematical Activities', 'Environmental Activities', 'Creative Activities', 'Religious Activities', 'Pastoral Programme of Instruction (PPI)'],
-  'RECEPTION': ['Language Activities', 'Mathematical Activities', 'Environmental Activities', 'Creative Activities', 'Religious Activities', 'Pastoral Programme of Instruction (PPI)'],
-  'TRANSITION': ['Language Activities', 'Mathematical Activities', 'Environmental Activities', 'Creative Activities', 'Religious Activities', 'Pastoral Programme of Instruction (PPI)'],
   'PP1': ['Language Activities', 'Mathematical Activities', 'Environmental Activities', 'Creative Activities', 'Religious Activities', 'Pastoral Programme of Instruction (PPI)'],
   'PP2': ['Language Activities', 'Mathematical Activities', 'Environmental Activities', 'Creative Activities', 'Religious Activities', 'Pastoral Programme of Instruction (PPI)'],
   'GRADE_1': ['English', 'Kiswahili', 'Indigenous Language', 'Mathematical Activities', 'Environmental Activities', 'Religious Education', 'Creative Activities'],
@@ -308,8 +305,27 @@ export const deleteScaleGroup = async (req: AuthRequest, res: Response) => {
     const result = await prisma.$transaction(async (tx) => {
       const systemIds = existing.gradingSystems.map((gs: any) => gs.id);
       let rangesCount = 0;
+      let testsArchivedCount = 0;
 
       if (systemIds.length > 0) {
+        // 1. Archive associated tests if force is true
+        if (force === 'true') {
+          const testsResult = await tx.summativeTest.updateMany({
+            where: {
+              scaleId: { in: systemIds },
+              archived: false
+            },
+            data: {
+              archived: true,
+              archivedAt: new Date(),
+              archivedBy: userId
+            }
+          });
+          testsArchivedCount = testsResult.count;
+          console.log(`✅ Force Delete: Archived ${testsArchivedCount} tests`);
+        }
+
+        // 2. Archive grading ranges
         const rangesResult = await tx.gradingRange.updateMany({
           where: {
             systemId: { in: systemIds }
@@ -335,30 +351,25 @@ export const deleteScaleGroup = async (req: AuthRequest, res: Response) => {
         }
       });
 
-      await tx.scaleGroup.update({
-        where: { id },
-        data: {
-          archived: true,
-          archivedAt: new Date(),
-          archivedBy: userId
-        }
-      });
-
       return {
         scaleGroupName: existing.name,
         systemsDeleted: systemsResult.count,
         rangesDeleted: rangesCount,
+        testsArchived: testsArchivedCount,
         learningAreas: existing.gradingSystems.map((gs: any) => gs.learningArea || 'All Subjects')
       };
     });
 
     res.json({
       success: true,
-      message: `Scale group "${result.scaleGroupName}" deleted successfully`,
+      message: result.testsArchived > 0 
+        ? `Scale group "${result.scaleGroupName}" and ${result.testsArchived} associated tests deleted successfully`
+        : `Scale group "${result.scaleGroupName}" deleted successfully`,
       details: {
         scaleGroupName: result.scaleGroupName,
         gradingSystemsDeleted: result.systemsDeleted,
         gradingRangesDeleted: result.rangesDeleted,
+        testsArchived: result.testsArchived,
         learningAreasAffected: result.learningAreas.length
       }
     });

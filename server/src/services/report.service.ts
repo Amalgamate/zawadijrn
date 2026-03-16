@@ -208,7 +208,7 @@ export async function generateTermlyReport(
 
   // Fetch AI Pathway Prediction for Grade 7 and up
   let pathwayPrediction = null;
-  const juniorSeniorGrades = ['GRADE_7', 'GRADE_8', 'GRADE_9', 'GRADE_10', 'GRADE_11', 'GRADE_12'];
+  const juniorSeniorGrades = ['GRADE_7', 'GRADE_8', 'GRADE_9'];
   if (juniorSeniorGrades.includes(learner.grade as string)) {
     try {
       pathwayPrediction = await aiAssistantService.generatePathwayPrediction(

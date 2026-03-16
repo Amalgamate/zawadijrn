@@ -189,26 +189,24 @@ export class FeeTypeController {
     // Seed default fee structures for all grades and terms
     static async seedStructures(req: Request, res: Response) {
         const GRADES = [
-            'CRECHE', 'RECEPTION', 'TRANSITION', 'PLAYGROUP',
-            'PP1', 'PP2', 'GRADE_1', 'GRADE_2', 'GRADE_3',
-            'GRADE_4', 'GRADE_5', 'GRADE_6', 'GRADE_7',
-            'GRADE_8', 'GRADE_9', 'GRADE_10', 'GRADE_11', 'GRADE_12'
+            'PLAYGROUP', 'PP1', 'PP2', 
+            'GRADE_1', 'GRADE_2', 'GRADE_3',
+            'GRADE_4', 'GRADE_5', 'GRADE_6', 
+            'GRADE_7', 'GRADE_8', 'GRADE_9'
         ];
 
         const TERMS = ['TERM_1', 'TERM_2', 'TERM_3'];
 
         const GRADE_DISPLAY_NAMES: Record<string, string> = {
-            'CRECHE': 'Creche', 'RECEPTION': 'Reception', 'TRANSITION': 'Transition',
-            'PLAYGROUP': 'Playgroup', 'PP1': 'PP1', 'PP2': 'PP2', 'GRADE_1': 'Grade 1',
-            'GRADE_2': 'Grade 2', 'GRADE_3': 'Grade 3', 'GRADE_4': 'Grade 4',
-            'GRADE_5': 'Grade 5', 'GRADE_6': 'Grade 6', 'GRADE_7': 'Grade 7',
-            'GRADE_8': 'Grade 8', 'GRADE_9': 'Grade 9', 'GRADE_10': 'Grade 10',
-            'GRADE_11': 'Grade 11', 'GRADE_12': 'Grade 12'
+            'PLAYGROUP': 'Playgroup', 'PP1': 'PP1', 'PP2': 'PP2', 
+            'GRADE_1': 'Grade 1', 'GRADE_2': 'Grade 2', 'GRADE_3': 'Grade 3', 
+            'GRADE_4': 'Grade 4', 'GRADE_5': 'Grade 5', 'GRADE_6': 'Grade 6', 
+            'GRADE_7': 'Grade 7', 'GRADE_8': 'Grade 8', 'GRADE_9': 'Grade 9'
         };
 
         // Default fee amounts per grade level
         const getFeeAmounts = (grade: string) => {
-            if (['CRECHE', 'RECEPTION', 'TRANSITION', 'PLAYGROUP', 'PP1', 'PP2'].includes(grade)) {
+            if (['PLAYGROUP', 'PP1', 'PP2'].includes(grade)) {
                 return {
                     TUITION: 15000, ACTIVITY: 500, TRANSPORT: 3000, MEALS: 8000,
                     EXAM: 300, LIBRARY: 500, SPORTS: 500, TECHNOLOGY: 1000, MISC: 500

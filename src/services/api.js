@@ -2268,8 +2268,9 @@ export const gradingAPI = {
     });
   },
 
-  deleteScaleGroup: async (id) => {
-    return fetchWithAuth(`/grading/scale-groups/${id}`, {
+  deleteScaleGroup: async (id, params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    return fetchWithAuth(`/grading/scale-groups/${id}${queryString ? `?${queryString}` : ''}`, {
       method: 'DELETE',
     });
   },

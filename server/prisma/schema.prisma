@@ -1686,9 +1686,6 @@ enum UserStatus {
 }
 
 enum Grade {
-  CRECHE
-  RECEPTION
-  TRANSITION
   PLAYGROUP
   PP1
   PP2
@@ -1701,9 +1698,6 @@ enum Grade {
   GRADE_7
   GRADE_8
   GRADE_9
-  GRADE_10
-  GRADE_11
-  GRADE_12
 }
 
 enum LearnerStatus {
