@@ -66,11 +66,8 @@ const SummativeTestsMobile = ({ onNavigate, onBack }) => {
       const gradeKey = test.grade || 'UNASSIGNED';
       if (!grouped[gradeKey]) grouped[gradeKey] = {};
 
-      const displayType = (test.testType || 'Assessment').replace(/_/g, ' ');
-      const displayTerm = (test.term || '').replace(/_/g, ' ');
-      const seriesName = test.testType && test.term && test.academicYear 
-        ? `${displayType} - ${displayTerm} ${test.academicYear}`
-        : (test.title || test.name || 'Individual Tests');
+      // Series Name is the first part before the " - "
+      const seriesName = test.title?.split(' - ')[0] || 'Individual Tests';
 
       if (!grouped[gradeKey][seriesName]) {
         grouped[gradeKey][seriesName] = {

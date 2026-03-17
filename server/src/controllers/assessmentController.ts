@@ -433,6 +433,7 @@ export const createSummativeTest = async (req: AuthRequest, res: Response) => {
     const {
       name,
       title,
+      title: seriesName,
       learningAreaId,
       learningArea,
       testType,
@@ -467,7 +468,8 @@ export const createSummativeTest = async (req: AuthRequest, res: Response) => {
       resolvedLearningArea = areaRecord?.name;
     }
 
-    const resolvedTitle = `${resolvedLearningArea} - ${testType} - ${normalizedTerm} ${academicYear}`;
+    const normalizedSeriesName = seriesName || `${testType} - ${normalizedTerm} ${academicYear}`;
+    const resolvedTitle = `${normalizedSeriesName} - ${resolvedLearningArea} - ${testType} - ${normalizedTerm} ${academicYear}`;
     const resolvedTotalMarks = totalMarks ?? maxScore ?? 100;
 
     if (!teacherId || !resolvedLearningArea || !normalizedTerm || !academicYear || !testType) {
@@ -622,7 +624,7 @@ export const generateTestsBulk = async (req: AuthRequest, res: Response) => {
       try {
         const test = await prisma.summativeTest.create({
           data: {
-            title: `${area} - ${testType} - ${normalizedTerm} ${academicYear}`,
+            title: `${seriesName || (testType + ' - ' + normalizedTerm + ' ' + academicYear)} - ${area} - ${testType} - ${normalizedTerm} ${academicYear}`,
             learningArea: area,
             testType,
             term: normalizedTerm,

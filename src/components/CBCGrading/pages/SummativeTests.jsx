@@ -159,16 +159,9 @@ const SummativeTests = ({ onNavigate }) => {
         grouped[gradeKey] = {};
       }
 
-      // Title is always "Subject - TYPE - TERM_1 YEAR" — group by TYPE + TERM + YEAR
-      // Display label: exam type nicely formatted, e.g. "Opener Exam — Term 1 2026"
-      const displayType = (test.testType || 'Assessment')
-        .replace(/_/g, ' ')
-        .replace(/\b\w/g, l => l.toUpperCase());
-      const displayTerm = (test.term || '')
-        .replace(/_/g, ' ')
-        .replace(/\b\w/g, l => l.toUpperCase());
-
-      const seriesName = `${displayType} — ${displayTerm} ${test.academicYear}`;
+      // Formatted Title: "Series Name - Subject - Type - Term Year"
+      // Series Name is the first part before the first " - "
+      const seriesName = test.title?.split(' - ')[0] || 'Unknown Series';
 
       if (!grouped[gradeKey][seriesName]) {
         grouped[gradeKey][seriesName] = {
