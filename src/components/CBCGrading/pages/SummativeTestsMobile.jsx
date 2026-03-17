@@ -72,6 +72,7 @@ const SummativeTestsMobile = ({ onNavigate, onBack }) => {
       if (!grouped[gradeKey][seriesName]) {
         grouped[gradeKey][seriesName] = {
           name: seriesName,
+          type: test.testType || 'Assessment',
           tests: []
         };
       }
@@ -213,7 +214,7 @@ const SummativeTestsMobile = ({ onNavigate, onBack }) => {
                         <div>
                           <h3 className="font-bold text-gray-900 text-sm leading-tight">{seriesName}</h3>
                           <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider mt-1">
-                            {data.tests.length} Subjects • {data.tests[0]?.academicYear}
+                            Type: {data.type.replace(/_/g, ' ')} • {data.tests[0]?.academicYear}
                           </p>
                         </div>
                       </div>

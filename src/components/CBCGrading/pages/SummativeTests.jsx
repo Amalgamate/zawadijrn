@@ -166,6 +166,7 @@ const SummativeTests = ({ onNavigate }) => {
       if (!grouped[gradeKey][seriesName]) {
         grouped[gradeKey][seriesName] = {
           name: seriesName,
+          type: test.testType || 'Assessment',
           tests: []
         };
       }
@@ -426,7 +427,9 @@ const SummativeTests = ({ onNavigate }) => {
                               <td className="px-6 py-5">
                                 <div className="flex flex-col">
                                   <span className="text-sm font-bold text-slate-800 leading-tight">{seriesName}</span>
-                                  <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest mt-1">Summative Series</span>
+                                  <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest mt-1">
+                                    Type: {data.type.replace(/_/g, ' ')}
+                                  </span>
                                 </div>
                               </td>
                               <td className="px-6 py-5 text-center">
