@@ -136,8 +136,8 @@ const BulkCreateTest = ({ onBack, onSuccess }) => {
             }
 
             if (totalCreated > 0) {
-                showSuccess(`✅ Successfully created ${totalCreated} test${totalCreated !== 1 ? 's' : ''}!`);
-                onSuccess && onSuccess();
+                const msg = `✅ Successfully created ${totalCreated} test${totalCreated !== 1 ? 's' : ''}!`;
+                onSuccess && onSuccess(msg);
             } else {
                 showError(hasError ? 'Some grades failed. Check console for details.' : 'No tests were created.');
             }

@@ -412,9 +412,10 @@ const SummativeTests = ({ onNavigate }) => {
     return (
       <BulkCreateTest
         onBack={() => setViewMode('list')}
-        onSuccess={() => {
-          fetchTests(); // Refresh the tests list
+        onSuccess={(msg) => {
+          fetchTests();
           setViewMode('list');
+          if (msg) showSuccess(msg);
         }}
       />
     );
