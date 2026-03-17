@@ -427,8 +427,68 @@ export const completeSchoolSetup = async (req: AuthRequest, res: Response) => {
   }
 };
 
+/**
+ * Selective Database Reset
+ * POST /api/assessments/setup/reset
+ */
+export const resetAssessments = async (req: AuthRequest, res: Response) => {
+  try {
+    const { 
+      summativeTests = false, 
+      formativeAssessments = false, 
+      gradingScales = false,
+      assessmentAudits = false
+    } = req.body;
+
+    const results: Record<string, number> = {};
+
+    if (summativeTests) {
+      const srh = await prisma.summativeResultHistory.deleteMany();
+      const sr = await prisma.summativeResult.deleteMany();
+      const st = await prisma.summativeTest.deleteMany();
+      results.summativeTestsDeleted = st.count;
+      results.summativeResultsDeleted = sr.count;
+      results.summativeHistoryDeleted = srh.count;
+    }
+
+    if (formativeAssessments) {
+      const fa = await prisma.formativeAssessment.deleteMany();
+      results.formativeAssessmentsDeleted = fa.count;
+    }
+
+    if (gradingScales) {
+      // First delete ranges as they are children of GradingSystem
+      await prisma.gradingRange.deleteMany();
+      const gs = await prisma.gradingSystem.deleteMany();
+      const sg = await prisma.scaleGroup.deleteMany();
+      results.gradingScalesDeleted = gs.count;
+      results.scaleGroupsDeleted = sg.count;
+    }
+
+    if (assessmentAudits) {
+      const sa = await prisma.assessmentSmsAudit.deleteMany();
+      results.smsAuditsDeleted = sa.count;
+    }
+
+    res.json({
+      success: true,
+      message: 'Selective reset completed successfully',
+      data: results
+    });
+
+  } catch (error: any) {
+    console.error('Error resetting assessments:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to reset assessments',
+      error: error.message
+    });
+  }
+};
+
 export default {
   bulkCreateGradingScales,
   bulkCreateSummativeTests,
-  completeSchoolSetup
+  completeSchoolSetup,
+  resetAssessments
 };

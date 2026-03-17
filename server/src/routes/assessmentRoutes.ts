@@ -279,4 +279,12 @@ router.post(
   setupController.completeSchoolSetup
 );
 
+router.post(
+  '/setup/reset',
+  authenticate,
+  rateLimit({ windowMs: 60_000, maxRequests: 5 }),
+  auditLog('SETUP_RESET_DATABASE'),
+  setupController.resetAssessments
+);
+
 export default router;

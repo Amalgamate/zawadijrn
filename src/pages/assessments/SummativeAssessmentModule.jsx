@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { BookOpen, Scale, FileText } from 'lucide-react';
+import { BookOpen, Scale, FileText, RefreshCw } from 'lucide-react';
 import ScalesManagement from './ScalesManagement';
 import SummativeTestForm from './SummativeTestForm';
+import ResetUtility from './ResetUtility';
 
 const SummativeAssessmentModule = () => {
   const [activeView, setActiveView] = useState('scales');
@@ -46,6 +47,18 @@ const SummativeAssessmentModule = () => {
             </button>
 
             <button
+              onClick={() => setActiveView('reset')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                activeView === 'reset'
+                  ? 'bg-red-100 text-red-800 border border-red-300'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <RefreshCw size={18} />
+              System Utility
+            </button>
+
+            <button
               onClick={() => setActiveView('info')}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
                 activeView === 'info'
@@ -64,6 +77,7 @@ const SummativeAssessmentModule = () => {
       <div className="pb-6">
         {activeView === 'scales' && <ScalesManagement />}
         {activeView === 'tests' && <SummativeTestForm />}
+        {activeView === 'reset' && <ResetUtility />}
         {activeView === 'info' && <QuickGuide />}
       </div>
     </div>
