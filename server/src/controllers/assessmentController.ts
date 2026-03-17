@@ -446,7 +446,7 @@ export const createSummativeTest = async (req: AuthRequest, res: Response) => {
       instructions,
       grade,
       stream,
-      curriculum = 'CBC',
+      curriculum = 'CBC_AND_EXAM',
       scaleId,
       weight = 1.0,
       duration          // FIX: now persisted to DB
@@ -494,7 +494,10 @@ export const createSummativeTest = async (req: AuthRequest, res: Response) => {
         scaleId,
         weight: parseFloat(String(weight || 1.0)),
         duration: duration ? parseInt(String(duration)) : undefined,  // FIX: persist duration
-        createdBy: teacherId
+        createdBy: teacherId,
+        status: req.body.status || 'PUBLISHED',
+        published: req.body.status === 'PUBLISHED' || true,
+        active: true
       }
     });
 
@@ -536,8 +539,9 @@ export const generateTestsBulk = async (req: AuthRequest, res: Response) => {
       testDate,
       totalMarks = 100,
       passMarks = 40,
+      duration,
       stream,
-      curriculum = 'CBC',
+      curriculum = 'CBC_AND_EXAM',
       weight = 1.0,
       scaleGroupId   // FIX: accept explicit scaleGroupId for reliable scale linking
     } = req.body;
@@ -606,11 +610,15 @@ export const generateTestsBulk = async (req: AuthRequest, res: Response) => {
           testDate: testDate ? new Date(testDate) : new Date(),
           totalMarks: parseInt(totalMarks),
           passMarks: parseInt(passMarks),
+          duration: duration ? parseInt(String(duration)) : undefined,
           grade,
           curriculum,
           weight: parseFloat(String(weight || 1.0)),
           scaleId: resolvedScaleId ?? null,
-          createdBy: teacherId
+          createdBy: teacherId,
+          status: req.body.status || 'PUBLISHED',
+          published: req.body.status === 'PUBLISHED' || true,
+          active: true
         }
       });
 
