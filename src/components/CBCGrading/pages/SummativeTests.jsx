@@ -391,64 +391,7 @@ const SummativeTests = ({ onNavigate }) => {
     completed: tests.filter(t => ['Completed', 'COMPLETED', 'Locked', 'LOCKED'].includes(t.status)).length
   }), [tests]);
 
-  const handleStatusClick = async (test) => {
-    const status = test.status?.toUpperCase();
 
-    // Check permissions
-    const canSubmit = ['TEACHER', 'HEAD_TEACHER', 'ADMIN', 'SUPER_ADMIN'].includes(user?.role);
-    const canApprove = ['HEAD_TEACHER', 'ADMIN', 'SUPER_ADMIN'].includes(user?.role);
-    const canPublish = ['ADMIN', 'HEAD_TEACHER', 'SUPER_ADMIN'].includes(user?.role);
-    const isAdmin = ['ADMIN', 'SUPER_ADMIN'].includes(user?.role);
-
-    try {
-      if (status === 'DRAFT' && canSubmit) {
-        // Admins can auto-approve their own tests
-        if (isAdmin) {
-          // Submit first
-          await workflowAPI.submit({ assessmentId: test.id, assessmentType: 'summative', comments: 'Auto-submitted by Admin' });
-          // Then Approve
-          await workflowAPI.approve('summative', test.id, { comments: 'Self-approved by Admin' });
-
-          setTests(prev => prev.map(t => t.id === test.id ? { ...t, status: 'Approved' } : t));
-          showSuccess(`${test.title} auto-approved!`);
-        } else {
-          // Teachers and Head Teachers must submit for approval
-          await workflowAPI.submit({ assessmentId: test.id, assessmentType: 'summative', comments: 'Submitted for approval' });
-          setTests(prev => prev.map(t => t.id === test.id ? { ...t, status: 'Submitted' } : t));
-          showSuccess(`${test.title} submitted for review!`);
-        }
-      } else if (status === 'SUBMITTED' && canApprove) {
-        // All admins can approve their own tests, others cannot
-        const isOwnTest = test.submittedBy === user?.userId;
-
-        // Debug logging
-        console.log('=== APPROVAL CHECK DEBUG ===');
-        console.log('User ID:', user?.userId);
-        console.log('User Role:', user?.role);
-        console.log('Test submittedBy:', test.submittedBy);
-        console.log('Is own test:', isOwnTest);
-        console.log('Is admin:', isAdmin);
-        console.log('Can approve:', canApprove);
-        console.log('==========================');
-
-        if (isOwnTest && !isAdmin) {
-          showError('You cannot approve your own test. Please wait for an administrator to review it.');
-          return;
-        }
-
-        await workflowAPI.approve('summative', test.id, { comments: isAdmin && isOwnTest ? 'Self-approved by Admin' : 'Approved' });
-        setTests(prev => prev.map(t => t.id === test.id ? { ...t, status: 'Approved' } : t));
-        showSuccess(`${test.title} approved!`);
-      } else if (status === 'APPROVED' && canPublish) {
-        await workflowAPI.publish('summative', test.id);
-        setTests(prev => prev.map(t => t.id === test.id ? { ...t, status: 'Published' } : t));
-        showSuccess(`${test.title} published!`);
-      }
-    } catch (error) {
-      console.error('Workflow action failed:', error);
-      showError('Action failed: ' + (error.message || 'Unknown error'));
-    }
-  };
 
   if (viewMode === 'create' || viewMode === 'edit') {
     return (
@@ -492,14 +435,7 @@ const SummativeTests = ({ onNavigate }) => {
                 >
                   <Trash2 size={14} /> Bulk Delete
                 </button>
-                {['HEAD_TEACHER', 'ADMIN', 'SUPER_ADMIN'].includes(user?.role) && (
-                  <button
-                    onClick={handleBulkApprove}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-green-600 text-white text-xs font-bold rounded-md hover:bg-green-700 transition"
-                  >
-                    <CheckCircle size={14} /> Bulk Approve
-                  </button>
-                )}
+
                 <button
                   onClick={() => setSelectedIds([])}
                   className="px-3 py-1.5 bg-white text-gray-600 text-xs font-bold rounded-md border border-gray-200 hover:bg-gray-50 transition"
@@ -513,18 +449,6 @@ const SummativeTests = ({ onNavigate }) => {
               <div className="text-right border-r pr-4 border-gray-200 min-w-[80px]">
                 <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Total Tests</p>
                 <p className="text-xl font-bold text-gray-800 leading-none">{stats.total}</p>
-              </div>
-              <div className="text-right border-r pr-4 border-gray-200 min-w-[60px]">
-                <p className="text-[10px] text-orange-600 uppercase font-bold tracking-wider">Draft</p>
-                <p className="text-xl font-bold text-orange-700 leading-none">{stats.draft}</p>
-              </div>
-              <div className="text-right border-r pr-4 border-gray-200 min-w-[80px]">
-                <p className="text-[10px] text-green-600 uppercase font-bold tracking-wider">Published</p>
-                <p className="text-xl font-bold text-green-700 leading-none">{stats.published}</p>
-              </div>
-              <div className="text-right min-w-[80px]">
-                <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Completed</p>
-                <p className="text-xl font-bold text-gray-800 leading-none">{stats.completed}</p>
               </div>
             </div>
           )}
@@ -659,34 +583,19 @@ const SummativeTests = ({ onNavigate }) => {
                                 </Badge>
                               </td>
                               <td className="px-6 py-5">
-                                <div className="flex items-center justify-center gap-2">
-                                  {draftCount > 0 && <span className="w-2 h-2 rounded-full bg-orange-400" title={`${draftCount} Draft`} />}
-                                  {submittedCount > 0 && <span className="w-2 h-2 rounded-full bg-brand-purple" title={`${submittedCount} Submitted`} />}
-                                  {approvedCount > 0 && <span className="w-2 h-2 rounded-full bg-brand-teal" title={`${approvedCount} Approved`} />}
-                                  <span className="text-[10px] font-bold text-slate-400 ml-1 uppercase">{approvedCount}/{data.tests.length} Ready</span>
+                                <div className="flex items-center justify-center">
+                                  <span className="text-[10px] font-bold text-brand-teal uppercase tracking-wider">{data.tests.length} Active</span>
                                 </div>
                               </td>
                               <td className="px-6 py-5 text-right">
-                                <div className="flex items-center justify-end gap-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => toggleGrade(groupKey)}
-                                    className="h-9 px-4 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-brand-purple rounded-xl"
-                                  >
-                                    {isExpanded ? 'Hide Areas' : 'View Areas'}
-                                  </Button>
-                                  <div className="h-4 w-px bg-slate-100 mx-1" />
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => canApproveAll && setShowApproveAll(true)}
-                                    className="text-brand-teal hover:bg-teal-50 rounded-xl h-9 w-9"
-                                    title="Bulk Process this Group"
-                                  >
-                                    <CheckCircle size={18} />
-                                  </Button>
-                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => toggleGrade(groupKey)}
+                                  className="h-9 px-4 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-brand-purple rounded-xl"
+                                >
+                                  {isExpanded ? 'Hide Areas' : 'View Areas'}
+                                </Button>
                               </td>
                             </tr>
                             {isExpanded && (
@@ -708,12 +617,7 @@ const SummativeTests = ({ onNavigate }) => {
                                           </div>
                                         </div>
                                         <div className="flex items-center gap-4">
-                                          <button
-                                            onClick={() => handleStatusClick(test)}
-                                            className={`px-2 py-0.5 rounded-full text-[9px] font-black border uppercase tracking-widest border-transparent ${getStatusBadgeStyles(test.status)}`}
-                                          >
-                                            {test.status}
-                                          </button>
+
                                           <div className="flex items-center gap-1">
                                             <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-brand-teal" onClick={() => onNavigate('summative-results', { testId: test.id })}><Eye size={14} /></Button>
                                             <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-green-600" onClick={() => { setSelectedTest(test); setViewMode('edit'); }}><Edit size={14} /></Button>
@@ -755,134 +659,7 @@ const SummativeTests = ({ onNavigate }) => {
         confirmButtonClass={confirmConfig.title?.includes('Delete') ? 'bg-red-600 hover:bg-red-700' : 'bg-brand-teal hover:bg-brand-teal/90'}
       />
 
-      {/* Approve All Dialog */}
-      {showApproveAll && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full mx-4 animate-scale-in overflow-hidden">
-            <div className="p-6 border-b border-gray-100 flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-xl font-bold text-gray-900">Approve All</h3>
-                <p className="text-sm text-gray-600 mt-1">
-                  Select the unapproved exam groups (series) you want to approve. Draft tests will be submitted first, then approved.
-                </p>
-              </div>
-              <button
-                onClick={() => {
-                  if (approvingAll) return;
-                  setShowApproveAll(false);
-                  setApproveAllQuery('');
-                  setSelectedGroupKeys(new Set());
-                }}
-                className="px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition font-bold text-gray-700"
-              >
-                Close
-              </button>
-            </div>
 
-            <div className="p-6 space-y-4">
-              <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-                <div className="flex items-center gap-2 flex-1">
-                  <div className="relative flex-1">
-                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input
-                      value={approveAllQuery}
-                      onChange={(e) => setApproveAllQuery(e.target.value)}
-                      placeholder="Search grade or exam group..."
-                      className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-purple focus:border-brand-purple"
-                      disabled={approvingAll}
-                    />
-                  </div>
-                </div>
-
-                <label className="flex items-center gap-2 text-sm font-bold text-gray-700 select-none">
-                  <input
-                    type="checkbox"
-                    className="rounded border-gray-300 text-brand-teal focus:ring-brand-teal"
-                    checked={unapprovedGroups.length > 0 && unapprovedGroups.every(g => selectedGroupKeys.has(g.key))}
-                    onChange={(e) => setAllVisibleGroupsSelected(e.target.checked)}
-                    disabled={approvingAll || unapprovedGroups.length === 0}
-                  />
-                  Select all
-                </label>
-              </div>
-
-              {unapprovedGroups.length === 0 ? (
-                <div className="bg-brand-teal/10 border border-brand-teal/20 text-brand-teal rounded-lg p-4 text-sm font-bold">
-                  No unapproved exam groups found.
-                </div>
-              ) : (
-                <div className="border border-gray-200 rounded-xl overflow-hidden">
-                  <div className="max-h-[52vh] overflow-auto divide-y divide-gray-100">
-                    {unapprovedGroups.map(group => (
-                      <label key={group.key} className="flex items-start gap-3 p-4 hover:bg-gray-50 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          className="mt-1 rounded border-gray-300 text-brand-teal focus:ring-brand-teal"
-                          checked={selectedGroupKeys.has(group.key)}
-                          onChange={() => toggleGroupKey(group.key)}
-                          disabled={approvingAll}
-                        />
-                        <div className="flex-1">
-                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                            <div>
-                              <p className="font-bold text-gray-900">
-                                {formatGradeDisplay(group.gradeKey)} • {group.seriesName}
-                              </p>
-                              <p className="text-xs text-gray-500 mt-1">
-                                {group.totalActionable} pending • {group.submittedCount} submitted • {group.draftCount} draft
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {group.submittedCount > 0 && (
-                                <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-brand-purple/10 text-brand-purple border border-brand-purple/20">
-                                  SUBMITTED {group.submittedCount}
-                                </span>
-                              )}
-                              {group.draftCount > 0 && (
-                                <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-orange-50 text-orange-700 border border-orange-100">
-                                  DRAFT {group.draftCount}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="p-6 border-t border-gray-100 flex items-center justify-between gap-3">
-              <p className="text-sm text-gray-600">
-                Selected: <span className="font-bold text-gray-800">{selectedGroupKeys.size}</span>
-              </p>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => {
-                    if (approvingAll) return;
-                    setShowApproveAll(false);
-                    setApproveAllQuery('');
-                    setSelectedGroupKeys(new Set());
-                  }}
-                  className="px-4 py-2 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition font-bold"
-                  disabled={approvingAll}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleApproveAllSelectedGroups}
-                  className="px-4 py-2 bg-brand-teal text-white rounded-lg hover:bg-brand-teal/90 transition font-bold flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={approvingAll || selectedGroupKeys.size === 0}
-                >
-                  {approvingAll ? <Loader className="animate-spin" size={16} /> : <CheckCircle size={16} />}
-                  Approve selected
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

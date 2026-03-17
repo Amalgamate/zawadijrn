@@ -28,7 +28,7 @@ const DEFAULT_FORM_DATA = {
   instructions: '',
   curriculum: 'CBC_AND_EXAM',
   weight: 100.0,
-  status: JSON.parse(localStorage.getItem('user') || '{}')?.role === 'SUPER_ADMIN' ? 'APPROVED' : 'DRAFT'
+  status: 'PUBLISHED'
 };
 
 export const useSummativeTestForm = () => {
