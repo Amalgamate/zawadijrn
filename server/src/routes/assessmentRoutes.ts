@@ -164,7 +164,7 @@ router.post(
 router.post(
   '/tests/bulk',
   authenticate,
-  rateLimit({ windowMs: 60_000, maxRequests: 10 }),
+  rateLimit({ windowMs: 60_000, maxRequests: 50 }),
   auditLog('GENERATE_TESTS_BULK'),
   assessmentController.generateTestsBulk
 );
