@@ -54,7 +54,7 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
       }
       const activeTests = testsData.filter(t => {
         const status = (t.status || '').toUpperCase();
-        return ['PUBLISHED', 'APPROVED'].includes(status) || t.published === true;
+        return status === 'PUBLISHED' || t.published === true;
       });
 
       // Debug: Log all test learning areas

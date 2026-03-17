@@ -27,7 +27,7 @@ const DEFAULT_FORM_DATA = {
   description: '',
   instructions: '',
   curriculum: 'CBC_AND_EXAM',
-  weight: 100.0,
+  weight: 1.0,
   status: 'PUBLISHED'
 };
 
@@ -218,9 +218,9 @@ export const useSummativeTestForm = () => {
         passMarks: parseInt(formData.passMarks),
         duration: parseInt(formData.duration) || null,
         createdBy: userId,
-        published: false,
+        published: true,
         active: true,
-        status: user?.role === 'SUPER_ADMIN' ? 'APPROVED' : 'DRAFT',
+        status: 'PUBLISHED',
         scaleId: selectedScale?.id || null,
         scaleName: selectedScale?.name || null
       };
@@ -264,6 +264,7 @@ export const useSummativeTestForm = () => {
     saveStatus,
     loading: loadingScales || schoolDataLoading,
     loadingScales,
+    loadingGrades: schoolDataLoading,
     saving,
     availableLearningAreas,
     testTypes: TEST_TYPES,

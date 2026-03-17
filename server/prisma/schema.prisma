@@ -489,6 +489,7 @@ model SummativeTest {
   @@index([testType])
   @@index([grade, learningArea, term])
   @@index([grade, term, academicYear])
+  @@unique([grade, learningArea, term, academicYear, testType])
   @@map("summative_tests")
 }
 

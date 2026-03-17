@@ -17,7 +17,8 @@ import bulkRoutes from './bulk';
 import cbcRoutes from './cbcRoutes';
 import gradingRoutes from './grading.routes';
 import configRoutes from './config.routes';
-import workflowRoutes from './workflow.routes';
+// workflowRoutes disabled — approval flow removed
+// import workflowRoutes from './workflow.routes';
 import communicationRoutes from './communication.routes';
 import adminRoutes from './admin.routes';
 import learningAreaRoutes from './learningArea.routes';
@@ -71,7 +72,7 @@ router.use('/cbc', cbcRoutes);
 router.use('/grading', gradingRoutes);
 router.use('/config', configRoutes);
 router.use('/learning-areas', learningAreaRoutes);
-router.use('/workflow', workflowRoutes);
+// router.use('/workflow', workflowRoutes); // disabled — approval flow removed
 router.use('/facility/streams', streamRoutes);
 router.use('/broadcasts', broadcastRoutes);
 router.use('/dashboard', dashboardRoutes);

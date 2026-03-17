@@ -7,7 +7,7 @@ import React, { useState } from 'react';
 import { CheckCircle, Check, Send, Save, ArrowRight, Edit3, FileText, Users, BarChart2, Sparkles, Loader2 } from 'lucide-react';
 import RatingSelector from '../shared/RatingSelector';
 import { useNotifications } from '../hooks/useNotifications';
-import api, { workflowAPI, aiAPI } from '../../../services/api';
+import api, { aiAPI } from '../../../services/api';
 import SmartLearnerSearch from '../shared/SmartLearnerSearch';
 import { useAssessmentSetup } from '../hooks/useAssessmentSetup';
 import { useLearnerSelection } from '../hooks/useLearnerSelection';
@@ -41,7 +41,6 @@ const FormativeAssessment = ({ learners }) => {
   const [assessments, setAssessments] = useState({});
   const [savedAssessments, setSavedAssessments] = useState({});
   const [saving, setSaving] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
   const [sendingWhatsApp, setSendingWhatsApp] = useState({});
   const [generatingAI, setGeneratingAI] = useState({});
 
@@ -273,44 +272,7 @@ const FormativeAssessment = ({ learners }) => {
     }
   };
 
-  const handleSubmitForApproval = async () => {
-    try {
-      setSubmitting(true);
-
-      const idsToSubmit = Object.values(savedAssessments)
-        .filter(a => a && a.id && a.status === 'DRAFT')
-        .map(a => a.id);
-
-      if (idsToSubmit.length === 0) {
-        showError('No draft assessments to submit. Save at least one learner\'s rating first.');
-        return;
-      }
-
-      const response = await workflowAPI.bulkSubmit({
-        ids: idsToSubmit,
-        assessmentType: 'formative',
-        comments: 'Bulk submitted for approval'
-      });
-
-      if (response.success) {
-        showSuccess(response.message || `Successfully submitted ${idsToSubmit.length} assessment(s) for approval!`);
-        const updatedSaved = { ...savedAssessments };
-        Object.keys(updatedSaved).forEach(learnerId => {
-          if (idsToSubmit.includes(updatedSaved[learnerId]?.id)) {
-            updatedSaved[learnerId] = { ...updatedSaved[learnerId], status: 'SUBMITTED' };
-          }
-        });
-        setSavedAssessments(updatedSaved);
-      } else {
-        showError(response.message || 'Failed to submit assessments');
-      }
-    } catch (error) {
-      console.error('Error submitting assessments:', error);
-      showError('Failed to submit assessments');
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  // handleSubmitForApproval removed — approval workflow disabled.
 
   const handleSendWhatsApp = async (learnerId) => {
     try {
@@ -864,26 +826,10 @@ const FormativeAssessment = ({ learners }) => {
                 setViewMode('setup');
                 window.scrollTo(0, 0);
               }}
-              className="px-8 py-3 bg-white border-2 border-brand-purple text-brand-purple rounded-xl hover:bg-brand-purple/5 font-bold shadow-sm hover:shadow-md transition"
-            >
-              Start New Assessment
-            </button>
-            <button
-              onClick={handleSubmitForApproval}
-              disabled={submitting}
               className="px-8 py-3 bg-brand-teal text-white rounded-xl hover:bg-brand-teal/90 font-bold shadow-lg hover:shadow-xl transition flex items-center gap-2"
             >
-              {submitting ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
-                  Submitting...
-                </>
-              ) : (
-                <>
-                  Submit for Approval
-                  <Check size={20} />
-                </>
-              )}
+              <Check size={20} />
+              Start New Assessment
             </button>
           </div>
         </div>

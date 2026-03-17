@@ -59,33 +59,32 @@ const SummativeTestsMobile = ({ onNavigate, onBack }) => {
     );
   }, [tests, searchQuery]);
 
-  // Group by status
-  const groupedTests = useMemo(() => {
+  // Group by Grade then Series
+  const groupedData = useMemo(() => {
     const grouped = {};
     filteredTests.forEach(test => {
-      const status = (test.status || 'DRAFT').toUpperCase();
-      if (!grouped[status]) grouped[status] = [];
-      grouped[status].push(test);
+      const gradeKey = test.grade || 'UNASSIGNED';
+      if (!grouped[gradeKey]) grouped[gradeKey] = {};
+
+      const displayType = (test.testType || 'Assessment').replace(/_/g, ' ');
+      const displayTerm = (test.term || '').replace(/_/g, ' ');
+      const seriesName = test.testType && test.term && test.academicYear 
+        ? `${displayType} - ${displayTerm} ${test.academicYear}`
+        : (test.title || test.name || 'Individual Tests');
+
+      if (!grouped[gradeKey][seriesName]) {
+        grouped[gradeKey][seriesName] = {
+          name: seriesName,
+          tests: []
+        };
+      }
+      grouped[gradeKey][seriesName].tests.push(test);
     });
     return grouped;
   }, [filteredTests]);
 
-  // Get status badge
-  const getStatusBadge = (status) => {
-    const s = status?.toUpperCase();
-    switch (s) {
-      case 'PUBLISHED':
-        return 'bg-green-100 text-green-800';
-      case 'APPROVED':
-        return 'bg-blue-100 text-blue-800';
-      case 'SUBMITTED':
-        return 'bg-purple-100 text-purple-800';
-      case 'ARCHIVED':
-        return 'bg-gray-100 text-gray-800';
-      default:
-        return 'bg-orange-100 text-orange-800';
-    }
-  };
+  // All tests are published — single badge style
+  const getStatusBadge = () => 'bg-green-100 text-green-800';
 
   // Delete test
   const handleDeleteTest = (testId) => {
@@ -185,85 +184,97 @@ const SummativeTestsMobile = ({ onNavigate, onBack }) => {
             title="No Tests Yet"
             message="Create your first summative test"
           />
-        ) : Object.keys(groupedTests).length === 0 ? (
+        ) : Object.keys(groupedData).length === 0 ? (
           <EmptyState
             icon={Search}
             title="No Results"
             message="No tests match your search"
           />
         ) : (
-          Object.entries(groupedTests).map(([status, statusTests]) => (
-            <div key={status}>
-              {/* Status Header */}
-              <div className="flex items-center gap-2 px-3 py-2 mb-2">
-                <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusBadge(status)}`}>
-                  {status}
-                </span>
-                <span className="text-xs text-gray-500">{statusTests.length}</span>
-              </div>
+          Object.entries(groupedData)
+            .sort((a, b) => {
+              const grades = ['PLAYGROUP', 'PP1', 'PP2', 'GRADE_1', 'GRADE_2', 'GRADE_3', 'GRADE_4', 'GRADE_5', 'GRADE_6', 'GRADE_7', 'GRADE_8', 'GRADE_9'];
+              return grades.indexOf(a[0]) - grades.indexOf(b[0]);
+            })
+            .map(([gradeKey, seriesGroups]) => (
+              <div key={gradeKey} className="space-y-4">
+                {/* Grade Header */}
+                <div className="flex items-center gap-2 px-3 py-1 mt-4">
+                  <div className="w-6 h-6 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center text-[10px] font-bold">
+                    {gradeKey.substring(0, 2).toUpperCase()}
+                  </div>
+                  <span className="text-xs font-black text-gray-400 uppercase tracking-widest">
+                    {gradeKey.replace(/_/g, ' ')}
+                  </span>
+                </div>
 
-              {/* Test Cards */}
-              <div className="space-y-2 mb-4">
-                {statusTests.map(test => (
-                  <div
-                    key={test.id}
-                    className="bg-white rounded-lg border border-gray-200 p-3 active:bg-gray-50 transition"
-                  >
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-gray-900 text-sm truncate">{test.title || test.name}</h3>
-                        <p className="text-xs text-gray-500">{test.grade || 'All Grades'}</p>
-                      </div>
-                      <div className="ml-2 text-right flex-shrink-0">
-                        <p className="text-xs font-semibold text-gray-700">
-                          {test.totalQuestions || 0} Q
-                        </p>
+                {/* Series Groups */}
+                {Object.entries(seriesGroups).map(([seriesName, data]) => (
+                  <div key={seriesName} className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+                    <div className="p-4 border-b border-gray-50 bg-gray-50/30">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-bold text-gray-900 text-sm leading-tight">{seriesName}</h3>
+                          <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider mt-1">
+                            {data.tests.length} Subjects • {data.tests[0]?.academicYear}
+                          </p>
+                        </div>
                       </div>
                     </div>
+                    
+                    <div className="divide-y divide-gray-50 grayscale-[0.5]">
+                      {data.tests.map(test => (
+                        <div key={test.id} className="p-4 active:bg-gray-50 transition-colors">
+                          <div className="flex items-center justify-between gap-4 mb-3">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-xs font-bold text-gray-800 truncate">{test.learningArea}</h4>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tight ${getStatusBadge(test.status)}`}>
+                                  {test.status}
+                                </span>
+                                <span className="text-[9px] text-gray-400 font-bold">{test.totalMarks} Marks</span>
+                              </div>
+                            </div>
+                          </div>
 
-                    {/* Details */}
-                    <div className="text-xs text-gray-600 mb-3 space-y-0.5">
-                      {test.subject && <p>Subject: {test.subject}</p>}
-                      {test.maxMark && <p>Max: {test.maxMark} marks</p>}
-                    </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => {
+                                setSelectedTest(test);
+                                setViewMode('view');
+                              }}
+                              className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors active:bg-blue-100"
+                            >
+                              <Eye size={14} />
+                              View
+                            </button>
 
-                    {/* Actions */}
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => {
-                          setSelectedTest(test);
-                          setViewMode('view');
-                        }}
-                        className="flex-1 flex items-center justify-center gap-1 py-1.5 bg-blue-50 text-blue-600 rounded text-xs font-medium hover:bg-blue-100"
-                      >
-                        <Eye size={14} />
-                        View
-                      </button>
+                            <button
+                              onClick={() => {
+                                setSelectedTest(test);
+                                setViewMode('edit');
+                              }}
+                              className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-gray-50 text-gray-600 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors active:bg-gray-100"
+                            >
+                              <Edit size={14} />
+                              Edit
+                            </button>
 
-                      <button
-                        onClick={() => {
-                          setSelectedTest(test);
-                          setViewMode('edit');
-                        }}
-                        className="flex-1 flex items-center justify-center gap-1 py-1.5 bg-gray-100 text-gray-700 rounded text-xs font-medium hover:bg-gray-200"
-                      >
-                        <Edit size={14} />
-                        Edit
-                      </button>
-
-                      <button
-                        onClick={() => handleDeleteTest(test.id)}
-                        disabled={deleting}
-                        className="flex items-center justify-center py-1.5 px-3 bg-red-50 text-red-600 rounded text-xs font-medium hover:bg-red-100 disabled:opacity-50"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                            <button
+                              onClick={() => handleDeleteTest(test.id)}
+                              disabled={deleting}
+                              className="flex items-center justify-center py-2 px-3 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 disabled:opacity-50"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
-          ))
+            ))
         )}
       </div>
 

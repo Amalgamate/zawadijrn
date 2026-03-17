@@ -308,9 +308,6 @@ const BulkCreateTest = ({ onBack, onSuccess }) => {
                                 disabled={loadingScales}
                             >
                                 <option value="">Default (auto per grade)</option>
-                                {scales.filter(s => s.type === 'SUMMATIVE').map(s => (
-                                    <option key={s.id} value={s.id}>{s.name}</option>
-                                ))}
                             </select>
                             <div className="absolute right-3 top-3 pointer-events-none text-brand-purple opacity-40">
                                 {loadingScales ? <RefreshCw className="animate-spin" size={16} /> : <Database size={16} />}

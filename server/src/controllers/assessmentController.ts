@@ -467,17 +467,18 @@ export const createSummativeTest = async (req: AuthRequest, res: Response) => {
       resolvedLearningArea = areaRecord?.name;
     }
 
-    const resolvedTitle = title || name;
+    const resolvedTitle = `${resolvedLearningArea} - ${testType} - ${normalizedTerm} ${academicYear}`;
     const resolvedTotalMarks = totalMarks ?? maxScore ?? 100;
 
-    if (!teacherId || !resolvedTitle || !resolvedLearningArea || !normalizedTerm || !academicYear) {
+    if (!teacherId || !resolvedLearningArea || !normalizedTerm || !academicYear || !testType) {
       return res.status(400).json({
         success: false,
         message: 'Missing required fields'
       });
     }
 
-    const test = await prisma.summativeTest.create({
+    try {
+      const test = await prisma.summativeTest.create({
       data: {
         title: resolvedTitle,
         learningArea: resolvedLearningArea,
@@ -495,8 +496,8 @@ export const createSummativeTest = async (req: AuthRequest, res: Response) => {
         weight: parseFloat(String(weight || 1.0)),
         duration: duration ? parseInt(String(duration)) : undefined,  // FIX: persist duration
         createdBy: teacherId,
-        status: req.body.status || 'PUBLISHED',
-        published: req.body.status === 'PUBLISHED' || true,
+        status: 'PUBLISHED',
+        published: true,
         active: true
       }
     });
@@ -515,7 +516,23 @@ export const createSummativeTest = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (error: any) {
+    if (error.code === 'P2002') {
+       return res.status(409).json({
+          success: false,
+          message: `A test of type ${testType} already exists for ${learningArea} in this grade for ${term} ${academicYear}.`,
+          error: 'Duplicate Test Found'
+       });
+    }
+
     console.error('Error creating summative test:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create test',
+      error: error.message
+    });
+  }
+  } catch (error: any) {
+    console.error('Error in createSummativeTest:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to create test',
@@ -526,7 +543,7 @@ export const createSummativeTest = async (req: AuthRequest, res: Response) => {
 
 /**
  * Bulk Generate Tests for multiple learning areas
- * POST /api/assessments/summative/bulk-generate
+ * POST /api/assessments/tests/bulk
  */
 export const generateTestsBulk = async (req: AuthRequest, res: Response) => {
   try {
@@ -543,7 +560,8 @@ export const generateTestsBulk = async (req: AuthRequest, res: Response) => {
       stream,
       curriculum = 'CBC_AND_EXAM',
       weight = 1.0,
-      scaleGroupId   // FIX: accept explicit scaleGroupId for reliable scale linking
+      scaleGroupId,
+      title: seriesName   // User-typed series name from BulkCreateTest form
     } = req.body;
 
     const teacherId = req.user?.userId;
@@ -581,6 +599,7 @@ export const generateTestsBulk = async (req: AuthRequest, res: Response) => {
 
     const createdTests = [];
     const scaleWarnings: string[] = [];
+    let duplicateCount = 0;
 
     for (const area of learningAreas) {
       const areaKey = String(area).trim().toLowerCase();
@@ -600,34 +619,47 @@ export const generateTestsBulk = async (req: AuthRequest, res: Response) => {
         scaleWarnings.push(`No scale found for "${area}" — test created without a scale`);
       }
 
-      const test = await prisma.summativeTest.create({
-        data: {
-          title: `${area} - ${testType} - ${term} ${academicYear}`,
-          learningArea: area,
-          testType,
-          term: normalizedTerm,
-          academicYear: parseInt(academicYear),
-          testDate: testDate ? new Date(testDate) : new Date(),
-          totalMarks: parseInt(totalMarks),
-          passMarks: parseInt(passMarks),
-          duration: duration ? parseInt(String(duration)) : undefined,
-          grade,
-          curriculum,
-          weight: parseFloat(String(weight || 1.0)),
-          scaleId: resolvedScaleId ?? null,
-          createdBy: teacherId,
-          status: req.body.status || 'PUBLISHED',
-          published: req.body.status === 'PUBLISHED' || true,
-          active: true
-        }
-      });
+      try {
+        const test = await prisma.summativeTest.create({
+          data: {
+            title: `${area} - ${testType} - ${normalizedTerm} ${academicYear}`,
+            learningArea: area,
+            testType,
+            term: normalizedTerm,
+            academicYear: parseInt(academicYear),
+            testDate: testDate ? new Date(testDate) : new Date(),
+            totalMarks: parseInt(totalMarks),
+            passMarks: parseInt(passMarks),
+            duration: duration ? parseInt(String(duration)) : undefined,
+            grade,
+            curriculum,
+            weight: parseFloat(String(weight || 1.0)),
+            scaleId: resolvedScaleId ?? null,
+            createdBy: teacherId,
+            status: 'PUBLISHED',
+            published: true,
+            active: true
+          }
+        });
 
-      createdTests.push(test);
+        createdTests.push(test);
+      } catch (err: any) {
+        if (err.code === 'P2002') {
+           duplicateCount++;
+        } else {
+           throw err; // Re-throw unhandled errors
+        }
+      }
+    }
+
+    let resultMessage = `Successfully generated ${createdTests.length} tests.`;
+    if (duplicateCount > 0) {
+      resultMessage += ` Skipped ${duplicateCount} tests because they already exist for this grade and term.`;
     }
 
     res.status(201).json({
       success: true,
-      message: `Successfully generated ${createdTests.length} tests`,
+      message: resultMessage,
       data: createdTests,
       ...(scaleWarnings.length > 0 ? { warnings: scaleWarnings } : {})
     });
@@ -650,7 +682,11 @@ export const getSummativeTests = async (req: AuthRequest, res: Response) => {
   try {
     const { term, academicYear, grade, stream, learningArea } = req.query;
 
-    const whereClause: any = { archived: false };
+    const whereClause: any = {
+      archived: false,
+      status: 'PUBLISHED',
+      active: true,
+    };
 
     if (term) whereClause.term = term;
     if (academicYear) whereClause.academicYear = parseInt(academicYear as string);

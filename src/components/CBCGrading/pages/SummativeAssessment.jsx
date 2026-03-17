@@ -142,12 +142,10 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
         testsData = response;
       }
 
-      // Filter for tests that are ready for assessment (exclude archived tests)
-      const activeTests = testsData.filter(t => {
-        const status = (t.status || '').toUpperCase();
-        // Include: DRAFT, SUBMITTED, APPROVED, PUBLISHED (exclude ARCHIVED)
-        return ['DRAFT', 'SUBMITTED', 'APPROVED', 'PUBLISHED'].includes(status) && !t.archived;
-      });
+      // Only show published, active tests (backend enforces this too)
+      const activeTests = testsData.filter(t =>
+        (t.status || '').toUpperCase() === 'PUBLISHED' && t.active !== false
+      );
 
       setTests(activeTests);
     } catch (error) {
@@ -464,7 +462,8 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
         return;
       }
       try {
-        // 1. Fetch Grading Scale
+        // 1. Fetch Grading Scale using selectedTest (resolved from state)
+        const test = tests.find(t => String(t.id) === String(selectedTestId));
         if (test) {
           const systems = await gradingAPI.getSystems();
           let scale = null;
@@ -483,10 +482,7 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
 
               if (!hasGrade) return false;
 
-              // 1. Direct match (e.g. "PP2 - MATHEMATICAL ACTIVITIES" contains "MATHEMATICAL ACTIVITIES")
               if (systemName.includes(normalizedArea)) return true;
-
-              // 2. Fuzzy matching for common terms
               if (normalizedArea.includes('MATHEMATIC') && systemName.includes('MATHEMATIC')) return true;
               if (normalizedArea.includes('LANGUAGE') && systemName.includes('LANGUAGE')) return true;
               if (normalizedArea.includes('ENVIRONMENTAL') && systemName.includes('ENVIRONMENTAL')) return true;
@@ -817,8 +813,13 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
         showSuccess('Overwriting existing results...');
       }
 
-      // Prepare bulk payload
-      const resultsToSave = Object.entries(currentMarksToSave).map(([learnerId, markData]) => {
+      // Prepare bulk payload — skip learners with no mark entered
+      const resultsToSave = Object.entries(currentMarksToSave)
+        .filter(([, markData]) => {
+          const m = markData?.mark;
+          return m !== null && m !== undefined && m !== '';
+        })
+        .map(([learnerId, markData]) => {
         const mark = markData.mark;
         // Find existing result to preserve remarks if not new mark
         const existingResult = existingResults.find(r => r.learnerId === learnerId);
@@ -842,6 +843,12 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
           teacherComment
         };
       });
+
+      if (resultsToSave.length === 0) {
+        setLoading(false);
+        showError('No marks to save — enter at least one score first.');
+        return;
+      }
 
       // Send bulk request
       await assessmentAPI.recordBulkResults({

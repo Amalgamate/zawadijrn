@@ -2145,54 +2145,20 @@ export const cbcAPI = {
 };
 
 // ============================================
-// WORKFLOW API
+// WORKFLOW API — REMOVED (approval flow disabled)
+// All tests auto-publish on creation/save.
 // ============================================
 
 export const workflowAPI = {
-  submit: async (data) => {
-    return fetchWithAuth('/workflow/submit', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-  bulkSubmit: async (data) => {
-    return fetchWithAuth('/workflow/bulk-submit', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-  approve: async (type, id, data = {}) => {
-    return fetchWithAuth(`/workflow/approve/${type}/${id}`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-  reject: async (type, id, data) => {
-    return fetchWithAuth(`/workflow/reject/${type}/${id}`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-  publish: async (type, id) => {
-    return fetchWithAuth(`/workflow/publish/${type}/${id}`, {
-      method: 'POST',
-    });
-  },
-  getHistory: async (type, id) => {
-    return fetchWithAuth(`/workflow/history/${type}/${id}`);
-  },
-  approveBulk: async (ids, assessmentType, comments = '') => {
-    return fetchWithAuth('/workflow/bulk-approve', {
-      method: 'POST',
-      body: JSON.stringify({ ids, assessmentType, comments }),
-    });
-  },
-  unlock: async (type, id, reason) => {
-    return fetchWithAuth(`/workflow/unlock/${type}/${id}`, {
-      method: 'POST',
-      body: JSON.stringify({ reason }),
-    });
-  }
+  // Stubs kept so existing call-sites don't crash; they resolve silently.
+  submit: async () => ({ success: true }),
+  bulkSubmit: async () => ({ success: true }),
+  approve: async () => ({ success: true }),
+  reject: async () => ({ success: true }),
+  publish: async () => ({ success: true }),
+  getHistory: async () => ({ success: true, data: [] }),
+  approveBulk: async () => ({ success: true, message: 'Auto-approved' }),
+  unlock: async () => ({ success: true }),
 };
 
 // ============================================

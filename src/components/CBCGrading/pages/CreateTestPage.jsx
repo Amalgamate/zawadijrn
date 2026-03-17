@@ -11,7 +11,7 @@ const CreateTestPage = ({ onSave, onCancel, initialData, availableGrades }) => {
     grade: '',
     term: 'Term 1',
     subject: '',
-    performanceScale: '',
+    performanceScale: 'Default (auto per grade)',
     year: new Date().getFullYear().toString(),
     date: new Date().toISOString().split('T')[0],
     duration: 60,
@@ -22,69 +22,7 @@ const CreateTestPage = ({ onSave, onCancel, initialData, availableGrades }) => {
     ...initialData
   });
 
-  const [scales, setScales] = useState([]);
 
-  useEffect(() => {
-    const fetchScales = async () => {
-      try {
-        const systems = await gradingAPI.getSystems();
-        const relevantScales = systems ? systems.filter(s => s.type === 'SUMMATIVE') : [];
-        setScales(relevantScales.length > 0 ? relevantScales : systems || []);
-        console.log('✅ Loaded', relevantScales.length, 'SUMMATIVE scales');
-      } catch (error) {
-        console.error('❌ Error fetching scales:', error);
-        setScales([]);
-      }
-    };
-    fetchScales();
-  }, []);
-
-  // Filter and group scales
-  const filteredAndGroupedScales = useMemo(() => {
-    if (scales.length === 0) {
-      return {};
-    }
-
-    // Helper to extract grade from scale name or grade field
-    const getScaleGrade = (scale) => {
-      // First try the grade field
-      if (scale.grade) return scale.grade;
-
-      // Then try to extract from name (e.g., "PLAYGROUP - MATH" -> "PLAYGROUP")
-      const nameParts = scale.name.split(' - ');
-      if (nameParts.length > 1) {
-        const possibleGrade = nameParts[0].trim();
-        // Check if it looks like a grade
-        if (possibleGrade.includes('GRADE') ||
-          possibleGrade.includes('PLAYGROUP') ||
-          possibleGrade.includes('PP') ||
-          possibleGrade.includes('PRE-PRIMARY')) {
-          return possibleGrade;
-        }
-      }
-
-      // Default category for scales without a clear grade
-      return 'General Scales';
-    };
-
-    // Group all scales by grade
-    const grouped = {};
-    scales.forEach(scale => {
-      const gradeKey = getScaleGrade(scale);
-      if (!grouped[gradeKey]) {
-        grouped[gradeKey] = [];
-      }
-      grouped[gradeKey].push(scale);
-    });
-
-    // If a grade is selected, we want to ensure its group appears first (optional UI enhancement)
-    // But since object key order isn't guaranteed in all JS environments (though mostly is for strings),
-    // we rely on the render order. The render uses Object.entries().
-    // We can't easily force order in a plain object, but we can return the object as is.
-    // The key change here is REMOVING the filtering that hid other grades' scales.
-
-    return grouped;
-  }, [formData.grade, scales]);
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -346,46 +284,14 @@ const CreateTestPage = ({ onSave, onCancel, initialData, availableGrades }) => {
                   onChange={(e) => handleChange('performanceScale', e.target.value)}
                   className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-semibold text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all appearance-none cursor-pointer"
                   required
+                  disabled
                 >
-                  <option value="">Select Scale</option>
-                  {Object.keys(filteredAndGroupedScales).length > 0 ? (
-                    Object.entries(filteredAndGroupedScales)
-                      .sort(([gradeA], [gradeB]) => {
-                        // Prioritize the selected grade group
-                        if (formData.grade) {
-                          const normSelected = formData.grade.toUpperCase().replace(/[\s-]/g, '');
-                          const normA = gradeA.toUpperCase().replace(/[\s-]/g, '');
-                          const normB = gradeB.toUpperCase().replace(/[\s-]/g, '');
-
-                          if (normA === normSelected) return -1;
-                          if (normB === normSelected) return 1;
-
-                          // Also try partial match
-                          if (normA.includes(normSelected)) return -1;
-                          if (normB.includes(normSelected)) return 1;
-                        }
-                        return gradeA.localeCompare(gradeB);
-                      })
-                      .map(([grade, gradeScales]) => (
-                        <optgroup key={grade} label={grade}>
-                          {gradeScales.map(scale => (
-                            <option key={scale.id} value={scale.name}>{scale.name}</option>
-                          ))}
-                        </optgroup>
-                      ))
-                  ) : (
-                    <option disabled>No scales available for this grade</option>
-                  )}
+                  <option value="Default (auto per grade)">Default (auto per grade)</option>
                 </select>
                 <div className="absolute right-3 top-3 pointer-events-none text-gray-400">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                 </div>
               </div>
-              {formData.grade && Object.values(filteredAndGroupedScales).flat().length === 0 && (
-                <p className="text-xs text-orange-600 mt-1">
-                  ⚠️ No performance scales found for {formData.grade}. You can still create the test and assign a scale later.
-                </p>
-              )}
             </div>
 
             {/* Action Buttons */}

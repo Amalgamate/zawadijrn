@@ -4,10 +4,10 @@
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Plus, Edit, Trash2, Eye, Loader, CheckCircle, Database, ChevronDown, ChevronRight, Search, RefreshCw, ListChecks, GraduationCap } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, Loader, Database, ChevronDown, GraduationCap } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
 import { useAuth } from '../../../hooks/useAuth';
-import { assessmentAPI, classAPI, workflowAPI } from '../../../services/api';
+import { assessmentAPI, classAPI } from '../../../services/api';
 import SummativeTestForm from '../../../pages/assessments/SummativeTestForm';
 import BulkCreateTest from './BulkCreateTest';
 import ConfirmDialog from '../shared/ConfirmDialog';
@@ -32,11 +32,7 @@ const SummativeTests = ({ onNavigate }) => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [confirmConfig, setConfirmConfig] = useState({ title: '', message: '', onConfirm: () => { } });
 
-  // Approve All dialog state (exam groups = "series" groups)
-  const [showApproveAll, setShowApproveAll] = useState(false);
-  const [approveAllQuery, setApproveAllQuery] = useState('');
-  const [selectedGroupKeys, setSelectedGroupKeys] = useState(() => new Set());
-  const [approvingAll, setApprovingAll] = useState(false);
+  // (Approval workflow removed — tests are auto-published)
 
   const fetchClasses = useCallback(async () => {
     try {
@@ -135,16 +131,8 @@ const SummativeTests = ({ onNavigate }) => {
     setShowConfirm(true);
   };
 
-  const getStatusBadgeStyles = (status) => {
-    const s = status?.toUpperCase();
-    switch (s) {
-      case 'PUBLISHED': return 'bg-brand-teal/10 text-brand-teal border-brand-teal/20';
-      case 'APPROVED': return 'bg-brand-purple/10 text-brand-purple border-brand-purple/20';
-      case 'SUBMITTED': return 'bg-brand-purple/5 text-brand-purple/80 border-brand-purple/10';
-      case 'ARCHIVED': return 'bg-gray-100 text-gray-800 border-gray-200';
-      default: return 'bg-orange-100 text-orange-800 border-orange-200';
-    }
-  };
+  // Status badge: all tests are published (workflow removed)
+  const getStatusBadgeStyles = () => 'bg-brand-teal/10 text-brand-teal border-brand-teal/20';
 
   const [expandedGrades, setExpandedGrades] = useState([]);
   const [expandedMajorGrades, setExpandedMajorGrades] = useState([]); // High-level grade accordions
@@ -171,10 +159,16 @@ const SummativeTests = ({ onNavigate }) => {
         grouped[gradeKey] = {};
       }
 
-      // Group by "Series" which is the prefix of the title before the first parenthesis
-      // E.g., "Term 1 Opening (Math)" -> "Term 1 Opening"
-      const seriesMatch = (test.title || test.name || '').match(/^(.*) \(/);
-      const seriesName = seriesMatch ? seriesMatch[1] : (test.title || test.name || 'Individual Tests');
+      // Title is always "Subject - TYPE - TERM_1 YEAR" — group by TYPE + TERM + YEAR
+      // Display label: exam type nicely formatted, e.g. "Opener Exam — Term 1 2026"
+      const displayType = (test.testType || 'Assessment')
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, l => l.toUpperCase());
+      const displayTerm = (test.term || '')
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, l => l.toUpperCase());
+
+      const seriesName = `${displayType} — ${displayTerm} ${test.academicYear}`;
 
       if (!grouped[gradeKey][seriesName]) {
         grouped[gradeKey][seriesName] = {
@@ -187,114 +181,7 @@ const SummativeTests = ({ onNavigate }) => {
     return grouped;
   }, [tests]);
 
-  const unapprovedGroups = useMemo(() => {
-    // Group key: "GRADE||SERIES"
-    const groups = [];
-    for (const [gradeKey, seriesGroups] of Object.entries(groupedData)) {
-      for (const [seriesName, data] of Object.entries(seriesGroups)) {
-        const groupTests = data.tests || [];
-        const actionable = groupTests.filter(t => ['DRAFT', 'Draft', 'SUBMITTED', 'Submitted'].includes(t.status));
-        if (actionable.length === 0) continue;
-
-        const draftCount = actionable.filter(t => ['DRAFT', 'Draft'].includes(t.status)).length;
-        const submittedCount = actionable.filter(t => ['SUBMITTED', 'Submitted'].includes(t.status)).length;
-
-        groups.push({
-          key: `${gradeKey}||${seriesName}`,
-          gradeKey,
-          seriesName,
-          totalActionable: actionable.length,
-          draftCount,
-          submittedCount,
-          tests: actionable
-        });
-      }
-    }
-
-    const q = approveAllQuery.trim().toLowerCase();
-    const filtered = q
-      ? groups.filter(g =>
-        `${g.gradeKey} ${g.seriesName}`.toLowerCase().includes(q)
-      )
-      : groups;
-
-    // Stable, readable sorting
-    return filtered.sort((a, b) => {
-      const gradeCmp = (a.gradeKey || '').localeCompare(b.gradeKey || '');
-      if (gradeCmp !== 0) return gradeCmp;
-      return (a.seriesName || '').localeCompare(b.seriesName || '');
-    });
-  }, [groupedData, approveAllQuery]);
-
-  const canApproveAll = useMemo(
-    () => ['HEAD_TEACHER', 'ADMIN', 'SUPER_ADMIN'].includes(user?.role),
-    [user?.role]
-  );
-
-  const toggleGroupKey = (key) => {
-    setSelectedGroupKeys(prev => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-  };
-
-  const setAllVisibleGroupsSelected = (checked) => {
-    setSelectedGroupKeys(prev => {
-      const next = new Set(prev);
-      if (checked) {
-        unapprovedGroups.forEach(g => next.add(g.key));
-      } else {
-        unapprovedGroups.forEach(g => next.delete(g.key));
-      }
-      return next;
-    });
-  };
-
-  const handleApproveAllSelectedGroups = async () => {
-    if (!canApproveAll) {
-      showError('You do not have permission to approve tests.');
-      return;
-    }
-
-    const selected = unapprovedGroups.filter(g => selectedGroupKeys.has(g.key));
-    if (selected.length === 0) {
-      showError('Select at least one exam group to approve.');
-      return;
-    }
-
-    const selectedTests = selected.flatMap(g => g.tests);
-    if (selectedTests.length === 0) {
-      showError('No unapproved tests found in the selected groups.');
-      return;
-    }
-
-    setApprovingAll(true);
-    try {
-      // 1) Submit any drafts first (workflow expects SUBMITTED before approval)
-      const draftTests = selectedTests.filter(t => ['DRAFT', 'Draft'].includes(t.status));
-      for (const t of draftTests) {
-        // eslint-disable-next-line no-await-in-loop
-        await workflowAPI.submit({ assessmentId: t.id, assessmentType: 'summative', comments: 'Bulk submit (Approve All)' });
-      }
-
-      // 2) Bulk approve (submitted + newly-submitted drafts)
-      const idsToApprove = selectedTests.map(t => t.id);
-      const response = await workflowAPI.approveBulk(idsToApprove, 'summative', 'Bulk approved (Approve All)');
-
-      showSuccess(response?.message || `Approved ${idsToApprove.length} tests`);
-      setShowApproveAll(false);
-      setApproveAllQuery('');
-      setSelectedGroupKeys(new Set());
-      fetchTests();
-    } catch (error) {
-      console.error('Approve All failed:', error);
-      showError('Failed to approve selected groups: ' + (error?.details || error?.message || 'Unknown error'));
-    } finally {
-      setApprovingAll(false);
-    }
-  };
+  // Approval workflow removed — no unapproved groups tracking needed.
 
   // eslint-disable-next-line no-unused-vars -- reserved for SummativeTestForm integration
   const handleSaveTest = async (formData) => {
@@ -314,10 +201,9 @@ const SummativeTests = ({ onNavigate }) => {
 
       // Try API first, fall back to localStorage
       if (viewMode === 'create') {
-          const newStatus = user?.role === 'SUPER_ADMIN' ? 'APPROVED' : 'DRAFT';
-          const newTest = await assessmentAPI.createTest({ ...payload, status: newStatus });
+          const newTest = await assessmentAPI.createTest({ ...payload, status: 'PUBLISHED' });
           setTests(prev => [...prev, newTest.data || newTest]);
-          showSuccess(newStatus === 'APPROVED' ? 'Test created and approved!' : 'Test created successfully!');
+          showSuccess('Test created successfully!');
         } else {
           const updatedTest = await assessmentAPI.updateTest(selectedTest.id, payload);
           setTests(prev => prev.map(t => t.id === selectedTest.id ? (updatedTest.data || updatedTest) : t));
@@ -362,34 +248,9 @@ const SummativeTests = ({ onNavigate }) => {
     setShowConfirm(true);
   };
 
-  const handleBulkApprove = async () => {
-    if (selectedIds.length === 0) return;
+  // handleBulkApprove removed — approval workflow disabled.
 
-    setConfirmConfig({
-      title: 'Bulk Approve Tests',
-      message: `Are you sure you want to approve ${selectedIds.length} selected tests? Only tests in 'Submitted' status can be approved.`,
-      onConfirm: async () => {
-        setShowConfirm(false);
-        try {
-          const response = await workflowAPI.approveBulk(selectedIds, 'summative', 'Bulk approved by Admin');
-          showSuccess(response.message || 'Bulk approval completed');
-          setSelectedIds([]);
-          fetchTests();
-        } catch (error) {
-          console.error('Bulk approve failed:', error);
-          showError('Failed to process bulk approval: ' + (error.details || error.message));
-        }
-      }
-    });
-    setShowConfirm(true);
-  };
-
-  const stats = useMemo(() => ({
-    total: tests.length,
-    draft: tests.filter(t => ['Draft', 'DRAFT'].includes(t.status)).length,
-    published: tests.filter(t => ['Published', 'PUBLISHED'].includes(t.status)).length,
-    completed: tests.filter(t => ['Completed', 'COMPLETED', 'Locked', 'LOCKED'].includes(t.status)).length
-  }), [tests]);
+  const stats = useMemo(() => ({ total: tests.length }), [tests]);
 
 
 
@@ -502,7 +363,7 @@ const SummativeTests = ({ onNavigate }) => {
                 </th>
                 <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Level / Series</th>
                 <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Coverage</th>
-                <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Status Metrics</th>
+                <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Tests</th>
                 <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
               </tr>
             </thead>
@@ -547,12 +408,9 @@ const SummativeTests = ({ onNavigate }) => {
                       </tr>
 
                       {/* Series Rows (Visible when Grade is expanded) */}
-                      {isMajorExpanded && Object.entries(seriesGroups).map(([seriesName, data], seriesIdx) => {
+                      {isMajorExpanded && Object.entries(seriesGroups).map(([seriesName, data]) => {
                         const groupKey = `${gradeKey}-${seriesName}`;
                         const isExpanded = expandedGrades.includes(groupKey);
-                        const draftCount = data.tests.filter(t => ['Draft', 'DRAFT'].includes(t.status)).length;
-                        const approvedCount = data.tests.filter(t => ['Approved', 'APPROVED', 'Published', 'PUBLISHED'].includes(t.status)).length;
-                        const submittedCount = data.tests.filter(t => ['Submitted', 'SUBMITTED'].includes(t.status)).length;
 
                         return (
                           <React.Fragment key={seriesName}>
@@ -584,8 +442,11 @@ const SummativeTests = ({ onNavigate }) => {
                                 </Badge>
                               </td>
                               <td className="px-6 py-5">
-                                <div className="flex items-center justify-center">
-                                  <span className="text-[10px] font-bold text-brand-teal uppercase tracking-wider">{data.tests.length} Active</span>
+                                <div className="flex items-center justify-center gap-4">
+                                  <div className="flex flex-col items-center">
+                                    <span className="text-[11px] font-black text-brand-teal leading-none">{data.tests.length}</span>
+                                    <span className="text-[7px] text-brand-teal/60 font-black uppercase tracking-tight mt-1">Published</span>
+                                  </div>
                                 </div>
                               </td>
                               <td className="px-6 py-5 text-right">
@@ -593,9 +454,9 @@ const SummativeTests = ({ onNavigate }) => {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => toggleGrade(groupKey)}
-                                  className="h-9 px-4 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-brand-purple rounded-xl"
+                                  className="h-9 px-4 text-[9px] font-black uppercase tracking-widest text-slate-500 hover:text-brand-purple rounded-xl border border-transparent hover:border-slate-100 hover:bg-slate-50 transition-all"
                                 >
-                                  {isExpanded ? 'Hide Areas' : 'View Areas'}
+                                  {isExpanded ? 'Hide Subjects' : 'View Subjects'}
                                 </Button>
                               </td>
                             </tr>
@@ -614,10 +475,23 @@ const SummativeTests = ({ onNavigate }) => {
                                           />
                                           <div>
                                             <p className="text-[11px] font-bold text-slate-800">{test.learningArea}</p>
-                                            <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">{test.testType || 'General Assessment'}</p>
+                                            <div className="flex items-center gap-2 mt-0.5">
+                                              <span className="text-[8px] text-slate-400 font-black uppercase tracking-widest">{test.testType || 'General Assessment'}</span>
+                                              <span className="w-1 h-1 rounded-full bg-slate-200" />
+                                              <span className="text-[8px] text-slate-500 font-bold uppercase tracking-tight">{test.totalMarks} Marks</span>
+                                              {test.weight !== 1 && (
+                                                <>
+                                                  <span className="w-1 h-1 rounded-full bg-slate-200" />
+                                                  <span className="text-[8px] text-brand-purple font-bold uppercase tracking-tight">Weight: {test.weight}x</span>
+                                                </>
+                                              )}
+                                            </div>
                                           </div>
                                         </div>
                                         <div className="flex items-center gap-4">
+                                          <div className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${['Published', 'PUBLISHED'].includes(test.status) ? 'bg-brand-teal/10 text-brand-teal' : 'bg-orange-100 text-orange-600'}`}>
+                                            {test.status}
+                                          </div>
 
                                           <div className="flex items-center gap-1">
                                             <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-brand-teal" onClick={() => onNavigate('summative-results', { testId: test.id })}><Eye size={14} /></Button>
