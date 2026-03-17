@@ -7,6 +7,7 @@ import {
 import { DatePicker } from '../../ui/date-picker';
 import { assessmentAPI, gradingAPI } from '../../../services/api';
 import { useNotifications } from '../hooks/useNotifications';
+import { useAuth } from '../../../hooks/useAuth';
 import { getLearningAreasByGrade } from '../../../constants/learningAreas';
 
 // Shadcn-like components
@@ -68,6 +69,7 @@ const TERMS = [
 ];
 
 const BulkCreateTest = ({ onBack, onSuccess }) => {
+    const { user } = useAuth();
     const { showSuccess, showError } = useNotifications();
     const [saving, setSaving] = useState(false);
     const [loadingScales, setLoadingScales] = useState(false);
@@ -285,8 +287,20 @@ const BulkCreateTest = ({ onBack, onSuccess }) => {
                                         </select>
                                     </div>
 
-                                    <div className="space-y-2">
-                                        <Label className="text-slate-700 font-bold">Grading Standard (Optional)</Label>
+                                     <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <Label className="text-slate-700 font-bold">Performance Scale</Label>
+                                            {user?.role === 'SUPER_ADMIN' && (
+                                                <button
+                                                    onClick={() => window.dispatchEvent(new CustomEvent('pageNavigate', {
+                                                        detail: { page: 'settings-academic', params: { tab: 'performance-levels' } }
+                                                    }))}
+                                                    className="text-[10px] font-bold text-indigo-500 hover:underline"
+                                                >
+                                                    Manage in Settings
+                                                </button>
+                                            )}
+                                        </div>
                                         <div className="relative">
                                             <select
                                                 value={formData.scaleGroupId}
@@ -294,7 +308,7 @@ const BulkCreateTest = ({ onBack, onSuccess }) => {
                                                 className="w-full h-10 px-3 pr-10 bg-white border border-slate-200 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none text-sm appearance-none transition-shadow shadow-sm"
                                                 disabled={loadingScales}
                                             >
-                                                <option value="">Auto-Assign (Based on grade link)</option>
+                                                <option value="">Default (Based on current level)</option>
                                                 {scaleGroups.map(group => (
                                                     <option key={group.id} value={group.id}>{group.name}</option>
                                                 ))}

@@ -268,7 +268,8 @@ const TimetablePage = () => {
 
       setScheduleData(grouped);
     } catch (error) {
-      showError('Failed to fetch schedules');
+      showError(`Failed to fetch schedules: ${error.message || String(error)}`);
+      console.error(error);
     }
   };
 

@@ -37,20 +37,20 @@ const BrandingSettings = ({ brandingSettings, setBrandingSettings }) => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const schoolId = localStorage.getItem('currentSchoolId');
+      const schoolId = null; // Removed for single-tenant mode
       const token = localStorage.getItem('token') || localStorage.getItem('authToken');
 
-      if (!schoolId || !token) throw new Error('Authentication required');
+      if (!token) throw new Error('Authentication required');
 
       const { API_BASE_URL } = await import('../../../../services/api');
 
       // Update backend - only send messaging fields (backend handles individual updates)
-      const response = await fetch(`${API_BASE_URL}/schools/${schoolId}`, {
+      // Update backend
+      const response = await fetch(`${API_BASE_URL}/schools/branding`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'X-School-Id': schoolId
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           welcomeTitle: localSettings.welcomeTitle,

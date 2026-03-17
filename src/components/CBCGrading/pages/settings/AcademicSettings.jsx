@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Calendar, Save, BookOpen, Plus, Edit, Trash2, Users, Loader, X, UserPlus, Layers } from 'lucide-react';
+import { Calendar, Save, BookOpen, Plus, Edit, Trash2, Users, Loader, X, UserPlus, Layers, Gauge } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useNotifications } from '../../hooks/useNotifications';
 import { useAuth } from '../../../../hooks/useAuth';
@@ -15,6 +15,7 @@ import { gradeStructure } from '../../data/gradeStructure';
 import { useSchoolData } from '../../../../contexts/SchoolDataContext';
 import HierarchicalLearningAreas from './HierarchicalLearningAreas';
 import SubjectAllocationPage from './SubjectAllocationPage';
+import PerformanceLevelManager from './PerformanceLevelManager';
 import Toast from '../../shared/Toast';
 
 const AcademicSettings = () => {
@@ -79,27 +80,12 @@ const AcademicSettings = () => {
   const loadConfigs = React.useCallback(async () => {
     try {
       setLoading(true);
-      let sid = user?.school?.id || user?.schoolId;
-      if (!sid) {
-        try {
-          const me = await authAPI.me();
-          const u = me.data || me;
-          sid = u.schoolId || (u.school && u.school.id) || sid;
-          if (sid) {
-            updateUser({ schoolId: sid, school: u.school || null });
-          }
-        } catch { }
-      }
-      if (!sid) {
-        showError('School ID not detected. Please re-login.');
-        setStreamConfigs([]);
-        setTermConfigs([]);
-        return;
-      }
+      setLoading(true);
+      // School ID removed for single-tenant mode
       const [terms, streams, classes, teachersList] = await Promise.all([
-        configAPI.getTermConfigs(sid),
-        configAPI.getStreamConfigs(sid),
-        configAPI.getClasses(sid),
+        configAPI.getTermConfigs(),
+        configAPI.getStreamConfigs(),
+        configAPI.getClasses(),
         userAPI.getAll()
       ]);
       const termsArr = Array.isArray(terms) ? terms : (terms && terms.data) ? terms.data : [];
@@ -116,25 +102,13 @@ const AcademicSettings = () => {
     } finally {
       setLoading(false);
     }
-  }, [user?.school?.id, user?.schoolId]);
+  }, []);
 
   // Load Learning Areas from Database
   const loadLearningAreas = React.useCallback(async () => {
     try {
-      let sid = user?.school?.id || user?.schoolId;
-      if (!sid) {
-        try {
-          const me = await authAPI.me();
-          const u = me.data || me;
-          sid = u.schoolId || (u.school && u.school.id) || sid;
-        } catch { }
-      }
-      if (!sid) {
-        setLearningAreas([]);
-        return;
-      }
-
-      const areas = await configAPI.getLearningAreas(sid);
+      // School ID removed for single-tenant mode
+      const areas = await configAPI.getLearningAreas();
       const areasArr = Array.isArray(areas) ? areas : (areas && areas.data) ? areas.data : [];
       setLearningAreas(areasArr);
     } catch (error) {
@@ -299,10 +273,8 @@ const AcademicSettings = () => {
   const handleSaveTerm = async (termData) => {
     try {
       setSubmitting(true);
-      const sid = user?.school?.id || user?.schoolId;
       await configAPI.upsertTermConfig({
-        ...termData,
-        schoolId: sid
+        ...termData
       });
       showSuccess(`Term ${termData.term} saved successfully!`);
       loadConfigs(); // Refresh
@@ -329,22 +301,13 @@ const AcademicSettings = () => {
       return;
     }
 
-    // Validate schoolId
-    const sidCtx = user?.school?.id || user?.schoolId || localStorage.getItem('currentSchoolId');
-    if (!sidCtx) {
-      showError('School ID is missing. Please log in again.');
-      console.error('User object:', user);
-      return;
-    }
-
+    // Unified single-tenant mode
     try {
       setSubmitting(true);
-      const sid = sidCtx;
       // removed debug log
 
       const payload = {
-        ...streamFormData,
-        schoolId: sid
+        ...streamFormData
       };
 
       if (editingStream) {
@@ -471,18 +434,10 @@ const AcademicSettings = () => {
       return;
     }
 
-    const sid = user?.school?.id || user?.schoolId;
-    if (!sid) {
-      showError('School ID is missing. Please log in again.');
-      return;
-    }
-
     try {
       setSubmitting(true);
       const payload = {
-        ...classFormData,
-        schoolId: sid,
-        branchId: user?.branchId || null
+        ...classFormData
       };
 
       if (editingClass) {
@@ -535,19 +490,12 @@ const AcademicSettings = () => {
 
     try {
       setSubmitting(true);
-      const sid = user?.school?.id || user?.schoolId;
-      if (!sid) {
-        showError('School ID is missing');
-        return;
-      }
-
       if (editingArea) {
         await configAPI.updateLearningArea(editingArea.id, formData);
         notifySuccess('✏️ Learning area updated successfully');
       } else {
         await configAPI.createLearningArea({
-          ...formData,
-          schoolId: sid
+          ...formData
         });
         notifySuccess('✨ Learning area created successfully');
       }
@@ -724,6 +672,16 @@ const AcademicSettings = () => {
             >
               <Users size={20} />
               Streams
+            </button>
+            <button
+              onClick={() => setActiveTab('performance-levels')}
+              className={`flex items-center gap-2 px-6 py-4 font-semibold transition ${activeTab === 'performance-levels'
+                ? 'border-b-2 border-blue-600 text-blue-600'
+                : 'text-gray-600 hover:text-gray-800'
+                }`}
+            >
+              <Gauge size={20} />
+              Performance Levels
             </button>
           </div>
         </div>
@@ -1040,9 +998,6 @@ const AcademicSettings = () => {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-lg font-bold">Manage Streams</h3>
-              <div className="text-xs text-gray-500 mt-1">
-                Current School: {user?.school?.name || 'Unknown'} ({user?.school?.id || user?.schoolId || '—'})
-              </div>
             </div>
             <div className="flex gap-2">
               <button
@@ -1106,6 +1061,13 @@ const AcademicSettings = () => {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {/* Performance Levels Tab */}
+      {activeTab === 'performance-levels' && (
+        <div className="bg-white rounded-xl shadow-md p-6">
+          <PerformanceLevelManager />
         </div>
       )}
 

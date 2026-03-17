@@ -5,7 +5,6 @@ import { useNotifications } from '../../hooks/useNotifications';
 
 const PaymentSettings = () => {
     const [loading, setLoading] = useState(false);
-    const [schoolId, setSchoolId] = useState('');
     const { showSuccess } = useNotifications();
 
     const [mpesaSettings, setMpesaSettings] = useState({
@@ -20,17 +19,13 @@ const PaymentSettings = () => {
     });
 
     useEffect(() => {
-        const sid = localStorage.getItem('currentSchoolId');
-        if (sid) {
-            setSchoolId(sid);
-            loadConfig(sid);
-        }
+        loadConfig();
     }, []);
 
-    const loadConfig = async (sid) => {
+    const loadConfig = async () => {
         try {
             setLoading(true);
-            const response = await communicationAPI.getConfig(sid);
+            const response = await communicationAPI.getConfig();
             const config = response.data || response;
 
             setMpesaSettings({
@@ -51,16 +46,11 @@ const PaymentSettings = () => {
     };
 
     const handleSave = async () => {
-        if (!schoolId) {
-            showSuccess('No school selected');
-            return;
-        }
 
         try {
             setLoading(true);
 
             const payload = {
-                schoolId,
                 mpesa: {
                     enabled: mpesaSettings.enabled,
                     shortcode: mpesaSettings.shortcode,
@@ -74,7 +64,7 @@ const PaymentSettings = () => {
             showSuccess('Payment settings saved successfully!');
 
             // Reload to update "has" flags
-            await loadConfig(schoolId);
+            await loadConfig();
         } catch (error) {
             console.error('Save error:', error);
             showSuccess(error.message || 'Failed to save payment settings');
@@ -101,7 +91,7 @@ const PaymentSettings = () => {
                         <h3 className="text-lg font-bold">M-Pesa Configuration</h3>
                     </div>
 
-                    {loading && !schoolId ? (
+                    {loading ? (
                         <div className="text-center py-4">
                             <Loader className="animate-spin inline" /> Loading config...
                         </div>

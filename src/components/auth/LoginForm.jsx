@@ -9,19 +9,7 @@ import { Label } from "../ui/label";
 import { Card, CardContent, CardHeader } from "../ui/card";
 import { cn } from "../../utils/cn";
 
-// Helper: Get default school when user context has no school yet
-const getDefaultSchool = async () => {
-  try {
-    const response = await schoolAPI.getAll();
-    const schools = response?.data || [];
-    if (schools.length > 0) {
-      return schools[0]; // Return first school as default
-    }
-  } catch (error) {
-    console.error('Failed to fetch default school:', error);
-  }
-  return null;
-};
+// Helper: School fetching removed for single-tenant mode
 
 export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword, onLoginSuccess, brandingSettings }) {
   const [formData, setFormData] = useState({ email: '', password: '', rememberMe: false });
@@ -63,8 +51,7 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
       // Trigger OTP flow
 
       try {
-        const sid = credentialsData.user?.schoolId || credentialsData.user?.school?.id || '';
-        await authAPI.sendOTP({ email: formData.email, schoolId: sid });
+        await authAPI.sendOTP({ email: formData.email });
         setPendingUserData({
           email: formData.email,
           phone: credentialsData.user?.phone || credentialsData.user?.school?.phone || '+254XXXXXXXX',
@@ -90,17 +77,9 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
       if (formData.rememberMe) localStorage.setItem('authToken', pendingUserData.token);
     }
 
-    // Get school ID - use user's school or default to first school
-    let schoolId = pendingUserData.user.schoolId || pendingUserData.user.school?.id;
+    // Unified single-tenant mode
+    let schoolId = null;
     let school = pendingUserData.user.school || null;
-
-    if (!schoolId) {
-      const defaultSchool = await getDefaultSchool();
-      if (defaultSchool) {
-        schoolId = defaultSchool.id;
-        school = defaultSchool;
-      }
-    }
 
     const loginUserData = {
       email: pendingUserData.user.email,
@@ -109,13 +88,13 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
       id: pendingUserData.user.id,
       firstName: pendingUserData.user.firstName,
       lastName: pendingUserData.user.lastName,
-      schoolId: schoolId || null,
+      schoolId: null,
       branchId: pendingUserData.user.branchId || pendingUserData.user.branch?.id || null,
       school: school,
       branch: pendingUserData.user.branch || null
     };
 
-    if (schoolId) setCurrentSchoolId(schoolId);
+    // setCurrentSchoolId removed for single-tenant mode
     const bid = pendingUserData.user.branchId || pendingUserData.user.branch?.id || '';
     if (bid) setBranchId(bid);
 

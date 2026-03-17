@@ -70,12 +70,7 @@ export const useSummativeTestForm = () => {
 
   const loadLearningAreas = useCallback(async () => {
     try {
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      const schoolId = user?.school?.id || user?.schoolId || localStorage.getItem('currentSchoolId');
-
-      if (!schoolId) return;
-
-      const response = await configAPI.getLearningAreas(schoolId);
+      const response = await configAPI.getLearningAreas();
       const areasData = response?.data || response;
       setAllLearningAreas(Array.isArray(areasData) ? areasData : []);
     } catch (error) {
@@ -87,12 +82,7 @@ export const useSummativeTestForm = () => {
   const loadScales = useCallback(async () => {
     setLoadingScales(true);
     try {
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      const schoolId = user?.school?.id || user?.schoolId || localStorage.getItem('currentSchoolId');
-
-      if (!schoolId) return;
-
-      const response = await gradingAPI.getSystems(schoolId);
+      const response = await gradingAPI.getSystems();
       const systemsData = response?.data || response;
       setScales(Array.isArray(systemsData) ? systemsData : []);
     } catch (error) {
@@ -123,22 +113,44 @@ export const useSummativeTestForm = () => {
       officialAreas.includes(area.name)
     );
 
-    // If we found official matches in the DB, show those. 
-    // Otherwise, show the official list as virtual objects to allow creation.
+    // Deduplicate by name (keep first occurrence)
+    const dedupe = (arr) => {
+      const seen = new Set();
+      return arr.filter(a => {
+        if (seen.has(a.name)) return false;
+        seen.add(a.name);
+        return true;
+      });
+    };
+
     if (filtered.length > 0) {
-      setAvailableLearningAreas(filtered);
+      setAvailableLearningAreas(dedupe(filtered));
     } else {
       setAvailableLearningAreas(officialAreas.map(name => ({ id: name, name })));
     }
+
+    // Reset learning area and scale when grade changes
+    setFormData(prev => ({ ...prev, learningArea: '', scaleId: '' }));
   }, [formData.grade, allLearningAreas]);
 
 
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setFormData(prev => {
+      const next = { ...prev, [field]: value };
+
+      // When learning area changes, auto-match the corresponding scale
+      if (field === 'learningArea' && value && next.grade) {
+        const match = scales.find(s =>
+          s.type === 'SUMMATIVE' &&
+          (s.grade === next.grade || (s.name && s.name.toUpperCase().includes(next.grade.toUpperCase().replace(/_/g, ' ')))) &&
+          s.name && s.name.toLowerCase().includes(value.toLowerCase())
+        );
+        next.scaleId = match ? match.id : '';
+      }
+
+      return next;
+    });
 
     // Clear error for this field
     if (errors[field]) {

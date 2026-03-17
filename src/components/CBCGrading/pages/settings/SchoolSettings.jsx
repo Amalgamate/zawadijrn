@@ -97,15 +97,13 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
   useEffect(() => {
     const fetchSchoolData = async () => {
       try {
-        const schoolId = localStorage.getItem('currentSchoolId');
         const token = localStorage.getItem('token') || localStorage.getItem('authToken');
 
-        if (!schoolId || !token) return;
+        if (!token) return;
 
-        const response = await fetch(`${API_BASE_URL}/schools/${schoolId}`, {
+        const response = await fetch(`${API_BASE_URL}/schools/profile`, {
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'X-School-Id': schoolId
+            'Authorization': `Bearer ${token}`
           }
         });
 
@@ -250,17 +248,15 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const schoolId = localStorage.getItem('currentSchoolId');
       const token = localStorage.getItem('token') || localStorage.getItem('authToken');
 
-      if (!schoolId || !token) throw new Error('Authentication required');
+      if (!token) throw new Error('Authentication required');
 
-      const response = await fetch(`${API_BASE_URL}/schools/${schoolId}`, {
+      const response = await fetch(`${API_BASE_URL}/schools/profile`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'X-School-Id': schoolId
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           name: settings.schoolName,

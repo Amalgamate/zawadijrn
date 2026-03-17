@@ -72,15 +72,8 @@ const BulkOperationsModal = ({
       const formData = new FormData();
       formData.append('file', file);
 
-      const schoolId = localStorage.getItem('currentSchoolId');
-      if (!schoolId) {
-        setUploadResult({
-          success: false,
-          error: 'School context not initialized. Please log out and log in again.'
-        });
-        setUploading(false);
-        return;
-      }
+      // School ID removed for single-tenant mode
+      const schoolId = null;
 
       const response = await axiosInstance.post(`/bulk/${entityType}/upload?forceCreate=${forceCreate ? 'true' : 'false'}`, formData, {
         headers: {
@@ -141,20 +134,14 @@ const BulkOperationsModal = ({
         return;
       }
 
-      const schoolId = localStorage.getItem('currentSchoolId');
-      if (!schoolId) {
-        alert('School context not initialized. Please log out and log in again to ensure your school is properly configured.');
-        setExporting(false);
-        return;
-      }
+      // School ID removed for single-tenant mode
+      const schoolId = null;
 
       let url = `${API_BASE_URL}/bulk/${entityType}/export`;
 
       const response = await fetch(url, {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'X-School-Id': schoolId,
-          'X-Branch-Id': localStorage.getItem('currentBranchId') || ''
+          'Authorization': `Bearer ${token}`
         }
       });
 

@@ -1,8 +1,10 @@
 import React from 'react';
 import { ArrowLeft, Check, AlertCircle, Loader } from 'lucide-react';
 import { useSummativeTestForm } from '../../hooks/useSummativeTestForm';
+import { useAuth } from '../../hooks/useAuth';
 
 const SummativeTestFormMobile = ({ onBack, onSuccess }) => {
+  const { user } = useAuth();
   const {
     formData,
     scales,
@@ -199,9 +201,22 @@ const SummativeTestFormMobile = ({ onBack, onSuccess }) => {
 
           {/* Scale */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Grading Scale
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm font-medium text-gray-700">
+                Performance Scale
+              </label>
+              {user?.role === 'SUPER_ADMIN' && (
+                <button
+                  type="button"
+                  onClick={() => window.dispatchEvent(new CustomEvent('pageNavigate', {
+                    detail: { page: 'settings-academic', params: { tab: 'performance-levels' } }
+                  }))}
+                  className="text-[10px] font-bold text-blue-600 hover:underline"
+                >
+                  Manage in Settings
+                </button>
+              )}
+            </div>
             <select
               value={formData.scaleId}
               onChange={(e) => handleInputChange('scaleId', e.target.value)}

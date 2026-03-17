@@ -1509,7 +1509,6 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
 
     try {
       setIsSendingSMS(true);
-      const schoolId = user?.schoolId || user?.school?.id || localStorage.getItem('currentSchoolId');
 
       // Format number to international standard if it starts with 0
       let formattedPhone = editedPhoneNumber;
@@ -1519,8 +1518,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
 
       await communicationAPI.sendTestSMS({
         phoneNumber: formattedPhone,
-        message: smsPreviewData.message,
-        schoolId: schoolId
+        message: smsPreviewData.message
       });
 
       setNotificationModal({
@@ -2378,48 +2376,6 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                   </p>
                 </div>
 
-                {/* ACTION BAR FOR BULK PREVIEW */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 bg-indigo-50 p-4 rounded-xl border border-indigo-100 no-print gap-4 md:gap-0">
-                  <div>
-                    <p className="text-sm font-bold text-indigo-900">Combined Actions</p>
-                    <p className="text-[10px] text-indigo-600 font-bold uppercase tracking-wider">
-                      {selectedReportRows.length > 0 ? `${selectedReportRows.length} learners selected` : `Apply to all ${reportData.rows.length} learners`}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap md:flex-nowrap gap-3 w-full md:w-auto">
-                    <button
-                      onClick={handleBulkSMS}
-                      disabled={bulkProgress.active}
-                      className="flex-1 md:flex-none justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-md flex items-center gap-2 font-bold uppercase text-[10px]"
-                    >
-                      {bulkProgress.active ? <Loader className="animate-spin" size={14} /> : <MessageSquare size={14} />}
-                      {bulkProgress.active ? 'Sending SMS...' : 'Bulk Send SMS'}
-                    </button>
-                    <button
-                      onClick={() => setShowWhatsAppConfirm(true)}
-                      disabled={isSendingWhatsApp}
-                      className="flex-1 md:flex-none justify-center px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition shadow-md flex items-center gap-2 font-bold uppercase text-[10px]"
-                    >
-                      {isSendingWhatsApp ? <Loader className="animate-spin" size={14} /> : <MessageCircle size={14} />}
-                      {isSendingWhatsApp ? 'Sending...' : 'Bulk WhatsApp'}
-                    </button>
-                    <div className="relative w-full md:w-auto mt-2 md:mt-0">
-                      <button
-                        onClick={handleBulkPrint}
-                        disabled={isBulkPrinting}
-                        className="w-full justify-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-md flex items-center gap-2 font-bold uppercase text-[10px]"
-                      >
-                        {isBulkPrinting ? <Loader className="animate-spin" size={14} /> : <Printer size={14} />}
-                        {isBulkPrinting ? 'Processing...' : 'Download Combined PDF'}
-                      </button>
-                      {isBulkPrinting && pdfProgress && (
-                        <div className="absolute top-full left-0 md:left-auto md:right-0 mt-1.5 text-[10px] font-bold text-indigo-600 animate-pulse whitespace-nowrap">
-                          {pdfProgress}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
 
                 <div className="mb-8 border rounded-xl overflow-hidden shadow-sm bg-white">
                   <div className="bg-slate-50 border-b p-3 hidden md:grid grid-cols-12 text-[10px] font-black text-slate-500 uppercase tracking-widest items-center">
@@ -2553,6 +2509,48 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                 </div>
 
                 <div className="flex flex-col items-center gap-4 border-t pt-6">
+                  {/* ACTION BAR FOR BULK PREVIEW */}
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center w-full bg-indigo-50 p-4 rounded-xl border border-indigo-100 no-print gap-4 md:gap-0">
+                    <div>
+                      <p className="text-sm font-bold text-indigo-900">Combined Actions</p>
+                      <p className="text-[10px] text-indigo-600 font-bold uppercase tracking-wider">
+                        {selectedReportRows.length > 0 ? `${selectedReportRows.length} learners selected` : `Apply to all ${reportData.rows.length} learners`}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap md:flex-nowrap gap-3 w-full md:w-auto">
+                      <button
+                        onClick={handleBulkSMS}
+                        disabled={bulkProgress.active}
+                        className="flex-1 md:flex-none justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-md flex items-center gap-2 font-bold uppercase text-[10px]"
+                      >
+                        {bulkProgress.active ? <Loader className="animate-spin" size={14} /> : <MessageSquare size={14} />}
+                        {bulkProgress.active ? 'Sending SMS...' : 'Bulk Send SMS'}
+                      </button>
+                      <button
+                        onClick={() => setShowWhatsAppConfirm(true)}
+                        disabled={isSendingWhatsApp}
+                        className="flex-1 md:flex-none justify-center px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition shadow-md flex items-center gap-2 font-bold uppercase text-[10px]"
+                      >
+                        {isSendingWhatsApp ? <Loader className="animate-spin" size={14} /> : <MessageCircle size={14} />}
+                        {isSendingWhatsApp ? 'Sending...' : 'Bulk WhatsApp'}
+                      </button>
+                      <div className="relative w-full md:w-auto mt-2 md:mt-0">
+                        <button
+                          onClick={handleBulkPrint}
+                          disabled={isBulkPrinting}
+                          className="w-full justify-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-md flex items-center gap-2 font-bold uppercase text-[10px]"
+                        >
+                          {isBulkPrinting ? <Loader className="animate-spin" size={14} /> : <Printer size={14} />}
+                          {isBulkPrinting ? 'Processing...' : 'Download Combined PDF'}
+                        </button>
+                        {isBulkPrinting && pdfProgress && (
+                          <div className="absolute top-full left-0 md:left-auto md:right-0 mt-1.5 text-[10px] font-bold text-indigo-600 animate-pulse whitespace-nowrap">
+                            {pdfProgress}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                   <button
                     onClick={() => setReportData(null)}
                     className="text-slate-500 hover:text-slate-800 font-bold uppercase text-xs transition px-4 py-2 border rounded-lg hover:bg-slate-50"

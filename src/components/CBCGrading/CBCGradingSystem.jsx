@@ -200,15 +200,7 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
   }, [currentPage]);
 
   React.useEffect(() => {
-    const schoolId = (user && (user.school?.id || user.schoolId)) || localStorage.getItem('currentSchoolId');
-    const lastSchoolId = localStorage.getItem('cbc_last_school_id');
-    if (!schoolId) return;
-    // Redirect to settings if switching to a different or fresh school
-    if (lastSchoolId !== schoolId) {
-      localStorage.setItem('cbc_last_school_id', schoolId);
-      // Removed automatic redirection to settings-school for fresh schools
-      // Users should always land on the dashboard now.
-    }
+    // School persistence logic removed for single-tenant mode
   }, [user]);
 
   // Persist expandedSections changes
@@ -425,8 +417,8 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
             let academicYear = new Date().getFullYear();
 
             try {
-              if (user?.schoolId) {
-                const termResp = await configAPI.getTermConfigs(user.schoolId);
+              if (true) {
+                const termResp = await configAPI.getTermConfigs();
                 const activeConfig = termResp.data?.find(t => t.isCurrent) || termResp.data?.[0];
                 if (activeConfig) {
                   term = activeConfig.term;

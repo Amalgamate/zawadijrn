@@ -84,205 +84,175 @@ const HierarchicalLearningAreas = ({
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-4">
       {sortedGrades.length === 0 ? (
         <div className="text-center py-12">
-          <BookOpen className="mx-auto text-gray-400 mb-3" size={48} />
-          <p className="text-gray-600">No learning areas added yet</p>
+          <BookOpen className="mx-auto text-slate-300 mb-3" size={48} />
+          <p className="text-slate-500 font-semibold">No learning areas added yet</p>
         </div>
       ) : (
-        sortedGrades.map(grade => {
-          const GradeCheckboxWrapper = () => {
-            const checkboxRef = useRef(null);
-            const gradeAreaIds = groupedByGrade[grade].map(a => a.id);
-            const allSelected = gradeAreaIds.every(id => selectedAreas.includes(id));
-            const someSelected = gradeAreaIds.some(id => selectedAreas.includes(id));
+        <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden">
+          <table className="w-full text-left border-collapse [&_th]:border-b [&_th]:border-slate-200 [&_td]:border-b [&_td]:border-slate-100">
+            <thead>
+              <tr className="bg-slate-50">
+                <th className="px-6 py-5 w-10"></th>
+                <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Level / Learning Area</th>
+                <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Coverage</th>
+                <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {sortedGrades.map(grade => {
+                const GradeCheckboxWrapper = () => {
+                  const checkboxRef = useRef(null);
+                  const gradeAreaIds = groupedByGrade[grade].map(a => a.id);
+                  const allSelected = gradeAreaIds.length > 0 && gradeAreaIds.every(id => selectedAreas.includes(id));
+                  const someSelected = gradeAreaIds.some(id => selectedAreas.includes(id));
 
-            useEffect(() => {
-              if (checkboxRef.current) {
-                checkboxRef.current.indeterminate = someSelected && !allSelected;
-              }
-            }, [someSelected, allSelected]);
+                  useEffect(() => {
+                    if (checkboxRef.current) {
+                      checkboxRef.current.indeterminate = someSelected && !allSelected;
+                    }
+                  }, [someSelected, allSelected]);
 
-            return (
-              <input
-                ref={checkboxRef}
-                type="checkbox"
-                checked={allSelected}
-                onChange={() => toggleGradeSelection(grade)}
-                className="w-5 h-5 cursor-pointer accent-blue-600"
-                title="Select all in this grade"
-              />
-            );
-          };
+                  return (
+                    <input
+                      ref={checkboxRef}
+                      type="checkbox"
+                      checked={allSelected}
+                      onChange={() => toggleGradeSelection(grade)}
+                      className="rounded border-slate-300 text-brand-purple focus:ring-brand-purple"
+                      title="Select all in this grade"
+                    />
+                  );
+                };
 
-          return (
-            <div key={grade} className="border border-gray-200 rounded-lg overflow-hidden">
-              {/* Grade Header Row */}
-              <div className="flex items-center gap-3 px-4 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
-                {/* Checkbox for select all */}
-                <div onClick={(e) => e.stopPropagation()} className="flex-shrink-0">
-                  <GradeCheckboxWrapper />
-                </div>
-                <button
-                  onClick={() => toggleGrade(grade)}
-                  className="flex items-center gap-3 flex-grow hover:opacity-70 transition"
-                >
-                  {expandedGrades[grade] ? (
-                    <ChevronDown size={20} className="text-blue-600" />
-                  ) : (
-                    <ChevronRight size={20} className="text-gray-500" />
-                  )}
-                  <div>
-                    <h3 className="font-bold text-gray-800 text-lg">
-                      {grade.replace(/_/g, ' ')}
-                    </h3>
-                    <p className="text-xs text-gray-500">
-                      {groupedByGrade[grade].length} learning {groupedByGrade[grade].length === 1 ? 'area' : 'areas'}
-                    </p>
-                  </div>
-                </button>
-                <span className="px-3 py-1 bg-blue-200 text-blue-800 text-sm font-semibold rounded-full">
-                  {groupedByGrade[grade].length}
-                </span>
-              </div>
+                const isGradeExpanded = expandedGrades[grade];
+                const areaCount = groupedByGrade[grade].length;
 
-              {/* Learning Areas - shown when grade is expanded */}
-              {expandedGrades[grade] && (
-                <div className="bg-white">
-                  {groupedByGrade[grade].map((area, index) => {
-                    const strands = getStrandsForArea(area.name);
-                    const isAreaExpanded = expandedAreas[area.id];
-
-                    return (
-                      <div
-                        key={area.id}
-                        className={`border-t ${index === groupedByGrade[grade].length - 1 ? '' : ''}`}
-                      >
-                        {/* Learning Area Row */}
-                        <div
-                          className="flex items-center gap-3 px-6 py-4 bg-gray-50 hover:bg-gray-100 transition"
-                        >
-                          {/* Checkbox */}
-                          <div onClick={(e) => e.stopPropagation()} className="flex-shrink-0">
-                            <input
-                              type="checkbox"
-                              checked={selectedAreas.includes(area.id)}
-                              onChange={() => toggleAreaSelection(area.id)}
-                              className="w-5 h-5 cursor-pointer accent-blue-600"
-                              title="Select this area"
-                            />
-                          </div>
-
-                          <div className="flex-shrink-0">
-                            {strands.length > 0 ? (
-                              <button
-                                onClick={() => toggleArea(area.id)}
-                                className="flex-shrink-0 focus:outline-none"
-                              >
-                                {isAreaExpanded ? (
-                                  <ChevronDown size={18} className="text-green-600" />
-                                ) : (
-                                  <ChevronRight size={18} className="text-gray-500" />
-                                )}
-                              </button>
-                            ) : (
-                              <div className="w-5" />
-                            )}
-                          </div>
-
-                          {/* Area Icon and Name */}
-                          <div className="flex-shrink-0 text-2xl">{area.icon}</div>
-                          <div className="flex-grow">
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-semibold text-gray-700">{area.name}</h4>
-                              {area.shortName && (
-                                <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded uppercase">
-                                  {area.shortName}
-                                </span>
-                              )}
+                return (
+                  <React.Fragment key={grade}>
+                    {/* Grade Header Row */}
+                    <tr
+                      onClick={() => toggleGrade(grade)}
+                      className={`cursor-pointer transition-all border-b border-slate-100 ${isGradeExpanded ? 'bg-slate-50/80' : 'bg-white hover:bg-slate-50/50'}`}
+                    >
+                      <td className="px-6 py-4 w-10" onClick={(e) => e.stopPropagation()}>
+                        <GradeCheckboxWrapper />
+                      </td>
+                      <td colSpan={3} className="px-6 py-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isGradeExpanded ? 'bg-brand-purple text-white' : 'bg-brand-purple/5 text-brand-purple border border-brand-purple/10'}`}>
+                              <BookOpen size={16} />
                             </div>
-                            <div className="flex items-center gap-2 mt-1">
-                              <div
-                                className="w-4 h-4 rounded border border-gray-300"
-                                style={{ backgroundColor: area.color }}
-                                title={area.color}
-                              ></div>
-                              {strands.length > 0 && (
-                                <span className="text-xs text-gray-500">
-                                  {strands.length} strand{strands.length !== 1 ? 's' : ''}
-                                </span>
-                              )}
+                            <div className="flex flex-col">
+                              <span className="text-sm font-black text-slate-900 uppercase tracking-tight leading-none">
+                                {grade.replace(/_/g, ' ')}
+                              </span>
+                              <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">
+                                {areaCount} Learning {areaCount === 1 ? 'Area' : 'Areas'}
+                              </span>
                             </div>
                           </div>
-
-                          {/* Actions */}
-                          <div className="flex gap-2 flex-shrink-0">
-                            <button
-                              onClick={() => onEdit(area)}
-                              className="p-1.5 text-blue-600 hover:bg-blue-100 rounded transition"
-                              title="Edit"
-                            >
-                              <Edit size={16} />
-                            </button>
-                            <button
-                              onClick={() => onDelete(area)}
-                              className="p-1.5 text-red-600 hover:bg-red-100 rounded transition"
-                              title="Delete"
-                            >
-                              <Trash2 size={16} />
-                            </button>
+                          <div className={`transition-transform duration-300 ${isGradeExpanded ? 'rotate-180' : ''}`}>
+                            <ChevronDown className="text-slate-300" size={18} />
                           </div>
                         </div>
+                      </td>
+                    </tr>
 
-                        {/* Strands - shown when area is expanded */}
-                        {isAreaExpanded && strands.length > 0 && (
-                          <div className="bg-blue-50 border-l-4 border-blue-400">
-                            <div className="px-6 py-3 space-y-2">
-                              <div className="flex items-center gap-2 mb-3">
-                                <span className="text-sm font-semibold text-blue-800">Strands:</span>
-                                <span className="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded">
-                                  {strands.length}
-                                </span>
-                              </div>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                {strands.map((strand, strandIndex) => (
-                                  <div
-                                    key={strandIndex}
-                                    className="flex items-start gap-2 p-2 bg-white rounded border border-blue-200 hover:border-blue-400 transition"
-                                  >
-                                    <span className="text-blue-500 font-bold flex-shrink-0">•</span>
-                                    <div className="flex-grow">
-                                      <p className="text-sm text-gray-700">{strand}</p>
-                                    </div>
-                                    <button
-                                      onClick={() => onAddStrand(area, strand)}
-                                      className="p-1 text-green-600 hover:bg-green-50 rounded transition flex-shrink-0"
-                                      title="Add assessment for this strand"
-                                    >
-                                      <Plus size={14} />
-                                    </button>
+                    {/* Learning Areas Rows */}
+                    {isGradeExpanded && groupedByGrade[grade].map((area) => {
+                      const strands = getStrandsForArea(area.name);
+                      const isAreaExpanded = expandedAreas[area.id];
+
+                      return (
+                        <React.Fragment key={area.id}>
+                          <tr className="hover:bg-slate-50/50 transition-all group animate-in slide-in-from-top-2 duration-200">
+                            <td className="px-6 py-5 border-l-4 border-brand-purple/20">
+                              <input
+                                type="checkbox"
+                                checked={selectedAreas.includes(area.id)}
+                                onChange={() => toggleAreaSelection(area.id)}
+                                className="rounded border-slate-200 text-brand-purple focus:ring-brand-purple"
+                              />
+                            </td>
+                            <td className="px-6 py-5">
+                              <div className="flex items-center gap-3">
+                                <div className="flex-shrink-0 text-2xl" title={area.color}>{area.icon}</div>
+                                <div className="flex flex-col">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-bold text-slate-800 leading-tight">{area.name}</span>
+                                    {area.shortName && (
+                                      <span className="px-1.5 py-0.5 bg-brand-purple/5 text-brand-purple border border-brand-purple/10 text-[9px] font-black rounded uppercase tracking-widest">
+                                        {area.shortName}
+                                      </span>
+                                    )}
                                   </div>
-                                ))}
+                                </div>
                               </div>
-                            </div>
-                          </div>
-                        )}
+                            </td>
+                            <td className="px-6 py-5 text-center">
+                              {strands.length > 0 ? (
+                                <button
+                                  onClick={() => toggleArea(area.id)}
+                                  className="px-3 py-1 rounded-full text-[9px] font-black border uppercase tracking-widest border-transparent bg-slate-100/50 text-slate-500 hover:bg-slate-200/50 transition"
+                                >
+                                  {strands.length} {strands.length === 1 ? 'Strand' : 'Strands'}
+                                  {isAreaExpanded ? <ChevronDown size={10} className="inline ml-1 mb-[1px]" /> : <ChevronRight size={10} className="inline ml-1 mb-[1px]" />}
+                                </button>
+                              ) : (
+                                <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">0 Strands</span>
+                              )}
+                            </td>
+                            <td className="px-6 py-5 text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                <button onClick={() => onEdit(area)} className="p-1.5 text-slate-400 hover:text-brand-teal rounded transition"><Edit size={16} /></button>
+                                <button onClick={() => onDelete(area)} className="p-1.5 text-slate-400 hover:text-red-600 rounded transition"><Trash2 size={16} /></button>
+                              </div>
+                            </td>
+                          </tr>
 
-                        {/* Empty strands message */}
-                        {isAreaExpanded && strands.length === 0 && (
-                          <div className="px-6 py-4 bg-blue-50 text-center">
-                            <p className="text-sm text-gray-500">No strands defined for this area</p>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })
+                          {/* Strands Expansion Row */}
+                          {isAreaExpanded && strands.length > 0 && (
+                            <tr className="bg-slate-50/30">
+                              <td colSpan={4} className="px-12 py-6 border-l-4 border-brand-purple/20">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Curriculum Strands</span>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                  {strands.map((strand, strandIndex) => (
+                                    <div
+                                      key={strandIndex}
+                                      className="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-xl shadow-sm hover:border-brand-purple/20 transition-all group/strand"
+                                    >
+                                      <div className="flex items-center gap-3">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-brand-purple/40 group-hover/strand:bg-brand-purple"></div>
+                                        <span className="text-[11px] font-bold text-slate-700">{strand}</span>
+                                      </div>
+                                      <button
+                                        onClick={() => onAddStrand(area, strand)}
+                                        className="w-6 h-6 rounded-md bg-slate-50 text-slate-400 hover:bg-brand-teal hover:text-white flex items-center justify-center transition-colors"
+                                        title="Add assessment configuration"
+                                      >
+                                        <Plus size={14} />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
+                  </React.Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

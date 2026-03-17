@@ -52,10 +52,7 @@ function AppContent() {
           };
           setBrandingSettings(prev => ({ ...prev, ...mappedBranding }));
 
-          // Store school ID for context
-          if (branding.id) {
-            localStorage.setItem('currentSchoolId', branding.id);
-          }
+          // School ID storage removed for single-tenant mode
         }
       } catch (err) {
         console.warn('Failed to fetch branding, using defaults:', err);
@@ -64,7 +61,7 @@ function AppContent() {
 
     fetchBranding();
     return () => { cancelled = true; };
-  }, [isAuthenticated, user?.schoolId]);
+  }, [isAuthenticated]);
 
   // Update favicon
   useEffect(() => {
@@ -108,7 +105,7 @@ function AppContent() {
     localStorage.removeItem('cbc_current_page');
     localStorage.removeItem('cbc_page_params');
     localStorage.removeItem('cbc_expanded_sections');
-    localStorage.removeItem('cbc_last_school_id');
+    // Unified single-tenant mode cleanup
     login(userData, token, refreshToken);
     navigate('/app', { replace: true });
   };

@@ -176,25 +176,8 @@ const MessagesPage = () => {
     try {
       const formattedPhone = formatPhoneNumber(testPhoneNumber);
 
-      // Get school ID from multiple sources
-      let schoolId = localStorage.getItem('currentSchoolId');
-      if (!schoolId) {
-        schoolId = sessionStorage.getItem('currentSchoolId');
-      }
-
-      console.log('📞 Formatted phone:', formattedPhone);
-      console.log('🏫 School ID:', schoolId);
-
-      if (!schoolId) {
-        showError('School ID not found. Please refresh the page and try again.');
-        setTestResult({
-          success: false,
-          message: 'School context missing. Please refresh and try again.',
-          timestamp: new Date().toLocaleString()
-        });
-        setIsSendingTest(false);
-        return;
-      }
+      // School ID removed for single-tenant mode
+      const schoolId = null; 
 
       const messageToSend = processMessageTemplate(messageTemplate, templateVariables);
       console.log('📝 Message to send:', messageToSend);
@@ -259,7 +242,7 @@ const MessagesPage = () => {
     setProgress({ current: 0, total: recipients.length, success: 0, failed: 0 });
     setDeliveryReport([]);
 
-    const schoolId = localStorage.getItem('currentSchoolId');
+    const schoolId = null; // Removed for single-tenant mode
     const report = [];
 
     for (let i = 0; i < recipients.length; i++) {
@@ -277,8 +260,7 @@ const MessagesPage = () => {
 
         await api.communication.sendTestSMS({
           phoneNumber: recipient.phone,
-          message: messageToSend,
-          schoolId
+          message: messageToSend
         });
 
         status = 'Sent';
@@ -385,16 +367,8 @@ const MessagesPage = () => {
     setIsSendingCompose(true);
 
     try {
-      let schoolId = localStorage.getItem('currentSchoolId');
-      if (!schoolId) {
-        schoolId = sessionStorage.getItem('currentSchoolId');
-      }
-
-      if (!schoolId) {
-        showError('School ID not found. Please refresh the page.');
-        setIsSendingCompose(false);
-        return;
-      }
+      // School ID removed for single-tenant mode
+      const schoolId = null;
 
       let successCount = 0;
       const report = [];
@@ -411,8 +385,7 @@ const MessagesPage = () => {
 
           const response = await api.communication.sendTestSMS({
             phoneNumber: formattedPhone,
-            message: composeMessage,
-            schoolId
+            message: composeMessage
           });
 
           messageId = response?.messageId || response?.id || `MSG-${Date.now()}-${i}`;

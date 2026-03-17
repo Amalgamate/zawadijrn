@@ -125,9 +125,9 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
     }
   };
 
-  // User Context
+  // User Context removed schoolId for single-tenant mode
   const { user } = useAuth();
-  const schoolId = user?.school?.id || user?.schoolId || localStorage.getItem('currentSchoolId') || 'default-school-e082e9a4';
+  const schoolId = null;
 
   // Load Tests
   const fetchTests = useCallback(async () => {
@@ -168,8 +168,8 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
     try {
       setAvailableTerms(['TERM_1', 'TERM_2', 'TERM_3']);
       // Streams from config
-      if (schoolId) {
-        const streamsResp = await configAPI.getStreamConfigs(schoolId);
+      if (true) {
+        const streamsResp = await configAPI.getStreamConfigs();
         const streamsArr = (streamsResp && streamsResp.data) ? streamsResp.data : [];
         const streamNames = streamsArr.filter(s => s.active !== false).map(s => s.name);
         setAvailableStreams(streamNames);
@@ -465,9 +465,8 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
       }
       try {
         // 1. Fetch Grading Scale
-        const test = tests.find(t => String(t.id) === String(selectedTestId));
         if (test) {
-          const systems = await gradingAPI.getSystems(schoolId);
+          const systems = await gradingAPI.getSystems();
           let scale = null;
 
           if (test.scaleId) {

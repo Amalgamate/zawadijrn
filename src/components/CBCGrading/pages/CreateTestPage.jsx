@@ -27,17 +27,7 @@ const CreateTestPage = ({ onSave, onCancel, initialData, availableGrades }) => {
   useEffect(() => {
     const fetchScales = async () => {
       try {
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        let schoolId = user?.school?.id || user?.schoolId || localStorage.getItem('currentSchoolId');
-
-        // Fallback to default school if no schoolId found
-        if (!schoolId) {
-          schoolId = 'default-school-e082e9a4';
-        }
-
-        console.log('🏫 Fetching scales for schoolId:', schoolId);
-
-        const systems = await gradingAPI.getSystems(schoolId);
+        const systems = await gradingAPI.getSystems();
         const relevantScales = systems ? systems.filter(s => s.type === 'SUMMATIVE') : [];
         setScales(relevantScales.length > 0 ? relevantScales : systems || []);
         console.log('✅ Loaded', relevantScales.length, 'SUMMATIVE scales');

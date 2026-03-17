@@ -14,14 +14,6 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    const sid = localStorage.getItem('currentSchoolId');
-    const bid = localStorage.getItem('currentBranchId');
-    if (sid) {
-      config.headers['X-School-Id'] = sid;
-    }
-    if (bid) {
-      config.headers['X-Branch-Id'] = bid;
-    }
     return config;
   },
   (error) => {

@@ -11,9 +11,9 @@ const performanceScaleService = {
    * @param {string} schoolId - The school ID
    * @returns {Promise<Array>} List of performance scales
    */
-  getPerformanceScales: async (schoolId) => {
+  getPerformanceScales: async () => {
     try {
-      const response = await api.get(`/api/grading/school/${schoolId}`);
+      const response = await api.get('/api/grading/systems');
       return response.data;
     } catch (error) {
       console.error('Error fetching performance scales:', error);
@@ -24,7 +24,7 @@ const performanceScaleService = {
   /**
    * Create a new performance scale
    * @param {Object} scaleData - The scale data
-   * @param {string} scaleData.schoolId - School ID
+   * @param {Object} scaleData - The scale data
    * @param {string} scaleData.name - Scale name
    * @param {string} scaleData.type - Scale type (SUMMATIVE or CBC)
    * @param {Array} scaleData.ranges - Array of grading ranges
