@@ -11,7 +11,7 @@ import { getLearningAreasByGrade } from '../../../constants/learningAreas';
 import { Button } from '../../ui/button';
 
 const GRADE_GROUPS = [
-    { id: 'pre_primary', name: 'Pre-Primary', grades: ['PP1', 'PP2'] },
+    { id: 'early_years', name: 'Early Years', grades: ['PLAYGROUP', 'PP1', 'PP2'] },
     { id: 'lower_primary', name: 'Lower Primary', grades: ['GRADE_1', 'GRADE_2', 'GRADE_3'] },
     { id: 'upper_primary', name: 'Upper Primary', grades: ['GRADE_4', 'GRADE_5', 'GRADE_6'] },
     { id: 'junior_school', name: 'Junior School', grades: ['GRADE_7', 'GRADE_8', 'GRADE_9'] },
@@ -97,14 +97,49 @@ const BulkCreateTest = ({ onBack, onSuccess }) => {
         if (selectedGrades.length === 0) { showError('Please select at least one grade level'); return; }
 
         setSaving(true);
+        let totalCreated = 0;
+        let hasError = false;
+
         try {
-            const payload = { ...formData, grades: selectedGrades };
-            const response = await assessmentAPI.bulkCreateTests(payload);
-            if (response.success) {
-                showSuccess(`Successfully created ${response.data?.createdCount ?? 'all'} tests!`);
+            for (const grade of selectedGrades) {
+                const learningAreas = getLearningAreasByGrade(grade);
+                if (!learningAreas || learningAreas.length === 0) continue;
+
+                const payload = {
+                    title: formData.title,
+                    testType: formData.testType,
+                    term: formData.term,
+                    academicYear: formData.academicYear,
+                    testDate: formData.testDate,
+                    totalMarks: formData.totalMarks,
+                    passMarks: formData.passMarks,
+                    duration: formData.duration,
+                    weight: formData.weight,
+                    scaleGroupId: formData.scaleGroupId || undefined,
+                    status: 'PUBLISHED',
+                    grade,
+                    learningAreas,
+                };
+
+                try {
+                    const response = await assessmentAPI.bulkCreateTests(payload);
+                    if (response.success) {
+                        totalCreated += response.data?.length ?? learningAreas.length;
+                    } else {
+                        console.warn(`Failed for grade ${grade}:`, response.message);
+                        hasError = true;
+                    }
+                } catch (gradeErr) {
+                    console.error(`Error creating tests for ${grade}:`, gradeErr.message);
+                    hasError = true;
+                }
+            }
+
+            if (totalCreated > 0) {
+                showSuccess(`✅ Successfully created ${totalCreated} test${totalCreated !== 1 ? 's' : ''}!`);
                 onSuccess && onSuccess();
             } else {
-                showError(response.message || 'Failed to create tests');
+                showError(hasError ? 'Some grades failed. Check console for details.' : 'No tests were created.');
             }
         } catch (err) {
             showError('Failed to create tests: ' + err.message);
