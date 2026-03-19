@@ -55,6 +55,7 @@ const prefetchModule = (path) => {
       'learning-hub-library': 'LearningHubPage',
       'facilities-classes': 'FacilityManager',
       'help': 'SupportHub',
+      'assess-summary-report': 'reports/SummaryReportPage',
       // Inventory Module Mappings
       'inventory-items': 'inventory/InventoryItems',
       'inventory-categories': 'inventory/InventoryCategories',

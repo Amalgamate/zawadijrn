@@ -1,20 +1,9 @@
 import axios from 'axios';
 
-
 // Use environment variable for API URL or fall back to automatic discovery for production stability
 const getApiBaseUrl = () => {
-    // 1. Explicit environment variable (Best for Vercel/Production)
     if (process.env.REACT_APP_API_URL) return process.env.REACT_APP_API_URL;
-
-    // 2. Automatic discovery if we are in production on a specific domain
-    if (window.location.hostname !== 'localhost') {
-        // If we're on zawadijrn.vercel.app, and the API is on zawadi-api...run.app
-        // we might not be able to "guess" it easily without the env var.
-        // But if we are proxying via Nginx or similar, this works.
-        return `${window.location.origin}/api`;
-    }
-
-    // 3. Local development fallback
+    if (window.location.hostname !== 'localhost') return `${window.location.origin}/api`;
     return 'http://localhost:5000/api';
 };
 
@@ -24,75 +13,64 @@ const axiosInstance = axios.create({
     baseURL: API_BASE_URL,
     headers: {
         'Content-Type': 'application/json',
+        // Signal that we accept gzip — axios decompresses automatically in browser
+        'Accept-Encoding': 'gzip, deflate, br',
     },
+    // Fail fast instead of hanging indefinitely
+    timeout: 30_000,
+    // Keep-Alive so the TCP connection is reused across requests (major win)
+    // Note: in browsers this is handled by the browser itself; this is for Node.js SSR use
 });
 
-// Request interceptor for API calls
+// ── Request interceptor ───────────────────────────────────────────────────────
 axiosInstance.interceptors.request.use(
-    async (config) => {
+    (config) => {
         const token = localStorage.getItem('token');
-        if (token) {
-            config.headers['Authorization'] = `Bearer ${token}`;
-        }
-
+        if (token) config.headers['Authorization'] = `Bearer ${token}`;
         return config;
     },
-    (error) => {
-        return Promise.reject(error);
-    }
+    (error) => Promise.reject(error)
 );
 
-// Response interceptor for API calls
+// ── Response interceptor ──────────────────────────────────────────────────────
 axiosInstance.interceptors.response.use(
-    (response) => {
-        return response;
-    },
+    (response) => response,
     async (error) => {
         const originalRequest = error.config;
+
         if (error.response?.status === 401 && !originalRequest._retry) {
             originalRequest._retry = true;
             const refreshToken = localStorage.getItem('refreshToken');
 
             if (refreshToken) {
                 try {
-                    const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-                        refreshToken,
-                    });
-
+                    const response = await axios.post(`${API_BASE_URL}/auth/refresh`, { refreshToken });
                     if (response.status === 200) {
                         const { token, refreshToken: newRefreshToken } = response.data;
                         localStorage.setItem('token', token);
                         localStorage.setItem('refreshToken', newRefreshToken);
-
                         axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
                         originalRequest.headers['Authorization'] = `Bearer ${token}`;
-
                         return axiosInstance(originalRequest);
                     }
-                } catch (refreshError) {
-                    console.error('Refresh token failed:', refreshError);
-                    // Token refresh failed - logout user
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('refreshToken');
-                    localStorage.removeItem('user');
-                    // Avoid redirecting if it's already a public request to prevent loops
-                    if (!originalRequest.url?.includes('/public/')) {
-                        window.location.href = '/';
-                    }
+                } catch (_refreshError) {
+                    _clearAuth();
                 }
             } else {
-                // No refresh token - logout user
-                localStorage.removeItem('token');
-                localStorage.removeItem('refreshToken');
-                localStorage.removeItem('user');
-                // Avoid redirecting if it's already a public request to prevent loops
-                if (!originalRequest.url?.includes('/public/')) {
-                    window.location.href = '/';
-                }
+                _clearAuth();
             }
         }
         return Promise.reject(error);
     }
 );
+
+function _clearAuth() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+    if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/';
+    }
+}
 
 export default axiosInstance;

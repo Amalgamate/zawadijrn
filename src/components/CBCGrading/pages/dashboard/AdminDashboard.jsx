@@ -26,7 +26,9 @@ import {
   TrendingUp,
   FileText,
   Clock,
-  Briefcase
+  Briefcase,
+  X,
+  Filter
 } from 'lucide-react';
 
 // Professional Metric Card with Premium Styling
@@ -82,6 +84,7 @@ const TabButton = ({ active, label, icon: Icon, onClick }) => (
 const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavigate }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('overview'); // overview, financials, performance, operations
+  const [showUnAssessedSheet, setShowUnAssessedSheet] = useState(false);
   const [timeFilter, setTimeFilter] = useState('term');
   const [metrics, setMetrics] = useState(null);
 
@@ -111,6 +114,9 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
     presentToday: metrics?.stats?.presentToday || 0,
     absentToday: metrics?.stats?.absentToday || 0,
     totalClasses: metrics?.stats?.totalClasses || 0,
+    totalAssessedClasses: metrics?.stats?.totalAssessedClasses || 0,
+    totalMissedExams: metrics?.stats?.totalMissedExams || 0,
+    currentTestSeries: metrics?.stats?.currentTestSeries || 'Current Series',
     avgAttendance: metrics?.stats?.avgAttendance || 0,
     feeCollected: metrics?.stats?.feeCollected || 0,
     feePending: metrics?.stats?.feePending || 0,
@@ -130,31 +136,31 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
         onClick: () => onNavigate('learners-list')
       },
       {
-        title: 'Teaching Staff',
-        value: stats.totalTeachers,
-        subtitle: `${stats.activeTeachers} verified tutors`,
+        title: 'Current Exam Series',
+        value: stats.currentTestSeries,
+        subtitle: 'Assessment Period',
         icon: GraduationCap,
-        trend: stats.teacherTrend?.startsWith('+') ? 'up' : 'down',
-        trendValue: stats.teacherTrend,
-        onClick: () => onNavigate('teachers-list')
+        trend: null,
+        trendValue: null,
+        onClick: () => onNavigate('assess-summary-report')
       },
       {
-        title: 'Daily Attendance',
-        value: `${stats.avgAttendance}%`,
-        subtitle: `${stats.presentToday} present today`,
+        title: 'Total Un-Assessed',
+        value: stats.totalMissedExams,
+        subtitle: stats.currentTestSeries,
+        icon: AlertCircle,
+        trend: null,
+        trendValue: null,
+        onClick: () => setShowUnAssessedSheet(true)
+      },
+      {
+        title: 'Assessed Classes',
+        value: stats.totalAssessedClasses,
+        subtitle: 'Classes with active assessments',
         icon: UserCheck,
         trend: null,
         trendValue: null,
-        onClick: () => onNavigate('attendance-daily')
-      },
-      {
-        title: 'Total Classes',
-        value: stats.totalClasses,
-        subtitle: 'Across all grades',
-        icon: BookOpen,
-        trend: null,
-        trendValue: null,
-        onClick: () => onNavigate('facilities-classes')
+        onClick: () => onNavigate('assess-summative-assessment')
       }
     ];
 
@@ -196,9 +202,17 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
                   {metrics?.recentActivity?.assessments?.slice(0, 5).map((as, idx) => (
                     <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
                       <td className="px-6 py-4 text-xs text-gray-500">{new Date(as.createdAt).toLocaleDateString()}</td>
-                      <td className="px-6 py-4 text-xs font-bold text-brand-purple">Assessment</td>
-                      <td className="px-6 py-4 text-xs font-semibold text-gray-700">{as.title} for {as.learningArea}</td>
-                      <td className="px-6 py-4 text-xs"><span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full font-bold uppercase tracking-widest text-[9px]">Calculated</span></td>
+                      <td className={`px-6 py-4 text-xs font-bold ${as.type === 'SUMMATIVE' ? 'text-brand-purple' : 'text-brand-teal'}`}>
+                        {as.type || 'Assessment'}
+                      </td>
+                      <td className="px-6 py-4 text-xs font-semibold text-gray-700">
+                        {as.title} recorded for {as.learner?.firstName} {as.learner?.lastName}
+                      </td>
+                      <td className="px-6 py-4 text-xs">
+                        <span className={`px-2 py-0.5 ${as.type === 'SUMMATIVE' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'} rounded-full font-bold uppercase tracking-widest text-[9px]`}>
+                          {as.type === 'SUMMATIVE' ? 'Graded' : 'Calculated'}
+                        </span>
+                      </td>
                     </tr>
                   ))}
                   {!metrics?.recentActivity?.admissions?.length && !metrics?.recentActivity?.assessments?.length && (
@@ -430,6 +444,139 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
     </div>
   );
 
+  // ── Un-Assessed Students Detailed Sheet ────────────────────────────────────────
+  const UnAssessedSheet = () => {
+    const breakdown = metrics?.unAssessedBreakdown || [];
+    
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-end bg-slate-900/40 backdrop-blur-sm transition-opacity">
+        <div className="h-full w-full max-w-2xl bg-white shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+          {/* Header */}
+          <div className="bg-white border-b border-slate-100 p-6 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-brand-purple/10 rounded-lg text-brand-purple">
+                <AlertCircle size={20} />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">Un-Assessed Students</h2>
+                <p className="text-xs text-slate-500 font-medium tracking-tight">Progress breakdown for {stats.currentTestSeries}</p>
+              </div>
+            </div>
+            <button 
+              onClick={() => setShowUnAssessedSheet(false)}
+              className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          {/* Filters Layout - Matching Assessment Page Style */}
+          <div className="bg-slate-50/50 px-6 py-4 border-b border-slate-100 flex flex-wrap gap-4 items-center">
+             <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-md shadow-sm">
+                <Calendar size={14} className="text-slate-400 font-bold" />
+                <span className="text-xs font-black text-slate-600">2026</span>
+             </div>
+             <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-md shadow-sm">
+                <Filter size={14} className="text-slate-400 font-bold" />
+                <span className="text-xs font-black text-slate-600">TERM 1</span>
+             </div>
+             <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-md shadow-sm max-w-[150px]">
+                <GraduationCap size={14} className="text-slate-400 font-bold" />
+                <span className="text-xs font-black text-slate-600 truncate">{stats.currentTestSeries}</span>
+             </div>
+             <div className="ml-auto">
+                <div className="bg-brand-purple/10 text-brand-purple border border-brand-purple/20 px-2 py-0.5 rounded text-[10px] font-black uppercase">
+                  Live Sync
+                </div>
+             </div>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-6">
+            {breakdown.length > 0 ? (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total</p>
+                    <p className="text-2xl font-black text-slate-900">{stats.totalStudents}</p>
+                  </div>
+                  <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 border-l-4 border-l-brand-teal">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Assessed</p>
+                    <p className="text-2xl font-black text-brand-teal">{stats.totalStudents - stats.totalMissedExams}</p>
+                  </div>
+                  <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
+                    <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">Progress</p>
+                    <p className="text-2xl font-black text-emerald-600">{Math.round(((stats.totalStudents - stats.totalMissedExams) / stats.totalStudents) * 100)}%</p>
+                  </div>
+                  <div className="bg-rose-50 rounded-xl p-4 border border-rose-100 border-l-4 border-l-rose-500">
+                    <p className="text-[10px] font-black text-rose-400 uppercase tracking-widest mb-1">Un-Assessed</p>
+                    <p className="text-2xl font-black text-rose-600">{stats.totalMissedExams}</p>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-200">
+                        <th className="px-5 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Grade</th>
+                        <th className="px-5 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Students</th>
+                        <th className="px-5 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center text-brand-teal">Done</th>
+                        <th className="px-5 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center text-rose-500">Left</th>
+                        <th className="px-5 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-medium">
+                      {breakdown.map((item, idx) => {
+                        const pct = item.total > 0 ? Math.round((item.assessed / item.total) * 100) : 0;
+                        return (
+                          <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                            <td className="px-5 py-3.5 text-sm font-bold text-slate-900 uppercase tracking-tighter">{item.grade}</td>
+                            <td className="px-5 py-3.5 text-sm text-center text-slate-600 font-bold">{item.total}</td>
+                            <td className="px-5 py-3.5 text-sm text-center text-brand-teal font-black">{item.assessed}</td>
+                            <td className="px-5 py-3.5 text-sm text-center text-rose-500 font-black">{item.unAssessed}</td>
+                            <td className="px-5 py-3.5 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <span className="text-[10px] font-black text-slate-500">{pct}%</span>
+                                <div className="w-12 h-1 bg-slate-100 rounded-full overflow-hidden">
+                                  <div 
+                                    className={`h-full rounded-full ${pct === 100 ? 'bg-brand-teal' : pct > 0 ? 'bg-brand-purple' : 'bg-slate-300'}`} 
+                                    style={{ width: `${pct}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-64 text-center">
+                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                  <Activity className="text-slate-300" size={32} />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900">Synchronizing...</h3>
+                <p className="text-sm text-slate-500 max-w-xs">Connecting to the assessment matrix to fetch the latest grade-level progress.</p>
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="p-6 bg-slate-50 border-t border-slate-100">
+            <button 
+              onClick={() => { setShowUnAssessedSheet(false); onNavigate('assess-summary-report'); }}
+              className="w-full flex items-center justify-center gap-2 py-3 bg-brand-purple text-white rounded-xl font-bold hover:bg-brand-purple/90 transition shadow-lg shadow-brand-purple/20"
+            >
+              Open Full Assessment Matrix <ChevronRight size={18} />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       {/* Tabs Navigation */}
@@ -442,6 +589,7 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
 
       {/* Tab Content */}
       <div className="animate-in slide-in-from-bottom-2 duration-300 rounded-lg">
+        {showUnAssessedSheet && <UnAssessedSheet />}
         {activeTab === 'overview' && renderOverview()}
         {activeTab === 'financials' && renderFinancials()}
         {activeTab === 'performance' && renderPerformance()}

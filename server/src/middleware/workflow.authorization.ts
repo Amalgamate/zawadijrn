@@ -5,9 +5,8 @@
 
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from './permissions.middleware';
-import { PrismaClient, UserRole, AssessmentStatus } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { UserRole, AssessmentStatus } from '@prisma/client';
+import prisma from '../config/database';
 
 // ============================================
 // WORKFLOW PERMISSIONS

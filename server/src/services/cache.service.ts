@@ -42,14 +42,35 @@ class CacheService {
   }
 
   /**
-   * Delete a value from cache
+   * Delete a single value from cache (exact key match)
    */
   delete(key: string): boolean {
     return this.cache.delete(key);
   }
 
   /**
-   * Clear all cache
+   * Delete all cache entries whose keys START WITH the given prefix.
+   * Use this instead of delete('tests:all') — the tests list cache uses
+   * parameterised keys like `tests:TERM_1:2026:::`, so a prefix bust is
+   * the only reliable way to invalidate every variant at once.
+   *
+   * @example  cacheService.deleteByPrefix('tests:')   // all test list keys
+   * @example  cacheService.deleteByPrefix('results:') // all result keys
+   * @example  cacheService.deleteByPrefix('grading:') // all grading keys
+   */
+  deleteByPrefix(prefix: string): number {
+    let deleted = 0;
+    for (const key of this.cache.keys()) {
+      if (key.startsWith(prefix)) {
+        this.cache.delete(key);
+        deleted++;
+      }
+    }
+    return deleted;
+  }
+
+  /**
+   * Clear ALL cache entries (use after a database reset)
    */
   clear(): void {
     this.cache.clear();

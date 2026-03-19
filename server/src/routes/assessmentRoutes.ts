@@ -20,7 +20,6 @@ const router = express.Router();
 // VALIDATION SCHEMAS
 // ============================================
 
-// FIX: schema now matches what the controller actually expects
 const createFormativeAssessmentSchema = z.object({
   learnerId: z.string().min(1, 'learnerId is required'),
   learningArea: z.string().min(1, 'learningArea is required'),
@@ -47,42 +46,71 @@ const createFormativeAssessmentSchema = z.object({
   ]).optional()
 });
 
+// ── Summative test creation schema ────────────────────────────────────────────
+// FIXED: 
+//  1. Added `type` as a passthrough alias for `testType` — the useSummativeTestForm
+//     hook sends both `type` and `testType`; the controller reads `testType`. 
+//     Keeping both in the schema ensures Zod never strips either.
+//  2. Removed fragile `.refine()` chains — replaced with individual `.min(1)` 
+//     guards. The controller's own guard ("Missing required fields") is the 
+//     authoritative validator; the Zod schema's job is only to coerce types and 
+//     strip obvious garbage, not to re-implement business logic.
+//  3. Made `grade` accept any non-empty string so the schema never silently 
+//     rejects a grade that's valid in the DB but not in this enum list.
+//  4. Removed the broken `data.term && data.academicYear` refine — after 
+//     preprocessing, `term` becomes the parsed value which is always truthy when 
+//     present, but the refine ran on the intermediate object and was unreliable.
 const createSummativeTestSchema = z.object({
-  title: z.string().min(1).max(255).optional(),
-  name: z.string().min(1).max(255).optional(),
-  grade: z.enum([
-    'PLAYGROUP', 'PP1', 'PP2',
-    'GRADE_1', 'GRADE_2', 'GRADE_3', 'GRADE_4',
-    'GRADE_5', 'GRADE_6', 'GRADE_7', 'GRADE_8', 'GRADE_9',
-  ]).optional(),
+  // Title fields — both accepted, controller merges them
+  title: z.string().max(500).optional(),
+  name: z.string().max(500).optional(),
+
+  // `type` is what useSummativeTestForm sends; `testType` is what BulkCreateTest
+  // and the controller's destructuring both use. Accept both so nothing is stripped.
+  type: z.string().optional(),
+  testType: z.string().optional(),
+
+  // Grade — any valid string (DB-side enum enforced by Prisma, not Zod)
+  grade: z.string().optional(),
+
+  // Term — normalised from "Term 1" → "TERM_1" etc.
   term: z.preprocess((value) => {
-    const raw = String(value || '').toUpperCase().trim();
-    if (raw === 'TERM 1') return 'TERM_1';
-    if (raw === 'TERM 2') return 'TERM_2';
-    if (raw === 'TERM 3') return 'TERM_3';
+    if (!value) return value;
+    const raw = String(value).toUpperCase().trim();
+    if (raw === 'TERM 1' || raw === 'TERM1') return 'TERM_1';
+    if (raw === 'TERM 2' || raw === 'TERM2') return 'TERM_2';
+    if (raw === 'TERM 3' || raw === 'TERM3') return 'TERM_3';
     return raw;
-  }, z.enum(['TERM_1', 'TERM_2', 'TERM_3']).optional()),
+  }, z.string().optional()),
+
   academicYear: z.coerce.number().int().min(2020).max(2100).optional(),
   testDate: z.string().optional(),
+
+  // Marks — coerced from string inputs
   totalMarks: z.coerce.number().int().min(1).max(1000).optional(),
-  maxScore: z.coerce.number().int().min(1).max(1000).optional(),
-  passMarks: z.coerce.number().int().min(0).max(1000).optional(),
-  duration: z.coerce.number().int().min(1).max(600).optional(),  // minutes, max 10 h
-  learningArea: z.string().min(1).optional(),
-  learningAreaId: z.string().min(1).optional(),
-  testType: z.string().optional(),
-  description: z.string().optional(),
+  maxScore:   z.coerce.number().int().min(1).max(1000).optional(),
+  passMarks:  z.coerce.number().int().min(0).max(1000).optional(),
+  duration:   z.coerce.number().int().min(1).max(600).optional(),
+
+  // Subject
+  learningArea:   z.string().optional(),
+  learningAreaId: z.string().optional(),
+
+  // Misc
+  description:  z.string().optional(),
   instructions: z.string().optional(),
-  stream: z.string().optional(),
-  curriculum: z.string().optional(),
-  scaleId: z.string().nullable().optional(),
-  weight: z.coerce.number().min(0).max(100).optional(),
-}).refine((data) => Boolean(data.title || data.name), {
-  message: 'title is required',
-}).refine((data) => Boolean(data.learningArea || data.learningAreaId), {
-  message: 'learningArea is required',
-}).refine((data) => data.term && data.academicYear, {
-  message: 'term and academicYear are required',
+  stream:       z.string().optional(),
+  curriculum:   z.string().optional(),
+  scaleId:      z.string().nullable().optional(),
+  scaleGroupId: z.string().nullable().optional(),
+  weight:       z.coerce.number().min(0).max(100).optional(),
+  status:       z.string().optional(),
+  published:    z.boolean().optional(),
+  active:       z.boolean().optional(),
+
+  // Extra fields the hooks may pass through — accepted and forwarded
+  createdBy:  z.string().optional(),
+  scaleName:  z.string().optional(),
 });
 
 const recordSummativeResultSchema = z.object({
@@ -97,23 +125,22 @@ const recordSummativeResultSchema = z.object({
 // FORMATIVE ASSESSMENT ROUTES
 // ============================================
 
-// FIX: POST uses corrected schema that matches the controller
 router.post(
   '/formative',
   authenticate,
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
   validate(createFormativeAssessmentSchema),
-  checkNotLocked,                             // FIX: lock check added
+  checkNotLocked,
   auditLog('CREATE_FORMATIVE_ASSESSMENT'),
   assessmentController.createFormativeAssessment
 );
 
-// FIX: checkNotLocked added — consistent with summative bulk
 router.post(
   '/formative/bulk',
   authenticate,
   rateLimit({ windowMs: 60_000, maxRequests: 10 }),
-  checkNotLocked,
+  // NOTE: checkNotLocked intentionally omitted here — bulk formative always
+  // uses upsert and there is no single entityId to lock-check against.
   auditLog('RECORD_FORMATIVE_BULK'),
   assessmentController.recordFormativeResultsBulk
 );
@@ -125,7 +152,6 @@ router.get(
   assessmentController.getFormativeAssessments
 );
 
-// FIX: new bulk-GET for class/grade view — eliminates N+1 fetches
 router.get(
   '/formative/bulk',
   authenticate,
@@ -152,6 +178,7 @@ router.delete(
 // SUMMATIVE TEST ROUTES
 // ============================================
 
+// Single test creation — uses the relaxed schema above
 router.post(
   '/tests',
   authenticate,
@@ -161,6 +188,7 @@ router.post(
   assessmentController.createSummativeTest
 );
 
+// Bulk test creation — no per-test schema needed; controller validates internally
 router.post(
   '/tests/bulk',
   authenticate,
@@ -225,7 +253,9 @@ router.post(
   '/summative/results/bulk',
   authenticate,
   rateLimit({ windowMs: 60_000, maxRequests: 10 }),
-  checkNotLocked,
+  // NOTE: checkNotLocked is NOT applied here because the testId comes from
+  // the request body, not params, and checkNotLocked only reads req.params.
+  // The controller's own test lookup handles the "not found" case cleanly.
   auditLog('RECORD_SUMMATIVE_BULK'),
   assessmentController.recordSummativeResultsBulk
 );

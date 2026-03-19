@@ -4,9 +4,8 @@
  * Implements various aggregation strategies for formative assessments in a single-tenant environment
  */
 
-import { PrismaClient, FormativeAssessment, AggregationStrategy, FormativeAssessmentType, Term, Grade } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { FormativeAssessment, AggregationStrategy, FormativeAssessmentType, Term, Grade } from '@prisma/client';
+import prisma from '../config/database';
 
 // ============================================
 // TYPE DEFINITIONS
@@ -285,42 +284,93 @@ export class CalculationService {
   }): Promise<{ updated: number; errors: string[] }> {
     const { classId, term, academicYear } = params;
 
+    // 1. Fetch all active enrollments with learners
     const enrollments = await prisma.classEnrollment.findMany({
       where: { classId, active: true },
-      include: { learner: true }
+      include: { learner: { select: { id: true, grade: true, admissionNumber: true } } }
+    });
+
+    if (enrollments.length === 0) return { updated: 0, errors: [] };
+
+    const learnerIds = enrollments.map(e => e.learnerId);
+
+    // 2. Fetch all configuration once
+    const termConfig = await this.getTermConfig(term, academicYear);
+    const aggregationConfigs = await prisma.aggregationConfig.findMany({
+      where: { archived: false }
+    });
+
+    // 3. Fetch all formative assessments and summative results for these learners in bulk
+    const [allFormative, allSummative] = await Promise.all([
+      prisma.formativeAssessment.findMany({
+        where: { learnerId: { in: learnerIds }, term, academicYear }
+      }),
+      prisma.summativeResult.findMany({
+        where: { learnerId: { in: learnerIds }, test: { term, academicYear } }
+      })
+    ]);
+
+    // 4. Group data by learner for in-memory processing
+    const formativeByLearner = new Map<string, FormativeAssessment[]>();
+    allFormative.forEach(a => {
+      const list = formativeByLearner.get(a.learnerId) || [];
+      list.push(a);
+      formativeByLearner.set(a.learnerId, list);
+    });
+
+    const summativeByLearner = new Map<string, any[]>();
+    allSummative.forEach(r => {
+      const list = summativeByLearner.get(r.learnerId) || [];
+      list.push(r);
+      summativeByLearner.set(r.learnerId, list);
     });
 
     let updated = 0;
     const errors: string[] = [];
 
+    // 5. Process each learner in-memory
     for (const enrollment of enrollments) {
       try {
-        const formativeResult = await this.calculateOverallFormativeScore({
-          learnerId: enrollment.learnerId,
-          classId,
-          term,
-          academicYear
-        });
+        const learnerAssessments = formativeByLearner.get(enrollment.learnerId) || [];
+        const learnerSummative = summativeByLearner.get(enrollment.learnerId) || [];
 
-        const summativeResults = await prisma.summativeResult.findMany({
-          where: {
-            learnerId: enrollment.learnerId,
-            test: { term, academicYear }
-          }
-        });
+        // Group formative by type
+        const assessmentsByType = this.groupByType(learnerAssessments);
+        const breakdown: FormativeScoreBreakdown[] = [];
 
-        const summativeScore = summativeResults.length > 0
-          ? summativeResults.reduce((sum, r) => sum + r.percentage, 0) / summativeResults.length
+        for (const [type, typeAssessments] of Object.entries(assessmentsByType)) {
+          const assessmentType = type as FormativeAssessmentType;
+          
+          // Find matching config in-memory
+          const configMatch = aggregationConfigs
+            .filter(c => c.type === assessmentType && (c.grade === enrollment.learner.grade || c.grade === null))
+            .sort((a, b) => (a.grade === null ? 1 : -1))[0];
+
+          const config: AggregationConfig = configMatch 
+            ? { strategy: configMatch.strategy, nValue: configMatch.nValue, weight: configMatch.weight }
+            : { strategy: 'SIMPLE_AVERAGE', nValue: null, weight: 1.0 };
+
+          const typeAverage = await this.calculateFormativeAverage(typeAssessments, config);
+
+          breakdown.push({
+            assessmentType,
+            count: typeAssessments.length,
+            averageScore: typeAverage,
+            averagePercentage: typeAverage,
+            weight: config.weight || 1.0
+          });
+        }
+
+        const formativeAverage = this.calculateWeightedTypeAverage(breakdown);
+        const summativeScore = learnerSummative.length > 0
+          ? learnerSummative.reduce((sum, r) => sum + r.percentage, 0) / learnerSummative.length
           : 0;
 
-        await this.calculateFinalScore({
-          learnerId: enrollment.learnerId,
-          classId,
-          term,
-          academicYear,
-          formativeScore: formativeResult.averagePercentage,
-          summativeScore
-        });
+        // Final weighted score (in-memory)
+        const formativeContribution = (formativeAverage * termConfig.formativeWeight) / 100;
+        const summativeContribution = (summativeScore * termConfig.summativeWeight) / 100;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const finalScore = formativeContribution + summativeContribution;
 
         updated++;
       } catch (error) {

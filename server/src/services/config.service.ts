@@ -4,9 +4,9 @@
  * Handles defaults, validation, and configuration retrieval
  */
 
-import { PrismaClient, Term, Grade, FormativeAssessmentType, AggregationStrategy } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { Term, Grade, FormativeAssessmentType, AggregationStrategy } from '@prisma/client';
+import prisma from '../config/database';
+import { cacheService } from './cache.service';
 
 // ============================================
 // TYPE DEFINITIONS
@@ -206,7 +206,7 @@ export class ConfigService {
       await this.deactivateOtherTerms();
     }
 
-    return await prisma.termConfig.upsert({
+    const result = await prisma.termConfig.upsert({
       where: {
         academicYear_term: {
           academicYear,
@@ -230,6 +230,10 @@ export class ConfigService {
         }
       }
     });
+
+    // Invalidate cache
+    cacheService.clear();
+    return result;
   }
 
   /**
@@ -252,7 +256,7 @@ export class ConfigService {
       await this.deactivateOtherTerms();
     }
 
-    return await prisma.termConfig.update({
+    const result = await prisma.termConfig.update({
       where: { id },
       data,
       include: {
@@ -265,6 +269,10 @@ export class ConfigService {
         }
       }
     });
+
+    // Invalidate cache
+    cacheService.clear();
+    return result;
   }
 
   private async deactivateOtherTerms(): Promise<void> {
@@ -282,7 +290,11 @@ export class ConfigService {
   }
 
   async getTermConfigs(): Promise<any[]> {
-    return await prisma.termConfig.findMany({
+    const cacheKey = 'term_configs';
+    const cached = cacheService.get<any[]>(cacheKey);
+    if (cached) return cached;
+
+    const configs = await prisma.termConfig.findMany({
       orderBy: [
         { academicYear: 'desc' },
         { term: 'desc' }
@@ -297,10 +309,17 @@ export class ConfigService {
         }
       }
     });
+
+    cacheService.set(cacheKey, configs, 600); // 10 minutes
+    return configs;
   }
 
   async getActiveTermConfig(): Promise<any | null> {
-    return await prisma.termConfig.findFirst({
+    const cacheKey = 'active_term_config';
+    const cached = cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
+    const config = await prisma.termConfig.findFirst({
       where: { isActive: true },
       include: {
         creator: {
@@ -312,6 +331,11 @@ export class ConfigService {
         }
       }
     });
+
+    if (config) {
+      cacheService.set(cacheKey, config, 600);
+    }
+    return config;
   }
 
   async getAggregationConfig(params: {
@@ -438,7 +462,11 @@ export class ConfigService {
   }
 
   async getAggregationConfigs(): Promise<any[]> {
-    return await prisma.aggregationConfig.findMany({
+    const cacheKey = 'aggregation_configs';
+    const cached = cacheService.get<any[]>(cacheKey);
+    if (cached) return cached;
+
+    const configs = await prisma.aggregationConfig.findMany({
       where: { archived: false },
       include: {
         creator: {
@@ -446,6 +474,9 @@ export class ConfigService {
         }
       }
     });
+
+    cacheService.set(cacheKey, configs, 600);
+    return configs;
   }
 
   async getSpecificAggregationConfig(params: { type: FormativeAssessmentType; grade?: Grade }): Promise<any> {

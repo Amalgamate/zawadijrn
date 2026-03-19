@@ -7,6 +7,7 @@ import { Request, Response } from 'express';
 import { AuthRequest } from '../middleware/permissions.middleware';
 import { Grade, Term } from '@prisma/client';
 import prisma from '../config/database';
+import { cacheService } from '../services/cache.service';
 
 // Define learning areas for each grade
 const LEARNING_AREAS_CONFIG: Record<string, string[]> = {
@@ -100,6 +101,9 @@ export const bulkCreateGradingScales = async (req: AuthRequest, res: Response) =
         logs.push(`✅ Created: ${scaleName}`);
       }
     }
+
+    // Bust grading cache so the new scales are immediately visible
+    cacheService.deleteByPrefix('grading:');
 
     res.json({
       success: true,
@@ -226,6 +230,9 @@ export const bulkCreateSummativeTests = async (req: AuthRequest, res: Response) 
       testsCreated++;
       logs.push(`✅ Created: ${testTitle}`);
     }
+
+    // Bust all test list cache variants
+    cacheService.deleteByPrefix('tests:');
 
     res.json({
       success: true,
@@ -407,6 +414,10 @@ export const completeSchoolSetup = async (req: AuthRequest, res: Response) => {
 
     logs.push(`✅ Summative Tests Created: ${testsCreated}`);
 
+    // Bust all caches after full setup
+    cacheService.deleteByPrefix('tests:');
+    cacheService.deleteByPrefix('grading:');
+
     res.json({
       success: true,
       message: 'Complete school setup successful',
@@ -430,6 +441,10 @@ export const completeSchoolSetup = async (req: AuthRequest, res: Response) => {
 /**
  * Selective Database Reset
  * POST /api/assessments/setup/reset
+ *
+ * FIX: Clear the entire in-memory cache after any reset.
+ * Without this, old cached test queries would return stale data after the DB
+ * was wiped, causing phantom 409 "duplicate" errors when recreating tests.
  */
 export const resetAssessments = async (req: AuthRequest, res: Response) => {
   try {
@@ -469,6 +484,12 @@ export const resetAssessments = async (req: AuthRequest, res: Response) => {
       const sa = await prisma.assessmentSmsAudit.deleteMany();
       results.smsAuditsDeleted = sa.count;
     }
+
+    // ── CRITICAL: Flush the entire in-memory cache after a DB reset ───────────
+    // If we don't do this, the server continues serving stale cached data
+    // (test lists, grading systems, results) that no longer exist in the DB.
+    // The next GET will then repopulate the cache from the clean DB state.
+    cacheService.clear();
 
     res.json({
       success: true,

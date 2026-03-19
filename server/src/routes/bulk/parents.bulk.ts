@@ -1,14 +1,10 @@
-/**
- * Bulk Operations for Parents
- * Handles CSV import/export for parent data
- */
-
 import { Router, Request, Response } from 'express';
 import { authenticate } from '../../middleware/auth.middleware';
 import { AuthRequest } from '../../middleware/auth.middleware';
 import { rateLimit } from '../../middleware/enhanced-rateLimit.middleware';
 import { auditLog } from '../../middleware/permissions.middleware';
-import { PrismaClient, UserStatus } from '@prisma/client';
+import { UserStatus } from '@prisma/client';
+import prisma from '../../config/database';
 import multer from 'multer';
 import csvParser from 'csv-parser';
 import { Parser } from 'json2csv';
@@ -17,7 +13,6 @@ import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 const upload = multer({
   storage: multer.memoryStorage(),

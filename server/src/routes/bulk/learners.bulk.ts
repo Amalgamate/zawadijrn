@@ -1,14 +1,10 @@
-/**
- * Bulk Operations for Learners
- * Handles CSV import/export for student data
- */
-
 import { Router, Request, Response } from 'express';
 import { authenticate } from '../../middleware/auth.middleware';
 import { AuthRequest } from '../../middleware/auth.middleware';
 import { rateLimit } from '../../middleware/enhanced-rateLimit.middleware';
 import { auditLog } from '../../middleware/permissions.middleware';
-import { PrismaClient, Grade } from '@prisma/client';
+import { Grade } from '@prisma/client';
+import prisma from '../../config/database';
 import multer from 'multer';
 import csvParser from 'csv-parser';
 import { Parser } from 'json2csv';
@@ -16,7 +12,6 @@ import { Readable } from 'stream';
 import { z } from 'zod';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 const upload = multer({
   storage: multer.memoryStorage(),

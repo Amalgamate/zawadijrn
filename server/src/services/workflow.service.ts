@@ -1,14 +1,7 @@
-/**
- * Workflow Service
- * Manages assessment lifecycle through approval workflow
- * Handles state transitions, permissions, and audit trails
- */
-
-import { PrismaClient, AssessmentStatus, UserRole } from '@prisma/client';
+import { AssessmentStatus, UserRole } from '@prisma/client';
+import prisma from '../config/database';
 import { auditService } from './audit.service';
 import { SmsService } from './sms.service';
-
-const prisma = new PrismaClient();
 
 // ============================================
 // TYPE DEFINITIONS
@@ -755,7 +748,7 @@ export class WorkflowService {
         data: {
           ...data,
           statusHistory: {
-            push: statusHistory
+            push: statusHistory as any
           }
         }
       });

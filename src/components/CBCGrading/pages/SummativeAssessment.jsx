@@ -1,7 +1,9 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import {
-  Save, Search, Loader, ArrowLeft, Printer, UploadCloud, Database, ChevronRight, FileSpreadsheet, Download, PlayCircle, Sparkles, Loader2
+  Save, Search, Loader, ArrowLeft, Printer, UploadCloud, Database, ChevronRight,
+  FileSpreadsheet, Download, PlayCircle, Sparkles, Loader2, CheckCircle2, ChevronDown
 } from 'lucide-react';
+import toast, { Toaster } from 'react-hot-toast';
 import * as XLSX from 'xlsx';
 import VirtualizedTable from '../shared/VirtualizedTable';
 import { assessmentAPI, gradingAPI, classAPI, configAPI, learnerAPI, aiAPI } from '../../../services/api';
@@ -18,6 +20,96 @@ import { useTeacherWorkload } from '../hooks/useTeacherWorkload';
 import { useSchoolData } from '../../../contexts/SchoolDataContext';
 import { getLearningAreasByGrade } from '../../../constants/learningAreas';
 import { getAcademicYearOptions, getCurrentAcademicYear } from '../utils/academicYear';
+
+// ─── Custom Test Picker ────────────────────────────────────────────────────────
+// Replaces the native <select> so we can render a green tick next to tests that
+// already have saved results. Keeps identical height/style to the other selects.
+const TestPicker = ({ tests, value, onChange, disabled }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  // Close when clicking outside
+  useEffect(() => {
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const selected = tests.find(t => String(t.id) === String(value));
+  const hasResults = (t) => (t._count?.results ?? 0) > 0;
+
+  if (disabled) {
+    return (
+      <div className="h-9 px-2.5 py-1.5 border border-slate-300 rounded text-xs bg-slate-50 text-slate-400 flex items-center flex-1 min-w-[120px] cursor-not-allowed select-none">
+        <span className="flex-1 truncate">{tests.length === 0 ? 'No tests' : 'Test'}</span>
+        <ChevronDown size={12} className="ml-1 text-slate-300 flex-shrink-0" />
+      </div>
+    );
+  }
+
+  return (
+    <div ref={ref} className="relative flex-1 min-w-[120px]">
+      {/* Trigger */}
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className={`h-9 w-full px-2.5 py-1.5 border rounded text-xs bg-white text-slate-900 flex items-center gap-1 cursor-pointer hover:border-slate-400 transition-colors text-left
+          ${open ? 'border-brand-purple ring-1 ring-brand-purple' : 'border-slate-300'}`}
+      >
+        {/* Green tick if selected test has results */}
+        {selected && hasResults(selected) && (
+          <CheckCircle2 size={13} className="text-green-500 flex-shrink-0" />
+        )}
+        <span className="flex-1 truncate text-slate-900">
+          {selected ? (selected.title || selected.name) : 'Test'}
+        </span>
+        <ChevronDown size={12} className={`ml-1 flex-shrink-0 transition-transform text-slate-400 ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {/* Dropdown list */}
+      {open && (
+        <div className="absolute z-50 top-full left-0 mt-1 w-full min-w-[260px] bg-white border border-slate-200 rounded shadow-lg overflow-hidden">
+          {/* Empty placeholder row */}
+          <div
+            onClick={() => { onChange(''); setOpen(false); }}
+            className={`px-3 py-2 text-xs cursor-pointer hover:bg-slate-50 text-slate-400 ${value === '' ? 'bg-slate-50' : ''}`}
+          >
+            — Select a test —
+          </div>
+
+          {tests.map(t => {
+            const done = hasResults(t);
+            const isSelected = String(t.id) === String(value);
+            return (
+              <div
+                key={t.id}
+                onClick={() => { onChange(t.id); setOpen(false); }}
+                className={`px-3 py-2 text-xs cursor-pointer flex items-center gap-2 transition-colors
+                  ${isSelected
+                    ? 'bg-brand-teal/10 text-brand-teal font-semibold'
+                    : 'hover:bg-slate-50 text-slate-800'
+                  }`}
+              >
+                {/* Green tick badge for tests with saved results */}
+                {done ? (
+                  <CheckCircle2
+                    size={14}
+                    className={`flex-shrink-0 ${isSelected ? 'text-green-500' : 'text-green-500'}`}
+                  />
+                ) : (
+                  <span className="w-[14px] flex-shrink-0" />
+                )}
+                <span className="leading-snug">{t.title || t.name}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
   const { showSuccess, showError } = useNotifications();
@@ -39,6 +131,14 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
     return saved ? parseInt(saved, 10) : 1;
   });
   const [loading, setLoading] = useState(true);
+
+  // --- FIX: Dedicated saving state so the page doesn't freeze during save ---
+  const [isSaving, setIsSaving] = useState(false);
+  // Track whether the last backend save succeeded (for the indicator dot)
+  const [lastBackendSave, setLastBackendSave] = useState(null);
+  // Ref to track current auto-save promise so we don't double-fire
+  const autoSaveTimerRef = useRef(null);
+  const autoSaveInProgressRef = useRef(false);
 
   const [generatingPDF, setGeneratingPDF] = useState(false);
   const [showBulkImportModal, setShowBulkImportModal] = useState(false);
@@ -116,10 +216,10 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
             comment: response.data
           }
         }));
-        showSuccess('AI comment generated successfully!');
+        toast.success('AI comment generated successfully!');
       }
     } catch (error) {
-      showError(error.message || 'Failed to generate AI comment');
+      toast.error(error.message || 'Failed to generate AI comment');
     } finally {
       setGeneratingAI(prev => ({ ...prev, [learnerId]: false }));
     }
@@ -150,11 +250,11 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
       setTests(activeTests);
     } catch (error) {
       console.error('Error loading tests:', error);
-      showError('Failed to load tests');
+      toast.error('Failed to load tests');
     } finally {
       setLoading(false);
     }
-  }, [showError]);
+  }, []);
 
   useEffect(() => {
     fetchTests();
@@ -188,9 +288,9 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
   // Alert teacher if they have no assignments
   useEffect(() => {
     if (!teacherWorkload.loading && teacherWorkload.isTeacher && !teacherWorkload.hasAnyAssignments) {
-      showError('You are not currently assigned to any classes or subjects. Please consult with the Head Teacher.');
+      toast.error('You are not currently assigned to any classes or subjects. Please consult with the Head Teacher.');
     }
-  }, [teacherWorkload.loading, teacherWorkload.isTeacher, teacherWorkload.hasAnyAssignments, showError]);
+  }, [teacherWorkload.loading, teacherWorkload.isTeacher, teacherWorkload.hasAnyAssignments]);
 
   // Derived Data
   const selectedTest = useMemo(() =>
@@ -501,22 +601,16 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
           }
         }
 
-
-
-        // 3. Fetch Existing Marks or Load from Draft
+        // 2. Fetch Existing Marks from backend first, then fall back to draft
         const draftKey = `draft-marks-${selectedTestId}`;
         const savedDraft = localStorage.getItem(draftKey);
 
-        if (savedDraft) {
-          const parsedDraft = JSON.parse(savedDraft);
-          setMarks(parsedDraft);
-          setIsDraft(true);
-          setLastSaved(new Date());
-          showSuccess('Draft marks restored automatically');
-        } else {
-          const resultsResponse = await assessmentAPI.getTestResults(selectedTestId);
-          const results = resultsResponse.data || resultsResponse || [];
+        // Always try to load from backend first
+        const resultsResponse = await assessmentAPI.getTestResults(selectedTestId);
+        const results = resultsResponse.data || resultsResponse || [];
 
+        if (results.length > 0) {
+          // Backend has data — load it (most authoritative source)
           const existingMarks = {};
           results.forEach(r => {
             if (r.learnerId) {
@@ -528,7 +622,22 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
           });
           setMarks(existingMarks);
           setIsDraft(false);
+          // Clear stale local draft if backend data exists
+          localStorage.removeItem(draftKey);
+          setLastSaved(new Date());
+          setLastBackendSave(new Date());
+        } else if (savedDraft) {
+          // No backend data yet — restore local draft
+          const parsedDraft = JSON.parse(savedDraft);
+          setMarks(parsedDraft);
+          setIsDraft(true);
+          setLastSaved(new Date());
+          toast('Draft marks restored — remember to save!', { icon: '📋' });
+        } else {
+          setMarks({});
+          setIsDraft(false);
           setLastSaved(null);
+          setLastBackendSave(null);
         }
 
       } catch (error) {
@@ -539,7 +648,7 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
     };
 
     loadTestDetails();
-  }, [selectedTestId, tests, schoolId, showSuccess]);
+  }, [selectedTestId, tests, schoolId]);
 
   // Clear stale selected test IDs from localStorage/context if they no longer exist
   useEffect(() => {
@@ -555,24 +664,89 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
     }
   }, [selectedTestId, tests]);
 
-  // Auto-save marks to localStorage with debouncing
+  // ============================================================
+  // AUTO-SAVE: debounce → localStorage + backend (twice per session)
+  // ============================================================
+  // Track how many times we've auto-saved to the backend this session
+  const autoSaveCountRef = useRef(0);
+
   useEffect(() => {
     if (!selectedTestId) return;
 
     const draftKey = `draft-marks-${selectedTestId}`;
 
-    // Only save if there are marks and they aren't the same as existing (to avoid initial blank save)
-    const timeoutId = setTimeout(() => {
-      if (Object.keys(marks).length > 0) {
-        localStorage.setItem(draftKey, JSON.stringify(marks));
-        setIsDraft(true);
-        setLastSaved(new Date());
-        console.log('Draft marks auto-saved.');
-      }
-    }, 2000); // 2 second debounce
+    // Clear any pending timer
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
 
-    return () => clearTimeout(timeoutId);
+    autoSaveTimerRef.current = setTimeout(async () => {
+      if (Object.keys(marks).length === 0) return;
+      if (autoSaveInProgressRef.current) return;
+
+      // 1. Always save to localStorage immediately
+      localStorage.setItem(draftKey, JSON.stringify(marks));
+      setIsDraft(true);
+      setLastSaved(new Date());
+      console.log('[AutoSave] Draft saved to localStorage.');
+
+      // 2. Also persist to backend (limit to 2 auto-saves per loaded test)
+      if (autoSaveCountRef.current < 2) {
+        autoSaveInProgressRef.current = true;
+        try {
+          const resultsToSave = Object.entries(marks)
+            .filter(([, markData]) => {
+              const m = markData?.mark;
+              return m !== null && m !== undefined && m !== '';
+            })
+            .map(([learnerId, markData]) => ({
+              learnerId,
+              marksObtained: markData.mark,
+              remarks: '-',
+              teacherComment: markData.comment || ''
+            }));
+
+          if (resultsToSave.length > 0) {
+            await assessmentAPI.recordBulkResults({
+              testId: selectedTestId,
+              results: resultsToSave
+            });
+            autoSaveCountRef.current += 1;
+            setLastBackendSave(new Date());
+            setIsDraft(false);
+            localStorage.removeItem(draftKey);
+            console.log(`[AutoSave] Backend persist #${autoSaveCountRef.current} complete.`);
+
+            // Mark this test as having results in the tests list (so tick appears immediately)
+            setTests(prev => prev.map(t =>
+              String(t.id) === String(selectedTestId)
+                ? { ...t, _count: { ...t._count, results: Math.max((t._count?.results || 0), resultsToSave.length) } }
+                : t
+            ));
+
+            // Subtle silent toast on auto-save to backend
+            toast.success('Auto-saved', {
+              duration: 2000,
+              style: { fontSize: '12px', padding: '8px 12px' },
+              icon: '🔄'
+            });
+          }
+        } catch (err) {
+          console.warn('[AutoSave] Backend auto-save failed, draft kept in localStorage:', err.message);
+        } finally {
+          autoSaveInProgressRef.current = false;
+        }
+      }
+    }, 3000); // 3-second debounce
+
+    return () => clearTimeout(autoSaveTimerRef.current);
   }, [marks, selectedTestId]);
+
+  // Reset auto-save counter when test changes
+  useEffect(() => {
+    autoSaveCountRef.current = 0;
+    autoSaveInProgressRef.current = false;
+  }, [selectedTestId]);
 
 
   // Fetch Learners when test is selected
@@ -599,7 +773,7 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
           setFetchedLearners(Array.isArray(learnersData) ? learnersData : []);
         } catch (error) {
           console.error('Error fetching learners:', error);
-          showError('Failed to load learners');
+          toast.error('Failed to load learners');
           setFetchedLearners([]);
         } finally {
           setLoadingLearners(false);
@@ -608,7 +782,7 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
 
       fetchLearners();
     }
-  }, [selectedTestId, selectedTest, setup.selectedStream, showError])
+  }, [selectedTestId, selectedTest, setup.selectedStream])
 
   const filteredLearners = useMemo(() => {
     let result = fetchedLearners;
@@ -685,13 +859,10 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
 
       if (onProgress) onProgress('Preparing report...', 10);
 
-      // Elements are already visible from the preview modal
-      // Just add a small delay to ensure everything is ready
       await new Promise(resolve => setTimeout(resolve, 500));
 
       if (onProgress) onProgress('Processing content...', 20);
 
-      // Get school information from user context and branding settings
       const schoolInfo = {
         schoolName: user?.school?.name || brandingSettings?.schoolName || 'School Name',
         address: user?.school?.address || brandingSettings?.address || 'School Address',
@@ -703,13 +874,11 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
         skipLetterhead: true
       };
 
-      // Generate filename
       const testName = (selectedTest?.title || selectedTest?.name || 'test').replace(/\s+/g, '_');
       const grade = selectedTest?.grade?.replace('_', '') || 'Grade';
       const timestamp = new Date().toISOString().split('T')[0];
       const filename = `${grade}_${testName}_Results_${timestamp}.pdf`;
 
-      // Generate PDF with LANDSCAPE orientation for better table display
       const result = await generatePDFWithLetterhead(
         'assessment-report-content',
         filename,
@@ -729,15 +898,15 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
 
       if (result.success) {
         if (onProgress) onProgress('Complete!', 100);
-        showSuccess('✅ PDF report downloaded successfully!');
+        toast.success('✅ PDF report downloaded successfully!');
       } else {
-        showError(`Failed to generate PDF: ${result.error}`);
+        toast.error(`Failed to generate PDF: ${result.error}`);
       }
 
       return result;
     } catch (error) {
       console.error('Print report error:', error);
-      showError('Failed to generate PDF report');
+      toast.error('Failed to generate PDF report');
       throw error;
     } finally {
       setGeneratingPDF(false);
@@ -747,7 +916,7 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
 
   const handleExport = (type = 'xlsx') => {
     if (filteredLearners.length === 0) {
-      showError("No data to export");
+      toast.error('No data to export');
       return;
     }
 
@@ -769,48 +938,49 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
     } else {
       XLSX.writeFile(wb, `${fileName}.csv`, { bookType: 'csv' });
     }
-    showSuccess(`Successfully exported to ${type.toUpperCase()}`);
+    toast.success(`Successfully exported to ${type.toUpperCase()}`);
   };
 
+  // ============================================================
+  // MANUAL SAVE — with dedicated isSaving state + toast feedback
+  // ============================================================
   const handleSave = async (marksToSaveOverride = null) => {
     const currentMarksToSave = marksToSaveOverride || marks;
 
-
-
     if (Object.keys(currentMarksToSave).length === 0) {
-      showError('No marks entered to save');
+      toast.error('No marks entered to save');
       return;
     }
 
-    try {
-      setLoading(true);
+    // Use isSaving (not loading) so the page stays interactive
+    setIsSaving(true);
 
-      // 🚨 CRITICAL FIX #1: Check for existing results before saving
+    // Show a loading toast while the save is in progress
+    const saveToastId = toast.loading('Saving marks…');
+
+    try {
+      // Check for existing results before saving
       const existingResultsResponse = await assessmentAPI.getTestResults(selectedTestId);
       const existingResults = existingResultsResponse.data || existingResultsResponse || [];
 
       if (existingResults.length > 0) {
         const publishedResultsCount = existingResults.filter(r => r.status === 'PUBLISHED').length;
 
-        let confirmTitle = 'Results Already Exist';
-        let confirmMessage = `Results already exist for ${existingResults.length} learner(s) in this test.\\n\\n`;
+        let confirmMessage = `Results already exist for ${existingResults.length} learner(s) in this test.\n\n`;
 
         if (publishedResultsCount > 0) {
-          confirmTitle = '⚠️ Warning: Published Results Exist';
-          confirmMessage += `**${publishedResultsCount} result(s) are PUBLISHED.** Overwriting will affect report cards and student records.\\n\\n`;
+          confirmMessage += `⚠️ ${publishedResultsCount} result(s) are PUBLISHED. Overwriting will affect report cards and student records.\n\n`;
         }
 
-        confirmMessage += `New marks to save: ${Object.keys(currentMarksToSave).length} learner(s).\\n\\nAre you sure you want to overwrite these results?`;
+        confirmMessage += `New marks to save: ${Object.keys(currentMarksToSave).length} learner(s).\n\nAre you sure you want to overwrite these results?`;
 
-        const userConfirmed = window.confirm(`${confirmTitle}\\n\\n${confirmMessage}`);
+        const userConfirmed = window.confirm(`Results Already Exist\n\n${confirmMessage}`);
 
         if (!userConfirmed) {
-          setLoading(false);
-          showError('Save cancelled - existing results were not overwritten');
+          toast.dismiss(saveToastId);
+          toast('Save cancelled — existing results were not overwritten.', { icon: 'ℹ️' });
           return;
         }
-
-        showSuccess('Overwriting existing results...');
       }
 
       // Prepare bulk payload — skip learners with no mark entered
@@ -820,33 +990,30 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
           return m !== null && m !== undefined && m !== '';
         })
         .map(([learnerId, markData]) => {
-        const mark = markData.mark;
-        // Find existing result to preserve remarks if not new mark
-        const existingResult = existingResults.find(r => r.learnerId === learnerId);
-        let remarks = existingResult?.remarks || '-'; // Use existing remarks if available
-        // Remove the automatic fallback that saves "Score: X/Y" as a comment.
-        // This prevents desynchronized score data in the comment field.
-        let teacherComment = markData.comment || existingResult?.teacherComment || '';
+          const mark = markData.mark;
+          const existingResult = existingResults.find(r => r.learnerId === learnerId);
+          let remarks = existingResult?.remarks || '-';
+          let teacherComment = markData.comment || existingResult?.teacherComment || '';
 
-        if (selectedTest?.totalMarks && mark !== null && mark !== undefined && mark !== '') {
-          const percentage = (mark / selectedTest.totalMarks) * 100;
-          if (gradingScale && gradingScale.ranges) {
-            const range = gradingScale.ranges.find(r => percentage >= r.minPercentage && percentage <= r.maxPercentage);
-            remarks = range ? range.label : remarks; // Update remarks only if a new range is found
+          if (selectedTest?.totalMarks && mark !== null && mark !== undefined && mark !== '') {
+            const percentage = (mark / selectedTest.totalMarks) * 100;
+            if (gradingScale && gradingScale.ranges) {
+              const range = gradingScale.ranges.find(r => percentage >= r.minPercentage && percentage <= r.maxPercentage);
+              remarks = range ? range.label : remarks;
+            }
           }
-        }
 
-        return {
-          learnerId,
-          marksObtained: mark,
-          remarks,
-          teacherComment
-        };
-      });
+          return {
+            learnerId,
+            marksObtained: mark,
+            remarks,
+            teacherComment
+          };
+        });
 
       if (resultsToSave.length === 0) {
-        setLoading(false);
-        showError('No marks to save — enter at least one score first.');
+        toast.dismiss(saveToastId);
+        toast.error('No marks to save — enter at least one score first.');
         return;
       }
 
@@ -856,8 +1023,7 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
         results: resultsToSave
       });
 
-      showSuccess(`Successfully saved marks for ${resultsToSave.length} learner(s)!`);
-      // After successful save, refresh marks from backend to ensure consistency
+      // After successful save, refresh marks from backend
       const updatedResultsResponse = await assessmentAPI.getTestResults(selectedTestId);
       const updatedResults = updatedResultsResponse.data || updatedResultsResponse || [];
       const updatedMarks = {};
@@ -870,18 +1036,60 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
         }
       });
       setMarks(updatedMarks);
-      localStorage.removeItem(`draft-marks-${selectedTestId}`); // Clear draft after successful save
+
+      // Clear local draft — backend is now authoritative
+      localStorage.removeItem(`draft-marks-${selectedTestId}`);
+      setIsDraft(false);
+      const now = new Date();
+      setLastSaved(now);
+      setLastBackendSave(now);
+
+      // Reset auto-save counter so it will auto-save again after manual save
+      autoSaveCountRef.current = 0;
+
+      // ── Update the test's _count.results so the green tick appears immediately ──
+      setTests(prev => prev.map(t =>
+        String(t.id) === String(selectedTestId)
+          ? { ...t, _count: { ...t._count, results: updatedResults.length || resultsToSave.length } }
+          : t
+      ));
+
+      // Dismiss loading toast and show success
+      toast.dismiss(saveToastId);
+      toast.success(`✅ Saved marks for ${resultsToSave.length} learner${resultsToSave.length !== 1 ? 's' : ''}!`, {
+        duration: 4000,
+      });
+
     } catch (error) {
       console.error('Save error:', error);
-      showError('Failed to save marks');
+      toast.dismiss(saveToastId);
+      toast.error(`Failed to save marks: ${error.message || 'Please try again.'}`);
     } finally {
-      setLoading(false);
+      setIsSaving(false);
     }
   };
 
   // Render Main Page with persistent filter bar
   return (
     <div className="min-h-screen bg-slate-50/30">
+      {/* react-hot-toast container — renders toasts for this component */}
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          success: {
+            style: { background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' },
+            iconTheme: { primary: '#16a34a', secondary: '#fff' },
+          },
+          error: {
+            style: { background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca' },
+            iconTheme: { primary: '#dc2626', secondary: '#fff' },
+          },
+          loading: {
+            style: { background: '#f8fafc', color: '#1e293b', border: '1px solid #e2e8f0' },
+          },
+        }}
+      />
+
       {/* Combined Sticky Header + Filter Bar - Unified Component */}
       <div className="sticky top-0 z-40 bg-white shadow-sm">
         {/* Assessment Header - Renders above filter when test selected */}
@@ -897,13 +1105,15 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
                   <ChevronRight size={10} className="text-gray-300" />
                   <span className="capitalize">{setup.selectedTerm?.replace(/_/g, ' ').toLowerCase()}</span>
                 </div>
-
-
               </div>
 
               {/* Bottom Row: Title & Actions */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
+                  {/* Green tick in the header title when test has saved results */}
+                  {selectedTest && (selectedTest._count?.results ?? 0) > 0 && (
+                    <CheckCircle2 size={18} className="text-green-500 flex-shrink-0" title="Assessment has saved results" />
+                  )}
                   <h2 className="text-lg font-bold text-gray-800 leading-none">
                     {selectedTest?.title || selectedTest?.name}
                   </h2>
@@ -920,10 +1130,17 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
                     </span>
                   )}
 
-                  {isDraft && (
+                  {/* Save indicator: shows backend save time or draft status */}
+                  {lastBackendSave && !isDraft && (
                     <span className="text-[10px] text-gray-400 font-medium italic flex items-center gap-1.5 ml-1">
-                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
-                      Saved {lastSaved && `at ${lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                      Saved at {lastBackendSave.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  )}
+                  {isDraft && lastSaved && (
+                    <span className="text-[10px] text-amber-500 font-medium italic flex items-center gap-1.5 ml-1">
+                      <div className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse"></div>
+                      Draft — auto-saving…
                     </span>
                   )}
                 </div>
@@ -974,12 +1191,23 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
 
                   <div className="h-3 w-px bg-gray-200 mx-3" />
 
+                  {/* MANUAL SAVE BUTTON — uses isSaving, not loading */}
                   <button
                     onClick={() => handleSave()}
-                    disabled={loading}
-                    className="text-sm font-bold text-[#0D9488] hover:text-[#0f766e] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={isSaving}
+                    className="flex items-center gap-1.5 text-sm font-bold text-[#0D9488] hover:text-[#0f766e] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {loading ? 'Saving...' : 'Save'}
+                    {isSaving ? (
+                      <>
+                        <Loader2 size={14} className="animate-spin" />
+                        Saving…
+                      </>
+                    ) : (
+                      <>
+                        <Save size={14} />
+                        Save
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
@@ -1077,25 +1305,13 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
               ))}
             </select>
 
-            {/* Test - Balanced */}
-            <select
+            {/* ── Test Picker — custom dropdown so we can show the green tick ── */}
+            <TestPicker
+              tests={stagedFinalTests}
               value={stagedTestId}
-              onChange={(e) => setStagedTestId(e.target.value)}
+              onChange={(id) => setStagedTestId(id)}
               disabled={stagedFinalTests.length === 0}
-              className="h-9 px-2.5 py-1.5 border border-slate-300 rounded text-xs bg-white text-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-purple appearance-none cursor-pointer hover:border-slate-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-50 flex-1 min-w-[120px]"
-              title="Select Test"
-            >
-              <option value="">
-                {stagedFinalTests.length === 0
-                  ? (stagedLearningArea ? 'No tests' : 'Test')
-                  : 'Test'}
-              </option>
-              {stagedFinalTests.map(t => (
-                <option key={t.id} value={t.id}>
-                  {t.title || t.name}
-                </option>
-              ))}
-            </select>
+            />
 
             {/* Apply Filters Button - Green button clicked to apply filters */}
             <button
@@ -1140,11 +1356,10 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
                   pageBreakAfter: pageIndex === chunkedLearners.length - 1 ? 'auto' : 'always',
                   pageBreakInside: 'avoid',
                   minHeight: '100vh',
-                  // Standard document margins: 1 inch / 25.4mm top & bottom, 0.75 inch / 19mm sides
-                  paddingTop: pageIndex === 0 ? '20px' : '95px', // 1 inch (25.4mm) for subsequent pages, less for first with letterhead
-                  paddingBottom: '113px', // 30mm to safely avoid footer
-                  paddingLeft: '20px', // ~19mm left margin
-                  paddingRight: '20px', // ~19mm right margin
+                  paddingTop: pageIndex === 0 ? '20px' : '95px',
+                  paddingBottom: '113px',
+                  paddingLeft: '20px',
+                  paddingRight: '20px',
                   marginLeft: '0',
                   marginRight: '0'
                 }}
@@ -1193,7 +1408,7 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
                   pageBreakInside: 'avoid',
                   paddingLeft: '0',
                   paddingRight: '0',
-                  marginBottom: '50px', // Keep table away from footer
+                  marginBottom: '50px',
                   display: 'flex',
                   flexDirection: 'column'
                 }}>
@@ -1285,7 +1500,7 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
             <div className="overflow-x-auto">
               <VirtualizedTable
                 data={filteredLearners}
-                rowHeight={40} // Compact row height for assessment
+                rowHeight={40}
                 visibleHeight={500}
                 emptyComponent={
                   <div className="px-6 py-12 text-center text-gray-500 text-sm">
@@ -1392,14 +1607,12 @@ const PieChartWithLabels = ({ data }) => {
 
   return (
     <g>
-      {/* Draw pie slices with percentage labels */}
       {Object.entries(data).map(([grade, count]) => {
         const percentage = (count / total) * 100;
         const angle = (percentage / 100) * 360;
         const startAngle = currentAngle;
         const endAngle = currentAngle + angle;
 
-        // Calculate slice path
         const startX = 100 + 85 * Math.cos((startAngle * Math.PI) / 180);
         const startY = 100 + 85 * Math.sin((startAngle * Math.PI) / 180);
         const endX = 100 + 85 * Math.cos((endAngle * Math.PI) / 180);
@@ -1414,9 +1627,8 @@ const PieChartWithLabels = ({ data }) => {
           `Z`
         ].join(' ');
 
-        // Calculate label position (middle of slice)
         const middleAngle = (startAngle + endAngle) / 2;
-        const labelRadius = 60; // Position labels mid-way in slice
+        const labelRadius = 60;
         const labelX = 100 + labelRadius * Math.cos((middleAngle * Math.PI) / 180);
         const labelY = 100 + labelRadius * Math.sin((middleAngle * Math.PI) / 180);
 
@@ -1424,7 +1636,6 @@ const PieChartWithLabels = ({ data }) => {
 
         return (
           <g key={grade}>
-            {/* Pie Slice */}
             <path
               d={pathData}
               fill={getGradeColor(grade)}
@@ -1432,28 +1643,13 @@ const PieChartWithLabels = ({ data }) => {
               strokeWidth="2.5"
               opacity="0.95"
             />
-
-            {/* Percentage Label (show if >= 5%) */}
             {percentage >= 5 && (
               <>
-                {/* White background circle for better readability */}
-                <circle
-                  cx={labelX}
-                  cy={labelY}
-                  r="12"
-                  fill="white"
-                  opacity="0.9"
-                />
-
-                {/* Percentage Text */}
+                <circle cx={labelX} cy={labelY} r="12" fill="white" opacity="0.9" />
                 <text
-                  x={labelX}
-                  y={labelY + 1}
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  fontSize="9"
-                  fontWeight="bold"
-                  fill={getGradeColor(grade)}
+                  x={labelX} y={labelY + 1}
+                  textAnchor="middle" dominantBaseline="middle"
+                  fontSize="9" fontWeight="bold" fill={getGradeColor(grade)}
                 >
                   {percentage.toFixed(0)}%
                 </text>
@@ -1463,40 +1659,13 @@ const PieChartWithLabels = ({ data }) => {
         );
       })}
 
-      {/* Center Circle with Total Count */}
       <circle
-        cx="100"
-        cy="100"
-        r="32"
-        fill="white"
-        stroke="#cbd5e1"
-        strokeWidth="3"
+        cx="100" cy="100" r="32"
+        fill="white" stroke="#cbd5e1" strokeWidth="3"
         filter="drop-shadow(0 2px 4px rgba(0,0,0,0.1))"
       />
-
-      {/* Total Number */}
-      <text
-        x="100"
-        y="95"
-        textAnchor="middle"
-        fontSize="16"
-        fontWeight="bold"
-        fill="#1e293b"
-      >
-        {total}
-      </text>
-
-      {/* "Students" Label */}
-      <text
-        x="100"
-        y="108"
-        textAnchor="middle"
-        fontSize="8"
-        fill="#64748b"
-        fontWeight="600"
-      >
-        Students
-      </text>
+      <text x="100" y="95" textAnchor="middle" fontSize="16" fontWeight="bold" fill="#1e293b">{total}</text>
+      <text x="100" y="108" textAnchor="middle" fontSize="8" fill="#64748b" fontWeight="600">Students</text>
     </g>
   );
 };

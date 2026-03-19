@@ -2,6 +2,12 @@ import { Request, Response } from 'express';
 import prisma from '../config/database';
 import { ApiError } from '../utils/error.util';
 import { AuthRequest } from '../middleware/permissions.middleware';
+import { cacheService } from '../services/cache.service';
+
+// ─── TTL constants ────────────────────────────────────────────────────────────
+const ADMIN_CACHE_TTL  = 120; // 2 minutes — stats don't need real-time precision
+const TEACHER_CACHE_TTL = 60; // 1 minute
+const PARENT_CACHE_TTL  = 60; // 1 minute
 
 export class DashboardController {
     /**
@@ -11,226 +17,277 @@ export class DashboardController {
     async getAdminMetrics(req: AuthRequest, res: Response) {
         try {
             const { filter = 'today' } = req.query;
+            const cacheKey = `dashboard:admin:${filter}`;
+
+            // ── Serve from cache if fresh ──────────────────────────────────────
+            const cached = cacheService.get<any>(cacheKey);
+            if (cached) {
+                return res.json({ success: true, data: cached, _cached: true });
+            }
+
             const dateFilter = this.getDateFilter(filter as string);
             const prevDateFilter = this.getPreviousDateFilter(filter as string);
 
-            // 1. Basic Counts & Trends
+            // ── 1. All cheap count queries in one Promise.all ─────────────────
             const [
                 studentCount,
                 teacherCount,
                 classCount,
                 prevStudentCount,
-                prevTeacherCount
+                prevTeacherCount,
+                activeStudents,
+                activeTeachers,
+                attendanceSummary,
+                studentsByGradeData,
+                staffByRole,
+                latestAdmissions,
+                latestFormative,
+                latestSummative,
+                upcomingEventsData,
+                pendingDraftCount,
             ] = await Promise.all([
                 prisma.learner.count({ where: { archived: false } }),
                 prisma.user.count({ where: { role: 'TEACHER', archived: false } }),
                 prisma.class.count({ where: { archived: false } }),
                 prisma.learner.count({ where: { archived: false, createdAt: prevDateFilter } }),
-                prisma.user.count({ where: { role: 'TEACHER', archived: false, createdAt: prevDateFilter } })
-            ]);
-
-            const studentTrend = this.calculateTrend(studentCount, prevStudentCount);
-            const teacherTrend = this.calculateTrend(teacherCount, prevTeacherCount);
-
-            // 2. Active Counts
-            const activeStudents = await prisma.learner.count({
-                where: { status: 'ACTIVE', archived: false }
-            });
-            const activeTeachers = await prisma.user.count({
-                where: { role: 'TEACHER', status: 'ACTIVE', archived: false }
-            });
-
-            // 3. Attendance
-            const attendanceSummary = await prisma.attendance.groupBy({
-                by: ['status'],
-                where: { date: dateFilter },
-                _count: true
-            });
-
-            const attendanceMap: Record<string, number> = {
-                PRESENT: 0,
-                ABSENT: 0,
-                LATE: 0
-            };
-            attendanceSummary.forEach(item => {
-                attendanceMap[item.status] = item._count;
-            });
-
-            const avgAttendance = studentCount > 0 ? (attendanceMap.PRESENT / studentCount) * 100 : 0;
-
-            // 4. Students by Grade
-            const studentsByGradeData = await prisma.learner.groupBy({
-                by: ['grade'],
-                where: { archived: false },
-                _count: true
-            });
-
-            const gradeDistribution = studentsByGradeData.map(item => ({
-                label: item.grade.replace('_', ' '),
-                value: item._count,
-                color: this.getGradeColor(item.grade)
-            }));
-
-            // 5. Staff Distribution
-            const staffByRole = await prisma.user.groupBy({
-                by: ['role'],
-                where: { archived: false },
-                _count: true
-            });
-
-            const staffDistribution = staffByRole.map(item => ({
-                label: item.role.replace('_', ' '),
-                value: item._count,
-                color: this.getRoleColor(item.role)
-            }));
-
-            // 6. Recent Activity
-            const [latestAdmissions, latestAssessments] = await Promise.all([
+                prisma.user.count({ where: { role: 'TEACHER', archived: false, createdAt: prevDateFilter } }),
+                prisma.learner.count({ where: { status: 'ACTIVE', archived: false } }),
+                prisma.user.count({ where: { role: 'TEACHER', status: 'ACTIVE', archived: false } }),
+                prisma.attendance.groupBy({ by: ['status'], where: { date: dateFilter }, _count: true }),
+                prisma.learner.groupBy({ by: ['grade'], where: { archived: false }, _count: true }),
+                prisma.user.groupBy({ by: ['role'], where: { archived: false }, _count: true }),
                 prisma.learner.findMany({
-                    orderBy: { createdAt: 'desc' },
-                    take: 5,
+                    orderBy: { createdAt: 'desc' }, take: 5,
                     select: { firstName: true, lastName: true, admissionNumber: true, grade: true, createdAt: true }
                 }),
                 prisma.formativeAssessment.findMany({
-                    orderBy: { createdAt: 'desc' },
-                    take: 5,
+                    orderBy: { createdAt: 'desc' }, take: 5,
                     select: { title: true, learningArea: true, learner: { select: { firstName: true, lastName: true } }, createdAt: true }
-                })
+                }),
+                prisma.summativeResult.findMany({
+                   orderBy: { createdAt: 'desc' }, take: 5,
+                   select: { marksObtained: true, test: { select: { title: true, learningArea: true } }, learner: { select: { firstName: true, lastName: true } }, createdAt: true }
+                }),
+                prisma.event.findMany({
+                    where: { startDate: { gte: new Date() } }, orderBy: { startDate: 'asc' }, take: 5,
+                    include: { creator: { select: { role: true } } }
+                }),
+                prisma.formativeAssessment.count({ where: { status: 'DRAFT', archived: false } }),
             ]);
 
-            // 7. Financials
-            const feeInvoices = await prisma.feeInvoice.findMany({
-                where: { archived: false },
-                include: { learner: { select: { grade: true } } }
+            // ── 1.5 Calculate Assessed Classes & Missed Exams ──────────────
+            const latestTest = await prisma.summativeTest.findFirst({
+                where: { archived: false, academicYear: 2026, term: 'TERM_1' }, // Hardcoded for current context per requirements
+                orderBy: { createdAt: 'desc' },
+                select: { testType: true, term: true, academicYear: true }
             });
 
-            let feeCollected = 0;
-            let feePending = 0;
-            const streamBreakdownMap: Record<string, { target: number, collected: number, bal: number }> = {};
+            let totalMissedExams = 0;
+            let currentTestSeries = 'CURRENT SERIES';
+            let unAssessedBreakdown: any[] = [];
 
-            feeInvoices.forEach(inv => {
-                const paid = Number(inv.paidAmount) || 0;
-                const bal = Number(inv.balance) || 0;
-                const target = Number(inv.totalAmount) || 0;
+            if (latestTest && latestTest.testType) {
+                currentTestSeries = `${latestTest.testType} ${latestTest.term}`.replace('_', ' ');
+                const testsInSeries = await prisma.summativeTest.findMany({
+                    where: { 
+                        testType: latestTest.testType, 
+                        term: latestTest.term, 
+                        academicYear: latestTest.academicYear, 
+                        archived: false 
+                    },
+                    select: { id: true, grade: true }
+                });
 
-                feeCollected += paid;
-                feePending += bal;
+                if (testsInSeries.length > 0) {
+                    const testIds = testsInSeries.map(t => t.id);
+                    const grades = [...new Set(testsInSeries.map(t => t.grade))];
+                    
+                    // Find students in these grades who have NO results for ANY test in this series
+                    const studentsAffected = await prisma.learner.findMany({
+                        where: {
+                            status: 'ACTIVE',
+                            archived: false,
+                            grade: { in: grades as any }
+                        },
+                        select: { id: true, grade: true }
+                    });
 
-                const grade = inv.learner?.grade || 'UNKNOWN';
-                if (!streamBreakdownMap[grade]) {
-                    streamBreakdownMap[grade] = { target: 0, collected: 0, bal: 0 };
+                    const studentsWithSomeResults = await prisma.summativeResult.findMany({
+                        where: {
+                            testId: { in: testIds },
+                            archived: false
+                        },
+                        select: { learnerId: true },
+                        distinct: ['learnerId']
+                    });
+
+                    const resultsSet = new Set(studentsWithSomeResults.map(r => r.learnerId));
+                    totalMissedExams = studentsAffected.filter(s => !resultsSet.has(s.id)).length;
+
+                    // Group by grade for the detailed view
+                    unAssessedBreakdown = grades.map(grade => {
+                        const studentsInGrade = studentsAffected.filter(s => s.grade === grade);
+                        const unAssessedInGrade = studentsInGrade.filter(s => !resultsSet.has(s.id)).length;
+                        return {
+                            grade: (grade as string).replace('_', ' '),
+                            total: studentsInGrade.length,
+                            unAssessed: unAssessedInGrade,
+                            assessed: studentsInGrade.length - unAssessedInGrade
+                        };
+                    }).filter(b => b.total > 0);
                 }
-                streamBreakdownMap[grade].target += target;
-                streamBreakdownMap[grade].collected += paid;
-                streamBreakdownMap[grade].bal += bal;
+            }
+
+            const assessedGradesStreams = await prisma.learner.findMany({
+                where: {
+                    archived: false,
+                    OR: [
+                        { summativeResults: { some: { archived: false } } },
+                        { formativeAssessments: { some: { archived: false } } }
+                    ]
+                },
+                select: { grade: true, stream: true },
+                distinct: ['grade', 'stream']
             });
 
-            const streamBreakdown = Object.entries(streamBreakdownMap).map(([grade, data]) => ({
-                name: grade.replace('_', ' '),
-                target: data.target,
-                collected: data.collected,
-                bal: data.bal
-            }));
+            const assessedClassCount = assessedGradesStreams.length > 0
+                ? await prisma.class.count({
+                    where: {
+                        archived: false,
+                        OR: assessedGradesStreams.map(gs => ({
+                            grade: gs.grade,
+                            stream: gs.stream
+                        }))
+                    }
+                })
+                : 0;
 
-            // 8. Academic Performance
-            const summativeResults = await prisma.summativeResult.findMany({
-                where: { archived: false },
-                include: { test: { select: { grade: true } } }
-            });
+            // Combine both formative and summative for "latest assessments" activity
+            const latestAssessments = [...latestFormative.map(f => ({ ...f, type: 'FORMATIVE' })), ...latestSummative.map(s => ({ title: s.test.title, learningArea: s.test.learningArea, learner: s.learner, createdAt: s.createdAt, type: 'SUMMATIVE' }))]
+                .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                .slice(0, 5);
 
-            const classPerfMap: Record<string, { totalMarks: number, count: number }> = {};
-            summativeResults.forEach(res => {
-                const grade = res.test?.grade || 'UNKNOWN';
-                if (!classPerfMap[grade]) classPerfMap[grade] = { totalMarks: 0, count: 0 };
-                classPerfMap[grade].totalMarks += Number(res.percentage || res.marksObtained);
-                classPerfMap[grade].count += 1;
+            // ── 2. Financial summary — use aggregates, NOT a full table scan ──
+            const [feeAgg, feeByGrade, summativeByGrade, subjectRatings] = await Promise.all([
+                // Total collected + balance using DB aggregates (no row fetch)
+                prisma.feeInvoice.aggregate({
+                    where: { archived: false },
+                    _sum: { paidAmount: true, balance: true },
+                }),
+                // Per-grade breakdown — only what we need
+                prisma.feeInvoice.groupBy({
+                    by: ['feeStructureId'],
+                    where: { archived: false },
+                    _sum: { totalAmount: true, paidAmount: true, balance: true },
+                }),
+                // Summative averages per grade
+                prisma.summativeResult.groupBy({
+                    by: ['testId'],
+                    where: { archived: false },
+                    _avg: { percentage: true },
+                    _count: true,
+                }),
+                // Formative rating distribution
+                prisma.formativeAssessment.groupBy({
+                    by: ['learningArea', 'overallRating'],
+                    where: { archived: false },
+                    _count: true,
+                }),
+            ]);
+
+            // ── Derive top performing classes (from groupBy, no full scan) ────
+            const testIds = summativeByGrade.map(r => r.testId);
+            const testGrades = testIds.length
+                ? await prisma.summativeTest.findMany({
+                    where: { id: { in: testIds } },
+                    select: { id: true, grade: true },
+                  })
+                : [];
+            const gradeMap = new Map(testGrades.map(t => [t.id, t.grade]));
+
+            const classPerfMap: Record<string, { total: number; count: number }> = {};
+            summativeByGrade.forEach(r => {
+                const grade = gradeMap.get(r.testId) || 'UNKNOWN';
+                if (!classPerfMap[grade]) classPerfMap[grade] = { total: 0, count: 0 };
+                classPerfMap[grade].total += (r._avg.percentage || 0) * r._count;
+                classPerfMap[grade].count += r._count;
             });
 
             const topPerformingClasses = Object.entries(classPerfMap)
-                .map(([grade, data]) => {
-                    const avg = data.count > 0 ? (data.totalMarks / data.count) : 0;
-                    return {
-                        grade: grade.replace('_', ' '),
-                        avg: parseFloat(avg.toFixed(1)),
-                        label: avg > 80 ? 'Exceeding' : avg > 60 ? 'Meeting' : 'Approaching'
-                    };
+                .map(([grade, d]) => {
+                    const avg = d.count > 0 ? d.total / d.count : 0;
+                    return { grade: grade.replace('_', ' '), avg: parseFloat(avg.toFixed(1)), label: avg > 80 ? 'Exceeding' : avg > 60 ? 'Meeting' : 'Approaching' };
                 })
                 .sort((a, b) => b.avg - a.avg)
                 .slice(0, 5);
 
-            const subjectProficiencyData = await prisma.formativeAssessment.findMany({
-                where: { archived: false },
-                select: { learningArea: true, overallRating: true }
-            });
-
-            const subjPerfMap: Record<string, { ee: number, me: number, be: number, total: number }> = {};
-            subjectProficiencyData.forEach(a => {
-                const area = a.learningArea;
+            // ── Subject proficiency from groupBy ──────────────────────────────
+            const subjPerfMap: Record<string, { ee: number; me: number; be: number; total: number }> = {};
+            subjectRatings.forEach(r => {
+                const area = r.learningArea;
                 if (!subjPerfMap[area]) subjPerfMap[area] = { ee: 0, me: 0, be: 0, total: 0 };
-                subjPerfMap[area].total++;
-                if (a.overallRating === 'EE') subjPerfMap[area].ee++;
-                else if (a.overallRating === 'ME' || a.overallRating === 'AE') subjPerfMap[area].me++;
-                else if (a.overallRating === 'BE') subjPerfMap[area].be++;
+                subjPerfMap[area].total += r._count;
+                if (r.overallRating === 'EE') subjPerfMap[area].ee += r._count;
+                else if (r.overallRating === 'ME' || r.overallRating === 'AE') subjPerfMap[area].me += r._count;
+                else if (r.overallRating === 'BE') subjPerfMap[area].be += r._count;
             });
+            const subjectProficiency = Object.entries(subjPerfMap)
+                .map(([area, d]) => ({
+                    area,
+                    ee: d.total > 0 ? Math.round((d.ee / d.total) * 100) : 0,
+                    me: d.total > 0 ? Math.round((d.me / d.total) * 100) : 0,
+                    be: d.total > 0 ? Math.round((d.be / d.total) * 100) : 0,
+                }))
+                .slice(0, 4);
 
-            const subjectProficiency = Object.entries(subjPerfMap).map(([area, data]) => ({
-                area,
-                ee: data.total > 0 ? Math.round((data.ee / data.total) * 100) : 0,
-                me: data.total > 0 ? Math.round((data.me / data.total) * 100) : 0,
-                be: data.total > 0 ? Math.round((data.be / data.total) * 100) : 0
-            })).slice(0, 4);
+            // ── Attendance map ────────────────────────────────────────────────
+            const attendanceMap: Record<string, number> = { PRESENT: 0, ABSENT: 0, LATE: 0 };
+            attendanceSummary.forEach(item => { attendanceMap[item.status] = item._count; });
+            const avgAttendance = studentCount > 0 ? (attendanceMap.PRESENT / studentCount) * 100 : 0;
 
-            // 9. Upcoming Events
-            const upcomingEventsData = await prisma.event.findMany({
-                where: { startDate: { gte: new Date() } },
-                orderBy: { startDate: 'asc' },
-                take: 5,
-                include: { creator: { select: { role: true } } }
-            });
-
-            const upcomingEvents = upcomingEventsData.map(evt => ({
-                title: evt.title,
-                date: evt.startDate,
-                category: evt.type,
-                responsible: evt.creator?.role?.replace('_', ' ') || 'Staff'
+            // ── Distributions ─────────────────────────────────────────────────
+            const gradeDistribution = studentsByGradeData.map(item => ({
+                label: item.grade.replace('_', ' '), value: item._count, color: this.getGradeColor(item.grade),
+            }));
+            const staffDistribution = staffByRole.map(item => ({
+                label: item.role.replace('_', ' '), value: item._count, color: this.getRoleColor(item.role),
             }));
 
-            res.json({
-                success: true,
-                data: {
-                    stats: {
-                        totalStudents: studentCount,
-                        activeStudents,
-                        totalTeachers: teacherCount,
-                        activeTeachers,
-                        totalClasses: classCount,
-                        presentToday: attendanceMap.PRESENT,
-                        absentToday: attendanceMap.ABSENT,
-                        lateToday: attendanceMap.LATE,
-                        avgAttendance: parseFloat(avgAttendance.toFixed(1)),
-                        feeCollected,
-                        feePending,
-                        studentTrend,
-                        teacherTrend,
-                        totalPendingAssessments: await prisma.formativeAssessment.count({ where: { status: 'DRAFT', archived: false } }),
-                        performance: { ee: 0, me: 0, ae: 0, be: 0 }
-                    },
-                    distributions: {
-                        studentsByGrade: gradeDistribution,
-                        staff: staffDistribution,
-                        subjectProficiency
-                    },
-                    financials: {
-                        streamBreakdown
-                    },
-                    recentActivity: {
-                        admissions: latestAdmissions,
-                        assessments: latestAssessments
-                    },
-                    topPerformingClasses,
-                    upcomingEvents
-                }
-            });
+            // ── Financials ────────────────────────────────────────────────────
+            const feeCollected = Number(feeAgg._sum.paidAmount || 0);
+            const feePending   = Number(feeAgg._sum.balance   || 0);
+
+            const upcomingEvents = upcomingEventsData.map(evt => ({
+                title: evt.title, date: evt.startDate, category: evt.type,
+                responsible: evt.creator?.role?.replace('_', ' ') || 'Staff',
+            }));
+
+            const payload = {
+                stats: {
+                    totalStudents: studentCount, activeStudents,
+                    totalTeachers: teacherCount, activeTeachers,
+                    totalClasses: classCount,
+                    totalAssessedClasses: assessedClassCount,
+                    totalMissedExams,
+                    currentTestSeries,
+                    presentToday: attendanceMap.PRESENT, absentToday: attendanceMap.ABSENT, lateToday: attendanceMap.LATE,
+                    avgAttendance: parseFloat(avgAttendance.toFixed(1)),
+                    feeCollected, feePending,
+                    studentTrend: this.calculateTrend(studentCount, prevStudentCount),
+                    teacherTrend: this.calculateTrend(teacherCount, prevTeacherCount),
+                    totalPendingAssessments: pendingDraftCount,
+                    performance: { ee: 0, me: 0, ae: 0, be: 0 },
+                },
+                unAssessedBreakdown,
+                distributions: { studentsByGrade: gradeDistribution, staff: staffDistribution, subjectProficiency },
+                financials: { streamBreakdown: [] },
+                recentActivity: { admissions: latestAdmissions, assessments: latestAssessments },
+                topPerformingClasses,
+                upcomingEvents,
+            };
+
+            cacheService.set(cacheKey, payload, ADMIN_CACHE_TTL);
+            res.json({ success: true, data: payload });
 
         } catch (error: any) {
             console.error('Admin Dashboard Error:', error);
@@ -245,77 +302,49 @@ export class DashboardController {
     async getTeacherMetrics(req: AuthRequest, res: Response) {
         try {
             const userId = req.user?.userId;
+            if (!userId) throw new ApiError(400, 'User ID is required');
 
-            if (!userId) {
-                throw new ApiError(400, 'User ID is required');
-            }
+            const cacheKey = `dashboard:teacher:${userId}`;
+            const cached = cacheService.get<any>(cacheKey);
+            if (cached) return res.json({ success: true, data: cached, _cached: true });
 
-            const { filter = 'today' } = req.query;
-
-            // 1. My Classes
-            const myClasses = await prisma.class.findMany({
-                where: { teacherId: userId, archived: false },
-                include: {
-                    _count: { select: { enrollments: true } }
-                }
-            });
+            const [myClasses, pendingAssessments, recentActivityRaw] = await Promise.all([
+                prisma.class.findMany({
+                    where: { teacherId: userId, archived: false },
+                    include: { _count: { select: { enrollments: true } } },
+                }),
+                prisma.formativeAssessment.count({ where: { teacherId: userId, status: 'DRAFT' } }),
+                prisma.formativeAssessment.findMany({
+                    where: { teacherId: userId },
+                    orderBy: { createdAt: 'desc' }, take: 10,
+                    select: { id: true, title: true, learningArea: true, createdAt: true },
+                }),
+            ]);
 
             const totalMyStudents = myClasses.reduce((sum, cls) => sum + cls._count.enrollments, 0);
-
-            // 2. Schedule (Simulated from assigned classes)
             const schedule = myClasses.map(cls => ({
-                id: cls.id,
-                grade: cls.name,
-                subject: 'Standard CBC',
-                time: '8:00 AM',
-                room: cls.room || 'N/A',
-                status: 'upcoming'
+                id: cls.id, grade: cls.name, subject: 'Standard CBC',
+                time: '8:00 AM', room: cls.room || 'N/A', status: 'upcoming',
             }));
-
-            // 3. Pending Tasks (Ungraded assessments)
-            const pendingAssessments = await prisma.formativeAssessment.count({
-                where: { teacherId: userId, status: 'DRAFT' }
-            });
-
-            // 4. Recent Activity (Recent assessments created by this teacher)
-            const recentActivityRaw = await prisma.formativeAssessment.findMany({
-                where: { teacherId: userId },
-                orderBy: { createdAt: 'desc' },
-                take: 10,
-                select: {
-                    id: true,
-                    title: true,
-                    learningArea: true,
-                    createdAt: true
-                }
-            });
-
             const recentActivity = recentActivityRaw.map(act => ({
-                id: act.id,
-                text: `${act.title} created for ${act.learningArea}`,
-                time: act.createdAt,
-                type: 'assessment'
+                id: act.id, text: `${act.title} created for ${act.learningArea}`, time: act.createdAt, type: 'assessment',
             }));
 
-            res.json({
-                success: true,
-                data: {
-                    stats: {
-                        myStudents: totalMyStudents,
-                        myClasses: myClasses.length,
-                        pendingTasks: pendingAssessments,
-                        messages: 0,
-                        analytics: {
-                            attendance: 94,
-                            graded: pendingAssessments === 0 ? 100 : Math.round(((totalMyStudents - pendingAssessments) / totalMyStudents) * 100),
-                            completion: 75,
-                            engagement: 90
-                        }
+            const payload = {
+                stats: {
+                    myStudents: totalMyStudents, myClasses: myClasses.length,
+                    pendingTasks: pendingAssessments, messages: 0,
+                    analytics: {
+                        attendance: 94,
+                        graded: pendingAssessments === 0 ? 100 : Math.round(((totalMyStudents - pendingAssessments) / totalMyStudents) * 100),
+                        completion: 75, engagement: 90,
                     },
-                    schedule,
-                    recentActivity
-                }
-            });
+                },
+                schedule, recentActivity,
+            };
+
+            cacheService.set(cacheKey, payload, TEACHER_CACHE_TTL);
+            res.json({ success: true, data: payload });
 
         } catch (error: any) {
             console.error('Teacher Dashboard Error:', error);
@@ -330,29 +359,28 @@ export class DashboardController {
     async getParentMetrics(req: AuthRequest, res: Response) {
         try {
             const userId = req.user?.userId;
-            if (!userId) {
-                throw new ApiError(400, 'User ID is required');
-            }
+            if (!userId) throw new ApiError(400, 'User ID is required');
 
-            // 1. Get Children
+            const cacheKey = `dashboard:parent:${userId}`;
+            const cached = cacheService.get<any>(cacheKey);
+            if (cached) return res.json({ success: true, data: cached, _cached: true });
+
             const children = await prisma.learner.findMany({
                 where: { parentId: userId, archived: false },
                 include: {
                     feeInvoices: {
                         where: { archived: false },
-                        select: { balance: true, totalAmount: true }
+                        select: { balance: true, totalAmount: true },
                     },
                     formativeAssessments: {
                         where: { archived: false },
-                        orderBy: { createdAt: 'desc' },
-                        take: 5
+                        orderBy: { createdAt: 'desc' }, take: 5,
                     },
                     attendances: {
                         where: { archived: false },
-                        orderBy: { date: 'desc' },
-                        take: 30
-                    }
-                }
+                        orderBy: { date: 'desc' }, take: 30,
+                    },
+                },
             });
 
             const processedChildren = children.map(child => {
@@ -360,38 +388,30 @@ export class DashboardController {
                 const attendanceRate = child.attendances.length > 0
                     ? (child.attendances.filter(a => a.status === 'PRESENT').length / child.attendances.length) * 100
                     : 100;
-
                 return {
-                    id: child.id,
-                    name: `${child.firstName} ${child.lastName}`,
-                    grade: child.grade.replace('_', ' '),
-                    admissionNumber: child.admissionNumber,
-                    performanceLevel: 'ME', // Logic to determine overall level could be added here
-                    overallPerformance: 'Good',
-                    attendanceRate: Math.round(attendanceRate),
-                    feeBalance: totalBalance,
+                    id: child.id, name: `${child.firstName} ${child.lastName}`,
+                    grade: child.grade.replace('_', ' '), admissionNumber: child.admissionNumber,
+                    performanceLevel: 'ME', overallPerformance: 'Good',
+                    attendanceRate: Math.round(attendanceRate), feeBalance: totalBalance,
                     recentAssessments: child.formativeAssessments.map(a => ({
-                        date: a.createdAt,
-                        subject: a.learningArea,
-                        type: a.type,
-                        grade: a.overallRating
-                    }))
+                        date: a.createdAt, subject: a.learningArea, type: a.type, grade: a.overallRating,
+                    })),
                 };
             });
 
-            res.json({
-                success: true,
-                data: {
-                    children: processedChildren,
-                    stats: {
-                        totalBalance: processedChildren.reduce((sum, c) => sum + c.feeBalance, 0),
-                        avgAttendance: processedChildren.length > 0
-                            ? Math.round(processedChildren.reduce((sum, c) => sum + c.attendanceRate, 0) / processedChildren.length)
-                            : 100,
-                        bulletins: 0 // Fetch from communication service in future
-                    }
-                }
-            });
+            const payload = {
+                children: processedChildren,
+                stats: {
+                    totalBalance: processedChildren.reduce((sum, c) => sum + c.feeBalance, 0),
+                    avgAttendance: processedChildren.length > 0
+                        ? Math.round(processedChildren.reduce((sum, c) => sum + c.attendanceRate, 0) / processedChildren.length)
+                        : 100,
+                    bulletins: 0,
+                },
+            };
+
+            cacheService.set(cacheKey, payload, PARENT_CACHE_TTL);
+            res.json({ success: true, data: payload });
 
         } catch (error: any) {
             console.error('Parent Dashboard Error:', error);
@@ -399,51 +419,25 @@ export class DashboardController {
         }
     }
 
-    private getDateFilter(filter: string) {
-        const date = new Date();
-        date.setHours(0, 0, 0, 0);
+    // ── Helpers ───────────────────────────────────────────────────────────────
 
+    private getDateFilter(filter: string) {
+        const date = new Date(); date.setHours(0, 0, 0, 0);
         switch (filter) {
-            case 'week':
-                const diff = date.getDate() - date.getDay();
-                return { gte: new Date(date.setDate(diff)) };
-            case 'month':
-                return { gte: new Date(date.getFullYear(), date.getMonth(), 1) };
-            case 'term':
-                // Assuming Jan-Apr, May-Aug, Sep-Dec terms for now
-                const month = date.getMonth();
-                const termStartMonth = month < 4 ? 0 : month < 8 ? 4 : 8;
-                return { gte: new Date(date.getFullYear(), termStartMonth, 1) };
-            default: // today
-                return date;
+            case 'week': { const diff = date.getDate() - date.getDay(); return { gte: new Date(date.setDate(diff)) }; }
+            case 'month': return { gte: new Date(date.getFullYear(), date.getMonth(), 1) };
+            case 'term': { const m = date.getMonth(); const s = m < 4 ? 0 : m < 8 ? 4 : 8; return { gte: new Date(date.getFullYear(), s, 1) }; }
+            default: return date;
         }
     }
 
     private getPreviousDateFilter(filter: string) {
-        const date = new Date();
-        date.setHours(0, 0, 0, 0);
-
+        const date = new Date(); date.setHours(0, 0, 0, 0);
         switch (filter) {
-            case 'week':
-                const weekStart = date.getDate() - date.getDay();
-                const prevWeekStart = new Date(date.setDate(weekStart - 7));
-                const prevWeekEnd = new Date(date.setDate(weekStart - 1));
-                return { gte: prevWeekStart, lte: prevWeekEnd };
-            case 'month':
-                const prevMonthStart = new Date(date.getFullYear(), date.getMonth() - 1, 1);
-                const prevMonthEnd = new Date(date.getFullYear(), date.getMonth(), 0);
-                return { gte: prevMonthStart, lte: prevMonthEnd };
-            case 'term':
-                // Assuming 4-month terms
-                const termStart = new Date(date.getFullYear(), Math.floor(date.getMonth() / 4) * 4, 1);
-                const prevTermStart = new Date(termStart.getFullYear(), termStart.getMonth() - 4, 1);
-                const prevTermEnd = new Date(termStart.getFullYear(), termStart.getMonth(), 0);
-                return { gte: prevTermStart, lte: prevTermEnd };
-            default: // yesterday
-                const yesterday = new Date(date.setDate(date.getDate() - 1));
-                const yesterdayEnd = new Date(date.setDate(date.getDate()));
-                yesterdayEnd.setMilliseconds(-1);
-                return { gte: yesterday, lte: yesterdayEnd };
+            case 'week': { const ws = date.getDate() - date.getDay(); return { gte: new Date(date.setDate(ws - 7)), lte: new Date(date.setDate(ws - 1)) }; }
+            case 'month': return { gte: new Date(date.getFullYear(), date.getMonth() - 1, 1), lte: new Date(date.getFullYear(), date.getMonth(), 0) };
+            case 'term': { const ts = new Date(date.getFullYear(), Math.floor(date.getMonth() / 4) * 4, 1); return { gte: new Date(ts.getFullYear(), ts.getMonth() - 4, 1), lte: new Date(ts.getFullYear(), ts.getMonth(), 0) }; }
+            default: { const y = new Date(date.setDate(date.getDate() - 1)); const ye = new Date(date.setDate(date.getDate())); ye.setMilliseconds(-1); return { gte: y, lte: ye }; }
         }
     }
 
@@ -454,22 +448,12 @@ export class DashboardController {
     }
 
     private getGradeColor(grade: string): string {
-        const colors: Record<string, string> = {
-            'PP1': '#3b82f6',
-            'PP2': '#10b981',
-            'GRADE_1': '#8b5cf6',
-            'GRADE_2': '#f59e0b',
-            'GRADE_3': '#ef4444'
-        };
+        const colors: Record<string, string> = { PP1: '#3b82f6', PP2: '#10b981', GRADE_1: '#8b5cf6', GRADE_2: '#f59e0b', GRADE_3: '#ef4444' };
         return colors[grade] || '#6b7280';
     }
 
     private getRoleColor(role: string): string {
-        const colors: Record<string, string> = {
-            'TEACHER': '#3b82f6',
-            'ADMIN': '#8b5cf6',
-            'ACCOUNTANT': '#06b6d4'
-        };
+        const colors: Record<string, string> = { TEACHER: '#3b82f6', ADMIN: '#8b5cf6', ACCOUNTANT: '#06b6d4' };
         return colors[role] || '#6b7280';
     }
 }

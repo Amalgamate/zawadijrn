@@ -1,6 +1,5 @@
-import { PrismaClient, SummativeGrade, DetailedRubricRating, AggregationStrategy, FormativeAssessmentType } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { SummativeGrade, DetailedRubricRating, AggregationStrategy, FormativeAssessmentType } from '@prisma/client';
+import prisma from '../config/database';
 
 interface ScoreItem {
   score: number;

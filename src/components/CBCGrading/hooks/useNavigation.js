@@ -80,7 +80,8 @@ export const allNavSections = [
                 icon: Zap,
                 items: [
                     { id: 'assess-summative-assessment', label: 'Assessments', path: 'assess-summative-assessment', permission: 'ACCESS_ASSESSMENT_MODULE' },
-                    { id: 'assess-summative-report', label: 'Reports', path: 'assess-summative-report', permission: 'ACCESS_ASSESSMENT_MODULE' },
+                    { id: 'assess-summary-report', label: 'Assessment Matrix', path: 'assess-summary-report', permission: 'ACCESS_ASSESSMENT_MODULE' },
+                    { id: 'assess-summative-report', label: 'Detailed Reports', path: 'assess-summative-report', permission: 'ACCESS_ASSESSMENT_MODULE' },
                 ]
             },
             {

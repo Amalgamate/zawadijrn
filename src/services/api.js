@@ -1,4 +1,5 @@
 import axiosInstance, { API_BASE_URL } from './axiosConfig';
+import { cachedFetch, cacheDel, cacheDelPrefix, dedupe, TTL } from './apiCache';
 
 export { API_BASE_URL };
 
@@ -15,7 +16,6 @@ const fetchWithAuth = async (url, options = {}) => {
       params: options.params,
     };
 
-    // If body is FormData, don't parse it
     if (options.body instanceof FormData) {
       config.data = options.body;
       delete config.headers['Content-Type'];
@@ -24,12 +24,9 @@ const fetchWithAuth = async (url, options = {}) => {
     const response = await axiosInstance(config);
     return response.data;
   } catch (error) {
-    // Axios interceptors handle 401 and refresh
     if (error.response?.data) {
       const data = error.response.data;
       let msg = data.message;
-
-      // Handle nested error objects from middleware
       if (!msg && data.error) {
         if (typeof data.error === 'object') {
           msg = data.error.message || JSON.stringify(data.error);
@@ -37,7 +34,6 @@ const fetchWithAuth = async (url, options = {}) => {
           msg = data.error;
         }
       }
-
       msg = msg || `HTTP ${error.response.status}`;
       throw new Error(msg);
     }
@@ -45,22 +41,17 @@ const fetchWithAuth = async (url, options = {}) => {
   }
 };
 
-// Simple In-Memory Cache for GET requests
+// ── Legacy simple cache (kept for fetchCached call-sites not yet migrated) ────
 const dataCache = new Map();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const LEGACY_CACHE_TTL = 5 * 60 * 1000;
 
-/**
- * Fetch data with basic caching for non-volatile read operations
- */
 const fetchCached = async (url, options = {}) => {
   const cacheKey = `${url}-${JSON.stringify(options.params || {})}`;
   const now = Date.now();
 
   if (dataCache.has(cacheKey)) {
     const { data, timestamp } = dataCache.get(cacheKey);
-    if (now - timestamp < CACHE_TTL) {
-      return data;
-    }
+    if (now - timestamp < LEGACY_CACHE_TTL) return data;
     dataCache.delete(cacheKey);
   }
 
@@ -69,12 +60,9 @@ const fetchCached = async (url, options = {}) => {
   return result;
 };
 
-/**
- * Clear specific or all cache
- */
 export const clearApiCache = (key) => {
-  if (key) dataCache.delete(key);
-  else dataCache.clear();
+  if (key) { dataCache.delete(key); cacheDel(key); }
+  else { dataCache.clear(); cacheDelPrefix(''); }
 };
 
 // ============================================
@@ -82,11 +70,6 @@ export const clearApiCache = (key) => {
 // ============================================
 
 export const authAPI = {
-  /**
-   * Login user
-   * @param {Object} credentials - { email, password }
-   * @returns {Promise} User data and token
-   */
   login: async (credentials) => {
     try {
       const response = await axiosInstance.post('/auth/login', credentials);
@@ -102,78 +85,44 @@ export const authAPI = {
       throw error;
     }
   },
-  /**
-   * Fetch public school branding info.
-   */
+
   schoolPublic: async () => {
     const response = await axiosInstance.get('/schools/public/branding');
     return response.data;
   },
 
-  /**
-   * Register new user
-   * @param {Object} userData - User registration data
-   * @returns {Promise} User data and token
-   */
   register: async (userData) => {
     const response = await axiosInstance.post('/auth/register', userData);
     return response.data;
   },
 
-  /**
-   * Check availability of email/phone
-   * @param {Object} data - { email, phone }
-   * @returns {Promise} Availability status
-   */
   checkAvailability: async (data) => {
     const response = await axiosInstance.post('/auth/check-availability', data);
     return response.data;
   },
 
-  /**
-   * Get current user profile
-   * @returns {Promise} Current user data
-   */
-  me: async () => {
-    return fetchWithAuth('/auth/me');
-  },
+  me: async () => fetchWithAuth('/auth/me'),
 
-  /**
-   * Get seeded development users
-   * @returns {Promise} List of seeded users
-   */
   getSeededUsers: async () => {
     try {
       const response = await axiosInstance.get('/auth/seeded-users');
       return response.data;
-    } catch (error) {
+    } catch {
       return { users: [] };
     }
   },
 
-  /**
-   * Reset Password
-   */
-  resetPassword: async (token, password) => {
-    return fetchWithAuth('/auth/reset-password', {
-      method: 'POST',
-      body: JSON.stringify({ token, password }),
-    });
-  },
+  resetPassword: async (token, password) =>
+    fetchWithAuth('/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, password }) }),
 
-  /**
-   * Send OTP to user's phone
-   * @param {Object} data - { email }
-   * @returns {Promise} Confirmation message
-   */
   sendOTP: async (data) => {
     try {
       const response = await axiosInstance.post('/auth/otp/send', data);
       return response.data;
     } catch (error) {
       if (error.response?.data) {
-        const data = error.response?.data;
-        let msg = data.message || data.error;
+        const d = error.response?.data;
+        let msg = d.message || d.error;
         if (!msg) msg = `HTTP ${error.response.status}`;
         if (typeof msg === 'object') msg = JSON.stringify(msg);
         throw new Error(msg);
@@ -182,19 +131,14 @@ export const authAPI = {
     }
   },
 
-  /**
-   * Verify OTP code
-   * @param {Object} data - { email, otp }
-   * @returns {Promise} User data and token
-   */
   verifyOTP: async (data) => {
     try {
       const response = await axiosInstance.post('/auth/otp/verify', data);
       return response.data;
     } catch (error) {
       if (error.response?.data) {
-        const data = error.response?.data;
-        let msg = data.message || data.error;
+        const d = error.response?.data;
+        let msg = d.message || d.error;
         if (!msg) msg = `HTTP ${error.response.status}`;
         if (typeof msg === 'object') msg = JSON.stringify(msg);
         throw new Error(msg);
@@ -203,61 +147,33 @@ export const authAPI = {
     }
   },
 
-  /**
-   * Get CSRF token
-   */
   getCsrf: async () => {
     const response = await axiosInstance.get('/auth/csrf');
     return response.data;
   },
 };
 
-/**
- * Onboarding Endpoints
- */
 export const onboardingAPI = {
-  /**
-   * Full school registration
-   */
   registerFull: async (data) => {
-    // Get CSRF token first
     const { token: csrfToken } = await authAPI.getCsrf();
-
     const response = await axiosInstance.post('/onboarding/register-full', data, {
-      headers: {
-        'X-CSRF-Token': csrfToken,
-      },
+      headers: { 'X-CSRF-Token': csrfToken },
     });
-
     return response.data;
   },
 };
 
 // ============================================
-// DASHBOARD API
+// DASHBOARD API — results are cached server-side; client just calls normally
 // ============================================
 
 export const dashboardAPI = {
-  /**
-   * Get Admin Dashboard metrics
-   */
-  getAdminMetrics: async (filter = 'today') => {
-    return fetchWithAuth(`/dashboard/admin?filter=${filter}`);
-  },
-
-  /**
-   * Get Teacher Dashboard metrics
-   */
-  getTeacherMetrics: async (filter = 'today') => {
-    return fetchWithAuth(`/dashboard/teacher?filter=${filter}`);
-  },
-
-  /**
-   * Get Parent Dashboard metrics
-   */
-  getParentMetrics: async () => {
-    return fetchWithAuth('/dashboard/parent');
-  }
+  getAdminMetrics: async (filter = 'today') =>
+    fetchWithAuth(`/dashboard/admin?filter=${filter}`),
+  getTeacherMetrics: async (filter = 'today') =>
+    fetchWithAuth(`/dashboard/teacher?filter=${filter}`),
+  getParentMetrics: async () =>
+    fetchWithAuth('/dashboard/parent'),
 };
 
 // ============================================
@@ -265,195 +181,67 @@ export const dashboardAPI = {
 // ============================================
 
 export const configAPI = {
-  /**
-   * Get Term Configurations
-   */
-  getTermConfigs: async () => {
-    return fetchCached('/config/term');
-  },
+  getTermConfigs: async () => fetchCached('/config/term'),
+  upsertTermConfig: async (data) =>
+    fetchWithAuth('/config/term', { method: 'POST', body: JSON.stringify(data) }),
 
-  /**
-   * Create or Update Term Configuration
-   */
-  upsertTermConfig: async (data) => {
-    return fetchWithAuth('/config/term', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
+  getAggregationConfigs: async () => fetchCached('/config/aggregation'),
+  createAggregationConfig: async (data) =>
+    fetchWithAuth('/config/aggregation', { method: 'POST', body: JSON.stringify(data) }),
+  updateAggregationConfig: async (id, data) =>
+    fetchWithAuth(`/config/aggregation/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteAggregationConfig: async (id) =>
+    fetchWithAuth(`/config/aggregation/${id}`, { method: 'DELETE' }),
 
-  /**
-   * Get Aggregation Configurations
-   */
-  getAggregationConfigs: async () => {
-    return fetchCached('/config/aggregation');
-  },
+  // ── Streams: long-lived cache (rarely changes) ────────────────────────────
+  getStreamConfigs: async () =>
+    cachedFetch('config:streams', () => fetchWithAuth('/config/streams'), TTL.LONG),
 
-  /**
-   * Create Aggregation Configuration
-   */
-  createAggregationConfig: async (data) => {
-    return fetchWithAuth('/config/aggregation', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Update Aggregation Configuration
-   */
-  updateAggregationConfig: async (id, data) => {
-    return fetchWithAuth(`/config/aggregation/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Delete Aggregation Configuration
-   */
-  deleteAggregationConfig: async (id) => {
-    return fetchWithAuth(`/config/aggregation/${id}`, {
-      method: 'DELETE',
-    });
-  },
-
-  /**
-   * Get Stream Configurations
-   */
-  getStreamConfigs: async () => {
-    return fetchCached('/config/streams');
-  },
-
-  /**
-   * Create or Update Stream Configuration
-   */
   upsertStreamConfig: async (data) => {
-    return fetchWithAuth('/config/streams', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    cacheDel('config:streams');
+    return fetchWithAuth('/config/streams', { method: 'POST', body: JSON.stringify(data) });
   },
-
-  /**
-   * Delete Stream Configuration
-   */
   deleteStreamConfig: async (id) => {
-    return fetchWithAuth(`/config/streams/${id}`, {
-      method: 'DELETE',
-    });
+    cacheDel('config:streams');
+    return fetchWithAuth(`/config/streams/${id}`, { method: 'DELETE' });
   },
 
+  getGrades: async () =>
+    cachedFetch('config:grades', () => fetchWithAuth('/config/grades'), TTL.VERY_LONG),
 
-  /**
-   * Get all available grades (Enum)
-   */
-  getGrades: async () => {
-    return fetchCached('/config/grades');
-  },
+  getBranding: async () => fetchCached('/settings/branding'),
 
-  /**
-   * Get Branding and School Settings
-   */
-  getBranding: async () => {
-    return fetchCached('/settings/branding');
-  },
-
-  /**
-   * Get Learning Areas
-   */
-  getLearningAreas: async () => {
-    return fetchWithAuth('/learning-areas');
-  },
-
-  /**
-   * Get a specific learning area
-   */
-  getLearningArea: async (id) => {
-    return fetchWithAuth(`/learning-areas/${id}`);
-  },
-
-  /**
-   * Create a learning area
-   */
+  getLearningAreas: async () =>
+    cachedFetch('config:learning-areas', () => fetchWithAuth('/learning-areas'), TTL.LONG),
+  getLearningArea: async (id) => fetchWithAuth(`/learning-areas/${id}`),
   createLearningArea: async (data) => {
-    return fetchWithAuth('/learning-areas', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    cacheDel('config:learning-areas');
+    return fetchWithAuth('/learning-areas', { method: 'POST', body: JSON.stringify(data) });
   },
-
-  /**
-   * Update a learning area
-   */
   updateLearningArea: async (id, data) => {
-    return fetchWithAuth(`/learning-areas/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
+    cacheDel('config:learning-areas');
+    return fetchWithAuth(`/learning-areas/${id}`, { method: 'PUT', body: JSON.stringify(data) });
   },
-
-  /**
-   * Delete a learning area
-   */
   deleteLearningArea: async (id) => {
-    return fetchWithAuth(`/learning-areas/${id}`, {
-      method: 'DELETE',
-    });
+    cacheDel('config:learning-areas');
+    return fetchWithAuth(`/learning-areas/${id}`, { method: 'DELETE' });
   },
-
-  /**
-   * Seed default learning areas
-   */
   seedLearningAreas: async () => {
-    return fetchWithAuth('/learning-areas/seed/default', {
-      method: 'POST',
-    });
+    cacheDel('config:learning-areas');
+    return fetchWithAuth('/learning-areas/seed/default', { method: 'POST' });
   },
 
-  /**
-   * Seed default classes
-   */
-  seedClasses: async () => {
-    return fetchWithAuth('/config/classes/seed', {
-      method: 'POST',
-    });
-  },
-
-  /**
-   * Seed default streams
-   */
+  seedClasses: async () => fetchWithAuth('/config/classes/seed', { method: 'POST' }),
   seedStreams: async () => {
-    return fetchWithAuth('/config/streams/seed', {
-      method: 'POST',
-    });
+    cacheDel('config:streams');
+    return fetchWithAuth('/config/streams/seed', { method: 'POST' });
   },
 
-  /**
-   * Get classes
-   */
-  getClasses: async () => {
-    return fetchCached('/config/classes');
-  },
-
-  /**
-   * Create or update class
-   */
-  upsertClass: async (data) => {
-    return fetchWithAuth('/config/classes', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Delete class
-   */
-  deleteClass: async (id) => {
-    return fetchWithAuth(`/config/classes/${id}`, {
-      method: 'DELETE',
-    });
-  },
+  getClasses: async () => fetchCached('/config/classes'),
+  upsertClass: async (data) =>
+    fetchWithAuth('/config/classes', { method: 'POST', body: JSON.stringify(data) }),
+  deleteClass: async (id) =>
+    fetchWithAuth(`/config/classes/${id}`, { method: 'DELETE' }),
 };
 
 // ============================================
@@ -461,125 +249,30 @@ export const configAPI = {
 // ============================================
 
 export const communicationAPI = {
-  /**
-   * Get Communication Config
-   */
-  getConfig: async () => {
-    return fetchWithAuth('/communication/config');
-  },
-
-  /**
-   * Save Communication Config
-   */
-  saveConfig: async (data) => {
-    return fetchWithAuth('/communication/config', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Send Test SMS
-   */
-  sendTestSMS: async (data) => {
-    return fetchWithAuth('/communication/test/sms', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Send Test Email
-   */
-  sendTestEmail: async (data) => {
-    return fetchWithAuth('/communication/test/email', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Get Birthdays Today
-   */
-  getBirthdaysToday: async () => {
-    return fetchWithAuth('/communication/birthdays/today');
-  },
-
-  /**
-   * Send Birthday Wishes
-   */
-  sendBirthdayWishes: async (data) => {
-    return fetchWithAuth('/communication/birthdays/send', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Get Broadcast Recipients
-   * @param {string} grade - Optional grade filter
-   */
+  getConfig: async () => fetchWithAuth('/communication/config'),
+  saveConfig: async (data) =>
+    fetchWithAuth('/communication/config', { method: 'POST', body: JSON.stringify(data) }),
+  sendTestSMS: async (data) =>
+    fetchWithAuth('/communication/test/sms', { method: 'POST', body: JSON.stringify(data) }),
+  sendTestEmail: async (data) =>
+    fetchWithAuth('/communication/test/email', { method: 'POST', body: JSON.stringify(data) }),
+  getBirthdaysToday: async () => fetchWithAuth('/communication/birthdays/today'),
+  sendBirthdayWishes: async (data) =>
+    fetchWithAuth('/communication/birthdays/send', { method: 'POST', body: JSON.stringify(data) }),
   getRecipients: async (grade) => {
     const params = grade ? `?grade=${encodeURIComponent(grade)}` : '';
     return fetchWithAuth(`/communication/recipients${params}`);
   },
-
-  /**
-   * Get All Recipients (all parents across all grades)
-   */
-  getAllRecipients: async () => {
-    return fetchWithAuth('/communication/recipients');
-  },
-
-  /**
-   * Get Staff Contacts
-   */
-  getStaffContacts: async () => {
-    return fetchWithAuth('/communication/staff');
-  },
-
-  /**
-   * Get all contact groups
-   */
-  getContactGroups: async () => {
-    return fetchWithAuth('/communication/groups');
-  },
-
-  /**
-   * Get contact group by ID
-   */
-  getContactGroupById: async (id) => {
-    return fetchWithAuth(`/communication/groups/${id}`);
-  },
-
-  /**
-   * Create contact group
-   */
-  createContactGroup: async (data) => {
-    return fetchWithAuth('/communication/groups', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Update contact group
-   */
-  updateContactGroup: async (id, data) => {
-    return fetchWithAuth(`/communication/groups/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Delete contact group
-   */
-  deleteContactGroup: async (id) => {
-    return fetchWithAuth(`/communication/groups/${id}`, {
-      method: 'DELETE',
-    });
-  },
+  getAllRecipients: async () => fetchWithAuth('/communication/recipients'),
+  getStaffContacts: async () => fetchWithAuth('/communication/staff'),
+  getContactGroups: async () => fetchWithAuth('/communication/groups'),
+  getContactGroupById: async (id) => fetchWithAuth(`/communication/groups/${id}`),
+  createContactGroup: async (data) =>
+    fetchWithAuth('/communication/groups', { method: 'POST', body: JSON.stringify(data) }),
+  updateContactGroup: async (id, data) =>
+    fetchWithAuth(`/communication/groups/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteContactGroup: async (id) =>
+    fetchWithAuth(`/communication/groups/${id}`, { method: 'DELETE' }),
 };
 
 // ============================================
@@ -587,66 +280,18 @@ export const communicationAPI = {
 // ============================================
 
 export const broadcastAPI = {
-  /**
-   * Save broadcast campaign after sending
-   */
-  saveCampaign: async (data) => {
-    return fetchWithAuth('/broadcasts', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Get broadcast history
-   */
-  getHistory: async (limit = 50, offset = 0) => {
-    const params = `?limit=${limit}&offset=${offset}`;
-    return fetchWithAuth(`/broadcasts${params}`);
-  },
-
-  /**
-   * Get broadcast details
-   */
-  getDetails: async (campaignId) => {
-    return fetchWithAuth(`/broadcasts/${campaignId}`);
-  },
-
-  /**
-   * Get broadcast statistics
-   */
-  getStats: async () => {
-    return fetchWithAuth('/broadcasts/stats');
-  },
-
-  /**
-   * Save SMS delivery log entry
-   */
-  saveDeliveryLog: async (campaignId, data) => {
-    return fetchWithAuth(`/broadcasts/${campaignId}/delivery-logs`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Delete broadcast campaign
-   */
-  deleteCampaign: async (campaignId) => {
-    return fetchWithAuth(`/broadcasts/${campaignId}`, {
-      method: 'DELETE',
-    });
-  },
-
-  /**
-   * Send bulk broadcast via backend (avoids browser-side rate limiting)
-   */
-  sendBulk: async (data) => {
-    return fetchWithAuth('/broadcasts/send-bulk', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
+  saveCampaign: async (data) =>
+    fetchWithAuth('/broadcasts', { method: 'POST', body: JSON.stringify(data) }),
+  getHistory: async (limit = 50, offset = 0) =>
+    fetchWithAuth(`/broadcasts?limit=${limit}&offset=${offset}`),
+  getDetails: async (campaignId) => fetchWithAuth(`/broadcasts/${campaignId}`),
+  getStats: async () => fetchWithAuth('/broadcasts/stats'),
+  saveDeliveryLog: async (campaignId, data) =>
+    fetchWithAuth(`/broadcasts/${campaignId}/delivery-logs`, { method: 'POST', body: JSON.stringify(data) }),
+  deleteCampaign: async (campaignId) =>
+    fetchWithAuth(`/broadcasts/${campaignId}`, { method: 'DELETE' }),
+  sendBulk: async (data) =>
+    fetchWithAuth('/broadcasts/send-bulk', { method: 'POST', body: JSON.stringify(data) }),
 };
 
 // ============================================
@@ -654,112 +299,25 @@ export const broadcastAPI = {
 // ============================================
 
 export const userAPI = {
-  /**
-   * Get all users
-   * @returns {Promise} List of all users
-   */
-  getAll: async () => {
-    return fetchWithAuth('/users');
-  },
-
-  /**
-   * Get user by ID
-   * @param {string} id - User ID
-   * @returns {Promise} User data
-   */
-  getById: async (id) => {
-    return fetchWithAuth(`/users/${id}`);
-  },
-
-  /**
-   * Get users by role
-   * @param {string} role - User role
-   * @param {Object} params - Query parameters (page, limit)
-   * @returns {Promise} List of users with specified role
-   */
+  getAll: async () => fetchWithAuth('/users'),
+  getById: async (id) => fetchWithAuth(`/users/${id}`),
   getByRole: async (role, params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     return fetchWithAuth(`/users/role/${role}${queryString ? `?${queryString}` : ''}`);
   },
-
-  /**
-   * Get user statistics
-   * @returns {Promise} User statistics for dashboard
-   */
-  getStats: async () => {
-    return fetchWithAuth('/users/stats');
-  },
-
-  /**
-   * Create new user
-   * @param {Object} userData - User data
-   * @returns {Promise} Created user data
-   */
-  create: async (userData) => {
-    return fetchWithAuth('/users', {
-      method: 'POST',
-      body: JSON.stringify(userData),
-    });
-  },
-
-  /**
-   * Update user
-   * @param {string} id - User ID
-   * @param {Object} userData - Updated user data
-   * @returns {Promise} Updated user data
-   */
-  update: async (id, userData) => {
-    return fetchWithAuth(`/users/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(userData),
-    });
-  },
-
-  /**
-   * Archive user (soft delete)
-   * @param {string} id - User ID
-   * @returns {Promise} Success message
-   */
-  archive: async (id) => {
-    return fetchWithAuth(`/users/${id}/archive`, {
-      method: 'POST',
-    });
-  },
-
-  /**
-   * Unarchive user
-   * @param {string} id - User ID
-   * @returns {Promise} Success message
-   */
-  unarchive: async (id) => {
-    return fetchWithAuth(`/users/${id}/unarchive`, {
-      method: 'POST',
-    });
-  },
-
-  /**
-   * Delete user (hard delete)
-   * @param {string} id - User ID
-   * @returns {Promise} Success message
-   */
-  delete: async (id) => {
-    return fetchWithAuth(`/users/${id}`, {
-      method: 'DELETE',
-    });
-  },
-
-  /**
-   * Reset user password (admin action)
-   * @param {string} id - User ID
-   * @param {Object} data - { newPassword, sendWhatsApp, sendSms }
-   * @returns {Promise} Success message
-   */
-  resetPassword: async (id, data) => {
-    return fetchWithAuth(`/users/${id}/reset-password`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
+  getStats: async () => fetchWithAuth('/users/stats'),
+  create: async (userData) =>
+    fetchWithAuth('/users', { method: 'POST', body: JSON.stringify(userData) }),
+  update: async (id, userData) =>
+    fetchWithAuth(`/users/${id}`, { method: 'PUT', body: JSON.stringify(userData) }),
+  archive: async (id) =>
+    fetchWithAuth(`/users/${id}/archive`, { method: 'POST' }),
+  unarchive: async (id) =>
+    fetchWithAuth(`/users/${id}/unarchive`, { method: 'POST' }),
+  delete: async (id) =>
+    fetchWithAuth(`/users/${id}`, { method: 'DELETE' }),
+  resetPassword: async (id, data) =>
+    fetchWithAuth(`/users/${id}/reset-password`, { method: 'POST', body: JSON.stringify(data) }),
 };
 
 // ============================================
@@ -767,72 +325,20 @@ export const userAPI = {
 // ============================================
 
 export const schoolAPI = {
-  /**
-   * Get all schools
-   * @returns {Promise} List of all schools
-   */
-  getAll: async () => {
-    return fetchWithAuth('/schools');
-  },
-
-  /**
-   * Get school by ID
-   * @param {string} id - School ID
-   * @returns {Promise} School data
-   */
-  getById: async (id) => {
-    return fetchWithAuth(`/schools/${id}`);
-  },
-
-  // getBranches removed — branches table was dropped in the remove_multitenant migration.
-  /**
-   * Create a new school
-   */
-  create: async (data) => {
-    return fetchWithAuth('/schools', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-  /**
-   * Update school
-   */
-  update: async (id, data) => {
-    return fetchWithAuth(`/schools/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  },
-  /**
-   * Deactivate school
-   */
-  deactivate: async (id) => {
-    return fetchWithAuth(`/schools/${id}/deactivate`, {
-      method: 'POST',
-    });
-  },
-  /**
-   * Delete school
-   */
-  delete: async (id) => {
-    return fetchWithAuth(`/schools/${id}`, {
-      method: 'DELETE',
-    });
-  },
-
-  /**
-   * Provision a new school with admin user (complete setup)
-   */
-  provision: async (data) => {
-    return fetchWithAuth('/schools/provision', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  getAdmissionNumberPreview: async (academicYear) => {
-    return fetchWithAuth(`/schools/admission-number-preview/${academicYear}`);
-  },
+  getAll: async () => fetchWithAuth('/schools'),
+  getById: async (id) => fetchWithAuth(`/schools/${id}`),
+  create: async (data) =>
+    fetchWithAuth('/schools', { method: 'POST', body: JSON.stringify(data) }),
+  update: async (id, data) =>
+    fetchWithAuth(`/schools/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deactivate: async (id) =>
+    fetchWithAuth(`/schools/${id}/deactivate`, { method: 'POST' }),
+  delete: async (id) =>
+    fetchWithAuth(`/schools/${id}`, { method: 'DELETE' }),
+  provision: async (data) =>
+    fetchWithAuth('/schools/provision', { method: 'POST', body: JSON.stringify(data) }),
+  getAdmissionNumberPreview: async (academicYear) =>
+    fetchWithAuth(`/schools/admission-number-preview/${academicYear}`),
 };
 
 // ============================================
@@ -840,292 +346,85 @@ export const schoolAPI = {
 // ============================================
 
 export const facilityAPI = {
-  getStreamsByBranch: async () => {
-    return fetchWithAuth('/facility/streams');
-  },
-
-  /**
-   * Get single stream by ID
-   * @param {string} streamId
-   */
-  getStream: async (streamId) => {
-    return fetchWithAuth(`/facility/streams/${streamId}`);
-  },
-
-  createStream: async (data) => {
-    return fetchWithAuth('/facility/streams', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Update stream
-   * @param {string} id
-   * @param {Object} data - { name, active }
-   */
-  updateStream: async (id, data) => {
-    return fetchWithAuth(`/facility/streams/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Delete stream (archive)
-   * @param {string} id
-   */
-  deleteStream: async (id) => {
-    return fetchWithAuth(`/facility/streams/${id}`, {
-      method: 'DELETE',
-    });
-  },
-
-  getAvailableStreamNames: async () => {
-    return fetchWithAuth('/facility/streams/available');
-  },
+  getStreamsByBranch: async () => fetchWithAuth('/facility/streams'),
+  getStream: async (streamId) => fetchWithAuth(`/facility/streams/${streamId}`),
+  createStream: async (data) =>
+    fetchWithAuth('/facility/streams', { method: 'POST', body: JSON.stringify(data) }),
+  updateStream: async (id, data) =>
+    fetchWithAuth(`/facility/streams/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteStream: async (id) =>
+    fetchWithAuth(`/facility/streams/${id}`, { method: 'DELETE' }),
+  getAvailableStreamNames: async () => fetchWithAuth('/facility/streams/available'),
 };
 
 // ============================================
-// TEACHERS API (alias to userAPI.getByRole)
+// TEACHERS API
 // ============================================
 
 export const teacherAPI = {
-  /**
-   * Get all teachers
-   * @returns {Promise} List of teachers
-   */
-  getAll: async (params = {}) => {
-    return userAPI.getByRole('TEACHER', params);
-  },
-
-  /**
-   * Create new teacher
-   * @param {Object} teacherData - Teacher data
-   * @returns {Promise} Created teacher data
-   */
-  create: async (teacherData) => {
-    return userAPI.create({ ...teacherData, role: 'TEACHER' });
-  },
-
-  /**
-   * Update teacher
-   * @param {string} id - Teacher ID
-   * @param {Object} teacherData - Updated teacher data
-   * @returns {Promise} Updated teacher data
-   */
-  update: async (id, teacherData) => {
-    return userAPI.update(id, teacherData);
-  },
-
-  /**
-   * Delete teacher
-   * @param {string} id - Teacher ID
-   * @returns {Promise} Success message
-   */
-  delete: async (id) => {
-    return userAPI.delete(id);
-  },
+  getAll: async (params = {}) => userAPI.getByRole('TEACHER', params),
+  create: async (teacherData) => userAPI.create({ ...teacherData, role: 'TEACHER' }),
+  update: async (id, teacherData) => userAPI.update(id, teacherData),
+  delete: async (id) => userAPI.delete(id),
 };
 
 // ============================================
-// PARENTS API (alias to userAPI.getByRole)
+// PARENTS API
 // ============================================
 
 export const parentAPI = {
-  /**
-   * Get all parents
-   * @param {Object} params - Query parameters (page, limit)
-   * @returns {Promise} List of parents
-   */
-  getAll: async (params = {}) => {
-    return userAPI.getByRole('PARENT', params);
-  },
-
-  /**
-   * Create new parent
-   * @param {Object} parentData - Parent data
-   * @returns {Promise} Created parent data
-   */
-  create: async (parentData) => {
-    return userAPI.create({ ...parentData, role: 'PARENT' });
-  },
-
-  /**
-   * Update parent
-   * @param {string} id - Parent ID
-   * @param {Object} parentData - Updated parent data
-   * @returns {Promise} Updated parent data
-   */
-  update: async (id, parentData) => {
-    return userAPI.update(id, parentData);
-  },
-
-  /**
-   * Archive parent (soft delete)
-   * @param {string} id - Parent ID
-   * @returns {Promise} Success message
-   */
-  archive: async (id) => {
-    return userAPI.archive(id);
-  },
-
-  /**
-   * Unarchive parent
-   * @param {string} id - Parent ID
-   * @returns {Promise} Success message
-   */
-  unarchive: async (id) => {
-    return userAPI.unarchive(id);
-  },
-
-  /**
-   * Delete parent (hard delete)
-   * @param {string} id - Parent ID
-   * @returns {Promise} Success message
-   */
-  delete: async (id) => {
-    return userAPI.delete(id);
-  },
+  getAll: async (params = {}) => userAPI.getByRole('PARENT', params),
+  create: async (parentData) => userAPI.create({ ...parentData, role: 'PARENT' }),
+  update: async (id, parentData) => userAPI.update(id, parentData),
+  archive: async (id) => userAPI.archive(id),
+  unarchive: async (id) => userAPI.unarchive(id),
+  delete: async (id) => userAPI.delete(id),
 };
 
 // ============================================
-// LEARNERS API
+// LEARNERS API — list is cached with short TTL
 // ============================================
 
 export const learnerAPI = {
-  /**
-   * Get all learners
-   * @param {Object} params - Query parameters (grade, stream, status, search, page, limit)
-   * @returns {Promise} List of learners
-   */
   getAll: async (params = {}) => {
     const queryString = new URLSearchParams(params).toString();
-    return fetchWithAuth(`/learners${queryString ? `?${queryString}` : ''}`);
+    const cacheKey = `learners:${queryString}`;
+    return cachedFetch(
+      cacheKey,
+      () => fetchWithAuth(`/learners${queryString ? `?${queryString}` : ''}`),
+      TTL.SHORT
+    );
   },
-
-  /**
-   * Get learner statistics
-   * @returns {Promise} Learner statistics
-   */
-  getStats: async () => {
-    return fetchWithAuth('/learners/stats');
-  },
-
-  /**
-   * Get learner by ID
-   * @param {string} id - Learner ID
-   * @returns {Promise} Learner data
-   */
-  getById: async (id) => {
-    return fetchWithAuth(`/learners/${id}`);
-  },
-
-  /**
-   * Get learner by admission number
-   * @param {string} admissionNumber - Admission number
-   * @returns {Promise} Learner data
-   */
-  getByAdmissionNumber: async (admissionNumber) => {
-    return fetchWithAuth(`/learners/admission/${admissionNumber}`);
-  },
-
-  /**
-   * Get learners by grade
-   * @param {string} grade - Grade level
-   * @param {Object} params - Additional params (stream, status)
-   * @returns {Promise} List of learners
-   */
+  getStats: async () => fetchWithAuth('/learners/stats'),
+  getById: async (id) => fetchWithAuth(`/learners/${id}`),
+  getByAdmissionNumber: async (admissionNumber) =>
+    fetchWithAuth(`/learners/admission/${admissionNumber}`),
   getByGrade: async (grade, params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     return fetchWithAuth(`/learners/grade/${grade}${queryString ? `?${queryString}` : ''}`);
   },
-
-  /**
-   * Get parent's children
-   * @param {string} parentId - Parent user ID
-   * @returns {Promise} List of children
-   */
-  getParentChildren: async (parentId) => {
-    return fetchWithAuth(`/learners/parent/${parentId}`);
-  },
-
-  /**
-   * Create new learner
-   * @param {Object} learnerData - Learner data
-   * @returns {Promise} Created learner data
-   */
+  getParentChildren: async (parentId) => fetchWithAuth(`/learners/parent/${parentId}`),
   create: async (learnerData) => {
-    return fetchWithAuth('/learners', {
-      method: 'POST',
-      body: JSON.stringify(learnerData),
-    });
+    cacheDelPrefix('learners:');
+    return fetchWithAuth('/learners', { method: 'POST', body: JSON.stringify(learnerData) });
   },
-
-  /**
-   * Update learner
-   * @param {string} id - Learner ID
-   * @param {Object} learnerData - Updated learner data
-   * @returns {Promise} Updated learner data
-   */
   update: async (id, learnerData) => {
-    return fetchWithAuth(`/learners/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(learnerData),
-    });
+    cacheDelPrefix('learners:');
+    return fetchWithAuth(`/learners/${id}`, { method: 'PUT', body: JSON.stringify(learnerData) });
   },
-
-  /**
-   * Delete learner
-   * @param {string} id - Learner ID
-   * @returns {Promise} Success message
-   */
   delete: async (id) => {
-    return fetchWithAuth(`/learners/${id}`, {
-      method: 'DELETE',
-    });
+    cacheDelPrefix('learners:');
+    return fetchWithAuth(`/learners/${id}`, { method: 'DELETE' });
   },
-
-  /**
-   * Upload learner photo
-   * @param {string} id - Learner ID
-   * @param {string} photoData - Base64 encoded image
-   * @returns {Promise} Updated learner data
-   */
-  uploadPhoto: async (id, photoData) => {
-    return fetchWithAuth(`/learners/${id}/photo`, {
-      method: 'POST',
-      body: JSON.stringify({ photoData }),
-    });
-  },
-
-  /**
-   * Process student transfer out
-   * @param {Object} transferData - { learnerId, transferDate, destinationSchool, reason, certificateNumber }
-   * @returns {Promise} Updated learner data
-   */
-  transferOut: async (transferData) => {
-    return fetchWithAuth('/learners/transfer-out', {
-      method: 'POST',
-      body: JSON.stringify(transferData),
-    });
-  },
-
-  /**
-   * Promote multiple learners (bulk)
-   * @param {Object} promotionData - { learnerIds, nextGrade }
-   * @returns {Promise} Success message
-   */
+  uploadPhoto: async (id, photoData) =>
+    fetchWithAuth(`/learners/${id}/photo`, { method: 'POST', body: JSON.stringify({ photoData }) }),
+  transferOut: async (transferData) =>
+    fetchWithAuth('/learners/transfer-out', { method: 'POST', body: JSON.stringify(transferData) }),
   bulkPromote: async (promotionData) => {
-    return fetchWithAuth('/learners/bulk-promote', {
-      method: 'POST',
-      body: JSON.stringify(promotionData),
-    });
+    cacheDelPrefix('learners:');
+    return fetchWithAuth('/learners/bulk-promote', { method: 'POST', body: JSON.stringify(promotionData) });
   },
-
-  getBirthdays: async () => {
-    return communicationAPI.getBirthdaysToday();
-  },
+  getBirthdays: async () => communicationAPI.getBirthdaysToday(),
 };
 
 // ============================================
@@ -1133,39 +432,16 @@ export const learnerAPI = {
 // ============================================
 
 export const subjectAssignmentAPI = {
-  /**
-   * Get all subject assignments
-   */
   getAll: async (params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     return fetchWithAuth(`/subject-assignments${queryString ? `?${queryString}` : ''}`);
   },
-
-  /**
-   * Create a new subject assignment
-   */
-  create: async (data) => {
-    return fetchWithAuth('/subject-assignments', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Remove a subject assignment
-   */
-  delete: async (id) => {
-    return fetchWithAuth(`/subject-assignments/${id}`, {
-      method: 'DELETE',
-    });
-  },
-
-  /**
-   * Get eligible teachers for a subject and grade
-   */
-  getEligibleTeachers: async (learningAreaId, grade) => {
-    return fetchWithAuth(`/subject-assignments/eligible-teachers?learningAreaId=${learningAreaId}&grade=${grade}`);
-  },
+  create: async (data) =>
+    fetchWithAuth('/subject-assignments', { method: 'POST', body: JSON.stringify(data) }),
+  delete: async (id) =>
+    fetchWithAuth(`/subject-assignments/${id}`, { method: 'DELETE' }),
+  getEligibleTeachers: async (learningAreaId, grade) =>
+    fetchWithAuth(`/subject-assignments/eligible-teachers?learningAreaId=${learningAreaId}&grade=${grade}`),
 };
 
 // ============================================
@@ -1173,159 +449,41 @@ export const subjectAssignmentAPI = {
 // ============================================
 
 export const classAPI = {
-  /**
-   * Get all classes
-   * @param {Object} params - Query parameters (grade, stream, academicYear, term, active)
-   * @returns {Promise} List of classes
-   */
   getAll: async (params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     return fetchWithAuth(`/classes${queryString ? `?${queryString}` : ''}`);
   },
-
-  /**
-   * Get class by ID
-   * @param {string} id - Class ID
-   * @returns {Promise} Class data with enrolled learners
-   */
-  getById: async (id) => {
-    return fetchWithAuth(`/classes/${id}`);
-  },
-
-  /**
-   * Create new class
-   * @param {Object} classData - Class data
-   * @returns {Promise} Created class data
-   */
-  create: async (classData) => {
-    return fetchWithAuth('/classes', {
-      method: 'POST',
-      body: JSON.stringify(classData),
-    });
-  },
-
-  /**
-   * Update class
-   * @param {string} id - Class ID
-   * @param {Object} classData - Updated class data
-   * @returns {Promise} Updated class data
-   */
-  update: async (id, classData) => {
-    return fetchWithAuth(`/classes/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(classData),
-    });
-  },
-
-  /**
-   * Enroll learner in class
-   * @param {string} classId - Class ID
-   * @param {string} learnerId - Learner ID
-   * @returns {Promise} Enrollment data
-   */
-  enrollLearner: async (classId, learnerId) => {
-    return fetchWithAuth('/classes/enroll', {
-      method: 'POST',
-      body: JSON.stringify({ classId, learnerId }),
-    });
-  },
-
-  /**
-   * Unenroll learner from class
-   * @param {string} classId - Class ID
-   * @param {string} learnerId - Learner ID
-   * @returns {Promise} Success message
-   */
-  unenrollLearner: async (classId, learnerId) => {
-    return fetchWithAuth('/classes/unenroll', {
-      method: 'POST',
-      body: JSON.stringify({ classId, learnerId }),
-    });
-  },
-
-  /**
-   * Get learner's current class
-   * @param {string} learnerId - Learner ID
-   * @returns {Promise} Class enrollment data
-   */
-  getLearnerClass: async (learnerId) => {
-    return fetchWithAuth(`/classes/learner/${learnerId}`);
-  },
-
-  /**
-   * Assign teacher to class (dedicated endpoint)
-   * @param {string} classId - Class ID
-   * @param {string} teacherId - Teacher ID
-   * @returns {Promise} Updated class data
-   */
-  assignTeacher: async (classId, teacherId) => {
-    return fetchWithAuth('/classes/assign-teacher', {
-      method: 'POST',
-      body: JSON.stringify({ classId, teacherId }),
-    });
-  },
-
-  /**
-   * Unassign teacher from class
-   * @param {string} classId - Class ID
-   * @returns {Promise} Success message
-   */
-  unassignTeacher: async (classId) => {
-    return fetchWithAuth('/classes/unassign-teacher', {
-      method: 'POST',
-      body: JSON.stringify({ classId }),
-    });
-  },
-
-  /**
-   * Get teacher's workload
-   * @param {string} teacherId - Teacher ID
-   * @param {Object} params - Query parameters (academicYear, term)
-   * @returns {Promise} Teacher workload data
-   */
+  getById: async (id) => fetchWithAuth(`/classes/${id}`),
+  create: async (classData) =>
+    fetchWithAuth('/classes', { method: 'POST', body: JSON.stringify(classData) }),
+  update: async (id, classData) =>
+    fetchWithAuth(`/classes/${id}`, { method: 'PUT', body: JSON.stringify(classData) }),
+  enrollLearner: async (classId, learnerId) =>
+    fetchWithAuth('/classes/enroll', { method: 'POST', body: JSON.stringify({ classId, learnerId }) }),
+  unenrollLearner: async (classId, learnerId) =>
+    fetchWithAuth('/classes/unenroll', { method: 'POST', body: JSON.stringify({ classId, learnerId }) }),
+  getLearnerClass: async (learnerId) => fetchWithAuth(`/classes/learner/${learnerId}`),
+  assignTeacher: async (classId, teacherId) =>
+    fetchWithAuth('/classes/assign-teacher', { method: 'POST', body: JSON.stringify({ classId, teacherId }) }),
+  unassignTeacher: async (classId) =>
+    fetchWithAuth('/classes/unassign-teacher', { method: 'POST', body: JSON.stringify({ classId }) }),
   getTeacherWorkload: async (teacherId, params = {}) => {
     const queryString = new URLSearchParams(params).toString();
-    return fetchWithAuth(`/classes/teacher/${teacherId}/workload${queryString ? `?${queryString}` : ''}`);
+    const key = `teacher-workload:${teacherId}:${queryString}`;
+    return cachedFetch(
+      key,
+      () => fetchWithAuth(`/classes/teacher/${teacherId}/workload${queryString ? `?${queryString}` : ''}`),
+      TTL.MEDIUM
+    );
   },
-  getTeacherSchedules: async (teacherId) => {
-    return fetchWithAuth(`/classes/teacher/${teacherId}/schedules`);
-  },
-
-  /**
-   * Get schedules for a specific class
-   */
-  getSchedules: async (classId) => {
-    return fetchWithAuth(`/classes/${classId}/schedules`);
-  },
-
-  /**
-   * Add a schedule to a class
-   */
-  addSchedule: async (classId, data) => {
-    return fetchWithAuth(`/classes/${classId}/schedules`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Update a schedule
-   */
-  updateSchedule: async (classId, scheduleId, data) => {
-    return fetchWithAuth(`/classes/${classId}/schedules/${scheduleId}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Delete a schedule
-   */
-  deleteSchedule: async (classId, scheduleId) => {
-    return fetchWithAuth(`/classes/${classId}/schedules/${scheduleId}`, {
-      method: 'DELETE',
-    });
-  },
+  getTeacherSchedules: async (teacherId) => fetchWithAuth(`/classes/teacher/${teacherId}/schedules`),
+  getSchedules: async (classId) => fetchWithAuth(`/classes/${classId}/schedules`),
+  addSchedule: async (classId, data) =>
+    fetchWithAuth(`/classes/${classId}/schedules`, { method: 'POST', body: JSON.stringify(data) }),
+  updateSchedule: async (classId, scheduleId, data) =>
+    fetchWithAuth(`/classes/${classId}/schedules/${scheduleId}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteSchedule: async (classId, scheduleId) =>
+    fetchWithAuth(`/classes/${classId}/schedules/${scheduleId}`, { method: 'DELETE' }),
 };
 
 // ============================================
@@ -1333,66 +491,20 @@ export const classAPI = {
 // ============================================
 
 export const attendanceAPI = {
-  /**
-   * Mark attendance for a single learner
-   * @param {Object} attendanceData - { learnerId, date, status, classId, remarks }
-   * @returns {Promise} Attendance record
-   */
-  mark: async (attendanceData) => {
-    return fetchWithAuth('/attendance', {
-      method: 'POST',
-      body: JSON.stringify(attendanceData),
-    });
-  },
-
-  /**
-   * Mark attendance for multiple learners (bulk)
-   * @param {Object} bulkData - { date, classId, attendanceRecords }
-   * @returns {Promise} Bulk operation results
-   */
-  markBulk: async (bulkData) => {
-    return fetchWithAuth('/attendance/bulk', {
-      method: 'POST',
-      body: JSON.stringify(bulkData),
-    });
-  },
-
-  /**
-   * Get attendance records
-   * @param {Object} params - Query parameters (date, startDate, endDate, learnerId, classId, status)
-   * @returns {Promise} List of attendance records
-   */
+  mark: async (attendanceData) =>
+    fetchWithAuth('/attendance', { method: 'POST', body: JSON.stringify(attendanceData) }),
+  markBulk: async (bulkData) =>
+    fetchWithAuth('/attendance/bulk', { method: 'POST', body: JSON.stringify(bulkData) }),
   getRecords: async (params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     return fetchWithAuth(`/attendance${queryString ? `?${queryString}` : ''}`);
   },
-
-  /**
-   * Get attendance statistics
-   * @param {Object} params - Query parameters (startDate, endDate, classId, learnerId)
-   * @returns {Promise} Attendance statistics
-   */
   getStats: async (params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     return fetchWithAuth(`/attendance/stats${queryString ? `?${queryString}` : ''}`);
   },
-
-  /**
-   * Get daily class attendance report
-   * @param {string} classId - Class ID
-   * @param {string} date - Date (YYYY-MM-DD)
-   * @returns {Promise} Daily attendance report with all learners
-   */
-  getDailyClassReport: async (classId, date) => {
-    return fetchWithAuth(`/attendance/class/daily?classId=${classId}&date=${date}`);
-  },
-
-  /**
-   * Get learner attendance summary
-   * @param {string} learnerId - Learner ID
-   * @param {Object} params - Query parameters (startDate, endDate)
-   * @returns {Promise} Learner attendance summary
-   */
+  getDailyClassReport: async (classId, date) =>
+    fetchWithAuth(`/attendance/class/daily?classId=${classId}&date=${date}`),
   getLearnerSummary: async (learnerId, params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     return fetchWithAuth(`/attendance/learner/${learnerId}${queryString ? `?${queryString}` : ''}`);
@@ -1404,272 +516,115 @@ export const attendanceAPI = {
 // ============================================
 
 export const assessmentAPI = {
-  // ============================================
-  // FORMATIVE ASSESSMENTS
-  // ============================================
-
-  /**
-   * Create or update formative assessment
-   * @param {Object} assessmentData - Assessment data
-   * @returns {Promise} Created/updated assessment
-   */
-  createFormative: async (assessmentData) => {
-    return fetchWithAuth('/assessments/formative', {
-      method: 'POST',
-      body: JSON.stringify(assessmentData),
-    });
-  },
-
-  /**
-   * Record bulk formative assessments
-   * @param {Object} bulkData - Formative assessment bulk data
-   * @returns {Promise} Processing summary
-   */
-  recordFormativeBulk: async (bulkData) => {
-    return fetchWithAuth('/assessments/formative/bulk', {
-      method: 'POST',
-      body: JSON.stringify(bulkData),
-    });
-  },
-
-  /**
-   * Get all formative assessments with filters
-   * @param {Object} params - Query parameters (term, academicYear, learningArea, grade)
-   * @returns {Promise} List of formative assessments
-   */
+  // ── Formative ──────────────────────────────────────────────────────────────
+  createFormative: async (assessmentData) =>
+    fetchWithAuth('/assessments/formative', { method: 'POST', body: JSON.stringify(assessmentData) }),
+  recordFormativeBulk: async (bulkData) =>
+    fetchWithAuth('/assessments/formative/bulk', { method: 'POST', body: JSON.stringify(bulkData) }),
   getFormativeAssessments: async (params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     return fetchWithAuth(`/assessments/formative${queryString ? `?${queryString}` : ''}`);
   },
-
-  /**
-   * Get formative assessments for a specific learner
-   * @param {string} learnerId - Learner ID
-   * @param {Object} params - Query parameters (term, academicYear)
-   * @returns {Promise} List of learner's formative assessments
-   */
   getFormativeByLearner: async (learnerId, params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     return fetchWithAuth(`/assessments/formative/learner/${learnerId}${queryString ? `?${queryString}` : ''}`);
   },
+  deleteFormative: async (id) =>
+    fetchWithAuth(`/assessments/formative/${id}`, { method: 'DELETE' }),
 
-  /**
-   * Delete formative assessment
-   * @param {string} id - Assessment ID
-   * @returns {Promise} Success message
-   */
-  deleteFormative: async (id) => {
-    return fetchWithAuth(`/assessments/formative/${id}`, {
-      method: 'DELETE',
-    });
-  },
-
-  // ============================================
-  // SUMMATIVE TESTS
-  // ============================================
-
-  /**
-   * Create summative test
-   * @param {Object} testData - Test data
-   * @returns {Promise} Created test
-   */
+  // ── Summative Tests — cached; busted on write ─────────────────────────────
   createTest: async (testData) => {
-    return fetchWithAuth('/assessments/tests', {
-      method: 'POST',
-      body: JSON.stringify(testData),
-    });
+    cacheDelPrefix('tests:');
+    return fetchWithAuth('/assessments/tests', { method: 'POST', body: JSON.stringify(testData) });
   },
-
-  /**
-   * Bulk create summative tests
-   * @param {Object} bulkData - Bulk test data (grades, term, year, etc.)
-   * @returns {Promise} Creation summary
-   */
   bulkCreateTests: async (bulkData) => {
-    return fetchWithAuth('/assessments/tests/bulk', {
-      method: 'POST',
-      body: JSON.stringify(bulkData),
-    });
+    cacheDelPrefix('tests:');
+    return fetchWithAuth('/assessments/tests/bulk', { method: 'POST', body: JSON.stringify(bulkData) });
   },
 
   /**
-   * Get all summative tests with filters
-   * @param {Object} params - Query parameters (term, academicYear, grade, learningArea, published)
-   * @returns {Promise} List of tests
+   * Get tests — deduplicated + cached per filter combination (2 min TTL).
+   * Multiple rapid calls with the same params share one in-flight request.
    */
   getTests: async (params = {}) => {
     const queryString = new URLSearchParams(params).toString();
-    return fetchWithAuth(`/assessments/tests${queryString ? `?${queryString}` : ''}`);
+    const key = `tests:${queryString}`;
+    return cachedFetch(
+      key,
+      () => fetchWithAuth(`/assessments/tests${queryString ? `?${queryString}` : ''}`),
+      TTL.MEDIUM
+    );
   },
 
-  /**
-   * Get single test with results
-   * @param {string} id - Test ID
-   * @returns {Promise} Test data with results and statistics
-   */
-  getTest: async (id) => {
-    return fetchWithAuth(`/assessments/tests/${id}`);
-  },
+  getTest: async (id) =>
+    cachedFetch(`test:${id}`, () => fetchWithAuth(`/assessments/tests/${id}`), TTL.MEDIUM),
 
-  /**
-   * Update summative test
-   * @param {string} id - Test ID
-   * @param {Object} testData - Updated test data
-   * @returns {Promise} Updated test
-   */
   updateTest: async (id, testData) => {
-    return fetchWithAuth(`/assessments/tests/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(testData),
-    });
+    cacheDel(`test:${id}`);
+    cacheDelPrefix('tests:');
+    return fetchWithAuth(`/assessments/tests/${id}`, { method: 'PUT', body: JSON.stringify(testData) });
   },
-
-  /**
-   * Delete summative test
-   * @param {string} id - Test ID
-   * @returns {Promise} Success message
-   */
   deleteTest: async (id) => {
-    return fetchWithAuth(`/assessments/tests/${id}`, {
-      method: 'DELETE',
-    });
+    cacheDel(`test:${id}`);
+    cacheDelPrefix('tests:');
+    return fetchWithAuth(`/assessments/tests/${id}`, { method: 'DELETE' });
   },
-
-  /**
-   * Delete multiple summative tests
-   * @param {string[]} ids - Array of test IDs
-   * @returns {Promise} Processing summary
-   */
   deleteTestsBulk: async (ids) => {
-    return fetchWithAuth('/assessments/tests/bulk', {
-      method: 'DELETE',
-      body: JSON.stringify({ ids }),
-    });
+    cacheDelPrefix('tests:');
+    return fetchWithAuth('/assessments/tests/bulk', { method: 'DELETE', body: JSON.stringify({ ids }) });
   },
 
-  // ============================================
-  // SUMMATIVE RESULTS
-  // ============================================
-
-  /**
-   * Record summative result
-   * @param {Object} resultData - Result data (testId, learnerId, marksObtained, remarks, teacherComment)
-   * @returns {Promise} Recorded result
-   */
+  // ── Summative Results ─────────────────────────────────────────────────────
   recordResult: async (resultData) => {
-    return fetchWithAuth('/assessments/summative/results', {
-      method: 'POST',
-      body: JSON.stringify(resultData),
-    });
+    cacheDel(`results:${resultData.testId}`);
+    return fetchWithAuth('/assessments/summative/results', { method: 'POST', body: JSON.stringify(resultData) });
   },
 
   /**
-   * Record bulk summative results
-   * @param {Object} bulkData - { testId, results: [{ learnerId, marksObtained }] }
-   * @returns {Promise} Bulk result
+   * Bulk save — busts the per-test results cache on success.
    */
   recordBulkResults: async (bulkData) => {
-    return fetchWithAuth('/assessments/summative/results/bulk', {
+    const result = await fetchWithAuth('/assessments/summative/results/bulk', {
       method: 'POST',
       body: JSON.stringify(bulkData),
     });
+    cacheDel(`results:${bulkData.testId}`);
+    return result;
   },
 
-  /**
-   * Get bulk summative results for classes/reports
-   * @param {Object} params - { grade, stream, academicYear, term }
-   * @returns {Promise} List of results
-   */
   getBulkResults: async (params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     return fetchWithAuth(`/assessments/summative/results/bulk${queryString ? `?${queryString}` : ''}`);
   },
-
-  /**
-   * Get summative results for a learner
-   * @param {string} learnerId - Learner ID
-   * @param {Object} params - Query parameters (term, academicYear)
-   * @returns {Promise} List of learner's results
-   */
   getSummativeByLearner: async (learnerId, params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     return fetchWithAuth(`/assessments/summative/results/learner/${learnerId}${queryString ? `?${queryString}` : ''}`);
   },
 
   /**
-   * Get all results for a specific test
-   * @param {string} testId - Test ID
-   * @returns {Promise} List of test results
+   * Per-test results — cached 30 s; multiple simultaneous loaders share one request.
    */
   async getTestResults(testId) {
-    return fetchWithAuth(`/assessments/summative/results/test/${testId}`);
+    return cachedFetch(
+      `results:${testId}`,
+      () => fetchWithAuth(`/assessments/summative/results/test/${testId}`),
+      TTL.SHORT
+    );
   },
 
-  /**
-   * Upload bulk assessments (scores) from Excel/CSV
-   * @param {FormData} formData - Contains the file and other parameters
-   * @returns {Promise} Upload result summary
-   */
   async uploadBulk(formData) {
-    return fetchWithAuth('/bulk/assessments/upload', {
-      method: 'POST',
-      body: formData,
-      // Header for FormData is handled automatically by fetch if body is FormData
-      headers: {}
-    });
+    return fetchWithAuth('/bulk/assessments/upload', { method: 'POST', body: formData, headers: {} });
   },
 
-  // ============================================
-  // SETUP ENDPOINTS (BULK OPERATIONS)
-  // ============================================
-
-  /**
-   * Create all grading scales for the school
-   * @param {Object} data - Setup data (optional: overwrite flag)
-   * @returns {Promise} Creation summary with count
-   */
-  createScalesForSchool: async (data = {}) => {
-    return fetchWithAuth('/assessments/setup/create-scales', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Create all summative tests linked to scales
-   * @param {Object} data - Setup data (term, academicYear, overwrite)
-   * @returns {Promise} Creation summary with count
-   */
-  createTestsForScales: async (data) => {
-    return fetchWithAuth('/assessments/setup/create-tests', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Complete school setup: create scales and tests atomically
-   * @param {Object} data - Setup data (term, academicYear, overwrite)
-   * @returns {Promise} Complete setup summary
-   */
-  completeSchoolSetup: async (data) => {
-    return fetchWithAuth('/assessments/setup/complete', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Reset selected assessment data
-   * @param {Object} data - { options: { summative: boolean, formative: boolean, scales: boolean, logs: boolean } }
-   * @returns {Promise} Reset summary
-   */
-  resetAssessments: async (data) => {
-    return fetchWithAuth('/assessments/setup/reset', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
+  // ── Setup endpoints ───────────────────────────────────────────────────────
+  createScalesForSchool: async (data = {}) =>
+    fetchWithAuth('/assessments/setup/create-scales', { method: 'POST', body: JSON.stringify(data) }),
+  createTestsForScales: async (data) =>
+    fetchWithAuth('/assessments/setup/create-tests', { method: 'POST', body: JSON.stringify(data) }),
+  completeSchoolSetup: async (data) =>
+    fetchWithAuth('/assessments/setup/complete', { method: 'POST', body: JSON.stringify(data) }),
+  resetAssessments: async (data) =>
+    fetchWithAuth('/assessments/setup/reset', { method: 'POST', body: JSON.stringify(data) }),
 };
 
 // ============================================
@@ -1677,209 +632,57 @@ export const assessmentAPI = {
 // ============================================
 
 export const feeAPI = {
-  /**
-   * Get all fee structures
-   * @param {Object} params - Query parameters
-   * @returns {Promise} Fee structures
-   */
   getAllFeeStructures: async (params = {}) => {
     const query = new URLSearchParams(params).toString();
     return fetchWithAuth(`/fees/structures${query ? `?${query}` : ''}`);
   },
-
-  /**
-   * Create fee structure
-   * @param {Object} data - Fee structure data
-   * @returns {Promise} Created fee structure
-   */
-  createFeeStructure: async (data) => {
-    return fetchWithAuth('/fees/structures', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Update fee structure
-   * @param {string} id - Fee structure ID
-   * @param {Object} data - Updated data
-   * @returns {Promise} Updated fee structure
-   */
-  updateFeeStructure: async (id, data) => {
-    return fetchWithAuth(`/fees/structures/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Delete fee structure
-   * @param {string} id - Fee structure ID
-   * @returns {Promise} Success message
-   */
-  deleteFeeStructure: async (id) => {
-    return fetchWithAuth(`/fees/structures/${id}`, {
-      method: 'DELETE',
-    });
-  },
-
-  /**
-   * Get all invoices
-   * @param {Object} params - Query parameters
-   * @returns {Promise} Invoices
-   */
+  createFeeStructure: async (data) =>
+    fetchWithAuth('/fees/structures', { method: 'POST', body: JSON.stringify(data) }),
+  updateFeeStructure: async (id, data) =>
+    fetchWithAuth(`/fees/structures/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteFeeStructure: async (id) =>
+    fetchWithAuth(`/fees/structures/${id}`, { method: 'DELETE' }),
   getAllInvoices: async (params = {}) => {
     const query = new URLSearchParams(params).toString();
     return fetchWithAuth(`/fees/invoices${query ? `?${query}` : ''}`);
   },
-
-  /**
-   * Get learner invoices
-   * @param {string} learnerId - Learner ID
-   * @returns {Promise} Learner invoices
-   */
-  getLearnerInvoices: async (learnerId) => {
-    return fetchWithAuth(`/fees/invoices/learner/${learnerId}`);
-  },
-
-  /**
-   * Create invoice
-   * @param {Object} data - Invoice data
-   * @returns {Promise} Created invoice
-   */
-  createInvoice: async (data) => {
-    return fetchWithAuth('/fees/invoices', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Bulk generate invoices
-   * @param {Object} data - Bulk generation data
-   * @returns {Promise} Created invoices
-   */
-  bulkGenerateInvoices: async (data) => {
-    return fetchWithAuth('/fees/invoices/bulk', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Record payment
-   * @param {Object} data - Payment data
-   * @returns {Promise} Payment record
-   */
-  recordPayment: async (data) => {
-    return fetchWithAuth('/fees/payments', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Get all fee types
-   * @param {Object} params - Query parameters (category, active)
-   * @returns {Promise} Fee types
-   */
+  getLearnerInvoices: async (learnerId) => fetchWithAuth(`/fees/invoices/learner/${learnerId}`),
+  createInvoice: async (data) =>
+    fetchWithAuth('/fees/invoices', { method: 'POST', body: JSON.stringify(data) }),
+  bulkGenerateInvoices: async (data) =>
+    fetchWithAuth('/fees/invoices/bulk', { method: 'POST', body: JSON.stringify(data) }),
+  recordPayment: async (data) =>
+    fetchWithAuth('/fees/payments', { method: 'POST', body: JSON.stringify(data) }),
   getAllFeeTypes: async (params = {}) => {
     const query = new URLSearchParams(params).toString();
     return fetchWithAuth(`/fees/types${query ? `?${query}` : ''}`);
   },
-
-  /**
-   * Seed default fee types for school
-   * @returns {Promise} Result with created count
-   */
-  seedDefaultFeeTypes: async () => {
-    return fetchWithAuth('/fees/types/seed/defaults', {
-      method: 'POST'
-    });
-  },
-
-  /**
-   * Seed default fee structures for all grades and terms
-   * @returns {Promise} Result with created count
-   */
-  seedDefaultFeeStructures: async () => {
-    return fetchWithAuth('/fees/types/seed/structures', {
-      method: 'POST'
-    });
-  },
-
-  /**
-   * Get payment statistics
-   * @param {Object} params - Query parameters
-   * @returns {Promise} Payment stats
-   */
+  seedDefaultFeeTypes: async () =>
+    fetchWithAuth('/fees/types/seed/defaults', { method: 'POST' }),
+  seedDefaultFeeStructures: async () =>
+    fetchWithAuth('/fees/types/seed/structures', { method: 'POST' }),
   getPaymentStats: async (params = {}) => {
     const query = new URLSearchParams(params).toString();
     return fetchWithAuth(`/fees/stats${query ? `?${query}` : ''}`);
   },
-
-  /**
-   * Export invoices to CSV
-   */
   exportInvoices: async (params = {}) => {
     const query = new URLSearchParams(params).toString();
     const token = localStorage.getItem('token');
     if (!token) throw new Error('No authentication token found');
-
-    // Have to bypass fetchWithAuth because it expects JSON response
     const response = await fetch(`${API_BASE_URL}/fees/invoices/export${query ? `?${query}` : ''}`, {
       method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+      headers: { Authorization: `Bearer ${token}` },
     });
-
-    if (!response.ok) {
-      throw new Error('Failed to export invoices');
-    }
-
+    if (!response.ok) throw new Error('Failed to export invoices');
     return response.blob();
   },
-
-  /**
-   * Reset all invoices and payments
-   * @returns {Promise} Success message
-   */
-  resetInvoices: async () => {
-    return fetchWithAuth('/fees/invoices/reset', {
-      method: 'DELETE',
-    });
-  },
-
-  /**
-   * Send invoice reminder
-   */
-  sendReminder: async (id, data) => {
-    return fetchWithAuth(`/fees/invoices/${id}/remind`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Bulk send reminders
-   */
-  bulkSendReminders: async (data) => {
-    return fetchWithAuth('/fees/invoices/remind/bulk', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Email fee statement to parent
-   */
-  emailStatement: async (learnerId, data) => {
-    return fetchWithAuth(`/fees/invoices/learner/${learnerId}/email`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
+  resetInvoices: async () => fetchWithAuth('/fees/invoices/reset', { method: 'DELETE' }),
+  sendReminder: async (id, data) =>
+    fetchWithAuth(`/fees/invoices/${id}/remind`, { method: 'POST', body: JSON.stringify(data) }),
+  bulkSendReminders: async (data) =>
+    fetchWithAuth('/fees/invoices/remind/bulk', { method: 'POST', body: JSON.stringify(data) }),
+  emailStatement: async (learnerId, data) =>
+    fetchWithAuth(`/fees/invoices/learner/${learnerId}/email`, { method: 'POST', body: JSON.stringify(data) }),
 };
 
 // ============================================
@@ -1887,180 +690,55 @@ export const feeAPI = {
 // ============================================
 
 export const notificationAPI = {
-  /**
-   * Send assessment completion notification to parent
-   * @param {Object} data - { learnerId, assessmentType, subject, grade, term }
-   * @returns {Promise} Send result
-   */
-  sendAssessmentNotification: async (data) => {
-    return fetchWithAuth('/notifications/assessment-complete', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Send bulk assessment notifications
-   * @param {Object} data - { learnerIds, assessmentType, subject, grade, term }
-   * @returns {Promise} Bulk send result
-   */
-  sendBulkAssessmentNotifications: async (data) => {
-    return fetchWithAuth('/notifications/assessment-complete/bulk', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Send custom message to parent
-   * @param {Object} data - { parentId, message }
-   * @returns {Promise} Send result
-   */
-  sendCustomMessage: async (data) => {
-    return fetchWithAuth('/notifications/custom', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Send announcement to all parents or filtered group
-   * @param {Object} data - { title, content, grade, stream }
-   * @returns {Promise} Send result
-   */
-  sendAnnouncement: async (data) => {
-    return fetchWithAuth('/notifications/announcement', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Send assessment report via SMS to parent
-   * @param {Object} data - Assessment report details
-   * @returns {Promise} Send result
-   */
-  sendAssessmentReportSms: async (data) => {
-    return fetchWithAuth('/notifications/sms/assessment-report', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Send assessment report via WhatsApp to parent
-   * @param {Object} data - Assessment report details
-   * @returns {Promise} Send result
-   */
-  sendAssessmentReportWhatsApp: async (data) => {
-    return fetchWithAuth('/notifications/whatsapp/assessment-report', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Test WhatsApp connection
-   * @param {string} phoneNumber - Phone number to test
-   * @returns {Promise} Test result
-   */
-  testWhatsApp: async (phoneNumber) => {
-    return fetchWithAuth('/notifications/test', {
-      method: 'POST',
-      body: JSON.stringify({ phoneNumber }),
-    });
-  },
-
-  /**
-   * Get WhatsApp connection status
-   * @returns {Promise} Status object { status, qrCode }
-   */
-  getWhatsAppStatus: async () => {
-    return fetchWithAuth('/notifications/whatsapp/status');
-  },
+  sendAssessmentNotification: async (data) =>
+    fetchWithAuth('/notifications/assessment-complete', { method: 'POST', body: JSON.stringify(data) }),
+  sendBulkAssessmentNotifications: async (data) =>
+    fetchWithAuth('/notifications/assessment-complete/bulk', { method: 'POST', body: JSON.stringify(data) }),
+  sendCustomMessage: async (data) =>
+    fetchWithAuth('/notifications/custom', { method: 'POST', body: JSON.stringify(data) }),
+  sendAnnouncement: async (data) =>
+    fetchWithAuth('/notifications/announcement', { method: 'POST', body: JSON.stringify(data) }),
+  sendAssessmentReportSms: async (data) =>
+    fetchWithAuth('/notifications/sms/assessment-report', { method: 'POST', body: JSON.stringify(data) }),
+  sendAssessmentReportWhatsApp: async (data) =>
+    fetchWithAuth('/notifications/whatsapp/assessment-report', { method: 'POST', body: JSON.stringify(data) }),
+  testWhatsApp: async (phoneNumber) =>
+    fetchWithAuth('/notifications/test', { method: 'POST', body: JSON.stringify({ phoneNumber }) }),
+  getWhatsAppStatus: async () => fetchWithAuth('/notifications/whatsapp/status'),
 };
 
 // ============================================
-// REPORTS API (NEW)
+// REPORTS API
 // ============================================
 
 export const reportAPI = {
-  /**
-   * Get comprehensive formative report for a learner
-   * @param {string} learnerId - Learner ID
-   * @param {Object} params - { term, academicYear }
-   * @returns {Promise} Formative report data
-   */
   getFormativeReport: async (learnerId, params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     return fetchWithAuth(`/reports/formative/${learnerId}${queryString ? `?${queryString}` : ''}`);
   },
-
-  /**
-   * Get comprehensive summative report for a learner
-   * @param {string} learnerId - Learner ID
-   * @param {Object} params - { term, academicYear }
-   * @returns {Promise} Summative report data
-   */
   getSummativeReport: async (learnerId, params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     return fetchWithAuth(`/reports/summative/${learnerId}${queryString ? `?${queryString}` : ''}`);
   },
-
-  /**
-   * Get complete termly report (formative + summative + attendance + CBC elements)
-   * @param {string} learnerId - Learner ID
-   * @param {Object} params - { term, academicYear }
-   * @returns {Promise} Complete termly report data
-   */
   getTermlyReport: async (learnerId, params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     return fetchWithAuth(`/reports/termly/${learnerId}${queryString ? `?${queryString}` : ''}`);
   },
-
-  /**
-   * Get class-level performance analytics
-   * @param {string} classId - Class ID
-   * @param {Object} params - { term, academicYear }
-   * @returns {Promise} Class analytics data
-   */
   getClassAnalytics: async (classId, params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     return fetchWithAuth(`/reports/analytics/class/${classId}${queryString ? `?${queryString}` : ''}`);
   },
-
-  /**
-   * Get individual learner analytics (year-long progress)
-   * @param {string} learnerId - Learner ID
-   * @param {Object} params - { academicYear }
-   * @returns {Promise} Learner analytics data
-   */
   getLearnerAnalytics: async (learnerId, params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     return fetchWithAuth(`/reports/analytics/learner/${learnerId}${queryString ? `?${queryString}` : ''}`);
   },
-
-  /**
-   * Generate high-fidelity PDF from HTML
-   * @param {Object} data - { html, fileName, options }
-   * @returns {Promise<Blob>} PDF Blob
-   */
   generatePdf: async (data) => {
     try {
-      const response = await axiosInstance.post('/reports/generate-pdf', data, {
-        responseType: 'blob'
-      });
-
+      const response = await axiosInstance.post('/reports/generate-pdf', data, { responseType: 'blob' });
       const blob = response.data;
-      console.log(`✅ PDF Received: ${blob.size} bytes (${blob.type})`);
-
-      if (blob.size < 100) {
-        console.warn('⚠️ PDF Blob is suspiciously small');
-      }
-
+      if (blob.size < 100) console.warn('⚠️ PDF Blob is suspiciously small');
       return blob;
     } catch (error) {
-      console.error('❌ PDF Generation Error:', error);
       throw new Error(error.response?.data?.message || 'PDF Generation failed');
     }
   },
@@ -2071,85 +749,45 @@ export const reportAPI = {
 // ============================================
 
 export const healthAPI = {
-  /**
-   * Check if backend is reachable
-   * @returns {Promise} Health status
-   */
   check: async () => {
     try {
       const response = await axiosInstance.get('/health');
       return response.data;
-    } catch (error) {
+    } catch {
       throw new Error('Backend server is not reachable');
     }
   },
 };
 
 // ============================================
-// CBC ASSESSMENT API (NEW)
+// CBC ASSESSMENT API
 // ============================================
 
 export const cbcAPI = {
-  // Core Competencies
-  saveCompetencies: async (data) => {
-    return fetchWithAuth('/cbc/competencies', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
+  saveCompetencies: async (data) =>
+    fetchWithAuth('/cbc/competencies', { method: 'POST', body: JSON.stringify(data) }),
   getCompetencies: async (learnerId, params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     return fetchWithAuth(`/cbc/competencies/${learnerId}${queryString ? `?${queryString}` : ''}`);
   },
-
-  // Values Assessment
-  saveValues: async (data) => {
-    return fetchWithAuth('/cbc/values', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
+  saveValues: async (data) =>
+    fetchWithAuth('/cbc/values', { method: 'POST', body: JSON.stringify(data) }),
   getValues: async (learnerId, params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     return fetchWithAuth(`/cbc/values/${learnerId}${queryString ? `?${queryString}` : ''}`);
   },
-
-  // Co-Curricular Activities
-  createCoCurricular: async (data) => {
-    return fetchWithAuth('/cbc/cocurricular', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
+  createCoCurricular: async (data) =>
+    fetchWithAuth('/cbc/cocurricular', { method: 'POST', body: JSON.stringify(data) }),
   getCoCurricular: async (learnerId, params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     return fetchWithAuth(`/cbc/cocurricular/${learnerId}${queryString ? `?${queryString}` : ''}`);
   },
-
-  updateCoCurricular: async (id, data) => {
-    return fetchWithAuth(`/cbc/cocurricular/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  },
-
-  deleteCoCurricular: async (id) => {
-    return fetchWithAuth(`/cbc/cocurricular/${id}`, {
-      method: 'DELETE',
-    });
-  },
-
-  // Termly Report Comments
-  saveComments: async (data) => {
-    return fetchWithAuth('/cbc/comments', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
+  updateCoCurricular: async (id, data) =>
+    fetchWithAuth(`/cbc/cocurricular/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteCoCurricular: async (id) =>
+    fetchWithAuth(`/cbc/cocurricular/${id}`, { method: 'DELETE' }),
+  saveComments: async (data) =>
+    fetchWithAuth('/cbc/comments', { method: 'POST', body: JSON.stringify(data) }),
   getComments: async (learnerId, params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     return fetchWithAuth(`/cbc/comments/${learnerId}${queryString ? `?${queryString}` : ''}`);
@@ -2157,12 +795,10 @@ export const cbcAPI = {
 };
 
 // ============================================
-// WORKFLOW API — REMOVED (approval flow disabled)
-// All tests auto-publish on creation/save.
+// WORKFLOW API — stubs (approval flow disabled)
 // ============================================
 
 export const workflowAPI = {
-  // Stubs kept so existing call-sites don't crash; they resolve silently.
   submit: async () => ({ success: true }),
   bulkSubmit: async () => ({ success: true }),
   approve: async () => ({ success: true }),
@@ -2174,176 +810,95 @@ export const workflowAPI = {
 };
 
 // ============================================
-// GRADING API
+// GRADING API — systems cached for 10 min (nearly static)
 // ============================================
 
 export const gradingAPI = {
-  getSystems: async (
-) => {
-    return fetchWithAuth(`/grading/systems`);
-  },
+  /**
+   * Fetch all grading systems — heavily cached + deduplicated.
+   * Called on every test load; without this, N parallel calls hit the DB simultaneously.
+   */
+  getSystems: async () =>
+    cachedFetch('grading:systems', () => fetchWithAuth('/grading/systems'), TTL.LONG),
 
   createSystem: async (data) => {
-    return fetchWithAuth('/grading/system', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    cacheDel('grading:systems');
+    return fetchWithAuth('/grading/system', { method: 'POST', body: JSON.stringify(data) });
   },
-
   updateSystem: async (id, data) => {
-    return fetchWithAuth(`/grading/system/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
+    cacheDel('grading:systems');
+    return fetchWithAuth(`/grading/system/${id}`, { method: 'PUT', body: JSON.stringify(data) });
   },
-
   deleteSystem: async (id) => {
-    return fetchWithAuth(`/grading/system/${id}`, {
-      method: 'DELETE',
-    });
+    cacheDel('grading:systems');
+    return fetchWithAuth(`/grading/system/${id}`, { method: 'DELETE' });
   },
-
   updateRange: async (id, data) => {
-    return fetchWithAuth(`/grading/range/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
+    cacheDel('grading:systems');
+    return fetchWithAuth(`/grading/range/${id}`, { method: 'PUT', body: JSON.stringify(data) });
   },
-
   createRange: async (data) => {
-    return fetchWithAuth('/grading/range', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    cacheDel('grading:systems');
+    return fetchWithAuth('/grading/range', { method: 'POST', body: JSON.stringify(data) });
   },
-
   deleteRange: async (id) => {
-    return fetchWithAuth(`/grading/range/${id}`, {
-      method: 'DELETE',
-    });
+    cacheDel('grading:systems');
+    return fetchWithAuth(`/grading/range/${id}`, { method: 'DELETE' });
   },
 
-  // Scale Group endpoints
-  getScaleGroups: async () => {
-    return fetchWithAuth('/grading/scale-groups');
-  },
-
-  getScaleGroupById: async (id) => {
-    return fetchWithAuth(`/grading/scale-groups/${id}`);
-  },
-
+  getScaleGroups: async () =>
+    cachedFetch('grading:scale-groups', () => fetchWithAuth('/grading/scale-groups'), TTL.LONG),
+  getScaleGroupById: async (id) => fetchWithAuth(`/grading/scale-groups/${id}`),
   createScaleGroup: async (data) => {
-    return fetchWithAuth('/grading/scale-groups', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    cacheDel('grading:scale-groups');
+    return fetchWithAuth('/grading/scale-groups', { method: 'POST', body: JSON.stringify(data) });
   },
-
   updateScaleGroup: async (id, data) => {
-    return fetchWithAuth(`/grading/scale-groups/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
+    cacheDel('grading:scale-groups');
+    return fetchWithAuth(`/grading/scale-groups/${id}`, { method: 'PUT', body: JSON.stringify(data) });
   },
-
   deleteScaleGroup: async (id, params = {}) => {
+    cacheDel('grading:scale-groups');
     const queryString = new URLSearchParams(params).toString();
-    return fetchWithAuth(`/grading/scale-groups/${id}${queryString ? `?${queryString}` : ''}`, {
-      method: 'DELETE',
-    });
+    return fetchWithAuth(`/grading/scale-groups/${id}${queryString ? `?${queryString}` : ''}`, { method: 'DELETE' });
   },
-
-  generateGradesForGroup: async (id, data) => {
-    return fetchWithAuth(`/grading/scale-groups/${id}/generate-grades`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
+  generateGradesForGroup: async (id, data) =>
+    fetchWithAuth(`/grading/scale-groups/${id}/generate-grades`, { method: 'POST', body: JSON.stringify(data) }),
   getScaleForTest: async (groupId, grade, learningArea) => {
     const params = new URLSearchParams({ grade });
     if (learningArea) params.append('learningArea', learningArea);
     return fetchWithAuth(`/grading/scale-groups/${groupId}/for-test?${params.toString()}`);
   },
-
-  // Setup endpoints for bulk operations
-  createTestsForScales: async (data) => {
-    return fetchWithAuth('/assessments/setup/create-tests', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  createScalesForSchool: async (data = {}) => {
-    return fetchWithAuth('/assessments/setup/create-scales', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  completeSchoolSetup: async (data) => {
-    return fetchWithAuth('/assessments/setup/complete', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
+  createTestsForScales: async (data) =>
+    fetchWithAuth('/assessments/setup/create-tests', { method: 'POST', body: JSON.stringify(data) }),
+  createScalesForSchool: async (data = {}) =>
+    fetchWithAuth('/assessments/setup/create-scales', { method: 'POST', body: JSON.stringify(data) }),
+  completeSchoolSetup: async (data) =>
+    fetchWithAuth('/assessments/setup/complete', { method: 'POST', body: JSON.stringify(data) }),
 };
 
 // ============================================
 // ADMIN API
 // ============================================
+
 export const adminAPI = {
-  getSchoolInfo: async () => {
-    return fetchCached('/settings/school-info');
-  },
-  listSchools: async () => {
-    return fetchWithAuth('/admin/schools');
-  },
-  provision: async (data) => {
-    return fetchWithAuth('/admin/schools/provision', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-  listPlans: async () => {
-    return fetchWithAuth('/admin/plans');
-  },
-  reactivateSchool: async () => {
-    return fetchWithAuth('/admin/school/reactivate', {
-      method: 'PATCH',
-    });
-  },
-  approvePayment: async (payload) => {
-    return fetchWithAuth('/admin/school/approve-payment', {
-      method: 'PATCH',
-      body: JSON.stringify(payload || {}),
-    });
-  },
-  trialMetrics: async () => {
-    return fetchWithAuth('/admin/trials/metrics');
-  },
-  getSchoolModules: async () => {
-    return fetchWithAuth('/admin/school/modules');
-  },
-  setSchoolModule: async (moduleKey, active) => {
-    return fetchWithAuth(`/admin/school/modules/${moduleKey}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ active }),
-    });
-  },
-  switchSchool: async () => {
-    const resp = await fetchWithAuth('/admin/switch-school', { method: 'POST' });
-    return resp;
-  },
-  getSchoolCommunication: async () => {
-    return fetchWithAuth('/admin/school/communication');
-  },
-  updateSchoolCommunication: async (data) => {
-    return fetchWithAuth('/admin/school/communication', {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  },
+  getSchoolInfo: async () => fetchCached('/settings/school-info'),
+  listSchools: async () => fetchWithAuth('/admin/schools'),
+  provision: async (data) =>
+    fetchWithAuth('/admin/schools/provision', { method: 'POST', body: JSON.stringify(data) }),
+  listPlans: async () => fetchWithAuth('/admin/plans'),
+  reactivateSchool: async () =>
+    fetchWithAuth('/admin/school/reactivate', { method: 'PATCH' }),
+  approvePayment: async (payload) =>
+    fetchWithAuth('/admin/school/approve-payment', { method: 'PATCH', body: JSON.stringify(payload || {}) }),
+  trialMetrics: async () => fetchWithAuth('/admin/trials/metrics'),
+  getSchoolModules: async () => fetchWithAuth('/admin/school/modules'),
+  setSchoolModule: async (moduleKey, active) =>
+    fetchWithAuth(`/admin/school/modules/${moduleKey}`, { method: 'PATCH', body: JSON.stringify({ active }) }),
+  switchSchool: async () => fetchWithAuth('/admin/switch-school', { method: 'POST' }),
+  getSchoolCommunication: async () => fetchWithAuth('/admin/school/communication'),
+  updateSchoolCommunication: async (data) =>
+    fetchWithAuth('/admin/school/communication', { method: 'PUT', body: JSON.stringify(data) }),
 };
 
 // ============================================
@@ -2351,112 +906,52 @@ export const adminAPI = {
 // ============================================
 
 export const documentsAPI = {
-  /**
-   * Get all documents
-   * @param {Object} params - { category, search, page, limit }
-   */
   getAll: async (params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     return fetchWithAuth(`/documents${queryString ? `?${queryString}` : ''}`);
   },
-
-  /**
-   * Get document categories
-   */
-  getCategories: async () => {
-    return fetchWithAuth('/documents/categories');
-  },
-
-  /**
-   * Upload a single document
-   * @param {FormData} formData - Contains 'file', 'category', 'name'
-   */
-  upload: async (formData) => {
-    return fetchWithAuth('/documents/upload', {
-      method: 'POST',
-      body: formData,
-    });
-  },
-
-  /**
-   * Upload multiple documents
-   * @param {FormData} formData - Contains 'files', 'category'
-   */
-  uploadMultiple: async (formData) => {
-    return fetchWithAuth('/documents/upload-multiple', {
-      method: 'POST',
-      body: formData,
-    });
-  },
-
-  /**
-   * Update document metadata
-   */
-  update: async (id, data) => {
-    return fetchWithAuth(`/documents/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Delete a document
-   */
-  delete: async (id) => {
-    return fetchWithAuth(`/documents/${id}`, {
-      method: 'DELETE',
-    });
-  },
+  getCategories: async () => fetchWithAuth('/documents/categories'),
+  upload: async (formData) =>
+    fetchWithAuth('/documents/upload', { method: 'POST', body: formData }),
+  uploadMultiple: async (formData) =>
+    fetchWithAuth('/documents/upload-multiple', { method: 'POST', body: formData }),
+  update: async (id, data) =>
+    fetchWithAuth(`/documents/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: async (id) =>
+    fetchWithAuth(`/documents/${id}`, { method: 'DELETE' }),
 };
 
 // ============================================
 // BOOKS & RESOURCES API
 // ============================================
+
 export const bookAPI = {
   getAll: async (params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     return fetchWithAuth(`/books${queryString ? `?${queryString}` : ''}`);
   },
-  create: async (data) => {
-    return fetchWithAuth('/books', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-  update: async (id, data) => {
-    return fetchWithAuth(`/books/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  },
-  assign: async (id, userId) => {
-    return fetchWithAuth(`/books/${id}/assign`, {
-      method: 'POST',
-      body: JSON.stringify({ userId }),
-    });
-  },
-  return: async (id) => {
-    return fetchWithAuth(`/books/${id}/return`, {
-      method: 'POST',
-    });
-  },
-  delete: async (id) => {
-    return fetchWithAuth(`/books/${id}`, {
-      method: 'DELETE',
-    });
-  },
+  create: async (data) =>
+    fetchWithAuth('/books', { method: 'POST', body: JSON.stringify(data) }),
+  update: async (id, data) =>
+    fetchWithAuth(`/books/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  assign: async (id, userId) =>
+    fetchWithAuth(`/books/${id}/assign`, { method: 'POST', body: JSON.stringify({ userId }) }),
+  return: async (id) =>
+    fetchWithAuth(`/books/${id}/return`, { method: 'POST' }),
+  delete: async (id) =>
+    fetchWithAuth(`/books/${id}`, { method: 'DELETE' }),
 };
 
 // ============================================
 // SHARING & COMMUNICATION API
 // ============================================
+
 export const sharingAPI = {
-  shareDocumentWhatsApp: async (documentId, phoneNumber) => {
-    return fetchWithAuth('/notifications/whatsapp/share-document', {
+  shareDocumentWhatsApp: async (documentId, phoneNumber) =>
+    fetchWithAuth('/notifications/whatsapp/share-document', {
       method: 'POST',
       body: JSON.stringify({ documentId, phoneNumber }),
-    });
-  },
+    }),
 };
 
 // ============================================
@@ -2464,77 +959,37 @@ export const sharingAPI = {
 // ============================================
 
 export const hrAPI = {
-  clockInStaff: async (data = {}) => {
-    return fetchWithAuth('/hr/attendance/clock-in', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-  clockOutStaff: async (data = {}) => {
-    return fetchWithAuth('/hr/attendance/clock-out', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-  getTodayClockIn: async () => {
-    return fetchWithAuth('/hr/attendance/today');
-  },
-  getStaffDirectory: async () => {
-    return fetchWithAuth('/hr/staff');
-  },
-  updateStaffHR: async (id, data) => {
-    return fetchWithAuth(`/hr/staff/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  },
-  getLeaveTypes: async () => {
-    return fetchWithAuth('/hr/leave/types');
-  },
-  submitLeaveRequest: async (data) => {
-    return fetchWithAuth('/hr/leave/apply', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
+  clockInStaff: async (data = {}) =>
+    fetchWithAuth('/hr/attendance/clock-in', { method: 'POST', body: JSON.stringify(data) }),
+  clockOutStaff: async (data = {}) =>
+    fetchWithAuth('/hr/attendance/clock-out', { method: 'POST', body: JSON.stringify(data) }),
+  getTodayClockIn: async () => fetchWithAuth('/hr/attendance/today'),
+  getStaffDirectory: async () => fetchWithAuth('/hr/staff'),
+  updateStaffHR: async (id, data) =>
+    fetchWithAuth(`/hr/staff/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  getLeaveTypes: async () => fetchWithAuth('/hr/leave/types'),
+  submitLeaveRequest: async (data) =>
+    fetchWithAuth('/hr/leave/apply', { method: 'POST', body: JSON.stringify(data) }),
   getLeaveRequests: async (params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     return fetchWithAuth(`/hr/leave/requests?${queryString}`);
   },
-  approveLeaveRequest: async (requestId, data) => {
-    return fetchWithAuth(`/hr/leave/approve/${requestId}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  },
-  generatePayroll: async (data) => {
-    return fetchWithAuth('/hr/payroll/generate', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
+  approveLeaveRequest: async (requestId, data) =>
+    fetchWithAuth(`/hr/leave/approve/${requestId}`, { method: 'PUT', body: JSON.stringify(data) }),
+  generatePayroll: async (data) =>
+    fetchWithAuth('/hr/payroll/generate', { method: 'POST', body: JSON.stringify(data) }),
   getPayrollRecords: async (params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     return fetchWithAuth(`/hr/payroll?${queryString}`);
   },
-
-  // Performance Management
   getPerformanceReviews: async (userId) => {
     const url = userId ? `/hr/performance?userId=${userId}` : '/hr/performance';
     return fetchWithAuth(url);
   },
-  createPerformanceReview: async (data) => {
-    return fetchWithAuth('/hr/performance', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-  updatePerformanceReview: async (id, data) => {
-    return fetchWithAuth(`/hr/performance/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  },
+  createPerformanceReview: async (data) =>
+    fetchWithAuth('/hr/performance', { method: 'POST', body: JSON.stringify(data) }),
+  updatePerformanceReview: async (id, data) =>
+    fetchWithAuth(`/hr/performance/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
 };
 
 // ============================================
@@ -2542,143 +997,97 @@ export const hrAPI = {
 // ============================================
 
 export const accountingAPI = {
-  initializeCoA: async () => {
-    return fetchWithAuth('/accounting/initialize', {
-      method: 'POST',
-      body: JSON.stringify({}),
-    });
-  },
-  getAccounts: async () => {
-    return fetchWithAuth('/accounting/accounts');
-  },
-  getBalances: async () => {
-    return fetchWithAuth('/accounting/balances');
-  },
-  getJournals: async () => {
-    return fetchWithAuth('/accounting/journals');
-  },
-  createJournalEntry: async (data) => {
-    return fetchWithAuth('/accounting/entries', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-  postJournalEntry: async (id) => {
-    return fetchWithAuth(`/accounting/entries/${id}/post`, {
-      method: 'POST',
-    });
-  },
-  getVendors: async () => {
-    return fetchWithAuth('/accounting/vendors');
-  },
-  createVendor: async (data) => {
-    return fetchWithAuth('/accounting/vendors', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-  recordExpense: async (data) => {
-    return fetchWithAuth('/accounting/expenses', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-  getBankStatements: async () => {
-    return fetchWithAuth('/accounting/bank-statements');
-  },
-  importBankStatement: async (data) => {
-    return fetchWithAuth('/accounting/bank-statements/import', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-  reconcileLine: async (data) => {
-    return fetchWithAuth('/accounting/bank-statements/reconcile', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-  getReport: async (type, startDate, endDate) => {
-    return fetchWithAuth(`/accounting/reports?type=${type}&startDate=${startDate}&endDate=${endDate}`);
-  },
-  getTrialBalance: async (startDate, endDate) => {
-    return fetchWithAuth(`/accounting/reports/trial-balance?startDate=${startDate}&endDate=${endDate}`);
-  },
+  initializeCoA: async () =>
+    fetchWithAuth('/accounting/initialize', { method: 'POST', body: JSON.stringify({}) }),
+  getAccounts: async () => fetchWithAuth('/accounting/accounts'),
+  getBalances: async () => fetchWithAuth('/accounting/balances'),
+  getJournals: async () => fetchWithAuth('/accounting/journals'),
+  createJournalEntry: async (data) =>
+    fetchWithAuth('/accounting/entries', { method: 'POST', body: JSON.stringify(data) }),
+  postJournalEntry: async (id) =>
+    fetchWithAuth(`/accounting/entries/${id}/post`, { method: 'POST' }),
+  getVendors: async () => fetchWithAuth('/accounting/vendors'),
+  createVendor: async (data) =>
+    fetchWithAuth('/accounting/vendors', { method: 'POST', body: JSON.stringify(data) }),
+  recordExpense: async (data) =>
+    fetchWithAuth('/accounting/expenses', { method: 'POST', body: JSON.stringify(data) }),
+  getBankStatements: async () => fetchWithAuth('/accounting/bank-statements'),
+  importBankStatement: async (data) =>
+    fetchWithAuth('/accounting/bank-statements/import', { method: 'POST', body: JSON.stringify(data) }),
+  reconcileLine: async (data) =>
+    fetchWithAuth('/accounting/bank-statements/reconcile', { method: 'POST', body: JSON.stringify(data) }),
+  getReport: async (type, startDate, endDate) =>
+    fetchWithAuth(`/accounting/reports?type=${type}&startDate=${startDate}&endDate=${endDate}`),
+  getTrialBalance: async (startDate, endDate) =>
+    fetchWithAuth(`/accounting/reports/trial-balance?startDate=${startDate}&endDate=${endDate}`),
 };
+
+// ============================================
+// INVENTORY API
+// ============================================
 
 export const inventoryAPI = {
-  // Categories
   getCategories: async () => fetchWithAuth('/inventory/categories'),
-  createCategory: async (data) => fetchWithAuth('/inventory/categories', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  }),
-
-  // Stores
+  createCategory: async (data) =>
+    fetchWithAuth('/inventory/categories', { method: 'POST', body: JSON.stringify(data) }),
   getStores: async () => fetchWithAuth('/inventory/stores'),
-  createStore: async (data) => fetchWithAuth('/inventory/stores', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  }),
-
-  // Items
-  getItems: async (categoryId) => fetchWithAuth(`/inventory/items${categoryId ? `?categoryId=${categoryId}` : ''}`),
-  createItem: async (data) => fetchWithAuth('/inventory/items', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  }),
-
-  // Movements
+  createStore: async (data) =>
+    fetchWithAuth('/inventory/stores', { method: 'POST', body: JSON.stringify(data) }),
+  getItems: async (categoryId) =>
+    fetchWithAuth(`/inventory/items${categoryId ? `?categoryId=${categoryId}` : ''}`),
+  createItem: async (data) =>
+    fetchWithAuth('/inventory/items', { method: 'POST', body: JSON.stringify(data) }),
   getMovements: async () => fetchWithAuth('/inventory/movements'),
-  recordMovement: async (data) => fetchWithAuth('/inventory/movements', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  }),
-
-  // Requisitions
+  recordMovement: async (data) =>
+    fetchWithAuth('/inventory/movements', { method: 'POST', body: JSON.stringify(data) }),
   getRequisitions: async () => fetchWithAuth('/inventory/requisitions'),
-  createRequisition: async (data) => fetchWithAuth('/inventory/requisitions', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  }),
-  updateRequisitionStatus: async (id, status) => fetchWithAuth(`/inventory/requisitions/${id}/status`, {
-    method: 'PATCH',
-    body: JSON.stringify({ status }),
-  }),
-
-  // Assets
+  createRequisition: async (data) =>
+    fetchWithAuth('/inventory/requisitions', { method: 'POST', body: JSON.stringify(data) }),
+  updateRequisitionStatus: async (id, status) =>
+    fetchWithAuth(`/inventory/requisitions/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    }),
   getAssetRegister: async () => fetchWithAuth('/inventory/assets'),
-  registerAsset: async (data) => fetchWithAuth('/inventory/assets', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  }),
-  assignAsset: async (data) => fetchWithAuth('/inventory/assets/assign', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  }),
+  registerAsset: async (data) =>
+    fetchWithAuth('/inventory/assets', { method: 'POST', body: JSON.stringify(data) }),
+  assignAsset: async (data) =>
+    fetchWithAuth('/inventory/assets/assign', { method: 'POST', body: JSON.stringify(data) }),
 };
 
-// Notices
+// ============================================
+// NOTICES API
+// ============================================
+
 export const noticesAPI = {
   getAll: async (params) => {
     const queryString = new URLSearchParams(params).toString();
     return fetchWithAuth(`/notices${queryString ? `?${queryString}` : ''}`);
   },
   getById: async (id) => fetchWithAuth(`/notices/${id}`),
-  create: async (data) => fetchWithAuth('/notices', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  }),
-  update: async (id, data) => fetchWithAuth(`/notices/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  }),
-  delete: async (id) => fetchWithAuth(`/notices/${id}`, {
-    method: 'DELETE',
-  }),
+  create: async (data) =>
+    fetchWithAuth('/notices', { method: 'POST', body: JSON.stringify(data) }),
+  update: async (id, data) =>
+    fetchWithAuth(`/notices/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: async (id) =>
+    fetchWithAuth(`/notices/${id}`, { method: 'DELETE' }),
 };
 
-// Export all APIs
+// ============================================
+// AI & ANALYTICS API
+// ============================================
+
+export const aiAPI = {
+  generateFeedback: async (learnerId, term, academicYear) =>
+    fetchWithAuth(`/ai/feedback/${learnerId}?term=${term}&academicYear=${academicYear}`),
+  analyzeRisk: async (learnerId) => fetchWithAuth(`/ai/analyze-risk/${learnerId}`),
+  getTrend: async (learnerId) => fetchWithAuth(`/ai/trend/${learnerId}`),
+};
+
+// ============================================
+// DEFAULT EXPORT
+// ============================================
+
 const api = {
   auth: authAPI,
   users: userAPI,
@@ -2715,23 +1124,12 @@ const api = {
       const queryString = new URLSearchParams(params).toString();
       return fetchWithAuth(`/planner/events?${queryString}`);
     },
-    createEvent: async (data) => {
-      return fetchWithAuth('/planner/events', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
-    },
-    updateEvent: async (id, data) => {
-      return fetchWithAuth(`/planner/events/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      });
-    },
-    deleteEvent: async (id) => {
-      return fetchWithAuth(`/planner/events/${id}`, {
-        method: 'DELETE',
-      });
-    },
+    createEvent: async (data) =>
+      fetchWithAuth('/planner/events', { method: 'POST', body: JSON.stringify(data) }),
+    updateEvent: async (id, data) =>
+      fetchWithAuth(`/planner/events/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    deleteEvent: async (id) =>
+      fetchWithAuth(`/planner/events/${id}`, { method: 'DELETE' }),
   },
   hr: hrAPI,
   accounting: accountingAPI,
@@ -2739,34 +1137,3 @@ const api = {
 };
 
 export default api;
-// ============================================
-// AI & ANALYTICS API
-// ============================================
-
-export const aiAPI = {
-  /**
-   * Generate AI Feedback for a learner
-   * @param {string} learnerId
-   * @param {string} term
-   * @param {number} academicYear
-   */
-  generateFeedback: async (learnerId, term, academicYear) => {
-    return fetchWithAuth(`/ai/feedback/${learnerId}?term=${term}&academicYear=${academicYear}`);
-  },
-
-  /**
-   * Analyze learner risk levels
-   * @param {string} learnerId
-   */
-  analyzeRisk: async (learnerId) => {
-    return fetchWithAuth(`/ai/analyze-risk/${learnerId}`);
-  },
-
-  /**
-   * Get learner performance trend
-   * @param {string} learnerId
-   */
-  getTrend: async (learnerId) => {
-    return fetchWithAuth(`/ai/trend/${learnerId}`);
-  },
-};

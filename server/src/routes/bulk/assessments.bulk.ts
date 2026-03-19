@@ -1,18 +1,13 @@
-/**
- * Bulk Operations for Assessments (Scores)
- * Handles Excel/CSV import for student scores
- */
-
 import { Router, Response } from 'express';
 import { AuthRequest } from '../../middleware/permissions.middleware';
 import { rateLimit } from '../../middleware/enhanced-rateLimit.middleware';
 import { auditLog } from '../../middleware/permissions.middleware';
-import { PrismaClient, Grade, Term, SummativeGrade, TestStatus } from '@prisma/client';
+import { Grade, Term, SummativeGrade, TestStatus } from '@prisma/client';
+import prisma from '../../config/database';
 import multer from 'multer';
 import * as XLSX from 'xlsx';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // Configure multer for file uploads
 const upload = multer({

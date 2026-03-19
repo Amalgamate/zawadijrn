@@ -1,15 +1,9 @@
-/**
- * Report Service
- * Business logic for generating comprehensive assessment reports
- */
-
-import { PrismaClient, Term, DetailedRubricRating, SummativeGrade } from '@prisma/client';
+import { Term, DetailedRubricRating, SummativeGrade } from '@prisma/client';
+import prisma from '../config/database';
 import * as rubricUtil from '../utils/rubric.util';
 import { gradingService } from './grading.service';
 import { calculationService } from './calculation.service';
 import { aiAssistantService } from './ai-assistant.service';
-
-const prisma = new PrismaClient();
 
 // ============================================
 // TYPE DEFINITIONS
