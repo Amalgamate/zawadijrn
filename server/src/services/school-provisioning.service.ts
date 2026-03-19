@@ -4,8 +4,6 @@ import { EmailService } from './email-resend.service';
 
 export interface SchoolProvisioningData {
   schoolName: string;
-  admissionFormatType: 'NO_BRANCH' | 'BRANCH_PREFIX_START' | 'BRANCH_PREFIX_MIDDLE' | 'BRANCH_PREFIX_END';
-  branchSeparator?: string;
   adminEmail: string;
   adminFirstName: string;
   adminLastName: string;
@@ -38,15 +36,13 @@ export async function provisionNewSchool(data: SchoolProvisioningData): Promise<
   const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
   const result = await prisma.$transaction(async (tx) => {
-    // In single-tenant mode, we only ever have ONE school
     const existingSchool = await tx.school.findFirst();
     if (existingSchool) throw new Error('School already provisioned');
 
     const school = await tx.school.create({
       data: {
         name: data.schoolName,
-        admissionFormatType: data.admissionFormatType,
-        branchSeparator: data.branchSeparator || '-',
+        admissionFormatType: 'NO_BRANCH',
         registrationNo: data.registrationNo,
         address: data.address,
         county: data.county,
@@ -63,8 +59,8 @@ export async function provisionNewSchool(data: SchoolProvisioningData): Promise<
         active: true,
         status: 'ACTIVE',
         curriculumType: 'CBC_AND_EXAM',
-        assessmentMode: 'MIXED'
-      }
+        assessmentMode: 'MIXED',
+      },
     });
 
     const adminUser = await tx.user.create({
@@ -77,21 +73,20 @@ export async function provisionNewSchool(data: SchoolProvisioningData): Promise<
         phone: data.adminPhone,
         role: 'ADMIN',
         status: 'ACTIVE',
-        emailVerified: false
-      }
+        emailVerified: false,
+      },
     });
 
-    // Branch model is removed in single-tenant mode
-
     const currentYear = new Date().getFullYear();
+
     const admissionSequence = await tx.admissionSequence.create({
-      data: { academicYear: currentYear, currentValue: 0 }
+      data: { academicYear: currentYear, currentValue: 0 },
     });
 
     const termDates = [
       { term: 'TERM_1', start: new Date(currentYear, 0, 15), end: new Date(currentYear, 3, 15) },
       { term: 'TERM_2', start: new Date(currentYear, 4, 15), end: new Date(currentYear, 7, 15) },
-      { term: 'TERM_3', start: new Date(currentYear, 8, 15), end: new Date(currentYear, 11, 15) }
+      { term: 'TERM_3', start: new Date(currentYear, 8, 15), end: new Date(currentYear, 11, 15) },
     ];
     for (const { term, start, end } of termDates) {
       await tx.termConfig.create({
@@ -104,52 +99,46 @@ export async function provisionNewSchool(data: SchoolProvisioningData): Promise<
           summativeWeight: 70.0,
           isActive: term === 'TERM_1',
           isClosed: false,
-          createdBy: adminUser.id
-        }
+          createdBy: adminUser.id,
+        },
       });
     }
 
     const aggStrategies = [
-      { type: 'OPENER', strategy: 'DROP_LOWEST_N' as const, nValue: 1 },
-      { type: 'WEEKLY', strategy: 'SIMPLE_AVERAGE' as const, nValue: null },
-      { type: 'MONTHLY', strategy: 'SIMPLE_AVERAGE' as const, nValue: null },
-      { type: 'CAT', strategy: 'BEST_N' as const, nValue: 3 },
-      { type: 'MID_TERM', strategy: 'SIMPLE_AVERAGE' as const, nValue: null },
+      { type: 'OPENER',     strategy: 'DROP_LOWEST_N' as const, nValue: 1    },
+      { type: 'WEEKLY',     strategy: 'SIMPLE_AVERAGE' as const, nValue: null },
+      { type: 'MONTHLY',    strategy: 'SIMPLE_AVERAGE' as const, nValue: null },
+      { type: 'CAT',        strategy: 'BEST_N' as const,         nValue: 3    },
+      { type: 'MID_TERM',   strategy: 'SIMPLE_AVERAGE' as const, nValue: null },
       { type: 'ASSIGNMENT', strategy: 'SIMPLE_AVERAGE' as const, nValue: null },
-      { type: 'PROJECT', strategy: 'SIMPLE_AVERAGE' as const, nValue: null },
-      { type: 'PRACTICAL', strategy: 'SIMPLE_AVERAGE' as const, nValue: null },
-      { type: 'QUIZ', strategy: 'DROP_LOWEST_N' as const, nValue: 1 },
-      { type: 'OBSERVATION', strategy: 'SIMPLE_AVERAGE' as const, nValue: null },
-      { type: 'ORAL', strategy: 'SIMPLE_AVERAGE' as const, nValue: null },
-      { type: 'EXAM', strategy: 'SIMPLE_AVERAGE' as const, nValue: null },
-      { type: 'OTHER', strategy: 'SIMPLE_AVERAGE' as const, nValue: null }
+      { type: 'PROJECT',    strategy: 'SIMPLE_AVERAGE' as const, nValue: null },
+      { type: 'PRACTICAL',  strategy: 'SIMPLE_AVERAGE' as const, nValue: null },
+      { type: 'QUIZ',       strategy: 'DROP_LOWEST_N' as const, nValue: 1    },
+      { type: 'OBSERVATION',strategy: 'SIMPLE_AVERAGE' as const, nValue: null },
+      { type: 'ORAL',       strategy: 'SIMPLE_AVERAGE' as const, nValue: null },
+      { type: 'EXAM',       strategy: 'SIMPLE_AVERAGE' as const, nValue: null },
+      { type: 'OTHER',      strategy: 'SIMPLE_AVERAGE' as const, nValue: null },
     ];
     for (const { type, strategy, nValue } of aggStrategies) {
       await tx.aggregationConfig.create({
-        data: {
-          type: type as any,
-          strategy,
-          nValue,
-          weight: 1.0,
-          createdBy: adminUser.id
-        }
+        data: { type: type as any, strategy, nValue, weight: 1.0, createdBy: adminUser.id },
       });
     }
 
     const feeTypes = [
-      { code: 'TUITION', name: 'Tuition', category: 'ACADEMIC' },
-      { code: 'ACTIVITY', name: 'Activity Fee', category: 'EXTRA_CURRICULAR' },
-      { code: 'TRANSPORT', name: 'Transport', category: 'TRANSPORT' },
-      { code: 'MEALS', name: 'Meals', category: 'BOARDING' },
-      { code: 'EXAM', name: 'Examination Fee', category: 'ACADEMIC' },
-      { code: 'LIBRARY', name: 'Library', category: 'ACADEMIC' },
-      { code: 'SPORTS', name: 'Sports Fee', category: 'EXTRA_CURRICULAR' },
-      { code: 'TECHNOLOGY', name: 'Technology Fee', category: 'ACADEMIC' },
-      { code: 'MISC', name: 'Miscellaneous', category: 'OTHER' }
+      { code: 'TUITION',    name: 'Tuition',           category: 'ACADEMIC'         },
+      { code: 'ACTIVITY',   name: 'Activity Fee',      category: 'EXTRA_CURRICULAR' },
+      { code: 'TRANSPORT',  name: 'Transport',         category: 'TRANSPORT'        },
+      { code: 'MEALS',      name: 'Meals',             category: 'BOARDING'         },
+      { code: 'EXAM',       name: 'Examination Fee',   category: 'ACADEMIC'         },
+      { code: 'LIBRARY',    name: 'Library',           category: 'ACADEMIC'         },
+      { code: 'SPORTS',     name: 'Sports Fee',        category: 'EXTRA_CURRICULAR' },
+      { code: 'TECHNOLOGY', name: 'Technology Fee',    category: 'ACADEMIC'         },
+      { code: 'MISC',       name: 'Miscellaneous',     category: 'OTHER'            },
     ];
     for (const ft of feeTypes) {
       await tx.feeType.create({
-        data: { code: ft.code, name: ft.name, category: ft.category as any, isActive: true }
+        data: { code: ft.code, name: ft.name, category: ft.category as any, isActive: true },
       });
     }
 
@@ -162,7 +151,7 @@ export async function provisionNewSchool(data: SchoolProvisioningData): Promise<
       schoolName: data.schoolName,
       adminName: `${data.adminFirstName} ${data.adminLastName}`,
       tempPassword,
-      loginUrl: process.env.FRONTEND_URL || 'http://localhost:3000'
+      loginUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
     });
   } catch (error) {
     console.error('Failed to send welcome email:', error);
@@ -174,6 +163,8 @@ export async function provisionNewSchool(data: SchoolProvisioningData): Promise<
 function generateTempPassword(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';
   let password = 'Aa1!';
-  for (let i = 4; i < 12; i++) password += chars.charAt(Math.floor(Math.random() * chars.length));
+  for (let i = 4; i < 12; i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
   return password.split('').sort(() => Math.random() - 0.5).join('');
 }

@@ -69,6 +69,10 @@ server/test-puppeteer*.js
 verify-restoration.js
 debug_zamzam.js
 
+# Archive folders — old dev scripts, not deployed
+_archive/
+server/_archive/
+
 # Misc local temp/backup
 temp_login.json
 _backup_removed_files/
@@ -90,3 +94,6 @@ server/prisma/schema.live.prisma
 !USERS_SNAPSHOT__PROTECTED__.txt
 backups/
 server/backups/
+
+# WhatsApp session data (auth credentials, never commit)
+server/.wwebjs_auth/

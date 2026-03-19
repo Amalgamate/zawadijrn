@@ -4,7 +4,8 @@ import {
     Home, Mail, Calendar, Users, GraduationCap, UserCheck,
     TrendingUp, Zap, CheckSquare, Settings, BookOpen,
     Users2, Truck, Fingerprint, CreditCard, PieChart,
-    Package, Building2, HelpCircle, Receipt, FileText
+    Package, Building2, HelpCircle, Receipt, FileText,
+    Shirt,
 } from 'lucide-react';
 
 const focusModules = ['dashboard', 'communications', 'planner', 'learners', 'teachers', 'parents', 'assessment', 'learning-hub', 'timetable', 'attendance', 'docs-center', 'knowledge-base', 'facilities', 'settings', 'hr', 'finance', 'inventory'];
@@ -44,9 +45,11 @@ export const allNavSections = [
         icon: Users,
         permission: null,
         items: [
-            { id: 'learners-list', label: 'Students List', path: 'learners-list', permission: 'VIEW_ALL_LEARNERS' },
-            { id: 'learners-admissions', label: 'Admissions', path: 'learners-admissions', permission: 'CREATE_LEARNER' },
-            { id: 'learners-promotion', label: 'Promotion', path: 'learners-promotion', permission: 'PROMOTE_LEARNER' }
+            { id: 'learners-list',       label: 'Students List',      path: 'learners-list',       permission: 'VIEW_ALL_LEARNERS' },
+            { id: 'learners-admissions', label: 'Admissions',         path: 'learners-admissions', permission: 'CREATE_LEARNER'    },
+            { id: 'learners-promotion',  label: 'Promotion',          path: 'learners-promotion',  permission: 'PROMOTE_LEARNER'   },
+            { id: 'learners-uniform',    label: 'Uniform Allocation', path: 'learners-uniform',    permission: 'VIEW_ALL_LEARNERS', icon: Shirt },
+            { id: 'learners-id-print',  label: 'ID Card Printing',   path: 'learners-id-print',   permission: 'VIEW_ALL_LEARNERS', icon: CreditCard },
         ]
     },
     {
@@ -79,9 +82,9 @@ export const allNavSections = [
                 type: 'group',
                 icon: Zap,
                 items: [
-                    { id: 'assess-summative-assessment', label: 'Assessments', path: 'assess-summative-assessment', permission: 'ACCESS_ASSESSMENT_MODULE' },
-                    { id: 'assess-summary-report', label: 'Assessment Matrix', path: 'assess-summary-report', permission: 'ACCESS_ASSESSMENT_MODULE' },
-                    { id: 'assess-summative-report', label: 'Detailed Reports', path: 'assess-summative-report', permission: 'ACCESS_ASSESSMENT_MODULE' },
+                    { id: 'assess-summative-assessment', label: 'Assessments',     path: 'assess-summative-assessment', permission: 'ACCESS_ASSESSMENT_MODULE' },
+                    { id: 'assess-summary-report',       label: 'Assessment Matrix', path: 'assess-summary-report',      permission: 'ACCESS_ASSESSMENT_MODULE' },
+                    { id: 'assess-summative-report',     label: 'Detailed Reports', path: 'assess-summative-report',     permission: 'ACCESS_ASSESSMENT_MODULE' },
                 ]
             },
             {
@@ -90,8 +93,8 @@ export const allNavSections = [
                 type: 'group',
                 icon: CheckSquare,
                 items: [
-                    { id: 'assess-formative', label: 'Assessments', path: 'assess-formative', permission: 'ACCESS_ASSESSMENT_MODULE' },
-                    { id: 'assess-formative-report', label: 'Reports', path: 'assess-formative-report', permission: 'ACCESS_ASSESSMENT_MODULE' },
+                    { id: 'assess-formative',        label: 'Assessments', path: 'assess-formative',        permission: 'ACCESS_ASSESSMENT_MODULE' },
+                    { id: 'assess-formative-report', label: 'Reports',     path: 'assess-formative-report', permission: 'ACCESS_ASSESSMENT_MODULE' },
                 ]
             },
             {
@@ -101,9 +104,9 @@ export const allNavSections = [
                 icon: BookOpen,
                 items: [
                     { id: 'assess-core-competencies', label: 'Core Competencies', path: 'assess-core-competencies', permission: 'ACCESS_ASSESSMENT_MODULE' },
-                    { id: 'assess-values', label: 'National Values', path: 'assess-values', permission: 'ACCESS_ASSESSMENT_MODULE' },
-                    { id: 'assess-cocurricular', label: 'Co-Curricular', path: 'assess-cocurricular', permission: 'ACCESS_ASSESSMENT_MODULE' },
-                    { id: 'assess-termly-report', label: 'Termly Report', path: 'assess-termly-report', permission: 'ACCESS_ASSESSMENT_MODULE' },
+                    { id: 'assess-values',            label: 'National Values',   path: 'assess-values',            permission: 'ACCESS_ASSESSMENT_MODULE' },
+                    { id: 'assess-cocurricular',      label: 'Co-Curricular',     path: 'assess-cocurricular',      permission: 'ACCESS_ASSESSMENT_MODULE' },
+                    { id: 'assess-termly-report',     label: 'Termly Report',     path: 'assess-termly-report',     permission: 'ACCESS_ASSESSMENT_MODULE' },
                 ]
             },
             {
@@ -112,8 +115,8 @@ export const allNavSections = [
                 type: 'group',
                 icon: Settings,
                 items: [
-                    { id: 'assess-learning-areas', label: 'Learning Areas', path: 'assess-learning-areas', permission: 'MANAGE_LEARNING_AREAS' },
-                    { id: 'assess-summative-tests', label: 'Tests', path: 'assess-summative-tests', permission: 'ACCESS_ASSESSMENT_MODULE' }
+                    { id: 'assess-learning-areas',    label: 'Learning Areas', path: 'assess-learning-areas',   permission: 'MANAGE_LEARNING_AREAS'    },
+                    { id: 'assess-summative-tests',   label: 'Tests',          path: 'assess-summative-tests',  permission: 'ACCESS_ASSESSMENT_MODULE' }
                 ]
             }
         ]
@@ -124,11 +127,11 @@ export const allNavSections = [
         icon: BookOpen,
         permission: 'ACCESS_LEARNING_HUB',
         items: [
-            { id: 'learning-hub-materials', label: 'Class Materials', path: 'learning-hub-materials', permission: null },
-            { id: 'learning-hub-assignments', label: 'Assignments', path: 'learning-hub-assignments', permission: null },
-            { id: 'learning-hub-lesson-plans', label: 'Lesson Plans', path: 'learning-hub-lesson-plans', permission: 'ACCESS_LEARNING_HUB' },
-            { id: 'coding-playground', label: 'Coding Playground', path: 'coding-playground', permission: null },
-            { id: 'learning-hub-library', label: 'Resource Library', path: 'learning-hub-library', permission: null }
+            { id: 'learning-hub-materials',    label: 'Class Materials',  path: 'learning-hub-materials',    permission: null },
+            { id: 'learning-hub-assignments',  label: 'Assignments',      path: 'learning-hub-assignments',  permission: null },
+            { id: 'learning-hub-lesson-plans', label: 'Lesson Plans',     path: 'learning-hub-lesson-plans', permission: 'ACCESS_LEARNING_HUB' },
+            { id: 'coding-playground',         label: 'Coding Playground',path: 'coding-playground',         permission: null },
+            { id: 'learning-hub-library',      label: 'Resource Library', path: 'learning-hub-library',      permission: null }
         ]
     },
     {
@@ -144,7 +147,7 @@ export const allNavSections = [
         icon: CheckSquare,
         permission: null,
         items: [
-            { id: 'attendance-daily', label: 'Daily Attendance', path: 'attendance-daily', permission: 'MARK_ATTENDANCE' },
+            { id: 'attendance-daily',   label: 'Daily Attendance',   path: 'attendance-daily',   permission: 'MARK_ATTENDANCE'               },
             { id: 'attendance-reports', label: 'Attendance Reports', path: 'attendance-reports', permission: 'GENERATE_ATTENDANCE_REPORTS' }
         ]
     },
@@ -168,12 +171,12 @@ export const allNavSections = [
         icon: Users2,
         permission: 'HR_MANAGEMENT',
         items: [
-            { id: 'hr-portal', label: 'HR Dashboard', path: 'hr-portal', permission: 'HR_MANAGEMENT' },
-            { id: 'hr-staff-profiles', label: 'Staff Directory', path: 'hr-staff-profiles', permission: 'HR_MANAGEMENT' },
-            { id: 'hr-payroll', label: 'Payroll Processing', path: 'hr-payroll', permission: 'HR_MANAGEMENT' },
-            { id: 'hr-leave', label: 'Leave Management', path: 'hr-leave', permission: 'HR_MANAGEMENT' },
-            { id: 'hr-documents', label: 'Staff Documents', path: 'hr-documents', permission: 'HR_MANAGEMENT' },
-            { id: 'hr-performance', label: 'Performance', path: 'hr-performance', permission: 'HR_MANAGEMENT' }
+            { id: 'hr-portal',         label: 'HR Dashboard',      path: 'hr-portal',         permission: 'HR_MANAGEMENT' },
+            { id: 'hr-staff-profiles', label: 'Staff Directory',   path: 'hr-staff-profiles', permission: 'HR_MANAGEMENT' },
+            { id: 'hr-payroll',        label: 'Payroll Processing', path: 'hr-payroll',       permission: 'HR_MANAGEMENT' },
+            { id: 'hr-leave',          label: 'Leave Management',  path: 'hr-leave',          permission: 'HR_MANAGEMENT' },
+            { id: 'hr-documents',      label: 'Staff Documents',   path: 'hr-documents',      permission: 'HR_MANAGEMENT' },
+            { id: 'hr-performance',    label: 'Performance',       path: 'hr-performance',    permission: 'HR_MANAGEMENT' }
         ]
     },
     {
@@ -182,11 +185,11 @@ export const allNavSections = [
         icon: BookOpen,
         permission: 'LIBRARY_MANAGEMENT',
         items: [
-            { id: 'library-catalog', label: 'Book Catalog', path: 'library-catalog', permission: 'LIBRARY_MANAGEMENT', comingSoon: true },
+            { id: 'library-catalog',     label: 'Book Catalog',           path: 'library-catalog',     permission: 'LIBRARY_MANAGEMENT', comingSoon: true },
             { id: 'library-circulation', label: 'Borrow/Return Tracking', path: 'library-circulation', permission: 'LIBRARY_MANAGEMENT', comingSoon: true },
-            { id: 'library-fees', label: 'Late Fee Automation', path: 'library-fees', permission: 'LIBRARY_MANAGEMENT', comingSoon: true },
-            { id: 'library-inventory', label: 'Inventory Reports', path: 'library-inventory', permission: 'LIBRARY_MANAGEMENT', comingSoon: true },
-            { id: 'library-members', label: 'Member Management', path: 'library-members', permission: 'LIBRARY_MANAGEMENT', comingSoon: true }
+            { id: 'library-fees',        label: 'Late Fee Automation',    path: 'library-fees',        permission: 'LIBRARY_MANAGEMENT', comingSoon: true },
+            { id: 'library-inventory',   label: 'Inventory Reports',      path: 'library-inventory',   permission: 'LIBRARY_MANAGEMENT', comingSoon: true },
+            { id: 'library-members',     label: 'Member Management',      path: 'library-members',     permission: 'LIBRARY_MANAGEMENT', comingSoon: true }
         ]
     },
     {
@@ -195,12 +198,12 @@ export const allNavSections = [
         icon: Truck,
         permission: 'TRANSPORT_MANAGEMENT',
         items: [
-            { id: 'transport-routes', label: 'Bus Routes & Roster', path: 'transport-routes', permission: 'TRANSPORT_MANAGEMENT', comingSoon: true },
-            { id: 'transport-tracking', label: 'GPS Tracking', path: 'transport-tracking', permission: 'TRANSPORT_MANAGEMENT', comingSoon: true },
-            { id: 'transport-drivers', label: 'Driver Management', path: 'transport-drivers', permission: 'TRANSPORT_MANAGEMENT', comingSoon: true },
-            { id: 'hostel-allocation', label: 'Hostel Room Allocation', path: 'hostel-allocation', permission: 'TRANSPORT_MANAGEMENT', comingSoon: true },
-            { id: 'hostel-fees', label: 'Transport/Hostel Fees', path: 'hostel-fees', permission: 'TRANSPORT_MANAGEMENT', comingSoon: true },
-            { id: 'transport-reports', label: 'Transport Reports', path: 'transport-reports', permission: 'TRANSPORT_MANAGEMENT', comingSoon: true }
+            { id: 'transport-routes',   label: 'Bus Routes & Roster',    path: 'transport-routes',   permission: 'TRANSPORT_MANAGEMENT', comingSoon: true },
+            { id: 'transport-tracking', label: 'GPS Tracking',           path: 'transport-tracking', permission: 'TRANSPORT_MANAGEMENT', comingSoon: true },
+            { id: 'transport-drivers',  label: 'Driver Management',      path: 'transport-drivers',  permission: 'TRANSPORT_MANAGEMENT', comingSoon: true },
+            { id: 'hostel-allocation',  label: 'Hostel Room Allocation', path: 'hostel-allocation',  permission: 'TRANSPORT_MANAGEMENT', comingSoon: true },
+            { id: 'hostel-fees',        label: 'Transport/Hostel Fees',  path: 'hostel-fees',        permission: 'TRANSPORT_MANAGEMENT', comingSoon: true },
+            { id: 'transport-reports',  label: 'Transport Reports',      path: 'transport-reports',  permission: 'TRANSPORT_MANAGEMENT', comingSoon: true }
         ]
     },
     {
@@ -216,10 +219,10 @@ export const allNavSections = [
                 icon: Receipt,
                 permission: 'FEE_MANAGEMENT',
                 items: [
-                    { id: 'fees-structure', label: 'Fee Structure', path: 'fees-structure', permission: 'FEE_MANAGEMENT' },
-                    { id: 'fees-collection', label: 'Fee Collection', path: 'fees-collection', permission: 'FEE_MANAGEMENT' },
-                    { id: 'fees-reports', label: 'Fee Reports', path: 'fees-reports', permission: 'FEE_MANAGEMENT' },
-                    { id: 'fees-statements', label: 'Student Statements', path: 'fees-statements', permission: 'FEE_MANAGEMENT' }
+                    { id: 'fees-structure',   label: 'Fee Structure',      path: 'fees-structure',   permission: 'FEE_MANAGEMENT' },
+                    { id: 'fees-collection',  label: 'Fee Collection',     path: 'fees-collection',  permission: 'FEE_MANAGEMENT' },
+                    { id: 'fees-reports',     label: 'Fee Reports',        path: 'fees-reports',     permission: 'FEE_MANAGEMENT' },
+                    { id: 'fees-statements',  label: 'Student Statements', path: 'fees-statements',  permission: 'FEE_MANAGEMENT' }
                 ]
             },
             {
@@ -229,13 +232,13 @@ export const allNavSections = [
                 icon: PieChart,
                 permission: 'ACCOUNTING_MANAGEMENT',
                 items: [
-                    { id: 'accounting-dashboard', label: 'Accounting Dashboard', path: 'accounting-dashboard', permission: 'ACCOUNTING_MANAGEMENT' },
-                    { id: 'accounting-accounts', label: 'Chart of Accounts', path: 'accounting-accounts', permission: 'ACCOUNTING_MANAGEMENT' },
-                    { id: 'accounting-entries', label: 'Journal Entries', path: 'accounting-entries', permission: 'ACCOUNTING_MANAGEMENT' },
-                    { id: 'accounting-expenses', label: 'Expenses', path: 'accounting-expenses', permission: 'ACCOUNTING_MANAGEMENT' },
-                    { id: 'accounting-vendors', label: 'Vendors', path: 'accounting-vendors', permission: 'ACCOUNTING_MANAGEMENT' },
-                    { id: 'accounting-reconciliation', label: 'Reconciliation', path: 'accounting-reconciliation', permission: 'ACCOUNTING_MANAGEMENT' },
-                    { id: 'accounting-reports', label: 'Financial Reports', path: 'accounting-reports', permission: 'ACCOUNTING_MANAGEMENT' }
+                    { id: 'accounting-dashboard',      label: 'Accounting Dashboard', path: 'accounting-dashboard',      permission: 'ACCOUNTING_MANAGEMENT' },
+                    { id: 'accounting-accounts',       label: 'Chart of Accounts',    path: 'accounting-accounts',       permission: 'ACCOUNTING_MANAGEMENT' },
+                    { id: 'accounting-entries',        label: 'Journal Entries',      path: 'accounting-entries',        permission: 'ACCOUNTING_MANAGEMENT' },
+                    { id: 'accounting-expenses',       label: 'Expenses',             path: 'accounting-expenses',       permission: 'ACCOUNTING_MANAGEMENT' },
+                    { id: 'accounting-vendors',        label: 'Vendors',              path: 'accounting-vendors',        permission: 'ACCOUNTING_MANAGEMENT' },
+                    { id: 'accounting-reconciliation', label: 'Reconciliation',       path: 'accounting-reconciliation', permission: 'ACCOUNTING_MANAGEMENT' },
+                    { id: 'accounting-reports',        label: 'Financial Reports',    path: 'accounting-reports',        permission: 'ACCOUNTING_MANAGEMENT' }
                 ]
             }
         ]
@@ -246,15 +249,15 @@ export const allNavSections = [
         icon: Package,
         permission: 'SCHOOL_SETTINGS',
         items: [
-            { id: 'inventory-items', label: 'Items', path: 'inventory-items', permission: 'SCHOOL_SETTINGS' },
-            { id: 'inventory-categories', label: 'Categories', path: 'inventory-categories', permission: 'SCHOOL_SETTINGS' },
-            { id: 'inventory-stores', label: 'Stores', path: 'inventory-stores', permission: 'SCHOOL_SETTINGS' },
-            { id: 'inventory-movements', label: 'Stock Movements', path: 'inventory-movements', permission: 'SCHOOL_SETTINGS' },
-            { id: 'inventory-requisitions', label: 'Requisitions', path: 'inventory-requisitions', permission: 'SCHOOL_SETTINGS' },
-            { id: 'inventory-transfers', label: 'Transfers', path: 'inventory-transfers', permission: 'SCHOOL_SETTINGS' },
-            { id: 'inventory-adjustments', label: 'Adjustments', path: 'inventory-adjustments', permission: 'SCHOOL_SETTINGS' },
-            { id: 'inventory-assets', label: 'Asset Register', path: 'inventory-assets', permission: 'SCHOOL_SETTINGS' },
-            { id: 'inventory-class-assignments', label: 'Class Assignments', path: 'inventory-class-assignments', permission: 'SCHOOL_SETTINGS' }
+            { id: 'inventory-items',            label: 'Items',             path: 'inventory-items',            permission: 'SCHOOL_SETTINGS' },
+            { id: 'inventory-categories',       label: 'Categories',        path: 'inventory-categories',       permission: 'SCHOOL_SETTINGS' },
+            { id: 'inventory-stores',           label: 'Stores',            path: 'inventory-stores',           permission: 'SCHOOL_SETTINGS' },
+            { id: 'inventory-movements',        label: 'Stock Movements',   path: 'inventory-movements',        permission: 'SCHOOL_SETTINGS' },
+            { id: 'inventory-requisitions',     label: 'Requisitions',      path: 'inventory-requisitions',     permission: 'SCHOOL_SETTINGS' },
+            { id: 'inventory-transfers',        label: 'Transfers',         path: 'inventory-transfers',        permission: 'SCHOOL_SETTINGS' },
+            { id: 'inventory-adjustments',      label: 'Adjustments',       path: 'inventory-adjustments',      permission: 'SCHOOL_SETTINGS' },
+            { id: 'inventory-assets',           label: 'Asset Register',    path: 'inventory-assets',           permission: 'SCHOOL_SETTINGS' },
+            { id: 'inventory-class-assignments',label: 'Class Assignments', path: 'inventory-class-assignments',permission: 'SCHOOL_SETTINGS' }
         ]
     },
     {
@@ -263,11 +266,11 @@ export const allNavSections = [
         icon: Fingerprint,
         permission: 'BIOMETRIC_ATTENDANCE',
         items: [
-            { id: 'biometric-devices', label: 'Device Management', path: 'biometric-devices', permission: 'BIOMETRIC_ATTENDANCE', comingSoon: true },
+            { id: 'biometric-devices',    label: 'Device Management',      path: 'biometric-devices',    permission: 'BIOMETRIC_ATTENDANCE', comingSoon: true },
             { id: 'biometric-enrollment', label: 'Fingerprint Enrollment', path: 'biometric-enrollment', permission: 'BIOMETRIC_ATTENDANCE', comingSoon: true },
-            { id: 'biometric-logs', label: 'Attendance Logs', path: 'biometric-logs', permission: 'BIOMETRIC_ATTENDANCE', comingSoon: true },
-            { id: 'biometric-reports', label: 'Biometric Reports', path: 'biometric-reports', permission: 'BIOMETRIC_ATTENDANCE', comingSoon: true },
-            { id: 'biometric-api', label: 'API Integration', path: 'biometric-api', permission: 'BIOMETRIC_ATTENDANCE', comingSoon: true }
+            { id: 'biometric-logs',       label: 'Attendance Logs',        path: 'biometric-logs',       permission: 'BIOMETRIC_ATTENDANCE', comingSoon: true },
+            { id: 'biometric-reports',    label: 'Biometric Reports',      path: 'biometric-reports',    permission: 'BIOMETRIC_ATTENDANCE', comingSoon: true },
+            { id: 'biometric-api',        label: 'API Integration',        path: 'biometric-api',        permission: 'BIOMETRIC_ATTENDANCE', comingSoon: true }
         ]
     },
     {
@@ -292,13 +295,13 @@ export const allNavSections = [
         icon: Settings,
         permission: 'SCHOOL_SETTINGS',
         items: [
-            { id: 'settings-school', label: 'School Settings', path: 'settings-school', permission: 'SCHOOL_SETTINGS' },
-            { id: 'settings-academic', label: 'Academic Settings', path: 'settings-academic', permission: 'ACADEMIC_SETTINGS' },
-            { id: 'settings-communication', label: 'Communication Settings', path: 'settings-communication', permission: 'SCHOOL_SETTINGS' },
-            { id: 'settings-payment', label: 'Payment Settings', path: 'settings-payment', permission: 'SCHOOL_SETTINGS' },
-            { id: 'settings-users', label: 'User Management', path: 'settings-users', permission: 'EDIT_USER' },
-            { id: 'settings-branding', label: 'Branding', path: 'settings-branding', permission: 'BRANDING_SETTINGS' },
-            { id: 'settings-backup', label: 'Backup & Restore', path: 'settings-backup', permission: 'BACKUP_SETTINGS' }
+            { id: 'settings-school',         label: 'School Settings',         path: 'settings-school',         permission: 'SCHOOL_SETTINGS'   },
+            { id: 'settings-academic',       label: 'Academic Settings',       path: 'settings-academic',       permission: 'ACADEMIC_SETTINGS' },
+            { id: 'settings-communication',  label: 'Communication Settings',  path: 'settings-communication',  permission: 'SCHOOL_SETTINGS'   },
+            { id: 'settings-payment',        label: 'Payment Settings',        path: 'settings-payment',        permission: 'SCHOOL_SETTINGS'   },
+            { id: 'settings-users',          label: 'User Management',         path: 'settings-users',          permission: 'EDIT_USER'         },
+            { id: 'settings-branding',       label: 'Branding',                path: 'settings-branding',       permission: 'BRANDING_SETTINGS' },
+            { id: 'settings-backup',         label: 'Backup & Restore',        path: 'settings-backup',         permission: 'BACKUP_SETTINGS'   }
         ]
     }
 ];
@@ -326,20 +329,9 @@ export const useNavigation = () => {
         };
 
         return allNavSections.filter(section => {
-            // First check if this section is in our focus modules
-            if (!focusModules.includes(section.id)) {
-                return false;
-            }
-
-            // Settings is handled separately
-            if (section.id === 'settings') {
-                return false;
-            }
-
-            if (section.permission && !can(section.permission)) {
-                return false;
-            }
-
+            if (!focusModules.includes(section.id)) return false;
+            if (section.id === 'settings') return false;
+            if (section.permission && !can(section.permission)) return false;
             if (section.items.length > 0) {
                 const visibleItems = processItems(section.items);
                 return visibleItems.length > 0;
@@ -355,12 +347,8 @@ export const useNavigation = () => {
         if (role === 'TEACHER') return null;
         const section = allNavSections.find(s => s.id === 'settings');
         if (!section || !can(section.permission)) return null;
-
         const isItemVisible = (item) => !item.permission || can(item.permission);
-        return {
-            ...section,
-            items: section.items.filter(isItemVisible)
-        };
+        return { ...section, items: section.items.filter(isItemVisible) };
     }, [can, role]);
 
     const educationSections = useMemo(() => {
@@ -380,9 +368,7 @@ export const useNavigation = () => {
 
     const sharedSections = useMemo(() => {
         if (role === 'TEACHER') return [];
-        return navSections.filter(s =>
-            ['docs-center', 'knowledge-base'].includes(s.id)
-        );
+        return navSections.filter(s => ['docs-center', 'knowledge-base'].includes(s.id));
     }, [navSections, role]);
 
     const schoolSections = useMemo(() => {
@@ -402,14 +388,9 @@ export const useNavigation = () => {
     const communicationSection = useMemo(() => {
         const section = navSections.find(s => s.id === 'communications');
         if (!section) return null;
-
         if (role === 'TEACHER') {
-            return {
-                ...section,
-                items: section.items.filter(item => item.id === 'comm-messages')
-            };
+            return { ...section, items: section.items.filter(item => item.id === 'comm-messages') };
         }
-
         return section;
     }, [navSections, role]);
 

@@ -15,72 +15,71 @@ import { useNavigation, allNavSections } from '../hooks/useNavigation';
 // Prefetch helper to speed up lazy loading
 const prefetchModule = (path) => {
   if (!path || path.startsWith('http')) return;
-  // This triggers the browser to start downloading the module chunk
-  // before the user even clicks it.
   try {
-    // 1. Check explicit fileMap first (High Priority)
     const fileMap = {
-      'learners-list': 'LearnersList',
+      'learners-list':       'LearnersList',
       'learners-admissions': 'AdmissionsPage',
-      'learners-promotion': 'PromotionPage',
+      'learners-promotion':  'PromotionPage',
+      'learners-uniform':    'UniformAllocationPage',
+      'learners-id-print':  'IDPrintingPage',
       'teachers-list': 'TeachersList',
-      'parents-list': 'ParentsList',
+      'parents-list':  'ParentsList',
       'assess-summative-assessment': 'SummativeAssessment',
-      'assess-summative-report': 'SummativeReport',
-      'assess-formative': 'FormativeAssessment',
-      'assess-formative-report': 'FormativeReport',
-      'assess-summative-tests': 'SummativeTests',
-      'assess-performance-scale': 'PerformanceScale',
-      'assess-learning-areas': 'LearningAreasManagement',
-      'assess-values': 'ValuesAssessment',
-      'assess-cocurricular': 'CoCurricularActivities',
-      'assess-core-competencies': 'CoreCompetenciesAssessment',
-      'assess-termly-report': 'TermlyReport',
-      'fees-collection': 'FeeCollectionPage',
-      'fees-structure': 'FeeStructurePage',
-      'fees-reports': 'FeeReportsPage',
-      'fees-statements': 'StudentStatementsPage',
-      'docs-center': 'DocumentCenter',
-      'knowledge-base': 'KnowledgeBase',
-      'coding-playground': 'CodingPlayground',
-      'timetable': 'TimetablePage',
-      'attendance-daily': 'DailyAttendanceAPI',
+      'assess-summative-report':     'SummativeReport',
+      'assess-formative':            'FormativeAssessment',
+      'assess-formative-report':     'FormativeReport',
+      'assess-summative-tests':      'SummativeTests',
+      'assess-performance-scale':    'PerformanceScale',
+      'assess-learning-areas':       'LearningAreasManagement',
+      'assess-values':               'ValuesAssessment',
+      'assess-cocurricular':         'CoCurricularActivities',
+      'assess-core-competencies':    'CoreCompetenciesAssessment',
+      'assess-termly-report':        'TermlyReport',
+      'assess-summary-report':       'reports/SummaryReportPage',
+      'fees-collection':  'FeeCollectionPage',
+      'fees-structure':   'FeeStructurePage',
+      'fees-reports':     'FeeReportsPage',
+      'fees-statements':  'StudentStatementsPage',
+      'docs-center':      'DocumentCenter',
+      'knowledge-base':   'KnowledgeBase',
+      'coding-playground':'CodingPlayground',
+      'timetable':        'TimetablePage',
+      'attendance-daily':   'DailyAttendanceAPI',
       'attendance-reports': 'AttendanceReports',
-      'comm-notices': 'NoticesPage',
+      'comm-notices':  'NoticesPage',
       'comm-messages': 'MessagesPage',
-      'comm-history': 'MessageHistoryPage',
-      'learning-hub-materials': 'LearningHubPage',
-      'learning-hub-assignments': 'LearningHubPage',
+      'comm-history':  'MessageHistoryPage',
+      'learning-hub-materials':    'LearningHubPage',
+      'learning-hub-assignments':  'LearningHubPage',
       'learning-hub-lesson-plans': 'LearningHubPage',
-      'learning-hub-library': 'LearningHubPage',
+      'learning-hub-library':      'LearningHubPage',
       'facilities-classes': 'FacilityManager',
       'help': 'SupportHub',
-      'assess-summary-report': 'reports/SummaryReportPage',
-      // Inventory Module Mappings
-      'inventory-items': 'inventory/InventoryItems',
-      'inventory-categories': 'inventory/InventoryCategories',
-      'inventory-stores': 'inventory/InventoryStores',
-      'inventory-movements': 'inventory/StockMovements',
-      'inventory-requisitions': 'inventory/StockRequisitions',
-      'inventory-transfers': 'inventory/StockTransfers',
-      'inventory-adjustments': 'inventory/StockAdjustments',
-      'inventory-assets': 'inventory/AssetRegister',
+      // Inventory
+      'inventory-items':             'inventory/InventoryItems',
+      'inventory-categories':        'inventory/InventoryCategories',
+      'inventory-stores':            'inventory/InventoryStores',
+      'inventory-movements':         'inventory/StockMovements',
+      'inventory-requisitions':      'inventory/StockRequisitions',
+      'inventory-transfers':         'inventory/StockTransfers',
+      'inventory-adjustments':       'inventory/StockAdjustments',
+      'inventory-assets':            'inventory/AssetRegister',
       'inventory-class-assignments': 'inventory/AssetAssignments',
-      // HR Module Mappings
-      'hr-portal': 'hr/HRManager',
+      // HR
+      'hr-portal':         'hr/HRManager',
       'hr-staff-profiles': 'hr/StaffDirectory',
-      'hr-leave': 'hr/LeaveManager',
-      'hr-payroll': 'hr/PayrollManager',
-      'hr-documents': 'hr/StaffDocuments',
-      'hr-performance': 'hr/PerformanceManager',
-      // Accounting Module Mappings
-      'accounting-dashboard': 'accounting/AccountingManager',
-      'accounting-accounts': 'accounting/ChartOfAccounts',
-      'accounting-entries': 'accounting/JournalEntries',
-      'accounting-expenses': 'accounting/ExpenseManager',
-      'accounting-vendors': 'accounting/VendorManager',
+      'hr-leave':          'hr/LeaveManager',
+      'hr-payroll':        'hr/PayrollManager',
+      'hr-documents':      'hr/StaffDocuments',
+      'hr-performance':    'hr/PerformanceManager',
+      // Accounting
+      'accounting-dashboard':      'accounting/AccountingManager',
+      'accounting-accounts':       'accounting/ChartOfAccounts',
+      'accounting-entries':        'accounting/JournalEntries',
+      'accounting-expenses':       'accounting/ExpenseManager',
+      'accounting-vendors':        'accounting/VendorManager',
       'accounting-reconciliation': 'accounting/BankReconciliation',
-      'accounting-reports': 'accounting/FinancialReports'
+      'accounting-reports':        'accounting/FinancialReports',
     };
 
     if (fileMap[path]) {
@@ -88,23 +87,21 @@ const prefetchModule = (path) => {
       return;
     }
 
-    // 2. Pattern based matching for settings
+    // Settings pages
     if (path.startsWith('settings-')) {
       const settingsMap = {
-        'settings-school': 'SchoolSettings',
-        'settings-academic': 'AcademicSettings',
-        'settings-communication': 'CommunicationSettings',
-        'settings-payment': 'PaymentSettings',
-        'settings-users': 'UserManagement',
-        'settings-branding': 'BrandingSettings',
-        'settings-backup': 'BackupSettings'
+        'settings-school':         'SchoolSettings',
+        'settings-academic':       'AcademicSettings',
+        'settings-communication':  'CommunicationSettings',
+        'settings-payment':        'PaymentSettings',
+        'settings-users':          'UserManagement',
+        'settings-branding':       'BrandingSettings',
+        'settings-backup':         'BackupSettings',
       };
       const fileName = settingsMap[path];
-      if (fileName) {
-        import(`../pages/settings/${fileName}.jsx`);
-      }
+      if (fileName) import(`../pages/settings/${fileName}.jsx`);
     }
-    // 3. Pattern based matching for profiles (Must be specific to avoid hr-staff-profiles)
+    // Profile pages
     else if (path.endsWith('-profile') && !path.startsWith('hr-')) {
       const name = path.replace('-profile', '');
       const capitalized = name.charAt(0).toUpperCase() + name.slice(1) + 'Profile';
@@ -114,12 +111,11 @@ const prefetchModule = (path) => {
       import('../pages/dashboard/RoleDashboard.jsx');
     }
     else {
-      // Fallback
       const fileName = path.charAt(0).toUpperCase() + path.slice(1);
       import(`../pages/${fileName}.jsx`);
     }
   } catch (e) {
-    // Fail silently, prefetching is a non-critical optimization
+    // Fail silently — prefetching is non-critical
   }
 };
 
@@ -151,40 +147,30 @@ const Sidebar = React.memo(({
   const [expandedSubSections, setExpandedSubSections] = useState({
     'group-summative': true,
     'group-formative': false,
-    'group-general': true
+    'group-general':   true
   });
 
   const toggleSubSection = (id) => {
     setExpandedSubSections(prev => {
       const isOpening = !prev[id];
       if (isOpening) {
-        // Close all other sub-sections
-        const newState = Object.keys(prev).reduce((acc, key) => {
-          acc[key] = false;
-          return acc;
-        }, {});
+        const newState = Object.keys(prev).reduce((acc, key) => { acc[key] = false; return acc; }, {});
         newState[id] = true;
         return newState;
-      } else {
-        // Just toggling off
-        return { ...prev, [id]: false };
       }
+      return { ...prev, [id]: false };
     });
   };
 
-  // Auto-expand group if one of its children is the current page
+  // Auto-expand group when one of its children is the active page
   React.useEffect(() => {
-    // Check all sections for groups with active children
     allNavSections.forEach(section => {
       if (section.items && section.items.length > 0) {
         section.items.forEach(item => {
           if (item.type === 'group') {
             const isChildActive = item.items.some(subItem => subItem.path === currentPage);
             if (isChildActive) {
-              setExpandedSubSections(prev => ({
-                ...prev,
-                [item.id]: true
-              }));
+              setExpandedSubSections(prev => ({ ...prev, [item.id]: true }));
             }
           }
         });
@@ -208,12 +194,10 @@ const Sidebar = React.memo(({
     if (sidebarOpen) {
       toggleSection(section.id);
     } else {
-      // If sidebar is collapsed, navigate to the first available item in the section
       const defaultPath = findDefaultPath(section.items);
       if (defaultPath) {
         onNavigate(defaultPath);
       } else {
-        // If no path found (e.g. all items hidden or coming soon), expand sidebar to show options
         setSidebarOpen(true);
         toggleSection(section.id);
       }
@@ -222,9 +206,9 @@ const Sidebar = React.memo(({
 
   const [activeCategory, setActiveCategory] = useState(() => {
     const learningRoles = ['TEACHER', 'PARENT'];
-    const schoolRoles = ['ACCOUNTANT', 'RECEPTIONIST', 'ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM'];
+    const schoolRoles   = ['ACCOUNTANT', 'RECEPTIONIST', 'ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM'];
     if (learningRoles.includes(role)) return 'learning';
-    if (schoolRoles.includes(role)) return 'school';
+    if (schoolRoles.includes(role))   return 'school';
     return 'learning';
   });
 
@@ -243,16 +227,13 @@ const Sidebar = React.memo(({
 
     if (isSchool) setActiveCategory('school');
     else if (isUtilities) setActiveCategory('utilities');
-    else if (currentPage === 'settings-school' || currentPage.startsWith('settings-')) setActiveCategory('settings');
+    else if (currentPage.startsWith('settings-')) setActiveCategory('settings');
   }, [currentPage, schoolSections, sharedSections]);
 
   return (
     <div className={`${sidebarOpen ? 'w-52' : 'w-20'} bg-[#5D0057] text-white transition-all duration-300 flex flex-col border-r border-white/10 shadow-lg`}>
-      {/* Logo/Brand with Premium Styling */}
+      {/* Logo/Brand */}
       <div className="h-20 p-5 border-b border-white/10 bg-[#520050] relative overflow-hidden">
-        {/* Decorative gradient overlay */}
-        <div className="absolute inset-0 opacity-0"></div>
-
         <div className="flex items-center gap-3 justify-center overflow-hidden relative z-10">
           {sidebarOpen ? (
             <h1 className="text-xl font-bold text-white tracking-widest truncate w-full text-center hover:drop-shadow-lg transition-shadow duration-300">
@@ -271,46 +252,40 @@ const Sidebar = React.memo(({
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto p-3 bg-[#5D0057] custom-scrollbar space-y-2">
         <div className="space-y-3">
+
           {/* Dashboard */}
           {dashboardSection && (
-            <div key={dashboardSection.id}>
-              <button
-                onClick={() => onNavigate(dashboardSection.id)}
-                onMouseEnter={() => prefetchModule(dashboardSection.id)}
-                className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-300 group relative overflow-hidden ${currentPage === dashboardSection.id
+            <button
+              onClick={() => onNavigate(dashboardSection.id)}
+              onMouseEnter={() => prefetchModule(dashboardSection.id)}
+              className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-300 group relative overflow-hidden ${
+                currentPage === dashboardSection.id
                   ? 'bg-brand-teal/40 text-white border border-brand-teal/50 shadow-lg shadow-brand-teal/20'
                   : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10'
-                  }`}
-              >
-                {currentPage === dashboardSection.id && (
-                  <div className="absolute inset-0 opacity-0"></div>
-                )}
-                <div className="min-w-[20px] flex justify-center relative z-10 group-hover:scale-110 transition-transform duration-300">
-                  <dashboardSection.icon size={20} />
-                </div>
-                {sidebarOpen && <span className="text-sm font-bold tracking-tight relative z-10">{dashboardSection.label}</span>}
-              </button>
-            </div>
+              }`}
+            >
+              <div className="min-w-[20px] flex justify-center relative z-10 group-hover:scale-110 transition-transform duration-300">
+                <dashboardSection.icon size={20} />
+              </div>
+              {sidebarOpen && <span className="text-sm font-bold tracking-tight relative z-10">{dashboardSection.label}</span>}
+            </button>
           )}
-
 
           {/* Communications */}
           {communicationSection && (
-            <div key={communicationSection.id}>
-              <NavSection
-                section={communicationSection}
-                expandedSections={expandedSections}
-                handleSectionClick={handleSectionClick}
-                sidebarOpen={sidebarOpen}
-                expandedSubSections={expandedSubSections}
-                toggleSubSection={toggleSubSection}
-                currentPage={currentPage}
-                onNavigate={onNavigate}
-              />
-            </div>
+            <NavSection
+              section={communicationSection}
+              expandedSections={expandedSections}
+              handleSectionClick={handleSectionClick}
+              sidebarOpen={sidebarOpen}
+              expandedSubSections={expandedSubSections}
+              toggleSubSection={toggleSubSection}
+              currentPage={currentPage}
+              onNavigate={onNavigate}
+            />
           )}
 
-          {/* Learning */}
+          {/* Education / Learning */}
           {educationSections.length > 0 && (
             <div className="space-y-1">
               {educationSections.map(section => (
@@ -338,8 +313,8 @@ const Sidebar = React.memo(({
                   className="w-full flex items-center justify-between px-3 py-2.5 text-xs font-bold text-gray-400 hover:text-gray-200 transition-all duration-300 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/10"
                 >
                   <div className="flex items-center gap-2">
-                    <div className="min-w-[20px] flex justify-center group-hover:scale-110 transition-transform">
-                      <School size={18} className="opacity-70 group-hover:opacity-100" />
+                    <div className="min-w-[20px] flex justify-center">
+                      <School size={18} className="opacity-70" />
                     </div>
                     <span className="uppercase tracking-wider font-bold text-brand-teal">Back Office Management</span>
                   </div>
@@ -347,7 +322,7 @@ const Sidebar = React.memo(({
                 </button>
               )}
               {(!sidebarOpen || activeCategory === 'school') && (
-                <div className={sidebarOpen ? "animate-in fade-in slide-in-from-top-1 duration-200" : ""}>
+                <div className={sidebarOpen ? 'animate-in fade-in slide-in-from-top-1 duration-200' : ''}>
                   {schoolSections.map(section => (
                     <NavSection
                       key={section.id}
@@ -366,7 +341,7 @@ const Sidebar = React.memo(({
             </div>
           )}
 
-          {/* Facilities - Direct Items */}
+          {/* Facilities */}
           {facilitiesSections.length > 0 && (
             <div className="space-y-1">
               {facilitiesSections.map(section => (
@@ -394,8 +369,8 @@ const Sidebar = React.memo(({
                   className="w-full flex items-center justify-between px-3 py-2.5 text-xs font-bold text-gray-400 hover:text-gray-200 transition-all duration-300 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/10"
                 >
                   <div className="flex items-center gap-2">
-                    <div className="min-w-[20px] flex justify-center group-hover:scale-110 transition-transform">
-                      <Boxes size={18} className="opacity-70 group-hover:opacity-100" />
+                    <div className="min-w-[20px] flex justify-center">
+                      <Boxes size={18} className="opacity-70" />
                     </div>
                     <span className="uppercase tracking-wider font-semibold">Utilities</span>
                   </div>
@@ -403,7 +378,7 @@ const Sidebar = React.memo(({
                 </button>
               )}
               {(!sidebarOpen || activeCategory === 'utilities') && (
-                <div className={sidebarOpen ? "animate-in fade-in slide-in-from-top-1 duration-200" : ""}>
+                <div className={sidebarOpen ? 'animate-in fade-in slide-in-from-top-1 duration-200' : ''}>
                   {sharedSections.map(section => (
                     <NavSection
                       key={section.id}
@@ -424,14 +399,15 @@ const Sidebar = React.memo(({
 
           {/* Help & Support */}
           {helpSection && (
-            <div key={helpSection.id} className="mt-4 pt-4 border-t border-white/10">
+            <div className="mt-4 pt-4 border-t border-white/10">
               <button
                 onClick={() => onNavigate(helpSection.id)}
                 onMouseEnter={() => prefetchModule(helpSection.id)}
-                className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-300 group relative overflow-hidden ${currentPage === helpSection.id
-                  ? 'bg-cyan-500/30 text-white border border-cyan-500/50 shadow-lg shadow-cyan-500/10'
-                  : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10'
-                  }`}
+                className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-300 group relative overflow-hidden ${
+                  currentPage === helpSection.id
+                    ? 'bg-cyan-500/30 text-white border border-cyan-500/50 shadow-lg shadow-cyan-500/10'
+                    : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10'
+                }`}
               >
                 <div className="min-w-[20px] flex justify-center relative z-10 group-hover:scale-110 transition-transform duration-300">
                   <helpSection.icon size={20} />
@@ -461,7 +437,7 @@ const Sidebar = React.memo(({
           </div>
         )}
 
-        {/* Toggle Button */}
+        {/* Collapse toggle */}
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md transition text-gray-400 hover:bg-[#0D9488] hover:text-white"
@@ -480,7 +456,7 @@ const Sidebar = React.memo(({
   );
 });
 
-// Helper component to avoid repetition
+// ─── NavSection ──────────────────────────────────────────────────────────────
 const NavSection = React.memo(({
   section,
   expandedSections,
@@ -499,20 +475,21 @@ const NavSection = React.memo(({
           <button
             onClick={() => handleSectionClick(section)}
             onMouseEnter={() => {
-              // Only prefetch first item if collapsed
               if (!sidebarOpen) {
                 const defaultPath = findDefaultPath(section.items);
                 if (defaultPath) prefetchModule(defaultPath);
               }
             }}
-            className={`w-full flex items-center justify-between px-3 py-3 rounded-lg transition-all duration-300 group relative overflow-hidden ${section.id === 'assessment'
-              ? (expandedSections[section.id] ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-lg shadow-amber-500/10' : 'text-amber-400 hover:bg-white/5 hover:text-amber-300 border border-transparent hover:border-amber-500/30')
-              : (expandedSections[section.id] ? 'bg-white/10 text-white border border-white/20 shadow-lg shadow-white/5' : 'text-gray-400 hover:bg-white/5 hover:text-white border border-transparent hover:border-white/10')
-              }`}
+            className={`w-full flex items-center justify-between px-3 py-3 rounded-lg transition-all duration-300 group relative overflow-hidden ${
+              section.id === 'assessment'
+                ? (expandedSections[section.id]
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-lg shadow-amber-500/10'
+                    : 'text-amber-400 hover:bg-white/5 hover:text-amber-300 border border-transparent hover:border-amber-500/30')
+                : (expandedSections[section.id]
+                    ? 'bg-white/10 text-white border border-white/20 shadow-lg shadow-white/5'
+                    : 'text-gray-400 hover:bg-white/5 hover:text-white border border-transparent hover:border-white/10')
+            }`}
           >
-            {expandedSections[section.id] && (
-              <div className="absolute inset-0 opacity-0"></div>
-            )}
             <div className="flex items-center gap-3 flex-1 relative z-10">
               <div className="min-w-[20px] flex justify-center group-hover:scale-110 transition-transform duration-300">
                 <section.icon size={20} className={section.id === 'assessment' ? 'text-amber-400' : ''} />
@@ -526,27 +503,29 @@ const NavSection = React.memo(({
               />
             )}
           </button>
+
           {expandedSections[section.id] && sidebarOpen && (
             <div className={`ml-6 space-y-0.5 mt-1 border-l border-white/10 ${isBottom ? 'mb-2' : ''}`}>
               {section.items.map((item) => {
                 if (item.type === 'group') {
-                  // Check if any child item matches current page
                   const isGroupActive = item.items.some(subItem => subItem.path === currentPage);
-
                   return (
                     <div key={item.id} className="mt-2 mb-1">
                       <button
                         onClick={() => item.greyedOut ? null : toggleSubSection(item.id)}
                         disabled={item.greyedOut}
-                        className={`w-full flex items-center justify-between px-3 py-1.5 text-xs font-medium transition-colors ${item.greyedOut
-                          ? 'text-gray-600 opacity-50 cursor-not-allowed'
-                          : (isGroupActive
-                            ? 'text-[#0D9488] bg-white/5 rounded-md'
-                            : 'text-gray-500 hover:text-gray-300')
-                          }`}
+                        className={`w-full flex items-center justify-between px-3 py-1.5 text-xs font-medium transition-colors ${
+                          item.greyedOut
+                            ? 'text-gray-600 opacity-50 cursor-not-allowed'
+                            : (isGroupActive
+                                ? 'text-[#0D9488] bg-white/5 rounded-md'
+                                : 'text-gray-500 hover:text-gray-300')
+                        }`}
                       >
                         <div className="flex items-center gap-2">
-                          {item.icon && <item.icon size={12} className={item.greyedOut ? 'opacity-40' : (isGroupActive ? 'text-[#0D9488]' : 'opacity-70')} />}
+                          {item.icon && (
+                            <item.icon size={12} className={item.greyedOut ? 'opacity-40' : (isGroupActive ? 'text-[#0D9488]' : 'opacity-70')} />
+                          )}
                           <span>{item.label}</span>
                         </div>
                         <ChevronDown size={10} className={`transition-transform duration-200 opacity-50 ${expandedSubSections[item.id] ? 'rotate-180' : ''}`} />
@@ -559,13 +538,14 @@ const NavSection = React.memo(({
                               key={subItem.id}
                               onClick={() => (subItem.comingSoon || subItem.greyedOut) ? null : onNavigate(subItem.path)}
                               onMouseEnter={() => prefetchModule(subItem.path)}
-                              className={`w-full text-left px-3 py-1.5 rounded-r-md text-sm transition flex items-center justify-between ${subItem.comingSoon || subItem.greyedOut
-                                ? 'text-gray-600 cursor-not-allowed'
-                                : (currentPage === subItem.path
-                                  ? 'bg-white/5 text-[#0D9488] font-medium border-l-2 border-[#0D9488]'
-                                  : 'text-gray-400 hover:text-white hover:bg-white/5 border-l-2 border-transparent')
-                                }`}
                               disabled={subItem.comingSoon || subItem.greyedOut}
+                              className={`w-full text-left px-3 py-1.5 rounded-r-md text-sm transition flex items-center justify-between ${
+                                subItem.comingSoon || subItem.greyedOut
+                                  ? 'text-gray-600 cursor-not-allowed'
+                                  : (currentPage === subItem.path
+                                      ? 'bg-white/5 text-[#0D9488] font-medium border-l-2 border-[#0D9488]'
+                                      : 'text-gray-400 hover:text-white hover:bg-white/5 border-l-2 border-transparent')
+                              }`}
                             >
                               <div className="flex items-center gap-2 flex-1 min-w-0">
                                 <span className="text-gray-500 flex-shrink-0">—</span>
@@ -583,18 +563,20 @@ const NavSection = React.memo(({
                     </div>
                   );
                 }
+
                 return (
                   <button
                     key={item.id}
                     onClick={() => (item.comingSoon || item.greyedOut) ? null : onNavigate(item.path)}
                     onMouseEnter={() => prefetchModule(item.path)}
-                    className={`w-full text-left px-3 py-1.5 rounded-r-md text-sm transition flex items-center justify-between ${item.comingSoon || item.greyedOut
-                      ? 'text-gray-600 cursor-not-allowed'
-                      : (currentPage === item.path
-                        ? 'bg-white/5 text-[#0D9488] font-medium border-l-2 border-[#0D9488]'
-                        : 'text-gray-400 hover:text-white hover:bg-white/5 border-l-2 border-transparent')
-                      }`}
                     disabled={item.comingSoon || item.greyedOut}
+                    className={`w-full text-left px-3 py-1.5 rounded-r-md text-sm transition flex items-center justify-between ${
+                      item.comingSoon || item.greyedOut
+                        ? 'text-gray-600 cursor-not-allowed'
+                        : (currentPage === item.path
+                            ? 'bg-white/5 text-[#0D9488] font-medium border-l-2 border-[#0D9488]'
+                            : 'text-gray-400 hover:text-white hover:bg-white/5 border-l-2 border-transparent')
+                    }`}
                   >
                     <span className="truncate">{item.label}</span>
                     {item.comingSoon && (
@@ -612,13 +594,14 @@ const NavSection = React.memo(({
         <button
           onClick={() => (section.comingSoon || section.greyedOut) ? null : onNavigate(section.id)}
           onMouseEnter={() => prefetchModule(section.id)}
-          className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all duration-200 group ${section.comingSoon || section.greyedOut
-            ? 'text-gray-500 opacity-50 cursor-not-allowed border border-dashed border-white/5'
-            : (currentPage === section.id
-              ? 'bg-white/5 text-[#0D9488] border-l-4 border-[#0D9488]'
-              : 'text-gray-400 hover:bg-white/5 hover:text-white border-l-4 border-transparent')
-            }`}
           disabled={section.comingSoon || section.greyedOut}
+          className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all duration-200 group ${
+            section.comingSoon || section.greyedOut
+              ? 'text-gray-500 opacity-50 cursor-not-allowed border border-dashed border-white/5'
+              : (currentPage === section.id
+                  ? 'bg-white/5 text-[#0D9488] border-l-4 border-[#0D9488]'
+                  : 'text-gray-400 hover:bg-white/5 hover:text-white border-l-4 border-transparent')
+          }`}
         >
           <div className="flex items-center gap-3 flex-1">
             <div className="min-w-[20px] flex justify-center">

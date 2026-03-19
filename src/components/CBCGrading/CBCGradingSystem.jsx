@@ -80,6 +80,10 @@ const TeacherProfile = lazy(() => import('./pages/profiles/TeacherProfile'));
 const ParentProfile = lazy(() => import('./pages/profiles/ParentProfile'));
 const PlannerLayout = lazy(() => import('./pages/planner/PlannerLayout'));
 
+// Student sub-modules
+const UniformAllocationPage = lazy(() => import('./pages/UniformAllocationPage'));
+const IDPrintingPage = lazy(() => import('./pages/IDPrintingPage'));
+
 // HR Module
 const HRManager = lazy(() => import('./pages/hr/HRManager'));
 const StaffDirectory = lazy(() => import('./pages/hr/StaffDirectory'));
@@ -416,8 +420,6 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
             console.log('🔄 Starting automatic invoice generation for new learner...');
             const newLearner = result.data;
 
-            // 1. Get Term Config to find current academic period
-            // In a real app, this should be robust. Here we pick the first active term config or default.
             let term = 'TERM_1';
             let academicYear = new Date().getFullYear();
 
@@ -434,9 +436,7 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
               console.warn('Failed to fetch term config, using defaults', err);
             }
 
-            // 2. Find or Seed Fee Structure
             const grade = newLearner.grade;
-            // Fetch fee structures for this grade/term
             const feeStructsResp = await feeAPI.getAllFeeStructures({
               grade,
               term,
@@ -446,25 +446,20 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
             let targetFeeStructureId = null;
 
             if (feeStructsResp.success && feeStructsResp.data && feeStructsResp.data.length > 0) {
-              targetFeeStructureId = feeStructsResp.data[0].id; // Use the first matching structure
+              targetFeeStructureId = feeStructsResp.data[0].id;
             } else {
-              // 3. Seed Default Fee Structures if missing
               console.log('🌱 No fee structure found. Seeding defaults...');
               showSuccess(`Seeding default fee structures for ${grade}...`);
 
-              // This is a special helper to seed defaults if missing
               await feeAPI.seedDefaultFeeStructures();
 
-              // Retry fetching
               const retryResp = await feeAPI.getAllFeeStructures({ grade, term, academicYear });
               if (retryResp.success && retryResp.data?.length > 0) {
                 targetFeeStructureId = retryResp.data[0].id;
               }
             }
 
-            // 4. Create Invoice
             if (targetFeeStructureId) {
-              // Calculate due date (e.g., 30 days from now)
               const dueDate = new Date();
               dueDate.setDate(dueDate.getDate() + 30);
 
@@ -479,11 +474,9 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
               showSuccess('✅ Invoice generated automatically!');
             } else {
               console.warn('Could not find or create a valid Fee Structure for auto-invoicing.');
-              // Don't show error to user as the student IS created, just log it.
             }
           } catch (invoiceError) {
             console.error('Failed to auto-generate invoice:', invoiceError);
-            // Non-blocking error
           }
         }
       } else {
@@ -496,7 +489,6 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
 
   const handleMarkAsExited = (learnerId) => {
     setConfirmAction(() => () => {
-      // Update learner status to Exited
       const learner = learners.find(l => l.id === learnerId);
       if (learner) {
         updateLearner({ ...learner, status: 'Exited' });
@@ -713,7 +705,7 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
           <PromotionPage
             learners={learners}
             onPromote={handlePromoteLearners}
-            showNotification={(msg, type) => showSuccess(msg)} // Map showNotification to showSuccess
+            showNotification={(msg, type) => showSuccess(msg)}
           />
         );
       case 'learners-transfer-out':
@@ -724,6 +716,14 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
             showNotification={(msg, type) => showSuccess(msg)}
           />
         );
+
+      // ── Student sub-modules ──────────────────────────────────────────────
+      case 'learners-uniform':
+        return <UniformAllocationPage />;
+      case 'learners-id-print':
+        return <IDPrintingPage />;
+      // ────────────────────────────────────────────────────────────────────
+
       case 'learner-profile':
         return (
           <LearnerProfile

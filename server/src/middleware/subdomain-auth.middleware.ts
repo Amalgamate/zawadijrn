@@ -1,4 +1,3 @@
-// REMOVED: Subdomain auth — not needed in single-tenant mode
 export async function subdomainAuth(_req: any, _res: any, next: any): Promise<void> {
   next();
 }
