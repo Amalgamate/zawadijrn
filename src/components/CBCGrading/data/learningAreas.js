@@ -39,9 +39,69 @@ export const learningAreas = [
     gradeLevel: 'Pre-Primary',
     grades: ['PP1', 'PP2'],
     color: '#8b5cf6',
-    icon: '🎨',
+    icon: '📖',
     weight: 1.0,
     strands: [{ id: 1, name: 'Reading Ready', subStrands: [{ name: 'Letter Recognition', outcomes: ['Identifies vowel sounds', 'Recognizes own name'] }] }]
+  },
+  {
+    id: 11,
+    name: 'Mathematical Activities',
+    shortName: 'Math',
+    code: 'MATH_PP',
+    gradeLevel: 'Pre-Primary',
+    grades: ['PP1', 'PP2'],
+    color: '#3b82f6',
+    icon: '🔢',
+    weight: 1.0,
+    strands: [{ id: 1, name: 'Numbers', subStrands: [{ name: 'Counting', outcomes: ['Count 1-20', 'Sort objects'] }] }]
+  },
+  {
+    id: 12,
+    name: 'Environmental Activities',
+    shortName: 'Env',
+    code: 'ENV_PP',
+    gradeLevel: 'Pre-Primary',
+    grades: ['PP1', 'PP2'],
+    color: '#10b981',
+    icon: '🌍',
+    weight: 1.0,
+    strands: []
+  },
+  {
+    id: 13,
+    name: 'Psychomotor and Creative Activities',
+    shortName: 'Creative',
+    code: 'PCA_PP',
+    gradeLevel: 'Pre-Primary',
+    grades: ['PP1', 'PP2'],
+    color: '#ec4899',
+    icon: '🎨',
+    weight: 1.0,
+    strands: []
+  },
+  {
+    id: 14,
+    name: 'Religious Education',
+    shortName: 'RE',
+    code: 'RE_PP',
+    gradeLevel: 'Pre-Primary',
+    grades: ['PP1', 'PP2'],
+    color: '#8b5cf6',
+    icon: '⛪',
+    weight: 1.0,
+    strands: []
+  },
+  {
+    id: 15,
+    name: 'Indigenous Language',
+    shortName: 'ILang',
+    code: 'IL_PP',
+    gradeLevel: 'Pre-Primary',
+    grades: ['PP1', 'PP2'],
+    color: '#f59e0b',
+    icon: '🗣️',
+    weight: 1.0,
+    strands: []
   },
 
   // LOWER PRIMARY (Grade 1-3)

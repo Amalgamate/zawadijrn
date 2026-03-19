@@ -161,17 +161,43 @@ const SummaryReportPage = () => {
         return;
       }
 
-      // 2. Identify Subjects
+      // 2. Identify Subjects — robust multi-strategy lookup
       const gradeObj = gradeStructure.find(g => g.code === stagedGrade);
       const gradeName = gradeObj ? gradeObj.name : stagedGrade.replace(/_/g, ' ');
-      
-      const expectedSubjects = learningAreas
-        .filter(la => la.grades.includes(gradeName) || la.gradeLevel === gradeObj?.learningArea)
-        .map(la => la.name);
+      const gradeLevelName = gradeObj?.learningArea; // e.g. 'Lower Primary'
 
-      const subjectsMap = new Map();
-      expectedSubjects.forEach(s => subjectsMap.set(s, s));
+      // Build a mapping from gradeLevel label in learningAreas to gradeStructure.learningArea
+      // This bridges the mismatch between 'Early Years' (learningAreas) and 'Pre-Primary' (gradeStructure)
+      // Strategy: match both by grade name in the array AND by grade level
+      const getExpectedSubjectsForGrade = () => {
+        // First try: direct match by grade name in la.grades array
+        const byGradeName = learningAreas.filter(la => 
+          la.grades && la.grades.some(g => g.toLowerCase() === gradeName.toLowerCase())
+        );
+        if (byGradeName.length > 0) return byGradeName.map(la => la.name);
+
+        // Second try: match by gradeLevel — handle Early Years / Pre-Primary mismatch
+        const gradeLevelMap = {
+          'Pre-Primary': ['Early Years', 'Pre-Primary'],
+          'Lower Primary': ['Lower Primary'],
+          'Upper Primary': ['Upper Primary'],
+          'Junior School': ['Junior School'],
+          'Senior School': ['Senior School'],
+        };
+        const matchingLevels = gradeLevelMap[gradeLevelName] || [gradeLevelName];
+        const byLevel = learningAreas.filter(la => matchingLevels.includes(la.gradeLevel));
+        if (byLevel.length > 0) return byLevel.map(la => la.name);
+
+        return [];
+      };
+
+      const expectedSubjectNames = getExpectedSubjectsForGrade();
       
+      // Seed map with expected subjects for this grade
+      const subjectsMap = new Map();
+      expectedSubjectNames.forEach(s => subjectsMap.set(s, s));
+      
+      // Add any subjects found in actual results that aren't already in the map
       rawResults.forEach(r => {
         if (r.test?.learningArea) {
           subjectsMap.set(r.test.learningArea, r.test.learningArea);
