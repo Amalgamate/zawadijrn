@@ -4,12 +4,13 @@
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Plus, Edit, Trash2, Eye, Loader, Database, ChevronDown, GraduationCap } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, Loader, Database, ChevronDown, GraduationCap, RefreshCw } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
 import { useAuth } from '../../../hooks/useAuth';
 import { assessmentAPI, classAPI } from '../../../services/api';
 import SummativeTestForm from '../../../pages/assessments/SummativeTestForm';
 import BulkCreateTest from './BulkCreateTest';
+import ResetUtility from '../../../pages/assessments/ResetUtility';
 import ConfirmDialog from '../shared/ConfirmDialog';
 import EmptyState from '../shared/EmptyState';
 
@@ -276,6 +277,22 @@ const SummativeTests = ({ onNavigate }) => {
     );
   }
 
+  if (viewMode === 'reset') {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between px-2">
+          <button 
+            onClick={() => setViewMode('list')}
+            className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors font-black uppercase tracking-widest text-[10px]"
+          >
+            ← Back to List
+          </button>
+        </div>
+        <ResetUtility />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {/* Compact Toolbar with Metrics */}
@@ -327,6 +344,15 @@ const SummativeTests = ({ onNavigate }) => {
               >
                 <Plus size={16} /> <span className="hidden sm:inline">Bulk Create</span><span className="inline sm:hidden">Bulk</span>
               </button>
+              {user?.role !== 'TEACHER' && (
+                <button
+                  onClick={() => setViewMode('reset')}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition shadow-sm font-bold text-sm"
+                  title="System Reset Utility"
+                >
+                  <RefreshCw size={16} /> <span className="hidden sm:inline">Reset Database</span><span className="inline sm:hidden">Reset</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

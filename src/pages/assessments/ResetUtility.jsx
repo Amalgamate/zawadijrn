@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import { Trash2, AlertTriangle, CheckCircle2, Loader2, RefreshCw } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import api from '@/services/api'; // Assuming there's a base api service
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
+import { assessmentAPI } from '../../services/api';
 
 const ResetUtility = () => {
   const [loading, setLoading] = useState(false);
@@ -33,9 +31,9 @@ const ResetUtility = () => {
     setError(null);
 
     try {
-      const response = await api.post('/assessments/setup/reset', options);
-      if (response.data.success) {
-        setSuccess(response.data.data);
+      const response = await assessmentAPI.resetAssessments(options);
+      if (response.success) {
+        setSuccess(response.data);
         setShowConfirmation(false);
         // Reset selections after success
         setOptions({
@@ -71,13 +69,15 @@ const ResetUtility = () => {
           </div>
         </CardHeader>
         <CardContent className="p-8">
-          <Alert variant="destructive" className="mb-8 border-red-200 bg-red-50 text-red-900 border-l-4">
-            <AlertTriangle className="h-5 w-5" />
-            <AlertTitle className="font-bold uppercase tracking-tight text-xs">Crucial Warning</AlertTitle>
-            <AlertDescription className="text-sm font-medium mt-1">
-              Resetting parts of the database will permanently delete the selected records. Ensure you have backups if necessary.
-            </AlertDescription>
-          </Alert>
+          <div className="mb-8 border-red-200 bg-red-50 text-red-900 border-l-4 p-4 rounded-r-xl flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 mt-0.5" />
+            <div>
+              <h5 className="font-bold uppercase tracking-tight text-xs">Crucial Warning</h5>
+              <p className="text-sm font-medium mt-1">
+                Resetting parts of the database will permanently delete the selected records. Ensure you have backups if necessary.
+              </p>
+            </div>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div 
@@ -86,11 +86,19 @@ const ResetUtility = () => {
                 options.summativeTests ? 'border-brand-purple bg-brand-purple/5' : 'border-slate-100 hover:border-slate-200 bg-white'
               }`}
             >
-              <Checkbox 
+              <input 
+                type="checkbox"
                 id="summativeTests" 
                 checked={options.summativeTests}
-                className="mt-1"
+                onChange={() => {}} // Controlled via parent div click
+                className="mt-1 invisible" // Hidden because we use parent div toggle, or styled input
               />
+              {/* Custom Checkbox visual since shadcn checkbox is missing */}
+              <div className={`mt-1 h-5 w-5 rounded border-2 flex items-center justify-center shrink-0 transition-all ${
+                options.summativeTests ? 'bg-brand-purple border-brand-purple' : 'border-slate-300 bg-white'
+              }`}>
+                {options.summativeTests && <CheckCircle2 size={12} className="text-white" />}
+              </div>
               <div className="space-y-1">
                 <label htmlFor="summativeTests" className="text-sm font-black text-slate-800 uppercase tracking-tight cursor-pointer">
                   Summative Tests & Results
@@ -107,11 +115,18 @@ const ResetUtility = () => {
                 options.formativeAssessments ? 'border-brand-purple bg-brand-purple/5' : 'border-slate-100 hover:border-slate-200 bg-white'
               }`}
             >
-              <Checkbox 
+              <input 
+                type="checkbox"
                 id="formativeAssessments" 
                 checked={options.formativeAssessments}
-                className="mt-1"
+                onChange={() => {}}
+                className="mt-1 invisible"
               />
+              <div className={`mt-1 h-5 w-5 rounded border-2 flex items-center justify-center shrink-0 transition-all ${
+                options.formativeAssessments ? 'bg-brand-purple border-brand-purple' : 'border-slate-300 bg-white'
+              }`}>
+                {options.formativeAssessments && <CheckCircle2 size={12} className="text-white" />}
+              </div>
               <div className="space-y-1">
                 <label htmlFor="formativeAssessments" className="text-sm font-black text-slate-800 uppercase tracking-tight cursor-pointer">
                   Formative Assessments
@@ -128,11 +143,18 @@ const ResetUtility = () => {
                 options.gradingScales ? 'border-brand-purple bg-brand-purple/5' : 'border-slate-100 hover:border-slate-200 bg-white'
               }`}
             >
-              <Checkbox 
+              <input 
+                type="checkbox"
                 id="gradingScales" 
                 checked={options.gradingScales}
-                className="mt-1"
+                onChange={() => {}}
+                className="mt-1 invisible"
               />
+              <div className={`mt-1 h-5 w-5 rounded border-2 flex items-center justify-center shrink-0 transition-all ${
+                options.gradingScales ? 'bg-brand-purple border-brand-purple' : 'border-slate-300 bg-white'
+              }`}>
+                {options.gradingScales && <CheckCircle2 size={12} className="text-white" />}
+              </div>
               <div className="space-y-1">
                 <label htmlFor="gradingScales" className="text-sm font-black text-slate-800 uppercase tracking-tight cursor-pointer">
                   Scales & Configuration
@@ -149,11 +171,18 @@ const ResetUtility = () => {
                 options.assessmentAudits ? 'border-brand-purple bg-brand-purple/5' : 'border-slate-100 hover:border-slate-200 bg-white'
               }`}
             >
-              <Checkbox 
+              <input 
+                type="checkbox"
                 id="assessmentAudits" 
                 checked={options.assessmentAudits}
-                className="mt-1"
+                onChange={() => {}}
+                className="mt-1 invisible"
               />
+              <div className={`mt-1 h-5 w-5 rounded border-2 flex items-center justify-center shrink-0 transition-all ${
+                options.assessmentAudits ? 'bg-brand-purple border-brand-purple' : 'border-slate-300 bg-white'
+              }`}>
+                {options.assessmentAudits && <CheckCircle2 size={12} className="text-white" />}
+              </div>
               <div className="space-y-1">
                 <label htmlFor="assessmentAudits" className="text-sm font-black text-slate-800 uppercase tracking-tight cursor-pointer">
                   SMS & Audit Logs
@@ -206,29 +235,33 @@ const ResetUtility = () => {
           </div>
 
           {success && (
-            <Alert className="mt-8 border-brand-teal bg-brand-teal/5 text-brand-teal border-l-4">
-              <CheckCircle2 className="h-5 w-5" />
-              <AlertTitle className="font-black uppercase tracking-tight text-xs">Reset Successful</AlertTitle>
-              <AlertDescription className="mt-2 space-y-2">
+            <div className="mt-8 border-brand-teal bg-brand-teal/5 text-brand-teal border-l-4 p-6 rounded-r-xl">
+              <div className="flex items-center gap-3 mb-4">
+                <CheckCircle2 className="h-5 w-5" />
+                <h5 className="font-black uppercase tracking-tight text-xs">Reset Successful</h5>
+              </div>
+              <div className="space-y-2">
                 <p className="text-[11px] font-medium">The following items were successfully cleared from the database:</p>
                 <div className="grid grid-cols-2 gap-2">
                   {Object.entries(success).map(([key, val]) => (
-                    <div key={key} className="flex justify-between items-center bg-white/50 px-3 py-1.5 rounded-lg border border-brand-teal/10">
+                    <div key={key} className="flex justify-between items-center bg-white border border-brand-teal/10 px-3 py-1.5 rounded-lg shadow-sm">
                       <span className="text-[9px] font-black uppercase tracking-widest opacity-70">{key.replace(/Deleted/g, '')}</span>
                       <span className="text-xs font-black">{val}</span>
                     </div>
                   ))}
                 </div>
-              </AlertDescription>
-            </Alert>
+              </div>
+            </div>
           )}
 
           {error && (
-            <Alert variant="destructive" className="mt-8 border-red-200 bg-red-50 text-red-600">
+            <div className="mt-8 border-red-200 bg-red-50 text-red-600 border-l-4 p-4 rounded-r-xl flex items-start gap-3">
               <AlertTriangle className="h-5 w-5" />
-              <AlertTitle className="font-bold">Error Occurred</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
+              <div>
+                <h5 className="font-bold text-sm">Error Occurred</h5>
+                <p className="text-sm mt-1">{error}</p>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>

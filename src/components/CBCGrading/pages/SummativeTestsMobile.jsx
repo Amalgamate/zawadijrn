@@ -4,16 +4,18 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Plus, Trash2, Eye, Loader, Search, Edit, ArrowLeft } from 'lucide-react';
+import { Plus, Trash2, Eye, Loader, Search, Edit, ArrowLeft, RefreshCw } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
 import { useAuth } from '../../../hooks/useAuth';
 import { assessmentAPI } from '../../../services/api';
 import SummativeTestForm from '../../../pages/assessments/SummativeTestForm';
+import ResetUtility from '../../../pages/assessments/ResetUtility';
 import EmptyState from '../shared/EmptyState';
 import ConfirmDialog from '../shared/ConfirmDialog';
 
 const SummativeTestsMobile = ({ onNavigate, onBack }) => {
   const { showSuccess, showError } = useNotifications();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('list'); // 'list' | 'create' | 'edit' | 'view'
   const [tests, setTests] = useState([]);
@@ -111,6 +113,25 @@ const SummativeTestsMobile = ({ onNavigate, onBack }) => {
     setShowConfirm(true);
   };
 
+  // RESET VIEW
+  if (viewMode === 'reset') {
+    return (
+      <div className="fixed inset-0 bg-gray-50 z-50 overflow-y-auto">
+        <div className="bg-white border-b border-gray-200 p-4 sticky top-0 z-10">
+          <button 
+            onClick={() => setViewMode('list')}
+            className="flex items-center gap-2 text-teal-600 font-bold uppercase tracking-widest text-[10px]"
+          >
+            ← Back to Tests
+          </button>
+        </div>
+        <div className="p-4">
+          <ResetUtility />
+        </div>
+      </div>
+    );
+  }
+
   // CREATE/EDIT VIEW
   if (viewMode === 'create' || viewMode === 'edit') {
     return (
@@ -143,6 +164,15 @@ const SummativeTestsMobile = ({ onNavigate, onBack }) => {
             </button>
             <h1 className="text-lg font-bold text-gray-900">Tests</h1>
           </div>
+          {user?.role !== 'TEACHER' && (
+            <button
+              onClick={() => setViewMode('reset')}
+              className="text-red-500 p-2 rounded-lg hover:bg-red-50 border border-red-100"
+              title="Reset Database"
+            >
+              <RefreshCw size={20} />
+            </button>
+          )}
           {/* 
           <button
             onClick={() => {

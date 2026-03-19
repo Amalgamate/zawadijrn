@@ -1657,6 +1657,18 @@ export const assessmentAPI = {
       method: 'POST',
       body: JSON.stringify(data),
     });
+  },
+
+  /**
+   * Reset selected assessment data
+   * @param {Object} data - { options: { summative: boolean, formative: boolean, scales: boolean, logs: boolean } }
+   * @returns {Promise} Reset summary
+   */
+  resetAssessments: async (data) => {
+    return fetchWithAuth('/assessments/setup/reset', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 };
 
