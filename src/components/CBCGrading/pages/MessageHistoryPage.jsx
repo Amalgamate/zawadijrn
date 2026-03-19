@@ -1,21 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Download, RefreshCw, Loader, MessageSquare, CheckCircle, XCircle, Search, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Card, CardHeader, CardContent, CardTitle, CardDescription, Button, Input, Label, Badge } from '../../../components/ui';
+import { Card, CardContent, Button, Input, Label, Badge } from '../../../components/ui';
 import { useNotifications } from '../hooks/useNotifications';
-import { toInputDate } from '../utils/dateHelpers';
 import api from '../../../services/api';
-import { getCurrentSchoolId, getStoredUser } from '../../../services/schoolContext';
 
 const MessageHistoryPage = () => {
     const { showSuccess, showError } = useNotifications();
 
-    // State
     const [loading, setLoading] = useState(false);
     const [logs, setLogs] = useState([]);
     const [summary, setSummary] = useState({ totalSent: 0, successRate: 0, failed: 0, bounced: 0, estimatedCost: 0 });
-    const [schoolId, setSchoolId] = useState(null);
 
-    // Filters
     const [filters, setFilters] = useState({
         startDate: '',
         endDate: '',
@@ -24,56 +19,82 @@ const MessageHistoryPage = () => {
         search: ''
     });
 
-    // Pagination
+    // Debounce search so we don't fire on every keystroke
+    const searchTimerRef = useRef(null);
+
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const limit = 50;
 
-    useEffect(() => {
-        let sid = getCurrentSchoolId();
-        if (!sid) {
-            const user = getStoredUser();
-            sid = user?.schoolId || user?.school?.id;
-        }
-        setSchoolId(sid);
+    // ── Core fetch — single-tenant, no schoolId required ─────────────────────
+    const fetchLogs = useCallback(async (overrideFilters, overridePage) => {
+        const activeFilters = overrideFilters ?? filters;
+        const activePage   = overridePage   ?? page;
 
-        if (sid) {
-            fetchLogs(sid);
-        }
-    }, [page, filters]);
-
-    const fetchLogs = async (sid) => {
         setLoading(true);
         try {
-            const response = await api.notifications.getAuditLogs({
-                schoolId: sid,
-                startDate: filters.startDate || undefined,
-                endDate: filters.endDate || undefined,
-                channel: filters.channel === 'all' ? undefined : filters.channel,
-                status: filters.status === 'all' ? undefined : filters.status,
-                search: filters.search || undefined,
-                page,
-                limit
-            });
+            const params = {
+                page: activePage,
+                limit,
+                ...(activeFilters.startDate  && { startDate:  activeFilters.startDate }),
+                ...(activeFilters.endDate    && { endDate:    activeFilters.endDate }),
+                ...(activeFilters.channel !== 'all' && { channel: activeFilters.channel }),
+                ...(activeFilters.status  !== 'all' && { status:  activeFilters.status }),
+                ...(activeFilters.search     && { search:     activeFilters.search }),
+            };
 
-            if (response.success) {
-                setLogs(response.data.logs || []);
-                setSummary(response.data.summary || { totalSent: 0, successRate: 0, failed: 0, bounced: 0, estimatedCost: 0 });
-                setTotalPages(Math.ceil((response.data.total || 0) / limit));
+            const response = await api.notifications.getAuditLogs(params);
+
+            if (response?.success) {
+                setLogs(response.data?.logs ?? []);
+                setSummary(response.data?.summary ?? { totalSent: 0, successRate: 0, failed: 0, bounced: 0, estimatedCost: 0 });
+                setTotalPages(Math.max(1, Math.ceil((response.data?.total ?? 0) / limit)));
+            } else {
+                throw new Error(response?.message || 'Unexpected response');
             }
         } catch (error) {
-            console.error('Failed to fetch message history:', error);
-            showError('Failed to load message history');
+            console.error('[MessageHistory] fetch error:', error);
+            showError(error.message || 'Failed to load message history');
+            setLogs([]);
         } finally {
             setLoading(false);
+        }
+    }, [filters, page, showError]);
+
+    // Initial load
+    useEffect(() => {
+        fetchLogs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Re-fetch when page changes
+    useEffect(() => {
+        fetchLogs(undefined, page);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [page]);
+
+    // Re-fetch when non-search filters change (date, channel, status)
+    // Reset page to 1 on filter change
+    const handleFilterChange = (key, value) => {
+        const next = { ...filters, [key]: value };
+        setFilters(next);
+
+        if (key === 'search') {
+            // Debounce search input — wait 600 ms after last keystroke
+            if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+            searchTimerRef.current = setTimeout(() => {
+                setPage(1);
+                fetchLogs(next, 1);
+            }, 600);
+        } else {
+            setPage(1);
+            fetchLogs(next, 1);
         }
     };
 
     const handleRefresh = () => {
-        if (schoolId) {
-            fetchLogs(schoolId);
-            showSuccess('Refreshed!');
-        }
+        fetchLogs();
+        showSuccess('Refreshed!');
     };
 
     const handleExportCSV = () => {
@@ -85,17 +106,17 @@ const MessageHistoryPage = () => {
         const headers = ['Date/Time', 'Learner Name', 'Parent Phone', 'Channel', 'Status', 'Sent By', 'Term'];
         const rows = logs.map(log => [
             new Date(log.createdAt).toLocaleString(),
-            log.learner?.firstName + ' ' + log.learner?.lastName || 'N/A',
+            `${log.learner?.firstName || ''} ${log.learner?.lastName || ''}`.trim() || 'N/A',
             log.phoneNumber || 'N/A',
             log.channel || 'N/A',
             log.status || 'N/A',
-            log.sentBy?.firstName + ' ' + log.sentBy?.lastName || 'System',
+            `${log.sentBy?.firstName || ''} ${log.sentBy?.lastName || ''}`.trim() || 'System',
             log.term || 'N/A'
         ]);
 
         const csvContent = [
             headers.join(','),
-            ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+            ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
         ].join('\n');
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -103,29 +124,30 @@ const MessageHistoryPage = () => {
         link.href = URL.createObjectURL(blob);
         link.download = `message_history_${new Date().toISOString().split('T')[0]}.csv`;
         link.click();
+        URL.revokeObjectURL(link.href);
 
         showSuccess('CSV exported successfully!');
     };
 
     const formatDate = (dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        if (!dateString) return '—';
+        return new Date(dateString).toLocaleDateString('en-US', {
+            month: 'short', day: 'numeric', year: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+        });
     };
 
     const getStatusMeta = (status) => {
-        const normalized = String(status || '').toUpperCase();
-        if (normalized === 'SENT') {
-            return { label: 'Sent', className: 'text-green-600' };
-        }
-        if (normalized === 'BOUNCED') {
-            return { label: 'Bounced', className: 'text-orange-600' };
-        }
-        return { label: 'Failed', className: 'text-red-600' };
+        const s = String(status || '').toUpperCase();
+        if (s === 'SENT')    return { label: 'Sent',    className: 'text-green-600',  icon: CheckCircle };
+        if (s === 'BOUNCED') return { label: 'Bounced', className: 'text-orange-600', icon: XCircle };
+        return                      { label: 'Failed',  className: 'text-red-600',    icon: XCircle };
     };
 
     return (
         <div className="h-full flex flex-col bg-white rounded-xl shadow-lg overflow-hidden">
-            {/* Header Section */}
+
+            {/* Header */}
             <div className="bg-gradient-to-r from-brand-teal to-brand-teal/80 px-6 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <div className="p-2 bg-white/20 rounded-lg">
@@ -157,51 +179,27 @@ const MessageHistoryPage = () => {
                 </div>
             </div>
 
-            {/* Metrics Cards */}
+            {/* Summary cards */}
             <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 grid grid-cols-2 md:grid-cols-5 gap-4">
-                <Card>
-                    <CardContent className="p-4">
-                        <div className="text-center">
-                            <p className="text-gray-600 text-sm mb-1">Total Sent</p>
-                            <p className="text-3xl font-bold text-brand-teal">{summary.totalSent}</p>
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent className="p-4">
-                        <div className="text-center">
-                            <p className="text-gray-600 text-sm mb-1">Success Rate</p>
-                            <p className="text-3xl font-bold text-green-600">{summary.successRate}%</p>
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent className="p-4">
-                        <div className="text-center">
-                            <p className="text-gray-600 text-sm mb-1">Failed</p>
-                            <p className="text-3xl font-bold text-red-600">{summary.failed}</p>
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent className="p-4">
-                        <div className="text-center">
-                            <p className="text-gray-600 text-sm mb-1">Bounced</p>
-                            <p className="text-3xl font-bold text-orange-600">{summary.bounced || 0}</p>
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent className="p-4">
-                        <div className="text-center">
-                            <p className="text-gray-600 text-sm mb-1">SMS Parts</p>
-                            <p className="text-3xl font-bold text-brand-purple">{summary.estimatedCost}</p>
-                        </div>
-                    </CardContent>
-                </Card>
+                {[
+                    { label: 'Total Sent',    value: summary.totalSent,    color: 'text-brand-teal' },
+                    { label: 'Success Rate',  value: `${summary.successRate}%`, color: 'text-green-600' },
+                    { label: 'Failed',        value: summary.failed,       color: 'text-red-600' },
+                    { label: 'Bounced',       value: summary.bounced ?? 0, color: 'text-orange-600' },
+                    { label: 'Total Records', value: summary.totalSent,    color: 'text-brand-purple' },
+                ].map(({ label, value, color }) => (
+                    <Card key={label}>
+                        <CardContent className="p-4">
+                            <div className="text-center">
+                                <p className="text-gray-600 text-sm mb-1">{label}</p>
+                                <p className={`text-3xl font-bold ${color}`}>{value}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                ))}
             </div>
 
-            {/* Filters Section */}
+            {/* Filters */}
             <div className="px-6 py-4 bg-white border-b border-gray-200">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
                     <div className="space-y-1">
@@ -209,8 +207,8 @@ const MessageHistoryPage = () => {
                         <Input
                             id="startDate"
                             type="date"
-                            value={toInputDate(filters.startDate)}
-                            onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
+                            value={filters.startDate}
+                            onChange={(e) => handleFilterChange('startDate', e.target.value)}
                         />
                     </div>
                     <div className="space-y-1">
@@ -218,8 +216,8 @@ const MessageHistoryPage = () => {
                         <Input
                             id="endDate"
                             type="date"
-                            value={toInputDate(filters.endDate)}
-                            onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+                            value={filters.endDate}
+                            onChange={(e) => handleFilterChange('endDate', e.target.value)}
                         />
                     </div>
                     <div className="space-y-1">
@@ -227,7 +225,7 @@ const MessageHistoryPage = () => {
                         <select
                             id="channel"
                             value={filters.channel}
-                            onChange={(e) => setFilters({ ...filters, channel: e.target.value })}
+                            onChange={(e) => handleFilterChange('channel', e.target.value)}
                             className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-teal focus:border-brand-teal text-sm"
                         >
                             <option value="all">All Channels</option>
@@ -240,7 +238,7 @@ const MessageHistoryPage = () => {
                         <select
                             id="status"
                             value={filters.status}
-                            onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                            onChange={(e) => handleFilterChange('status', e.target.value)}
                             className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-teal focus:border-brand-teal text-sm"
                         >
                             <option value="all">All Status</option>
@@ -257,7 +255,7 @@ const MessageHistoryPage = () => {
                                 id="search"
                                 type="text"
                                 value={filters.search}
-                                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                                onChange={(e) => handleFilterChange('search', e.target.value)}
                                 placeholder="Name or phone..."
                                 className="pl-10"
                             />
@@ -266,7 +264,7 @@ const MessageHistoryPage = () => {
                 </div>
             </div>
 
-            {/* Table Section */}
+            {/* Table */}
             <div className="flex-1 overflow-auto">
                 {loading ? (
                     <div className="p-12 flex flex-col items-center justify-center">
@@ -290,50 +288,49 @@ const MessageHistoryPage = () => {
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
                                     {logs.map((log, idx) => {
-                                        const statusMeta = getStatusMeta(log.status);
+                                        const { label, className, icon: StatusIcon } = getStatusMeta(log.status);
                                         return (
-                                        <tr key={idx} className="hover:bg-gray-50 transition">
-                                            <td className="px-4 py-3 text-xs text-gray-700 font-mono">{formatDate(log.createdAt)}</td>
-                                            <td className="px-4 py-3">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-8 h-8 bg-brand-teal/10 rounded-full flex items-center justify-center text-brand-teal font-bold text-sm">
-                                                        {log.learner?.firstName?.charAt(0) || 'L'}
+                                            <tr key={log.id || idx} className="hover:bg-gray-50 transition">
+                                                <td className="px-4 py-3 text-xs text-gray-700 font-mono whitespace-nowrap">
+                                                    {formatDate(log.createdAt)}
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-8 h-8 bg-brand-teal/10 rounded-full flex items-center justify-center text-brand-teal font-bold text-sm flex-shrink-0">
+                                                            {log.learner?.firstName?.charAt(0)?.toUpperCase() || 'L'}
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-bold text-gray-800 whitespace-nowrap">
+                                                                {log.learner?.firstName} {log.learner?.lastName}
+                                                            </p>
+                                                            <p className="text-xs text-gray-500">{log.learner?.admissionNumber || '—'}</p>
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        <p className="text-sm font-bold text-gray-800">
-                                                            {log.learner?.firstName} {log.learner?.lastName}
-                                                        </p>
-                                                        <p className="text-xs text-gray-500">{log.learner?.admissionNumber}</p>
+                                                </td>
+                                                <td className="px-4 py-3 text-xs font-mono text-gray-700 whitespace-nowrap">
+                                                    {log.phoneNumber || '—'}
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <Badge
+                                                        variant={log.channel === 'SMS' ? 'secondary' : 'outline'}
+                                                        className={log.channel === 'WHATSAPP' ? 'bg-green-50 text-green-700 border-green-200' : ''}
+                                                    >
+                                                        {log.channel || '—'}
+                                                    </Badge>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <div className={`flex items-center gap-1 ${className}`}>
+                                                        <StatusIcon size={14} />
+                                                        <span className="text-xs font-bold">{label}</span>
                                                     </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-3 text-xs font-mono text-gray-700">{log.phoneNumber || 'N/A'}</td>
-                                            <td className="px-4 py-3">
-                                                <Badge
-                                                    variant={log.channel === 'SMS' ? 'secondary' : 'outline'}
-                                                    className={log.channel === 'SMS' ? '' : 'bg-green-50 text-green-700 border-green-200'}
-                                                >
-                                                    {log.channel || 'N/A'}
-                                                </Badge>
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                {log.status === 'SENT' ? (
-                                                    <div className={`flex items-center gap-1 ${statusMeta.className}`}>
-                                                        <CheckCircle size={16} />
-                                                        <span className="text-xs font-bold">{statusMeta.label}</span>
-                                                    </div>
-                                                ) : (
-                                                    <div className={`flex items-center gap-1 ${statusMeta.className}`}>
-                                                        <XCircle size={16} />
-                                                        <span className="text-xs font-bold">{statusMeta.label}</span>
-                                                    </div>
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-3 text-xs text-gray-700">
-                                                {log.sentBy?.firstName} {log.sentBy?.lastName || 'System'}
-                                            </td>
-                                            <td className="px-4 py-3 text-xs text-gray-700">{log.term || 'N/A'}</td>
-                                        </tr>
+                                                </td>
+                                                <td className="px-4 py-3 text-xs text-gray-700 whitespace-nowrap">
+                                                    {`${log.sentBy?.firstName || ''} ${log.sentBy?.lastName || ''}`.trim() || 'System'}
+                                                </td>
+                                                <td className="px-4 py-3 text-xs text-gray-700">
+                                                    {log.term || '—'}
+                                                </td>
+                                            </tr>
                                         );
                                     })}
                                 </tbody>
@@ -343,29 +340,27 @@ const MessageHistoryPage = () => {
                         {/* Pagination */}
                         {totalPages > 1 && (
                             <div className="bg-gray-50 border-t border-gray-200 px-6 py-4 flex items-center justify-between">
-                                <div className="text-sm text-gray-600">
+                                <p className="text-sm text-gray-600">
                                     Page <span className="font-bold">{page}</span> of <span className="font-bold">{totalPages}</span>
-                                </div>
+                                </p>
                                 <div className="flex gap-2">
                                     <Button
                                         variant="outline"
                                         size="sm"
                                         onClick={() => setPage(p => Math.max(1, p - 1))}
-                                        disabled={page === 1}
+                                        disabled={page === 1 || loading}
                                         className="gap-1"
                                     >
-                                        <ChevronLeft size={16} />
-                                        Previous
+                                        <ChevronLeft size={16} /> Previous
                                     </Button>
                                     <Button
                                         variant="outline"
                                         size="sm"
                                         onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                                        disabled={page === totalPages}
+                                        disabled={page === totalPages || loading}
                                         className="gap-1"
                                     >
-                                        Next
-                                        <ChevronRight size={16} />
+                                        Next <ChevronRight size={16} />
                                     </Button>
                                 </div>
                             </div>
@@ -375,7 +370,11 @@ const MessageHistoryPage = () => {
                     <div className="p-12 flex flex-col items-center justify-center">
                         <MessageSquare size={48} className="text-gray-300 mb-4" />
                         <h3 className="text-lg font-bold text-gray-600">No Messages Found</h3>
-                        <p className="text-gray-400 text-sm mt-2">Try adjusting your filters or date range</p>
+                        <p className="text-gray-400 text-sm mt-2">
+                            {filters.startDate || filters.endDate || filters.channel !== 'all' || filters.status !== 'all' || filters.search
+                                ? 'No messages match your current filters — try adjusting the date range or clearing filters.'
+                                : 'Messages will appear here once SMS or WhatsApp notifications are sent.'}
+                        </p>
                     </div>
                 )}
             </div>

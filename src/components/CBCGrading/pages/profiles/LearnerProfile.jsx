@@ -10,7 +10,6 @@ import ProfileHeader from '../../shared/ProfileHeader';
 import ProfileLayout from '../../shared/ProfileLayout';
 import { useNotifications } from '../../hooks/useNotifications';
 import ProfilePhotoModal from '../../shared/ProfilePhotoModal';
-import AddEditLearnerModal from '../../shared/AddEditLearnerModal';
 
 const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onNavigate }) => {
     const { showSuccess, showError } = useNotifications();
@@ -21,7 +20,6 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
     const [assessments, setAssessments] = useState([]);
 
     const [showPhotoModal, setShowPhotoModal] = useState(false);
-    const [showEditModal, setShowEditModal] = useState(false);
 
     useEffect(() => {
         if (initialLearner && initialLearner.id !== currentLearner?.id) {
@@ -93,24 +91,6 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
         }
     };
 
-    const handleUpdateLearner = async (updatedData) => {
-        try {
-            const response = await api.learners.update(currentLearner.id, updatedData);
-            if (response.success) {
-                showSuccess('Learner profile updated successfully');
-                setCurrentLearner(prev => ({
-                    ...prev,
-                    ...updatedData,
-                    ...response.data
-                }));
-                setShowEditModal(false);
-            }
-        } catch (error) {
-            console.error('Failed to update learner:', error);
-            showError('Failed to update learner profile');
-        }
-    };
-
     const calculateAge = (dateOfBirth) => {
         if (!dateOfBirth) return 'N/A';
         const today = new Date();
@@ -140,7 +120,7 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
             primaryAction={{
                 label: "Edit Profile",
                 icon: FileText,
-                onClick: () => setShowEditModal(true)
+                onClick: () => onNavigate('learners-admissions', { learner: currentLearner })
             }}
         >
             <ProfileHeader
@@ -447,13 +427,6 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                 onClose={() => setShowPhotoModal(false)}
                 onSave={handleSavePhoto}
                 currentPhoto={currentLearner.photoUrl || currentLearner.photo || currentLearner.avatar}
-            />
-
-            <AddEditLearnerModal
-                show={showEditModal}
-                onClose={() => setShowEditModal(false)}
-                onSave={handleUpdateLearner}
-                learner={currentLearner}
             />
         </ProfileLayout>
     );

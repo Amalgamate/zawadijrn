@@ -390,13 +390,18 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
     // Extract custom flags
     const { generateInvoice, ...dataToSave } = learnerData;
 
-    if (editingLearner) {
-      const result = await updateLearner(editingLearner.id, dataToSave);
-      if (result.success) {
+    // Use learnerData.id as the source of truth for edit vs create.
+    // editingLearner state can be lost across Suspense remounts, so we
+    // fall back to the id embedded in the form data itself.
+    const learnerId = editingLearner?.id || learnerData.id;
+
+    if (learnerId) {
+      const result = await updateLearner(learnerId, dataToSave);
+      if (result?.success) {
         showSuccess('Student updated successfully!');
         setEditingLearner(null);
       } else {
-        showSuccess('Error updating student: ' + result.error);
+        showError('Error updating student: ' + (result?.error || 'Unknown error'));
       }
       return result;
     } else {
@@ -482,8 +487,8 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
           }
         }
       } else {
-        const errorMsg = typeof result.error === 'object' ? JSON.stringify(result.error) : result.error;
-        showSuccess('Error creating student: ' + errorMsg);
+        const errorMsg = typeof result?.error === 'object' ? JSON.stringify(result?.error) : result?.error;
+        showError('Error creating student: ' + errorMsg);
       }
       return result;
     }

@@ -164,7 +164,7 @@ export const onboardingAPI = {
 };
 
 // ============================================
-// DASHBOARD API — results are cached server-side; client just calls normally
+// DASHBOARD API
 // ============================================
 
 export const dashboardAPI = {
@@ -193,10 +193,8 @@ export const configAPI = {
   deleteAggregationConfig: async (id) =>
     fetchWithAuth(`/config/aggregation/${id}`, { method: 'DELETE' }),
 
-  // ── Streams: long-lived cache (rarely changes) ────────────────────────────
   getStreamConfigs: async () =>
     cachedFetch('config:streams', () => fetchWithAuth('/config/streams'), TTL.LONG),
-
   upsertStreamConfig: async (data) => {
     cacheDel('config:streams');
     return fetchWithAuth('/config/streams', { method: 'POST', body: JSON.stringify(data) });
@@ -382,7 +380,7 @@ export const parentAPI = {
 };
 
 // ============================================
-// LEARNERS API — list is cached with short TTL
+// LEARNERS API
 // ============================================
 
 export const learnerAPI = {
@@ -516,7 +514,6 @@ export const attendanceAPI = {
 // ============================================
 
 export const assessmentAPI = {
-  // ── Formative ──────────────────────────────────────────────────────────────
   createFormative: async (assessmentData) =>
     fetchWithAuth('/assessments/formative', { method: 'POST', body: JSON.stringify(assessmentData) }),
   recordFormativeBulk: async (bulkData) =>
@@ -532,7 +529,6 @@ export const assessmentAPI = {
   deleteFormative: async (id) =>
     fetchWithAuth(`/assessments/formative/${id}`, { method: 'DELETE' }),
 
-  // ── Summative Tests — cached; busted on write ─────────────────────────────
   createTest: async (testData) => {
     cacheDelPrefix('tests:');
     return fetchWithAuth('/assessments/tests', { method: 'POST', body: JSON.stringify(testData) });
@@ -541,24 +537,13 @@ export const assessmentAPI = {
     cacheDelPrefix('tests:');
     return fetchWithAuth('/assessments/tests/bulk', { method: 'POST', body: JSON.stringify(bulkData) });
   },
-
-  /**
-   * Get tests — deduplicated + cached per filter combination (2 min TTL).
-   * Multiple rapid calls with the same params share one in-flight request.
-   */
   getTests: async (params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     const key = `tests:${queryString}`;
-    return cachedFetch(
-      key,
-      () => fetchWithAuth(`/assessments/tests${queryString ? `?${queryString}` : ''}`),
-      TTL.MEDIUM
-    );
+    return cachedFetch(key, () => fetchWithAuth(`/assessments/tests${queryString ? `?${queryString}` : ''}`), TTL.MEDIUM);
   },
-
   getTest: async (id) =>
     cachedFetch(`test:${id}`, () => fetchWithAuth(`/assessments/tests/${id}`), TTL.MEDIUM),
-
   updateTest: async (id, testData) => {
     cacheDel(`test:${id}`);
     cacheDelPrefix('tests:');
@@ -574,15 +559,10 @@ export const assessmentAPI = {
     return fetchWithAuth('/assessments/tests/bulk', { method: 'DELETE', body: JSON.stringify({ ids }) });
   },
 
-  // ── Summative Results ─────────────────────────────────────────────────────
   recordResult: async (resultData) => {
     cacheDel(`results:${resultData.testId}`);
     return fetchWithAuth('/assessments/summative/results', { method: 'POST', body: JSON.stringify(resultData) });
   },
-
-  /**
-   * Bulk save — busts the per-test results cache on success.
-   */
   recordBulkResults: async (bulkData) => {
     const result = await fetchWithAuth('/assessments/summative/results/bulk', {
       method: 'POST',
@@ -591,7 +571,6 @@ export const assessmentAPI = {
     cacheDel(`results:${bulkData.testId}`);
     return result;
   },
-
   getBulkResults: async (params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     return fetchWithAuth(`/assessments/summative/results/bulk${queryString ? `?${queryString}` : ''}`);
@@ -600,23 +579,13 @@ export const assessmentAPI = {
     const queryString = new URLSearchParams(params).toString();
     return fetchWithAuth(`/assessments/summative/results/learner/${learnerId}${queryString ? `?${queryString}` : ''}`);
   },
-
-  /**
-   * Per-test results — cached 30 s; multiple simultaneous loaders share one request.
-   */
   async getTestResults(testId) {
-    return cachedFetch(
-      `results:${testId}`,
-      () => fetchWithAuth(`/assessments/summative/results/test/${testId}`),
-      TTL.SHORT
-    );
+    return cachedFetch(`results:${testId}`, () => fetchWithAuth(`/assessments/summative/results/test/${testId}`), TTL.SHORT);
   },
-
   async uploadBulk(formData) {
     return fetchWithAuth('/bulk/assessments/upload', { method: 'POST', body: formData, headers: {} });
   },
 
-  // ── Setup endpoints ───────────────────────────────────────────────────────
   createScalesForSchool: async (data = {}) =>
     fetchWithAuth('/assessments/setup/create-scales', { method: 'POST', body: JSON.stringify(data) }),
   createTestsForScales: async (data) =>
@@ -810,17 +779,12 @@ export const workflowAPI = {
 };
 
 // ============================================
-// GRADING API — systems cached for 10 min (nearly static)
+// GRADING API
 // ============================================
 
 export const gradingAPI = {
-  /**
-   * Fetch all grading systems — heavily cached + deduplicated.
-   * Called on every test load; without this, N parallel calls hit the DB simultaneously.
-   */
   getSystems: async () =>
     cachedFetch('grading:systems', () => fetchWithAuth('/grading/systems'), TTL.LONG),
-
   createSystem: async (data) => {
     cacheDel('grading:systems');
     return fetchWithAuth('/grading/system', { method: 'POST', body: JSON.stringify(data) });
@@ -845,7 +809,6 @@ export const gradingAPI = {
     cacheDel('grading:systems');
     return fetchWithAuth(`/grading/range/${id}`, { method: 'DELETE' });
   },
-
   getScaleGroups: async () =>
     cachedFetch('grading:scale-groups', () => fetchWithAuth('/grading/scale-groups'), TTL.LONG),
   getScaleGroupById: async (id) => fetchWithAuth(`/grading/scale-groups/${id}`),
@@ -943,7 +906,7 @@ export const bookAPI = {
 };
 
 // ============================================
-// SHARING & COMMUNICATION API
+// SHARING API
 // ============================================
 
 export const sharingAPI = {
@@ -1099,12 +1062,20 @@ const api = {
   subjectAssignments: subjectAssignmentAPI,
   assessments: assessmentAPI,
   reports: reportAPI,
+
+  // ── notifications: full object — spread notificationAPI then add getAuditLogs ──
   notifications: {
-    getAuditLogs: async (params) => {
-      const queryString = new URLSearchParams(params).toString();
-      return fetchWithAuth(`/notifications/audit-logs?${queryString}`);
+    ...notificationAPI,
+    getAuditLogs: async (params = {}) => {
+      // Strip undefined / null / empty string values so they don't appear in the query
+      const clean = Object.fromEntries(
+        Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== '')
+      );
+      const queryString = new URLSearchParams(clean).toString();
+      return fetchWithAuth(`/notifications/audit-logs${queryString ? `?${queryString}` : ''}`);
     },
   },
+
   fees: feeAPI,
   cbc: cbcAPI,
   health: healthAPI,

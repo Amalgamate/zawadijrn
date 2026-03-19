@@ -48,7 +48,7 @@ export const useLearners = () => {
           photoUrl: learner.photoUrl,
           photo: learner.photoUrl,
           status: learner.status,
-          admissionDate: learner.admissionDate ? new Date(learner.admissionDate).toLocaleDateString() : 'N/A',
+          admissionDate: learner.admissionDate || null,  // keep ISO string — do NOT format as locale string
           exitDate: learner.exitDate ? new Date(learner.exitDate).toLocaleDateString() : null,
           exitReason: learner.exitReason,
 
@@ -158,13 +158,18 @@ export const useLearners = () => {
 
       const response = await api.learners.update(id, learnerData);
 
-      if (response.success) {
+      if (response?.success) {
         await fetchLearners({
           page: pagination.page,
           limit: pagination.limit
         });
         return { success: true, data: response.data };
       }
+
+      // API returned success:false — surface the message
+      const msg = response?.message || response?.error || 'Failed to update learner';
+      setError(msg);
+      return { success: false, error: msg };
     } catch (err) {
       console.error('Error updating learner:', err);
       setError(err.message);

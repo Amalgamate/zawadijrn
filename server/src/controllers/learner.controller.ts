@@ -181,15 +181,96 @@ export class LearnerController {
   }
 
   async updateLearner(req: AuthRequest, res: Response) {
-    const { id } = req.params;
-    const learner = await prisma.learner.findUnique({ where: { id } });
-    if (!learner) throw new ApiError(404, 'Learner not found');
-    const updateData: any = { ...req.body, updatedBy: req.user!.userId };
-    if (updateData.dateOfBirth) updateData.dateOfBirth = new Date(updateData.dateOfBirth);
-    if (updateData.exitDate)    updateData.exitDate    = new Date(updateData.exitDate);
-    if (updateData.photo) { updateData.photoUrl = updateData.photo; delete updateData.photo; }
-    const updated = await prisma.learner.update({ where: { id }, data: updateData, include: { parent: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } } } });
-    res.json({ success: true, data: updated });
+    try {
+      const { id } = req.params;
+
+      const learner = await prisma.learner.findUnique({ where: { id } });
+      if (!learner) throw new ApiError(404, 'Learner not found');
+
+      // Whitelist of fields the frontend is allowed to update
+      const allowedFields = [
+        'firstName', 'lastName', 'middleName',
+        'dateOfBirth', 'gender', 'grade', 'stream',
+        'parentId',
+        'guardianName', 'guardianPhone', 'guardianEmail',
+        'fatherName', 'fatherPhone', 'fatherEmail', 'fatherDeceased',
+        'motherName', 'motherPhone', 'motherEmail', 'motherDeceased',
+        'guardianRelation',
+        'primaryContactType', 'primaryContactName', 'primaryContactPhone', 'primaryContactEmail',
+        'medicalConditions', 'allergies', 'emergencyContact', 'emergencyPhone',
+        'bloodGroup', 'address', 'county', 'subCounty',
+        'previousSchool', 'religion', 'specialNeeds',
+        'status', 'exitDate', 'exitReason',
+      ];
+
+      const updateData: any = { updatedBy: req.user!.userId };
+
+      for (const field of allowedFields) {
+        const val = req.body[field];
+        if (val === undefined) continue;
+
+        // Never persist empty-string enums — keep the existing DB value instead
+        if (field === 'gender') {
+          if (val && val !== '') updateData.gender = val as Gender;
+          continue;
+        }
+        if (field === 'grade') {
+          if (val && val !== '') updateData.grade = val as Grade;
+          continue;
+        }
+        if (field === 'status') {
+          if (val && val !== '') updateData.status = val as LearnerStatus;
+          continue;
+        }
+
+        // Coerce boolean fields so "false" string doesn't become truthy
+        if (field === 'fatherDeceased' || field === 'motherDeceased') {
+          updateData[field] = val === true || val === 'true';
+          continue;
+        }
+
+        // Null out genuinely empty strings for optional text fields
+        updateData[field] = val === '' ? null : val;
+      }
+
+      // Date fields — parse only when provided and non-empty
+      if (req.body.dateOfBirth && req.body.dateOfBirth !== '') {
+        updateData.dateOfBirth = new Date(req.body.dateOfBirth);
+      }
+      if (req.body.dateOfAdmission && req.body.dateOfAdmission !== '') {
+        updateData.admissionDate = new Date(req.body.dateOfAdmission);
+      }
+      if (req.body.exitDate && req.body.exitDate !== '') {
+        updateData.exitDate = new Date(req.body.exitDate);
+      }
+
+      // Photo
+      if (req.body.photo && req.body.photo !== '') {
+        updateData.photoUrl = req.body.photo;
+      }
+
+      const updated = await prisma.learner.update({
+        where: { id },
+        data: updateData,
+        include: { parent: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } } },
+      });
+
+      res.json({ success: true, data: updated });
+    } catch (error: any) {
+      console.error('[updateLearner] error:', error?.message || error);
+
+      // Propagate known API errors (404, 403) with their status codes
+      if (error instanceof ApiError) {
+        return res.status(error.statusCode).json({ success: false, message: error.message });
+      }
+
+      // Prisma unique constraint (shouldn't happen on update, but guard anyway)
+      if (error?.code === 'P2002') {
+        return res.status(409).json({ success: false, message: 'A learner with that admission number already exists.' });
+      }
+
+      res.status(500).json({ success: false, message: error?.message || 'Failed to update learner' });
+    }
   }
 
   async deleteLearner(req: AuthRequest, res: Response) {

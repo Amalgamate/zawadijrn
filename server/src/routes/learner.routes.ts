@@ -28,7 +28,7 @@ const createLearnerSchema = z.object({
 const updateLearnerSchema = z.object({
   firstName: z.string().min(2).max(100).optional(),
   lastName: z.string().min(2).max(100).optional(),
-  dateOfBirth: z.string().datetime().optional(),
+  dateOfBirth: z.string().optional(),
   guardianName: z.string().min(2).max(100).optional()
 }).passthrough();
 

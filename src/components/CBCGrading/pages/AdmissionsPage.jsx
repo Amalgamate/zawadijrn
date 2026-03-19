@@ -81,9 +81,15 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
   // Initialize form with learner data if editing
   useEffect(() => {
     if (learner) {
+      // Prevent React warnings by replacing null values from the backend with empty strings
+      const sanitizedLearner = Object.fromEntries(
+        Object.entries(learner).map(([key, value]) => [key, value === null ? '' : value])
+      );
+
       setFormData({
         ...initialFormData,
-        ...learner,
+        ...sanitizedLearner,
+        id: learner.id,          // always carry the real DB id for edit detection
         dateOfBirth: toInputDate(learner.dateOfBirth),
         dateOfAdmission: toInputDate(learner.admissionDate) || initialFormData.dateOfAdmission,
       });
@@ -532,7 +538,21 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Nationality</label>
-                    <input type="text" name="nationality" value={formData.nationality} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-purple" />
+                    <select name="nationality" value={formData.nationality} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-purple bg-white">
+                      <option value="">Select Nationality</option>
+                      {[
+                        'Algeria', 'Angola', 'Benin', 'Botswana', 'Burkina Faso', 'Burundi', 'Cabo Verde', 
+                        'Cameroon', 'Central African Republic', 'Chad', 'Comoros', 'Democratic Republic of the Congo', 
+                        'Republic of the Congo', "Cote d'Ivoire", 'Djibouti', 'Egypt', 'Equatorial Guinea', 'Eritrea', 
+                        'Eswatini', 'Ethiopia', 'Gabon', 'Gambia', 'Ghana', 'Guinea', 'Guinea-Bissau', 'Kenya', 
+                        'Lesotho', 'Liberia', 'Libya', 'Madagascar', 'Malawi', 'Mali', 'Mauritania', 'Mauritius', 
+                        'Morocco', 'Mozambique', 'Namibia', 'Niger', 'Nigeria', 'Rwanda', 'Sao Tome and Principe', 
+                        'Senegal', 'Seychelles', 'Sierra Leone', 'Somalia', 'South Africa', 'South Sudan', 'Sudan', 
+                        'Tanzania', 'Togo', 'Tunisia', 'Uganda', 'Zambia', 'Zimbabwe'
+                      ].map(country => (
+                        <option key={country} value={country}>{country}</option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Religion</label>
