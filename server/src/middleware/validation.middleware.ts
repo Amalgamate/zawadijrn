@@ -40,10 +40,11 @@ export const validate = (
           logInvalidInput(req, userId, msg.field, msg.message);
         });
 
+        const errorMsg = 'Validation failed: ' + messages.map((m) => `${m.field}: ${m.message}`).join(', ');
         return next(
           new ApiError(
             400,
-            'Validation failed',
+            errorMsg,
             true
           )
         );

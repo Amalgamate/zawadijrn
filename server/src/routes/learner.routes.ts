@@ -20,17 +20,17 @@ const createLearnerSchema = z.object({
   firstName: z.string().min(2).max(100),
   lastName: z.string().min(2).max(100),
   admissionNumber: z.string().min(1).max(50),
-  dateOfBirth: z.string().datetime().optional(),
-  grade: z.enum(['Grade1', 'Grade2', 'Grade3', 'Grade4', 'Grade5', 'Grade6']),
+  dateOfBirth: z.string().optional(),
+  grade: z.string(),
   guardianName: z.string().min(2).max(100).optional()
-});
+}).passthrough();
 
 const updateLearnerSchema = z.object({
   firstName: z.string().min(2).max(100).optional(),
   lastName: z.string().min(2).max(100).optional(),
   dateOfBirth: z.string().datetime().optional(),
   guardianName: z.string().min(2).max(100).optional()
-});
+}).passthrough();
 
 // Protect all routes
 router.use(authenticate);

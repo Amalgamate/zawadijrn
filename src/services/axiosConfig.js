@@ -13,8 +13,6 @@ const axiosInstance = axios.create({
     baseURL: API_BASE_URL,
     headers: {
         'Content-Type': 'application/json',
-        // Signal that we accept gzip — axios decompresses automatically in browser
-        'Accept-Encoding': 'gzip, deflate, br',
     },
     // Fail fast instead of hanging indefinitely
     timeout: 30_000,

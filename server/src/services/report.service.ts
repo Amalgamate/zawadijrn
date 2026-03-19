@@ -135,7 +135,31 @@ export interface TermlyReportData {
 }
 
 // ============================================
-// MAIN SERVICE FUNCTIONS
+// GRADES ELIGIBLE FOR PATHWAY PREDICTION
+// Client requirement: strictly Grade 7, 8, 9 only.
+// ============================================
+const PATHWAY_ELIGIBLE_GRADES = ['GRADE_7', 'GRADE_8', 'GRADE_9'] as const;
+
+// ============================================
+// TERM → APPROXIMATE DATE RANGES
+// Used to filter attendance when no TermConfig row exists.
+// Term 1 = Jan–Apr, Term 2 = May–Aug, Term 3 = Sep–Dec.
+// ============================================
+function termDateRange(term: Term, academicYear: number): { gte: Date; lte: Date } {
+  const ranges: Record<Term, [number, number, number, number]> = {
+    TERM_1: [1, 1, 4, 30],
+    TERM_2: [5, 1, 8, 31],
+    TERM_3: [9, 1, 12, 31],
+  };
+  const [startMonth, startDay, endMonth, endDay] = ranges[term];
+  return {
+    gte: new Date(academicYear, startMonth - 1, startDay),
+    lte: new Date(academicYear, endMonth - 1, endDay, 23, 59, 59),
+  };
+}
+
+// ============================================
+// MAIN SERVICE FUNCTION
 // ============================================
 
 export async function generateTermlyReport(
@@ -200,10 +224,10 @@ export async function generateTermlyReport(
     attendanceSummary
   );
 
-  // Fetch AI Pathway Prediction for Grade 7 and up
-  let pathwayPrediction = null;
-  const juniorSeniorGrades = ['GRADE_7', 'GRADE_8', 'GRADE_9'];
-  if (juniorSeniorGrades.includes(learner.grade as string)) {
+  // ── Pathway prediction — Grade 7, 8, 9 only (client requirement) ──────────
+  let pathwayPrediction: any = null;
+
+  if (PATHWAY_ELIGIBLE_GRADES.includes(learner.grade as any)) {
     try {
       pathwayPrediction = await aiAssistantService.generatePathwayPrediction(
         learnerId,
@@ -211,16 +235,17 @@ export async function generateTermlyReport(
         academicYear
       );
     } catch (e: any) {
-      console.warn('Pathway prediction failed:', e?.message || e);
-      // Service is fully deterministic — this catch is a last-resort safety net
-      // only for unexpected DB errors. Return a neutral pending state.
+      console.warn('[PathwayPrediction] Failed:', e?.message || e);
+      // Deterministic service — this only fires on unexpected DB errors.
+      // Return a neutral pending state rather than crashing the whole report.
       pathwayPrediction = {
         predictedPathway: 'Analysis Pending',
         confidence: 0,
-        justification: 'Could not compute pathway analysis. Please ensure all subject results are recorded for this term.',
+        justification:
+          'Could not compute pathway analysis. Please ensure all subject results are recorded for this term.',
         careerRecommendations: ['Contact the class teacher for guidance'],
         growthAreas: ['Ensure all subject scores are entered for this term'],
-        clusterBreakdown: { STEM: 0, Social: 0, Arts: 0 }
+        clusterBreakdown: { STEM: 0, Social: 0, Arts: 0 },
       };
     }
   }
@@ -241,18 +266,20 @@ export async function generateTermlyReport(
     coreCompetencies,
     values: valuesAssessment,
     coCurricular: coCurricularActivities,
-    comments: reportComments ? {
-      classTeacher: reportComments.classTeacherComment,
-      classTeacherName: reportComments.classTeacherName,
-      classTeacherDate: reportComments.classTeacherDate,
-      headTeacher: reportComments.headTeacherComment,
-      headTeacherName: reportComments.headTeacherName,
-      headTeacherDate: reportComments.headTeacherDate,
-      nextTermOpens: reportComments.nextTermOpens
-    } : null,
+    comments: reportComments
+      ? {
+          classTeacher: reportComments.classTeacherComment,
+          classTeacherName: reportComments.classTeacherName,
+          classTeacherDate: reportComments.classTeacherDate,
+          headTeacher: reportComments.headTeacherComment,
+          headTeacherName: reportComments.headTeacherName,
+          headTeacherDate: reportComments.headTeacherDate,
+          nextTermOpens: reportComments.nextTermOpens,
+        }
+      : null,
     overallPerformance,
     pathwayPrediction,
-    generatedDate: new Date()
+    generatedDate: new Date(),
   };
 }
 
@@ -300,17 +327,50 @@ async function fetchSummativeResults(learnerId: string, term: Term, academicYear
   return await prisma.summativeResult.findMany({
     where: { learnerId, test: { term, academicYear } },
     include: {
-      test: { select: { title: true, learningArea: true, totalMarks: true, passMarks: true, testDate: true } },
+      test: {
+        select: {
+          title: true,
+          learningArea: true,
+          totalMarks: true,
+          passMarks: true,
+          testDate: true,
+        }
+      },
       recorder: { select: { firstName: true, lastName: true } }
     },
     orderBy: { test: { learningArea: 'asc' } }
   });
 }
 
+/**
+ * Fetch attendance records scoped to a specific term.
+ *
+ * Strategy (in priority order):
+ * 1. Look up the TermConfig for the exact term/year — if it has startDate/endDate,
+ *    use them for a precise date filter.
+ * 2. Fall back to the hard-coded approximate ranges (Jan–Apr / May–Aug / Sep–Dec)
+ *    when no TermConfig row exists yet.
+ *
+ * This ensures the attendance count on a Term 1 report never includes
+ * Term 2 or Term 3 records.
+ */
 async function fetchAttendanceRecords(learnerId: string, term: Term, academicYear: number) {
+  // 1. Try to use configured term dates
+  const termConfig = await prisma.termConfig.findFirst({
+    where: { term, academicYear },
+    select: { startDate: true, endDate: true },
+  });
+
+  const dateFilter = termConfig
+    ? { gte: termConfig.startDate, lte: termConfig.endDate }
+    : termDateRange(term, academicYear);
+
   return await prisma.attendance.findMany({
-    where: { learnerId },
-    orderBy: { date: 'desc' }
+    where: {
+      learnerId,
+      date: dateFilter,
+    },
+    orderBy: { date: 'asc' },
   });
 }
 
@@ -413,11 +473,11 @@ function calculateAttendanceSummary(records: any[]): AttendanceSummary {
     };
   }
 
-  const present = records.filter(r => r.status === 'PRESENT').length;
-  const absent = records.filter(r => r.status === 'ABSENT').length;
-  const late = records.filter(r => r.status === 'LATE').length;
-  const excused = records.filter(r => r.status === 'EXCUSED').length;
-  const sick = records.filter(r => r.status === 'SICK').length;
+  const present  = records.filter(r => r.status === 'PRESENT').length;
+  const absent   = records.filter(r => r.status === 'ABSENT').length;
+  const late     = records.filter(r => r.status === 'LATE').length;
+  const excused  = records.filter(r => r.status === 'EXCUSED').length;
+  const sick     = records.filter(r => r.status === 'SICK').length;
 
   return {
     totalDays,

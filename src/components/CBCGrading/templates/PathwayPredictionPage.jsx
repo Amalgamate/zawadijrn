@@ -6,12 +6,17 @@ import {
     Lightbulb,
     TrendingUp,
     Briefcase,
-    ExternalLink
 } from 'lucide-react';
 
 /**
- * PathwayPredictionPage - Page 2 of the Comprehensive CBC Report
- * AI-powered career navigation and pathway analysis for Grade 7-8 students.
+ * PathwayPredictionPage — Page 2 of the Termly Report Card
+ *
+ * Rendered automatically for Grade 7, 8 and 9 learners.
+ * The pathway data is computed deterministically in ai-assistant.service.ts
+ * from summative cluster averages (STEM / Social Sciences / Arts & Sports).
+ *
+ * No external AI API is called — the service uses lookup tables for careers
+ * and growth tips, and derives confidence from the gap between cluster scores.
  */
 const PathwayPredictionPage = ({ data, brandColor = '#4a0404' }) => {
     if (!data || !data.pathwayPrediction) return null;
@@ -20,188 +25,250 @@ const PathwayPredictionPage = ({ data, brandColor = '#4a0404' }) => {
         predictedPathway,
         confidence,
         justification,
-        careerRecommendations,
-        growthAreas,
-        clusterBreakdown
+        careerRecommendations = [],
+        growthAreas = [],
+        clusterBreakdown = {},
     } = data.pathwayPrediction;
 
-    // Percentage calculations for the bar charts
-    const stemWidth = `${clusterBreakdown?.STEM || 0}%`;
-    const socialWidth = `${clusterBreakdown?.Social || 0}%`;
-    const artsWidth = `${clusterBreakdown?.Arts || 0}%`;
+    const stem   = clusterBreakdown.STEM   ?? 0;
+    const social = clusterBreakdown.Social ?? 0;
+    const arts   = clusterBreakdown.Arts   ?? 0;
+
+    // Bar widths — cap at 100 so a value > 100 doesn't overflow
+    const stemWidth   = `${Math.min(stem,   100)}%`;
+    const socialWidth = `${Math.min(social, 100)}%`;
+    const artsWidth   = `${Math.min(arts,   100)}%`;
+
+    // Pick icon by pathway
+    const PathwayIcon =
+        predictedPathway?.includes('STEM')   ? Target :
+        predictedPathway?.includes('Social') ? Brain  :
+        Trophy;
+
+    // Learner grade label for the header sub-line
+    const gradeLabel = data.learner?.grade?.replace('_', ' ') || 'Senior School';
 
     return (
         <div
-            className="bg-white text-gray-900 font-sans p-10 flex flex-col page-break-before-always"
+            className="bg-white text-gray-900 font-sans p-10 flex flex-col"
             style={{
                 width: '794px',
-                height: '1123px',
+                minHeight: '1123px',
                 boxSizing: 'border-box',
                 position: 'relative',
                 overflow: 'hidden',
-                border: '1px solid #eee'
+                border: '1px solid #eee',
+                pageBreakBefore: 'always',
             }}
         >
-            {/* 1. SECTION HEADER */}
-            <div className="flex items-center gap-4 mb-8 pb-4 border-b-2" style={{ borderColor: brandColor }}>
-                <div className="p-3 rounded-lg text-white" style={{ backgroundColor: brandColor }}>
-                    <Brain size={32} />
+            {/* ── HEADER ────────────────────────────────────────────────── */}
+            <div
+                className="flex items-center gap-4 mb-8 pb-5 border-b-2"
+                style={{ borderColor: brandColor }}
+            >
+                <div
+                    className="p-3 rounded-lg text-white flex-shrink-0"
+                    style={{ backgroundColor: brandColor }}
+                >
+                    <Brain size={28} />
                 </div>
-                <div>
-                    <h2 className="text-2xl font-black uppercase tracking-tight">Pathway Prediction</h2>
-                    <p className="text-sm font-bold text-gray-500 uppercase tracking-widest">Senior School Career Navigator · CBC Cluster Analysis</p>
+                <div className="flex-1">
+                    <h2 className="text-2xl font-black uppercase tracking-tight leading-none">
+                        CBC Pathway Analysis
+                    </h2>
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">
+                        {gradeLabel} · Senior School Career Navigator · {data.term?.replace('_', ' ')} {data.academicYear}
+                    </p>
+                </div>
+                {/* Confidence pill */}
+                <div
+                    className="text-white text-xs font-black px-4 py-2 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: brandColor }}
+                >
+                    {confidence}% confidence
                 </div>
             </div>
 
-            <div className="grid grid-cols-12 gap-8 flex-grow">
-                {/* LEFT COLUMN: VISUAL ANALYTICS */}
-                <div className="col-span-12 lg:col-span-5 space-y-8">
+            {/* ── MAIN GRID ─────────────────────────────────────────────── */}
+            <div className="grid grid-cols-5 gap-8 flex-grow">
 
-                    {/* PATHWAY BADGE */}
+                {/* LEFT — visual analytics (2 / 5 columns) */}
+                <div className="col-span-2 space-y-8">
+
+                    {/* Pathway badge */}
                     <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100 text-center shadow-sm">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">Recommended Pathway</p>
-                        <div className="inline-flex flex-col items-center">
-                            <div className="w-20 h-20 rounded-full flex items-center justify-center mb-4 bg-white shadow-inner" style={{ color: brandColor, border: `4px solid ${brandColor}` }}>
-                                {predictedPathway?.includes('STEM') ? <Target size={40} /> :
-                                    predictedPathway?.includes('Social') ? <Brain size={40} /> : <Trophy size={40} />}
-                            </div>
-                            <h3 className="text-xl font-black uppercase" style={{ color: brandColor }}>{predictedPathway || 'Analyzing...'}</h3>
-                            <div className="mt-2 flex items-center gap-2">
-                                <div className="px-3 py-1 bg-white border border-gray-200 rounded-full text-[10px] font-bold text-gray-600">
-                                    CONFIDENCE: {confidence}%
-                                </div>
-                            </div>
+                        <p
+                            className="text-[9px] font-black uppercase tracking-[0.2em] mb-4"
+                            style={{ color: brandColor }}
+                        >
+                            Recommended Pathway
+                        </p>
+                        <div
+                            className="w-20 h-20 rounded-full mx-auto flex items-center justify-center mb-4 shadow-inner"
+                            style={{ border: `4px solid ${brandColor}`, color: brandColor, background: '#fff' }}
+                        >
+                            <PathwayIcon size={38} />
                         </div>
+                        <h3
+                            className="text-lg font-black uppercase leading-tight"
+                            style={{ color: brandColor }}
+                        >
+                            {predictedPathway || 'Pending'}
+                        </h3>
                     </div>
 
-                    {/* CLUSTER BREAKDOWN VISUAL */}
-                    <div className="space-y-6">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b pb-2">Academic Strength Clusters</p>
+                    {/* Cluster bars */}
+                    <div className="space-y-5">
+                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 pb-2">
+                            Academic Cluster Scores
+                        </p>
 
-                        {/* STEM Cluster */}
-                        <div className="space-y-2">
-                            <div className="flex justify-between items-end">
-                                <span className="text-xs font-black uppercase text-gray-700">STEM Cluster</span>
-                                <span className="text-xs font-bold text-gray-500">{clusterBreakdown?.STEM}%</span>
+                        {/* STEM */}
+                        <div className="space-y-1.5">
+                            <div className="flex justify-between text-[10px] font-black uppercase">
+                                <span className="text-gray-700">STEM</span>
+                                <span className="text-gray-500">{stem}%</span>
                             </div>
                             <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
                                 <div
-                                    className="h-full rounded-full transition-all duration-1000"
+                                    className="h-full rounded-full"
                                     style={{ width: stemWidth, backgroundColor: brandColor }}
                                 />
                             </div>
-                            <p className="text-[8px] text-gray-400 font-bold uppercase italic">Maths, Integrated Science, Pre-Tech, Agriculture</p>
+                            <p className="text-[7px] text-gray-400 font-bold uppercase italic">
+                                Maths · Science · Pre-Tech · Agriculture
+                            </p>
                         </div>
 
-                        {/* Social Cluster */}
-                        <div className="space-y-2">
-                            <div className="flex justify-between items-end">
-                                <span className="text-xs font-black uppercase text-gray-700">Social Sciences</span>
-                                <span className="text-xs font-bold text-gray-500">{clusterBreakdown?.Social}%</span>
+                        {/* Social */}
+                        <div className="space-y-1.5">
+                            <div className="flex justify-between text-[10px] font-black uppercase">
+                                <span className="text-gray-700">Social Sciences</span>
+                                <span className="text-gray-500">{social}%</span>
                             </div>
                             <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
                                 <div
-                                    className="h-full rounded-full bg-gray-400 opacity-60"
+                                    className="h-full rounded-full bg-gray-500 opacity-60"
                                     style={{ width: socialWidth }}
                                 />
                             </div>
-                            <p className="text-[8px] text-gray-400 font-bold uppercase italic">Languages, Social Studies, RE, Life Skills</p>
+                            <p className="text-[7px] text-gray-400 font-bold uppercase italic">
+                                Languages · Social Studies · RE · Life Skills
+                            </p>
                         </div>
 
-                        {/* Arts Cluster */}
-                        <div className="space-y-2">
-                            <div className="flex justify-between items-end">
-                                <span className="text-xs font-black uppercase text-gray-700">Arts & Sports</span>
-                                <span className="text-xs font-bold text-gray-500">{clusterBreakdown?.Arts}%</span>
+                        {/* Arts */}
+                        <div className="space-y-1.5">
+                            <div className="flex justify-between text-[10px] font-black uppercase">
+                                <span className="text-gray-700">Arts &amp; Sports</span>
+                                <span className="text-gray-500">{arts}%</span>
                             </div>
                             <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
                                 <div
-                                    className="h-full rounded-full bg-gray-300 opacity-60"
+                                    className="h-full rounded-full bg-gray-300 opacity-70"
                                     style={{ width: artsWidth }}
                                 />
                             </div>
-                            <p className="text-[8px] text-gray-400 font-bold uppercase italic">Creative Arts, Music, P.E.</p>
+                            <p className="text-[7px] text-gray-400 font-bold uppercase italic">
+                                Creative Arts · Music · Physical Education
+                            </p>
                         </div>
                     </div>
-
                 </div>
 
-                {/* RIGHT COLUMN: AI INSIGHTS */}
-                <div className="col-span-12 lg:col-span-7 space-y-8 border-l border-gray-100 pl-8">
+                {/* RIGHT — insights (3 / 5 columns) */}
+                <div className="col-span-3 space-y-7 border-l border-gray-100 pl-8">
 
-                    {/* JUSTIFICATION */}
+                    {/* Counselor's insight */}
                     <div>
-                        <div className="flex items-center gap-2 mb-3 text-brand-purple">
-                            <Lightbulb size={18} />
-                            <h4 className="text-xs font-black uppercase tracking-widest text-gray-800">Counselor's Insight</h4>
+                        <div className="flex items-center gap-2 mb-3">
+                            <Lightbulb size={15} className="text-yellow-500 flex-shrink-0" />
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-700">
+                                Counselor's Insight
+                            </h4>
                         </div>
-                        <div className="bg-brand-purple/5 p-5 rounded-xl border border-brand-purple/10">
-                            <p className="text-sm text-gray-700 leading-relaxed font-medium italic">
-                                "{justification || "The learner exhibits balanced potential across multiple areas, with a distinct leaning towards experimental and analytical thinking styles typical of the STEM pathway."}"
+                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                            <p className="text-[11px] text-gray-700 leading-relaxed font-medium italic">
+                                "{justification || 'No analysis available — ensure all subject results are recorded.'}"
                             </p>
                         </div>
                     </div>
 
-                    {/* CAREER RECOMMENDATIONS */}
-                    <div>
-                        <div className="flex items-center gap-2 mb-4 text-brand-teal">
-                            <Briefcase size={18} />
-                            <h4 className="text-xs font-black uppercase tracking-widest text-gray-800">Potential Career Horizons</h4>
+                    {/* Career horizons */}
+                    {careerRecommendations.length > 0 && (
+                        <div>
+                            <div className="flex items-center gap-2 mb-3">
+                                <Briefcase size={15} className="text-blue-500 flex-shrink-0" />
+                                <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-700">
+                                    Potential Career Horizons
+                                </h4>
+                            </div>
+                            <div className="space-y-2">
+                                {careerRecommendations.map((career, i) => (
+                                    <div
+                                        key={i}
+                                        className="flex items-center gap-3 bg-gray-50 px-3 py-2 rounded-lg border border-gray-100"
+                                    >
+                                        <div
+                                            className="w-2 h-2 rounded-full flex-shrink-0"
+                                            style={{ backgroundColor: brandColor }}
+                                        />
+                                        <span className="text-[11px] font-bold text-gray-700">{career}</span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                        <div className="grid grid-cols-1 gap-3">
-                            {careerRecommendations?.map((career, i) => (
-                                <div key={i} className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg border border-gray-100 group transition-all hover:bg-white hover:shadow-sm">
-                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: brandColor }} />
-                                    <span className="text-sm font-bold text-gray-700">{career}</span>
-                                    <ExternalLink size={12} className="ml-auto text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                    )}
 
-                    {/* GROWTH AREAS */}
-                    <div>
-                        <div className="flex items-center gap-2 mb-3 text-orange-500">
-                            <TrendingUp size={18} />
-                            <h4 className="text-xs font-black uppercase tracking-widest text-gray-800">Future Readiness Tips</h4>
+                    {/* Growth tips */}
+                    {growthAreas.length > 0 && (
+                        <div>
+                            <div className="flex items-center gap-2 mb-3">
+                                <TrendingUp size={15} className="text-orange-500 flex-shrink-0" />
+                                <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-700">
+                                    Future Readiness Tips
+                                </h4>
+                            </div>
+                            <ul className="space-y-2">
+                                {growthAreas.map((tip, i) => (
+                                    <li key={i} className="flex gap-2 text-[11px] font-bold text-gray-600 leading-snug">
+                                        <span className="text-orange-400 mt-0.5 flex-shrink-0">•</span>
+                                        {tip}
+                                    </li>
+                                ))}
+                            </ul>
                         </div>
-                        <ul className="space-y-2">
-                            {growthAreas?.map((tip, i) => (
-                                <li key={i} className="flex gap-2 text-[11px] font-bold text-gray-600">
-                                    <span className="text-orange-500">•</span>
-                                    {tip}
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-
+                    )}
                 </div>
             </div>
 
-            {/* FOOTER ADVICE */}
-            <div className="mt-10 p-6 bg-gray-900 rounded-lg text-white relative overflow-hidden">
-                <div className="relative z-10">
-                    <h5 className="text-[10px] font-black uppercase tracking-[0.2em] mb-2 opacity-60">Important Note for Parents</h5>
-                    <p className="text-[11px] font-medium leading-relaxed">
-                        This pathway analysis is computed from the learner's summative assessment scores using CBC cluster methodology.
-                        It is intended for career guidance only and should be discussed with the learner's subject teachers and
-                        school counselor to ensure alignment with the child's natural passions and tertiary goals.
-                    </p>
-                </div>
-                <div className="absolute top-0 right-0 p-4 opacity-10">
-                    <Brain size={80} />
+            {/* ── FOOTER NOTE ───────────────────────────────────────────── */}
+            <div
+                className="mt-8 p-5 rounded-lg text-white relative overflow-hidden"
+                style={{ backgroundColor: '#1a1a2e' }}
+            >
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] mb-1 opacity-50">
+                    Important Note for Parents &amp; Guardians
+                </p>
+                <p className="text-[10px] font-medium leading-relaxed relative z-10">
+                    This pathway analysis is computed from the learner's summative assessment scores using CBC
+                    cluster methodology. It is for career guidance only and should be discussed with subject
+                    teachers and the school counselor to ensure alignment with the learner's personal interests.
+                </p>
+                <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+                    <Brain size={72} />
                 </div>
             </div>
 
-            {/* SIGNATURE SECTION */}
-            <div className="mt-8 grid grid-cols-2 gap-10 pt-6 border-t border-gray-100">
+            {/* ── SIGNATURES ────────────────────────────────────────────── */}
+            <div className="mt-6 grid grid-cols-2 gap-10 pt-5 border-t border-gray-100">
                 <div className="text-center">
-                    <div className="border-b border-gray-200 h-8 mb-1"></div>
+                    <div className="border-b border-gray-200 h-8 mb-1" />
                     <p className="text-[8px] font-black text-gray-400 uppercase">Career Guidance Counselor</p>
                 </div>
                 <div className="text-center">
-                    <div className="border-b border-gray-200 h-8 mb-1"></div>
-                    <p className="text-[8px] font-black text-gray-400 uppercase">Parent/Guardian Signature</p>
+                    <div className="border-b border-gray-200 h-8 mb-1" />
+                    <p className="text-[8px] font-black text-gray-400 uppercase">Parent / Guardian Signature</p>
                 </div>
             </div>
         </div>
