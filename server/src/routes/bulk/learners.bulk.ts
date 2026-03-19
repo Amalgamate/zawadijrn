@@ -41,6 +41,44 @@ const learnerSchema = z.object({
 });
 
 /**
+ * Normalise a raw class/grade string from a CSV into a Prisma Grade enum value.
+ * Handles variants like "Play Group", "PLAY GROUP", "Playgroup", "PLAYGROUP",
+ * "Grade 1", "GRADE 1", "GRADE_1", "1", "PP1", "PP2", etc.
+ */
+function resolveGrade(raw: string): Grade {
+  // Strip all spaces and underscores, uppercase — gives a canonical token
+  const normalised = raw.toUpperCase().replace(/[\s_]+/g, '');
+
+  const gradeMap: { [key: string]: Grade } = {
+    // Playgroup — all spacing variants collapse to PLAYGROUP
+    'PLAYGROUP': 'PLAYGROUP',
+    'PLAYGRP':   'PLAYGROUP',
+    'PG':        'PLAYGROUP',
+    // Pre-primary
+    'PP1': 'PP1',
+    'PP2': 'PP2',
+    // Grade 1–9 (with or without the word GRADE)
+    'GRADE1': 'GRADE_1', 'GRADE2': 'GRADE_2', 'GRADE3': 'GRADE_3',
+    'GRADE4': 'GRADE_4', 'GRADE5': 'GRADE_5', 'GRADE6': 'GRADE_6',
+    'GRADE7': 'GRADE_7', 'GRADE8': 'GRADE_8', 'GRADE9': 'GRADE_9',
+    'GRADE_1': 'GRADE_1', 'GRADE_2': 'GRADE_2', 'GRADE_3': 'GRADE_3',
+    'GRADE_4': 'GRADE_4', 'GRADE_5': 'GRADE_5', 'GRADE_6': 'GRADE_6',
+    'GRADE_7': 'GRADE_7', 'GRADE_8': 'GRADE_8', 'GRADE_9': 'GRADE_9',
+    '1': 'GRADE_1', '2': 'GRADE_2', '3': 'GRADE_3', '4': 'GRADE_4',
+    '5': 'GRADE_5', '6': 'GRADE_6', '7': 'GRADE_7', '8': 'GRADE_8',
+    '9': 'GRADE_9',
+  };
+
+  if (gradeMap[normalised]) return gradeMap[normalised];
+
+  // Fuzzy fallback: find first key contained in the normalised string
+  const match = Object.keys(gradeMap).find(k => normalised.includes(k));
+  if (match) return gradeMap[match];
+
+  return 'GRADE_1'; // absolute last resort
+}
+
+/**
  * POST /api/bulk/learners/upload
  */
 router.post(
@@ -97,26 +135,7 @@ router.post(
         const csvData = item.data;
         const admNo = csvData['Adm No'];
 
-        const gradeStr = (csvData['Class'] || '').toString().toUpperCase().trim();
-        const gradeMap: { [key: string]: Grade } = {
-          'PLAYGROUP': 'PLAYGROUP',
-          'PP1': 'PP1',
-          'PP2': 'PP2',
-          'GRADE 1': 'GRADE_1', 'GRADE 2': 'GRADE_2', 'GRADE 3': 'GRADE_3',
-          'GRADE 4': 'GRADE_4', 'GRADE 5': 'GRADE_5', 'GRADE 6': 'GRADE_6',
-          'GRADE 7': 'GRADE_7', 'GRADE 8': 'GRADE_8', 'GRADE 9': 'GRADE_9',
-          '1': 'GRADE_1', '2': 'GRADE_2', '3': 'GRADE_3', '4': 'GRADE_4',
-          '5': 'GRADE_5', '6': 'GRADE_6', '7': 'GRADE_7', '8': 'GRADE_8',
-          '9': 'GRADE_9',
-        };
-
-        let grade: Grade = 'GRADE_1';
-        if (gradeMap[gradeStr]) {
-          grade = gradeMap[gradeStr];
-        } else {
-          const match = Object.keys(gradeMap).find(k => gradeStr.includes(k));
-          if (match) grade = gradeMap[match];
-        }
+        const grade = resolveGrade((csvData['Class'] || '').toString());
 
         const rawName = csvData['Learner Name'] || csvData['Leaner Name'] || csvData['Name'] || '';
         const nameParts = rawName.trim().split(/\s+/);
