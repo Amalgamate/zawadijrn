@@ -27,7 +27,8 @@ export const getCurrentAcademicYear = () => {
 export const getAcademicYearOptions = () => {
   const currentYear = getCurrentAcademicYear();
   const years = [];
-  for (let i = -10; i <= 10; i++) {
+  // Restrict to current year and 10 years in the past
+  for (let i = -10; i <= 0; i++) {
     const year = currentYear + i;
     years.push({
       value: year,
@@ -35,7 +36,8 @@ export const getAcademicYearOptions = () => {
     });
   }
   
-  return years;
+  // Return reversed so current year is at the top
+  return years.reverse();
 };
 
 /**
@@ -58,8 +60,8 @@ export const isValidAcademicYear = (year) => {
   if (!year || typeof year !== 'number') return false;
   
   const currentYear = getCurrentAcademicYear();
-  // Valid range: current year ± 10 years
-  return year >= (currentYear - 10) && year <= (currentYear + 10);
+  // Valid range: up to current year, stretching 10 years back
+  return year >= (currentYear - 10) && year <= currentYear;
 };
 
 const academicYearConfig = {

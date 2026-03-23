@@ -10,7 +10,7 @@ export const learningAreas = [
   {
     id: 10,
     name: 'Literacy',
-    shortName: 'Literacy',
+    shortName: 'LANG',
     code: 'LIT_PP',
     gradeLevel: 'Pre-Primary',
     grades: ['Playgroup', 'PP1', 'PP2'],
@@ -22,7 +22,7 @@ export const learningAreas = [
   {
     id: 11,
     name: 'Mathematical Activities',
-    shortName: 'Math',
+    shortName: 'MATH',
     code: 'MATH_PP',
     gradeLevel: 'Pre-Primary',
     grades: ['Playgroup', 'PP1', 'PP2'],
@@ -34,7 +34,7 @@ export const learningAreas = [
   {
     id: 12,
     name: 'Environmental Activities',
-    shortName: 'Env',
+    shortName: 'ENV',
     code: 'ENV_PP',
     gradeLevel: 'Pre-Primary',
     grades: ['Playgroup', 'PP1', 'PP2'],
@@ -46,7 +46,7 @@ export const learningAreas = [
   {
     id: 13,
     name: 'Psychomotor and Creative Activities',
-    shortName: 'Creative',
+    shortName: 'CREA',
     code: 'PCA_PP',
     gradeLevel: 'Pre-Primary',
     grades: ['Playgroup', 'PP1', 'PP2'],
@@ -58,7 +58,7 @@ export const learningAreas = [
   {
     id: 14,
     name: 'Religious Education',
-    shortName: 'RE',
+    shortName: 'REL',
     code: 'RE_PP',
     gradeLevel: 'Pre-Primary',
     grades: ['Playgroup', 'PP1', 'PP2'],
@@ -70,7 +70,7 @@ export const learningAreas = [
   {
     id: 15,
     name: 'Indigenous Language',
-    shortName: 'ILang',
+    shortName: 'INDI',
     code: 'IL_PP',
     gradeLevel: 'Pre-Primary',
     grades: ['Playgroup', 'PP1', 'PP2'],
@@ -84,7 +84,7 @@ export const learningAreas = [
   {
     id: 20,
     name: 'Mathematics',
-    shortName: 'Maths',
+    shortName: 'MATH',
     code: 'MATH',
     gradeLevel: 'Lower Primary',
     grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
@@ -113,7 +113,7 @@ export const learningAreas = [
   {
     id: 21,
     name: 'English',
-    shortName: 'ENG',
+    shortName: 'LANG',
     code: 'ENG',
     gradeLevel: 'Lower Primary',
     grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
@@ -128,7 +128,7 @@ export const learningAreas = [
   {
     id: 22,
     name: 'Kiswahili',
-    shortName: 'Kiswa',
+    shortName: 'KISW',
     code: 'KIS',
     gradeLevel: 'Lower Primary',
     grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
@@ -152,7 +152,7 @@ export const learningAreas = [
   {
     id: 24,
     name: 'Creative Activities',
-    shortName: 'CA',
+    shortName: 'CREA',
     code: 'CA',
     gradeLevel: 'Lower Primary',
     grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9'],
@@ -164,7 +164,7 @@ export const learningAreas = [
   {
     id: 25,
     name: 'Religious Education',
-    shortName: 'RE',
+    shortName: 'REL',
     code: 'RE',
     gradeLevel: 'Lower Primary',
     grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
@@ -190,7 +190,7 @@ export const learningAreas = [
   {
     id: 40,
     name: 'Science and Technology',
-    shortName: 'Science',
+    shortName: 'SCI',
     code: 'SCI',
     gradeLevel: 'Upper Primary',
     grades: ['Grade 4', 'Grade 5', 'Grade 6'],
@@ -202,7 +202,7 @@ export const learningAreas = [
   {
     id: 41,
     name: 'Social Studies',
-    shortName: 'Social',
+    shortName: 'SOC',
     code: 'SOC',
     gradeLevel: 'Upper Primary',
     grades: ['Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9'],
@@ -214,7 +214,7 @@ export const learningAreas = [
   {
     id: 42,
     name: 'Agriculture',
-    shortName: 'Agriculture',
+    shortName: 'AGRI',
     code: 'AGRI',
     gradeLevel: 'Upper Primary',
     grades: ['Grade 4', 'Grade 5', 'Grade 6'],
@@ -231,7 +231,7 @@ export const learningAreas = [
   {
     id: 70,
     name: 'Integrated Science',
-    shortName: 'Int. Science',
+    shortName: 'I-SCI',
     code: 'ISCI',
     gradeLevel: 'Junior School',
     grades: ['Grade 7', 'Grade 8', 'Grade 9'],
@@ -243,7 +243,7 @@ export const learningAreas = [
   {
     id: 71,
     name: 'Pre-Technical Studies',
-    shortName: 'Pre-Tech',
+    shortName: 'P-TECH',
     code: 'PTECH',
     gradeLevel: 'Junior School',
     grades: ['Grade 7', 'Grade 8', 'Grade 9'],
@@ -255,7 +255,7 @@ export const learningAreas = [
   {
     id: 72,
     name: 'Agriculture',
-    shortName: 'Agriculture',
+    shortName: 'AGRI',
     code: 'AGRI_JS',
     gradeLevel: 'Junior School',
     grades: ['Grade 7', 'Grade 8', 'Grade 9'],

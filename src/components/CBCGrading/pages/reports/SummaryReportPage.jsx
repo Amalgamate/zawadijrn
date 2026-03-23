@@ -36,35 +36,41 @@ import { toast } from 'react-hot-toast';
 // ============================================================================
 
 const LEARNING_AREA_ABBREVIATIONS = {
-  'MATHEMATICS': 'MAT',
-  'ENGLISH': 'ENG',
-  'KISWAHILI': 'KIS',
+  'MATHEMATICS': 'MATH',
+  'ENGLISH': 'LANG',
+  'KISWAHILI': 'KISW',
   'SCIENCE AND TECHNOLOGY': 'SCI',
-  'SOCIAL STUDIES': 'SST',
+  'SOCIAL STUDIES': 'SOC',
   'CHRISTIAN RELIGIOUS EDUCATION': 'CRE',
   'ISLAMIC RELIGIOUS EDUCATION': 'IRE',
-  'CREATIVE ARTS AND SPORTS': 'ARTS',
+  'CREATIVE ARTS AND SPORTS': 'CREA',
   'AGRICULTURE': 'AGRI',
   'ENVIRONMENTAL ACTIVITIES': 'ENV',
   'HOMESCIENCE': 'H/SCI',
   'MUSIC': 'MUS',
   'ART AND CRAFT': 'ART',
   'PHYSICAL AND HEALTH EDUCATION': 'PHE',
-  'SHUGHULI ZA KISWAHILI': 'KIS',
-  'MATHEMATICAL ACTIVITIES': 'MAT',
-  'ENGLISH LANGUAGE ACTIVITIES': 'ENG',
-  'KISWAHILI LANGUAGE ACTIVITIES': 'KIS',
+  'SHUGHULI ZA KISWAHILI': 'KISW',
+  'MATHEMATICAL ACTIVITIES': 'MATH',
+  'ENGLISH LANGUAGE ACTIVITIES': 'LANG',
+  'KISWAHILI LANGUAGE ACTIVITIES': 'KISW',
   'SCIENCE & TECHNOLOGY': 'SCI',
   'AGRICULTURE': 'AGRI',
-  'PRE-TECHNICAL STUDIES': 'TECH',
-  'INTEGRATED SCIENCE': 'I/SCI',
-  'SOCIAL STUDIES & LIFE SKILLS': 'SST',
-  'MOVEMENT AND CREATIVE ACTIVITIES': 'ARTS',
+  'PRE-TECHNICAL STUDIES': 'P-TECH',
+  'INTEGRATED SCIENCE': 'I-SCI',
+  'SOCIAL STUDIES & LIFE SKILLS': 'SOC',
+  'MOVEMENT AND CREATIVE ACTIVITIES': 'CREA',
   'ENVIRONMENTAL STUDIES': 'ENV',
   'LITERACY ACTIVITIES': 'LIT',
   'LITERACY': 'LIT',
   'HYGIENE AND NUTRITION ACTIVITIES': 'HYG',
-  'RELIGIOUS EDUCATION': 'RE'
+  'RELIGIOUS EDUCATION': 'REL',
+  'CREATIVE ACTIVITIES': 'CREA',
+  'PSYCHOMOTOR AND CREATIVE ACTIVITIES': 'CREA',
+  'PASTORAL PROGRAMME OF INSTRUCTION (PPI)': 'PASTO',
+  'PASTORAL PROGRAMME OF INSTRUCTION': 'PASTO',
+  'INDIGENOUS LANGUAGE': 'INDI',
+  'LANGUAGE ACTIVITIES': 'LANG'
 };
 
 const getAbbreviatedName = (name) => {
@@ -109,6 +115,7 @@ const SummaryReportPage = () => {
   
   // Track last fetched configuration to avoid loops but allow auto-switching
   const lastFetchRef = useRef(null);
+  const isFetchingRef = useRef(false);
 
   // Initial Fetch: Streams
   useEffect(() => {
@@ -152,11 +159,21 @@ const SummaryReportPage = () => {
   }, [stagedGrade, stagedTerm, stagedYear]);
 
   // Handle Generation
-  const handleGenerate = useCallback(async () => {
+  const handleGenerate = useCallback(async (forced = false) => {
     if (!stagedGrade) return;
 
-    // Update last fetch ref
-    lastFetchRef.current = `${stagedGrade}-${stagedStream}-${stagedTerm}-${stagedYear}-${stagedTestType}`;
+    const currentConfig = `${stagedGrade}-${stagedStream}-${stagedTerm}-${stagedYear}-${stagedTestType}`;
+    
+    // Prevent overlapping or redundant calls
+    if (!forced && (isFetchingRef.current || lastFetchRef.current === currentConfig)) {
+      return;
+    }
+
+    console.log(`[Matrix] Generating for: ${currentConfig} (forced: ${forced})`);
+    
+    // Synchronously track fetching status to prevent race-condition loops
+    isFetchingRef.current = true;
+    lastFetchRef.current = currentConfig;
 
     setLoading(true);
     setMatrixData(null);
@@ -233,7 +250,25 @@ const SummaryReportPage = () => {
           subjectsMap.set(r.test.learningArea, r.test.learningArea);
         }
       });
-      const subjects = Array.from(subjectsMap.keys()).sort();
+      
+      // Calculate performance for sorting
+      const performanceMap = {};
+      rawResults.forEach(r => {
+        const sub = r.test?.learningArea;
+        if (!sub) return;
+        if (!performanceMap[sub]) performanceMap[sub] = { sum: 0, count: 0 };
+        performanceMap[sub].sum += r.percentage || 0;
+        performanceMap[sub].count += 1;
+      });
+
+      const subjects = Array.from(subjectsMap.keys()).sort((a, b) => {
+        const perfA = performanceMap[a] ? (performanceMap[a].sum / performanceMap[a].count) : -1;
+        const perfB = performanceMap[b] ? (performanceMap[b].sum / performanceMap[b].count) : -1;
+        
+        // If means are equal or both are -1, fall back to alphabetical
+        if (perfA === perfB) return a.localeCompare(b);
+        return perfB - perfA; // Descending (best first)
+      });
 
       // 3. Transform into Grid Data
       const gridRows = students.map(student => {
@@ -295,8 +330,9 @@ const SummaryReportPage = () => {
       toast.error(error.message || 'Failed to generate matrix');
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
-  }, [stagedGrade, stagedStream, stagedTerm, stagedYear]);
+  }, [stagedGrade, stagedStream, stagedTerm, stagedYear, stagedTestType]);
 
   // Set default grade when data is ready
   useEffect(() => {
@@ -309,11 +345,11 @@ const SummaryReportPage = () => {
 
   // Auto-generate whenever filters change and data is "stale" or missing
   useEffect(() => {
-    const currentConfig = `${stagedGrade}-${stagedStream}-${stagedTerm}-${stagedYear}`;
-    if (stagedGrade && !loading && lastFetchRef.current !== currentConfig) {
-        handleGenerate();
+    // Rely on handleGenerate's internal guard (isFetchingRef + lastFetchRef)
+    if (stagedGrade && !loading) {
+       handleGenerate();
     }
-  }, [stagedGrade, stagedStream, stagedTerm, stagedYear, loading, handleGenerate]);
+  }, [stagedGrade, stagedStream, stagedTerm, stagedYear, stagedTestType, handleGenerate]);
 
   // Filtered Rows (Search)
   const filteredRows = useMemo(() => {
@@ -332,11 +368,11 @@ const SummaryReportPage = () => {
     const means = {};
     matrixData.subjects.forEach(sub => {
       const scored = filteredRows.filter(r => r.subjectScores[sub] !== null);
-      if (scored.length === 0) { means[sub] = null; return; }
-      const total = scored.reduce((acc, r) => acc + r.subjectScores[sub].marks, 0);
-      const maxTotal = scored.reduce((acc, r) => acc + r.subjectScores[sub].max, 0);
+      const total = scored.reduce((acc, r) => acc + parseFloat(r.subjectScores[sub].marks), 0);
+      const maxTotal = scored.reduce((acc, r) => acc + parseFloat(r.subjectScores[sub].max), 100 * scored.length);
       means[sub] = {
         mean: (total / scored.length).toFixed(1),
+        totalSum: total.toFixed(0),
         percentage: maxTotal > 0 ? (total / maxTotal) * 100 : 0,
         count: scored.length
       };
@@ -598,7 +634,7 @@ const SummaryReportPage = () => {
 
             <div className="self-end">
               <button
-                onClick={handleGenerate}
+                onClick={() => handleGenerate(true)}
                 disabled={loading || !stagedGrade}
                 className="h-9 px-4 bg-brand-teal hover:bg-brand-teal/90 disabled:bg-slate-200 text-white rounded font-bold text-xs transition-all flex items-center gap-2 shadow-sm"
               >
@@ -689,7 +725,7 @@ const SummaryReportPage = () => {
                 We couldn't find any learners enrolled in {stagedGrade.replace(/_/g, ' ')} {stagedStream !== 'all' ? `(${stagedStream})` : ''}.
               </p>
               <button 
-                onClick={handleGenerate}
+                onClick={() => handleGenerate(true)}
                 className="mt-6 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-bold transition-all"
               >
                 Retry Fetch
@@ -712,35 +748,59 @@ const SummaryReportPage = () => {
                   header={tableHeader}
                   footer={
                     matrixData && filteredRows.length > 0 ? (
-                      <tr className="bg-indigo-50 border-t-2 border-indigo-200">
-                        <td className="sticky left-0 z-10 bg-indigo-50 border-r border-indigo-200 px-4 py-3 text-center text-[10px] font-black text-indigo-400 uppercase">—</td>
-                        <td className="sticky left-12 z-10 bg-indigo-50 border-r border-indigo-200 px-4 py-3 min-w-[200px]">
-                          <div className="font-black text-indigo-700 text-xs uppercase tracking-wide">Class Mean</div>
-                          <div className="text-[10px] text-indigo-400">{filteredRows.length} students</div>
-                        </td>
-                        {matrixData.subjects.map(sub => {
-                          const m = subjectMeans[sub];
-                          if (!m) return (
-                            <td key={sub} className="border-r border-indigo-100 px-2 py-3 text-center bg-indigo-50/50">
-                              <span className="text-[10px] font-bold text-indigo-300">N/A</span>
-                            </td>
-                          );
-                          const { color } = getCBCGrade(m.percentage);
-                          return (
-                            <td key={sub} className="border-r border-indigo-100 px-2 py-3 text-center bg-indigo-50">
-                              <div className={`text-sm font-black ${color}`}>{m.mean}</div>
-                              <div className="text-[9px] text-indigo-400 leading-none">{m.percentage.toFixed(0)}%</div>
-                            </td>
-                          );
-                        })}
-                        <td className="bg-indigo-100 border-r border-indigo-200 px-4 py-3 text-center font-black text-indigo-700 w-20 text-sm">—</td>
-                        <td className="bg-indigo-100 border-r border-indigo-200 px-4 py-3 text-center font-black text-indigo-700 w-20">
-                          <div className="text-sm font-black text-indigo-700">{classMeanPct.toFixed(1)}%</div>
-                        </td>
-                        <td className={`${getCBCGrade(classMeanPct).bg} px-4 py-3 text-center w-20`}>
-                          <div className={`text-sm font-black ${getCBCGrade(classMeanPct).color}`}>{getCBCGrade(classMeanPct).grade}</div>
-                        </td>
-                      </tr>
+                      <>
+                        {/* Row 1: Total Marks */}
+                        <tr className="bg-slate-50 border-t border-slate-200">
+                          <td className="sticky left-0 z-10 bg-slate-50 border-r border-slate-200 px-4 py-2 text-center text-[10px] font-bold text-slate-400 uppercase">—</td>
+                          <td className="sticky left-12 z-10 bg-slate-50 border-r border-slate-200 px-4 py-2 min-w-[200px]">
+                            <div className="font-bold text-slate-600 text-[10px] uppercase tracking-wider">Total Marks</div>
+                          </td>
+                          {matrixData.subjects.map(sub => {
+                            const m = subjectMeans[sub];
+                            return (
+                              <td key={`total-${sub}`} className="border-r border-slate-100 px-2 py-2 text-center">
+                                <span className="text-xs font-bold text-slate-600">{m ? m.totalSum : '—'}</span>
+                              </td>
+                            );
+                          })}
+                          <td className="bg-slate-100/50 border-r border-slate-200 px-4 py-2 text-center font-bold text-slate-600 w-20 text-xs text-indigo-700">
+                            {filteredRows.reduce((acc, r) => acc + parseFloat(r.totalScore), 0).toFixed(0)}
+                          </td>
+                          <td className="bg-slate-50 border-r border-slate-200 px-4 py-2 text-center font-bold text-slate-400 w-20 text-xs">—</td>
+                          <td className="bg-slate-50 border-r border-slate-200 px-4 py-2 text-center font-bold text-slate-400 w-20 text-xs">—</td>
+                        </tr>
+
+                        {/* Row 2: Class Mean */}
+                        <tr className="bg-indigo-50 border-t-2 border-indigo-100">
+                          <td className="sticky left-0 z-10 bg-indigo-50 border-r border-indigo-200 px-4 py-3 text-center text-[10px] font-black text-indigo-400 uppercase">—</td>
+                          <td className="sticky left-12 z-10 bg-indigo-50 border-r border-indigo-200 px-4 py-3 min-w-[200px]">
+                            <div className="font-black text-indigo-700 text-xs uppercase tracking-wide">Class Mean</div>
+                            <div className="text-[10px] text-indigo-400">{filteredRows.length} students</div>
+                          </td>
+                          {matrixData.subjects.map(sub => {
+                            const m = subjectMeans[sub];
+                            if (!m) return (
+                              <td key={`mean-${sub}`} className="border-r border-indigo-100 px-2 py-3 text-center bg-indigo-50/50">
+                                <span className="text-[10px] font-bold text-indigo-300">N/A</span>
+                              </td>
+                            );
+                            const { color } = getCBCGrade(m.percentage);
+                            return (
+                              <td key={`mean-${sub}`} className="border-r border-indigo-100 px-2 py-3 text-center bg-indigo-50">
+                                <div className={`text-sm font-black ${color}`}>{m.mean}</div>
+                                <div className="text-[9px] text-indigo-400 leading-none">{m.percentage.toFixed(0)}% • {getCBCGrade(m.percentage).grade}</div>
+                              </td>
+                            );
+                          })}
+                          <td className="bg-indigo-100 border-r border-indigo-200 px-4 py-3 text-center font-black text-indigo-700 w-20 text-sm">—</td>
+                          <td className="bg-indigo-100 border-r border-indigo-200 px-4 py-3 text-center font-black text-indigo-700 w-20">
+                            <div className="text-sm font-black text-indigo-700">{classMeanPct.toFixed(1)}%</div>
+                          </td>
+                          <td className={`${getCBCGrade(classMeanPct).bg} px-4 py-3 text-center w-20 border-r border-indigo-200`}>
+                            <div className={`text-sm font-black ${getCBCGrade(classMeanPct).color}`}>{getCBCGrade(classMeanPct).grade}</div>
+                          </td>
+                        </tr>
+                      </>
                     ) : null
                   }
                   renderRow={renderRow}
@@ -758,7 +818,7 @@ const SummaryReportPage = () => {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 8px;
           height: 8px;
