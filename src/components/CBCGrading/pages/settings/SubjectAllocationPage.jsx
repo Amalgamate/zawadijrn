@@ -58,32 +58,13 @@ const SubjectAllocationPage = () => {
 
   const { showSuccess, showError } = useNotifications();
 
-  const resolveSchoolId = () => {
-    const fromContext = getCurrentSchoolId();
-    if (fromContext) return fromContext;
-
-    const user = getStoredUser();
-    return user?.schoolId || user?.school?.id || null;
-  };
-
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const schoolId = resolveSchoolId();
-      const isSuperAdmin = getStoredUser()?.role === 'SUPER_ADMIN';
-
-      if (!schoolId && !isSuperAdmin) {
-        showError('Select a school first to manage subject allocation.');
-        setLearningAreas([]);
-        setAssignments([]);
-        setClassSchedules([]);
-        setTeachers([]);
-        return;
-      }
 
       const [teachersResp, areasResp, assignmentsResp, classesResp] = await Promise.all([
         api.teachers.getAll({ limit: 1000 }),
-        api.config.getLearningAreas(schoolId || undefined),
+        api.config.getLearningAreas(),
         api.subjectAssignments.getAll(),
         api.classes.getAll({ active: true })
       ]);
