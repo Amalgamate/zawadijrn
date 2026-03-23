@@ -592,7 +592,7 @@ const SummaryReportPage = () => {
           </div>
 
           {/* Legend row */}
-          <div className="px-6 pb-2 flex flex-wrap items-center gap-x-5 gap-y-1">
+          <div className="px-6 pb-2 flex flex-wrap items-center gap-x-4 gap-y-1">
             <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Key:</span>
             {/* ABS */}
             <span className="flex items-center gap-1.5">
@@ -604,24 +604,23 @@ const SummaryReportPage = () => {
               <span className="text-[10px] font-mono text-slate-500">1234 • A</span>
               <span className="text-[9px] text-slate-400">= Adm No • Stream</span>
             </span>
-            {/* CBC grade bands */}
-            <span className="flex items-center gap-1 text-[9px] text-slate-400">Grade bands:</span>
-            <span className="flex items-center gap-1">
-              <span className="text-[9px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">EE</span>
-              <span className="text-[9px] text-slate-400">Exceeding (75–100%)</span>
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="text-[9px] font-black text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">ME</span>
-              <span className="text-[9px] text-slate-400">Meeting (41–74%)</span>
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="text-[9px] font-black text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">AE</span>
-              <span className="text-[9px] text-slate-400">Approaching (21–40%)</span>
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="text-[9px] font-black text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded">BE</span>
-              <span className="text-[9px] text-slate-400">Below (0–20%)</span>
-            </span>
+            {/* CBC grade bands — all 8 */}
+            <span className="flex items-center gap-1 text-[9px] text-slate-400">CBC Bands:</span>
+            {[
+              { grade: 'EE1', label: 'Exceeding', range: '90–100%', color: 'text-emerald-700', bg: 'bg-emerald-50' },
+              { grade: 'EE2', label: 'Exceeding', range: '75–89%',  color: 'text-emerald-600', bg: 'bg-emerald-50' },
+              { grade: 'ME1', label: 'Meeting',   range: '58–74%',  color: 'text-blue-700',    bg: 'bg-blue-50' },
+              { grade: 'ME2', label: 'Meeting',   range: '41–57%',  color: 'text-blue-600',    bg: 'bg-blue-50' },
+              { grade: 'AE1', label: 'Approaching',range: '31–40%', color: 'text-amber-700',   bg: 'bg-amber-50' },
+              { grade: 'AE2', label: 'Approaching',range: '21–30%', color: 'text-amber-600',   bg: 'bg-amber-50' },
+              { grade: 'BE1', label: 'Below',     range: '11–20%',  color: 'text-rose-700',    bg: 'bg-rose-50' },
+              { grade: 'BE2', label: 'Below',     range: '0–10%',   color: 'text-rose-800',    bg: 'bg-rose-100' },
+            ].map(({ grade, label, range, color, bg }) => (
+              <span key={grade} className="flex items-center gap-1" title={`${label} — ${range}`}>
+                <span className={`text-[9px] font-black ${color} ${bg} px-1.5 py-0.5 rounded`}>{grade}</span>
+                <span className="text-[9px] text-slate-400">{range}</span>
+              </span>
+            ))}
           </div>
         </div>
       )}
