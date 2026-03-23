@@ -295,6 +295,32 @@ const SummaryReportPage = () => {
     );
   }, [matrixData, searchQuery]);
 
+  // Class mean per subject (excludes absent/null scores)
+  const subjectMeans = useMemo(() => {
+    if (!matrixData || filteredRows.length === 0) return {};
+    const means = {};
+    matrixData.subjects.forEach(sub => {
+      const scored = filteredRows.filter(r => r.subjectScores[sub] !== null);
+      if (scored.length === 0) { means[sub] = null; return; }
+      const total = scored.reduce((acc, r) => acc + r.subjectScores[sub].marks, 0);
+      const maxTotal = scored.reduce((acc, r) => acc + r.subjectScores[sub].max, 0);
+      means[sub] = {
+        mean: (total / scored.length).toFixed(1),
+        percentage: maxTotal > 0 ? (total / maxTotal) * 100 : 0,
+        count: scored.length
+      };
+    });
+    return means;
+  }, [matrixData, filteredRows]);
+
+  // Overall class mean percentage across all subjects
+  const classMeanPct = useMemo(() => {
+    const vals = Object.values(subjectMeans).filter(Boolean);
+    if (vals.length === 0) return 0;
+    return vals.reduce((acc, v) => acc + v.percentage, 0) / vals.length;
+  }, [subjectMeans]);
+
+
   // Export to Excel
   const exportToExcel = () => {
     if (!matrixData) return;
@@ -600,20 +626,53 @@ const SummaryReportPage = () => {
             </div>
           ) : (
             <div className="flex-1 overflow-x-auto">
-              <VirtualizedTable
-                data={filteredRows}
-                header={tableHeader}
-                renderRow={renderRow}
-                rowHeight={64}
-                visibleHeight={1000} 
-                className="flex-1"
-                emptyComponent={
-                  <div className="py-20 text-center text-slate-400 italic font-medium">
-                    No students matched your search query in this grade.
-                  </div>
-                }
-              />
-            </div>
+                <VirtualizedTable
+                  data={filteredRows}
+                  header={tableHeader}
+                  footer={
+                    matrixData && filteredRows.length > 0 ? (
+                      <tr className="bg-indigo-50 border-t-2 border-indigo-200">
+                        <td className="sticky left-0 z-10 bg-indigo-50 border-r border-indigo-200 px-4 py-3 text-center text-[10px] font-black text-indigo-400 uppercase">—</td>
+                        <td className="sticky left-12 z-10 bg-indigo-50 border-r border-indigo-200 px-4 py-3 min-w-[200px]">
+                          <div className="font-black text-indigo-700 text-xs uppercase tracking-wide">Class Mean</div>
+                          <div className="text-[10px] text-indigo-400">{filteredRows.length} students</div>
+                        </td>
+                        {matrixData.subjects.map(sub => {
+                          const m = subjectMeans[sub];
+                          if (!m) return (
+                            <td key={sub} className="border-r border-indigo-100 px-2 py-3 text-center bg-indigo-50/50">
+                              <span className="text-[10px] font-bold text-indigo-300">N/A</span>
+                            </td>
+                          );
+                          const { color } = getCBCGrade(m.percentage);
+                          return (
+                            <td key={sub} className="border-r border-indigo-100 px-2 py-3 text-center bg-indigo-50">
+                              <div className={`text-sm font-black ${color}`}>{m.mean}</div>
+                              <div className="text-[9px] text-indigo-400 leading-none">{m.percentage.toFixed(0)}%</div>
+                            </td>
+                          );
+                        })}
+                        <td className="bg-indigo-100 border-r border-indigo-200 px-4 py-3 text-center font-black text-indigo-700 w-20 text-sm">—</td>
+                        <td className="bg-indigo-100 border-r border-indigo-200 px-4 py-3 text-center font-black text-indigo-700 w-20">
+                          <div className="text-sm font-black text-indigo-700">{classMeanPct.toFixed(1)}%</div>
+                        </td>
+                        <td className={`${getCBCGrade(classMeanPct).bg} px-4 py-3 text-center w-20`}>
+                          <div className={`text-sm font-black ${getCBCGrade(classMeanPct).color}`}>{getCBCGrade(classMeanPct).grade}</div>
+                        </td>
+                      </tr>
+                    ) : null
+                  }
+                  renderRow={renderRow}
+                  rowHeight={64}
+                  visibleHeight={1000} 
+                  className="flex-1"
+                  emptyComponent={
+                    <div className="py-20 text-center text-slate-400 italic font-medium">
+                      No students matched your search query in this grade.
+                    </div>
+                  }
+                />
+              </div>
           )}
         </div>
       </div>

@@ -11,6 +11,7 @@ const VirtualizedTable = ({
     bufferedItems = 5,
     renderRow,
     header,
+    footer,
     className = "",
     emptyComponent
 }) => {
@@ -86,6 +87,11 @@ const VirtualizedTable = ({
                         </>
                     )}
                 </tbody>
+                {footer && (
+                    <tfoot className="sticky bottom-0 z-20 bg-white shadow-[0_-2px_6px_rgba(0,0,0,0.06)]">
+                        {footer}
+                    </tfoot>
+                )}
             </table>
         </div>
     );
