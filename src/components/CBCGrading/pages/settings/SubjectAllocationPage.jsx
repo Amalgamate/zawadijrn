@@ -13,7 +13,8 @@ import {
 import api from '../../../../services/api';
 import { useNotifications } from '../../hooks/useNotifications';
 import { getCurrentSchoolId, getStoredUser } from '../../../../services/schoolContext';
-import { getGradeLabel } from '../../../../constants/grades';
+import { getGradeLabel, GRADES } from '../../../../constants/grades';
+const ACTIVE_GRADE_VALUES = GRADES.map(g => g.value);
 
 const dayAlias = {
   MONDAY: 'MONDAY',
@@ -70,11 +71,17 @@ const SubjectAllocationPage = () => {
       ]);
 
       const teachersData = Array.isArray(teachersResp?.data) ? teachersResp.data : [];
-      const areasData = Array.isArray(areasResp?.data)
+      const allAreas = Array.isArray(areasResp?.data)
         ? areasResp.data
         : Array.isArray(areasResp)
           ? areasResp
           : [];
+
+      // Filter out legacy grades (Creche, Reception, Transition)
+      const areasData = allAreas.filter(area =>
+        ACTIVE_GRADE_VALUES.includes(area.gradeLevel) ||
+        GRADES.some(g => (g.label || '').toUpperCase() === (area.gradeLevel || '').toUpperCase())
+      );
       const assignmentsData = Array.isArray(assignmentsResp?.data) ? assignmentsResp.data : [];
       const classesData = Array.isArray(classesResp?.data) ? classesResp.data : [];
 

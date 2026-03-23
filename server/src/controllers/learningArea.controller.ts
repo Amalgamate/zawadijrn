@@ -181,10 +181,7 @@ export const seedLearningAreas = async (req: AuthRequest, res: Response) => {
 
     // Official CBC Per-Grade Mapping
     const gradeMappings: { [key: string]: string[] } = {
-      'CRECHE': ['Language Activities', 'Mathematical Activities', 'Environmental Activities', 'Creative Activities', 'Religious Activities', 'Pastoral Programme of Instruction (PPI)'],
       'PLAYGROUP': ['Language Activities', 'Mathematical Activities', 'Environmental Activities', 'Creative Activities', 'Religious Activities', 'Pastoral Programme of Instruction (PPI)'],
-      'RECEPTION': ['Language Activities', 'Mathematical Activities', 'Environmental Activities', 'Creative Activities', 'Religious Activities', 'Pastoral Programme of Instruction (PPI)'],
-      'TRANSITION': ['Language Activities', 'Mathematical Activities', 'Environmental Activities', 'Creative Activities', 'Religious Activities', 'Pastoral Programme of Instruction (PPI)'],
       'PP1': ['Language Activities', 'Mathematical Activities', 'Environmental Activities', 'Creative Activities', 'Religious Activities', 'Pastoral Programme of Instruction (PPI)'],
       'PP2': ['Language Activities', 'Mathematical Activities', 'Environmental Activities', 'Creative Activities', 'Religious Activities', 'Pastoral Programme of Instruction (PPI)'],
       'GRADE_1': ['English', 'Kiswahili', 'Indigenous Language', 'Mathematical Activities', 'Environmental Activities', 'Religious Education', 'Creative Activities'],
@@ -235,7 +232,7 @@ export const seedLearningAreas = async (req: AuthRequest, res: Response) => {
 
     for (const [grade, areas] of Object.entries(gradeMappings)) {
       let visualGroup = 'Lower Primary';
-      if (['CRECHE', 'PLAYGROUP', 'RECEPTION', 'TRANSITION', 'PP1', 'PP2'].includes(grade)) visualGroup = 'Pre-Primary';
+      if (['PLAYGROUP', 'PP1', 'PP2'].includes(grade)) visualGroup = 'Pre-Primary';
       if (['GRADE_4', 'GRADE_5', 'GRADE_6'].includes(grade)) visualGroup = 'Upper Primary';
       if (['GRADE_7', 'GRADE_8', 'GRADE_9'].includes(grade)) visualGroup = 'Junior School';
 
