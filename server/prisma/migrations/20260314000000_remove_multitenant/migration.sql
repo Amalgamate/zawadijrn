@@ -143,6 +143,6 @@ ALTER TABLE "classes" DROP CONSTRAINT IF EXISTS "classes_grade_stream_academicYe
 ALTER TABLE "classes" ADD CONSTRAINT "classes_grade_stream_academicYear_term_key" UNIQUE ("grade", "stream", "academicYear", "term");
 
 -- Example: summative_results
-ALTER TABLE "summative_results" DROP CONSTRAINT IF EXISTS "summative_results_testId_learnerId_schoolId_key";
+DROP INDEX IF EXISTS "summative_results_testId_learnerId_key";
 ALTER TABLE "summative_results" DROP CONSTRAINT IF EXISTS "summative_results_testId_learnerId_key";
 ALTER TABLE "summative_results" ADD CONSTRAINT "summative_results_testId_learnerId_key" UNIQUE ("testId", "learnerId");
