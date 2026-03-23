@@ -1260,11 +1260,11 @@ export const getTestResults = async (req: Request, res: Response) => {
 
 /**
  * Get Bulk Summative Results for a class/grade/stream
- * GET /api/assessments/summative/results/bulk?grade=...&stream=...&academicYear=...&term=...
+ * GET /api/assessments/summative/results/bulk?grade=...&stream=...&academicYear=...&term=...&testType=...
  */
 export const getBulkSummativeResults = async (req: AuthRequest, res: Response) => {
   try {
-    const { grade, stream, academicYear, term } = req.query;
+    const { grade, stream, academicYear, term, testType } = req.query;
 
     if (!grade || !academicYear || !term) {
       return res.status(400).json({ success: false, message: 'Missing required filters: grade, academicYear, term' });
@@ -1282,7 +1282,8 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
       test: {
         academicYear: parseInt(academicYear as string),
         term: normalizedTerm,
-        archived: false
+        archived: false,
+        ...(testType ? { testType: String(testType) } : {})
       }
     };
 

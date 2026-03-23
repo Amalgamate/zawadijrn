@@ -97,12 +97,14 @@ const SummaryReportPage = () => {
   const [stagedStream, setStagedStream] = useState('all');
   const [stagedTerm, setStagedTerm] = useState('TERM_1');
   const [stagedYear, setStagedYear] = useState(getCurrentAcademicYear());
+  const [stagedTestType, setStagedTestType] = useState('all');
 
   // Data States
   const [loading, setLoading] = useState(false);
   const [matrixData, setMatrixData] = useState(null);
   const [noStudentsFound, setNoStudentsFound] = useState(false);
   const [availableStreams, setAvailableStreams] = useState([]);
+  const [availableTestTypes, setAvailableTestTypes] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   
   // Track last fetched configuration to avoid loops but allow auto-switching
@@ -123,12 +125,38 @@ const SummaryReportPage = () => {
     fetchStreams();
   }, [user?.schoolId]);
 
+  // Fetch available test types when grade/term/year changes
+  useEffect(() => {
+    const fetchTestTypes = async () => {
+      if (!stagedGrade || !stagedTerm || !stagedYear) {
+        setAvailableTestTypes([]);
+        return;
+      }
+      try {
+        const resp = await assessmentAPI.getTests({
+          grade: stagedGrade,
+          term: stagedTerm,
+          academicYear: stagedYear
+        });
+        const tests = resp?.data || [];
+        // Extract unique testTypes
+        const types = [...new Set(tests.map(t => t.testType).filter(Boolean))].sort();
+        setAvailableTestTypes(types);
+        // Reset selection if current type no longer available
+        setStagedTestType(prev => (prev === 'all' || types.includes(prev)) ? prev : 'all');
+      } catch {
+        setAvailableTestTypes([]);
+      }
+    };
+    fetchTestTypes();
+  }, [stagedGrade, stagedTerm, stagedYear]);
+
   // Handle Generation
   const handleGenerate = useCallback(async () => {
     if (!stagedGrade) return;
 
     // Update last fetch ref
-    lastFetchRef.current = `${stagedGrade}-${stagedStream}-${stagedTerm}-${stagedYear}`;
+    lastFetchRef.current = `${stagedGrade}-${stagedStream}-${stagedTerm}-${stagedYear}-${stagedTestType}`;
 
     setLoading(true);
     setMatrixData(null);
@@ -142,6 +170,9 @@ const SummaryReportPage = () => {
       };
       if (stagedStream && stagedStream !== 'all') {
           apiParams.stream = stagedStream;
+      }
+      if (stagedTestType && stagedTestType !== 'all') {
+          apiParams.testType = stagedTestType;
       }
 
       // 1. Fetch Students & Results concurrently
@@ -537,7 +568,7 @@ const SummaryReportPage = () => {
               </select>
             </div>
 
-            <div className="w-24">
+            <div className="w-36">
               <label className="block text-[10px] font-black text-slate-400 uppercase mb-1 px-1">Year</label>
               <select
                 value={stagedYear}
@@ -546,6 +577,21 @@ const SummaryReportPage = () => {
               >
                 {getAcademicYearOptions().map(y => (
                   <option key={y.value} value={y.value}>{y.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="w-40">
+              <label className="block text-[10px] font-black text-slate-400 uppercase mb-1 px-1">Exam Type</label>
+              <select
+                value={stagedTestType}
+                onChange={(e) => setStagedTestType(e.target.value)}
+                disabled={availableTestTypes.length === 0}
+                className="w-full h-9 px-2.5 py-1.5 border border-slate-300 rounded text-xs bg-white text-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-purple appearance-none cursor-pointer hover:border-slate-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <option value="all">All Exams</option>
+                {availableTestTypes.map(t => (
+                  <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>
                 ))}
               </select>
             </div>
