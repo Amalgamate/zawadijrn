@@ -11,7 +11,10 @@ import { useAuth } from '../../../hooks/useAuth';
 const AddEditTeacherPage = ({ onSave, onCancel, teacher = null }) => {
     const { user } = useAuth();
     const isEdit = !!teacher;
-    const canEditEmail = !isEdit || ['ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER'].includes(user?.role);
+    // Admins/Head Teachers or the user themselves can edit the email
+    const canEditEmail = !isEdit || 
+        ['ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER'].includes(user?.role) || 
+        (user?.id === teacher?.id);
     const { showSuccess, showError } = useNotifications();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
