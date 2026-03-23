@@ -6,9 +6,12 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Save, User, Mail, BookOpen, CheckCircle, AlertCircle } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
+import { useAuth } from '../../../hooks/useAuth';
 
 const AddEditTeacherPage = ({ onSave, onCancel, teacher = null }) => {
+    const { user } = useAuth();
     const isEdit = !!teacher;
+    const canEditEmail = !isEdit || ['ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER'].includes(user?.role);
     const { showSuccess, showError } = useNotifications();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -218,12 +221,12 @@ const AddEditTeacherPage = ({ onSave, onCancel, teacher = null }) => {
                                 name="email"
                                 value={formData.email}
                                 onChange={handleChange}
-                                disabled={isEdit}
-                                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-purple transition ${errors.email ? 'border-red-500 focus:ring-red-200' : 'border-gray-300'} ${isEdit ? 'bg-gray-100 cursor-not-allowed opacity-75' : ''}`}
+                                disabled={!canEditEmail}
+                                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-purple transition ${errors.email ? 'border-red-500 focus:ring-red-200' : 'border-gray-300'} ${!canEditEmail ? 'bg-gray-100 cursor-not-allowed opacity-75' : ''}`}
                                 placeholder="email@example.com"
                             />
                             {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
-                            {isEdit && <p className="text-xs text-gray-500 mt-1 flex items-center gap-1"><AlertCircle size={10} /> Email cannot be changed</p>}
+                            {!canEditEmail && <p className="text-xs text-gray-500 mt-1 flex items-center gap-1"><AlertCircle size={10} /> Email cannot be changed</p>}
                         </div>
 
                         <div>
