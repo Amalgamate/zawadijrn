@@ -87,6 +87,7 @@ model User {
   tickets                   SupportTicket[]          @relation("UserTickets")
   createdTermConfigs        TermConfig[]
   assessedValues            ValuesAssessment[]       @relation("AssessorValues")
+  schemesOfWork             SchemeOfWork[]           @relation("TeacherSchemes")
 
   @@map("users")
 }
@@ -1978,4 +1979,61 @@ enum AssetCondition {
   POOR
   BROKEN
   REJECTED
+}
+
+// ─── Schemes of Work ─────────────────────────────────────────────────────────
+
+enum SoWStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+model SchemeOfWork {
+  id            String             @id @default(uuid())
+  teacherId     String
+  grade         Grade
+  learningArea  String
+  term          Term
+  academicYear  Int
+  classId       String?
+  title         String?
+  status        SoWStatus          @default(DRAFT)
+  reviewedBy    String?
+  reviewedAt    DateTime?
+  reviewComment String?
+  weeks         SchemeOfWorkWeek[]
+  teacher       User               @relation("TeacherSchemes", fields: [teacherId], references: [id])
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  archived      Boolean            @default(false)
+
+  @@unique([teacherId, grade, learningArea, term, academicYear])
+  @@index([grade, term, academicYear])
+  @@index([teacherId])
+  @@index([status])
+  @@map("schemes_of_work")
+}
+
+model SchemeOfWorkWeek {
+  id               String       @id @default(uuid())
+  schemeId         String
+  weekNumber       Int
+  strand           String?
+  subStrand        String?
+  outcomes         String?
+  inquiryQuestions String?
+  activities       String?
+  coreCompetencies String?
+  values           String?
+  pertinentIssues  String?
+  resources        String?
+  assessment       String?
+  remarks          String?
+  scheme           SchemeOfWork @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+
+  @@unique([schemeId, weekNumber])
+  @@index([schemeId])
+  @@map("scheme_of_work_weeks")
 }

@@ -11,7 +11,7 @@ import { authenticate } from '../middleware/auth.middleware';
 import { requireSchoolContext } from '../middleware/school.middleware';
 import { rateLimit } from '../middleware/enhanced-rateLimit.middleware';
 import { validate } from '../middleware/validation.middleware';
-import { auditLog } from '../middleware/permissions.middleware';
+import { auditLog, ResourceAccessControl } from '../middleware/permissions.middleware';
 import { checkNotLocked } from '../middleware/workflow.authorization';
 
 const router = express.Router();
@@ -169,6 +169,7 @@ router.get(
 router.delete(
   '/formative/:id',
   authenticate,
+  ResourceAccessControl.canAccessAssessment(),
   rateLimit({ windowMs: 60_000, maxRequests: 10 }),
   auditLog('DELETE_FORMATIVE_ASSESSMENT'),
   assessmentController.deleteFormativeAssessment
@@ -214,6 +215,7 @@ router.get(
 router.put(
   '/tests/:id',
   authenticate,
+  ResourceAccessControl.canAccessAssessment(),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
   auditLog('UPDATE_SUMMATIVE_TEST'),
   assessmentController.updateSummativeTest
@@ -230,6 +232,7 @@ router.delete(
 router.delete(
   '/tests/:id',
   authenticate,
+  ResourceAccessControl.canAccessAssessment(),
   rateLimit({ windowMs: 60_000, maxRequests: 10 }),
   auditLog('DELETE_SUMMATIVE_TEST'),
   assessmentController.deleteSummativeTest
@@ -242,6 +245,7 @@ router.delete(
 router.post(
   '/summative/results',
   authenticate,
+  ResourceAccessControl.canAccessAssessment(),
   rateLimit({ windowMs: 60_000, maxRequests: 50 }),
   validate(recordSummativeResultSchema),
   checkNotLocked,

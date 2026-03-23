@@ -6,7 +6,7 @@
 import { Router } from 'express';
 import { LearnerController } from '../controllers/learner.controller';
 import { authenticate, authorize } from '../middleware/auth.middleware';
-import { requirePermission, requireRole, auditLog } from '../middleware/permissions.middleware';
+import { requirePermission, requireRole, ResourceAccessControl, auditLog } from '../middleware/permissions.middleware';
 import { asyncHandler } from '../utils/async.util';
 import { validate } from '../middleware/validation.middleware';
 import { rateLimit } from '../middleware/enhanced-rateLimit.middleware';
@@ -65,6 +65,7 @@ router.get('/admission/:admissionNumber',
 );
 
 router.get('/:id', 
+  ResourceAccessControl.canAccessLearner(),
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   asyncHandler(learnerController.getLearnerById.bind(learnerController))
 );
@@ -79,6 +80,7 @@ router.post('/',
 
 router.put('/:id', 
   requirePermission('EDIT_LEARNER'), 
+  ResourceAccessControl.canAccessLearner(),
   rateLimit({ windowMs: 60_000, maxRequests: 50 }),
   validate(updateLearnerSchema),
   auditLog('UPDATE_LEARNER'), 
@@ -87,6 +89,7 @@ router.put('/:id',
 
 router.delete('/:id', 
   requirePermission('DELETE_LEARNER'), 
+  ResourceAccessControl.canAccessLearner(),
   rateLimit({ windowMs: 60_000, maxRequests: 20 }),
   auditLog('DELETE_LEARNER'), 
   asyncHandler(learnerController.deleteLearner.bind(learnerController))
@@ -94,6 +97,7 @@ router.delete('/:id',
 
 router.post('/:id/photo', 
   requirePermission('EDIT_LEARNER'), 
+  ResourceAccessControl.canAccessLearner(),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
   auditLog('UPLOAD_LEARNER_PHOTO'), 
   asyncHandler(learnerController.uploadLearnerPhoto.bind(learnerController))
@@ -101,13 +105,14 @@ router.post('/:id/photo',
 
 router.delete('/:id/photo', 
   requirePermission('EDIT_LEARNER'), 
+  ResourceAccessControl.canAccessLearner(),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
   auditLog('DELETE_LEARNER_PHOTO'), 
   asyncHandler(learnerController.deleteLearnerPhoto.bind(learnerController))
 );
 
 router.post('/bulk-promote', 
-  requirePermission('EDIT_LEARNER'), 
+  requirePermission('PROMOTE_LEARNER'), 
   rateLimit({ windowMs: 60_000, maxRequests: 10 }),
   auditLog('BULK_PROMOTE_LEARNERS'), 
   asyncHandler(learnerController.promoteLearners.bind(learnerController))

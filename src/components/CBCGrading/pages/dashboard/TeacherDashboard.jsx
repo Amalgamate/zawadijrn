@@ -97,7 +97,7 @@ const TeacherDashboard = ({ learners, user, onNavigate }) => {
       }
     };
     loadMetrics();
-  }, [user]);
+  }, [user?.id]);
 
   useEffect(() => {
     let active = true;
@@ -108,16 +108,21 @@ const TeacherDashboard = ({ learners, user, onNavigate }) => {
       setClockInState(status);
     };
 
+    const handleClockInEvt = () => {
+      if (!active) return;
+      setClockInState(getCurrentUserClockInStatus(user));
+    };
+
     refreshClockIn();
-    window.addEventListener('teacherClockInChanged', refreshClockIn);
-    window.addEventListener('storage', refreshClockIn);
+    window.addEventListener('teacherClockInChanged', handleClockInEvt);
+    window.addEventListener('storage', handleClockInEvt);
 
     return () => {
       active = false;
-      window.removeEventListener('teacherClockInChanged', refreshClockIn);
-      window.removeEventListener('storage', refreshClockIn);
+      window.removeEventListener('teacherClockInChanged', handleClockInEvt);
+      window.removeEventListener('storage', handleClockInEvt);
     };
-  }, [user]);
+  }, [user?.id]);
 
   const handleClockIn = () => {
     clockInTeacher(user, {

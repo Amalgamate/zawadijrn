@@ -178,11 +178,10 @@ const SummaryReportPage = () => {
 
         // Second try: match by gradeLevel — handle Early Years / Pre-Primary mismatch
         const gradeLevelMap = {
-          'Pre-Primary': ['Early Years', 'Pre-Primary'],
+          'Pre-Primary': ['Pre-Primary'],
           'Lower Primary': ['Lower Primary'],
           'Upper Primary': ['Upper Primary'],
-          'Junior School': ['Junior School'],
-          'Senior School': ['Senior School'],
+          'Junior School': ['Junior School']
         };
         const matchingLevels = gradeLevelMap[gradeLevelName] || [gradeLevelName];
         const byLevel = learningAreas.filter(la => matchingLevels.includes(la.gradeLevel));

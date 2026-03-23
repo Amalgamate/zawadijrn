@@ -1,6 +1,7 @@
 import React from 'react';
-import { Calendar, Clock, List } from 'lucide-react';
+import { Calendar, Clock, List, ClipboardList } from 'lucide-react';
 import CalendarView from './CalendarView';
+import SchemesOfWork from './SchemesOfWork';
 
 const PlannerLayout = ({ currentPage, onNavigate }) => {
 
@@ -8,12 +9,15 @@ const PlannerLayout = ({ currentPage, onNavigate }) => {
         { id: 'planner-calendar', icon: Calendar, label: 'Calendar' },
         { id: 'planner-timetable', icon: Clock, label: 'Timetable' },
         { id: 'planner-agenda', icon: List, label: 'Agenda' },
+        { id: 'planner-schemes', icon: ClipboardList, label: 'Schemes of Work' },
     ];
 
     const renderContent = () => {
         switch (currentPage) {
             case 'planner-calendar':
                 return <CalendarView />;
+            case 'planner-schemes':
+                return <SchemesOfWork onNavigate={onNavigate} />;
             case 'planner-timetable':
                 // Fallback or placeholder till integrated
                 return (

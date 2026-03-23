@@ -7,6 +7,7 @@ import { useState, useCallback, useEffect } from 'react';
 import api from '../../../services/api';
 import { useSchoolData } from '../../../contexts/SchoolDataContext';
 import { useAuth } from '../../../hooks/useAuth';
+import toast from 'react-hot-toast';
 
 export const useAttendance = () => {
   const [attendanceRecords, setAttendanceRecords] = useState([]);
@@ -65,7 +66,12 @@ export const useAttendance = () => {
       }
     } catch (err) {
       setError(err.message);
-      console.error('Error fetching attendance:', err);
+      if (err.message?.includes('not assigned as class teacher')) {
+         toast.error('Access Denied: You are not assigned as a Class Teacher.');
+      } else {
+         console.error('Error fetching attendance:', err);
+         toast.error('Failed to fetch attendance data.');
+      }
       return [];
     } finally {
       setLoading(false);

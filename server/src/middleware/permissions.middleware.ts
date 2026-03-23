@@ -195,24 +195,40 @@ export class ResourceAccessControl {
         }
 
         // TEACHER - check if learner is in their class
+        // TEACHER - can view all, but only edit/delete if assigned to class or created record
         if (userRole === 'TEACHER') {
-          const learnerId = req.params.learnerId || req.body.learnerId || req.query.learnerId;
-          if (!learnerId) return next(); // Cannot check if no ID provided
+          // Allow all viewing
+          if (req.method === 'GET') {
+            return next();
+          }
 
-          const enrollment = await prisma.classEnrollment.findFirst({
-            where: {
-              learnerId,
-              active: true,
-              class: {
-                teacherId: userId
+          const learnerId = req.params.learnerId || req.params.id || req.body.learnerId || req.query.learnerId;
+          if (!learnerId) return next();
+
+          // Check if teacher is the creator of the learner OR assigned to the class
+          const learner = await prisma.learner.findUnique({
+            where: { id: learnerId as string },
+            select: { 
+              createdBy: true, 
+              enrollments: {
+                where: { active: true },
+                select: {
+                  class: { select: { teacherId: true } }
+                }
               }
             }
           });
 
-          if (enrollment) return next();
+          if (!learner) return next();
+
+          const isCreator = learner.createdBy === userId;
+          const isClassTeacher = learner.enrollments.some(e => e.class?.teacherId === userId);
+
+          if (isCreator || isClassTeacher) return next();
+
           return res.status(403).json({
             success: false,
-            message: 'You can only access learners in your assigned classes'
+            message: 'You can only modify learners in your assigned classes or records you created'
           });
         }
 
@@ -265,13 +281,34 @@ export class ResourceAccessControl {
         }
 
         // TEACHER - can access assessments for their classes
+        // TEACHER - can view all results/tests, but only edit/delete if owner
         if (userRole === 'TEACHER') {
-          const assessmentId = req.params.id || req.body.assessmentId;
-          if (!assessmentId) return next();
+          // Allow all viewing
+          if (req.method === 'GET') {
+            return next();
+          }
 
-          // Check if assessment (SummativeResult or FormativeAssessment) belongs to teacher
-          // This is a simplified check - in a real scenario we'd check the learner's class
-          return next(); // Still slightly permissive but better than before
+          const id = req.params.id || req.body.id || req.body.assessmentId || req.body.testId;
+          if (!id) return next();
+
+          // Check if modifying a SummativeResult, SummativeTest, or FormativeAssessment
+          const [result, test, formative] = await Promise.all([
+            prisma.summativeResult.findUnique({ where: { id: id as string }, select: { recordedBy: true } }),
+            prisma.summativeTest.findUnique({ where: { id: id as string }, select: { createdBy: true } }),
+            prisma.formativeAssessment.findUnique({ where: { id: id as string }, select: { teacherId: true } })
+          ]);
+
+          const isOwner = 
+            (result?.recordedBy === userId) || 
+            (test?.createdBy === userId) || 
+            (formative?.teacherId === userId);
+
+          if (isOwner) return next();
+
+          return res.status(403).json({
+            success: false,
+            message: 'You can only modify assessments you recorded or tests you created'
+          });
         }
 
         // PARENT - can view assessments for their children

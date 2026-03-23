@@ -49,6 +49,11 @@ const prefetchModule = (path) => {
       'comm-notices':  'NoticesPage',
       'comm-messages': 'MessagesPage',
       'comm-history':  'MessageHistoryPage',
+      // Planner
+      'planner-calendar':  'planner/PlannerLayout',
+      'planner-timetable': 'planner/PlannerLayout',
+      'planner-agenda':    'planner/PlannerLayout',
+      'planner-schemes':   'planner/PlannerLayout',
       'learning-hub-materials':    'LearningHubPage',
       'learning-hub-assignments':  'LearningHubPage',
       'learning-hub-lesson-plans': 'LearningHubPage',

@@ -8,16 +8,6 @@ export const gradeStructure = [
   // EARLY YEARS EDUCATION (EYE)
   {
     id: 1,
-    name: 'Crèche',
-    code: 'CRECHE',
-    learningArea: 'Pre-Primary',
-    ageRange: '0-3 years',
-    capacity: 15,
-    active: true,
-    curriculum: 'Developmental Care'
-  },
-  {
-    id: 2,
     name: 'Playgroup',
     code: 'PLAYGROUP',
     learningArea: 'Pre-Primary',
@@ -27,27 +17,7 @@ export const gradeStructure = [
     curriculum: 'Play-based'
   },
   {
-    id: 3,
-    name: 'Reception',
-    code: 'RECEPTION',
-    learningArea: 'Pre-Primary',
-    ageRange: '4-5 years',
-    capacity: 25,
-    active: true,
-    curriculum: 'Play-based'
-  },
-  {
-    id: 4,
-    name: 'Transition',
-    code: 'TRANSITION',
-    learningArea: 'Pre-Primary',
-    ageRange: '4-5 years',
-    capacity: 25,
-    active: true,
-    curriculum: 'Play-based'
-  },
-  {
-    id: 5,
+    id: 2,
     name: 'Pre-Primary 1',
     code: 'PP1',
     learningArea: 'Pre-Primary',
@@ -57,7 +27,7 @@ export const gradeStructure = [
     curriculum: 'CBC'
   },
   {
-    id: 6,
+    id: 3,
     name: 'Pre-Primary 2',
     code: 'PP2',
     learningArea: 'Pre-Primary',
@@ -69,7 +39,7 @@ export const gradeStructure = [
 
   // PRIMARY SCHOOL
   {
-    id: 7,
+    id: 4,
     name: 'Grade 1',
     code: 'GRADE_1',
     learningArea: 'Lower Primary',
@@ -79,7 +49,7 @@ export const gradeStructure = [
     curriculum: 'CBC'
   },
   {
-    id: 8,
+    id: 5,
     name: 'Grade 2',
     code: 'GRADE_2',
     learningArea: 'Lower Primary',
@@ -89,7 +59,7 @@ export const gradeStructure = [
     curriculum: 'CBC'
   },
   {
-    id: 9,
+    id: 6,
     name: 'Grade 3',
     code: 'GRADE_3',
     learningArea: 'Lower Primary',
@@ -99,7 +69,7 @@ export const gradeStructure = [
     curriculum: 'CBC'
   },
   {
-    id: 10,
+    id: 7,
     name: 'Grade 4',
     code: 'GRADE_4',
     learningArea: 'Upper Primary',
@@ -109,7 +79,7 @@ export const gradeStructure = [
     curriculum: 'CBC'
   },
   {
-    id: 11,
+    id: 8,
     name: 'Grade 5',
     code: 'GRADE_5',
     learningArea: 'Upper Primary',
@@ -119,7 +89,7 @@ export const gradeStructure = [
     curriculum: 'CBC'
   },
   {
-    id: 12,
+    id: 9,
     name: 'Grade 6',
     code: 'GRADE_6',
     learningArea: 'Upper Primary',
@@ -131,7 +101,7 @@ export const gradeStructure = [
 
   // JUNIOR SCHOOL (Grades 7-9)
   {
-    id: 13,
+    id: 10,
     name: 'Grade 7',
     code: 'GRADE_7',
     learningArea: 'Junior School',
@@ -141,7 +111,7 @@ export const gradeStructure = [
     curriculum: 'CBC'
   },
   {
-    id: 14,
+    id: 11,
     name: 'Grade 8',
     code: 'GRADE_8',
     learningArea: 'Junior School',
@@ -151,44 +121,12 @@ export const gradeStructure = [
     curriculum: 'CBC'
   },
   {
-    id: 15,
+    id: 12,
     name: 'Grade 9',
     code: 'GRADE_9',
     learningArea: 'Junior School',
     ageRange: '14-15 years',
     capacity: 45,
-    active: true,
-    curriculum: 'CBC'
-  },
-
-  // SENIOR SCHOOL (Grades 10-12)
-  {
-    id: 16,
-    name: 'Grade 10',
-    code: 'GRADE_10',
-    learningArea: 'Senior School',
-    ageRange: '15-16 years',
-    capacity: 40,
-    active: true,
-    curriculum: 'CBC'
-  },
-  {
-    id: 17,
-    name: 'Grade 11',
-    code: 'GRADE_11',
-    learningArea: 'Senior School',
-    ageRange: '16-17 years',
-    capacity: 40,
-    active: true,
-    curriculum: 'CBC'
-  },
-  {
-    id: 18,
-    name: 'Grade 12',
-    code: 'GRADE_12',
-    learningArea: 'Senior School',
-    ageRange: '17-18 years',
-    capacity: 40,
     active: true,
     curriculum: 'CBC'
   }

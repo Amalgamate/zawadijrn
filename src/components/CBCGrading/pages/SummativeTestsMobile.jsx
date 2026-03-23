@@ -277,24 +277,28 @@ const SummativeTestsMobile = ({ onNavigate, onBack }) => {
                               View
                             </button>
 
-                            <button
-                              onClick={() => {
-                                setSelectedTest(test);
-                                setViewMode('edit');
-                              }}
-                              className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-gray-50 text-gray-600 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors active:bg-gray-100"
-                            >
-                              <Edit size={14} />
-                              Edit
-                            </button>
+                            {(user?.role !== 'TEACHER' || test.createdBy === user?.id) && (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    setSelectedTest(test);
+                                    setViewMode('edit');
+                                  }}
+                                  className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-gray-50 text-gray-600 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors active:bg-gray-100"
+                                >
+                                  <Edit size={14} />
+                                  Edit
+                                </button>
 
-                            <button
-                              onClick={() => handleDeleteTest(test.id)}
-                              disabled={deleting}
-                              className="flex items-center justify-center py-2 px-3 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 disabled:opacity-50"
-                            >
-                              <Trash2 size={14} />
-                            </button>
+                                <button
+                                  onClick={() => handleDeleteTest(test.id)}
+                                  disabled={deleting}
+                                  className="flex items-center justify-center py-2 px-3 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 disabled:opacity-50"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </>
+                            )}
                           </div>
                         </div>
                       ))}

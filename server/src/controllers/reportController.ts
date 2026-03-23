@@ -147,9 +147,10 @@ export const reportController = {
             select: { firstName: true, lastName: true }
           }
         },
-        orderBy: {
-          test: { learningArea: 'asc' }
-        }
+        orderBy: [
+          { test: { learningArea: 'asc' } },
+          { test: { testDate: 'asc' } }
+        ]
       });
 
       const subjectSummary = calculateSubjectSummary(results, ranges);

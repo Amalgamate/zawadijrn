@@ -665,6 +665,7 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
       case 'planner-calendar':
       case 'planner-timetable':
       case 'planner-agenda':
+      case 'planner-schemes':
         return <PlannerLayout currentPage={currentPage} onNavigate={handleNavigate} />;
 
       // Learners Module

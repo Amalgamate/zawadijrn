@@ -43,6 +43,11 @@ export class LearnerController {
             primaryContactPhone: true, primaryContactName: true,
             primaryContactType: true, primaryContactEmail: true,
             guardianPhone: true, guardianName: true,
+            createdBy: true,
+            enrollments: {
+              where: { active: true },
+              select: { class: { select: { teacherId: true } } }
+            },
             parent: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
           },
           orderBy: [{ createdAt: 'desc' }, { grade: 'asc' }, { stream: 'asc' }, { lastName: 'asc' }, { firstName: 'asc' }],

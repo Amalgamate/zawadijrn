@@ -48,8 +48,10 @@ const LearnersList = ({
   const { grades } = useSchoolData();
   const isMobile = useMediaQuery('(max-width: 767px)');
 
-  // Check if user can create learners (only admins, head teachers, super admins)
+  // Check permissions
   const canCreateLearner = can('CREATE_LEARNER');
+  const canEditLearner = can('EDIT_LEARNER');
+  const canDeleteLearner = can('DELETE_LEARNER');
   const isTeacher = isRole('TEACHER');
 
   // Fetch streams on mount
@@ -105,6 +107,13 @@ const LearnersList = ({
   };
 
   const displayLearners = learners;
+
+  const canTeacherModify = (learner) => {
+    if (!isTeacher) return true; // Admins etc can always modify
+    const isCreator = learner.createdBy === user?.id;
+    const isClassTeacher = learner.enrollments?.some(e => e.class?.teacherId === user?.id);
+    return isCreator || isClassTeacher;
+  };
 
   const handleReset = () => {
     setSearchTerm('');
@@ -554,26 +563,30 @@ const LearnersList = ({
                   </div>
 
                   {/* Actions mobile */}
-                  {!isTeacher && (
+                  {(canEditLearner || canDeleteLearner) && (
                     <div className="flex gap-2 mt-3 justify-end items-center">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); onEditLearner(learner); }}
-                        className="px-3 py-1.5 text-xs font-bold text-gray-600 bg-gray-50 border border-gray-200 rounded-lg shadow-sm"
-                      >
-                        Edit
-                      </button>
-
-                      <div className="relative" onClick={e => e.stopPropagation()}>
+                      {canEditLearner && (isTeacher ? canTeacherModify(learner) : true) && (
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (window.confirm('Delete this student?')) { handleIndividualDelete(learner.id); }
-                          }}
-                          className="px-3 py-1.5 text-xs font-bold text-red-600 bg-red-50 border border-red-100 rounded-lg"
+                          onClick={(e) => { e.stopPropagation(); onEditLearner(learner); }}
+                          className="px-3 py-1.5 text-xs font-bold text-gray-600 bg-gray-50 border border-gray-200 rounded-lg shadow-sm"
                         >
-                          Delete
+                          Edit
                         </button>
-                      </div>
+                      )}
+
+                      {canDeleteLearner && (isTeacher ? canTeacherModify(learner) : true) && (
+                        <div className="relative" onClick={e => e.stopPropagation()}>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (window.confirm('Delete this student?')) { handleIndividualDelete(learner.id); }
+                            }}
+                            className="px-3 py-1.5 text-xs font-bold text-red-600 bg-red-50 border border-red-100 rounded-lg"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -712,16 +725,18 @@ const LearnersList = ({
                     >
                       <Eye size={16} />
                     </button>
-                    {!isTeacher && (
+                    {(canEditLearner || canDeleteLearner) && (
                       <>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); onEditLearner(learner); }}
-                          className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition"
-                          title="Edit"
-                        >
-                          <Edit size={16} />
-                        </button>
-                        {learner.status === 'Active' && (
+                        {canEditLearner && (isTeacher ? canTeacherModify(learner) : true) && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onEditLearner(learner); }}
+                            className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition"
+                            title="Edit"
+                          >
+                            <Edit size={16} />
+                          </button>
+                        )}
+                        {canEditLearner && learner.status === 'Active' && (isTeacher ? canTeacherModify(learner) : true) && (
                           <button
                             onClick={(e) => { e.stopPropagation(); onMarkAsExited(learner.id); }}
                             className="p-1.5 text-orange-600 hover:bg-orange-50 rounded-lg transition"
@@ -730,13 +745,15 @@ const LearnersList = ({
                             <LogOut size={16} />
                           </button>
                         )}
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleIndividualDelete(learner.id); }}
-                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition"
-                          title="Delete"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        {canDeleteLearner && (isTeacher ? canTeacherModify(learner) : true) && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleIndividualDelete(learner.id); }}
+                            className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition"
+                            title="Delete"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
                       </>
                     )}
                   </div>

@@ -270,9 +270,26 @@ export const recordFormativeResultsBulk = async (req: AuthRequest, res: Response
       valid.push(a);
     }
 
+    // Pre-fetch existing owner IDs to enforce "Edit Own"
+    const existingAssessments = await prisma.formativeAssessment.findMany({
+      where: {
+        learnerId: { in: valid.map(v => v.learnerId) },
+        term: valid[0]?.term,
+        academicYear: parseInt(valid[0]?.academicYear),
+        learningArea: valid[0]?.learningArea,
+        type: valid[0]?.type ?? 'OTHER',
+        title: valid[0]?.title ?? ''
+      },
+      select: { learnerId: true, teacherId: true }
+    });
+    const ownerMap = new Map(existingAssessments.map(a => [a.learnerId, a.teacherId]));
+
     const saved = await prisma.$transaction(
-      valid.map((a: any) =>
-        prisma.formativeAssessment.upsert({
+      valid.map((a: any) => {
+        const ownerId = ownerMap.get(a.learnerId);
+        const canUpdate = !ownerId || ownerId === teacherId;
+
+        return prisma.formativeAssessment.upsert({
           where: {
             learnerId_term_academicYear_learningArea_type_title: {
               learnerId: a.learnerId,
@@ -283,7 +300,7 @@ export const recordFormativeResultsBulk = async (req: AuthRequest, res: Response
               title: a.title ?? ''
             }
           },
-          update: {
+          update: canUpdate ? {
             overallRating: a.overallRating,
             detailedRating: a.detailedRating,
             percentage: a.percentage,
@@ -292,7 +309,7 @@ export const recordFormativeResultsBulk = async (req: AuthRequest, res: Response
             areasImprovement: a.areasImprovement,
             remarks: a.remarks ?? a.recommendations,
             weight: a.weight != null ? Number(a.weight) : undefined
-          },
+          } : {}, // If not owner, do nothing in update
           create: {
             learnerId: a.learnerId,
             teacherId,
@@ -313,8 +330,8 @@ export const recordFormativeResultsBulk = async (req: AuthRequest, res: Response
             areasImprovement: a.areasImprovement,
             remarks: a.remarks ?? a.recommendations
           }
-        })
-      )
+        });
+      })
     );
 
     const savedMap = saved.map((s: any) => ({
@@ -1281,7 +1298,8 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
       },
       orderBy: [
         { learner: { firstName: 'asc' } },
-        { test: { learningArea: 'asc' } }
+        { test: { learningArea: 'asc' } },
+        { test: { testDate: 'asc' } }
       ]
     });
 
@@ -1310,11 +1328,11 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
       };
     });
 
-    const isCandidateGrade = ['GRADE_7', 'GRADE_8'].includes(grade as string);
+    const isCandidateGrade = ['GRADE_7', 'GRADE_8', 'GRADE_9'].includes(grade as string);
     const predictions: Record<string, any> = {};
 
     if (isCandidateGrade && learnerIds.length > 0 && req.query.includePredictions === 'true') {
-      const CAP = 10;
+      const CAP = 100;
       if (learnerIds.length > CAP) {
         (predictions as any).__tooLarge = true;
         (predictions as any).__count = learnerIds.length;
@@ -1394,7 +1412,7 @@ export const recordSummativeResultsBulk = async (req: AuthRequest, res: Response
     // ── 2. Pre-fetch ALL existing results in ONE query ────────────────────────
     const existingResults = await prisma.summativeResult.findMany({
       where: { testId },
-      select: { id: true, learnerId: true, marksObtained: true }
+      select: { id: true, learnerId: true, marksObtained: true, recordedBy: true }
     });
     const existingMap = new Map(existingResults.map(r => [r.learnerId, r]));
 
@@ -1432,11 +1450,25 @@ export const recordSummativeResultsBulk = async (req: AuthRequest, res: Response
       }
 
       const existing = existingMap.get(item.learnerId);
+      const canUpdate = !existing || existing.recordedBy === recordedBy;
+
+      if (existing && !canUpdate) {
+        skipped.push({ learnerId: item.learnerId, reason: 'Record owned by another teacher' });
+        continue;
+      }
 
       upsertOps.push(
         prisma.summativeResult.upsert({
           where: { testId_learnerId: { testId, learnerId: item.learnerId } },
-          update: { marksObtained: marks, percentage, grade, status, recordedBy, remarks, teacherComment: item.teacherComment },
+          update: { 
+            marksObtained: marks, 
+            percentage, 
+            grade, 
+            status, 
+            remarks, 
+            teacherComment: item.teacherComment,
+            recordedBy
+          },
           create: { testId, learnerId: item.learnerId, marksObtained: marks, percentage, grade, status, recordedBy, remarks, teacherComment: item.teacherComment },
           select: { id: true, learnerId: true }
         })

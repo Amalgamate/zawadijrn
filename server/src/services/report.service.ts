@@ -338,7 +338,10 @@ async function fetchSummativeResults(learnerId: string, term: Term, academicYear
       },
       recorder: { select: { firstName: true, lastName: true } }
     },
-    orderBy: { test: { learningArea: 'asc' } }
+    orderBy: [
+      { test: { learningArea: 'asc' } },
+      { test: { testDate: 'asc' } }
+    ]
   });
 }
 

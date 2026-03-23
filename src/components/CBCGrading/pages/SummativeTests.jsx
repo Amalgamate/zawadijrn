@@ -160,18 +160,31 @@ const SummativeTests = ({ onNavigate }) => {
         grouped[gradeKey] = {};
       }
 
-      // Formatted Title: "Series Name - Subject - Type - Term Year"
-      // Series Name is the first part before the first " - "
-      const seriesName = test.title?.split(' - ')[0] || 'Unknown Series';
+      // Group key: testType + term + academicYear — this is the "series"
+      // e.g. all OPENER tests for TERM_1 2026 form one series row
+      const seriesKey = `${test.testType || 'ASSESSMENT'}__${test.term || ''}__${test.academicYear || ''}`;
 
-      if (!grouped[gradeKey][seriesName]) {
-        grouped[gradeKey][seriesName] = {
-          name: seriesName,
-          type: test.testType || 'Assessment',
+      if (!grouped[gradeKey][seriesKey]) {
+        // Human-readable type: OPENER → Opener, END_TERM → End Term
+        const displayType = (test.testType || 'Assessment')
+          .replace(/_/g, ' ')
+          .toLowerCase()
+          .replace(/\b\w/g, l => l.toUpperCase());
+        // Human-readable term: TERM_1 → Term 1
+        const displayTerm = (test.term || '')
+          .replace(/_/g, ' ')
+          .toLowerCase()
+          .replace(/\b\w/g, l => l.toUpperCase());
+
+        grouped[gradeKey][seriesKey] = {
+          seriesKey,
+          displayType,   // e.g. "Opener"
+          displayTerm,   // e.g. "Term 1"
+          academicYear: test.academicYear,
           tests: []
         };
       }
-      grouped[gradeKey][seriesName].tests.push(test);
+      grouped[gradeKey][seriesKey].tests.push(test);
     });
     return grouped;
   }, [tests]);
@@ -331,16 +344,14 @@ const SummativeTests = ({ onNavigate }) => {
               <button
                 onClick={handleAddSingleTest}
                 className="flex items-center gap-2 px-4 py-2 bg-brand-teal text-white rounded-lg hover:bg-brand-teal/90 transition shadow-sm font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={user?.role === 'TEACHER'}
-                title={user?.role === 'TEACHER' ? "Please consult with the Head Teacher to create new tests" : "Create a single test"}
+                title="Create a single test"
               >
                 <Plus size={16} /> <span className="hidden sm:inline">New Test</span><span className="inline sm:hidden">+</span>
               </button>
               <button
                 onClick={handleAdd}
                 className="flex items-center gap-2 px-4 py-2 bg-brand-teal/70 text-white rounded-lg hover:bg-brand-teal/80 transition shadow-sm font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={user?.role === 'TEACHER'}
-                title={user?.role === 'TEACHER' ? "Please consult with the Head Teacher to create new tests" : "Create all tests for a series"}
+                title="Create all tests for a series"
               >
                 <Plus size={16} /> <span className="hidden sm:inline">Bulk Create</span><span className="inline sm:hidden">Bulk</span>
               </button>
@@ -452,9 +463,9 @@ const SummativeTests = ({ onNavigate }) => {
                               </td>
                               <td className="px-6 py-5">
                                 <div className="flex flex-col">
-                                  <span className="text-sm font-bold text-slate-800 leading-tight">{seriesName}</span>
+                                  <span className="text-sm font-bold text-slate-800 leading-tight">{data.displayType}</span>
                                   <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest mt-1">
-                                    Type: {data.type.replace(/_/g, ' ')}
+                                    Summative Series • {data.displayTerm} {data.academicYear}
                                   </span>
                                 </div>
                               </td>
@@ -517,8 +528,12 @@ const SummativeTests = ({ onNavigate }) => {
 
                                           <div className="flex items-center gap-1">
                                             <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-brand-teal" onClick={() => onNavigate('summative-results', { testId: test.id })}><Eye size={14} /></Button>
-                                            <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-green-600" onClick={() => { setSelectedTest(test); setViewMode('edit'); }}><Edit size={14} /></Button>
-                                            <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-red-600" onClick={() => handleDelete(test)}><Trash2 size={14} /></Button>
+                                            {(user?.role !== 'TEACHER' || test.createdBy === user?.id) && (
+                                              <>
+                                                <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-green-600" onClick={() => { setSelectedTest(test); setViewMode('edit'); }}><Edit size={14} /></Button>
+                                                <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-red-600" onClick={() => handleDelete(test)}><Trash2 size={14} /></Button>
+                                              </>
+                                            )}
                                           </div>
                                         </div>
                                       </div>

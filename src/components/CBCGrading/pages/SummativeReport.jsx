@@ -57,6 +57,7 @@ const formatSubjectName = (name) => {
 };
 
 
+
 const getAbbreviatedName = (name) => {
   if (!name) return '';
   const upper = name.toUpperCase().trim();
@@ -180,15 +181,46 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
 
   // Identify unique Test Types for Columns
   const testTypesFound = new Set();
+  const colDates = {};
+
   results?.forEach(r => {
     const type = resolveTestGroup({
       testType: r.test?.testType || r.testType,
       title: r.test?.title || r.title
     });
     testTypesFound.add(type);
+
+    // Track the earliest date for each test group to assist in sorting
+    const date = new Date(r.testDate || r.test?.testDate || 0);
+    if (!colDates[type] || (date > new Date(0) && date < colDates[type])) {
+      colDates[type] = date;
+    }
   });
 
-  const testColumns = Array.from(testTypesFound).sort();
+  // Sort columns: Opener -> Midterm -> End Term -> Others by Date
+  const testColumns = Array.from(testTypesFound).sort((a, b) => {
+    const priority = {
+      'OPENER': 1,
+      'MIDTERM': 2,
+      'END_TERM': 3,
+      'END OF TERM': 3,
+      'MONTHLY': 4,
+      'WEEKLY': 5,
+      'RANDOM': 6
+    };
+
+    const pA = priority[a.toUpperCase()] || 99;
+    const pB = priority[b.toUpperCase()] || 99;
+
+    if (pA !== pB) return pA - pB;
+
+    // Fallback to date sorting if priorities are equal
+    const dateA = colDates[a] || 0;
+    const dateB = colDates[b] || 0;
+    if (dateA && dateB) return dateA - dateB;
+
+    return a.localeCompare(b);
+  });
   const formatTestName = (str) => {
     if (!str) return '';
     return str.replace(/_/g, ' ')
@@ -448,17 +480,21 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
           </tbody>
         </table>
 
-      {/* Performance Chart Row - 100% Width */}
-      <div className="mb-4 page-break-inside-avoid" style={{ marginTop: '16px' }}>
-        <h3 className="text-[10px] font-bold text-gray-800 uppercase border-b border-gray-200 mb-2 pb-1">Subject Performance</h3>
-        <div style={{ height: '120px', width: '100%' }}>
-          {tableRows && tableRows.length > 0 && BarChart ? (
+      {/* Performance Chart Row - 60% Center Width */}
+      <div className="mb-4 page-break-inside-avoid" style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <h3 className="text-[10px] font-bold text-gray-800 uppercase border-b border-gray-200 mb-2 pb-1 w-full">Subject Performance</h3>
+        <div style={{ height: '80px', width: '80%', margin: '0 auto' }}>
+          {tableRows && tableRows.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={tableRows.map(r => ({ ...r, area: getAbbreviatedName(r.area) }))} margin={{ top: 5, right: 10, left: -25, bottom: 0 }} barCategoryGap="20%">
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="area" interval={0} axisLine={{ stroke: '#e2e8f0' }} tickLine={false} tick={{ fontSize: 8, fontWeight: 'bold' }} />
-                <YAxis domain={[0, 100]} tick={{ fontSize: 8, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                <Bar dataKey="percentage" fill="#1E3A8A" />
+              <BarChart data={tableRows.map(r => ({ ...r, area: getAbbreviatedName(r.area) }))} margin={{ top: 5, right: 10, left: -25, bottom: 0 }} barCategoryGap="25%">
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="area" interval={0} axisLine={{ stroke: '#e2e8f0' }} tickLine={false} tick={{ fontSize: 7, fontWeight: 'bold', fill: '#64748b' }} />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 7, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                <Bar dataKey="percentage" radius={[3, 3, 0, 0]}>
+                  {tableRows.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           ) : (
@@ -1696,7 +1732,8 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
 
     const queryParams = {
       term: normalize(stagedTerm),
-      academicYear: stagedAcademicYear || setup.academicYear
+      academicYear: stagedAcademicYear || setup.academicYear,
+      includePredictions: 'true'
     };
     if (stagedGrade && stagedGrade !== 'all') queryParams.grade = normalize(stagedGrade);
     if (selectedStream && selectedStream !== 'all') queryParams.stream = selectedStream;
@@ -1768,7 +1805,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
           processedResults.sort((a, b) => {
             const dateA = new Date(a.testDate || (a.test && a.test.testDate) || 0);
             const dateB = new Date(b.testDate || (b.test && b.test.testDate) || 0);
-            return dateB - dateA;
+            return dateA - dateB;
           });
 
           allReportRows.push({

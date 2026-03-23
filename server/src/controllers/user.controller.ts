@@ -265,7 +265,15 @@ export class UserController {
     const { search, page = 1, limit = 20 } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
 
-    const whereClause: any = { role: role as Role, archived: false };
+    let whereClause: any = { archived: false };
+    
+    // If requesting TEACHER role, include other teaching roles like HEAD_TEACHER
+    if (role === 'TEACHER') {
+        whereClause.role = { in: ['TEACHER', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM'] };
+    } else {
+        whereClause.role = role as Role;
+    }
+
     if (search) {
       whereClause.OR = [
         { firstName: { contains: search as string, mode: 'insensitive' } },

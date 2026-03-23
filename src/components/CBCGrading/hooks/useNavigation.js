@@ -5,7 +5,7 @@ import {
     TrendingUp, Zap, CheckSquare, Settings, BookOpen,
     Users2, Truck, Fingerprint, CreditCard, PieChart,
     Package, Building2, HelpCircle, Receipt, FileText,
-    Shirt,
+    Shirt, ClipboardList
 } from 'lucide-react';
 
 const focusModules = ['dashboard', 'communications', 'planner', 'learners', 'teachers', 'parents', 'assessment', 'learning-hub', 'timetable', 'attendance', 'docs-center', 'knowledge-base', 'facilities', 'settings', 'hr', 'finance', 'inventory'];
@@ -37,6 +37,7 @@ export const allNavSections = [
         items: [
             { id: 'planner-calendar', label: 'Calendar', path: 'planner-calendar', permission: null },
             { id: 'planner-timetable', label: 'Timetable', path: 'planner-timetable', permission: 'ACCESS_TIMETABLE' },
+            { id: 'planner-schemes', label: 'Schemes of Work', path: 'planner-schemes', permission: null, icon: ClipboardList },
         ]
     },
     {

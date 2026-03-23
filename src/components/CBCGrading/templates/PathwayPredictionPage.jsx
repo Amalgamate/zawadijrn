@@ -77,7 +77,7 @@ const PathwayPredictionPage = ({ data, brandColor = '#4a0404' }) => {
                         CBC Pathway Analysis
                     </h2>
                     <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">
-                        {gradeLabel} · Senior School Career Navigator · {data.term?.replace('_', ' ')} {data.academicYear}
+                        {gradeLabel} · Junior School Career Navigator · {data.term?.replace('_', ' ')} {data.academicYear}
                     </p>
                 </div>
                 {/* Confidence pill */}
@@ -117,62 +117,57 @@ const PathwayPredictionPage = ({ data, brandColor = '#4a0404' }) => {
                         </h3>
                     </div>
 
-                    {/* Cluster bars */}
-                    <div className="space-y-5">
-                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 pb-2">
-                            Academic Cluster Scores
+                    {/* Cluster bars - Compact Multi-colored Graph */}
+                    <div className="space-y-3 bg-gray-50/50 p-4 rounded-xl border border-gray-100">
+                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">
+                            Cluster Analysis
                         </p>
 
                         {/* STEM */}
-                        <div className="space-y-1.5">
-                            <div className="flex justify-between text-[10px] font-black uppercase">
-                                <span className="text-gray-700">STEM</span>
-                                <span className="text-gray-500">{stem}%</span>
+                        <div className="space-y-1">
+                            <div className="flex justify-between text-[9px] font-black uppercase">
+                                <span className="text-gray-600">STEM</span>
+                                <span className="text-blue-600">{stem}%</span>
                             </div>
-                            <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-2 bg-gray-200/50 rounded-full overflow-hidden">
                                 <div
-                                    className="h-full rounded-full"
-                                    style={{ width: stemWidth, backgroundColor: brandColor }}
+                                    className="h-full rounded-full bg-blue-500 shadow-sm"
+                                    style={{ width: stemWidth }}
                                 />
                             </div>
-                            <p className="text-[7px] text-gray-400 font-bold uppercase italic">
-                                Maths · Science · Pre-Tech · Agriculture
-                            </p>
                         </div>
 
                         {/* Social */}
-                        <div className="space-y-1.5">
-                            <div className="flex justify-between text-[10px] font-black uppercase">
-                                <span className="text-gray-700">Social Sciences</span>
-                                <span className="text-gray-500">{social}%</span>
+                        <div className="space-y-1">
+                            <div className="flex justify-between text-[9px] font-black uppercase">
+                                <span className="text-gray-600">Social Sciences</span>
+                                <span className="text-emerald-600">{social}%</span>
                             </div>
-                            <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-2 bg-gray-200/50 rounded-full overflow-hidden">
                                 <div
-                                    className="h-full rounded-full bg-gray-500 opacity-60"
+                                    className="h-full rounded-full bg-emerald-500 shadow-sm"
                                     style={{ width: socialWidth }}
                                 />
                             </div>
-                            <p className="text-[7px] text-gray-400 font-bold uppercase italic">
-                                Languages · Social Studies · RE · Life Skills
-                            </p>
                         </div>
 
                         {/* Arts */}
-                        <div className="space-y-1.5">
-                            <div className="flex justify-between text-[10px] font-black uppercase">
-                                <span className="text-gray-700">Arts &amp; Sports</span>
-                                <span className="text-gray-500">{arts}%</span>
+                        <div className="space-y-1">
+                            <div className="flex justify-between text-[9px] font-black uppercase">
+                                <span className="text-gray-600">Arts &amp; Sports</span>
+                                <span className="text-amber-600">{arts}%</span>
                             </div>
-                            <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-2 bg-gray-200/50 rounded-full overflow-hidden">
                                 <div
-                                    className="h-full rounded-full bg-gray-300 opacity-70"
+                                    className="h-full rounded-full bg-amber-500 shadow-sm"
                                     style={{ width: artsWidth }}
                                 />
                             </div>
-                            <p className="text-[7px] text-gray-400 font-bold uppercase italic">
-                                Creative Arts · Music · Physical Education
-                            </p>
                         </div>
+
+                        <p className="text-[6px] text-gray-400 font-bold uppercase pt-1 border-t border-gray-100 mt-2">
+                            * Based on cluster averages
+                        </p>
                     </div>
                 </div>
 
@@ -252,8 +247,8 @@ const PathwayPredictionPage = ({ data, brandColor = '#4a0404' }) => {
                 </p>
                 <p className="text-[10px] font-medium leading-relaxed relative z-10">
                     This pathway analysis is computed from the learner's summative assessment scores using CBC
-                    cluster methodology. It is for career guidance only and should be discussed with subject
-                    teachers and the school counselor to ensure alignment with the learner's personal interests.
+                    cluster methodology. It is designed to provide career guidance during the Junior School years
+                    to help inform future Senior School choices. Please discuss results with teachers and counselors.
                 </p>
                 <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
                     <Brain size={72} />

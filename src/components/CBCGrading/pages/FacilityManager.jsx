@@ -112,54 +112,34 @@ const FacilityManager = () => {
 
   // Initialize
   useEffect(() => {
-    let sid = getCurrentSchoolId();
-    if (!sid) {
-      const user = getStoredUser();
-      sid = user?.schoolId || user?.school?.id;
-    }
-    setSchoolId(sid);
-
-    if (sid) {
-      const user = getStoredUser();
-      const initialBranchId = user?.branchId || null;
-      setSelectedBranchId(initialBranchId);
-      fetchInitialData(sid, initialBranchId);
-    }
+    // Single-tenant mode: the backend resolves school from JWT,
+    // so we use a non-null sentinel to bypass the schoolId guard.
+    const SINGLETON = 'default';
+    setSchoolId(SINGLETON);
+    const user = getStoredUser();
+    const initialBranchId = user?.branchId || null;
+    setSelectedBranchId(initialBranchId);
+    fetchInitialData(SINGLETON, initialBranchId);
   }, []);
 
-  // Fetch all initial data
+  // Fetch all initial data — schoolId param ignored (single-tenant, backend resolves from JWT)
   const fetchInitialData = async (sid, bid = selectedBranchId) => {
     try {
       setLoading(true);
       console.log('📝 Fetching initial data for school:', sid);
 
       // Fetch classes
-      const classesResponse = await configAPI.getClasses(sid);
+      const classesResponse = await configAPI.getClasses();
       console.log('✅ Classes fetched:', classesResponse.data);
       setClasses(classesResponse.data || []);
 
-      // Fetch branches
-      try {
-        const branchesResponse = await configAPI.getBranches(sid);
-        console.log('✅ Branches fetched:', branchesResponse.data);
-        const branchesList = branchesResponse.data || [];
-        setBranches(branchesList);
+      // Branches not used in single-tenant mode
+      setBranches([]);
 
-        // If no selected branch and branches exist, select the first one
-        if (!bid && branchesList.length > 0) {
-          const defaultBranch = branchesList[0].id;
-          setSelectedBranchId(defaultBranch);
-          bid = defaultBranch; // Update local var for stream fetching
-        }
-      } catch (err) {
-        console.error('⚠️ Failed to fetch branches:', err);
-        setBranches([]);
-      }
-
-      // Fetch streams (Use School Config instead of Branch Streams)
+      // Fetch streams
       try {
-        const streamsResponse = await configAPI.getStreamConfigs(sid);
-        console.log('✅ Streams fetched for school:', sid, streamsResponse);
+        const streamsResponse = await configAPI.getStreamConfigs();
+        console.log('✅ Streams fetched', streamsResponse);
         const streamsData = Array.isArray(streamsResponse) ? streamsResponse : (streamsResponse.data || []);
         setStreams(streamsData);
       } catch (err) {

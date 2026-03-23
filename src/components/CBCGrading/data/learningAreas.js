@@ -4,31 +4,7 @@
  */
 
 export const learningAreas = [
-  // EARLY YEARS (Crèche to Transition)
-  {
-    id: 1,
-    name: 'Literacy Activities',
-    shortName: 'Literacy',
-    code: 'LIT',
-    gradeLevel: 'Early Years',
-    grades: ['Crèche', 'Reception', 'Transition', 'Playgroup'],
-    color: '#ec4899',
-    icon: '🧸',
-    weight: 1.0,
-    strands: [{ id: 1, name: 'Oral Communication', subStrands: [{ name: 'Listening', outcomes: ['Responds to sounds', 'Follows simple instructions'] }] }]
-  },
-  {
-    id: 2,
-    name: 'Mathematical Activities',
-    shortName: 'Math',
-    code: 'MATH_EY',
-    gradeLevel: 'Early Years',
-    grades: ['Crèche', 'Reception', 'Transition', 'Playgroup'],
-    color: '#3b82f6',
-    icon: '🔢',
-    weight: 1.0,
-    strands: [{ id: 1, name: 'Numbers', subStrands: [{ name: 'Counting', outcomes: ['Counts 1-10', 'Identifies shapes'] }] }]
-  },
+  // PRE-PRIMARY (Playgroup, PP1, PP2)
 
   // PRE-PRIMARY (PP1, PP2)
   {
@@ -37,7 +13,7 @@ export const learningAreas = [
     shortName: 'Literacy',
     code: 'LIT_PP',
     gradeLevel: 'Pre-Primary',
-    grades: ['PP1', 'PP2'],
+    grades: ['Playgroup', 'PP1', 'PP2'],
     color: '#8b5cf6',
     icon: '📖',
     weight: 1.0,
@@ -49,7 +25,7 @@ export const learningAreas = [
     shortName: 'Math',
     code: 'MATH_PP',
     gradeLevel: 'Pre-Primary',
-    grades: ['PP1', 'PP2'],
+    grades: ['Playgroup', 'PP1', 'PP2'],
     color: '#3b82f6',
     icon: '🔢',
     weight: 1.0,
@@ -61,7 +37,7 @@ export const learningAreas = [
     shortName: 'Env',
     code: 'ENV_PP',
     gradeLevel: 'Pre-Primary',
-    grades: ['PP1', 'PP2'],
+    grades: ['Playgroup', 'PP1', 'PP2'],
     color: '#10b981',
     icon: '🌍',
     weight: 1.0,
@@ -73,7 +49,7 @@ export const learningAreas = [
     shortName: 'Creative',
     code: 'PCA_PP',
     gradeLevel: 'Pre-Primary',
-    grades: ['PP1', 'PP2'],
+    grades: ['Playgroup', 'PP1', 'PP2'],
     color: '#ec4899',
     icon: '🎨',
     weight: 1.0,
@@ -85,7 +61,7 @@ export const learningAreas = [
     shortName: 'RE',
     code: 'RE_PP',
     gradeLevel: 'Pre-Primary',
-    grades: ['PP1', 'PP2'],
+    grades: ['Playgroup', 'PP1', 'PP2'],
     color: '#8b5cf6',
     icon: '⛪',
     weight: 1.0,
@@ -97,7 +73,7 @@ export const learningAreas = [
     shortName: 'ILang',
     code: 'IL_PP',
     gradeLevel: 'Pre-Primary',
-    grades: ['PP1', 'PP2'],
+    grades: ['Playgroup', 'PP1', 'PP2'],
     color: '#f59e0b',
     icon: '🗣️',
     weight: 1.0,
@@ -111,7 +87,7 @@ export const learningAreas = [
     shortName: 'Maths',
     code: 'MATH',
     gradeLevel: 'Lower Primary',
-    grades: ['Grade 1', 'Grade 2', 'Grade 3'],
+    grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
     color: '#3b82f6',
     icon: '🔢',
     weight: 1.0,
@@ -140,7 +116,7 @@ export const learningAreas = [
     shortName: 'ENG',
     code: 'ENG',
     gradeLevel: 'Lower Primary',
-    grades: ['Grade 1', 'Grade 2', 'Grade 3'],
+    grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
     color: '#10b981',
     icon: '📚',
     weight: 1.0,
@@ -155,7 +131,7 @@ export const learningAreas = [
     shortName: 'Kiswa',
     code: 'KIS',
     gradeLevel: 'Lower Primary',
-    grades: ['Grade 1', 'Grade 2', 'Grade 3'],
+    grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
     color: '#f59e0b',
     icon: '🗣️',
     weight: 1.0,
@@ -167,7 +143,7 @@ export const learningAreas = [
     shortName: 'ENV',
     code: 'ENV',
     gradeLevel: 'Lower Primary',
-    grades: ['Grade 1', 'Grade 2', 'Grade 3'],
+    grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
     color: '#3b82f6',
     icon: '🌍',
     weight: 1.0,
@@ -179,7 +155,7 @@ export const learningAreas = [
     shortName: 'CA',
     code: 'CA',
     gradeLevel: 'Lower Primary',
-    grades: ['Grade 1', 'Grade 2', 'Grade 3'],
+    grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9'],
     color: '#ec4899',
     icon: '🎨',
     weight: 1.0,
@@ -191,7 +167,7 @@ export const learningAreas = [
     shortName: 'RE',
     code: 'RE',
     gradeLevel: 'Lower Primary',
-    grades: ['Grade 1', 'Grade 2', 'Grade 3'],
+    grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
     color: '#8b5cf6',
     icon: '⛪',
     weight: 1.0,
@@ -203,7 +179,7 @@ export const learningAreas = [
     shortName: 'ICT',
     code: 'ICT',
     gradeLevel: 'Lower Primary',
-    grades: ['Grade 1', 'Grade 2', 'Grade 3'],
+    grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
     color: '#64748b',
     icon: '💻',
     weight: 1.0,
@@ -229,7 +205,7 @@ export const learningAreas = [
     shortName: 'Social',
     code: 'SOC',
     gradeLevel: 'Upper Primary',
-    grades: ['Grade 4', 'Grade 5', 'Grade 6'],
+    grades: ['Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9'],
     color: '#3b82f6',
     icon: '🌍',
     weight: 1.0,
@@ -289,35 +265,6 @@ export const learningAreas = [
     strands: [
       { id: 1, name: 'Agricultural Economics', subStrands: [{ name: 'Importance of Agriculture', outcomes: ['Role in economy', 'Food security'] }] },
       { id: 2, name: 'Animal Production', subStrands: [{ name: 'Livestock Management', outcomes: ['Feeding practices', 'Health care'] }] }
-    ]
-  },
-
-  // SENIOR SCHOOL (Grade 10-12)
-  {
-    id: 100,
-    name: 'Community Service Learning',
-    shortName: 'CSL',
-    code: 'CSL',
-    gradeLevel: 'Senior School',
-    grades: ['Grade 10', 'Grade 11', 'Grade 12'],
-    color: '#f43f5e',
-    icon: '🤝',
-    weight: 1.0,
-    strands: [{ id: 1, name: 'Community Engagement', subStrands: [{ name: 'Social Responsibility', outcomes: ['Participate in local projects'] }] }]
-  },
-  {
-    id: 101,
-    name: 'Agriculture',
-    shortName: 'Agriculture',
-    code: 'AGRI_SR',
-    gradeLevel: 'Senior School',
-    grades: ['Grade 10', 'Grade 11', 'Grade 12'],
-    color: '#14532d',
-    icon: '🌾',
-    weight: 1.0,
-    strands: [
-      { id: 1, name: 'Advanced Crop Science', subStrands: [{ name: 'Plant Pathology', outcomes: ['Identify diseases', 'Pest control strategies'] }] },
-      { id: 2, name: 'Farm Power and Machinery', subStrands: [{ name: 'Equipment Maintenance', outcomes: ['Service farm tools', 'Safe operation'] }] }
     ]
   }
 ];

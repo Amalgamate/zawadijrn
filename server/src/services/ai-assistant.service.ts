@@ -23,6 +23,8 @@ const CLUSTER_MAP: Record<string, 'STEM' | 'SOCIAL' | 'ARTS'> = {
   'agriculture':           'STEM',
   'computer science':      'STEM',
   'science and technology':'STEM',
+  'information communications technology': 'STEM',
+  'ict':                   'STEM',
 
   // SOCIAL
   'english':               'SOCIAL',
@@ -36,6 +38,8 @@ const CLUSTER_MAP: Record<string, 'STEM' | 'SOCIAL' | 'ARTS'> = {
   'creative arts and sports': 'ARTS',
   'creative arts & sports':   'ARTS',
   'creative arts':            'ARTS',
+  'creative activities':      'ARTS',
+  'ca':                       'ARTS',
   'music':                    'ARTS',
   'physical education':       'ARTS',
   'pe':                       'ARTS',
