@@ -267,11 +267,13 @@ export class UserController {
 
     let whereClause: any = { archived: false };
     
-    // If requesting TEACHER role, include other teaching roles like HEAD_TEACHER
+    // If requesting TEACHER role, include other teaching roles like HEAD_TEACHER, ADMIN, etc.
     if (role === 'TEACHER') {
-        whereClause.role = { in: ['TEACHER', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM'] };
+        whereClause.role = { 
+            in: ['TEACHER', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM', 'ADMIN', 'SUPER_ADMIN'] 
+        };
     } else {
-        whereClause.role = role as Role;
+        whereClause.role = role as any;
     }
 
     if (search) {

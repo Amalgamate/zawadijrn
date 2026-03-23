@@ -82,7 +82,7 @@ const SubjectAllocationPage = () => {
       }
 
       const [teachersResp, areasResp, assignmentsResp, classesResp] = await Promise.all([
-        api.teachers.getAll(),
+        api.teachers.getAll({ limit: 1000 }),
         api.config.getLearningAreas(schoolId || undefined),
         api.subjectAssignments.getAll(),
         api.classes.getAll({ active: true })

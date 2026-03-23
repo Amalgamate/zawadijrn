@@ -7,7 +7,7 @@ import { Response } from 'express';
 import prisma from '../config/database';
 import { ApiError } from '../utils/error.util';
 import { AuthRequest } from '../middleware/permissions.middleware';
-import { Grade } from '@prisma/client';
+import { Grade, UserRole } from '@prisma/client';
 
 export class SubjectAssignmentController {
 
@@ -49,8 +49,11 @@ export class SubjectAssignmentController {
 
         // Verify teacher exists and is a teacher
         const teacher = await prisma.user.findUnique({ where: { id: teacherId } });
-        if (!teacher || (teacher.role !== 'TEACHER' && teacher.role !== 'HEAD_TEACHER')) {
-            throw new ApiError(400, 'Invalid teacher selected');
+        // Define roles allowed for subject allocation
+        const allowedRoles: UserRole[] = ['TEACHER', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM', 'ADMIN', 'SUPER_ADMIN'];
+        
+        if (!teacher || !allowedRoles.includes(teacher.role)) {
+            throw new ApiError(400, 'Invalid teacher selected or role not allowed for allocation');
         }
 
         // Verify learning area exists

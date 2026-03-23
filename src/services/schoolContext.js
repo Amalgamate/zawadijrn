@@ -3,7 +3,10 @@
  * Helpers for reading and writing school/branch context in local storage.
  */
 
-export const getCurrentSchoolId = () => null;
+export const getCurrentSchoolId = () => {
+    const user = getStoredUser();
+    return localStorage.getItem('currentSchoolId') || user?.schoolId || user?.school?.id || null;
+};
 
 export const getStoredUser = () => {
     try {
@@ -20,12 +23,34 @@ export const isSuperAdminUser = () => {
     return user?.role === 'SUPER_ADMIN';
 };
 
-export const resolveCurrentSchoolId = () => null;
+export const resolveCurrentSchoolId = () => {
+    return getCurrentSchoolId();
+};
 
-export const setCurrentSchoolId = (id) => { };
-export const setBranchId = (id) => { };
+export const setCurrentSchoolId = (id) => {
+    if (id) {
+        localStorage.setItem('currentSchoolId', id);
+    } else {
+        localStorage.removeItem('currentSchoolId');
+    }
+};
 
-export const clearCurrentSchoolId = () => { };
-export const clearBranchId = () => { };
+export const setBranchId = (id) => {
+    if (id) {
+        localStorage.setItem('currentBranchId', id);
+    } else {
+        localStorage.removeItem('currentBranchId');
+    }
+};
 
-export const getBranchId = () => null;
+export const clearCurrentSchoolId = () => {
+    localStorage.removeItem('currentSchoolId');
+};
+
+export const clearBranchId = () => {
+    localStorage.removeItem('currentBranchId');
+};
+
+export const getBranchId = () => {
+    return localStorage.getItem('currentBranchId');
+};

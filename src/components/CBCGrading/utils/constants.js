@@ -147,6 +147,10 @@ export const USER_ROLES = [
 // Page Titles Mapping
 export const PAGE_TITLES = {
   'dashboard': 'Overview',
+  'planner-calendar': 'School Calendar',
+  'planner-timetable': 'Class Timetable',
+  'planner-agenda': 'Agenda',
+  'planner-schemes': 'Schemes of Work',
 
   // Learners
   'learners-list': 'Scholars List',
