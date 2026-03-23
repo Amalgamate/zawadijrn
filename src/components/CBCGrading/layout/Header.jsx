@@ -244,6 +244,12 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
     let active = true;
 
     const refreshClockIn = async () => {
+      // Check local status first to avoid immediate API call if already known
+      const localStatus = getCurrentUserClockInStatus(user);
+      if (localStatus.clockedIn) {
+        setClockInState(localStatus);
+      }
+      
       const status = await syncCurrentUserClockInStatus(user);
       if (!active) return;
       setClockInState(status);

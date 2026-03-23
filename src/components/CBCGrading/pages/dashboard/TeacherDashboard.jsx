@@ -103,6 +103,12 @@ const TeacherDashboard = ({ learners, user, onNavigate }) => {
     let active = true;
 
     const refreshClockIn = async () => {
+      // Check local status first to avoid immediate API call
+      const localStatus = getCurrentUserClockInStatus(user);
+      if (localStatus.clockedIn) {
+        setClockInState(localStatus);
+      }
+      
       const status = await syncCurrentUserClockInStatus(user);
       if (!active) return;
       setClockInState(status);

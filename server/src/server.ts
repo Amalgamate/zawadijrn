@@ -30,7 +30,7 @@ app.use(cors({
 // Global IP-based rate limiting  
 app.use(ipRateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  maxRequests: 1000, // 1000 requests per 15 minutes
+  maxRequests: 5000, // Increased to 5000 for better dev/multi-tab experience
   message: 'Too many requests from this IP. Please try again later.'
 }));
 
