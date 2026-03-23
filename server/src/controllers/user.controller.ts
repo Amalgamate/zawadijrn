@@ -167,7 +167,7 @@ export class UserController {
     const { id } = req.params;
     const currentUserId = req.user!.userId;
     const currentUserRole = req.user!.role;
-    const { firstName, lastName, middleName, phone, role, status, password, subject, gender } = req.body;
+    const { firstName, lastName, middleName, phone, role, status, password, subject, gender, email } = req.body;
 
     const targetUser = await prisma.user.findUnique({ where: { id } });
     if (!targetUser) throw new ApiError(404, 'User not found');
@@ -177,6 +177,17 @@ export class UserController {
     if (!canUpdate) throw new ApiError(403, 'Permission denied');
 
     const updateData: any = {};
+
+    // Only update email if it's provided and different from current
+    if (email && email !== targetUser.email) {
+      // Security: Check if new email is already taken
+      const existingUser = await prisma.user.findUnique({ where: { email } });
+      if (existingUser) {
+        throw new ApiError(400, 'User with this email already exists');
+      }
+      updateData.email = email;
+    }
+
     if (firstName) updateData.firstName = firstName;
     if (lastName) updateData.lastName = lastName;
     if (middleName !== undefined) updateData.middleName = middleName;
