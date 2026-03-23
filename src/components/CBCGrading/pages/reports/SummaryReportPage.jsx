@@ -566,26 +566,62 @@ const SummaryReportPage = () => {
 
       {/* ── SEARCH & STATS ─────────────────────────────────────────────── */}
       {matrixData && (
-        <div className="bg-slate-50 px-6 py-2 border-b border-slate-200 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search student or adm..."
-                className="pl-9 pr-3 py-1.5 bg-white border border-slate-200 rounded-md text-xs focus:ring-2 focus:ring-indigo-500 outline-none w-64 transition-all"
-              />
+        <div className="bg-slate-50 border-b border-slate-200 print:hidden">
+          {/* Search + stats row */}
+          <div className="px-6 py-2 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search student or adm..."
+                  className="pl-9 pr-3 py-1.5 bg-white border border-slate-200 rounded-md text-xs focus:ring-2 focus:ring-indigo-500 outline-none w-64 transition-all"
+                />
+              </div>
+              <div className="flex items-center gap-3 text-[10px] font-black text-slate-400 uppercase">
+                <span className="flex items-center gap-1"><CheckCircle size={10} className="text-emerald-500"/> {matrixData.subjects.length} Subjects Assessed</span>
+                <span className="flex items-center gap-1"><AlertCircle size={10} className="text-indigo-500"/> {matrixData.rows.length} Total Students</span>
+              </div>
             </div>
-            <div className="flex items-center gap-3 text-[10px] font-black text-slate-400 uppercase">
-              <span className="flex items-center gap-1"><CheckCircle size={10} className="text-emerald-500"/> {matrixData.subjects.length} Subjects Assessed</span>
-              <span className="flex items-center gap-1"><AlertCircle size={10} className="text-indigo-500"/> {matrixData.rows.length} Total Students</span>
+            
+            <div className="text-[10px] font-bold text-slate-400 bg-white px-3 py-1 rounded-full border border-slate-200 shadow-sm">
+              Auto-Ranked by Academic Performance
             </div>
           </div>
-          
-          <div className="text-[10px] font-bold text-slate-400 bg-white px-3 py-1 rounded-full border border-slate-200 shadow-sm">
-            Auto-Ranked by Academic Performance
+
+          {/* Legend row */}
+          <div className="px-6 pb-2 flex flex-wrap items-center gap-x-5 gap-y-1">
+            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Key:</span>
+            {/* ABS */}
+            <span className="flex items-center gap-1.5">
+              <span className="text-[10px] font-bold text-rose-400 opacity-60">ABS</span>
+              <span className="text-[9px] text-slate-400">= No result recorded</span>
+            </span>
+            {/* Stream dot */}
+            <span className="flex items-center gap-1.5">
+              <span className="text-[10px] font-mono text-slate-500">1234 • A</span>
+              <span className="text-[9px] text-slate-400">= Adm No • Stream</span>
+            </span>
+            {/* CBC grade bands */}
+            <span className="flex items-center gap-1 text-[9px] text-slate-400">Grade bands:</span>
+            <span className="flex items-center gap-1">
+              <span className="text-[9px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">EE</span>
+              <span className="text-[9px] text-slate-400">Exceeding (75–100%)</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="text-[9px] font-black text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">ME</span>
+              <span className="text-[9px] text-slate-400">Meeting (41–74%)</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="text-[9px] font-black text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">AE</span>
+              <span className="text-[9px] text-slate-400">Approaching (21–40%)</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="text-[9px] font-black text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded">BE</span>
+              <span className="text-[9px] text-slate-400">Below (0–20%)</span>
+            </span>
           </div>
         </div>
       )}
