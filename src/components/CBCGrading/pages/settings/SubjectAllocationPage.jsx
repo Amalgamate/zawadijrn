@@ -273,7 +273,7 @@ const SubjectAllocationPage = () => {
         {filteredRows.length === 0 ? (
           <div className="text-center py-10 text-gray-500">
             <p className="font-medium">No learning areas available for allocation</p>
-            <p className="text-sm mt-1">Seed or add learning areas in the Learning Areas tab first.</p>
+            <p className="text-sm mt-1">Add learning areas in the Learning Areas tab first.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">

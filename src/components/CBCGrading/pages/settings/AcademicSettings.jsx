@@ -818,7 +818,8 @@ const AcademicSettings = () => {
               <p className="text-sm text-gray-600 mt-1">Organized by grade level with curriculum strands</p>
             </div>
             <div className="flex gap-2">
-              <button
+              {/* Hiding seeding buttons for now
+               <button
                 onClick={handleSeedLearningAreas}
                 disabled={seedingLearningAreas || deletingLearningAreas}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg transition font-semibold ${seedingLearningAreas
@@ -839,6 +840,7 @@ const AcademicSettings = () => {
                   </>
                 )}
               </button>
+              */}
 
               {selectedLearningAreas.length > 0 && (
                 <button
@@ -917,7 +919,8 @@ const AcademicSettings = () => {
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-bold">Manage Classes</h3>
             <div className="flex gap-2">
-              <button
+              {/* Hiding seeding buttons for now
+               <button
                 onClick={handleSeedClasses}
                 disabled={seedingClasses}
                 className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
@@ -935,6 +938,7 @@ const AcademicSettings = () => {
                   </>
                 )}
               </button>
+              */}
               <button
                 onClick={() => openClassModal()}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold"
@@ -1000,7 +1004,8 @@ const AcademicSettings = () => {
               <h3 className="text-lg font-bold">Manage Streams</h3>
             </div>
             <div className="flex gap-2">
-              <button
+              {/* Hiding seeding buttons for now
+               <button
                 onClick={handleSeedStreams}
                 disabled={seedingStreams}
                 className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1018,6 +1023,7 @@ const AcademicSettings = () => {
                   </>
                 )}
               </button>
+              */}
               <button
                 onClick={() => openStreamModal()}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold"

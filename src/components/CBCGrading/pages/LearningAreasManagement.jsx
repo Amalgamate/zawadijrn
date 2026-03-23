@@ -173,7 +173,8 @@ const LearningAreasManagement = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <button
+          {/* Hiding seeding buttons for now
+           <button
             onClick={handleSeedAreas}
             disabled={seeding || loading}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all shadow-sm ${seeding
@@ -188,6 +189,7 @@ const LearningAreasManagement = () => {
             )}
             {seeding ? 'Seeding...' : 'Seed CBC Areas'}
           </button>
+          */}
 
           <button
             onClick={() => handleOpenModal()}
