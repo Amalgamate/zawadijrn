@@ -12,7 +12,7 @@ import { requirePermission, requireRole, auditLog } from '../middleware/permissi
 import { asyncHandler } from '../utils/async.util';
 import { validate } from '../middleware/validation.middleware';
 import { rateLimit } from '../middleware/enhanced-rateLimit.middleware';
-import { idSchema } from '../utils/validation.util';
+import { idSchema, createUserSchema, updateUserSchema } from '../utils/validation.util';
 
 const router = Router();
 const userController = new UserController();
@@ -76,7 +76,9 @@ router.get(
 router.post(
   '/',
   authenticate,
-  rateLimit({ windowMs: 60_000, maxRequests: 20 }),
+  requirePermission('EDIT_USER'), // Standardize creation permission if needed, but usually linked to EDIT_USER in this system
+  validate(createUserSchema),
+  rateLimit({ windowMs: 15 * 60 * 1000, maxRequests: 10 }), // Strict: 10 users per 15 mins
   auditLog('CREATE_USER'),
   asyncHandler(userController.createUser)
 );
@@ -90,6 +92,8 @@ router.put(
   '/:id',
   authenticate,
   requirePermission('EDIT_USER'),
+  validate(updateUserSchema),
+  rateLimit({ windowMs: 15 * 60 * 1000, maxRequests: 30 }), // Strict: 30 updates per 15 mins
   auditLog('UPDATE_USER'),
   asyncHandler(userController.updateUser)
 );
@@ -154,6 +158,7 @@ router.post(
   '/:id/reset-password',
   authenticate,
   requirePermission('EDIT_USER'),
+  rateLimit({ windowMs: 15 * 60 * 1000, maxRequests: 5 }), // Very strict: 5 resets per 15 mins
   auditLog('RESET_PASSWORD'),
   asyncHandler(userController.resetPassword)
 );

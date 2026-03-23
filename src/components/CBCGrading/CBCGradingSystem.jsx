@@ -12,6 +12,7 @@ import EmptyState from './shared/EmptyState';
 import AddEditParentModal from './shared/AddEditParentModal';
 import MobileAppShell from './layout/MobileAppShell';
 import { useMediaQuery } from './hooks/useMediaQuery';
+import { useUIStore } from '../../store/useUIStore';
 
 // Hooks
 import { useLearners } from './hooks/useLearners';
@@ -134,138 +135,20 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
   // Mobile Detection
   const isMobile = useMediaQuery('(max-width: 767px)');
 
-  // UI State
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  // Initialize pageParams from localStorage to survive refreshes
-  const [pageParams, setPageParams] = useState(() => {
-    try {
-      const saved = localStorage.getItem('cbc_page_params');
-      return saved ? JSON.parse(saved) : {};
-    } catch (e) {
-      return {};
-    }
-  });
+  // UI State from Zustand Store
+  const { 
+    sidebarOpen, 
+    setSidebarOpen, 
+    currentPage, 
+    setCurrentPage, 
+    pageParams, 
+    expandedSections, 
+    toggleSection 
+  } = useUIStore();
 
-  // Persist pageParams changes
-  React.useEffect(() => {
-    try {
-      localStorage.setItem('cbc_page_params', JSON.stringify(pageParams));
-    } catch (e) {
-      console.error('Failed to save page params', e);
-    }
-  }, [pageParams]);
-
-  // Initialize from localStorage or default to 'dashboard'
-  const [currentPage, setCurrentPage] = useState(() => {
-    try {
-      return localStorage.getItem('cbc_current_page') || 'dashboard';
-    } catch (e) {
-      return 'dashboard';
-    }
-  });
-
-  // Initialize from localStorage or default
-  const [expandedSections, setExpandedSections] = useState(() => {
-    try {
-      const saved = localStorage.getItem('cbc_expanded_sections');
-      return saved ? JSON.parse(saved) : {
-        dashboard: true,
-        learners: false,
-        teachers: false,
-        attendance: false,
-        communications: false,
-        assessment: false,
-        'learning-hub': false,
-        finance: false,
-        settings: false
-      };
-    } catch (e) {
-      return {
-        dashboard: true,
-        learners: false,
-        teachers: false,
-        attendance: false,
-        communications: false,
-        assessment: false,
-        'learning-hub': false,
-        finance: false,
-        settings: false
-      };
-    }
-  });
-
-  // Persist currentPage changes
-  React.useEffect(() => {
-    try {
-      localStorage.setItem('cbc_current_page', currentPage);
-    } catch (e) {
-      console.error('Failed to save page state', e);
-    }
-  }, [currentPage]);
-
-  React.useEffect(() => {
-    // School persistence logic removed for single-tenant mode
-  }, [user]);
-
-  // Persist expandedSections changes
-  React.useEffect(() => {
-    try {
-      localStorage.setItem('cbc_expanded_sections', JSON.stringify(expandedSections));
-    } catch (e) {
-      console.error('Failed to save sidebar state', e);
-    }
-  }, [expandedSections]);
-
-  // Handle page navigation from child components
-  React.useEffect(() => {
-    const handlePageNavigate = (event) => {
-      const { page, params } = event.detail;
-      setCurrentPage(page);
-      setPageParams(params);
-    };
-
-    window.addEventListener('pageNavigate', handlePageNavigate);
-    return () => window.removeEventListener('pageNavigate', handlePageNavigate);
-  }, []);
-
-  // Restore scroll position when page changes
-  React.useEffect(() => {
-    if (mainContentRef.current) {
-      const savedScroll = localStorage.getItem(`cbc_scroll_${currentPage}`);
-      if (savedScroll) {
-        // Use a small delay to ensure content is rendered before scrolling
-        const timer = setTimeout(() => {
-          if (mainContentRef.current) {
-            mainContentRef.current.scrollTop = parseInt(savedScroll, 10);
-          }
-        }, 100);
-        return () => clearTimeout(timer);
-      } else {
-        mainContentRef.current.scrollTop = 0;
-      }
-    }
-  }, [currentPage]);
-
-  const handleScroll = (e) => {
-    const scrollTop = e.target.scrollTop;
-    localStorage.setItem(`cbc_scroll_${currentPage}`, scrollTop);
-  };
-
-  // Handle browser back button
-  React.useEffect(() => {
-    const handlePopState = (event) => {
-      if (event.state && event.state.page) {
-        setCurrentPage(event.state.page);
-        setPageParams(event.state.params || {});
-        if (event.state.params?.learner) {
-          setEditingLearner(event.state.params.learner);
-        }
-      }
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+  const handlePageNavigate = React.useCallback((page, params = {}) => {
+    setCurrentPage(page, params);
+  }, [setCurrentPage]);
 
   // Confirmation Dialog State
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -324,31 +207,11 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
     showError
   } = useNotifications();
 
-  // Handlers
-  const toggleSection = (section) => {
-    setExpandedSections(prev => {
-      const isOpening = !prev[section];
-      if (isOpening) {
-        // Close all other sections
-        const newState = Object.keys(prev).reduce((acc, key) => {
-          acc[key] = false;
-          return acc;
-        }, {});
-        newState[section] = true;
-        return newState;
-      } else {
-        // Just toggling off
-        return { ...prev, [section]: false };
-      }
-    });
-  };
-
-  const handleNavigate = (page, params = {}) => {
-    setPageParams(params);
+  const handleNavigate = React.useCallback((page, params = {}) => {
     if (params.learner) {
       setEditingLearner(params.learner);
     }
-    setCurrentPage(page);
+    setCurrentPage(page, params);
 
     // Push to browser history so back button works
     try {
@@ -360,7 +223,8 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
     } catch (e) {
       console.error('Failed to push history state:', e);
     }
-  };
+  }, [setCurrentPage]);
+
 
   const handleLogout = () => {
     setConfirmAction(() => () => {

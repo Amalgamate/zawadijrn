@@ -56,7 +56,50 @@ export const registerSchema = z.object({
     .string()
     .regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number format')
     .optional(),
-  role: z.enum(['TEACHER', 'ADMIN', 'PARENT', 'SUPER_ADMIN']).optional()
+  role: z.enum([
+    'SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM', 
+    'TEACHER', 'PARENT', 'ACCOUNTANT', 'RECEPTIONIST', 'LIBRARIAN', 
+    'NURSE', 'SECURITY', 'DRIVER', 'COOK', 'CLEANER', 
+    'GROUNDSKEEPER', 'IT_SUPPORT', 'STUDENT'
+  ]).optional()
+});
+
+export const createUserSchema = z.object({
+  email: emailSchema,
+  password: passwordSchema,
+  firstName: z.string().min(2).max(50),
+  middleName: z.string().max(50).optional().nullable(),
+  lastName: z.string().min(2).max(50),
+  phone: z.string().optional().nullable(),
+  role: z.enum([
+    'SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM', 
+    'TEACHER', 'PARENT', 'ACCOUNTANT', 'RECEPTIONIST', 'LIBRARIAN', 
+    'NURSE', 'SECURITY', 'DRIVER', 'COOK', 'CLEANER', 
+    'GROUNDSKEEPER', 'IT_SUPPORT', 'STUDENT'
+  ]),
+  status: z.enum(['ACTIVE', 'INACTIVE', 'SUSPENDED']).optional(),
+  gender: z.enum(['MALE', 'FEMALE', 'OTHER']).optional().nullable(),
+  staffId: z.string().optional().nullable(),
+  subject: z.string().optional().nullable(),
+});
+
+export const updateUserSchema = z.object({
+  email: emailSchema.optional(),
+  firstName: z.string().min(2).max(50).optional(),
+  middleName: z.string().max(50).optional().nullable(),
+  lastName: z.string().min(2).max(50).optional(),
+  phone: z.string().optional().nullable(),
+  role: z.enum([
+    'SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM', 
+    'TEACHER', 'PARENT', 'ACCOUNTANT', 'RECEPTIONIST', 'LIBRARIAN', 
+    'NURSE', 'SECURITY', 'DRIVER', 'COOK', 'CLEANER', 
+    'GROUNDSKEEPER', 'IT_SUPPORT', 'STUDENT'
+  ]).optional(),
+  status: z.enum(['ACTIVE', 'INACTIVE', 'SUSPENDED']).optional(),
+  gender: z.enum(['MALE', 'FEMALE', 'OTHER']).optional().nullable(),
+  staffId: z.string().optional().nullable(),
+  subject: z.string().optional().nullable(),
+  profilePicture: z.string().url().optional().nullable(),
 });
 
 // ============================================
