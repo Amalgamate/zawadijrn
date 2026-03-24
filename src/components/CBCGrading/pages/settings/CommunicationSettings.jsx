@@ -102,14 +102,14 @@ const CommunicationSettings = () => {
             }
           }
           // Update Email Settings
-          if (data.email) {
+          if (data && data.email) {
             setEmailSettings(prev => ({
               ...prev,
-              provider: data.email.provider || 'resend',
-              enabled: data.email.enabled,
-              fromEmail: data.email.fromEmail || '',
-              fromName: data.email.fromName || '',
-              hasApiKey: data.email.hasApiKey
+              provider: data.email.provider || COMMUNICATION_DEFAULTS.email.provider,
+              enabled: !!data.email.enabled,
+              fromEmail: data.email.fromEmail || COMMUNICATION_DEFAULTS.email.fromEmail || '',
+              fromName: data.email.fromName || COMMUNICATION_DEFAULTS.email.fromName || '',
+              hasApiKey: !!data.email.hasApiKey
             }));
 
             // Load templates
@@ -122,14 +122,14 @@ const CommunicationSettings = () => {
           }
 
           // Update SMS Settings
-          if (data.sms) {
+          if (data && data.sms) {
             setSmsSettings(prev => ({
               ...prev,
               provider: data.sms.provider || COMMUNICATION_DEFAULTS.sms.provider,
-              enabled: data.sms.enabled,
+              enabled: !!data.sms.enabled,
               baseUrl: data.sms.baseUrl || COMMUNICATION_DEFAULTS.sms.baseUrl,
               senderId: data.sms.senderId || COMMUNICATION_DEFAULTS.sms.senderId,
-              hasApiKey: data.sms.hasApiKey,
+              hasApiKey: !!data.sms.hasApiKey,
 
               // AT specific
               username: data.sms.username || COMMUNICATION_DEFAULTS.sms.username || '',
@@ -138,7 +138,7 @@ const CommunicationSettings = () => {
               customName: data.sms.customName || '',
               customBaseUrl: data.sms.customUrl || '',
               customAuthHeader: data.sms.customAuthHeader || 'Authorization',
-              hasCustomToken: data.sms.hasCustomToken
+              hasCustomToken: !!data.sms.hasCustomToken
             }));
           }
 

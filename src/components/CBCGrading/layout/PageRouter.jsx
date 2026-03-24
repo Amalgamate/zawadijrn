@@ -322,7 +322,7 @@ const PageRouter = ({
           case 'settings-users': return <UserManagement />;
           case 'settings-branding': return <BrandingSettings brandingSettings={brandingSettings} setBrandingSettings={handlers.setBrandingSettings} />;
           case 'settings-backup': return <BackupSettings />;
-          case 'settings-communication': return <CommunicationSettings />;
+          case 'settings-communication': return <ErrorBoundary><CommunicationSettings /></ErrorBoundary>;
           case 'settings-payment': return <PaymentSettings />;
 
           default:
