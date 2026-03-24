@@ -40,7 +40,20 @@ const buildAllowedOrigins = (): string[] => {
 
 const allowedOrigins = buildAllowedOrigins();
 
-console.log(`🌐 CORS allowed origins: ${allowedOrigins.join(', ')}`);
+// Extract Vercel project slug from FRONTEND_URL to allow preview deployments.
+// e.g. FRONTEND_URL=https://zawadijrn.vercel.app -> slug=zawadijrn
+// This permits zawadijrn-<hash>-*.vercel.app preview URLs without opening to all of vercel.app
+const vercelPreviewPattern = (() => {
+  const frontendUrl = process.env.FRONTEND_URL || '';
+  const match = frontendUrl.match(/https:\/\/([a-z0-9-]+)\.vercel\.app/);
+  if (match) {
+    const slug = match[1];
+    return new RegExp('^https://' + slug + '(-[a-z0-9]+)+\\.vercel\\.app$', 'i');
+  }
+  return null;
+})();
+
+console.log(`🌐 CORS allowed origins: ${allowedOrigins.join(', ')}${vercelPreviewPattern ? ` + Vercel previews: ${vercelPreviewPattern}` : ''}`);
 
 app.use(cors({
   origin: (requestOrigin, callback) => {
@@ -50,6 +63,11 @@ app.use(cors({
     }
 
     if (allowedOrigins.includes(requestOrigin)) {
+      return callback(null, true);
+    }
+
+    // Allow Vercel preview deployments for this project
+    if (vercelPreviewPattern && vercelPreviewPattern.test(requestOrigin)) {
       return callback(null, true);
     }
 
