@@ -190,7 +190,8 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
       />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         <Header user={user} />
-        <main ref={mainContentRef} className="flex-1 overflow-y-auto overflow-x-hidden bg-[#F8FAFC]">
+        <main ref={mainContentRef} className="flex-1 overflow-y-auto overflow-x-hidden bg-[#F8FAFC] p-6">
+          <div className="max-w-screen-2xl mx-auto">
           <ErrorBoundary>
             <PageRouter
               currentPage={currentPage} pageParams={pageParams} user={user}
@@ -200,6 +201,7 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
               handlers={handlers}
             />
           </ErrorBoundary>
+          </div>
         </main>
         <GlobalModals
           showConfirmDialog={showConfirmDialog} setShowConfirmDialog={setShowConfirmDialog} confirmAction={confirmAction}
