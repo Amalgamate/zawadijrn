@@ -1,8 +1,26 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import api from '../services/api';
 import { GRADES } from '../constants/grades'; // For sorting
 
 const SchoolDataContext = createContext();
+
+// Helper to sort grades based on the constants definition if available
+const sortGrades = (gradeArray) => {
+    if (!gradeArray || gradeArray.length === 0) return [];
+
+    // Map constant GRADES array to order indices
+    const gradeOrderMap = new Map(GRADES?.map((g, index) => [g.value || g, index]) || []);
+
+    return [...gradeArray].sort((a, b) => {
+        const indexA = gradeOrderMap.has(a) ? gradeOrderMap.get(a) : 999;
+        const indexB = gradeOrderMap.has(b) ? gradeOrderMap.get(b) : 999;
+
+        if (indexA !== indexB) {
+            return indexA - indexB;
+        }
+        return a.localeCompare(b); // Fallback to alphabetical
+    });
+};
 
 export const SchoolDataProvider = ({ children }) => {
     const [classes, setClasses] = useState([]);
@@ -10,25 +28,8 @@ export const SchoolDataProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // Helper to sort grades based on the constants definition if available
-    const sortGrades = (gradeArray) => {
-        if (!gradeArray || gradeArray.length === 0) return [];
 
-        // Map constant GRADES array to order indices
-        const gradeOrderMap = new Map(GRADES?.map((g, index) => [g.value || g, index]) || []);
-
-        return [...gradeArray].sort((a, b) => {
-            const indexA = gradeOrderMap.has(a) ? gradeOrderMap.get(a) : 999;
-            const indexB = gradeOrderMap.has(b) ? gradeOrderMap.get(b) : 999;
-
-            if (indexA !== indexB) {
-                return indexA - indexB;
-            }
-            return a.localeCompare(b); // Fallback to alphabetical
-        });
-    };
-
-    const fetchSchoolData = async () => {
+    const fetchSchoolData = useCallback(async () => {
         try {
             setLoading(true);
             setError(null);
@@ -48,11 +49,11 @@ export const SchoolDataProvider = ({ children }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
         fetchSchoolData();
-    }, []);
+    }, [fetchSchoolData]);
 
     const value = useMemo(() => ({
         classes,
@@ -60,7 +61,7 @@ export const SchoolDataProvider = ({ children }) => {
         loading,
         error,
         refreshSchoolData: fetchSchoolData
-    }), [classes, grades, loading, error]);
+    }), [classes, grades, loading, error, fetchSchoolData]);
 
     return (
         <SchoolDataContext.Provider value={value}>

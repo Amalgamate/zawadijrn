@@ -79,112 +79,64 @@ async function seedLearningAreas() {
       'Junior School': '🧬'
     };
 
+    // Seed globally for the whole system
     let totalCreated = 0;
     let totalSkipped = 0;
-    let totalSchoolsSkipped = 0;
 
-    // Seed for each school
-    for (const school of schools) {
-      // IMPORTANT: Check if classes exist for this school first
-      const existingClasses = await prisma.class.findMany({
-        where: { schoolId: school.id },
-        select: { grade: true },
-        distinct: ['grade']
-      });
+    console.log(`📋 Seeding global learning areas...`);
 
-      if (existingClasses.length === 0) {
-        console.log(`⚠️  School: ${school.name}`);
-        console.log(`   └─ ⚠️  SKIPPED: No classes defined. Please seed classes first!`);
-        totalSchoolsSkipped++;
-        continue;
-      }
+    // Get all grade levels from the mapping
+    const gradeLevels = Object.keys(gradeLevelMappings);
 
-      // Get unique grade levels from existing classes
-      const existingGradeLevels = new Set(
-        existingClasses
-          .map(c => GRADE_TO_LEARNING_AREA[c.grade])
-          .filter((level): level is string => level !== undefined)
-      );
-      
-      if (existingGradeLevels.size === 0) {
-        console.log(`⚠️  School: ${school.name}`);
-        console.log(`   └─ ⚠️  SKIPPED: Classes have unrecognized grade levels.`);
-        totalSchoolsSkipped++;
-        continue;
-      }
-      
-      console.log(`\n📋 School: ${school.name}`);
-      console.log(`   └─ Existing grade levels: ${Array.from(existingGradeLevels).join(', ')}`);
+    for (const gradeLevel of gradeLevels) {
+      const areas = gradeLevelMappings[gradeLevel];
 
-      let schoolCreated = 0;
-      let schoolSkipped = 0;
-
-      // ONLY seed learning areas for grades that have classes
-      for (const gradeLevel of existingGradeLevels) {
-        const areas = gradeLevelMappings[gradeLevel];
-
-        if (!areas) {
-          console.log(`   ⚠️  Grade level "${gradeLevel}" has no learning areas mapping. Skipping...`);
-          continue;
-        }
-
-        for (const area of areas) {
-          try {
-            const existing = await prisma.learningArea.findFirst({
-              where: {
-                name: area,
-                gradeLevel: gradeLevel,
-                schoolId: school.id
-              }
-            });
-
-            if (existing) {
-              schoolSkipped++;
-              totalSkipped++;
-              continue;
+      for (const area of areas) {
+        try {
+          const existing = await prisma.learningArea.findFirst({
+            where: {
+              name: area,
+              gradeLevel: gradeLevel
             }
+          });
 
-            // Specific short names for Lower Primary
-            let shortName = area.split(' ')[0];
-            if (gradeLevel === 'Lower Primary') {
-              const mapping: { [key: string]: string } = {
-                'Mathematics': 'Maths',
-                'English': 'ENG',
-                'Kiswahili': 'Kiswa',
-                'Environmental Studies': 'ENV',
-                'Creative Activities': 'CA',
-                'Religious Education': 'RE',
-                'Information Communications Technology': 'ICT'
-              };
-              shortName = mapping[area] || shortName;
-            }
-
-            await prisma.learningArea.create({
-              data: {
-                name: area,
-                shortName,
-                gradeLevel,
-                icon: icons[gradeLevel] || '📚',
-                color: colors[gradeLevel] || '#3b82f6',
-                schoolId: school.id
-              }
-            });
-
-            schoolCreated++;
-            totalCreated++;
-          } catch (error: any) {
-            if (!error.message.includes('Unique constraint failed')) {
-              console.error(`❌ Error creating area "${area}" for ${school.name}:`, error.message);
-            }
-            schoolSkipped++;
+          if (existing) {
             totalSkipped++;
+            continue;
           }
-        }
-      }
 
-      console.log(`   ✅ Created: ${schoolCreated} learning areas`);
-      if (schoolSkipped > 0) {
-        console.log(`   ⏭️  Skipped: ${schoolSkipped} (already exist)`);
+          // Specific short names for Lower Primary
+          let shortName = area.split(' ')[0];
+          if (gradeLevel === 'Lower Primary') {
+            const mapping: { [key: string]: string } = {
+              'Mathematics': 'Maths',
+              'English': 'ENG',
+              'Kiswahili': 'Kiswa',
+              'Environmental Studies': 'ENV',
+              'Creative Activities': 'CA',
+              'Religious Education': 'RE',
+              'Information Communications Technology': 'ICT'
+            };
+            shortName = mapping[area] || shortName;
+          }
+
+          await prisma.learningArea.create({
+            data: {
+              name: area,
+              shortName,
+              gradeLevel,
+              icon: icons[gradeLevel] || '📚',
+              color: colors[gradeLevel] || '#3b82f6'
+            }
+          });
+
+          totalCreated++;
+        } catch (error: any) {
+          if (!error.message.includes('Unique constraint failed')) {
+            console.error(`❌ Error creating area "${area}":`, error.message);
+          }
+          totalSkipped++;
+        }
       }
     }
 
@@ -192,9 +144,6 @@ async function seedLearningAreas() {
     console.log('✨ Learning areas seeding completed!');
     console.log(`   Total created: ${totalCreated}`);
     console.log(`   Total skipped: ${totalSkipped}`);
-    if (totalSchoolsSkipped > 0) {
-      console.log(`   ⚠️  Schools skipped (no classes): ${totalSchoolsSkipped}`);
-    }
     console.log('='.repeat(60));
     console.log('\n📝 Next steps:');
     console.log('   1. If schools were skipped, seed classes first: npm run seed:classes');

@@ -7,7 +7,7 @@ const router = express.Router();
  * POST /api/migrations/run
  * Manually trigger Prisma migrations
  */
-router.post('/run', async (req: Request, res: Response) => {
+router.post('/run', async (_req: Request, res: Response) => {
   try {
     console.log('🔄 Starting database migrations...');
     execSync('npx prisma migrate deploy', { stdio: 'pipe' });
@@ -29,7 +29,7 @@ router.post('/run', async (req: Request, res: Response) => {
  * GET /api/migrations/status
  * Check if tables exist in the database
  */
-router.get('/status', async (req: Request, res: Response) => {
+router.get('/status', async (_req: Request, res: Response) => {
   try {
     const prisma = require('../config/database').default;
     
@@ -64,7 +64,7 @@ router.get('/status', async (req: Request, res: Response) => {
  * POST /api/migrations/create-admin
  * Create a super admin user
  */
-router.post('/create-admin', async (req: Request, res: Response) => {
+router.post('/create-admin', async (_req: Request, res: Response) => {
   try {
     const prisma = require('../config/database').default;
     

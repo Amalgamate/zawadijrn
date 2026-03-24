@@ -116,6 +116,7 @@ export const useTeacherWorkload = () => {
         hasAnyAssignments,
         primaryGrade,
         primaryStream,
+        isAssignedToGrade,
         getAssignedSubjectsForGrade,
         refresh: fetchWorkload
     };

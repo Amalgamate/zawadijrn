@@ -11,35 +11,33 @@
     "start": "prisma migrate deploy && node dist/index.js",
     "start:push": "prisma db push --skip-generate && node dist/index.js",
     "db:reset": "prisma migrate reset --force --schema ./prisma/schema.prisma",
+
     "seed": "ts-node prisma/seed.ts",
     "seed:streams": "ts-node prisma/seed-streams.ts",
     "seed:classes": "ts-node prisma/seed-classes.ts",
     "seed:learning-areas": "ts-node prisma/seed-learning-areas.ts",
     "seed:backfill-streams-classes": "ts-node prisma/seeders/seed-streams-classes.ts",
-    "check-users": "ts-node prisma/check-users.ts",
-    "update-user-schools": "ts-node scripts/update-user-schools.ts",
-    "check-migration": "ts-node scripts/check-migration.ts",
-    "check-schools": "ts-node scripts/check-schools.ts",
-    "provision": "ts-node src/scripts/provision-school.ts",
-    "system-setup": "ts-node src/scripts/setup-system.ts",
+
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "prisma:seed": "ts-node prisma/seed.ts",
+
+    "provision": "ts-node src/scripts/provision-school.ts",
+    "system-setup": "ts-node src/scripts/setup-system.ts",
+
     "audit:responses": "node scripts/audit-api-response-format.js",
     "audit:responses:strict": "node scripts/audit-api-response-format.js --fail-on-findings",
+
     "test": "jest --coverage",
     "test:watch": "jest --watch",
-    "lint": "eslint src --ext .ts",
-    "lint:fix": "eslint src --ext .ts --fix",
     "test:security": "ts-node tests/security-validation.test.ts",
     "test:load": "ts-node tests/load-testing.test.ts",
     "test:load:light": "ts-node tests/load-testing.test.ts -- --light",
     "test:phase1": "npm run test:security && npm run test:load",
-    "phase2:profile": "ts-node scripts/phase2-profiling.ts",
-    "phase2:profile:clinic": "clinic doctor -- node -r ts-node/register scripts/phase2-profiling.ts",
-    "phase2:analyze": "ts-node scripts/phase2-query-analysis.ts",
-    "phase2:test": "npm run phase2:profile && npm run phase2:analyze"
+
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix"
   },
   "keywords": [
     "education",

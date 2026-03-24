@@ -8,8 +8,8 @@ export const COMMUNICATION_DEFAULTS = {
   // Email Defaults
   email: {
     provider: 'resend',
-    fromEmail: process.env.REACT_APP_EMAIL_FROM || 'noreply@zawadisms.com',
-    fromName: process.env.REACT_APP_EMAIL_FROM_NAME || 'School Academy',
+    fromEmail: import.meta.env.VITE_EMAIL_FROM || 'noreply@zawadisms.com',
+    fromName: import.meta.env.VITE_EMAIL_FROM_NAME || 'School Academy',
     enabled: false
   },
 
@@ -17,9 +17,9 @@ export const COMMUNICATION_DEFAULTS = {
   sms: {
     provider: 'africastalking',
     baseUrl: 'https://api.africastalking.com/version1/messaging',
-    apiKey: process.env.REACT_APP_SMS_API_KEY || '',
-    username: process.env.REACT_APP_SMS_USERNAME || '',
-    senderId: process.env.REACT_APP_SMS_SENDER_ID || '',
+    apiKey: import.meta.env.VITE_SMS_API_KEY || '',
+    username: import.meta.env.VITE_SMS_USERNAME || '',
+    senderId: import.meta.env.VITE_SMS_SENDER_ID || '',
     enabled: false
   },
 
@@ -31,7 +31,7 @@ export const COMMUNICATION_DEFAULTS = {
 };
 
 export const TEST_MESSAGES = {
-  sms: process.env.REACT_APP_TEST_SMS_MESSAGE || 'This is a test message from Zawadi SMS.',
+  sms: import.meta.env.VITE_TEST_SMS_MESSAGE || 'This is a test message from Zawadi SMS.',
   email: {
     welcome: {
       subject: 'Welcome to Zawadi SMS',
@@ -140,10 +140,10 @@ export const SUCCESS_MESSAGES = {
 // Brand/Organization Info
 export const BRAND = {
   name: 'Zawadi SMS',
-  email: process.env.REACT_APP_BRAND_EMAIL || 'hello@zawadisms.com',
-  phone: process.env.REACT_APP_BRAND_PHONE || '+254 712 345 678',
-  website: process.env.REACT_APP_BRAND_WEBSITE || 'zawadisms.com',
-  logo: process.env.REACT_APP_BRAND_LOGO || 'https://zawadisms.com/logo.png',
+  email: import.meta.env.VITE_BRAND_EMAIL || 'hello@zawadisms.com',
+  phone: import.meta.env.VITE_BRAND_PHONE || '+254 712 345 678',
+  website: import.meta.env.VITE_BRAND_WEBSITE || 'zawadisms.com',
+  logo: import.meta.env.VITE_BRAND_LOGO || 'https://zawadisms.com/logo.png',
   displayName: 'School Academy',
   tagline: 'Advanced School Management System'
 };

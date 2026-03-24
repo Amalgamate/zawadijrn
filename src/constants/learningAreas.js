@@ -4,6 +4,8 @@
  * This is the Single Source of Truth for Grade-Based auto-generation.
  */
 
+import useSubjectStore from '../store/useSubjectStore';
+
 export const OFFICIAL_CBC_MAPPING = {
   'PLAYGROUP': ['Language Activities', 'Mathematical Activities', 'Environmental Activities', 'Creative Activities', 'Religious Activities', 'Pastoral Programme of Instruction (PPI)'],
   'PP1': ['Language Activities', 'Mathematical Activities', 'Environmental Activities', 'Creative Activities', 'Religious Activities', 'Pastoral Programme of Instruction (PPI)'],
@@ -21,12 +23,18 @@ export const OFFICIAL_CBC_MAPPING = {
 
 /**
  * Returns learning areas for a specific grade
- * Robust against case variations and underscores/spaces
+ * Prioritizes dynamic database subjects, falls back to static mapping
  */
 export const getLearningAreasByGrade = (grade) => {
   if (!grade) return [];
+
+  // 1. Try to get dynamic subjects from Store
+  const dynamicSubjects = useSubjectStore.getState().getSubjectsByGrade(grade);
+  if (dynamicSubjects && dynamicSubjects.length > 0) {
+    return dynamicSubjects.map(s => s.name);
+  }
   
-  // Normalize grade name (e.g., "Grade 1" -> "GRADE_1", "Playgroup" -> "PLAYGROUP")
+  // 2. Fallback to Static Mapping
   const normalizedGrade = String(grade)
     .trim()
     .replace(/\s+/g, '_')
@@ -39,8 +47,9 @@ export const getLearningAreasByGrade = (grade) => {
  * Returns grouped learning areas for UI display (grouped by Grade)
  */
 export const getGroupedLearningAreas = (grade) => {
+  const areas = getLearningAreasByGrade(grade);
   return {
-    [grade]: OFFICIAL_CBC_MAPPING[grade] || []
+    [grade]: areas
   };
 };
 
@@ -48,6 +57,11 @@ export const getGroupedLearningAreas = (grade) => {
  * Fallback for legacy components
  */
 export const getAllLearningAreas = () => {
+  const dynamicSubjects = useSubjectStore.getState().subjects;
+  if (dynamicSubjects && dynamicSubjects.length > 0) {
+    return Array.from(new Set(dynamicSubjects.map(s => s.name)));
+  }
+
   const all = new Set();
   Object.values(OFFICIAL_CBC_MAPPING).forEach(areas => {
     areas.forEach(area => all.add(area));
@@ -59,7 +73,7 @@ export const getAllLearningAreas = () => {
  * Validates if a learning area is official for a given grade
  */
 export const isValidLearningAreaForGrade = (grade, learningArea) => {
-  const areas = OFFICIAL_CBC_MAPPING[grade] || [];
+  const areas = getLearningAreasByGrade(grade);
   return areas.includes(learningArea);
 };
 

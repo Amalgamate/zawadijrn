@@ -2,7 +2,8 @@ import axios from 'axios';
 
 // Use environment variable for API URL or fall back to automatic discovery for production stability
 const getApiBaseUrl = () => {
-    if (process.env.REACT_APP_API_URL) return process.env.REACT_APP_API_URL;
+    const viteApiUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
+    if (viteApiUrl) return viteApiUrl;
     if (window.location.hostname !== 'localhost') return `${window.location.origin}/api`;
     return 'http://localhost:5000/api';
 };

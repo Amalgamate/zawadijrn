@@ -6,7 +6,6 @@
  */
 
 import React, { createContext, useState, useEffect, useCallback } from 'react';
-import { logout as apiLogout } from '../services/api';
 
 export const AuthContext = createContext({
   isAuthenticated: false,

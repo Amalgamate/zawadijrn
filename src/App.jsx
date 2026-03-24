@@ -9,6 +9,8 @@ import { SpeedInsights } from '@vercel/speed-insights/react';
 import api from './services/api';
 import axiosInstance from './services/axiosConfig';
 
+import useSubjectStore from './store/useSubjectStore';
+
 const DEFAULT_BRANDING = {
   logoUrl: '/logo-zawadi.png',
   faviconUrl: '/favicon.png',
@@ -21,6 +23,7 @@ const DEFAULT_BRANDING = {
 
 function AppContent() {
   const { isAuthenticated, user, loading, login, logout } = useAuth();
+  const fetchSubjects = useSubjectStore(state => state.fetchSubjects);
   const navigate = useNavigate();
   const location = useLocation();
   const pathname = location.pathname;
@@ -32,6 +35,13 @@ function AppContent() {
     const timer = setTimeout(() => setAppReady(true), 300);
     return () => clearTimeout(timer);
   }, []);
+
+  // Fetch school subjects
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchSubjects();
+    }
+  }, [isAuthenticated, fetchSubjects]);
 
   // Fetch school branding
   useEffect(() => {

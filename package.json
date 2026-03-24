@@ -1,6 +1,7 @@
 {
-  "name": "cbc-grading-system",
+  "name": "zawadi-sms",
   "version": "0.1.0",
+  "type": "module",
   "private": true,
   "dependencies": {
     "@capacitor/android": "^8.1.0",
@@ -37,15 +38,14 @@
     "zustand": "^5.0.12"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "backend": "npm --prefix server run dev",
-    "frontend": "npm start",
-    "gcp-build": "npm --prefix server install && npm --prefix server run build",
-    "kill-ports": "powershell -ExecutionPolicy Bypass -Command \"& { $ports=@(3000,5000); foreach ($p in $ports){ try { Get-NetTCPConnection -LocalPort $p -ErrorAction SilentlyContinue | Select-Object -Expand OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue } } catch {} } }\"",
     "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "build": "vite build",
+    "preview": "vite preview",
+    "backend": "npm --prefix server run dev",
+    "frontend": "vite",
+    "gcp-build": "npm --prefix server install && npm --prefix server run build",
+    "kill-ports": "powershell -ExecutionPolicy Bypass -Command \"& { $ports=@(3000,3001,3002,5000); foreach ($p in $ports){ try { Get-NetTCPConnection -LocalPort $p -ErrorAction SilentlyContinue | Select-Object -Expand OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue } } catch {} } }\"",
+    "start": "npm run dev",
     "lint": "eslint \"src\" --ext .js,.jsx",
     "lint:fix": "eslint \"src\" --ext .js,.jsx --fix",
     "format": "prettier --write \"src/**/*.{js,jsx,css,md,json}\""
@@ -76,6 +76,7 @@
     ]
   },
   "devDependencies": {
+    "@vitejs/plugin-react": "^6.0.1",
     "autoprefixer": "^10.4.14",
     "concurrently": "^9.2.1",
     "eslint-config-prettier": "^10.1.8",
@@ -86,6 +87,9 @@
     "sharp": "^0.34.5",
     "tailwindcss": "^3.3.0",
     "tailwindcss-animate": "^1.0.7",
+    "vite": "^8.0.2",
+    "vite-plugin-svgr": "^4.5.0",
+    "vite-tsconfig-paths": "^6.1.1",
     "wait-on": "^9.0.3"
   }
 }
