@@ -36,6 +36,7 @@ import subjectAssignmentRoutes from './subjectAssignment.routes';
 import schemeOfWorkRoutes from './schemeOfWork.routes';
 import noticeRoutes from './notice.routes';
 import aiRoutes from './ai.routes';
+import backupRoutes from './backup.routes';
 import { issueCsrfToken } from '../middleware/csrf.middleware';
 import { authenticate } from '../middleware/auth.middleware';
 
@@ -87,5 +88,6 @@ router.use('/schemes-of-work', schemeOfWorkRoutes);
 router.use('/communication', communicationRoutes);
 router.use('/notices', noticeRoutes);
 router.use('/ai', aiRoutes);
+router.use('/backup', backupRoutes);
 
 export default router;

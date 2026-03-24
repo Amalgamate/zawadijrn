@@ -29,6 +29,9 @@
     "audit:responses": "node scripts/audit-api-response-format.js",
     "audit:responses:strict": "node scripts/audit-api-response-format.js --fail-on-findings",
 
+    "backup": "node scripts/backup-db.js",
+    "backup:auto": "node scripts/backup-db.js --auto",
+
     "test": "jest --coverage",
     "test:watch": "jest --watch",
     "test:security": "ts-node tests/security-validation.test.ts",

@@ -29,6 +29,8 @@ server/node_modules/.prisma/
 # Logs
 logs/
 *.log
+!logs/.gitkeep
+!server/logs/.gitkeep
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

@@ -458,7 +458,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
                 <th style={{ padding: '8px 4px', textAlign: 'center', fontWeight: 'bold', borderLeft: '1px solid rgba(255,255,255,0.2)' }}>AVG %</th>
               )}
               <th style={{ padding: '8px 4px', textAlign: 'left', fontWeight: 'bold', borderLeft: '1px solid rgba(255,255,255,0.2)' }}>GRADE</th>
-              <th style={{ padding: '8px 4px', textAlign: 'left', fontWeight: 'bold', borderLeft: '1px solid rgba(255,255,255,0.2)' }}>REMARKS</th>
+
             </tr>
           </thead>
           <tbody>
@@ -474,90 +474,90 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
                   <td style={{ padding: '6px 4px', textAlign: 'center', fontWeight: '700', fontSize: '16px', color: '#000000' }}>{row.percentage}%</td>
                 )}
                 <td style={{ padding: '6px 4px', textAlign: 'left', fontWeight: '700', fontSize: '16px', color: row.color }}>{row.grade}</td>
-                <td style={{ padding: '6px 4px', fontSize: '11px', fontStyle: 'italic', fontWeight: '700', color: '#000000', lineHeight: '1.2' }}>{row.remark}</td>
+
               </tr>
             ))}
           </tbody>
         </table>
 
-      {/* Performance Chart Row - 60% Center Width */}
-      <div className="mb-4 page-break-inside-avoid" style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <h3 className="text-[10px] font-bold text-gray-800 uppercase border-b border-gray-200 mb-2 pb-1 w-full">Subject Performance</h3>
-        <div style={{ height: '80px', width: '80%', margin: '0 auto' }}>
-          {tableRows && tableRows.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={tableRows.map(r => ({ ...r, area: getAbbreviatedName(r.area) }))} margin={{ top: 5, right: 10, left: -25, bottom: 0 }} barCategoryGap="25%">
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="area" interval={0} axisLine={{ stroke: '#e2e8f0' }} tickLine={false} tick={{ fontSize: 7, fontWeight: 'bold', fill: '#64748b' }} />
-                <YAxis domain={[0, 100]} tick={{ fontSize: 7, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                <Bar dataKey="percentage" radius={[3, 3, 0, 0]}>
-                  {tableRows.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+      {/* Chart + Pathway Insight — side by side */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '16px', marginBottom: '20px', alignItems: 'start' }}>
+
+        {/* LEFT: Bar Chart — half width, left-aligned */}
+        <div>
+          <h3 style={{ fontSize: '10px', fontWeight: '800', color: '#111827', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', marginBottom: '6px', paddingBottom: '2px' }}>Subject Performance</h3>
+          <div style={{ height: '80px', width: '100%' }}>
+            {tableRows && tableRows.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={tableRows.map(r => ({ ...r, area: getAbbreviatedName(r.area) }))} margin={{ top: 5, right: 5, left: -25, bottom: 0 }} barCategoryGap="25%">
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="area" interval={0} axisLine={{ stroke: '#e2e8f0' }} tickLine={false} tick={{ fontSize: 6, fontWeight: 'bold', fill: '#64748b' }} />
+                  <YAxis domain={[0, 100]} tick={{ fontSize: 6, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                  <Bar dataKey="percentage" radius={[3, 3, 0, 0]}>
+                    {tableRows.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', background: '#f8fafc', fontSize: '10px', color: '#9ca3af', fontWeight: 'bold', textTransform: 'uppercase' }}>No data</div>
+            )}
+          </div>
+        </div>
+
+        {/* RIGHT: Pathway Insight */}
+        <div style={{ borderLeft: '1px solid #e2e8f0', paddingLeft: '12px' }}>
+          <h3 style={{ fontSize: '10px', fontWeight: '800', color: '#111827', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', marginBottom: '6px', paddingBottom: '2px' }}>Pathways Insight</h3>
+          {pathwayPrediction ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <div>
+                <div style={{ fontSize: '9px', fontWeight: '800', color: '#374151', textTransform: 'uppercase', marginBottom: '2px' }}>Predicted Pathway</div>
+                <div style={{ fontSize: '15px', fontWeight: '900', color: '#16a34a', textTransform: 'uppercase', lineHeight: '1.2' }}>{pathwayPrediction.predictedPathway}</div>
+              </div>
+              <div style={{ fontSize: '11px', fontWeight: '700', color: '#111827' }}>
+                <span style={{ fontWeight: '900' }}>Confidence:</span> {pathwayPrediction.confidence}%
+              </div>
+              {pathwayPrediction.careerRecommendations?.length > 0 && (
+                <div style={{ fontSize: '11px', color: '#111827' }}>
+                  <span style={{ fontWeight: '900' }}>Careers: </span>
+                  <span style={{ fontWeight: '600', fontStyle: 'italic' }}>
+                    {pathwayPrediction.careerRecommendations.slice(0, 3).join(', ')}
+                  </span>
+                </div>
+              )}
+            </div>
           ) : (
-            <div className="flex items-center justify-center h-full bg-gray-50 text-[10px] text-gray-400 font-bold uppercase">No data for chart</div>
+            <div style={{ fontSize: '11px', color: '#6b7280', fontStyle: 'italic', marginTop: '6px' }}>No AI pathway prediction generated.</div>
           )}
         </div>
+
       </div>
 
-      {/* Pathways & Grading Key Row — 1 table row 2 columns */}
+      {/* Grading Key — full width below */}
       <table className="w-full page-break-inside-avoid" style={{ borderCollapse: 'collapse', tableLayout: 'fixed', marginBottom: '20px' }}>
-        <tbody>
+        <thead>
           <tr>
-            {/* 1st Column: Pathways */}
-            <td style={{ width: '40%', verticalAlign: 'top', paddingRight: '12px' }}>
-              <h3 style={{ fontSize: '10px', fontWeight: '800', color: '#111827', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', marginBottom: '6px', paddingBottom: '2px' }}>Pathways Insight</h3>
-              {pathwayPrediction ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                  <div>
-                    <div style={{ fontSize: '9px', fontWeight: '800', color: '#374151', textTransform: 'uppercase', marginBottom: '2px' }}>Predicted Pathway</div>
-                    <div style={{ fontSize: '16px', fontWeight: '900', color: '#16a34a', textTransform: 'uppercase', lineHeight: '1.2' }}>{pathwayPrediction.predictedPathway}</div>
-                  </div>
-                  <div style={{ fontSize: '11px', fontWeight: '700', color: '#111827' }}>
-                    <span style={{ fontWeight: '900' }}>Confidence:</span> {pathwayPrediction.confidence}%
-                  </div>
-                  {pathwayPrediction.careerRecommendations?.length > 0 && (
-                    <div style={{ fontSize: '11px', color: '#111827' }}>
-                      <span style={{ fontWeight: '900' }}>Careers: </span>
-                      <span style={{ fontWeight: '600', fontStyle: 'italic' }}>
-                        {pathwayPrediction.careerRecommendations.slice(0, 3).join(', ')}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div style={{ fontSize: '11px', color: '#6b7280', fontStyle: 'italic', marginTop: '6px' }}>No AI pathway prediction generated.</div>
-              )}
-            </td>
-
-            {/* 2nd Column: Grading Key */}
-            <td style={{ width: '60%', verticalAlign: 'top', borderLeft: '1px solid #e2e8f0', paddingLeft: '12px' }}>
-              <h3 style={{ fontSize: '10px', fontWeight: '800', color: '#374151', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', marginBottom: '4px', paddingBottom: '2px' }}>Grading Key</h3>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
-                <tbody>
-                  {[
-                    [{ code: 'EE1', range: '90–100%', label: 'Outstanding' }, { code: 'AE1', range: '31–40%', label: 'Low Average' }],
-                    [{ code: 'EE2', range: '75–89%', label: 'Very High' }, { code: 'AE2', range: '21–30%', label: 'Below Average' }],
-                    [{ code: 'ME1', range: '58–74%', label: 'High Average' }, { code: 'BE1', range: '11–20%', label: 'Low' }],
-                    [{ code: 'ME2', range: '41–57%', label: 'Average' }, { code: 'BE2', range: '0–10%', label: 'Very Low' }],
-                  ].map((rowPairs, idx) => (
-                    <tr key={idx}>
-                      {rowPairs.map(g => (
-                        <td key={g.code} style={{ border: '1px solid #cbd5e1', padding: '4px 6px', textAlign: 'left', backgroundColor: idx % 2 === 0 ? '#f8fafc' : '#f1f5f9' }}>
-                          <span style={{ display: 'inline-block', fontWeight: '900', color: '#111827', marginRight: '5px', fontSize: '11px', width: '22px' }}>{g.code}</span>
-                          <span style={{ fontWeight: '800', color: '#374151', fontSize: '10px', display: 'inline-block', width: '45px' }}>{g.range}</span>
-                          <span style={{ fontWeight: '600', color: '#6b7280', marginLeft: '2px', fontSize: '10px' }}>({g.label})</span>
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </td>
+            <td colSpan="4" style={{ fontSize: '10px', fontWeight: '800', color: '#374151', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px', marginBottom: '4px' }}>Grading Key</td>
           </tr>
+        </thead>
+        <tbody>
+          {[
+            [{ code: 'EE1', range: '90–100%', label: 'Outstanding' }, { code: 'AE1', range: '31–40%', label: 'Low Average' }],
+            [{ code: 'EE2', range: '75–89%', label: 'Very High' }, { code: 'AE2', range: '21–30%', label: 'Below Average' }],
+            [{ code: 'ME1', range: '58–74%', label: 'High Average' }, { code: 'BE1', range: '11–20%', label: 'Low' }],
+            [{ code: 'ME2', range: '41–57%', label: 'Average' }, { code: 'BE2', range: '0–10%', label: 'Very Low' }],
+          ].map((rowPairs, idx) => (
+            <tr key={idx}>
+              {rowPairs.map(g => (
+                <td key={g.code} style={{ border: '1px solid #cbd5e1', padding: '4px 6px', textAlign: 'left', backgroundColor: idx % 2 === 0 ? '#f8fafc' : '#f1f5f9' }}>
+                  <span style={{ display: 'inline-block', fontWeight: '900', color: '#111827', marginRight: '5px', fontSize: '11px', width: '22px' }}>{g.code}</span>
+                  <span style={{ fontWeight: '800', color: '#374151', fontSize: '10px', display: 'inline-block', width: '45px' }}>{g.range}</span>
+                  <span style={{ fontWeight: '600', color: '#6b7280', marginLeft: '2px', fontSize: '10px' }}>({g.label})</span>
+                </td>
+              ))}
+            </tr>
+          ))}
         </tbody>
       </table>
 
