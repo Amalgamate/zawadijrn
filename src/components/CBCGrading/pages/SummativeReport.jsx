@@ -445,35 +445,44 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '18px' }}>
 
 
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px', marginBottom: '20px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px', marginBottom: '20px', border: '1px solid #cbd5e1' }}>
           <thead>
             <tr style={{ backgroundColor: '#1e3a8a', color: 'white' }}>
-              <th style={{ padding: '8px 4px', textAlign: 'left', fontWeight: 'bold' }}>SUBJECT</th>
+              <th style={{ padding: '8px 6px', textAlign: 'left', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.2)' }}>SUBJECT</th>
               {testColumns.map(col => (
-                <th key={col} style={{ padding: '8px 4px', textAlign: 'center', fontWeight: 'bold', borderLeft: '1px solid rgba(255,255,255,0.2)' }}>
+                <th key={col} style={{ padding: '8px 6px', textAlign: 'center', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.2)' }}>
                   {formatTestName(col)}
                 </th>
               ))}
               {testColumns.length > 1 && (
-                <th style={{ padding: '8px 4px', textAlign: 'center', fontWeight: 'bold', borderLeft: '1px solid rgba(255,255,255,0.2)' }}>AVG %</th>
+                <th style={{ padding: '8px 6px', textAlign: 'center', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.2)' }}>AVG %</th>
               )}
-              <th style={{ padding: '8px 4px', textAlign: 'left', fontWeight: 'bold', borderLeft: '1px solid rgba(255,255,255,0.2)' }}>GRADE</th>
+              <th style={{ padding: '8px 6px', textAlign: 'left', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.2)' }}>GRADE</th>
 
             </tr>
           </thead>
           <tbody>
             {tableRows.map((row, idx) => (
-              <tr key={row.area} style={{ backgroundColor: idx % 2 === 0 ? '#f8fafc' : 'white', borderBottom: '1px solid #e2e8f0' }}>
-                <td style={{ padding: '6px 4px', fontWeight: '700', fontSize: '16px', color: '#000000', letterSpacing: '-0.2px' }}>{row.area}</td>
-                {testColumns.map(col => (
-                  <td key={col} style={{ padding: '6px 4px', textAlign: 'center', color: '#000000', fontWeight: '700', fontSize: '16px' }}>
-                    {row.scoresByCol[col] !== null ? row.scoresByCol[col] : '—'}
-                  </td>
-                ))}
+              <tr key={row.area} style={{ backgroundColor: 'white', borderBottom: '1px solid #cbd5e1' }}>
+                <td style={{ padding: '6px 6px', fontWeight: '700', fontSize: '16px', color: '#000000', letterSpacing: '-0.2px', border: '1px solid #cbd5e1' }}>{row.area}</td>
+                {testColumns.map(col => {
+                  const score = row.scoresByCol[col];
+                  const colGrade = score !== null && row.totalMarks > 0
+                    ? getCBCGrade((score / (row.totalMarks / (row.testCount || 1))) * 100).grade
+                    : null;
+                  return (
+                    <td key={col} style={{ padding: '6px 6px', textAlign: 'center', color: '#000000', fontWeight: '700', fontSize: '16px', border: '1px solid #cbd5e1' }}>
+                      {score !== null ? score : '—'}
+                      {colGrade && (
+                        <div style={{ fontSize: '8px', fontWeight: '700', color: '#6b7280', lineHeight: '1', marginTop: '1px' }}>{colGrade}</div>
+                      )}
+                    </td>
+                  );
+                })}
                 {testColumns.length > 1 && (
-                  <td style={{ padding: '6px 4px', textAlign: 'center', fontWeight: '700', fontSize: '16px', color: '#000000' }}>{row.percentage}%</td>
+                  <td style={{ padding: '6px 6px', textAlign: 'center', fontWeight: '700', fontSize: '16px', color: '#000000', border: '1px solid #cbd5e1' }}>{row.percentage}%</td>
                 )}
-                <td style={{ padding: '6px 4px', textAlign: 'left', fontWeight: '700', fontSize: '16px', color: row.color }}>{row.grade}</td>
+                <td style={{ padding: '6px 6px', textAlign: 'left', fontWeight: '700', fontSize: '16px', color: row.color, border: '1px solid #cbd5e1' }}>{row.grade}</td>
 
               </tr>
             ))}
@@ -507,30 +516,109 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
         </div>
 
         {/* RIGHT: Pathway Insight */}
-        <div style={{ borderLeft: '1px solid #e2e8f0', paddingLeft: '12px' }}>
-          <h3 style={{ fontSize: '10px', fontWeight: '800', color: '#111827', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', marginBottom: '6px', paddingBottom: '2px' }}>Pathways Insight</h3>
-          {pathwayPrediction ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-              <div>
-                <div style={{ fontSize: '9px', fontWeight: '800', color: '#374151', textTransform: 'uppercase', marginBottom: '2px' }}>Predicted Pathway</div>
-                <div style={{ fontSize: '15px', fontWeight: '900', color: '#16a34a', textTransform: 'uppercase', lineHeight: '1.2' }}>{pathwayPrediction.predictedPathway}</div>
+        {(() => {
+          // Map each subject row to a pathway bucket
+          const PATHWAY_MAP = {
+            STEM: [
+              'MATHEMATICS', 'MATH', 'MAT',
+              'INTEGRATED SCIENCE', 'INT SCI', 'I-SCI',
+              'SCIENCE AND TECHNOLOGY', 'SCITECH', 'SCIENCE & TECHNOLOGY',
+              'PRE-TECHNICAL STUDIES', 'PRE-TECH', 'P-TECH',
+              'AGRICULTURE', 'AGRI',
+              'HOMESCIENCE', 'H SCI',
+            ],
+            SOCIAL: [
+              'ENGLISH', 'ENG',
+              'KISWAHILI', 'KIS',
+              'SOCIAL STUDIES', 'SST',
+              'RELIGIOUS EDUCATION', 'REL',
+              'CHRISTIAN RELIGIOUS EDUCATION', 'CRE',
+              'ISLAMIC RELIGIOUS EDUCATION', 'IRE', 'RE',
+              'HISTORY', 'GEOGRAPHY',
+            ],
+            ARTS: [
+              'CREATIVE ARTS AND SPORTS', 'CREATIVE', 'CREA',
+              'CREATIVE ARTS & SPORTS',
+              'ART AND CRAFT', 'ART',
+              'MUSIC', 'MUS',
+              'PHYSICAL AND HEALTH EDUCATION', 'PHE',
+              'MOVEMENT AND CREATIVE ACTIVITIES',
+            ],
+          };
+
+          const calcPathwayScore = (keywords) => {
+            const matched = tableRows.filter(r =>
+              keywords.some(k => r.area.toUpperCase().includes(k.toUpperCase()))
+            );
+            if (matched.length === 0) return null;
+            const total = matched.reduce((s, r) => s + r.totalScore, 0);
+            const max = matched.reduce((s, r) => s + r.totalMarks, 0);
+            return max > 0 ? Math.round((total / max) * 100) : null;
+          };
+
+          const stemPct   = calcPathwayScore(PATHWAY_MAP.STEM);
+          const socialPct = calcPathwayScore(PATHWAY_MAP.SOCIAL);
+          const artsPct   = calcPathwayScore(PATHWAY_MAP.ARTS);
+
+          const pathways = [
+            { label: 'STEM',            pct: stemPct,   color: '#2563eb', bg: '#eff6ff', icon: '🔬' },
+            { label: 'Social Sciences', pct: socialPct, color: '#16a34a', bg: '#f0fdf4', icon: '🌍' },
+            { label: 'Arts & Sports',   pct: artsPct,   color: '#d97706', bg: '#fffbeb', icon: '🎨' },
+          ];
+
+          // Recommended pathway = highest scoring one
+          const recommended = [...pathways]
+            .filter(p => p.pct !== null)
+            .sort((a, b) => b.pct - a.pct)[0];
+
+          return (
+            <div style={{ borderLeft: '1px solid #e2e8f0', paddingLeft: '12px' }}>
+              <h3 style={{ fontSize: '10px', fontWeight: '800', color: '#111827', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', marginBottom: '8px', paddingBottom: '2px' }}>Pathways Insight</h3>
+
+              {/* 3 pathway score bars */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px' }}>
+                {pathways.map(p => (
+                  <div key={p.label}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                      <span style={{ fontSize: '10px', fontWeight: '800', color: '#374151' }}>{p.icon} {p.label}</span>
+                      <span style={{ fontSize: '10px', fontWeight: '900', color: p.pct !== null ? p.color : '#9ca3af' }}>
+                        {p.pct !== null ? `${p.pct}%` : 'N/A'}
+                        {recommended && p.label === recommended.label && (
+                          <span style={{ marginLeft: '4px', fontSize: '8px', background: p.color, color: 'white', padding: '1px 4px', borderRadius: '3px', fontWeight: '800' }}>BEST FIT</span>
+                        )}
+                      </span>
+                    </div>
+                    <div style={{ height: '6px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div style={{
+                        height: '100%',
+                        width: `${p.pct ?? 0}%`,
+                        background: p.pct !== null ? p.color : '#e2e8f0',
+                        borderRadius: '4px',
+                        transition: 'width 0.3s ease'
+                      }} />
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div style={{ fontSize: '11px', fontWeight: '700', color: '#111827' }}>
-                <span style={{ fontWeight: '900' }}>Confidence:</span> {pathwayPrediction.confidence}%
-              </div>
-              {pathwayPrediction.careerRecommendations?.length > 0 && (
-                <div style={{ fontSize: '11px', color: '#111827' }}>
-                  <span style={{ fontWeight: '900' }}>Careers: </span>
-                  <span style={{ fontWeight: '600', fontStyle: 'italic' }}>
-                    {pathwayPrediction.careerRecommendations.slice(0, 3).join(', ')}
-                  </span>
+
+              {/* AI prediction line if available */}
+              {pathwayPrediction ? (
+                <div style={{ fontSize: '10px', color: '#374151', borderTop: '1px solid #f1f5f9', paddingTop: '5px' }}>
+                  <span style={{ fontWeight: '900' }}>AI Prediction: </span>
+                  <span style={{ fontWeight: '700', color: '#16a34a', textTransform: 'uppercase' }}>{pathwayPrediction.predictedPathway}</span>
+                  <span style={{ color: '#6b7280' }}> ({pathwayPrediction.confidence}% confidence)</span>
+                  {pathwayPrediction.careerRecommendations?.length > 0 && (
+                    <div style={{ marginTop: '3px', fontStyle: 'italic', color: '#6b7280' }}>
+                      {pathwayPrediction.careerRecommendations.slice(0, 2).join(' • ')}
+                    </div>
+                  )}
                 </div>
+              ) : (
+                <div style={{ fontSize: '10px', color: '#9ca3af', fontStyle: 'italic', borderTop: '1px solid #f1f5f9', paddingTop: '5px' }}>No AI prediction generated.</div>
               )}
             </div>
-          ) : (
-            <div style={{ fontSize: '11px', color: '#6b7280', fontStyle: 'italic', marginTop: '6px' }}>No AI pathway prediction generated.</div>
-          )}
-        </div>
+          );
+        })()}
 
       </div>
 
@@ -1730,6 +1818,26 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
     setStatusMessage('⏳ Generating report...');
     setSelectedReportRows([]); // Reset selection on new report
 
+    // CRITICAL: Ensure we have the latest tests for the selected grade to avoid race conditions
+    // (where availableTests state might still be from the PREVIOUS grade)
+    let currentTests = availableTests;
+    try {
+      if (stagedGrade && stagedGrade !== 'all') {
+        const testParams = {
+          grade: normalize(stagedGrade),
+          term: normalize(stagedTerm),
+          academicYear: stagedAcademicYear || setup.academicYear
+        };
+        const testsRes = await api.assessments.getTests(testParams);
+        if (testsRes.success && testsRes.data) {
+          currentTests = testsRes.data;
+          setAvailableTests(testsRes.data); // Keep global state in sync
+        }
+      }
+    } catch (e) {
+      console.warn('[Report] Failed to pre-fetch tests, falling back to cached state', e);
+    }
+
     const queryParams = {
       term: normalize(stagedTerm),
       academicYear: stagedAcademicYear || setup.academicYear,
@@ -1768,7 +1876,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
           // Filter results by selected test groups if any
           if (selectedTestGroups.length > 0) {
             processedResults = processedResults.filter(r => {
-              const matchingTest = availableTests.find(t => t.id === r.testId);
+              const matchingTest = currentTests.find(t => t.id === r.testId);
               const group = resolveTestGroup({
                 testType: r.test?.testType || r.testType || matchingTest?.testType,
                 title: r.test?.title || matchingTest?.title || r.title
@@ -1779,7 +1887,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
 
           // Process and format results for the UI
           processedResults = processedResults.map(r => {
-            const test = r.test || availableTests.find(t => t.id === r.testId) || {};
+            const test = r.test || currentTests.find(t => t.id === r.testId) || {};
             const score = r.score !== undefined ? r.score : r.marksObtained;
             const totalMarks = r.totalMarks || test.totalMarks || 100;
             const percentage = totalMarks > 0 ? (score / totalMarks) * 100 : 0;
@@ -1867,11 +1975,11 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
         setStatusMessage(`⏳ Fetching results for ${targetLearners.length} learners...`);
 
         // 2. Identify Target Tests
-        let targetTests = availableTests;
+        let targetTests = currentTests;
         if (selectedTestIds.length > 0) {
-          targetTests = availableTests.filter(t => selectedTestIds.includes(t.id));
+          targetTests = currentTests.filter(t => selectedTestIds.includes(t.id));
         } else if (selectedTestGroups.length > 0) {
-          targetTests = availableTests.filter(t => selectedTestGroups.includes(getTestGroup(t)));
+          targetTests = currentTests.filter(t => selectedTestGroups.includes(getTestGroup(t)));
         }
 
         if (targetTests.length === 0) {
@@ -1970,11 +2078,11 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
           return;
         }
 
-        let targetTests = availableTests;
+        let targetTests = currentTests;
         if (selectedTestIds.length > 0) {
-          targetTests = availableTests.filter(t => selectedTestIds.includes(t.id));
+          targetTests = currentTests.filter(t => selectedTestIds.includes(t.id));
         } else if (selectedTestGroups.length > 0) {
-          targetTests = availableTests.filter(t => selectedTestGroups.includes(getTestGroup(t)));
+          targetTests = currentTests.filter(t => selectedTestGroups.includes(getTestGroup(t)));
         }
 
         if (targetTests.length === 0) {
