@@ -145,6 +145,43 @@ class RedisCacheService {
   }
 
   /**
+   * Delete all cache entries whose keys start with the given prefix
+   */
+  async deleteByPrefix(prefix: string): Promise<number> {
+    try {
+      let deletedCount = 0;
+
+      if (this.useRedis && this.redis) {
+        const stream = this.redis.scanStream({
+          match: `${prefix}*`,
+          count: 100
+        });
+
+        for await (const keys of stream) {
+          if (keys.length > 0) {
+            const deleted = await this.redis.del(...keys);
+            deletedCount += deleted;
+          }
+        }
+      } else {
+        // Memory fallback
+        for (const key of this.memoryFallback.keys()) {
+          if (key.startsWith(prefix)) {
+            if (this.memoryFallback.delete(key)) {
+              deletedCount++;
+            }
+          }
+        }
+      }
+
+      return deletedCount;
+    } catch (error) {
+      console.error(`[Cache] DeleteByPrefix error for prefix ${prefix}:`, error);
+      return 0;
+    }
+  }
+
+  /**
    * Clear all cache
    */
   async clear(): Promise<void> {

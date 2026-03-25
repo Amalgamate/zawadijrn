@@ -128,14 +128,14 @@ const CHART_COLORS = [
 // GRADING UTILITIES
 // ============================================================================
 const getCBCGrade = (percentage) => {
-  if (percentage >= 90) return { grade: 'EE1', remark: 'Exceeding Expectations 1 - Outstanding', color: '#006400' }; // Deep Green
-  if (percentage >= 75) return { grade: 'EE2', remark: 'Exceeding Expectations 2 - Very High', color: '#008000' }; // Green
-  if (percentage >= 58) return { grade: 'ME1', remark: 'Meeting Expectations 1 - High Average', color: '#000080' }; // Navy Blue
-  if (percentage >= 41) return { grade: 'ME2', remark: 'Meeting Expectations 2 - Average', color: '#0000CD' }; // Medium Blue
-  if (percentage >= 31) return { grade: 'AE1', remark: 'Approaching Expectations 1 - Low Average', color: '#8B4513' }; // SaddleBrown (Darker than Goldenrod)
-  if (percentage >= 21) return { grade: 'AE2', remark: 'Approaching Expectations 2 - Below Average', color: '#A0522D' }; // Sienna
-  if (percentage >= 11) return { grade: 'BE1', remark: 'Below Expectations 1 - Low', color: '#D2691E' }; // Chocolate
-  return { grade: 'BE2', remark: 'Below Expectations 2 - Very Low', color: '#8B0000' }; // Dark Red
+  if (percentage >= 90) return { grade: 'EE1', remark: 'Exceeding Expectations 1 - Outstanding', color: '#006400', points: 8 }; // Deep Green
+  if (percentage >= 75) return { grade: 'EE2', remark: 'Exceeding Expectations 2 - Very High', color: '#008000', points: 7 }; // Green
+  if (percentage >= 58) return { grade: 'ME1', remark: 'Meeting Expectations 1 - High Average', color: '#000080', points: 6 }; // Navy Blue
+  if (percentage >= 41) return { grade: 'ME2', remark: 'Meeting Expectations 2 - Average', color: '#0000CD', points: 5 }; // Medium Blue
+  if (percentage >= 31) return { grade: 'AE1', remark: 'Approaching Expectations 1 - Low Average', color: '#8B4513', points: 4 }; // SaddleBrown
+  if (percentage >= 21) return { grade: 'AE2', remark: 'Approaching Expectations 2 - Below Average', color: '#A0522D', points: 3 }; // Sienna
+  if (percentage >= 11) return { grade: 'BE1', remark: 'Below Expectations 1 - Low', color: '#D2691E', points: 2 }; // Chocolate
+  return { grade: 'BE2', remark: 'Below Expectations 2 - Very Low', color: '#8B0000', points: 1 }; // Dark Red
 };
 
 const resolveTestGroup = (item) => {
@@ -155,7 +155,7 @@ const resolveTestGroup = (item) => {
 // ============================================================================
 // LEARNER REPORT TEMPLATE COMPONENT (Reusable for Bulk Print)
 // ============================================================================
-const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, academicYear, brandingSettings, user, streamConfigs }) => {
+const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, academicYear, brandingSettings, user, streamConfigs, remarks }) => {
   // --- DATA PREPARATION LOGIC ---
   const standardAreas = getLearningAreasByGrade(learner.grade);
   const resultAreas = new Set(results?.map(r => r.learningArea || 'General') || []);
@@ -249,12 +249,14 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
     let grade = '—';
     let remark = '—';
     let color = '#d1d5db';
+    let points = null;
 
     if (testCount > 0 && totalMarks > 0) {
       const res = getCBCGrade(percentage);
       grade = res.grade;
       remark = res.remark;
       color = res.color;
+      points = res.points;
     }
 
     let displayArea = formatSubjectName(area).toUpperCase();
@@ -271,7 +273,8 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
       percentage: parseFloat(percentage.toFixed(0)),
       grade,
       remark,
-      color
+      color,
+      points
     };
   }).filter(row => row.testCount > 0);
 
@@ -342,7 +345,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
         lineHeight: '1.2',
         width: '210mm',
         minHeight: '297mm',
-        padding: '8mm',
+        padding: '8mm 8mm 20mm 8mm',
         boxSizing: 'border-box',
         display: 'flex',
         flexDirection: 'column'
@@ -352,16 +355,21 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
       <div className="mb-6" style={{ textAlign: 'center' }}>
         {/* Logo Middle */}
         <div className="mb-4">
+          {(() => {
+            const logoSrc = brandingSettings?.logoUrl || user?.school?.logoUrl || user?.school?.logo || user?.schoolLogo || user?.logoUrl || '/logo-new.png';
+            return (
           <img
-            src={brandingSettings?.logoUrl || user?.school?.logo || ""}
-            alt="Logo"
-            style={{ height: '100px', width: 'auto', objectFit: 'contain', display: brandingSettings?.logoUrl || user?.school?.logo ? 'inline-block' : 'none', margin: '0 auto' }}
-            onError={(e) => { e.target.style.display = 'none'; }} // Hide if logo is broken
+            src={logoSrc}
+            alt="School Logo"
+            style={{ height: '100px', width: 'auto', objectFit: 'contain', display: 'inline-block', margin: '0 auto' }}
+            onError={(e) => { e.target.style.display = 'none'; }}
           />
+            );
+          })()}
         </div>
 
         {/* School Info */}
-        <h1 style={{ fontSize: '26px', fontWeight: '900', color: brandingSettings?.brandColor || '#1E3A8A', margin: '0', textTransform: 'uppercase', letterSpacing: '1px', lineHeight: '1.1' }}>
+        <h1 style={{ fontSize: '36px', fontWeight: '950', color: brandingSettings?.brandColor || '#1E3A8A', margin: '0', textTransform: 'uppercase', letterSpacing: '1.5px', lineHeight: '1.1' }}>
           {user?.school?.name || brandingSettings?.schoolName || 'ACADEMIC SCHOOL'}
         </h1>
 
@@ -378,7 +386,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
         </div>
 
         {/* Separator Line */}
-        <div className="w-full h-1 mt-4 mb-4" style={{ backgroundColor: brandingSettings?.brandColor || '#1e3a8a' }}></div>
+        <div className="w-full h-1 mt-2 mb-2" style={{ backgroundColor: brandingSettings?.brandColor || '#1e3a8a' }}></div>
 
         {/* Report Title */}
         <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#000', margin: '0', textTransform: 'uppercase', letterSpacing: '2px' }}>
@@ -386,7 +394,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
         </h2>
 
         {/* Exam Name / Termly Details */}
-        <div style={{ display: 'inline-block', fontSize: '12px', fontWeight: '700', color: '#1E3A8A', marginTop: '4px', marginBottom: '15px', textTransform: 'uppercase', backgroundColor: '#eff6ff', padding: '4px 16px', borderRadius: '40px' }}>
+        <div style={{ display: 'inline-block', fontSize: '11px', fontWeight: '700', color: '#1E3A8A', marginTop: '2px', marginBottom: '8px', textTransform: 'uppercase', backgroundColor: '#eff6ff', padding: '2px 12px', borderRadius: '40px' }}>
           {Array.from(testTypesFound).map(t => t.replace(/_/g, ' ')).join(', ')} | {term ? (typeof term === 'string' ? term.replace(/_/g, ' ') : (term.label || '')) : 'TERM'} | {academicYear || new Date().getFullYear()} ACADEMIC YEAR
         </div>
       </div>
@@ -395,6 +403,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
       {/* Student Info + Summary Stats — 2-col header */}
       {(() => {
         const totalTests = tableRows.reduce((acc, r) => acc + r.testCount, 0);
+        const totalPoints = tableRows.reduce((acc, r) => acc + (r.points || 0), 0);
         const totalMax = tableRows.reduce((acc, r) => acc + r.totalMarks, 0);
         const avgPct = totalMax > 0 ? (tableRows.reduce((acc, r) => acc + r.totalScore, 0) / totalMax * 100).toFixed(0) : 0;
         let overallGrade = 'BE2';
@@ -406,9 +415,9 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
         else if (avgPct >= 21) overallGrade = 'AE2';
         else if (avgPct >= 11) overallGrade = 'BE1';
         return (
-          <div className="mb-6" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', border: '1px solid #e2e8f0', borderRadius: '4px', overflow: 'hidden', fontSize: '14px' }}>
+          <div className="mb-3" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', border: '1px solid #e2e8f0', borderRadius: '4px', overflow: 'hidden', fontSize: '13px' }}>
             {/* LEFT: Learner Info */}
-            <div style={{ padding: '10px 12px', display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 10px', alignContent: 'start' }}>
+            <div style={{ padding: '6px 12px', display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '2px 10px', alignContent: 'start' }}>
               <div style={{ fontWeight: '900', color: '#444' }}>NAME:</div>
               <div style={{ fontWeight: '900', color: '#000', textTransform: 'uppercase' }}>{learner.firstName} {learner.lastName}</div>
               <div style={{ fontWeight: '900', color: '#444' }}>ADM NO:</div>
@@ -420,21 +429,21 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
             </div>
             {/* RIGHT: Assessment Summary */}
             <div style={{ borderLeft: '1px solid #e2e8f0', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0' }}>
-              <div style={{ padding: '10px 12px', textAlign: 'center', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
-                <div style={{ fontSize: '10px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '2px' }}>Subjects Assessed</div>
-                <div style={{ fontSize: '20px', fontWeight: '900', color: '#0f172a' }}>{tableRows.length}</div>
+              <div style={{ padding: '6px 12px', textAlign: 'center', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
+                <div style={{ fontSize: '9px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '1px' }}>Subjects Assessed</div>
+                <div style={{ fontSize: '16px', fontWeight: '900', color: '#0f172a' }}>{tableRows.length}</div>
               </div>
-              <div style={{ padding: '10px 12px', textAlign: 'center', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
-                <div style={{ fontSize: '10px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '2px' }}>Total Assessments</div>
-                <div style={{ fontSize: '20px', fontWeight: '900', color: '#0f172a' }}>{totalTests}</div>
+              <div style={{ padding: '6px 12px', textAlign: 'center', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
+                <div style={{ fontSize: '9px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '1px' }}>Total Points</div>
+                <div style={{ fontSize: '16px', fontWeight: '900', color: '#0f172a' }}>{totalPoints}</div>
               </div>
-              <div style={{ padding: '10px 12px', textAlign: 'center', borderRight: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
-                <div style={{ fontSize: '10px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '2px' }}>Average Score</div>
-                <div style={{ fontSize: '20px', fontWeight: '900', color: '#0f172a' }}>{avgPct}%</div>
+              <div style={{ padding: '6px 12px', textAlign: 'center', borderRight: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
+                <div style={{ fontSize: '9px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '1px' }}>Average Score</div>
+                <div style={{ fontSize: '16px', fontWeight: '900', color: '#0f172a' }}>{avgPct}%</div>
               </div>
-              <div style={{ padding: '10px 12px', textAlign: 'center', backgroundColor: '#eff6ff' }}>
-                <div style={{ fontSize: '10px', fontWeight: '800', color: '#1e40af', textTransform: 'uppercase', marginBottom: '2px' }}>Overall Grade</div>
-                <div style={{ fontSize: '20px', fontWeight: '900', color: '#1e3a8a' }}>{overallGrade}</div>
+              <div style={{ padding: '6px 12px', textAlign: 'center', backgroundColor: '#eff6ff' }}>
+                <div style={{ fontSize: '9px', fontWeight: '800', color: '#1e40af', textTransform: 'uppercase', marginBottom: '1px' }}>Overall Grade</div>
+                <div style={{ fontSize: '16px', fontWeight: '900', color: '#1e3a8a' }}>{overallGrade}</div>
               </div>
             </div>
           </div>
@@ -445,7 +454,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '18px' }}>
 
 
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px', marginBottom: '20px', border: '1px solid #cbd5e1' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', marginBottom: '8px', border: '1px solid #cbd5e1' }}>
           <thead>
             <tr style={{ backgroundColor: '#1e3a8a', color: 'white' }}>
               <th style={{ padding: '8px 6px', textAlign: 'left', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.2)' }}>SUBJECT</th>
@@ -458,6 +467,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
                 <th style={{ padding: '8px 6px', textAlign: 'center', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.2)' }}>AVG %</th>
               )}
               <th style={{ padding: '8px 6px', textAlign: 'left', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.2)' }}>GRADE</th>
+              <th style={{ padding: '8px 6px', textAlign: 'center', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.2)' }}>PTS</th>
 
             </tr>
           </thead>
@@ -474,7 +484,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
                     <td key={col} style={{ padding: '6px 6px', textAlign: 'center', color: '#000000', fontWeight: '700', fontSize: '16px', border: '1px solid #cbd5e1' }}>
                       {score !== null ? score : '—'}
                       {colGrade && (
-                        <div style={{ fontSize: '8px', fontWeight: '700', color: '#6b7280', lineHeight: '1', marginTop: '1px' }}>{colGrade}</div>
+                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', lineHeight: '1', marginTop: '1px' }}>{colGrade}</div>
                       )}
                     </td>
                   );
@@ -483,6 +493,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
                   <td style={{ padding: '6px 6px', textAlign: 'center', fontWeight: '700', fontSize: '16px', color: '#000000', border: '1px solid #cbd5e1' }}>{row.percentage}%</td>
                 )}
                 <td style={{ padding: '6px 6px', textAlign: 'left', fontWeight: '700', fontSize: '16px', color: row.color, border: '1px solid #cbd5e1' }}>{row.grade}</td>
+                <td style={{ padding: '6px 6px', textAlign: 'center', fontWeight: '700', fontSize: '16px', color: '#000000', border: '1px solid #cbd5e1' }}>{row.points || '—'}</td>
 
               </tr>
             ))}
@@ -490,7 +501,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
         </table>
 
       {/* Chart + Pathway Insight — side by side */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '16px', marginBottom: '20px', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '12px', marginBottom: '8px', alignItems: 'start' }}>
 
         {/* LEFT: Bar Chart — half width, left-aligned */}
         <div>
@@ -502,11 +513,12 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis dataKey="area" interval={0} axisLine={{ stroke: '#e2e8f0' }} tickLine={false} tick={{ fontSize: 6, fontWeight: 'bold', fill: '#64748b' }} />
                   <YAxis domain={[0, 100]} tick={{ fontSize: 6, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                  <Bar dataKey="percentage" radius={[3, 3, 0, 0]}>
+                  <Bar dataKey="percentage">
                     {tableRows.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                     ))}
                   </Bar>
+
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -550,20 +562,23 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
             const matched = tableRows.filter(r =>
               keywords.some(k => r.area.toUpperCase().includes(k.toUpperCase()))
             );
-            if (matched.length === 0) return null;
+            if (matched.length === 0) return { pct: null, subjects: '' };
             const total = matched.reduce((s, r) => s + r.totalScore, 0);
             const max = matched.reduce((s, r) => s + r.totalMarks, 0);
-            return max > 0 ? Math.round((total / max) * 100) : null;
+            return {
+              pct: max > 0 ? Math.round((total / max) * 100) : null,
+              subjects: matched.map(r => getAbbreviatedName(r.area)).join(', ')
+            };
           };
 
-          const stemPct   = calcPathwayScore(PATHWAY_MAP.STEM);
-          const socialPct = calcPathwayScore(PATHWAY_MAP.SOCIAL);
-          const artsPct   = calcPathwayScore(PATHWAY_MAP.ARTS);
+          const stem   = calcPathwayScore(PATHWAY_MAP.STEM);
+          const social = calcPathwayScore(PATHWAY_MAP.SOCIAL);
+          const arts   = calcPathwayScore(PATHWAY_MAP.ARTS);
 
           const pathways = [
-            { label: 'STEM',            pct: stemPct,   color: '#2563eb', bg: '#eff6ff', icon: '🔬' },
-            { label: 'Social Sciences', pct: socialPct, color: '#16a34a', bg: '#f0fdf4', icon: '🌍' },
-            { label: 'Arts & Sports',   pct: artsPct,   color: '#d97706', bg: '#fffbeb', icon: '🎨' },
+            { label: 'STEM',            pct: stem.pct,   subjects: stem.subjects,   color: '#2563eb', bg: '#eff6ff' },
+            { label: 'Social Sciences', pct: social.pct, subjects: social.subjects, color: '#16a34a', bg: '#f0fdf4' },
+            { label: 'Arts & Sports',   pct: arts.pct,   subjects: arts.subjects,   color: '#d97706', bg: '#fffbeb' },
           ];
 
           // Recommended pathway = highest scoring one
@@ -576,11 +591,11 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
               <h3 style={{ fontSize: '10px', fontWeight: '800', color: '#111827', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', marginBottom: '8px', paddingBottom: '2px' }}>Pathways Insight</h3>
 
               {/* 3 pathway score bars */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '8px' }}>
                 {pathways.map(p => (
                   <div key={p.label}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                      <span style={{ fontSize: '10px', fontWeight: '800', color: '#374151' }}>{p.icon} {p.label}</span>
+                      <span style={{ fontSize: '10px', fontWeight: '800', color: '#374151' }}>{p.label}</span>
                       <span style={{ fontSize: '10px', fontWeight: '900', color: p.pct !== null ? p.color : '#9ca3af' }}>
                         {p.pct !== null ? `${p.pct}%` : 'N/A'}
                         {recommended && p.label === recommended.label && (
@@ -588,34 +603,24 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
                         )}
                       </span>
                     </div>
-                    <div style={{ height: '6px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
+                    <div style={{ height: '6px', background: '#f1f5f9', overflow: 'hidden', marginBottom: '2px' }}>
                       <div style={{
                         height: '100%',
                         width: `${p.pct ?? 0}%`,
                         background: p.pct !== null ? p.color : '#e2e8f0',
-                        borderRadius: '4px',
                         transition: 'width 0.3s ease'
                       }} />
                     </div>
+                    {p.subjects && (
+                      <div style={{ fontSize: '8px', color: '#9ca3af', fontStyle: 'italic', lineHeight: '1' }}>
+                        ({p.subjects})
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
 
-              {/* AI prediction line if available */}
-              {pathwayPrediction ? (
-                <div style={{ fontSize: '10px', color: '#374151', borderTop: '1px solid #f1f5f9', paddingTop: '5px' }}>
-                  <span style={{ fontWeight: '900' }}>AI Prediction: </span>
-                  <span style={{ fontWeight: '700', color: '#16a34a', textTransform: 'uppercase' }}>{pathwayPrediction.predictedPathway}</span>
-                  <span style={{ color: '#6b7280' }}> ({pathwayPrediction.confidence}% confidence)</span>
-                  {pathwayPrediction.careerRecommendations?.length > 0 && (
-                    <div style={{ marginTop: '3px', fontStyle: 'italic', color: '#6b7280' }}>
-                      {pathwayPrediction.careerRecommendations.slice(0, 2).join(' • ')}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div style={{ fontSize: '10px', color: '#9ca3af', fontStyle: 'italic', borderTop: '1px solid #f1f5f9', paddingTop: '5px' }}>No AI prediction generated.</div>
-              )}
+              {/* AI prediction line has been removed as requested */}
             </div>
           );
         })()}
@@ -623,42 +628,80 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
       </div>
 
       {/* Grading Key — full width below */}
-      <table className="w-full page-break-inside-avoid" style={{ borderCollapse: 'collapse', tableLayout: 'fixed', marginBottom: '20px' }}>
-        <thead>
-          <tr>
-            <td colSpan="4" style={{ fontSize: '10px', fontWeight: '800', color: '#374151', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px', marginBottom: '4px' }}>Grading Key</td>
-          </tr>
-        </thead>
-        <tbody>
-          {[
-            [{ code: 'EE1', range: '90–100%', label: 'Outstanding' }, { code: 'AE1', range: '31–40%', label: 'Low Average' }],
-            [{ code: 'EE2', range: '75–89%', label: 'Very High' }, { code: 'AE2', range: '21–30%', label: 'Below Average' }],
-            [{ code: 'ME1', range: '58–74%', label: 'High Average' }, { code: 'BE1', range: '11–20%', label: 'Low' }],
-            [{ code: 'ME2', range: '41–57%', label: 'Average' }, { code: 'BE2', range: '0–10%', label: 'Very Low' }],
-          ].map((rowPairs, idx) => (
-            <tr key={idx}>
-              {rowPairs.map(g => (
-                <td key={g.code} style={{ border: '1px solid #cbd5e1', padding: '4px 6px', textAlign: 'left', backgroundColor: idx % 2 === 0 ? '#f8fafc' : '#f1f5f9' }}>
-                  <span style={{ display: 'inline-block', fontWeight: '900', color: '#111827', marginRight: '5px', fontSize: '11px', width: '22px' }}>{g.code}</span>
-                  <span style={{ fontWeight: '800', color: '#374151', fontSize: '10px', display: 'inline-block', width: '45px' }}>{g.range}</span>
-                  <span style={{ fontWeight: '600', color: '#6b7280', marginLeft: '2px', fontSize: '10px' }}>({g.label})</span>
-                </td>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '30px', marginBottom: '2px' }}>
+        <div style={{ flex: 1 }}>
+          <table className="w-full page-break-inside-avoid" style={{ borderCollapse: 'collapse', tableLayout: 'fixed', borderTop: 'none' }}>
+            <thead>
+              <tr>
+                <td colSpan="4" style={{ fontSize: '10px', fontWeight: '800', color: '#374151', textTransform: 'uppercase', paddingBottom: '2px' }}>Grading Key</td>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                [
+                  { code: 'EE1', range: '90–100%', label: 'Outstanding' },
+                  { code: 'EE2', range: '75–89%', label: 'Very High' },
+                  { code: 'ME1', range: '58–74%', label: 'High Average' },
+                  { code: 'ME2', range: '41–57%', label: 'Average' }
+                ],
+                [
+                  { code: 'AE1', range: '31–40%', label: 'Low Average' },
+                  { code: 'AE2', range: '21–30%', label: 'Below Average' },
+                  { code: 'BE1', range: '11–20%', label: 'Low' },
+                  { code: 'BE2', range: '0–10%', label: 'Very Low' }
+                ],
+              ].map((rowItems, idx) => (
+                <tr key={idx}>
+                  {rowItems.map(g => (
+                    <td key={g.code} style={{ border: '1px solid #cbd5e1', padding: '4px 6px', textAlign: 'left', backgroundColor: idx % 2 === 0 ? '#f8fafc' : '#f1f5f9' }}>
+                      <span style={{ display: 'inline-block', fontWeight: '900', color: '#111827', marginRight: '5px', fontSize: '11px', width: '22px' }}>{g.code}</span>
+                      <span style={{ fontWeight: '800', color: '#374151', fontSize: '10px', display: 'inline-block', width: '45px' }}>{g.range}</span>
+                      <span style={{ fontWeight: '600', color: '#6b7280', fontSize: '10px' }}> ({g.label})</span>
+                    </td>
+                  ))}
+                </tr>
               ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+            </tbody>
+          </table>
+        </div>
 
-      </div> {/* END CONTENT BODY */}
+        {/* School Stamp */}
+        <div style={{ minWidth: '200px', textAlign: 'right', alignSelf: 'center', marginRight: '20px' }}>
+          {(() => {
+            const stampSrc = brandingSettings?.stampUrl || user?.school?.stampUrl || user?.schoolStamp || user?.stampUrl;
+            if (!stampSrc) return null;
+            return (
+              <div style={{ textAlign: 'center' }}>
+                <img
+                  src={stampSrc}
+                  alt="School Stamp"
+                  style={{ height: '140px', width: 'auto', objectFit: 'contain', display: 'block', margin: '0 auto', opacity: '0.9' }}
+                  onError={(e) => { e.target.style.display = 'none'; }}
+                />
+                <div style={{ fontSize: '8px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', marginTop: '4px' }}>OFFICIAL STAMP</div>
+              </div>
+            );
+          })()}
+        </div>
+      </div>
 
+      </div>{/* end CONTENT BODY */}
 
-
-
+      {/* Class Teacher's Remarks — anchored just above the footer */}
+      <div style={{ position: 'absolute', bottom: '18mm', left: '8mm', right: '8mm' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+          <span style={{ fontSize: '10px', fontWeight: '900', color: '#475569', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+            Class Teacher's Remarks:
+          </span>
+          <div style={{ flex: 1, borderBottom: '1px dotted #cbd5e1', paddingBottom: '2px', minHeight: '22px' }}>
+            {/* Blank for handwriting as requested */}
+          </div>
+        </div>
+      </div>
 
       {/* Footer Disclaimer - Absolute Bottom */}
-      <div style={{ position: 'absolute', bottom: '8mm', left: '8mm', right: '8mm', paddingTop: '10px', borderTop: '2px solid #f1f5f9', fontSize: '10px', textAlign: 'center', color: '#64748b', fontWeight: '800' }}>
-        <div>This is an official report generated by the Assessment System.</div>
-        <div style={{ marginTop: '2px' }}>For inquiries, contact the administration office.</div>
+      <div style={{ position: 'absolute', bottom: '6mm', left: '8mm', right: '8mm', textAlign: 'center', fontSize: '10px', color: '#64748b', fontWeight: '400' }}>
+        This is an official summative assessment report. Verified by School Administration System. © {new Date().getFullYear()} {brandingSettings?.schoolName || user?.school?.name || 'Academic Institution'}.
       </div>
     </div >
   );
@@ -2464,6 +2507,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                     brandingSettings={brandingSettings}
                     user={user}
                     streamConfigs={streamConfigs}
+                    remarks={reportData.rows?.[0]?.remarks || (reportData.results?.[0]?.remarks && reportData.results[0].remarks !== '-' ? reportData.results[0].remarks : null)}
                   />
                 </div>
 
@@ -2739,7 +2783,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                   </div>
 
                   {/* School Info */}
-                  <h1 style={{ fontSize: '28px', fontWeight: '900', color: brandingSettings?.brandColor || '#1E3A8A', margin: '0', textTransform: 'uppercase', letterSpacing: '1px', lineHeight: '1.1' }}>
+                  <h1 style={{ fontSize: '36px', fontWeight: '950', color: brandingSettings?.brandColor || '#1E3A8A', margin: '0', textTransform: 'uppercase', letterSpacing: '1.5px', lineHeight: '1.1' }}>
                     {user?.school?.name || brandingSettings?.schoolName || 'ACADEMIC SCHOOL'}
                   </h1>
 
@@ -2938,7 +2982,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                   </div>
 
                   {/* School Info */}
-                  <h1 style={{ fontSize: '24px', fontWeight: '900', color: brandingSettings?.brandColor || '#1E3A8A', margin: '0', textTransform: 'uppercase', letterSpacing: '1px', lineHeight: '1.2' }}>
+                  <h1 style={{ fontSize: '36px', fontWeight: '950', color: brandingSettings?.brandColor || '#1E3A8A', margin: '0', textTransform: 'uppercase', letterSpacing: '1.5px', lineHeight: '1.1' }}>
                     {user?.school?.name || brandingSettings?.schoolName || 'ACADEMIC SCHOOL'}
                   </h1>
 
@@ -3054,6 +3098,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                   brandingSettings={brandingSettings}
                   user={user}
                   streamConfigs={streamConfigs}
+                  remarks={row.remarks || row.results?.[0]?.remarks}
                 />
               </div>
             ))}
@@ -3072,6 +3117,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
               brandingSettings={brandingSettings}
               user={user}
               streamConfigs={streamConfigs}
+              remarks={singleDownloadData.remarks || singleDownloadData.results?.[0]?.remarks}
             />
           </div>
         )}

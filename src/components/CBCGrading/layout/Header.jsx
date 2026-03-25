@@ -10,7 +10,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "../../ui/popover";
 import { cn } from "../../../utils/cn";
 
 const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate }) => {
-  const [showQuickActions, setShowQuickActions] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUnreadReminder, setShowUnreadReminder] = useState(false);
   const [birthdays, setBirthdays] = useState([]);
@@ -19,6 +18,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
   const [readNotificationKeys, setReadNotificationKeys] = useState(() => new Set());
   const [reminderCycle, setReminderCycle] = useState(0);
   const [clockInState, setClockInState] = useState(() => getCurrentUserClockInStatus(user));
+  const [smsBalance, setSmsBalance] = useState(null);
 
   const notificationRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -77,17 +77,26 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
     }
   };
 
-  // Close dropdowns when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowQuickActions(false);
-      }
-    };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+
+  // Fetch SMS Balance
+  useEffect(() => {
+    if (role === 'SUPER_ADMIN' || role === 'ADMIN' || role === 'HEAD_TEACHER') {
+      const fetchBalance = async () => {
+        try {
+          const resp = await api.communication.getSmsBalance();
+          if (resp?.success && resp?.data?.balance) {
+            setSmsBalance(resp.data.balance);
+          }
+        } catch (error) {
+          console.error("Failed to fetch SMS balance:", error);
+        }
+      };
+      fetchBalance();
+      const interval = setInterval(fetchBalance, 300000); // 5 minutes
+      return () => clearInterval(interval);
+    }
+  }, [role]);
 
   // Fetch birthdays
   useEffect(() => {
@@ -217,28 +226,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const getQuickActions = () => {
-    const teacherActions = [
-      { icon: ClipboardList, label: 'Create Assessment', action: () => console.log('Create Assessment') },
-      { icon: Calendar, label: 'Mark Attendance', action: () => console.log('Mark Attendance') },
-      { icon: BarChart3, label: 'View Reports', action: () => console.log('View Reports') },
-      { icon: MessageSquare, label: 'Send Message', action: () => console.log('Send Message') },
-    ];
 
-    const adminActions = [
-      { icon: ClipboardList, label: 'Add Student', action: () => console.log('Add Student') },
-      { icon: Calendar, label: 'View Attendance', action: () => console.log('View Attendance') },
-      { icon: BarChart3, label: 'Generate Reports', action: () => console.log('Generate Reports') },
-      { icon: MessageSquare, label: 'Send Notice', action: () => console.log('Send Notice') },
-    ];
-
-    if (role === 'TEACHER') return teacherActions;
-    if (role === 'ADMIN' || role === 'SUPER_ADMIN' || role === 'HEAD_TEACHER') return adminActions;
-
-    return teacherActions;
-  };
-
-  const quickActions = getQuickActions();
 
   useEffect(() => {
     let active = true;
@@ -287,7 +275,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
     setClockInState(getCurrentUserClockInStatus(user));
   };
 
-  const brandColor = brandingSettings?.brandColor || '#520050';
+  const brandColor = brandingSettings?.brandColor || 'var(--brand-purple)';
 
   return (
     <header className="h-20 bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm px-4 lg:px-8 flex items-center justify-between sticky top-0 z-50">
@@ -314,38 +302,17 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
       </div>
 
       <div className="flex items-center gap-2 lg:gap-4">
-        {/* Quick Actions Popover */}
-        <Popover open={showQuickActions} onOpenChange={setShowQuickActions}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className="hidden md:flex items-center gap-2 h-10 px-4 border-gray-200 hover:border-brand-purple/30 hover:bg-brand-purple/5 transition-all text-gray-700 font-bold"
-            >
-              <Zap size={16} className="text-yellow-500 fill-yellow-500 animate-pulse" />
-              <span>Quick Actions</span>
-              <ChevronDown size={14} className={cn("transition-transform duration-300 opacity-50", showQuickActions && "rotate-180")} />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-64 p-2" align="end">
-            <div className="px-3 py-2 border-b border-gray-50 mb-1">
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Available Actions</p>
-            </div>
-            {quickActions.map((action, index) => (
-              <Button
-                key={index}
-                variant="ghost"
-                onClick={() => {
-                  action.action();
-                  setShowQuickActions(false);
-                }}
-                className="w-full justify-start gap-3 h-11 text-sm font-bold text-gray-700 hover:text-brand-purple hover:bg-brand-purple/5 group"
-              >
-                <action.icon size={18} className="text-gray-400 group-hover:text-brand-purple group-hover:scale-110 transition-all" />
-                <span>{action.label}</span>
-              </Button>
-            ))}
-          </PopoverContent>
-        </Popover>
+        {/* SMS Balance display */}
+        {(role === 'SUPER_ADMIN' || role === 'ADMIN' || role === 'HEAD_TEACHER') && smsBalance && (
+          <div className="hidden md:flex items-center gap-2 bg-brand-purple/5 border border-brand-purple/20 px-3 py-1.5 rounded-full mr-2 hover:bg-brand-purple/10 transition-colors shadow-sm cursor-default">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="text-[10px] font-black text-brand-purple uppercase tracking-widest leading-none">
+              AT AIRTIME: {smsBalance}
+            </span>
+          </div>
+        )}
+
+
 
         {/* Notifications Popover */}
         <Popover open={showNotifications} onOpenChange={(open) => {

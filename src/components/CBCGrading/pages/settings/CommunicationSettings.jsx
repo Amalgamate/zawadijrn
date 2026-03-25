@@ -10,7 +10,6 @@ import {
 } from 'lucide-react';
 import { useNotifications } from '../../hooks/useNotifications';
 import { communicationAPI } from '../../../../services/api';
-import { getCurrentSchoolId, getStoredUser } from '../../../../services/schoolContext';
 import { COMMUNICATION_DEFAULTS, TEST_MESSAGES } from '../../../../constants/communicationMessages';
 
 const CommunicationSettings = () => {
@@ -19,7 +18,6 @@ const CommunicationSettings = () => {
   const [loading, setLoading] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState(null);
-  const [schoolId, setSchoolId] = useState(null);
 
   // Edit mode states
   const [editingTestContact, setEditingTestContact] = useState(false);
@@ -63,29 +61,14 @@ const CommunicationSettings = () => {
     const loadConfig = async () => {
       try {
         setLoading(true);
-        // Load saved test contact from localStorage
+        // Restore persisted test contact from localStorage
         const savedTestContact = localStorage.getItem('testContactPhone');
-        console.log('Loaded from localStorage:', { savedTestContact });
         if (savedTestContact) {
           setTestContact(savedTestContact);
         }
 
-        // Determine School ID
-        let sid = getCurrentSchoolId();
-        if (!sid) {
-          const user = getStoredUser();
-          sid = user?.schoolId || user?.school?.id;
-        }
-
-        if (!sid) {
-          console.error('No school ID found in context');
-          return;
-        }
-
-        setSchoolId(sid);
-        console.log('School ID set:', sid);
-
-        const response = await communicationAPI.getConfig(sid);
+        // Single-tenant: no schoolId needed — backend uses findFirst()
+        const response = await communicationAPI.getConfig();
         const data = response.data;
         console.log('Config loaded from API:', data);
 
@@ -157,14 +140,9 @@ const CommunicationSettings = () => {
   }, []);
 
   const handleSave = async (type) => {
-    if (!schoolId) {
-      showError('School Context Missing');
-      return;
-    }
-
     try {
       setLoading(true);
-      const payload = { schoolId };
+      const payload = {};
 
       if (type === 'Email' || type === 'All') {
         payload.email = {
@@ -215,17 +193,8 @@ const CommunicationSettings = () => {
   };
 
   const handleTestSMS = async () => {
-    // Debug logging for production issues
-    console.log('handleTestSMS called', { testContact, schoolId, testMessage });
-
     if (testContact.length < 9) {
-      console.warn('Phone validation failed:', { length: testContact.length, value: testContact });
       showError('Enter valid phone (e.g. 07... or 254...)');
-      return;
-    }
-    if (!schoolId) {
-      console.warn('School ID missing');
-      showError('School Context Missing');
       return;
     }
 
@@ -234,7 +203,6 @@ const CommunicationSettings = () => {
 
     try {
       const payload = {
-        schoolId,
         phoneNumber: testContact,
         message: testMessage
       };
@@ -314,7 +282,7 @@ const CommunicationSettings = () => {
           <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100 transition-colors duration-300">
             <h3 className="text-lg font-bold mb-6">Email Configuration (Resend)</h3>
 
-            {loading && !schoolId && <div className="text-center py-4"><Loader className="animate-spin inline" /> Loading config...</div>}
+            {loading && <div className="text-center py-4"><Loader className="animate-spin inline" /> Loading config...</div>}
 
             <div className="space-y-4">
               <div className="flex items-center gap-3 p-4 bg-blue-50 text-blue-800 rounded-lg mb-4">
@@ -548,7 +516,6 @@ const CommunicationSettings = () => {
                 setTestResult(null);
                 try {
                   const res = await communicationAPI.sendTestEmail({
-                    schoolId,
                     email: testContact,
                     template: testMessage // "welcome" or "onboarding"
                   });
@@ -601,7 +568,7 @@ const CommunicationSettings = () => {
           <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100 transition-colors duration-300">
             <h3 className="text-lg font-bold mb-6">SMS Configuration</h3>
 
-            {loading && !schoolId && <div className="text-center py-4"><Loader className="animate-spin inline" /> Loading config...</div>}
+            {loading && <div className="text-center py-4"><Loader className="animate-spin inline" /> Loading config...</div>}
 
             <div className="space-y-4">
               <div>

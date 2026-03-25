@@ -41,14 +41,14 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        'brand-purple': '#520050',
-        'brand-teal': '#14B8A6',
+        'brand-purple': 'var(--brand-purple)',
+        'brand-teal': 'var(--brand-teal)',
         'brand-dark': '#111827',
         'brand-light': '#F9FAFB',
         brand: {
           dark: '#111827',
-          teal: '#14B8A6',
-          purple: '#520050',
+          teal: 'var(--brand-teal)',
+          purple: 'var(--brand-purple)',
           yellow: '#F59E0B',
           light: '#F9FAFB',
         }

@@ -23,11 +23,6 @@ export const authenticate = async (
     const decoded = verifyAccessToken(token);
     req.user = decoded;
 
-    // Set school context (minimal for single-tenant)
-    (req as any).schoolContext = {
-      schoolId: null
-    };
-
     next();
   } catch (error: any) {
     console.error('❌ Auth Error:', error.message);
@@ -50,18 +45,4 @@ export const authorize = (...roles: Role[]) => {
   };
 };
 
-/**
- * Middleware to ensure system is initialized
- */
-export const requireSchool = (req: AuthRequest, _res: Response, next: NextFunction) => {
-  // In single-tenant, we just assume the system is configured or check if a school exists if needed
-  next();
-};
 
-/**
- * Middleware to ensure user has access to branch-specific data
- */
-export const requireBranch = (req: AuthRequest, _res: Response, next: NextFunction) => {
-  // Simplified for single-tenant
-  next();
-};

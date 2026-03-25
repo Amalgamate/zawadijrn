@@ -13,7 +13,7 @@ export const useUIStore = create(
       pageParams: {},
       
       // Sidebar
-      sidebarOpen: true,
+      sidebarOpen: false,
       expandedSections: {
         dashboard: true,
         learners: false,
@@ -58,7 +58,7 @@ export const useUIStore = create(
       resetUI: () => set({
         currentPage: 'dashboard',
         pageParams: {},
-        sidebarOpen: true
+        sidebarOpen: false
       })
     }),
     {

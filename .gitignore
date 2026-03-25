@@ -19,6 +19,10 @@ public/build/
 .env.*.local
 *.env
 server/.env
+# Production env files must NEVER be committed — rotate all secrets if already committed
+.env.production
+server/.env.production
+**/.env.production
 
 # Prisma
 prisma/*.db

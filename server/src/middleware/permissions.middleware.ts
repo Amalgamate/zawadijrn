@@ -346,23 +346,29 @@ export class ResourceAccessControl {
 }
 
 /**
- * Audit log middleware - logs sensitive operations
- * Should be used before operations that modify critical data
+ * Audit log middleware — persists sensitive operations to the database.
+ * Falls back to console.error (never silently swallows the failure) if the
+ * write itself fails, so the request is never blocked by an audit error.
  */
 export const auditLog = (action: string) => {
-  return (req: AuthRequest, _res: Response, next: NextFunction) => {
-    // TODO: Implement actual audit logging to database
-    console.log('[AUDIT]', {
-      timestamp: new Date().toISOString(),
-      action,
-      user: req.user?.email,
-      role: req.user?.role,
-      ip: req.ip,
-      method: req.method,
-      path: req.path,
-      params: req.params,
-    });
-
+  return async (req: AuthRequest, _res: Response, next: NextFunction) => {
+    try {
+      await prisma.auditLog.create({
+        data: {
+          action,
+          userId:    req.user?.userId  || null,
+          userEmail: req.user?.email   || null,
+          userRole:  req.user?.role    || null,
+          ipAddress: req.ip            || null,
+          method:    req.method,
+          path:      req.path,
+          params:    JSON.stringify(req.params),
+        }
+      });
+    } catch (e) {
+      // Audit failure must never block the request, but must be visible in logs
+      console.error('[AUDIT] Failed to write audit log:', e);
+    }
     next();
   };
 };

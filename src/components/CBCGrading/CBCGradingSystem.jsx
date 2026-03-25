@@ -160,10 +160,19 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
       <MobileAppShell user={user} brandingSettings={brandingSettings} onLogout={handleLogout}>
         <ErrorBoundary>
           <PageRouter
-            currentPage={currentPage} pageParams={pageParams} user={user}
-            {...learnerData} {...teacherData} {...parentData}
+            currentPage={currentPage} 
+            pageParams={pageParams} 
+            user={user}
+            learners={learnerData.learners}
+            teachers={teacherData.teachers}
+            parents={parentData.parents}
+            pagination={learnerData.pagination}
+            teacherPagination={teacherData.pagination}
+            parentPagination={parentData.pagination}
+            learnersLoading={learnerData.loading}
             brandingSettings={brandingSettings}
-            editingLearner={editingLearner} editingTeacher={editingTeacher}
+            editingLearner={editingLearner} 
+            editingTeacher={editingTeacher}
             handlers={handlers}
           />
         </ErrorBoundary>
@@ -194,10 +203,19 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
           <div className="max-w-screen-2xl mx-auto">
           <ErrorBoundary>
             <PageRouter
-              currentPage={currentPage} pageParams={pageParams} user={user}
-              {...learnerData} {...teacherData} {...parentData}
+              currentPage={currentPage} 
+              pageParams={pageParams} 
+              user={user}
+              learners={learnerData.learners}
+              teachers={teacherData.teachers}
+              parents={parentData.parents}
+              pagination={learnerData.pagination}
+              teacherPagination={teacherData.pagination}
+              parentPagination={parentData.pagination}
+              learnersLoading={learnerData.loading}
               brandingSettings={brandingSettings}
-              editingLearner={editingLearner} editingTeacher={editingTeacher}
+              editingLearner={editingLearner} 
+              editingTeacher={editingTeacher}
               handlers={handlers}
             />
           </ErrorBoundary>

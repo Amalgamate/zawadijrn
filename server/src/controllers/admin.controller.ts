@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../config/database';
 import { encrypt } from '../utils/encryption.util';
+import { ApiError } from '../utils/error.util';
 
 export class AdminController {
   /**
@@ -8,21 +9,17 @@ export class AdminController {
    * GET /api/admin/modules
    */
   async getSchoolModules(_req: Request, res: Response) {
-    try {
-      const modules = {
-        ASSESSMENT: true,
-        LEARNERS: true,
-        TUTORS: true,
-        PARENTS: true,
-        ATTENDANCE: true,
-        FEES: true,
-        REPORTS: true,
-        SETTINGS: true,
-      };
-      res.json({ success: true, data: modules });
-    } catch (error) {
-      res.status(500).json({ success: false, error: 'Failed to fetch modules' });
-    }
+    const modules = {
+      ASSESSMENT: true,
+      LEARNERS: true,
+      TUTORS: true,
+      PARENTS: true,
+      ATTENDANCE: true,
+      FEES: true,
+      REPORTS: true,
+      SETTINGS: true,
+    };
+    res.json({ success: true, data: modules });
   }
 
   /**
@@ -30,25 +27,21 @@ export class AdminController {
    * GET /api/admin/communication
    */
   async getSchoolCommunication(_req: Request, res: Response) {
-    try {
-      const config = await prisma.communicationConfig.findFirst();
+    const config = await prisma.communicationConfig.findFirst();
 
-      if (!config) {
-        return res.json({
-          success: true,
-          data: {
-            smsEnabled: true,
-            smsProvider: 'mobilesasa',
-            emailProvider: 'resend',
-            mpesaProvider: 'intasend',
-          },
-        });
-      }
-
-      res.json({ success: true, data: config });
-    } catch (error) {
-      res.status(500).json({ success: false, error: 'Failed to fetch communication config' });
+    if (!config) {
+      return res.json({
+        success: true,
+        data: {
+          smsEnabled: true,
+          smsProvider: 'mobilesasa',
+          emailProvider: 'resend',
+          mpesaProvider: 'intasend',
+        },
+      });
     }
+
+    res.json({ success: true, data: config });
   }
 
   /**
@@ -56,25 +49,21 @@ export class AdminController {
    * PUT /api/admin/communication
    */
   async updateSchoolCommunication(req: Request, res: Response) {
-    try {
-      const updateData = { ...req.body };
+    const updateData = { ...req.body };
 
-      // Encrypt sensitive keys before storing
-      if (updateData.smsApiKey)       updateData.smsApiKey       = encrypt(updateData.smsApiKey);
-      if (updateData.emailApiKey)     updateData.emailApiKey     = encrypt(updateData.emailApiKey);
-      if (updateData.mpesaSecretKey)  updateData.mpesaSecretKey  = encrypt(updateData.mpesaSecretKey);
-      if (updateData.mpesaPublicKey)  updateData.mpesaPublicKey  = encrypt(updateData.mpesaPublicKey);
-      if (updateData.smsCustomToken)  updateData.smsCustomToken  = encrypt(updateData.smsCustomToken);
+    // Encrypt sensitive keys before storing
+    if (updateData.smsApiKey)       updateData.smsApiKey       = encrypt(updateData.smsApiKey);
+    if (updateData.emailApiKey)     updateData.emailApiKey     = encrypt(updateData.emailApiKey);
+    if (updateData.mpesaSecretKey)  updateData.mpesaSecretKey  = encrypt(updateData.mpesaSecretKey);
+    if (updateData.mpesaPublicKey)  updateData.mpesaPublicKey  = encrypt(updateData.mpesaPublicKey);
+    if (updateData.smsCustomToken)  updateData.smsCustomToken  = encrypt(updateData.smsCustomToken);
 
-      const existing = await prisma.communicationConfig.findFirst();
+    const existing = await prisma.communicationConfig.findFirst();
 
-      const config = existing
-        ? await prisma.communicationConfig.update({ where: { id: existing.id }, data: updateData })
-        : await prisma.communicationConfig.create({ data: updateData });
+    const config = existing
+      ? await prisma.communicationConfig.update({ where: { id: existing.id }, data: updateData })
+      : await prisma.communicationConfig.create({ data: updateData });
 
-      res.json({ success: true, data: config });
-    } catch (error) {
-      res.status(500).json({ success: false, error: 'Failed to update communication config' });
-    }
+    res.json({ success: true, data: config });
   }
 }

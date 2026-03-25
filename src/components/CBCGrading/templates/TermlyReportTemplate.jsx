@@ -37,7 +37,7 @@ const TermlyReportTemplate = ({ reportData, id = "termly-report-content" }) => {
                             )}
                         </div>
                         <div className="text-left">
-                            <h1 className="text-3xl font-black uppercase tracking-tight leading-none mb-1">
+                            <h1 className="uppercase tracking-tight leading-none mb-1" style={{ fontSize: '36px', fontWeight: '950' }}>
                                 {reportData.schoolName || 'ACADEMIC SCHOOL'}
                             </h1>
                             <p className="text-sm font-bold text-gray-500 uppercase tracking-[0.1em]">

@@ -5,6 +5,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { logRateLimitExceeded } from '../utils/security-logging.util';
+import { redisCacheService } from '../services/redis-cache.service';
 
 export interface RateLimitConfig {
   windowMs: number; // Time window in milliseconds
@@ -14,20 +15,11 @@ export interface RateLimitConfig {
   skipFailedRequests?: boolean;
 }
 
-interface RateLimitStore {
-  [key: string]: {
-    count: number;
-    resetAt: number;
-    failedAttempts?: number;
-  };
+interface RateLimitEntry {
+  count: number;
+  resetAt: number;
+  failedAttempts?: number;
 }
-
-/**
- * In-memory store for rate limiting. 
- * NOTE: This resets on server restart and does not share state across multi-instance clusters.
- * TODO: Move to Redis for distributed rate limiting in production.
- */
-const store: RateLimitStore = {};
 
 /**
  * Get client identifier (IP address)
@@ -41,45 +33,59 @@ const getClientId = (req: Request): string => {
   );
 };
 
+const getRateLimitEntry = async (key: string, windowMs: number): Promise<RateLimitEntry> => {
+  const now = Date.now();
+  const entry = await redisCacheService.get<RateLimitEntry>(key);
+  if (!entry || now > entry.resetAt) {
+    return {
+      count: 0,
+      resetAt: now + windowMs,
+      failedAttempts: 0
+    };
+  }
+  return entry;
+};
+
+const saveRateLimitEntry = async (key: string, entry: RateLimitEntry, windowMs: number) => {
+  // TTL is windowMs divided by 1000 to get seconds
+  await redisCacheService.set(key, entry, Math.ceil(windowMs / 1000));
+};
+
 /**
  * Standard rate limiter middleware
  */
 export const rateLimit = (config: RateLimitConfig) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    const clientId = getClientId(req);
-    const key = `${clientId}:${req.path}`;
-    const now = Date.now();
-
-    // Initialize or get existing entry
-    let entry = store[key];
-    if (!entry || now > entry.resetAt) {
-      entry = {
-        count: 0,
-        resetAt: now + config.windowMs,
-        failedAttempts: 0
-      };
-    }
-
-    entry.count++;
-    store[key] = entry;
-
-    // Set rate limit headers
-    res.setHeader('RateLimit-Limit', config.maxRequests);
-    res.setHeader('RateLimit-Remaining', Math.max(0, config.maxRequests - entry.count));
-    res.setHeader('RateLimit-Reset', new Date(entry.resetAt).toISOString());
-
-    if (entry.count > config.maxRequests) {
-      logRateLimitExceeded(req, req.path, config.maxRequests, config.windowMs);
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const clientId = getClientId(req);
+      const key = `rl:${clientId}:${req.path}`;
       
-      return res.status(429).json({
-        success: false,
-        error: {
-          message: config.message || 'Too many requests. Please try again later.'
-        }
-      });
-    }
+      const entry = await getRateLimitEntry(key, config.windowMs);
+      entry.count++;
+      await saveRateLimitEntry(key, entry, config.windowMs);
 
-    next();
+      // Set rate limit headers
+      res.setHeader('RateLimit-Limit', config.maxRequests);
+      res.setHeader('RateLimit-Remaining', Math.max(0, config.maxRequests - entry.count));
+      res.setHeader('RateLimit-Reset', new Date(entry.resetAt).toISOString());
+
+      if (entry.count > config.maxRequests) {
+        logRateLimitExceeded(req, req.path, config.maxRequests, config.windowMs);
+        
+        res.status(429).json({
+          success: false,
+          error: {
+            message: config.message || 'Too many requests. Please try again later.'
+          }
+        });
+        return;
+      }
+
+      next();
+    } catch (e) {
+      console.error('[RateLimit Error]', e);
+      next();
+    }
   };
 };
 
@@ -87,53 +93,49 @@ export const rateLimit = (config: RateLimitConfig) => {
  * Progressive rate limiter that increases restrictions on repeated failures
  */
 export const progressiveRateLimit = (config: RateLimitConfig) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    const clientId = getClientId(req);
-    const key = `${clientId}:${req.path}`;
-    const now = Date.now();
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const clientId = getClientId(req);
+      const key = `prl:${clientId}:${req.path}`;
 
-    // Initialize or get existing entry
-    let entry = store[key];
-    if (!entry || now > entry.resetAt) {
-      entry = {
-        count: 0,
-        resetAt: now + config.windowMs,
-        failedAttempts: 0
-      };
+      const entry = await getRateLimitEntry(key, config.windowMs);
+      entry.count++;
+
+      // Calculate dynamic limits based on failed attempts
+      const failureMultiplier = Math.min(entry.failedAttempts || 0, 5);
+      const adjustedLimit = Math.max(1, Math.floor(config.maxRequests / (1 + failureMultiplier)));
+
+      await saveRateLimitEntry(key, entry, config.windowMs);
+
+      // Set rate limit headers
+      res.setHeader('RateLimit-Limit', adjustedLimit);
+      res.setHeader('RateLimit-Remaining', Math.max(0, adjustedLimit - entry.count));
+      res.setHeader('RateLimit-Reset', new Date(entry.resetAt).toISOString());
+
+      if (entry.count > adjustedLimit) {
+        logRateLimitExceeded(req, req.path, adjustedLimit, config.windowMs);
+        
+        // Increase delay on subsequent requests
+        const delay = Math.min(10000, 1000 * Math.pow(2, failureMultiplier));
+        
+        res.status(429).json({
+          success: false,
+          error: {
+            message: `Too many requests. Please try again after ${Math.ceil(delay / 1000)} seconds.`,
+            retryAfter: Math.ceil(delay / 1000)
+          },
+          headers: {
+            'Retry-After': Math.ceil(delay / 1000)
+          }
+        });
+        return;
+      }
+
+      next();
+    } catch (e) {
+      console.error('[RateLimit Error]', e);
+      next();
     }
-
-    entry.count++;
-
-    // Calculate dynamic limits based on failed attempts
-    const failureMultiplier = Math.min(entry.failedAttempts || 0, 5);
-    const adjustedLimit = Math.max(1, config.maxRequests / (1 + failureMultiplier));
-
-    store[key] = entry;
-
-    // Set rate limit headers
-    res.setHeader('RateLimit-Limit', adjustedLimit);
-    res.setHeader('RateLimit-Remaining', Math.max(0, adjustedLimit - entry.count));
-    res.setHeader('RateLimit-Reset', new Date(entry.resetAt).toISOString());
-
-    if (entry.count > adjustedLimit) {
-      logRateLimitExceeded(req, req.path, adjustedLimit, config.windowMs);
-      
-      // Increase delay on subsequent requests
-      const delay = Math.min(10000, 1000 * Math.pow(2, failureMultiplier));
-      
-      return res.status(429).json({
-        success: false,
-        error: {
-          message: `Too many requests. Please try again after ${Math.ceil(delay / 1000)} seconds.`,
-          retryAfter: Math.ceil(delay / 1000)
-        },
-        headers: {
-          'Retry-After': Math.ceil(delay / 1000)
-        }
-      });
-    }
-
-    next();
   };
 };
 
@@ -141,38 +143,36 @@ export const progressiveRateLimit = (config: RateLimitConfig) => {
  * IP-based rate limiter (for entire IP, not per endpoint)
  */
 export const ipRateLimit = (config: RateLimitConfig) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    const clientId = getClientId(req);
-    const key = `ip:${clientId}`;
-    const now = Date.now();
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const clientId = getClientId(req);
+      const key = `iprl:${clientId}`;
 
-    let entry = store[key];
-    if (!entry || now > entry.resetAt) {
-      entry = {
-        count: 0,
-        resetAt: now + config.windowMs
-      };
+      const entry = await getRateLimitEntry(key, config.windowMs);
+      entry.count++;
+      await saveRateLimitEntry(key, entry, config.windowMs);
+
+      res.setHeader('RateLimit-Limit', config.maxRequests);
+      res.setHeader('RateLimit-Remaining', Math.max(0, config.maxRequests - entry.count));
+      res.setHeader('RateLimit-Reset', new Date(entry.resetAt).toISOString());
+
+      if (entry.count > config.maxRequests) {
+        logRateLimitExceeded(req, 'global', config.maxRequests, config.windowMs);
+        
+        res.status(429).json({
+          success: false,
+          error: {
+            message: config.message || 'Too many requests from this IP. Please try again later.'
+          }
+        });
+        return;
+      }
+
+      next();
+    } catch (e) {
+      console.error('[RateLimit Error]', e);
+      next();
     }
-
-    entry.count++;
-    store[key] = entry;
-
-    res.setHeader('RateLimit-Limit', config.maxRequests);
-    res.setHeader('RateLimit-Remaining', Math.max(0, config.maxRequests - entry.count));
-    res.setHeader('RateLimit-Reset', new Date(entry.resetAt).toISOString());
-
-    if (entry.count > config.maxRequests) {
-      logRateLimitExceeded(req, 'global', config.maxRequests, config.windowMs);
-      
-      return res.status(429).json({
-        success: false,
-        error: {
-          message: config.message || 'Too many requests from this IP. Please try again later.'
-        }
-      });
-    }
-
-    next();
   };
 };
 
@@ -183,84 +183,82 @@ export const authRateLimit = (
   maxAttempts: number = 5,
   windowMs: number = 15 * 60 * 1000 // 15 minutes
 ) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    const clientId = getClientId(req);
-    const identifier = req.body?.email || req.body?.username || clientId;
-    const key = `auth:${clientId}:${identifier}`;
-    const now = Date.now();
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const clientId = getClientId(req);
+      const identifier = req.body?.email || req.body?.username || clientId;
+      const key = `authrl:${clientId}:${identifier}`;
+      const now = Date.now();
 
-    let entry = store[key];
-    if (!entry || now > entry.resetAt) {
-      entry = {
-        count: 0,
-        resetAt: now + windowMs,
-        failedAttempts: 0
-      };
+      const entry = await getRateLimitEntry(key, windowMs);
+      entry.count++;
+
+      res.setHeader('RateLimit-Limit', maxAttempts);
+      res.setHeader('RateLimit-Remaining', Math.max(0, maxAttempts - entry.count));
+      res.setHeader('RateLimit-Reset', new Date(entry.resetAt).toISOString());
+
+      if (entry.count > maxAttempts) {
+        const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
+        
+        logRateLimitExceeded(req, `${req.path} (${identifier})`, maxAttempts, windowMs);
+
+        res.status(429).json({
+          success: false,
+          error: {
+            message: `Too many authentication attempts. Please try again in ${retryAfter} seconds.`,
+            retryAfter
+          }
+        });
+        return;
+      }
+
+      await saveRateLimitEntry(key, entry, windowMs);
+      next();
+    } catch (e) {
+      console.error('[RateLimit Error]', e);
+      next();
     }
-
-    entry.count++;
-
-    res.setHeader('RateLimit-Limit', maxAttempts);
-    res.setHeader('RateLimit-Remaining', Math.max(0, maxAttempts - entry.count));
-    res.setHeader('RateLimit-Reset', new Date(entry.resetAt).toISOString());
-
-    if (entry.count > maxAttempts) {
-      const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
-      
-      logRateLimitExceeded(req, `${req.path} (${identifier})`, maxAttempts, windowMs);
-
-      return res.status(429).json({
-        success: false,
-        error: {
-          message: `Too many authentication attempts. Please try again in ${retryAfter} seconds.`,
-          retryAfter
-        }
-      });
-    }
-
-    store[key] = entry;
-    next();
   };
 };
 
 /**
  * Track failed authentication attempts
  */
-export const recordAuthFailure = (email: string, clientId: string): void => {
-  const key = `auth:${clientId}:${email}`;
-  const entry = store[key];
-  
-  if (entry) {
-    entry.failedAttempts = (entry.failedAttempts || 0) + 1;
+export const recordAuthFailure = async (email: string, clientId: string): Promise<void> => {
+  try {
+    const key = `authrl:${clientId}:${email}`;
+    const entry = await redisCacheService.get<RateLimitEntry>(key);
+    
+    if (entry) {
+      entry.failedAttempts = (entry.failedAttempts || 0) + 1;
+      // Re-save with remaining TTL (approximate by using resetAt)
+      const now = Date.now();
+      const remainingMs = Math.max(1000, entry.resetAt - now);
+      await saveRateLimitEntry(key, entry, remainingMs);
+    }
+  } catch (e) {
+    console.error('[RateLimit Error]', e);
   }
 };
 
 /**
  * Clear rate limit for specific key (e.g., after successful auth)
  */
-export const clearRateLimit = (clientId: string, identifier: string, type: string = 'auth'): void => {
-  const key = `${type}:${clientId}:${identifier}`;
-  delete store[key];
+export const clearRateLimit = async (clientId: string, identifier: string, type: string = 'auth'): Promise<void> => {
+  try {
+    const prefix = type === 'auth' ? 'authrl' : type;
+    const key = `${prefix}:${clientId}:${identifier}`;
+    await redisCacheService.delete(key);
+  } catch (e) {
+    console.error('[RateLimit Error]', e);
+  }
 };
 
 /**
  * Cleanup old entries periodically to prevent memory leaks
+ * NOTE: Redis natively handles TTL, so this is only needed if falling back to the memory cache in redisCacheService
+ * Since redisCacheService itself cleans up its memory fallback, we do not need to do anything here.
  */
 export const cleanupRateLimitStore = (): void => {
-  const now = Date.now();
-  let cleaned = 0;
-
-  for (const key in store) {
-    if (store[key].resetAt < now) {
-      delete store[key];
-      cleaned++;
-    }
-  }
-
-  if (cleaned > 0) {
-    console.log(`🧹 Rate limit store cleanup: removed ${cleaned} expired entries`);
-  }
+  // No-op. redisCacheService handles its own memory cleanup via setInterval.
 };
-
-// Run cleanup every 5 minutes
-setInterval(cleanupRateLimitStore, 5 * 60 * 1000);

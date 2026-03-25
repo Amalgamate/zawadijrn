@@ -10,6 +10,7 @@ import { AuthRequest } from '../middleware/permissions.middleware';
 import { Grade, LearnerStatus, Gender } from '@prisma/client';
 import { generateAdmissionNumber } from '../services/admissionNumber.service';
 import { feeService } from '../services/fee.service';
+import { v2 as cloudinary } from 'cloudinary';
 
 export class LearnerController {
   async getAllLearners(req: AuthRequest, res: Response) {
@@ -56,8 +57,8 @@ export class LearnerController {
         prisma.learner.count({ where: whereClause }),
       ]);
       res.json({ success: true, data: learners, pagination: { total, page: Number(page), limit: Number(limit), pages: Math.ceil(total / Number(limit)) } });
-    } catch (error) {
-      res.status(500).json({ success: false, message: 'Server error' });
+    } catch (error: any) {
+      throw new ApiError(500, 'Server error fetching learners: ' + error.message);
     }
   }
 
@@ -144,6 +145,12 @@ export class LearnerController {
         parentId = parent.id;
       }
 
+      let finalPhotoUrl = photo;
+      if (photo && photo.startsWith('data:image')) {
+        const result = await cloudinary.uploader.upload(photo, { folder: 'zawadi/photos' });
+        finalPhotoUrl = result.secure_url;
+      }
+
       const learner = await prisma.learner.create({
         data: {
           admissionNumber, firstName, lastName, middleName,
@@ -151,7 +158,7 @@ export class LearnerController {
           stream: stream || 'A', parentId, guardianName, guardianPhone, guardianEmail,
           medicalConditions, allergies, emergencyContact, emergencyPhone, bloodGroup,
           address, county, subCounty, previousSchool, religion, specialNeeds,
-          photoUrl: photo, fatherName, fatherPhone, fatherEmail, fatherDeceased: fatherDeceased || false,
+          photoUrl: finalPhotoUrl, fatherName, fatherPhone, fatherEmail, fatherDeceased: fatherDeceased || false,
           motherName, motherPhone, motherEmail, motherDeceased: motherDeceased || false,
           guardianRelation, primaryContactType, primaryContactName, primaryContactPhone, primaryContactEmail,
           status: 'ACTIVE', createdBy: currentUserId,
@@ -181,7 +188,7 @@ export class LearnerController {
 
       res.status(201).json({ success: true, data: learner, message: 'Learner created successfully' });
     } catch (createError: any) {
-      res.status(500).json({ success: false, message: `Creation failed: ${createError.message}` });
+      throw new ApiError(500, `Creation failed: ${createError.message}`);
     }
   }
 
@@ -251,7 +258,12 @@ export class LearnerController {
 
       // Photo
       if (req.body.photo && req.body.photo !== '') {
-        updateData.photoUrl = req.body.photo;
+        let finalPhotoUrl = req.body.photo;
+        if (req.body.photo.startsWith('data:image')) {
+          const result = await cloudinary.uploader.upload(req.body.photo, { folder: 'zawadi/photos' });
+          finalPhotoUrl = result.secure_url;
+        }
+        updateData.photoUrl = finalPhotoUrl;
       }
 
       const updated = await prisma.learner.update({
@@ -265,16 +277,14 @@ export class LearnerController {
       console.error('[updateLearner] error:', error?.message || error);
 
       // Propagate known API errors (404, 403) with their status codes
-      if (error instanceof ApiError) {
-        return res.status(error.statusCode).json({ success: false, message: error.message });
-      }
+      if (error instanceof ApiError) throw error;
 
       // Prisma unique constraint (shouldn't happen on update, but guard anyway)
       if (error?.code === 'P2002') {
-        return res.status(409).json({ success: false, message: 'A learner with that admission number already exists.' });
+        throw new ApiError(409, 'A learner with that admission number already exists.');
       }
 
-      res.status(500).json({ success: false, message: error?.message || 'Failed to update learner' });
+      throw new ApiError(500, error?.message || 'Failed to update learner');
     }
   }
 

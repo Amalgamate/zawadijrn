@@ -8,7 +8,7 @@ const MobileAppShell = ({ children, user, onLogout, onNavigate, currentPage, bra
   return (
     <div className="flex flex-col h-screen bg-gray-50 overflow-hidden relative">
       {/* Mobile Top App Bar */}
-      <div className="h-16 bg-[#520050] text-white flex items-center justify-between px-4 z-50 shadow-md">
+      <div className="h-16 bg-[var(--brand-purple)] text-white flex items-center justify-between px-4 z-50 shadow-md">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0">
             <img src="/logo.svg" alt="Logo" className="w-full h-full object-cover" onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; }} />
@@ -21,7 +21,7 @@ const MobileAppShell = ({ children, user, onLogout, onNavigate, currentPage, bra
           <button
             onClick={onLogout}
             title="Logout"
-            className="w-8 h-8 bg-brand-teal/20 hover:bg-red-500/20 rounded-full flex items-center justify-center font-bold text-sm text-white hover:text-red-600 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#5D0057] overflow-hidden"
+            className="w-8 h-8 bg-brand-teal/20 hover:bg-red-500/20 rounded-full flex items-center justify-center font-bold text-sm text-white hover:text-red-600 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[var(--brand-purple)] overflow-hidden"
           >
             {(user?.name || 'A').substring(0, 2).toUpperCase()}
           </button>

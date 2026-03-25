@@ -31,7 +31,7 @@ export const useAssessmentSetup = (options = {}) => {
   const [selectedStream, setSelectedStream] = useState(defaultStream);
   const [selectedTerm, setSelectedTerm] = useState(defaultTerm);
   const [selectedAcademicYear, setSelectedAcademicYear] = useState(getCurrentAcademicYear());
-  const { grades: dynamicGrades } = useSchoolData();
+  const { grades: dynamicGrades, streams: dynamicStreams } = useSchoolData();
 
   // Reset all selections
   const resetSetup = useCallback(() => {
@@ -80,6 +80,7 @@ export const useAssessmentSetup = (options = {}) => {
     selectedTerm,
     academicYear: selectedAcademicYear,
     grades: dynamicGrades.length > 0 ? dynamicGrades.map(g => ({ value: g, label: g.replace(/_/g, ' ') })) : [],
+    streams: dynamicStreams.length > 0 ? dynamicStreams.map(s => ({ value: s.name, label: `Stream ${s.name}` })) : [],
     terms: TERMS,
 
     // Setters (Standard Names)

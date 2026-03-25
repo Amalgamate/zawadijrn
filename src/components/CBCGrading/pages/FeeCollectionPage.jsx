@@ -646,7 +646,7 @@ const FeeCollectionPage = ({ learnerId }) => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden">
             {/* Header - Matching Bulk Operations */}
-            <div className="bg-[#520050] px-6 py-4 flex justify-between items-center text-white">
+            <div className="bg-[var(--brand-purple)] px-6 py-4 flex justify-between items-center text-white">
               <h3 className="text-lg font-bold">Create New Invoice</h3>
               <button
                 onClick={() => setShowCreateModal(false)}

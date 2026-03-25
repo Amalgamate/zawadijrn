@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import prisma from '../config/database';
 import { ApiError } from '../utils/error.util';
 import { AuthRequest } from '../middleware/permissions.middleware';
-import { cacheService } from '../services/cache.service';
+import { redisCacheService } from '../services/redis-cache.service';
 
 // ─── TTL constants ────────────────────────────────────────────────────────────
 const ADMIN_CACHE_TTL  = 120; // 2 minutes — stats don't need real-time precision
@@ -20,7 +20,7 @@ export class DashboardController {
             const cacheKey = `dashboard:admin:${filter}`;
 
             // ── Serve from cache if fresh ──────────────────────────────────────
-            const cached = cacheService.get<any>(cacheKey);
+            const cached = await redisCacheService.get<any>(cacheKey);
             if (cached) {
                 return res.json({ success: true, data: cached, _cached: true });
             }
@@ -286,12 +286,12 @@ export class DashboardController {
                 upcomingEvents,
             };
 
-            cacheService.set(cacheKey, payload, ADMIN_CACHE_TTL);
+            await redisCacheService.set(cacheKey, payload, ADMIN_CACHE_TTL);
             res.json({ success: true, data: payload });
 
         } catch (error: any) {
             console.error('Admin Dashboard Error:', error);
-            res.status(500).json({ success: false, error: error.message || 'Failed to fetch dashboard metrics' });
+            throw new ApiError(500, error.message || 'Failed to fetch dashboard metrics');
         }
     }
 
@@ -305,7 +305,7 @@ export class DashboardController {
             if (!userId) throw new ApiError(400, 'User ID is required');
 
             const cacheKey = `dashboard:teacher:${userId}`;
-            const cached = cacheService.get<any>(cacheKey);
+            const cached = await redisCacheService.get<any>(cacheKey);
             if (cached) return res.json({ success: true, data: cached, _cached: true });
 
             const [myClasses, pendingAssessments, recentActivityRaw] = await Promise.all([
@@ -343,12 +343,12 @@ export class DashboardController {
                 schedule, recentActivity,
             };
 
-            cacheService.set(cacheKey, payload, TEACHER_CACHE_TTL);
+            await redisCacheService.set(cacheKey, payload, TEACHER_CACHE_TTL);
             res.json({ success: true, data: payload });
 
         } catch (error: any) {
             console.error('Teacher Dashboard Error:', error);
-            res.status(500).json({ success: false, error: error.message || 'Failed to fetch teacher dashboard metrics' });
+            throw new ApiError(500, error.message || 'Failed to fetch teacher dashboard metrics');
         }
     }
 
@@ -362,7 +362,7 @@ export class DashboardController {
             if (!userId) throw new ApiError(400, 'User ID is required');
 
             const cacheKey = `dashboard:parent:${userId}`;
-            const cached = cacheService.get<any>(cacheKey);
+            const cached = await redisCacheService.get<any>(cacheKey);
             if (cached) return res.json({ success: true, data: cached, _cached: true });
 
             const children = await prisma.learner.findMany({
@@ -410,12 +410,12 @@ export class DashboardController {
                 },
             };
 
-            cacheService.set(cacheKey, payload, PARENT_CACHE_TTL);
+            await redisCacheService.set(cacheKey, payload, PARENT_CACHE_TTL);
             res.json({ success: true, data: payload });
 
         } catch (error: any) {
             console.error('Parent Dashboard Error:', error);
-            res.status(500).json({ success: false, error: error.message || 'Failed to fetch parent dashboard metrics' });
+            throw new ApiError(500, error.message || 'Failed to fetch parent dashboard metrics');
         }
     }
 

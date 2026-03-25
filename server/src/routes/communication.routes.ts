@@ -14,7 +14,8 @@ import {
     getContactGroups,
     getContactGroupById,
     updateContactGroup,
-    deleteContactGroup
+    deleteContactGroup,
+    getSmsBalance
 } from '../controllers/communication.controller';
 import { requireRole, auditLog } from '../middleware/permissions.middleware';
 import { authenticate } from '../middleware/auth.middleware';
@@ -96,6 +97,15 @@ router.get(
     requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER']),
     rateLimit({ windowMs: 60_000, maxRequests: 50 }),
     getCommunicationConfig
+);
+
+// Get SMS Balance
+// Allowed: Admin, Super Admin, Head Teacher
+router.get(
+    '/balance',
+    requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER']),
+    rateLimit({ windowMs: 60_000, maxRequests: 50 }),
+    getSmsBalance
 );
 
 // Save Configuration

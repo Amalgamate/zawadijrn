@@ -6,7 +6,7 @@
 
 import { Term, Grade, FormativeAssessmentType, AggregationStrategy } from '@prisma/client';
 import prisma from '../config/database';
-import { cacheService } from './cache.service';
+import { redisCacheService } from './redis-cache.service';
 
 // ============================================
 // TYPE DEFINITIONS
@@ -232,7 +232,7 @@ export class ConfigService {
     });
 
     // Invalidate cache
-    cacheService.clear();
+    await redisCacheService.clear();
     return result;
   }
 
@@ -271,7 +271,7 @@ export class ConfigService {
     });
 
     // Invalidate cache
-    cacheService.clear();
+    await redisCacheService.clear();
     return result;
   }
 
@@ -291,7 +291,7 @@ export class ConfigService {
 
   async getTermConfigs(): Promise<any[]> {
     const cacheKey = 'term_configs';
-    const cached = cacheService.get<any[]>(cacheKey);
+    const cached = await redisCacheService.get<any[]>(cacheKey);
     if (cached) return cached;
 
     const configs = await prisma.termConfig.findMany({
@@ -310,13 +310,13 @@ export class ConfigService {
       }
     });
 
-    cacheService.set(cacheKey, configs, 600); // 10 minutes
+    await redisCacheService.set(cacheKey, configs, 600); // 10 minutes
     return configs;
   }
 
   async getActiveTermConfig(): Promise<any | null> {
     const cacheKey = 'active_term_config';
-    const cached = cacheService.get<any>(cacheKey);
+    const cached = await redisCacheService.get<any>(cacheKey);
     if (cached) return cached;
 
     const config = await prisma.termConfig.findFirst({
@@ -333,7 +333,7 @@ export class ConfigService {
     });
 
     if (config) {
-      cacheService.set(cacheKey, config, 600);
+      await redisCacheService.set(cacheKey, config, 600);
     }
     return config;
   }
@@ -463,7 +463,7 @@ export class ConfigService {
 
   async getAggregationConfigs(): Promise<any[]> {
     const cacheKey = 'aggregation_configs';
-    const cached = cacheService.get<any[]>(cacheKey);
+    const cached = await redisCacheService.get<any[]>(cacheKey);
     if (cached) return cached;
 
     const configs = await prisma.aggregationConfig.findMany({
@@ -475,7 +475,7 @@ export class ConfigService {
       }
     });
 
-    cacheService.set(cacheKey, configs, 600);
+    await redisCacheService.set(cacheKey, configs, 600);
     return configs;
   }
 

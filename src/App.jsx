@@ -7,12 +7,12 @@ import SplashScreen from './components/mobile/SplashScreen';
 import { SchoolDataProvider } from './contexts/SchoolDataContext';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import api from './services/api';
-import axiosInstance from './services/axiosConfig';
+import axiosInstance from './services/api/axiosConfig';
 
 import useSubjectStore from './store/useSubjectStore';
 
 const DEFAULT_BRANDING = {
-  logoUrl: '/logo-zawadi.png',
+  logoUrl: '/logo-new.png',
   faviconUrl: '/favicon.png',
   stampUrl: '/ZawadiStamp.svg',
   brandColor: '#520050',
@@ -85,6 +85,26 @@ function AppContent() {
     if (!url) { link.href = '/favicon.png'; return; }
     link.href = url.startsWith('data:') ? url : `${url}${url.includes('?') ? '&' : '?'}v=${Date.now()}`;
   }, [brandingSettings.faviconUrl]);
+
+  // Update CSS variables for branding
+  useEffect(() => {
+    const root = document.documentElement;
+    const color = brandingSettings?.brandColor || 'var(--brand-purple)';
+    root.style.setProperty('--brand-purple', color);
+    
+    // Generate a darker version for logo/sidebar accents (roughly 15-20% darker)
+    // Simple hex darken if it's hex
+    if (color.startsWith('#') && color.length === 7) {
+      const r = parseInt(color.slice(1, 3), 16);
+      const g = parseInt(color.slice(3, 5), 16);
+      const b = parseInt(color.slice(5, 7), 16);
+      const darken = (val) => Math.max(0, Math.floor(val * 0.85)).toString(16).padStart(2, '0');
+      const darkColor = `#${darken(r)}${darken(g)}${darken(b)}`;
+      root.style.setProperty('--brand-purple-dark', darkColor);
+    } else {
+      root.style.setProperty('--brand-purple-dark', color);
+    }
+  }, [brandingSettings.brandColor]);
 
   // Update page title
   useEffect(() => {

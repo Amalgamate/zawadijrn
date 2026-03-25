@@ -37,33 +37,15 @@ const BrandingSettings = ({ brandingSettings, setBrandingSettings }) => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const schoolId = null; // Removed for single-tenant mode
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      // Single-tenant: PUT /schools updates the one school record
+      const { default: axiosInstance } = await import('../../../../services/api/axiosConfig');
 
-      if (!token) throw new Error('Authentication required');
-
-      const { API_BASE_URL } = await import('../../../../services/api');
-
-      // Update backend - only send messaging fields (backend handles individual updates)
-      // Update backend
-      const response = await fetch(`${API_BASE_URL}/schools/branding`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          welcomeTitle: localSettings.welcomeTitle,
-          welcomeMessage: localSettings.welcomeMessage,
-          onboardingTitle: localSettings.onboardingTitle,
-          onboardingMessage: localSettings.onboardingMessage
-        })
+      await axiosInstance.put('/schools', {
+        welcomeTitle: localSettings.welcomeTitle,
+        welcomeMessage: localSettings.welcomeMessage,
+        onboardingTitle: localSettings.onboardingTitle,
+        onboardingMessage: localSettings.onboardingMessage
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to save branding messages');
-      }
 
       // Update parent state (keep other branding fields intact)
       setBrandingSettings(prev => ({
@@ -198,7 +180,7 @@ const BrandingSettings = ({ brandingSettings, setBrandingSettings }) => {
             </div>
             <div
               className="p-10 text-white relative flex flex-col items-center text-center justify-center min-h-[300px]"
-              style={{ backgroundColor: brandingSettings?.brandColor || '#520050' }}
+              style={{ backgroundColor: brandingSettings?.brandColor || 'var(--brand-purple)' }}
             >
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
               <img
@@ -220,7 +202,7 @@ const BrandingSettings = ({ brandingSettings, setBrandingSettings }) => {
             </div>
             <div
               className="p-10 text-white relative flex flex-col items-center text-center justify-center min-h-[300px]"
-              style={{ backgroundColor: brandingSettings?.brandColor || '#520050' }}
+              style={{ backgroundColor: brandingSettings?.brandColor || 'var(--brand-purple)' }}
             >
               <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2"></div>
               <img

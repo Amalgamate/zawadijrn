@@ -5,7 +5,7 @@ import { auditLog } from '../../middleware/permissions.middleware';
 import { Grade, Term, SummativeGrade, TestStatus } from '@prisma/client';
 import prisma from '../../config/database';
 import multer from 'multer';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 const router = Router();
 
@@ -31,6 +31,41 @@ function calculateStatus(percentage: number): TestStatus {
 }
 
 /**
+ * Parse an uploaded xlsx/xls/csv buffer with ExcelJS.
+ * Returns an array of plain objects keyed by the header row.
+ */
+async function parseWorkbook(buffer: Buffer): Promise<Record<string, any>[]> {
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(buffer as any);
+
+    const ws = wb.worksheets[0];
+    if (!ws) return [];
+
+    const rows: Record<string, any>[] = [];
+    let headers: string[] = [];
+
+    ws.eachRow((row, rowNumber) => {
+        const values = (row.values as any[]).slice(1); // ExcelJS uses 1-based index; index 0 is empty
+        if (rowNumber === 1) {
+            // Header row
+            headers = values.map(v => (v == null ? '' : String(v).trim()));
+        } else {
+            const obj: Record<string, any> = {};
+            headers.forEach((h, i) => {
+                const cell = values[i];
+                // Unwrap rich-text objects ExcelJS sometimes returns
+                obj[h] = cell && typeof cell === 'object' && 'richText' in cell
+                    ? cell.richText.map((r: any) => r.text).join('')
+                    : cell ?? null;
+            });
+            rows.push(obj);
+        }
+    });
+
+    return rows;
+}
+
+/**
  * POST /api/bulk/assessments/upload
  */
 router.post(
@@ -41,7 +76,7 @@ router.post(
     async (req: AuthRequest, res: Response) => {
     try {
         if (!req.file) {
-            return res.status(400).json({ error: 'No file uploaded' });
+            return res.status(400).json({ success: false, error: 'No file uploaded' });
         }
 
         const {
@@ -53,16 +88,13 @@ router.post(
         } = req.body;
 
         if (!academicYear || !term || !grade || !columnMapping) {
-            return res.status(400).json({ error: 'Missing required parameters' });
+            return res.status(400).json({ success: false, error: 'Missing required parameters' });
         }
 
         const parsedMapping = JSON.parse(columnMapping);
         const yearInt = parseInt(academicYear);
 
-        const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
-        const firstSheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[firstSheetName];
-        const data: any[] = XLSX.utils.sheet_to_json(worksheet);
+        const data = await parseWorkbook(req.file.buffer);
 
         const results = {
             created: 0,
@@ -108,16 +140,14 @@ router.post(
 
         for (const [index, row] of data.entries()) {
             try {
-                const admNo = String(row[admissionColumn] || row['Adm No'] || row['Admission Number'] || '').trim();
+                const admNo = String(row[admissionColumn] ?? row['Adm No'] ?? row['Admission Number'] ?? '').trim();
                 if (!admNo) {
                     results.failed++;
                     results.errors.push({ row: index + 2, error: 'Admission number missing' });
                     continue;
                 }
 
-                const learner = await prisma.learner.findUnique({
-                    where: { admissionNumber: admNo }
-                });
+                const learner = await prisma.learner.findUnique({ where: { admissionNumber: admNo } });
 
                 if (!learner) {
                     results.failed++;
@@ -138,12 +168,7 @@ router.post(
                     const testId = testMap[laName as string];
 
                     await prisma.summativeResult.upsert({
-                        where: {
-                            testId_learnerId: {
-                                testId,
-                                learnerId: learner.id
-                            }
-                        },
+                        where: { testId_learnerId: { testId, learnerId: learner.id } },
                         update: {
                             marksObtained: Math.round(score),
                             percentage: score,
@@ -183,7 +208,7 @@ router.post(
 
     } catch (error: any) {
         console.error('Bulk assessment upload error:', error);
-        res.status(500).json({ error: 'Failed to process bulk upload', details: error.message });
+        res.status(500).json({ success: false, error: 'Failed to process bulk upload', details: error.message });
     }
 });
 

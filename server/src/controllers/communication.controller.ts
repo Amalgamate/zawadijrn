@@ -13,84 +13,75 @@ import { COMMUNICATION_CONFIG, ERROR_MESSAGES, SMS_MESSAGES } from '../config/co
  * GET /api/communication/config
  */
 export const getCommunicationConfig = async (req: AuthRequest, res: Response) => {
-    try {
-        const config = await prisma.communicationConfig.findFirst();
+    const config = await prisma.communicationConfig.findFirst();
 
-        if (!config) {
-            // Return defaults if not found
-            return res.status(200).json({
-                success: true,
-                data: {
-                    sms: {
-                        enabled: false,
-                        provider: COMMUNICATION_CONFIG.sms.provider,
-                        hasApiKey: false,
-                        senderId: ''
-                    },
-                    email: {
-                        enabled: false,
-                        provider: COMMUNICATION_CONFIG.email.provider,
-                        hasApiKey: false
-                    },
-                    mpesa: {
-                        enabled: false,
-                        provider: 'intasend',
-                        hasSecretKey: false
-                    },
-                    birthdays: {
-                        enabled: false,
-                        template: SMS_MESSAGES.birthdayStandard('{learnerName}', '{schoolName}', '{gradeName}')
-                    }
-                }
-            });
-        }
-
-        // Return config with masked keys
-        res.status(200).json({
+    if (!config) {
+        return res.status(200).json({
             success: true,
             data: {
-                id: config.id,
                 sms: {
-                    enabled: config.smsEnabled,
-                    provider: config.smsProvider,
-                    baseUrl: config.smsBaseUrl,
-                    senderId: config.smsSenderId,
-                    hasApiKey: !!config.smsApiKey, // Boolean flag
-                    // custom provider fields
-                    customName: config.smsCustomName,
-                    customUrl: config.smsCustomBaseUrl,
-                    customAuthHeader: config.smsCustomAuthHeader,
-                    hasCustomToken: !!config.smsCustomToken,
-                    username: (config as any).smsUsername
+                    enabled: false,
+                    provider: COMMUNICATION_CONFIG.sms.provider,
+                    hasApiKey: false,
+                    senderId: ''
                 },
                 email: {
-                    enabled: config.emailEnabled,
-                    provider: config.emailProvider,
-                    fromEmail: config.emailFrom,
-                    fromName: config.emailFromName,
-                    hasApiKey: !!config.emailApiKey,
-                    emailTemplates: config.emailTemplates
+                    enabled: false,
+                    provider: COMMUNICATION_CONFIG.email.provider,
+                    hasApiKey: false
                 },
                 mpesa: {
-                    enabled: config.mpesaEnabled,
-                    provider: config.mpesaProvider,
-                    publicKey: config.mpesaPublicKey,
-                    businessNumber: config.mpesaBusinessNo,
-                    hasSecretKey: !!config.mpesaSecretKey
+                    enabled: false,
+                    provider: 'intasend',
+                    hasSecretKey: false
                 },
                 birthdays: {
-                    enabled: config.birthdayEnabled,
-                    template: config.birthdayMessageTemplate || SMS_MESSAGES.birthdayStandard('{learnerName}', '{schoolName}', '{gradeName}')
-                },
-                createdAt: config.createdAt,
-                updatedAt: config.updatedAt
+                    enabled: false,
+                    template: SMS_MESSAGES.birthdayStandard('{learnerName}', '{schoolName}', '{gradeName}')
+                }
             }
         });
-
-    } catch (error: any) {
-        console.error('Get Communication Config Error:', error);
-        res.status(500).json({ success: false, error: error.message || 'Failed to get configuration' });
     }
+
+    res.status(200).json({
+        success: true,
+        data: {
+            id: config.id,
+            sms: {
+                enabled: config.smsEnabled,
+                provider: config.smsProvider,
+                baseUrl: config.smsBaseUrl,
+                senderId: config.smsSenderId,
+                hasApiKey: !!config.smsApiKey,
+                customName: config.smsCustomName,
+                customUrl: config.smsCustomBaseUrl,
+                customAuthHeader: config.smsCustomAuthHeader,
+                hasCustomToken: !!config.smsCustomToken,
+                username: (config as any).smsUsername
+            },
+            email: {
+                enabled: config.emailEnabled,
+                provider: config.emailProvider,
+                fromEmail: config.emailFrom,
+                fromName: config.emailFromName,
+                hasApiKey: !!config.emailApiKey,
+                emailTemplates: config.emailTemplates
+            },
+            mpesa: {
+                enabled: config.mpesaEnabled,
+                provider: config.mpesaProvider,
+                publicKey: config.mpesaPublicKey,
+                businessNumber: config.mpesaBusinessNo,
+                hasSecretKey: !!config.mpesaSecretKey
+            },
+            birthdays: {
+                enabled: config.birthdayEnabled,
+                template: config.birthdayMessageTemplate || SMS_MESSAGES.birthdayStandard('{learnerName}', '{schoolName}', '{gradeName}')
+            },
+            createdAt: config.createdAt,
+            updatedAt: config.updatedAt
+        }
+    });
 };
 
 /**
@@ -98,124 +89,77 @@ export const getCommunicationConfig = async (req: AuthRequest, res: Response) =>
  * POST /api/communication/config
  */
 export const saveCommunicationConfig = async (req: AuthRequest, res: Response) => {
-    try {
-        const { sms, email, mpesa, birthdays } = req.body;
+    const { sms, email, mpesa, birthdays } = req.body;
+    const data: any = {};
 
-        // Prepare data for upsert
-        const data: any = {};
-
-        // SMS Configuration
-        if (sms) {
-            console.log(`[CommunicationController] SMS Config Update:`, {
-                provider: sms.provider,
-                hasApiKey: !!sms.apiKey,
-                hasUsername: !!sms.username,
-                hasSenderId: !!sms.senderId
-            });
-
-            data.smsProvider = sms.provider || 'mobilesasa';
-            data.smsBaseUrl = sms.baseUrl || 'https://api.mobilesasa.com';
-            data.smsEnabled = sms.enabled !== undefined ? sms.enabled : true; // Default to enabled
-
-            // Only update Sender ID if provided
-            if (sms.senderId) {
-                data.smsSenderId = sms.senderId;
-            }
-
-            // Encrypt API key if provided (should never be empty/undefined)
-            if (sms.apiKey && sms.apiKey.trim()) {
-                console.log(`[CommunicationController] Encrypting SMS API Key for provider: ${sms.provider}`);
-                data.smsApiKey = encrypt(sms.apiKey);
-            } else if (!sms.apiKey) {
-                // If no API key provided, don't overwrite existing one
-                console.log(`[CommunicationController] No API key provided - keeping existing key`);
-            }
-
-            // Africa's Talking specific field
-            if (sms.username && sms.username.trim()) {
-                console.log(`[CommunicationController] Setting Africa's Talking username`);
-                data.smsUsername = sms.username;
-            }
-
-            // Custom provider fields (if applicable)
-            if (sms.provider === 'custom') {
-                data.smsCustomName = sms.customName || null;
-                data.smsCustomBaseUrl = sms.customBaseUrl || null;
-                data.smsCustomAuthHeader = sms.customAuthHeader || 'Authorization';
-                if (sms.customToken) {
-                    data.smsCustomToken = encrypt(sms.customToken);
-                }
-            }
-        }
-
-        // Email Configuration
-        if (email) {
-            data.emailProvider = email.provider || 'resend';
-            data.emailFrom = email.fromEmail || null;
-            data.emailFromName = email.fromName || null;
-            data.emailEnabled = email.enabled !== undefined ? email.enabled : false;
-
-            if (email.apiKey) {
-                data.emailApiKey = encrypt(email.apiKey);
-            }
-
-            // Save templates if provided
-            if (email.emailTemplates) {
-                data.emailTemplates = email.emailTemplates;
-            }
-        }
-
-        // M-Pesa Configuration
-        if (mpesa) {
-            data.mpesaProvider = mpesa.provider || 'intasend';
-            data.mpesaPublicKey = mpesa.publicKey || null;
-            data.mpesaBusinessNo = mpesa.businessNumber || null;
-            data.mpesaEnabled = mpesa.enabled !== undefined ? mpesa.enabled : false;
-
-            if (mpesa.secretKey) {
-                data.mpesaSecretKey = encrypt(mpesa.secretKey);
-            }
-        }
-
-        // Birthday Configuration
-        if (birthdays) {
-            data.birthdayEnabled = birthdays.enabled !== undefined ? birthdays.enabled : false;
-            data.birthdayMessageTemplate = birthdays.template || null;
-        }
-
-        // Upsert configuration: Global config, so we look for the first one
-        const existingConfig = await prisma.communicationConfig.findFirst();
-        let config;
-
-        if (existingConfig) {
-            config = await prisma.communicationConfig.update({
-                where: { id: existingConfig.id },
-                data
-            });
-        } else {
-            config = await prisma.communicationConfig.create({
-                data
-            });
-        }
-
-        // Clear SMS config cache so changes take effect immediately
-        const { SmsService } = await import('../services/sms.service');
-        (SmsService as any).clearConfigCache();
-        console.log(`✅ Communication config saved and cache cleared`);
-
-        res.status(200).json({
-            success: true,
-            message: 'Configuration saved successfully',
-            data: {
-                id: config.id,
-                updatedAt: config.updatedAt
-            }
+    if (sms) {
+        console.log(`[CommunicationController] SMS Config Update:`, {
+            provider: sms.provider,
+            hasApiKey: !!sms.apiKey,
+            hasUsername: !!sms.username,
+            hasSenderId: !!sms.senderId
         });
 
-    } catch (error: any) {
-        console.error('Save Communication Config Error:', error);
-        res.status(500).json({ success: false, error: error.message || 'Failed to save configuration' });
+        data.smsProvider = sms.provider || 'mobilesasa';
+        data.smsBaseUrl = sms.baseUrl || 'https://api.mobilesasa.com';
+        data.smsEnabled = sms.enabled !== undefined ? sms.enabled : true;
+
+        if (sms.senderId) data.smsSenderId = sms.senderId;
+
+        if (sms.apiKey && sms.apiKey.trim()) {
+            console.log(`[CommunicationController] Encrypting SMS API Key for provider: ${sms.provider}`);
+            data.smsApiKey = encrypt(sms.apiKey);
+        }
+
+        if (sms.username && sms.username.trim()) {
+            data.smsUsername = sms.username;
+        }
+
+        if (sms.provider === 'custom') {
+            data.smsCustomName = sms.customName || null;
+            data.smsCustomBaseUrl = sms.customBaseUrl || null;
+            data.smsCustomAuthHeader = sms.customAuthHeader || 'Authorization';
+            if (sms.customToken) data.smsCustomToken = encrypt(sms.customToken);
+        }
     }
+
+    if (email) {
+        data.emailProvider = email.provider || 'resend';
+        data.emailFrom = email.fromEmail || null;
+        data.emailFromName = email.fromName || null;
+        data.emailEnabled = email.enabled !== undefined ? email.enabled : false;
+        if (email.apiKey) data.emailApiKey = encrypt(email.apiKey);
+        if (email.emailTemplates) data.emailTemplates = email.emailTemplates;
+    }
+
+    if (mpesa) {
+        data.mpesaProvider = mpesa.provider || 'intasend';
+        data.mpesaPublicKey = mpesa.publicKey || null;
+        data.mpesaBusinessNo = mpesa.businessNumber || null;
+        data.mpesaEnabled = mpesa.enabled !== undefined ? mpesa.enabled : false;
+        if (mpesa.secretKey) data.mpesaSecretKey = encrypt(mpesa.secretKey);
+    }
+
+    if (birthdays) {
+        data.birthdayEnabled = birthdays.enabled !== undefined ? birthdays.enabled : false;
+        data.birthdayMessageTemplate = birthdays.template || null;
+    }
+
+    const existingConfig = await prisma.communicationConfig.findFirst();
+    const config = existingConfig
+        ? await prisma.communicationConfig.update({ where: { id: existingConfig.id }, data })
+        : await prisma.communicationConfig.create({ data });
+
+    // Clear SMS config cache so changes take effect immediately
+    const { SmsService: SmsServiceImport } = await import('../services/sms.service');
+    (SmsServiceImport as any).clearConfigCache();
+    console.log(`✅ Communication config saved and cache cleared`);
+
+    res.status(200).json({
+        success: true,
+        message: 'Configuration saved successfully',
+        data: { id: config.id, updatedAt: config.updatedAt }
+    });
 };
 
 /**
@@ -223,45 +167,23 @@ export const saveCommunicationConfig = async (req: AuthRequest, res: Response) =
  * POST /api/communication/test/sms
  */
 export const sendTestSms = async (req: AuthRequest, res: Response) => {
-    try {
-        const { phoneNumber, message } = req.body;
+    const { phoneNumber, message } = req.body;
 
-        if (!phoneNumber || !message) {
-            return res.status(400).json({
-                success: false,
-                error: 'phoneNumber and message are required'
-            });
-        }
-
-        console.log('📞 Test SMS Request:', { phoneNumber, messageLength: message.length });
-
-        // Send SMS
-        const result = await SmsService.sendSms(phoneNumber, message);
-
-        if (!result.success) {
-            console.error('❌ SMS send failed:', result.error);
-            return res.status(400).json({
-                success: false,
-                error: result.error || 'Failed to send SMS'
-            });
-        }
-
-        console.log('✅ SMS sent successfully:', result);
-        res.status(200).json({
-            success: true,
-            message: 'SMS sent successfully',
-            data: {
-                messageId: result.messageId,
-                provider: result.provider
-            }
-        });
-    } catch (error: any) {
-        console.error('❌ Send Test SMS Error:', error);
-        res.status(500).json({
-            success: false,
-            error: error.message || 'Failed to send test SMS'
-        });
+    if (!phoneNumber || !message) {
+        throw new ApiError(400, 'phoneNumber and message are required');
     }
+
+    const result = await SmsService.sendSms(phoneNumber, message);
+
+    if (!result.success) {
+        throw new ApiError(400, result.error || 'Failed to send SMS');
+    }
+
+    res.status(200).json({
+        success: true,
+        message: 'SMS sent successfully',
+        data: { messageId: result.messageId, provider: result.provider }
+    });
 };
 
 /**
@@ -269,57 +191,30 @@ export const sendTestSms = async (req: AuthRequest, res: Response) => {
  * POST /api/communication/test/email
  */
 export const sendTestEmail = async (req: AuthRequest, res: Response) => {
-    try {
-        const { email, template = 'welcome' } = req.body;
+    const { email, template = 'welcome' } = req.body;
 
-        if (!email) {
-            return res.status(400).json({
-                success: false,
-                error: 'Email is required'
-            });
-        }
+    if (!email) throw new ApiError(400, 'Email is required');
 
-        console.log('📧 Test Email Request:', { email, template });
+    const school = await prisma.school.findFirst({ select: { name: true } });
+    const schoolName = school?.name || 'Your School';
+    const adminName = req.user?.userId
+        ? (await prisma.user.findUnique({ where: { id: req.user.userId } }))?.firstName || 'Admin'
+        : 'Admin';
 
-        // Fetch School Name
-        const school = await prisma.school.findFirst({ select: { name: true } });
-        const schoolName = school?.name || 'Your School';
-        const adminName = req.user?.userId ? (await prisma.user.findUnique({ where: { id: req.user.userId } }))?.firstName || 'Admin' : 'Admin';
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const loginUrl = `${frontendUrl}/login`;
 
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-        const loginUrl = `${frontendUrl}/login`;
-
-        // Send Email based on template selection
-        if (template === 'onboarding') {
-            await EmailService.sendOnboardingEmail({
-                to: email,
-                schoolName,
-                adminName,
-                loginUrl
-            });
-        } else {
-            // Default to Welcome
-            await EmailService.sendWelcomeEmail({
-                to: email,
-                schoolName,
-                adminName,
-                loginUrl
-            });
-        }
-
-        console.log('✅ Test email sent successfully to:', email);
-        res.status(200).json({
-            success: true,
-            message: `Test email (${template}) sent successfully to ${email}`,
-            data: {
-                provider: 'resend' // We know it's resend
-            }
-        });
-
-    } catch (error: any) {
-        console.error('❌ Send Test Email Error:', error);
-        res.status(500).json({ success: false, error: error.message || 'Failed to send test email' });
+    if (template === 'onboarding') {
+        await EmailService.sendOnboardingEmail({ to: email, schoolName, adminName, loginUrl });
+    } else {
+        await EmailService.sendWelcomeEmail({ to: email, schoolName, adminName, loginUrl });
     }
+
+    res.status(200).json({
+        success: true,
+        message: `Test email (${template}) sent successfully to ${email}`,
+        data: { provider: 'resend' }
+    });
 };
 
 /**
@@ -327,42 +222,38 @@ export const sendTestEmail = async (req: AuthRequest, res: Response) => {
  * GET /api/communication/birthdays/today
  */
 export const getBirthdaysToday = async (req: AuthRequest, res: Response) => {
-    try {
-        const now = new Date();
-        const monthDay = `${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
+    const now = new Date();
+    const monthDay = `${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
 
-        const learners = await prisma.learner.findMany({
-            where: { status: 'ACTIVE' },
-            select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                dateOfBirth: true,
-                guardianPhone: true,
-                emergencyPhone: true,
-                grade: true,
-                stream: true,
-                admissionNumber: true
-            }
-        });
+    const learners = await prisma.learner.findMany({
+        where: { status: 'ACTIVE' },
+        select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            dateOfBirth: true,
+            guardianPhone: true,
+            emergencyPhone: true,
+            grade: true,
+            stream: true,
+            admissionNumber: true
+        }
+    });
 
-        const birthdaysToday = learners.filter(l => {
+    const birthdaysToday = learners
+        .filter(l => {
             if (!l.dateOfBirth) return false;
             const dob = new Date(l.dateOfBirth);
             const dobMonthDay = `${(dob.getMonth() + 1).toString().padStart(2, '0')}-${dob.getDate().toString().padStart(2, '0')}`;
             return dobMonthDay === monthDay;
-        }).map(l => ({
+        })
+        .map(l => ({
             ...l,
             name: `${l.firstName} ${l.lastName}`,
             guardianPhone: l.guardianPhone || l.emergencyPhone
         }));
 
-        res.status(200).json({ success: true, data: birthdaysToday });
-
-    } catch (error: any) {
-        console.error('Get Birthdays Today Error:', error);
-        res.status(500).json({ success: false, error: error.message || 'Failed to fetch birthdays' });
-    }
+    res.status(200).json({ success: true, data: birthdaysToday });
 };
 
 /**
@@ -370,131 +261,101 @@ export const getBirthdaysToday = async (req: AuthRequest, res: Response) => {
  * POST /api/communication/birthdays/send
  */
 export const sendBirthdayWishes = async (req: AuthRequest, res: Response) => {
-    try {
-        const { learnerIds, template, channel = 'sms' } = req.body;
+    const { learnerIds, template, channel = 'sms' } = req.body;
 
-        if (!learnerIds || !Array.isArray(learnerIds)) {
-            throw new ApiError(400, 'learnerIds array is required');
-        }
-
-        const school = await prisma.school.findFirst({ select: { name: true } });
-        const schoolName = school?.name || 'Your School';
-
-        const learners = await prisma.learner.findMany({
-            where: { id: { in: learnerIds } }
-        });
-
-        const results = [];
-
-        const calculateAge = (dob: Date) => {
-            const today = new Date();
-            let age = today.getFullYear() - dob.getFullYear();
-            const m = today.getMonth() - dob.getMonth();
-            if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
-                age--;
-            }
-            return age;
-        };
-
-        for (const learner of learners) {
-            const phoneNumber = learner.guardianPhone || learner.emergencyPhone;
-            if (!phoneNumber) {
-                results.push({ learnerId: learner.id, success: false, error: 'No phone number' });
-                continue;
-            }
-
-            const formatTitleCase = (str: string) => {
-                if (!str) return '';
-                return str.toLowerCase().split(/[_\s]+/).map(word =>
-                    word.charAt(0).toUpperCase() + word.slice(1)
-                ).join(' ');
-            };
-
-            const getOrdinal = (n: number) => {
-                const s = ["th", "st", "nd", "rd"];
-                const v = n % 100;
-                return n + (s[(v - 20) % 10] || s[v] || s[0]);
-            };
-
-            const formatDate = (date: Date) => {
-                return date.toLocaleDateString('en-US', { day: 'numeric', month: 'long' });
-            };
-
-            const age = calculateAge(new Date(learner.dateOfBirth));
-            const ageOrdinal = getOrdinal(age);
-            const bdayDate = formatDate(new Date(learner.dateOfBirth));
-            const gradeName = formatTitleCase(learner.grade);
-            const firstName = formatTitleCase(learner.firstName);
-            const lastName = formatTitleCase(learner.lastName);
-            const fullName = `${firstName} ${lastName}`;
-
-            try {
-                let result;
-                if (channel === 'whatsapp') {
-                    // Use premium WhatsApp birthday message if no custom template is provided
-                    const finalMessage = !template
-                        ? SMS_MESSAGES.birthdayPremium({
-                            learnerName: firstName,
-                            schoolName,
-                            gradeName,
-                            ageOrdinal,
-                            bdayDate
-                        })
-                        : template
-                            .replace(/{learnerName}/g, fullName)
-                            .replace(/{firstName}/g, firstName)
-                            .replace(/{lastName}/g, lastName)
-                            .replace(/{schoolName}/g, schoolName)
-                            .replace(/{grade}/g, gradeName)
-                            .replace(/{age}/g, age.toString())
-                            .replace(/{ageOrdinal}/g, ageOrdinal)
-                            .replace(/{birthdayDate}/g, bdayDate);
-
-                    result = await whatsappService.sendMessage({
-                        to: phoneNumber,
-                        message: finalMessage,
-                    } as any);
-                } else {
-                    // Use standard SMS birthday message
-                    const smsMessage = template
-                        ? template
-                            .replace(/{learnerName}/g, fullName)
-                            .replace(/{firstName}/g, firstName)
-                            .replace(/{lastName}/g, lastName)
-                            .replace(/{schoolName}/g, schoolName)
-                            .replace(/{grade}/g, gradeName)
-                            .replace(/{age}/g, age.toString())
-                            .replace(/{ageOrdinal}/g, ageOrdinal)
-                            .replace(/{birthdayDate}/g, bdayDate)
-                        : SMS_MESSAGES.birthdayStandard(firstName, schoolName, gradeName);
-
-                    result = await SmsService.sendSms(phoneNumber, smsMessage);
-                }
-
-                results.push({
-                    learnerId: learner.id,
-                    success: result.success,
-                    messageId: result.messageId,
-                    error: result.error
-                });
-            } catch (err: any) {
-                results.push({ learnerId: learner.id, success: false, error: err.message });
-            }
-        }
-
-        const successCount = results.filter(r => r.success).length;
-        const failCount = results.length - successCount;
-
-        res.status(200).json({
-            success: true,
-            message: `Processed ${results.length} birthday messages. ${successCount} sent, ${failCount} failed.`,
-            data: { results }
-        });
-
-    } catch (error: any) {
-        console.error('Send Birthday Wishes Error:', error);
-        res.status(500).json({ success: false, error: error.message || 'Failed to send messages' });
+    if (!learnerIds || !Array.isArray(learnerIds)) {
+        throw new ApiError(400, 'learnerIds array is required');
     }
+
+    const school = await prisma.school.findFirst({ select: { name: true } });
+    const schoolName = school?.name || 'Your School';
+    const learners = await prisma.learner.findMany({ where: { id: { in: learnerIds } } });
+
+    const calculateAge = (dob: Date) => {
+        const today = new Date();
+        let age = today.getFullYear() - dob.getFullYear();
+        const m = today.getMonth() - dob.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+        return age;
+    };
+
+    const formatTitleCase = (str: string) => {
+        if (!str) return '';
+        return str.toLowerCase().split(/[_\s]+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    };
+
+    const getOrdinal = (n: number) => {
+        const s = ['th', 'st', 'nd', 'rd'];
+        const v = n % 100;
+        return n + (s[(v - 20) % 10] || s[v] || s[0]);
+    };
+
+    const formatDate = (date: Date) =>
+        date.toLocaleDateString('en-US', { day: 'numeric', month: 'long' });
+
+    const results = [];
+
+    for (const learner of learners) {
+        const phoneNumber = learner.guardianPhone || learner.emergencyPhone;
+        if (!phoneNumber) {
+            results.push({ learnerId: learner.id, success: false, error: 'No phone number' });
+            continue;
+        }
+
+        const age = calculateAge(new Date(learner.dateOfBirth));
+        const ageOrdinal = getOrdinal(age);
+        const bdayDate = formatDate(new Date(learner.dateOfBirth));
+        const gradeName = formatTitleCase(learner.grade);
+        const firstName = formatTitleCase(learner.firstName);
+        const lastName = formatTitleCase(learner.lastName);
+        const fullName = `${firstName} ${lastName}`;
+
+        try {
+            let result;
+            if (channel === 'whatsapp') {
+                const finalMessage = !template
+                    ? SMS_MESSAGES.birthdayPremium({ learnerName: firstName, schoolName, gradeName, ageOrdinal, bdayDate })
+                    : template
+                        .replace(/{learnerName}/g, fullName)
+                        .replace(/{firstName}/g, firstName)
+                        .replace(/{lastName}/g, lastName)
+                        .replace(/{schoolName}/g, schoolName)
+                        .replace(/{grade}/g, gradeName)
+                        .replace(/{age}/g, age.toString())
+                        .replace(/{ageOrdinal}/g, ageOrdinal)
+                        .replace(/{birthdayDate}/g, bdayDate);
+
+                result = await whatsappService.sendMessage({ to: phoneNumber, message: finalMessage } as any);
+            } else {
+                const smsMessage = template
+                    ? template
+                        .replace(/{learnerName}/g, fullName)
+                        .replace(/{firstName}/g, firstName)
+                        .replace(/{lastName}/g, lastName)
+                        .replace(/{schoolName}/g, schoolName)
+                        .replace(/{grade}/g, gradeName)
+                        .replace(/{age}/g, age.toString())
+                        .replace(/{ageOrdinal}/g, ageOrdinal)
+                        .replace(/{birthdayDate}/g, bdayDate)
+                    : SMS_MESSAGES.birthdayStandard(firstName, schoolName, gradeName);
+
+                result = await SmsService.sendSms(phoneNumber, smsMessage);
+            }
+
+            results.push({ learnerId: learner.id, success: result.success, messageId: result.messageId, error: result.error });
+        } catch (err: any) {
+            results.push({ learnerId: learner.id, success: false, error: err.message });
+        }
+    }
+
+    const successCount = results.filter(r => r.success).length;
+    const failCount = results.length - successCount;
+
+    res.status(200).json({
+        success: true,
+        message: `Processed ${results.length} birthday messages. ${successCount} sent, ${failCount} failed.`,
+        data: { results }
+    });
 };
 
 /**
@@ -502,171 +363,70 @@ export const sendBirthdayWishes = async (req: AuthRequest, res: Response) => {
  * GET /api/communication/recipients
  */
 export const getBroadcastRecipients = async (req: AuthRequest, res: Response) => {
-    try {
-        const { grade } = req.query;
+    const { grade } = req.query;
+    let whereClause: any = { status: 'ACTIVE' };
 
-        let whereClause: any = { status: 'ACTIVE' };
-
-        // Handle Grade Filtering
-        if (grade && grade !== 'All Grades') {
-            // Normalize grade input (e.g. "Grade 5" -> "GRADE_5")
-            // This handles both enum values and display names if possible
-            // But for safety, we'll try to match strictly or use a contains if it was a string field.
-            // Since it's an enum, we need to be careful. Ideally frontend sends correct ENUM.
-            // If frontend sends "Grade 5", we need to map or rely on frontend sending "GRADE_5".
-            // However, the previous issue showed a mismatch.
-            // Let's rely on the frontend sending the "correct" value, OR we fetch all and filter if we are unsure.
-            // BUT, for "Grade 5" specifically, let's try to map it if it matches the pattern "Grade X" -> "GRADE_X"
-
-            let targetGrade = String(grade);
-            if (targetGrade.match(/^Grade \d+$/i)) {
-                targetGrade = targetGrade.toUpperCase().replace(' ', '_');
-            } else if (targetGrade.match(/^PP\d+$/i)) {
-                targetGrade = targetGrade.toUpperCase();
-            }
-
-            // We can try to use it directly. If it fails validation, Prisma might throw.
-            // To be safe against "Grade 5" vs "GRADE_5" issues, we could just fetch all active and filter in memory 
-            // if the dataset isn't huge (which it isn't, ~300 students).
-            // But let's try the direct query first with the normalized value.
-            whereClause.grade = targetGrade;
+    if (grade && grade !== 'All Grades') {
+        let targetGrade = String(grade);
+        if (targetGrade.match(/^Grade \d+$/i)) {
+            targetGrade = targetGrade.toUpperCase().replace(' ', '_');
+        } else if (targetGrade.match(/^PP\d+$/i)) {
+            targetGrade = targetGrade.toUpperCase();
         }
-
-        // Fetch learners
-        let learners = await prisma.learner.findMany({
-            where: whereClause,
-            select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                grade: true,
-                guardianName: true,
-                guardianPhone: true,
-                fatherName: true,
-                fatherPhone: true,
-                fatherDeceased: true,
-                motherName: true,
-                motherPhone: true,
-                motherDeceased: true,
-                primaryContactName: true,
-                primaryContactPhone: true,
-                parent: {
-                    select: {
-                        id: true,
-                        firstName: true,
-                        lastName: true,
-                        phone: true
-                    }
-                }
-            }
-        });
-
-        if (learners.length === 0 && grade && grade !== 'All Grades') {
-            const allLearners = await prisma.learner.findMany({
-                where: { status: 'ACTIVE' },
-                select: {
-                    id: true,
-                    firstName: true,
-                    lastName: true,
-                    grade: true,
-                    guardianName: true,
-                    guardianPhone: true,
-                    fatherName: true,
-                    fatherPhone: true,
-                    fatherDeceased: true,
-                    motherName: true,
-                    motherPhone: true,
-                    motherDeceased: true,
-                    primaryContactName: true,
-                    primaryContactPhone: true,
-                    parent: {
-                        select: {
-                            id: true,
-                            firstName: true,
-                            lastName: true,
-                            phone: true
-                        }
-                    }
-                }
-            });
-
-            const normalize = (g: string) => String(g).toUpperCase().replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
-            const target = normalize(String(grade));
-
-            learners = allLearners.filter(l => normalize(l.grade) === target);
-        }
-
-        // Process Recipients
-        const uniqueContacts = new Map();
-
-        learners.forEach(learner => {
-            // Priority: Primary -> Father -> Mother -> Guardian -> Parent Account
-            let phone = learner.primaryContactPhone;
-            let name = learner.primaryContactName;
-
-            // If no explicit primary contact, check hierarchy
-            if (!phone) {
-                // 1. Father (if not deceased and has phone)
-                if (learner.fatherPhone && !learner.fatherDeceased) {
-                    phone = learner.fatherPhone;
-                    name = learner.fatherName || 'Father';
-                }
-                // 2. Mother (if father deceased/no-phone and mother not deceased)
-                else if (learner.motherPhone && !learner.motherDeceased) {
-                    phone = learner.motherPhone;
-                    name = learner.motherName || 'Mother';
-                }
-                // 3. Guardian (fallback)
-                else if (learner.guardianPhone) {
-                    phone = learner.guardianPhone;
-                    name = learner.guardianName || 'Guardian';
-                }
-                // 4. Linked Parent Account (Last resort)
-                else if (learner.parent?.phone) {
-                    phone = learner.parent.phone;
-                    name = `${learner.parent.firstName} ${learner.parent.lastName}`;
-                }
-            }
-
-            if (phone) {
-                // Normalize phone
-                let cleanPhone = phone.replace(/\D/g, '');
-                // Basic Kenya validation
-                if (cleanPhone.startsWith('0')) cleanPhone = '254' + cleanPhone.substring(1);
-                if (cleanPhone.length === 9) cleanPhone = '254' + cleanPhone;
-
-                if (!uniqueContacts.has(cleanPhone)) {
-                    uniqueContacts.set(cleanPhone, {
-                        id: learner.id, // linked learner ID (just one of them if siblings)
-                        name: name || 'Parent',
-                        phone: cleanPhone,
-                        studentName: `${learner.firstName} ${learner.lastName}`,
-                        grade: learner.grade,
-                        // If multiple kids, we could list them, but simpler to just show one for now
-                        // or maybe "John & Jane"
-                    });
-                } else {
-                    // Update student name to indicate multiple?
-                    const existing = uniqueContacts.get(cleanPhone);
-                    if (!existing.studentName.includes(learner.firstName)) {
-                        existing.studentName += `, ${learner.firstName}`;
-                    }
-                }
-            }
-        });
-
-        const recipients = Array.from(uniqueContacts.values());
-
-        res.status(200).json({
-            success: true,
-            count: recipients.length,
-            data: recipients
-        });
-
-    } catch (error: any) {
-        console.error('Get Broadcast Recipients Error:', error);
-        res.status(500).json({ success: false, error: error.message || 'Failed to fetch recipients' });
+        whereClause.grade = targetGrade;
     }
+
+    const contactSelect = {
+        id: true, firstName: true, lastName: true, grade: true,
+        guardianName: true, guardianPhone: true,
+        fatherName: true, fatherPhone: true, fatherDeceased: true,
+        motherName: true, motherPhone: true, motherDeceased: true,
+        primaryContactName: true, primaryContactPhone: true,
+        parent: { select: { id: true, firstName: true, lastName: true, phone: true } }
+    };
+
+    let learners = await prisma.learner.findMany({ where: whereClause, select: contactSelect });
+
+    if (learners.length === 0 && grade && grade !== 'All Grades') {
+        const allLearners = await prisma.learner.findMany({ where: { status: 'ACTIVE' }, select: contactSelect });
+        const normalize = (g: string) => String(g).toUpperCase().replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
+        const target = normalize(String(grade));
+        learners = allLearners.filter(l => normalize(l.grade) === target);
+    }
+
+    const uniqueContacts = new Map();
+    learners.forEach(learner => {
+        let phone = learner.primaryContactPhone;
+        let name = learner.primaryContactName;
+
+        if (!phone) {
+            if (learner.fatherPhone && !learner.fatherDeceased) { phone = learner.fatherPhone; name = learner.fatherName || 'Father'; }
+            else if (learner.motherPhone && !learner.motherDeceased) { phone = learner.motherPhone; name = learner.motherName || 'Mother'; }
+            else if (learner.guardianPhone) { phone = learner.guardianPhone; name = learner.guardianName || 'Guardian'; }
+            else if (learner.parent?.phone) { phone = learner.parent.phone; name = `${learner.parent.firstName} ${learner.parent.lastName}`; }
+        }
+
+        if (phone) {
+            let cleanPhone = phone.replace(/\D/g, '');
+            if (cleanPhone.startsWith('0')) cleanPhone = '254' + cleanPhone.substring(1);
+            if (cleanPhone.length === 9) cleanPhone = '254' + cleanPhone;
+
+            if (!uniqueContacts.has(cleanPhone)) {
+                uniqueContacts.set(cleanPhone, {
+                    id: learner.id, name: name || 'Parent', phone: cleanPhone,
+                    studentName: `${learner.firstName} ${learner.lastName}`, grade: learner.grade
+                });
+            } else {
+                const existing = uniqueContacts.get(cleanPhone);
+                if (!existing.studentName.includes(learner.firstName)) {
+                    existing.studentName += `, ${learner.firstName}`;
+                }
+            }
+        }
+    });
+
+    const recipients = Array.from(uniqueContacts.values());
+    res.status(200).json({ success: true, count: recipients.length, data: recipients });
 };
 
 /**
@@ -674,45 +434,21 @@ export const getBroadcastRecipients = async (req: AuthRequest, res: Response) =>
  * GET /api/communication/staff
  */
 export const getStaffContacts = async (req: AuthRequest, res: Response) => {
-    try {
-        const staff = await prisma.user.findMany({
-            where: {
-                status: 'ACTIVE',
-                phone: { not: null },
-                role: {
-                    in: ['TEACHER', 'HEAD_TEACHER', 'ADMIN', 'ACCOUNTANT', 'RECEPTIONIST', 'LIBRARIAN', 'NURSE']
-                }
-            },
-            select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                phone: true,
-                role: true,
-                email: true
-            }
-        });
+    const staff = await prisma.user.findMany({
+        where: {
+            status: 'ACTIVE',
+            phone: { not: null },
+            role: { in: ['TEACHER', 'HEAD_TEACHER', 'ADMIN', 'ACCOUNTANT', 'RECEPTIONIST', 'LIBRARIAN', 'NURSE'] }
+        },
+        select: { id: true, firstName: true, lastName: true, phone: true, role: true, email: true }
+    });
 
-        // Format staff contacts
-        const contacts = staff.map(s => ({
-            id: s.id,
-            name: `${s.firstName} ${s.lastName}`,
-            phone: s.phone,
-            role: s.role,
-            email: s.email,
-            type: 'staff' as const
-        }));
+    const contacts = staff.map(s => ({
+        id: s.id, name: `${s.firstName} ${s.lastName}`,
+        phone: s.phone, role: s.role, email: s.email, type: 'staff' as const
+    }));
 
-        res.status(200).json({
-            success: true,
-            count: contacts.length,
-            data: contacts
-        });
-
-    } catch (error: any) {
-        console.error('Get Staff Contacts Error:', error);
-        res.status(500).json({ success: false, error: error.message || 'Failed to fetch staff contacts' });
-    }
+    res.status(200).json({ success: true, count: contacts.length, data: contacts });
 };
 
 /**
@@ -720,35 +456,19 @@ export const getStaffContacts = async (req: AuthRequest, res: Response) => {
  * POST /api/communication/groups
  */
 export const createContactGroup = async (req: AuthRequest, res: Response) => {
-    try {
-        const { name, description, recipients } = req.body;
-        const createdById = req.user?.userId;
+    const { name, description, recipients } = req.body;
+    const createdById = req.user?.userId;
 
-        if (!createdById) throw new ApiError(401, 'Authentication required');
-
-        if (!name || !recipients || !Array.isArray(recipients)) {
-            throw new ApiError(400, 'Name and recipients array are required');
-        }
-
-        const group = await prisma.contactGroup.create({
-            data: {
-                name,
-                description: description || null,
-                createdById,
-                recipients
-            }
-        });
-
-        res.status(201).json({
-            success: true,
-            message: 'Contact group created successfully',
-            data: group
-        });
-
-    } catch (error: any) {
-        console.error('Create Contact Group Error:', error);
-        res.status(500).json({ success: false, error: error.message || 'Failed to create contact group' });
+    if (!createdById) throw new ApiError(401, 'Authentication required');
+    if (!name || !recipients || !Array.isArray(recipients)) {
+        throw new ApiError(400, 'Name and recipients array are required');
     }
+
+    const group = await prisma.contactGroup.create({
+        data: { name, description: description || null, createdById, recipients }
+    });
+
+    res.status(201).json({ success: true, message: 'Contact group created successfully', data: group });
 };
 
 /**
@@ -756,37 +476,18 @@ export const createContactGroup = async (req: AuthRequest, res: Response) => {
  * GET /api/communication/groups
  */
 export const getContactGroups = async (req: AuthRequest, res: Response) => {
-    try {
-        const groups = await prisma.contactGroup.findMany({
-            where: {},
-            include: {
-                createdBy: {
-                    select: {
-                        id: true,
-                        firstName: true,
-                        lastName: true
-                    }
-                }
-            },
-            orderBy: { createdAt: 'desc' }
-        });
+    const groups = await prisma.contactGroup.findMany({
+        where: {},
+        include: { createdBy: { select: { id: true, firstName: true, lastName: true } } },
+        orderBy: { createdAt: 'desc' }
+    });
 
-        // Add recipient count to each group
-        const groupsWithCount = groups.map(g => ({
-            ...g,
-            recipientCount: Array.isArray(g.recipients) ? (g.recipients as any[]).length : 0
-        }));
+    const groupsWithCount = groups.map(g => ({
+        ...g,
+        recipientCount: Array.isArray(g.recipients) ? (g.recipients as any[]).length : 0
+    }));
 
-        res.status(200).json({
-            success: true,
-            count: groups.length,
-            data: groupsWithCount
-        });
-
-    } catch (error: any) {
-        console.error('Get Contact Groups Error:', error);
-        res.status(500).json({ success: false, error: error.message || 'Failed to fetch contact groups' });
-    }
+    res.status(200).json({ success: true, count: groups.length, data: groupsWithCount });
 };
 
 /**
@@ -794,92 +495,49 @@ export const getContactGroups = async (req: AuthRequest, res: Response) => {
  * GET /api/communication/groups/:id
  */
 export const getContactGroupById = async (req: AuthRequest, res: Response) => {
-    try {
-        const { id } = req.params;
+    const { id } = req.params;
 
-        // Fallback for older frontend that might send a Grade string
-        if (id.startsWith('GRADE_') || id.startsWith('PP') || id === 'PLAYGROUP') {
-            console.log(`[CommunicationController] Legacy frontend requested grade recipients via getContactGroupById: ${id}`);
-
-            // Normalize grade (reusing logic from getBroadcastRecipients)
-            let targetGrade = String(id);
-            if (targetGrade.match(/^Grade \d+$/i)) {
-                targetGrade = targetGrade.toUpperCase().replace(' ', '_');
-            }
-
-            const learners = await prisma.learner.findMany({
-                where: { grade: targetGrade as any, status: 'ACTIVE' },
-                select: {
-                    id: true,
-                    firstName: true,
-                    lastName: true,
-                    grade: true,
-                    guardianPhone: true,
-                    guardianName: true,
-                    fatherPhone: true,
-                    fatherName: true,
-                    motherPhone: true,
-                    motherName: true,
-                    primaryContactPhone: true,
-                    primaryContactName: true,
-                }
-            });
-
-            // Format into the 'members' format expected by the old frontend
-            const members = learners.map(l => {
-                const phone = l.primaryContactPhone || l.fatherPhone || l.motherPhone || l.guardianPhone;
-                const name = l.primaryContactName || l.fatherName || l.motherName || l.guardianName || 'Parent';
-
-                let cleanPhone = phone ? phone.replace(/\D/g, '') : '';
-                if (cleanPhone.startsWith('0')) cleanPhone = '254' + cleanPhone.substring(1);
-                if (cleanPhone.length === 9) cleanPhone = '254' + cleanPhone;
-
-                return {
-                    id: l.id,
-                    name: name,
-                    phone: cleanPhone,
-                    studentName: `${l.firstName} ${l.lastName}`,
-                    grade: l.grade
-                };
-            }).filter(m => m.phone);
-
-            return res.status(200).json({
-                success: true,
-                data: {
-                    id,
-                    name: id.replace(/_/g, ' '),
-                    members: members // Old frontend expects 'members'
-                }
-            });
+    // Fallback for older frontend that might send a Grade string
+    if (id.startsWith('GRADE_') || id.startsWith('PP') || id === 'PLAYGROUP') {
+        let targetGrade = String(id);
+        if (targetGrade.match(/^Grade \d+$/i)) {
+            targetGrade = targetGrade.toUpperCase().replace(' ', '_');
         }
 
-        const group = await prisma.contactGroup.findFirst({
-            where: { id },
-            include: {
-                createdBy: {
-                    select: {
-                        id: true,
-                        firstName: true,
-                        lastName: true
-                    }
-                }
+        const learners = await prisma.learner.findMany({
+            where: { grade: targetGrade as any, status: 'ACTIVE' },
+            select: {
+                id: true, firstName: true, lastName: true, grade: true,
+                guardianPhone: true, guardianName: true,
+                fatherPhone: true, fatherName: true,
+                motherPhone: true, motherName: true,
+                primaryContactPhone: true, primaryContactName: true
             }
         });
 
-        if (!group) {
-            throw new ApiError(404, 'Contact group not found');
-        }
+        const members = learners.map(l => {
+            const phone = l.primaryContactPhone || l.fatherPhone || l.motherPhone || l.guardianPhone;
+            const name = l.primaryContactName || l.fatherName || l.motherName || l.guardianName || 'Parent';
+            let cleanPhone = phone ? phone.replace(/\D/g, '') : '';
+            if (cleanPhone.startsWith('0')) cleanPhone = '254' + cleanPhone.substring(1);
+            if (cleanPhone.length === 9) cleanPhone = '254' + cleanPhone;
+            return { id: l.id, name, phone: cleanPhone, studentName: `${l.firstName} ${l.lastName}`, grade: l.grade };
+        }).filter(m => m.phone);
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
-            data: group
+            data: { id, name: id.replace(/_/g, ' '), members }
         });
-
-    } catch (error: any) {
-        console.error('Get Contact Group By ID Error:', error);
-        const status = error.statusCode || 500;
-        res.status(status).json({ success: false, error: error.message || 'Failed to fetch contact group' });
     }
+
+    const group = await prisma.contactGroup.findFirst({
+        where: { id },
+        include: { createdBy: { select: { id: true, firstName: true, lastName: true } } }
+    });
+
+    if (!group) throw new ApiError(404, 'Contact group not found');
+
+    res.status(200).json({ success: true, data: group });
 };
 
 /**
@@ -887,39 +545,22 @@ export const getContactGroupById = async (req: AuthRequest, res: Response) => {
  * PUT /api/communication/groups/:id
  */
 export const updateContactGroup = async (req: AuthRequest, res: Response) => {
-    try {
-        const { id } = req.params;
-        const { name, description, recipients } = req.body;
+    const { id } = req.params;
+    const { name, description, recipients } = req.body;
 
-        const existing = await prisma.contactGroup.findFirst({
-            where: { id }
-        });
+    const existing = await prisma.contactGroup.findFirst({ where: { id } });
+    if (!existing) throw new ApiError(404, 'Contact group not found');
 
-        if (!existing) {
-            throw new ApiError(404, 'Contact group not found');
+    const updated = await prisma.contactGroup.update({
+        where: { id },
+        data: {
+            ...(name && { name }),
+            ...(description !== undefined && { description }),
+            ...(recipients && { recipients })
         }
+    });
 
-        // Update group
-        const updated = await prisma.contactGroup.update({
-            where: { id },
-            data: {
-                ...(name && { name }),
-                ...(description !== undefined && { description }),
-                ...(recipients && { recipients })
-            }
-        });
-
-        res.status(200).json({
-            success: true,
-            message: 'Contact group updated successfully',
-            data: updated
-        });
-
-    } catch (error: any) {
-        console.error('Update Contact Group Error:', error);
-        const status = error.statusCode || 500;
-        res.status(status).json({ success: false, error: error.message || 'Failed to update contact group' });
-    }
+    res.status(200).json({ success: true, message: 'Contact group updated successfully', data: updated });
 };
 
 /**
@@ -927,30 +568,54 @@ export const updateContactGroup = async (req: AuthRequest, res: Response) => {
  * DELETE /api/communication/groups/:id
  */
 export const deleteContactGroup = async (req: AuthRequest, res: Response) => {
-    try {
-        const { id } = req.params;
+    const { id } = req.params;
 
-        const existing = await prisma.contactGroup.findFirst({
-            where: { id }
-        });
+    const existing = await prisma.contactGroup.findFirst({ where: { id } });
+    if (!existing) throw new ApiError(404, 'Contact group not found');
 
-        if (!existing) {
-            throw new ApiError(404, 'Contact group not found');
-        }
+    await prisma.contactGroup.delete({ where: { id } });
 
-        await prisma.contactGroup.delete({
-            where: { id }
-        });
-
-        res.status(200).json({
-            success: true,
-            message: 'Contact group deleted successfully'
-        });
-
-    } catch (error: any) {
-        console.error('Delete Contact Group Error:', error);
-        const status = error.statusCode || 500;
-        res.status(status).json({ success: false, error: error.message || 'Failed to delete contact group' });
-    }
+    res.status(200).json({ success: true, message: 'Contact group deleted successfully' });
 };
 
+/**
+ * Get SMS Balance
+ * GET /api/communication/balance
+ */
+export const getSmsBalance = async (req: AuthRequest, res: Response) => {
+    const config = await prisma.communicationConfig.findFirst();
+
+    if (!config || !config.smsEnabled || !config.smsApiKey) {
+        return res.status(200).json({
+            success: true,
+            data: { balance: null, provider: config?.smsProvider || 'none' }
+        });
+    }
+
+    if (config.smsProvider === 'africastalking') {
+        const { decrypt } = await import('../utils/encryption.util');
+        const axios = (await import('axios')).default;
+
+        const apiKey = decrypt(config.smsApiKey);
+        const username = (config as any).smsUsername;
+
+        if (!username || !apiKey) {
+            return res.status(200).json({ success: true, data: { balance: null, provider: 'africastalking' } });
+        }
+
+        const response = await axios.get(
+            `https://api.africastalking.com/version1/user?username=${username}`,
+            { headers: { apikey: apiKey, Accept: 'application/json' } }
+        );
+
+        const data = response.data;
+        if (data?.UserData?.balance) {
+            return res.status(200).json({
+                success: true,
+                data: { balance: data.UserData.balance, provider: 'africastalking' }
+            });
+        }
+    }
+
+    res.status(200).json({ success: true, data: { balance: null, provider: config.smsProvider } });
+};

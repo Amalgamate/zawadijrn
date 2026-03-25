@@ -407,7 +407,7 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess, brand
 
   const passwordStrength = getPasswordStrength(formData.password);
 
-  const brandColor = brandingSettings?.brandColor || '#520050';
+  const brandColor = brandingSettings?.brandColor || 'var(--brand-purple)';
 
   return (
     <div

@@ -373,6 +373,7 @@ model Learner {
   @@index([grade, stream])
   @@index([status])
   @@index([lastName, firstName])
+  @@index([grade, status, archived])
   @@map("learners")
 }
 
@@ -1103,6 +1104,7 @@ model AssessmentSmsAudit {
   @@index([parentPhone])
   @@index([sentAt])
   @@index([smsStatus])
+  @@index([channel, smsStatus])
   @@index([term, academicYear])
   @@map("assessment_sms_audits")
 }
@@ -2037,3 +2039,21 @@ model SchemeOfWorkWeek {
   @@index([schemeId])
   @@map("scheme_of_work_weeks")
 }
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  action    String
+  userId    String?
+  userEmail String?
+  userRole  String?
+  ipAddress String?
+  method    String
+  path      String
+  params    String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@map("audit_logs")
+}
+

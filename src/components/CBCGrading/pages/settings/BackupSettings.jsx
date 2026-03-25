@@ -5,7 +5,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Download, Upload, RefreshCw, Trash2, AlertCircle, Loader2 } from 'lucide-react';
 import { useNotifications } from '../../hooks/useNotifications';
-import axiosInstance from '../../../../services/axiosConfig';
+import axiosInstance from '../../../../services/api/axiosConfig';
 
 const BackupSettings = () => {
   const { showSuccess, showError } = useNotifications();

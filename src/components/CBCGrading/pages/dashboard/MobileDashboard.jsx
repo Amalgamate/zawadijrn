@@ -10,7 +10,7 @@ const MobileDashboard = ({ onNavigate, brandingSettings, user }) => {
     return (
         <div className="pb-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
             {/* Welcome Card */}
-            <div className="mb-6 bg-gradient-to-br from-[#5D0057] to-[#8c0082] rounded-2xl p-5 text-white shadow-lg relative overflow-hidden">
+            <div className="mb-6 bg-gradient-to-br from-[var(--brand-purple)] to-[#8c0082] rounded-2xl p-5 text-white shadow-lg relative overflow-hidden">
                 <div className="absolute top-0 right-0 opacity-10 transform translate-x-4 -translate-y-4">
                     <svg width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
                 </div>
@@ -51,7 +51,7 @@ const MobileDashboard = ({ onNavigate, brandingSettings, user }) => {
                                 onClick={() => onNavigate(defaultPath)}
                                 className="flex flex-col items-center gap-2 group outline-none"
                             >
-                                <div className="w-16 h-16 rounded-full bg-white shadow-sm border border-gray-100 flex items-center justify-center text-[#5D0057] group-hover:bg-[#5D0057] group-hover:text-white transform group-hover:-translate-y-1 transition-all group-active:scale-95 duration-200">
+                                <div className="w-16 h-16 rounded-full bg-white shadow-sm border border-gray-100 flex items-center justify-center text-[var(--brand-purple)] group-hover:bg-[var(--brand-purple)] group-hover:text-white transform group-hover:-translate-y-1 transition-all group-active:scale-95 duration-200">
                                     <section.icon size={26} strokeWidth={2.5} />
                                 </div>
                                 <span className="text-[11px] font-bold text-gray-600 group-hover:text-gray-900 text-center line-clamp-2 leading-tight tracking-tight">

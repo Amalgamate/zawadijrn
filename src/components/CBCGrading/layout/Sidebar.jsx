@@ -131,9 +131,9 @@ const Sidebar = React.memo(({
   }, [currentPage, schoolSections, sharedSections]);
 
   return (
-    <div className={`${sidebarOpen ? 'w-52' : 'w-20'} bg-[#5D0057] text-white transition-all duration-300 flex flex-col border-r border-white/10 shadow-lg`}>
+    <div className={`${sidebarOpen ? 'w-52' : 'w-20'} bg-[var(--brand-purple)] text-white transition-all duration-300 flex flex-col border-r border-white/10 shadow-lg`}>
       {/* Logo/Brand */}
-      <div className="h-20 p-5 border-b border-white/10 bg-[#520050] relative overflow-hidden">
+      <div className="h-20 p-5 border-b border-white/10 bg-[var(--brand-purple-dark)] relative overflow-hidden">
         <div className="flex items-center gap-3 justify-center overflow-hidden relative z-10">
           {sidebarOpen ? (
             <h1 className="text-xl font-bold text-white tracking-widest truncate w-full text-center hover:drop-shadow-lg transition-shadow duration-300">
@@ -150,7 +150,7 @@ const Sidebar = React.memo(({
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto p-3 bg-[#5D0057] custom-scrollbar space-y-2">
+      <nav className="flex-1 overflow-y-auto p-3 bg-[var(--brand-purple)] custom-scrollbar space-y-2">
         <div className="space-y-3">
 
           {/* Dashboard */}
@@ -320,7 +320,7 @@ const Sidebar = React.memo(({
       </nav>
 
       {/* Settings (Admin Only) */}
-      <div className="p-3 border-t border-white/10 bg-[#520050]">
+      <div className="p-3 border-t border-white/10 bg-[var(--brand-purple-dark)]">
         {settingsSection && (
           <div className="mb-2">
             <NavSection

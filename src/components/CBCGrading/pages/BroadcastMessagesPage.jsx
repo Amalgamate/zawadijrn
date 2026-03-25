@@ -9,7 +9,7 @@ import {
 } from '../../../components/ui';
 import { useNotifications } from '../hooks/useNotifications';
 import api from '../../../services/api';
-import { getCurrentSchoolId, getStoredUser } from '../../../services/schoolContext';
+import { getStoredUser } from '../../../services/schoolContext';
 import { formatPhoneNumber, isValidPhoneNumber, getDisplayPhoneNumber } from '../../../utils/phoneFormatter';
 import { useSchoolData } from '../../../contexts/SchoolDataContext';
 
@@ -18,7 +18,6 @@ const BroadcastMessagesPage = () => {
 
   // Workflow Steps: 'recipients' -> 'compose' -> 'review' -> 'send'
   const [step, setStep] = useState('recipients');
-  const [schoolId, setSchoolId] = useState(null);
 
   // Recipients State
   const [recipientSource, setRecipientSource] = useState(''); // 'manual', 'csv', 'group', 'all'
@@ -51,12 +50,6 @@ const BroadcastMessagesPage = () => {
   const [failedRecipients, setFailedRecipients] = useState([]);
 
   useEffect(() => {
-    let sid = getCurrentSchoolId();
-    if (!sid) {
-      const user = getStoredUser();
-      sid = user?.schoolId || user?.school?.id;
-    }
-    setSchoolId(sid);
     const user = getStoredUser();
     setPreviewData(prev => ({
       ...prev,
@@ -289,8 +282,7 @@ const BroadcastMessagesPage = () => {
 
       const response = await api.communication.sendTestSMS({
         phoneNumber: formattedPhone,
-        message: messageToSend,
-        schoolId
+        message: messageToSend
       });
 
       setTestResult({
@@ -406,8 +398,7 @@ const BroadcastMessagesPage = () => {
 
         const response = await api.communication.sendTestSMS({
           phoneNumber: recipient.phone,
-          message: messageToSend,
-          schoolId
+          message: messageToSend
         });
 
         messageId = response?.messageId || response?.id || `MSG-RETRY-${Date.now()}-${i}`;

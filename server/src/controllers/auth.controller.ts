@@ -12,6 +12,25 @@ import { EmailService } from '../services/email-resend.service';
 import { whatsappService } from '../services/whatsapp.service';
 import { redisCacheService } from '../services/redis-cache.service';
 
+/**
+ * Redis key for a revoked refresh token.
+ * TTL is set to the remaining lifetime of the token (7d), so Redis auto-cleans.
+ */
+const revokedTokenKey = (token: string) => `revoked_rt:${token}`;
+
+/** Mark a refresh token as revoked in Redis. */
+const revokeRefreshToken = async (token: string): Promise<void> => {
+  // 7 days in seconds — matches JWT_REFRESH_EXPIRES_IN default
+  const ttl = 7 * 24 * 60 * 60;
+  await redisCacheService.set(revokedTokenKey(token), '1', ttl);
+};
+
+/** Return true if the refresh token has been revoked. */
+const isRefreshTokenRevoked = async (token: string): Promise<boolean> => {
+  const val = await redisCacheService.get<string>(revokedTokenKey(token));
+  return val !== null;
+};
+
 export class AuthController {
   async register(req: AuthRequest, res: Response) {
     const { email, password, firstName, lastName, role, phone } = req.body;
@@ -209,9 +228,24 @@ export class AuthController {
     res.json({ success: true, message: 'Verification code sent via WhatsApp' });
   }
 
+  /**
+   * Refresh token endpoint with rotation:
+   * - Verify the incoming refresh token is valid and not revoked.
+   * - Revoke it immediately (one-time use).
+   * - Issue a fresh access token + fresh refresh token.
+   *
+   * This means a stolen refresh token can only be used once. If an attacker
+   * uses it first, the legitimate user's next refresh will fail (revoked), and
+   * the attacker's new token is unknown to the legitimate user — both parties
+   * can no longer silently reuse the same long-lived token.
+   */
   async refresh(req: Request, res: Response) {
     const { refreshToken } = req.body;
     if (!refreshToken) throw new ApiError(400, 'Refresh token required');
+
+    // Check revocation list before verifying signature — fast-fail on already-used tokens
+    const revoked = await isRefreshTokenRevoked(refreshToken);
+    if (revoked) throw new ApiError(401, 'Refresh token has already been used');
 
     try {
       const decoded = verifyRefreshToken(refreshToken);
@@ -219,11 +253,15 @@ export class AuthController {
 
       if (!user || user.status !== 'ACTIVE') throw new ApiError(401, 'Invalid user or account inactive');
 
+      // Revoke the consumed token before issuing new ones (atomic enough for this use case)
+      await revokeRefreshToken(refreshToken);
+
       const newAccessToken = generateAccessToken(user);
       const newRefreshToken = generateRefreshToken(user);
 
       res.json({ success: true, token: newAccessToken, refreshToken: newRefreshToken });
     } catch (error) {
+      if (error instanceof ApiError) throw error;
       throw new ApiError(401, 'Invalid refresh token');
     }
   }
@@ -281,6 +319,15 @@ export class AuthController {
   }
 
   async logout(req: AuthRequest, res: Response) {
+    // Revoke the refresh token supplied at logout so it cannot be replayed
+    const { refreshToken } = req.body;
+    if (refreshToken) {
+      try {
+        await revokeRefreshToken(refreshToken);
+      } catch {
+        // Non-blocking — logout should always succeed
+      }
+    }
     res.json({ success: true, message: 'Logged out' });
   }
 

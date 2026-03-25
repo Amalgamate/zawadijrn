@@ -7,61 +7,58 @@
 import React from 'react';
 import { ArrowUp, ArrowDown } from 'lucide-react';
 
-const CompactMetricBanner = ({ metrics, gradientFrom = 'from-brand-purple', gradientVia = 'via-purple-500', gradientTo = 'to-pink-500' }) => {
+const CompactMetricBanner = ({ metrics }) => {
   return (
-    <div className={`bg-gradient-to-r ${gradientFrom} ${gradientVia} ${gradientTo} rounded-xl p-6 shadow-lg overflow-hidden relative`}>
-      {/* Decorative background circles */}
-      <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mr-20 -mt-20"></div>
-      <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full -ml-16 -mb-16"></div>
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 w-full">
+      {metrics.map((metric, index) => {
+        const Icon = metric.icon;
+        return (
+          <div
+            key={index}
+            onClick={() => metric.onClick && metric.onClick()}
+            className={`group flex items-center p-3 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-brand-purple/40 hover:shadow-md transition-all duration-300 ${metric.onClick ? 'cursor-pointer hover:-translate-y-0.5' : ''}`}
+          >
+            {/* Icon container */}
+            <div className="flex-shrink-0 p-2.5 mr-3.5 bg-brand-purple/5 group-hover:bg-brand-purple/10 border border-brand-purple/10 rounded-lg transition-colors duration-300">
+              <Icon size={18} className="text-brand-purple opacity-80 group-hover:opacity-100 transition-opacity" />
+            </div>
 
-      {/* Metric items */}
-      <div className="relative z-10 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
-        {metrics.map((metric, index) => {
-          const Icon = metric.icon;
-          return (
-            <div
-              key={index}
-              onClick={() => metric.onClick && metric.onClick()}
-              className={`group flex flex-col items-start transition-all duration-300 hover:scale-105 ${metric.onClick ? 'cursor-pointer' : ''}`}
-            >
-              {/* Icon container */}
-              <div className="p-2 rounded-lg bg-white/10 backdrop-blur-sm group-hover:bg-white/20 transition-all duration-300 mb-2">
-                <Icon size={20} className="text-white group-hover:scale-110 transition-transform duration-300" />
-              </div>
+            {/* Content Container */}
+            <div className="flex flex-col flex-1 min-w-0">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5 truncate">
+                {metric.title}
+              </p>
 
-              {/* Metric value */}
-              <div className="flex items-baseline gap-1">
-                <span className="text-2xl md:text-3xl font-black text-white">
+              <div className="flex items-center gap-2">
+                <span className="text-xl font-black text-slate-800 leading-none">
                   {metric.value}
                 </span>
+
+                {/* Trend indicator */}
                 {metric.trendValue && (
-                  <span className={`flex items-center text-xs font-bold ${metric.trend === 'up'
-                      ? 'text-emerald-200'
-                      : 'text-rose-200'
+                  <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-bold ${metric.trend === 'up'
+                      ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
+                      : 'bg-rose-50 text-rose-600 border border-rose-100'
                     }`}>
-                    {metric.trend === 'up' ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
+                    {metric.trend === 'up' ? <ArrowUp size={8} strokeWidth={3} /> : <ArrowDown size={8} strokeWidth={3} />}
                     {metric.trendValue}
                   </span>
                 )}
               </div>
 
-              {/* Metric label */}
-              <p className="text-xs font-semibold text-white/80 mt-1 uppercase tracking-tight line-clamp-2">
-                {metric.title}
-              </p>
-
               {/* Subtitle */}
               {metric.subtitle && (
-                <p className="text-[10px] text-white/60 mt-0.5 line-clamp-1">
+                <p className="text-[9px] text-slate-500 font-semibold mt-1 truncate">
                   {metric.subtitle}
                 </p>
               )}
             </div>
-          );
-        })}
-      </div>
+          </div>
+        );
+      })}
     </div>
   );
 };
 
 export default CompactMetricBanner;
+

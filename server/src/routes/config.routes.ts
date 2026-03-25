@@ -305,32 +305,6 @@ router.get(
 );
 
 /**
- * @route   POST /api/config/reset-defaults
- * @desc    Reset configuration to defaults (Dangerous - rare operation)
- * @access  SUPER_ADMIN
- */
-router.post(
-  '/reset-defaults',
-  requireRole(['SUPER_ADMIN']),
-  rateLimit({ windowMs: 60_000, maxRequests: 5 }),
-  auditLog('RESET_CONFIG_DEFAULTS'),
-  configController.resetToDefaults
-);
-
-/**
- * @route   POST /api/config/create-defaults
- * @desc    Create default aggregation configurations
- * @access  ADMIN, SUPER_ADMIN
- */
-router.post(
-  '/create-defaults',
-  requireRole(['ADMIN', 'SUPER_ADMIN']),
-  rateLimit({ windowMs: 60_000, maxRequests: 10 }),
-  auditLog('CREATE_DEFAULT_AGGREGATIONS'),
-  configController.createDefaultAggregationConfigs
-);
-
-/**
  * @route   POST /api/config/recalculate-class
  * @desc    Recalculate class scores
  * @access  ADMIN, SUPER_ADMIN

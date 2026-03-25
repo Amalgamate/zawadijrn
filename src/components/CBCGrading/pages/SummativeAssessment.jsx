@@ -1513,7 +1513,6 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
                     <th className="px-3 py-2 text-[9px] font-bold uppercase tracking-wide text-center w-32 border-r border-brand-purple/20">Adm No</th>
                     <th className="px-3 py-2 text-[9px] font-bold uppercase tracking-wide border-r border-brand-purple/20 w-1/3">Student Name</th>
                     <th className="px-3 py-2 text-[9px] font-bold uppercase tracking-wide text-center w-20 border-r border-brand-purple/20">Score</th>
-                    <th className="px-3 py-2 text-[9px] font-bold uppercase tracking-wide border-r border-brand-purple/20 w-1/4">Comments ✨</th>
                     <th className="px-3 py-2 text-[9px] font-bold uppercase tracking-wide">Descriptor</th>
                   </tr>
                 }
@@ -1536,25 +1535,6 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
                           className="w-full px-2 py-1 border border-gray-300 bg-white rounded focus:ring-2 focus:ring-brand-purple outline-none transition text-center font-semibold text-xs"
                           placeholder="-"
                         />
-                      </td>
-                      <td className="px-3 py-1.5 border-r border-gray-200">
-                        <div className="flex items-center gap-2">
-                          <textarea
-                            value={marks[learner.id]?.comment ?? ''}
-                            onChange={(e) => handleCommentChange(learner.id, e.target.value)}
-                            className="flex-1 px-2 py-1 border border-gray-300 bg-white rounded focus:ring-2 focus:ring-brand-purple outline-none transition text-xs"
-                            rows="1"
-                            placeholder="Add narrative feedback..."
-                          />
-                          <button
-                            onClick={() => handleGenerateAIComment(learner.id)}
-                            disabled={generatingAI[learner.id]}
-                            className="p-1 text-brand-purple hover:bg-purple-100 rounded transition"
-                            title="AI Suggester"
-                          >
-                            {generatingAI[learner.id] ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-                          </button>
-                        </div>
                       </td>
                       <td className="px-3 py-1.5 text-[10px] text-[#475569] italic leading-snug">
                         {getDescriptionForGrade(marks[learner.id]?.mark, selectedTest?.totalMarks, learner.firstName)}

@@ -161,7 +161,7 @@ const AccountingManager = ({ user }) => {
 
                 {/* Quick Links / Actions */}
                 <div className="space-y-6">
-                    <div className="bg-[#5D0057] rounded-xl p-6 text-white shadow-xl shadow-brand-purple/20 relative overflow-hidden group">
+                    <div className="bg-[var(--brand-purple)] rounded-xl p-6 text-white shadow-xl shadow-brand-purple/20 relative overflow-hidden group">
                         <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all duration-700"></div>
                         <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
                             <BarChart3 size={20} className="text-brand-teal" />

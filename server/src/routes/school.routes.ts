@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import express, { Router } from 'express';
 import { authenticate, authorize } from '../middleware/auth.middleware';
 import {
   createSchoolWithProvisioning,
@@ -65,8 +65,9 @@ router.get('/:id',
 );
 
 router.put('/',
-  authorize('SUPER_ADMIN', 'ADMIN'),
+  authorize('SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM'),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
+  express.json({ limit: '10mb' }),   // logo/favicon/stamp are base64 — needs a higher limit
   validate(updateSchoolSchema),
   updateSchool
 );

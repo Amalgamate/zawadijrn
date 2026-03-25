@@ -107,7 +107,7 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
     setErrors({});
   };
 
-  const brandColor = brandingSettings?.brandColor || '#520050';
+  const brandColor = brandingSettings?.brandColor || 'var(--brand-purple)';
 
   return (
     <div

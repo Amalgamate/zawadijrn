@@ -5,7 +5,7 @@ import {
   Settings, Lock, Check, AlertCircle, Clock, Activity, BookOpen, MessageCircle, Key
 } from 'lucide-react';
 import { userAPI } from '../../../../services/api';
-import { getCurrentSchoolId, getStoredUser } from '../../../../services/schoolContext';
+import { getStoredUser } from '../../../../services/schoolContext';
 import ResetPasswordModal from '../../shared/ResetPasswordModal';
 
 // Real API is imported from services/api.js
@@ -218,19 +218,8 @@ const UserManagement = () => {
     try {
       setLoading(true);
 
-      // Get school ID from context
-      let sid = getCurrentSchoolId();
-      if (!sid) {
-        const user = getStoredUser();
-        sid = user?.schoolId || user?.school?.id;
-      }
-
-      if (!sid) {
-        console.warn('No school ID found. Using API without schoolId filter.');
-      }
-
-      // Fetch users for this school
-      const response = await userAPI.getAll(sid);
+      // Single-tenant: fetch all users directly
+      const response = await userAPI.getAll();
       console.log('API Response:', response);
 
       // Handle different response formats

@@ -6,7 +6,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { School, Save, Upload, X, AlertTriangle, MapPin, Loader2, Palette, Image as ImageIcon, Info, Phone, Mail, MessageSquare } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useNotifications } from '../../hooks/useNotifications';
-import { API_BASE_URL } from '../../../../services/api';
+import axiosInstance, { API_BASE_URL } from '../../../../services/api/axiosConfig';
 
 const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
   const { showSuccess } = useNotifications();
@@ -28,7 +28,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
     mission: '',
     latitude: null,
     longitude: null,
-    brandColor: brandingSettings?.brandColor || '#520050',
+    brandColor: brandingSettings?.brandColor || 'var(--brand-purple)',
     logoUrl: brandingSettings?.logoUrl || '/logo-new.png',
     faviconUrl: brandingSettings?.faviconUrl || '/favicon.png',
     stampUrl: brandingSettings?.stampUrl || '/stamp.svg',
@@ -59,7 +59,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
       mission: '',
       latitude: null,
       longitude: null,
-      brandColor: brandingSettings?.brandColor || '#520050',
+      brandColor: brandingSettings?.brandColor || 'var(--brand-purple)',
       logoUrl: brandingSettings?.logoUrl || '/logo-new.png',
       faviconUrl: brandingSettings?.faviconUrl || '/favicon.png',
       stampUrl: brandingSettings?.stampUrl || '/stamp.svg',
@@ -97,54 +97,42 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
   useEffect(() => {
     const fetchSchoolData = async () => {
       try {
-        const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+        const response = await axiosInstance.get('/schools/public/branding');
+        const school = response.data?.data || response.data;
 
-        if (!token) return;
+        if (school) {
+          const fetchedSettings = {
+            schoolName: school.name || school.schoolName || '',
+            address: school.address || '',
+            phone: school.phone || '',
+            email: school.email || '',
+            motto: school.motto || '',
+            vision: school.vision || '',
+            mission: school.mission || '',
+            latitude: school.latitude || null,
+            longitude: school.longitude || null,
+            brandColor: school.brandColor || 'var(--brand-purple)',
+            logoUrl: school.logoUrl || '/logo-new.png',
+            faviconUrl: school.faviconUrl || '/favicon.png',
+            stampUrl: school.stampUrl || '/stamp.svg',
+            welcomeTitle: school.welcomeTitle || '',
+            welcomeMessage: school.welcomeMessage || '',
+            onboardingTitle: school.onboardingTitle || '',
+            onboardingMessage: school.onboardingMessage || ''
+          };
 
-        const response = await fetch(`${API_BASE_URL}/schools/profile`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
+          const fetchedPreviews = {
+            logo: fetchedSettings.logoUrl,
+            favicon: fetchedSettings.faviconUrl,
+            stamp: fetchedSettings.stampUrl
+          };
 
-        if (response.ok) {
-          const data = await response.json();
-          const school = data.data || data;
-
-          if (school) {
-            const fetchedSettings = {
-              schoolName: school.name || '',
-              address: school.address || '',
-              phone: school.phone || '',
-              email: school.email || '',
-              motto: school.motto || '',
-              vision: school.vision || '',
-              mission: school.mission || '',
-              latitude: school.latitude || null,
-              longitude: school.longitude || null,
-              brandColor: school.brandColor || '#520050',
-              logoUrl: school.logoUrl || '/logo-new.png',
-              faviconUrl: school.faviconUrl || '/favicon.png',
-              stampUrl: school.stampUrl || '/stamp.svg',
-              welcomeTitle: school.welcomeTitle || '',
-              welcomeMessage: school.welcomeMessage || '',
-              onboardingTitle: school.onboardingTitle || '',
-              onboardingMessage: school.onboardingMessage || ''
-            };
-
-            const fetchedPreviews = {
-              logo: fetchedSettings.logoUrl,
-              favicon: fetchedSettings.faviconUrl,
-              stamp: fetchedSettings.stampUrl
-            };
-
-            setSettings(fetchedSettings);
-            setPreviews(fetchedPreviews);
-            setSavedState({
-              settings: fetchedSettings,
-              previews: fetchedPreviews
-            });
-          }
+          setSettings(fetchedSettings);
+          setPreviews(fetchedPreviews);
+          setSavedState({
+            settings: fetchedSettings,
+            previews: fetchedPreviews
+          });
         }
       } catch (error) {
         console.error('Error fetching school data:', error);
@@ -154,7 +142,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
     };
 
     fetchSchoolData();
-  }, [API_BASE_URL]);
+  }, []);
 
   // Sync with global branding state (for sidebar/favicon/title reflection)
   useEffect(() => {
@@ -248,44 +236,44 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
-
-      if (!token) throw new Error('Authentication required');
-
-      const response = await fetch(`${API_BASE_URL}/schools/profile`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          name: settings.schoolName,
-          address: settings.address,
-          phone: settings.phone,
-          email: settings.email,
-          motto: settings.motto,
-          vision: settings.vision,
-          mission: settings.mission,
-          logoUrl: settings.logoUrl,
-          faviconUrl: settings.faviconUrl,
-          stampUrl: settings.stampUrl,
-          brandColor: settings.brandColor,
-          latitude: settings.latitude,
-          longitude: settings.longitude,
-          welcomeTitle: settings.welcomeTitle,
-          welcomeMessage: settings.welcomeMessage,
-          onboardingTitle: settings.onboardingTitle,
-          onboardingMessage: settings.onboardingMessage
-        })
+      await axiosInstance.put('/schools', {
+        name: settings.schoolName,
+        address: settings.address,
+        phone: settings.phone,
+        email: settings.email,
+        motto: settings.motto,
+        vision: settings.vision,
+        mission: settings.mission,
+        logoUrl: settings.logoUrl,
+        faviconUrl: settings.faviconUrl,
+        stampUrl: settings.stampUrl,
+        brandColor: settings.brandColor,
+        latitude: settings.latitude,
+        longitude: settings.longitude,
+        welcomeTitle: settings.welcomeTitle,
+        welcomeMessage: settings.welcomeMessage,
+        onboardingTitle: settings.onboardingTitle,
+        onboardingMessage: settings.onboardingMessage
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to save settings');
-      }
 
       setSavedState({ settings: { ...settings }, previews: { ...previews } });
       toast.success('✅ School settings updated successfully!');
+
+      // Push updated branding to app state immediately
+      if (setBrandingSettings) {
+        setBrandingSettings(prev => ({
+          ...prev,
+          logoUrl: settings.logoUrl,
+          faviconUrl: settings.faviconUrl,
+          stampUrl: settings.stampUrl,
+          schoolName: settings.schoolName,
+          brandColor: settings.brandColor,
+          motto: settings.motto,
+          address: settings.address,
+          phone: settings.phone,
+          email: settings.email,
+        }));
+      }
 
       // Sync local storage user object for header/sidebar immediate reflection
       try {

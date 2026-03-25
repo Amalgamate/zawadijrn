@@ -7,7 +7,8 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/permissions.middleware';
 import { Grade, Term } from '@prisma/client';
 import prisma from '../config/database';
-import { cacheService } from '../services/cache.service';
+import { redisCacheService } from '../services/redis-cache.service';
+import { ApiError } from '../utils/error.util';
 
 const LEARNING_AREAS_CONFIG: Record<string, string[]> = {
   PLAYGROUP: ['Language Activities', 'Mathematical Activities', 'Environmental Activities', 'Creative Activities', 'Religious Activities', 'Pastoral Programme of Instruction (PPI)'],
@@ -75,10 +76,10 @@ export const bulkCreateGradingScales = async (req: AuthRequest, res: Response) =
       }
     }
 
-    cacheService.deleteByPrefix('grading:');
+    await redisCacheService.deleteByPrefix('grading:');
     res.json({ success: true, message: `Created ${created} grading scales`, data: { created, skipped, logs } });
   } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message });
+    throw new ApiError(500, error.message);
   }
 };
 
@@ -88,7 +89,7 @@ export const bulkCreateGradingScales = async (req: AuthRequest, res: Response) =
 export const bulkCreateSummativeTests = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId;
-    if (!userId) return res.status(401).json({ success: false, message: 'User ID required' });
+    if (!userId) throw new ApiError(401, 'User ID required');
 
     const { term = 'TERM_1', academicYear = new Date().getFullYear(), overwrite = false, weight = 1.0 } = req.body;
 
@@ -99,7 +100,7 @@ export const bulkCreateSummativeTests = async (req: AuthRequest, res: Response) 
     const scales = await prisma.gradingSystem.findMany({ where: { active: true, type: 'SUMMATIVE' } });
 
     if (scales.length === 0) {
-      return res.status(400).json({ success: false, message: 'No grading scales found. Create scales first.' });
+      throw new ApiError(400, 'No grading scales found. Create scales first.');
     }
 
     for (const scale of scales) {
@@ -139,10 +140,10 @@ export const bulkCreateSummativeTests = async (req: AuthRequest, res: Response) 
       logs.push(`✅ Created: ${testTitle}`);
     }
 
-    cacheService.deleteByPrefix('tests:');
+    await redisCacheService.deleteByPrefix('tests:');
     res.json({ success: true, message: `Created ${created} summative tests`, data: { created, skipped, logs } });
   } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message });
+    throw new ApiError(500, error.message);
   }
 };
 
@@ -153,7 +154,7 @@ export const bulkCreateSummativeTests = async (req: AuthRequest, res: Response) 
 export const completeSchoolSetup = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId;
-    if (!userId) return res.status(401).json({ success: false, message: 'User ID required' });
+    if (!userId) throw new ApiError(401, 'User ID required');
 
     const { term = 'TERM_1', academicYear = new Date().getFullYear(), overwrite = false, weight = 1.0 } = req.body;
     const logs: string[] = [];
@@ -241,12 +242,12 @@ export const completeSchoolSetup = async (req: AuthRequest, res: Response) => {
     }
     logs.push(`✅ Summative tests created: ${testsCreated}`);
 
-    cacheService.deleteByPrefix('tests:');
-    cacheService.deleteByPrefix('grading:');
+    await redisCacheService.deleteByPrefix('tests:');
+    await redisCacheService.deleteByPrefix('grading:');
 
     res.json({ success: true, message: 'Complete setup successful', data: { scalesCreated, testsCreated, logs } });
   } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message });
+    throw new ApiError(500, error.message);
   }
 };
 
@@ -285,11 +286,11 @@ export const resetAssessments = async (req: AuthRequest, res: Response) => {
       results.smsAuditsDeleted = sa.count;
     }
 
-    cacheService.clear();
+    await redisCacheService.clear();
 
     res.json({ success: true, message: 'Selective reset completed', data: results });
   } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message });
+    throw new ApiError(500, error.message);
   }
 };
 

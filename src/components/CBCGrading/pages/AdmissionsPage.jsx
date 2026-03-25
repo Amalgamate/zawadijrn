@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { Save, X, ArrowRight, ArrowLeft, CheckCircle, User, Users as UsersIcon, Heart, Trash2 } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
 import { useAuth } from '../../../hooks/useAuth';
-import { configAPI, schoolAPI } from '../../../services/api';
+import { configAPI, learnerAPI } from '../../../services/api';
 import { toInputDate } from '../utils/dateHelpers';
 import ParentGuardianStep from './steps/ParentGuardianStep';
 import { useMediaQuery } from '../hooks/useMediaQuery';
@@ -26,21 +26,19 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
   const [stepErrors, setStepErrors] = useState({}); // Track validation errors per step
   const [generateInvoice, setGenerateInvoice] = useState(true); // Default to true
 
-  // Fetch streams
+  // Fetch streams — single-tenant, no schoolId needed
   useEffect(() => {
     const fetchStreams = async () => {
-      if (user?.schoolId) {
-        try {
-          const resp = await configAPI.getStreamConfigs(user.schoolId);
-          const arr = resp?.data || [];
-          setAvailableStreams(arr.filter(s => s.active !== false));
-        } catch (error) {
-          console.error('Failed to fetch streams:', error);
-        }
+      try {
+        const resp = await configAPI.getStreamConfigs();
+        const arr = resp?.data || [];
+        setAvailableStreams(arr.filter(s => s.active !== false));
+      } catch (error) {
+        console.error('Failed to fetch streams:', error);
       }
     };
     fetchStreams();
-  }, [user?.schoolId]);
+  }, []);
 
   // Fetch grades
   useEffect(() => {
@@ -61,7 +59,7 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
     const iso = now.toISOString().split('T')[0];
     return {
       firstName: '', middleName: '', lastName: '', gender: '', dateOfBirth: '',
-      nationality: '', religion: '', admissionNumber: '', grade: '', stream: '',
+      nationality: 'Kenya', religion: 'Islam', admissionNumber: '', grade: '', stream: '',
       dateOfAdmission: iso, previousSchool: '', previousClass: '',
       address: '', county: '',
       // Parent/Guardian Information (New Hierarchical System)
@@ -116,35 +114,27 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
 
   // Fetch Next Admission Number Preview (only for new admissions)
   useEffect(() => {
+    if (isEdit) return;
     const fetchAdmPreview = async () => {
-      if (user?.schoolId && !isEdit) {
-        try {
-          const academicYear = new Date().getFullYear();
-          const resp = await schoolAPI.getAdmissionNumberPreview(user.schoolId, academicYear);
-
-          if (resp?.data?.previews?.length > 0) {
-            // Find preview for current branch if possible, otherwise use first one
-            const branchPreview = resp.data.previews.find(p => p.branchId === user.branchId) || resp.data.previews[0];
-            const nextAdm = branchPreview.nextAdmissionNumber;
-
-            if (nextAdm) {
-              setFormData(prev => ({
-                ...prev,
-                admissionNumber: nextAdm
-              }));
-              console.log('📡 Fetched next admission number:', nextAdm);
-            }
-          }
-        } catch (error) {
-          console.error('Failed to fetch admission preview:', error);
+      try {
+        const resp = await learnerAPI.getNextAdmissionNumber();
+        const next = resp?.data?.nextAdmissionNumber;
+        if (next) {
+          setFormData(prev => ({ ...prev, admissionNumber: next }));
         }
+      } catch (error) {
+        console.error('Failed to fetch admission preview:', error);
       }
     };
     fetchAdmPreview();
-  }, [user?.schoolId, user?.branchId, isEdit]);
+  }, [isEdit]);
 
-  // Debounced auto-save to localStorage
+  // Debounced auto-save to localStorage (new admissions only — never save edit state)
   useEffect(() => {
+    // Never persist draft state when editing an existing learner: the `id` field
+    // would be written to localStorage and get picked up on the next *new* admission,
+    // silently turning a create into an update.
+    if (isEdit) return;
     // Check if the form has been interacted with (not initial state)
     const isInitial = JSON.stringify(formData) === JSON.stringify(initialFormData);
     if (isInitial) return;
@@ -616,8 +606,7 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
                         name="admissionNumber"
                         value={formData.admissionNumber}
                         onChange={handleInputChange}
-                        disabled={true}
-                        className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm shadow-sm cursor-not-allowed font-mono font-bold text-brand-purple"
+                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md text-sm shadow-sm focus:border-brand-purple focus:ring-1 focus:ring-brand-purple font-mono font-bold text-brand-purple"
                         placeholder="Auto-generating..."
                       />
                     </div>

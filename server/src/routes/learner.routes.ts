@@ -3,7 +3,7 @@
  * Handles learner management endpoints for single-tenancy
  */
 
-import { Router } from 'express';
+import express, { Router } from 'express';
 import { LearnerController } from '../controllers/learner.controller';
 import { authenticate, authorize } from '../middleware/auth.middleware';
 import { requirePermission, requireRole, ResourceAccessControl, auditLog } from '../middleware/permissions.middleware';
@@ -11,6 +11,7 @@ import { asyncHandler } from '../utils/async.util';
 import { validate } from '../middleware/validation.middleware';
 import { rateLimit } from '../middleware/enhanced-rateLimit.middleware';
 import { z } from 'zod';
+import { getNextAdmissionNumberPreview } from '../services/admissionNumber.service';
 
 const router = Router();
 const learnerController = new LearnerController();
@@ -19,10 +20,12 @@ const learnerController = new LearnerController();
 const createLearnerSchema = z.object({
   firstName: z.string().min(2).max(100),
   lastName: z.string().min(2).max(100),
-  admissionNumber: z.string().min(1).max(50),
+  // auto-generated in controller if empty/missing
+  admissionNumber: z.string().max(50).optional(),
   dateOfBirth: z.string().optional(),
   grade: z.string(),
-  guardianName: z.string().min(2).max(100).optional()
+  // only required when guardian is the primary contact
+  guardianName: z.string().max(100).optional().or(z.literal(''))
 }).passthrough();
 
 const updateLearnerSchema = z.object({
@@ -34,6 +37,16 @@ const updateLearnerSchema = z.object({
 
 // Protect all routes
 router.use(authenticate);
+
+router.get('/next-admission-number',
+  authenticate,
+  rateLimit({ windowMs: 60_000, maxRequests: 100 }),
+  asyncHandler(async (_req, res) => {
+    const year = new Date().getFullYear();
+    const preview = await getNextAdmissionNumberPreview('MC', year);
+    res.json({ success: true, data: { nextAdmissionNumber: preview || `ADM-${year}-001` } });
+  })
+);
 
 router.get('/birthdays/upcoming', 
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
@@ -73,6 +86,7 @@ router.get('/:id',
 router.post('/', 
   requirePermission('CREATE_LEARNER'), 
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
+  express.json({ limit: '10mb' }),  // new learner may include base64 photo
   validate(createLearnerSchema),
   auditLog('CREATE_LEARNER'), 
   asyncHandler(learnerController.createLearner.bind(learnerController))
@@ -82,6 +96,7 @@ router.put('/:id',
   requirePermission('EDIT_LEARNER'), 
   ResourceAccessControl.canAccessLearner(),
   rateLimit({ windowMs: 60_000, maxRequests: 50 }),
+  express.json({ limit: '10mb' }),  // learner record may include base64 photo
   validate(updateLearnerSchema),
   auditLog('UPDATE_LEARNER'), 
   asyncHandler(learnerController.updateLearner.bind(learnerController))
@@ -99,6 +114,7 @@ router.post('/:id/photo',
   requirePermission('EDIT_LEARNER'), 
   ResourceAccessControl.canAccessLearner(),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
+  express.json({ limit: '10mb' }),  // base64 photo upload
   auditLog('UPLOAD_LEARNER_PHOTO'), 
   asyncHandler(learnerController.uploadLearnerPhoto.bind(learnerController))
 );

@@ -77,9 +77,13 @@ export class OnboardingController {
           data: { academicYear: new Date().getFullYear(), currentValue: 0 },
         });
 
-        // Default streams
+        // Default streams — write to the `Stream` table (canonical model used by config.service)
         for (const name of ['A', 'B', 'C', 'D']) {
-          await tx.streamConfig.create({ data: { name, active: true } });
+          await tx.stream.upsert({
+            where: { name },
+            update: { active: true, archived: false },
+            create: { name, active: true },
+          });
         }
 
         // Communication config

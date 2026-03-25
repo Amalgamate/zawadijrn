@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { X, Upload, Download, FileDown, AlertCircle, CheckCircle, Loader } from 'lucide-react';
-import axiosInstance, { API_BASE_URL } from '../../../../services/axiosConfig';
+import axiosInstance, { API_BASE_URL } from '../../../../services/api/axiosConfig';
 
 const BulkOperationsModal = ({
   isOpen,
@@ -219,7 +219,7 @@ const BulkOperationsModal = ({
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
         {/* Header */}
-        <div className="bg-gradient-to-r from-[#520050] to-[#7a0078] text-white p-5 flex items-center justify-between">
+        <div className="bg-gradient-to-r from-[var(--brand-purple)] to-[#7a0078] text-white p-5 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold tracking-tight">{title}</h2>
             <p className="text-white/70 text-[10px] uppercase tracking-widest font-medium mt-0.5">Bulk Management System</p>
@@ -245,16 +245,16 @@ const BulkOperationsModal = ({
             <button
               onClick={handleExport}
               disabled={exporting}
-              className="flex flex-col items-center justify-center gap-2 p-4 border border-[#520050]/20 rounded-2xl hover:border-[#520050] hover:bg-[#520050]/5 transition-all group disabled:bg-gray-50 disabled:opacity-50 active:scale-95"
+              className="flex flex-col items-center justify-center gap-2 p-4 border border-[var(--brand-purple)]/20 rounded-2xl hover:border-[var(--brand-purple)] hover:bg-[var(--brand-purple)]/5 transition-all group disabled:bg-gray-50 disabled:opacity-50 active:scale-95"
             >
-              <div className="p-2 bg-[#520050]/10 rounded-xl group-hover:bg-[#520050]/20 transition-colors">
+              <div className="p-2 bg-[var(--brand-purple)]/10 rounded-xl group-hover:bg-[var(--brand-purple)]/20 transition-colors">
                 {exporting ? (
-                  <Loader size={22} className="animate-spin text-[#520050]" />
+                  <Loader size={22} className="animate-spin text-[var(--brand-purple)]" />
                 ) : (
-                  <Download size={22} className="text-[#520050]" />
+                  <Download size={22} className="text-[var(--brand-purple)]" />
                 )}
               </div>
-              <span className="text-xs font-bold text-[#520050] uppercase tracking-wider">
+              <span className="text-xs font-bold text-[var(--brand-purple)] uppercase tracking-wider">
                 {exporting ? 'Exporting...' : 'Export CSV'}
               </span>
             </button>
@@ -348,7 +348,7 @@ const BulkOperationsModal = ({
                     {uploadResult && (
                       <button
                         onClick={handleFinish}
-                        className="w-full px-6 py-3.5 bg-[#520050] text-white text-xs font-bold rounded-xl hover:bg-[#420040] transition-all flex items-center justify-center gap-2 uppercase tracking-widest shadow-lg shadow-[#520050]/20 active:scale-95"
+                        className="w-full px-6 py-3.5 bg-[var(--brand-purple)] text-white text-xs font-bold rounded-xl hover:bg-[#420040] transition-all flex items-center justify-center gap-2 uppercase tracking-widest shadow-lg shadow-[var(--brand-purple)]/20 active:scale-95"
                       >
                         <CheckCircle size={18} />
                         <span>Complete & Refresh View</span>
@@ -364,7 +364,7 @@ const BulkOperationsModal = ({
                   <div className="space-y-1">
                     <p className="text-sm font-bold text-gray-700">Drop your CSV file here</p>
                     <p className="text-xs text-gray-400">
-                      Or <label className="text-[#520050] cursor-pointer hover:underline font-bold">
+                      Or <label className="text-[var(--brand-purple)] cursor-pointer hover:underline font-bold">
                         browse files
                         <input
                           ref={fileInputRef}

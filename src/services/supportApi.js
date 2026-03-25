@@ -1,5 +1,5 @@
 
-import axiosInstance from './axiosConfig';
+import axiosInstance from './api/axiosConfig';
 
 export const supportAPI = {
     getTickets: async () => {

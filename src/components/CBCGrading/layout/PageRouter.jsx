@@ -317,7 +317,7 @@ const PageRouter = ({
           case 'hr-documents': return <StaffDocuments />;
           case 'hr-performance': return <PerformanceManager />;
 
-          case 'settings-school': return <SchoolSettings />;
+          case 'settings-school': return <SchoolSettings brandingSettings={brandingSettings} setBrandingSettings={handlers.setBrandingSettings} />;
           case 'settings-academic': return <AcademicSettings />;
           case 'settings-users': return <UserManagement />;
           case 'settings-branding': return <BrandingSettings brandingSettings={brandingSettings} setBrandingSettings={handlers.setBrandingSettings} />;

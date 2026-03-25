@@ -104,19 +104,17 @@ const AcademicSettings = () => {
     }
   }, []);
 
-  // Load Learning Areas from Database
+  // Load Learning Areas from Database — single-tenant, no schoolId needed
   const loadLearningAreas = React.useCallback(async () => {
     try {
-      // School ID removed for single-tenant mode
       const areas = await configAPI.getLearningAreas();
       const areasArr = Array.isArray(areas) ? areas : (areas && areas.data) ? areas.data : [];
       setLearningAreas(areasArr);
     } catch (error) {
       console.error('Failed to load learning areas:', error);
-      // Silently fail - don't show error for this non-critical feature
       setLearningAreas([]);
     }
-  }, [user?.school?.id, user?.schoolId]);
+  }, []);
 
   // Seed Learning Areas
   const handleSeedLearningAreas = React.useCallback(async () => {
@@ -163,13 +161,12 @@ const AcademicSettings = () => {
     }
   }, [loadLearningAreas]);
 
-  // Seed Classes
+  // Seed Classes — single-tenant, no schoolId needed
   const handleSeedClasses = React.useCallback(async () => {
     try {
       setSeedingClasses(true);
       setSubmitting(true);
-      const sid = user?.school?.id || user?.schoolId;
-      const result = await configAPI.seedClasses(sid);
+      const result = await configAPI.seedClasses();
       notifySuccess(`✏️ Classes seeded! Created: ${result.created || 0}, Skipped: ${result.skipped || 0}`);
       await loadConfigs();
     } catch (error) {
@@ -181,13 +178,12 @@ const AcademicSettings = () => {
     }
   }, [loadConfigs, showSuccess, showError]);
 
-  // Seed Streams
+  // Seed Streams — single-tenant, no schoolId needed
   const handleSeedStreams = React.useCallback(async () => {
     try {
       setSeedingStreams(true);
       setSubmitting(true);
-      const sid = user?.school?.id || user?.schoolId;
-      const result = await configAPI.seedStreams(sid);
+      const result = await configAPI.seedStreams();
       notifySuccess(`🌊 Streams seeded! Created: ${result.created || 0}, Skipped: ${result.skipped || 0}`);
       await loadConfigs();
     } catch (error) {
@@ -200,10 +196,8 @@ const AcademicSettings = () => {
   }, [loadConfigs, showSuccess, showError]);
 
   useEffect(() => {
-    if (user?.school?.id || user?.schoolId) {
-      loadConfigs();
-    }
-  }, [user?.school?.id, user?.schoolId, loadConfigs]);
+    loadConfigs();
+  }, [loadConfigs]);
 
   useEffect(() => {
     if (activeTab === 'streams' || activeTab === 'classes') {
@@ -270,14 +264,58 @@ const AcademicSettings = () => {
     active: true
   });
 
-  const handleSaveTerm = async (termData) => {
+  // Local draft state for term edits — keyed by "YEAR-TERM"
+  const [termDrafts, setTermDrafts] = useState({});
+
+  // Get draft for a given year+term, falling back to the saved config
+  const getTermDraft = (termName) => {
+    const key = `${selectedYear}-${termName}`;
+    if (termDrafts[key]) return termDrafts[key];
+    return termConfigs.find(c => c.academicYear === selectedYear && c.term === termName) || {
+      academicYear: selectedYear,
+      term: termName,
+      startDate: '',
+      endDate: '',
+      formativeWeight: 30,
+      summativeWeight: 70,
+      isActive: false
+    };
+  };
+
+  const updateTermDraft = (termName, changes) => {
+    const key = `${selectedYear}-${termName}`;
+    setTermDrafts(prev => ({
+      ...prev,
+      [key]: { ...getTermDraft(termName), ...changes }
+    }));
+  };
+
+  const handleSaveTerm = async (termName) => {
+    const draft = getTermDraft(termName);
+    // Validate weights
+    const fw = Number(draft.formativeWeight ?? 30);
+    const sw = Number(draft.summativeWeight ?? 70);
+    if (Math.abs(fw + sw - 100) > 0.01) {
+      showError(`Weights must sum to 100%. Current: ${fw + sw}%`);
+      return;
+    }
     try {
       setSubmitting(true);
       await configAPI.upsertTermConfig({
-        ...termData
+        ...draft,
+        academicYear: selectedYear,
+        term: termName,
+        formativeWeight: fw,
+        summativeWeight: sw,
       });
-      showSuccess(`Term ${termData.term} saved successfully!`);
-      loadConfigs(); // Refresh
+      // Clear draft so it re-reads from server
+      setTermDrafts(prev => {
+        const next = { ...prev };
+        delete next[`${selectedYear}-${termName}`];
+        return next;
+      });
+      notifySuccess(`Term ${termName.replace('_', ' ')} saved!`);
+      await loadConfigs();
     } catch (error) {
       showError(error.message || 'Failed to save term configuration');
     } finally {
@@ -712,29 +750,46 @@ const AcademicSettings = () => {
               {loading ? <p>Loading settings...</p> : (
                 <div className="space-y-6">
                   {['TERM_1', 'TERM_2', 'TERM_3'].map((termName, index) => {
-                    const config = termConfigs.find(c => c.academicYear === selectedYear && c.term === termName) || {
-                      academicYear: selectedYear,
-                      term: termName,
-                      startDate: '',
-                      endDate: '',
-                      isActive: false
-                    };
+                    const draft = getTermDraft(termName);
+                    const draftKey = `${selectedYear}-${termName}`;
+                    const isDirty = !!termDrafts[draftKey];
+                    const fw = Number(draft.formativeWeight ?? 30);
+                    const sw = Number(draft.summativeWeight ?? 70);
+                    const weightSum = fw + sw;
+                    const weightError = Math.abs(weightSum - 100) > 0.01;
 
                     return (
-                      <div key={termName} className={`border rounded-lg p-4 ${config.isActive ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'}`}>
+                      <div key={termName} className={`border rounded-lg p-4 ${draft.isActive ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'}`}>
                         <div className="flex justify-between items-center mb-4">
-                          <h4 className="font-bold text-gray-800">Term {index + 1}</h4>
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              checked={config.isActive}
-                              disabled={submitting}
-                              onChange={(e) => handleSaveTerm({ ...config, isActive: e.target.checked })}
-                              className="w-4 h-4 text-blue-600 disabled:opacity-50"
-                            />
-                            <span className="text-sm font-medium">
-                              {submitting && config.isActive ? 'Updating...' : 'Active Term'}
-                            </span>
+                          <div className="flex items-center gap-3">
+                            <h4 className="font-bold text-gray-800">Term {index + 1}</h4>
+                            {isDirty && (
+                              <span className="text-xs bg-amber-100 text-amber-700 font-semibold px-2 py-0.5 rounded-full">Unsaved changes</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={draft.isActive}
+                                disabled={submitting}
+                                onChange={(e) => updateTermDraft(termName, { isActive: e.target.checked })}
+                                className="w-4 h-4 text-blue-600 disabled:opacity-50"
+                              />
+                              <span className="text-sm font-medium">Active Term</span>
+                            </label>
+                            <button
+                              onClick={() => handleSaveTerm(termName)}
+                              disabled={submitting || (!isDirty)}
+                              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-semibold transition ${
+                                isDirty && !submitting
+                                  ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
+                                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                              }`}
+                            >
+                              <Save size={14} />
+                              {submitting ? 'Saving...' : 'Save'}
+                            </button>
                           </div>
                         </div>
 
@@ -743,9 +798,9 @@ const AcademicSettings = () => {
                             <label className="block text-xs font-semibold text-gray-600 mb-1">Start Date</label>
                             <input
                               type="date"
-                              value={toInputDate(config.startDate)}
+                              value={toInputDate(draft.startDate)}
                               disabled={submitting}
-                              onChange={(e) => handleSaveTerm({ ...config, startDate: e.target.value })}
+                              onChange={(e) => updateTermDraft(termName, { startDate: e.target.value })}
                               className="w-full px-3 py-2 border rounded text-sm disabled:bg-gray-100"
                             />
                           </div>
@@ -753,9 +808,9 @@ const AcademicSettings = () => {
                             <label className="block text-xs font-semibold text-gray-600 mb-1">End Date</label>
                             <input
                               type="date"
-                              value={toInputDate(config.endDate)}
+                              value={toInputDate(draft.endDate)}
                               disabled={submitting}
-                              onChange={(e) => handleSaveTerm({ ...config, endDate: e.target.value })}
+                              onChange={(e) => updateTermDraft(termName, { endDate: e.target.value })}
                               className="w-full px-3 py-2 border rounded text-sm disabled:bg-gray-100"
                             />
                           </div>
@@ -768,13 +823,12 @@ const AcademicSettings = () => {
                               type="number"
                               min="0"
                               max="100"
-                              value={config.formativeWeight ?? 30}
+                              value={fw}
                               disabled={submitting}
-                              onChange={(e) => handleSaveTerm({
-                                ...config,
-                                formativeWeight: Number(e.target.value),
-                                summativeWeight: 100 - Number(e.target.value)
-                              })}
+                              onChange={(e) => {
+                                const val = Number(e.target.value);
+                                updateTermDraft(termName, { formativeWeight: val, summativeWeight: 100 - val });
+                              }}
                               className="w-full px-3 py-2 border border-blue-100 rounded text-sm focus:ring-1 focus:ring-blue-500 outline-none"
                             />
                             <p className="text-[10px] text-gray-400 mt-1">Weight for continuous assessments</p>
@@ -785,17 +839,21 @@ const AcademicSettings = () => {
                               type="number"
                               min="0"
                               max="100"
-                              value={config.summativeWeight ?? 70}
+                              value={sw}
                               disabled={submitting}
-                              onChange={(e) => handleSaveTerm({
-                                ...config,
-                                summativeWeight: Number(e.target.value),
-                                formativeWeight: 100 - Number(e.target.value)
-                              })}
+                              onChange={(e) => {
+                                const val = Number(e.target.value);
+                                updateTermDraft(termName, { summativeWeight: val, formativeWeight: 100 - val });
+                              }}
                               className="w-full px-3 py-2 border border-indigo-100 rounded text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
                             />
                             <p className="text-[10px] text-gray-400 mt-1">Weight for end of term exams</p>
                           </div>
+                          {weightError && (
+                            <div className="col-span-2 text-xs text-red-600 font-semibold bg-red-50 border border-red-200 rounded px-3 py-2">
+                              ⚠️ Weights must sum to 100%. Current total: {weightSum}%
+                            </div>
+                          )}
                         </div>
                       </div>
                     );

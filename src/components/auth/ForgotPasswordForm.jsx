@@ -44,7 +44,7 @@ export default function ForgotPasswordForm({ onSwitchToLogin, brandingSettings }
     if (error) setError('');
   };
 
-  const brandColor = brandingSettings?.brandColor || '#520050';
+  const brandColor = brandingSettings?.brandColor || 'var(--brand-purple)';
 
   if (emailSent) {
     return (

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
-import api from '../services/api';
+import api, { configAPI } from '../services/api';
 import { GRADES } from '../constants/grades'; // For sorting
 
 const SchoolDataContext = createContext();
@@ -25,6 +25,7 @@ const sortGrades = (gradeArray) => {
 export const SchoolDataProvider = ({ children }) => {
     const [classes, setClasses] = useState([]);
     const [grades, setGrades] = useState([]);
+    const [streams, setStreams] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -34,14 +35,24 @@ export const SchoolDataProvider = ({ children }) => {
             setLoading(true);
             setError(null);
 
-            const response = await api.classes.getAll();
-            const fetchedClasses = response.data || [];
+            // Fetch classes and streams in parallel
+            const [classesResponse, streamsResponse] = await Promise.all([
+                api.classes.getAll(),
+                configAPI.getStreamConfigs().catch(() => [])
+            ]);
 
+            const fetchedClasses = classesResponse.data || [];
             setClasses(fetchedClasses);
 
             // Extract unique grades and filter out falsy values
             const uniqueGrades = [...new Set(fetchedClasses.map(c => c.grade))].filter(Boolean);
             setGrades(sortGrades(uniqueGrades));
+
+            // Process streams from configAPI response
+            const rawStreams = Array.isArray(streamsResponse)
+                ? streamsResponse
+                : (streamsResponse?.data || []);
+            setStreams(rawStreams.filter(s => !s.archived && s.active !== false));
 
         } catch (err) {
             console.error('Error fetching school data:', err);
@@ -58,10 +69,11 @@ export const SchoolDataProvider = ({ children }) => {
     const value = useMemo(() => ({
         classes,
         grades,
+        streams,
         loading,
         error,
         refreshSchoolData: fetchSchoolData
-    }), [classes, grades, loading, error, fetchSchoolData]);
+    }), [classes, grades, streams, loading, error, fetchSchoolData]);
 
     return (
         <SchoolDataContext.Provider value={value}>

@@ -15,7 +15,9 @@ export async function generateAdmissionNumber(
 ): Promise<string> {
   try {
     const school = await prisma.school.findFirst();
-    if (!school) throw new Error('School configuration not found');
+    // No school config yet — use a safe default format
+    const separator = school?.branchSeparator || '-';
+    const formatType = school?.admissionFormatType || 'NO_BRANCH';
 
     const result = await prisma.$transaction(async (tx) => {
       let sequence = await tx.admissionSequence.findUnique({
@@ -35,10 +37,9 @@ export async function generateAdmissionNumber(
     });
 
     const paddedNumber = String(result.currentValue).padStart(3, '0');
-    const separator = school.branchSeparator || '-';
     let admissionNumber: string;
 
-    switch (school.admissionFormatType) {
+    switch (formatType) {
       case 'NO_BRANCH':
         admissionNumber = `ADM${separator}${academicYear}${separator}${paddedNumber}`;
         break;

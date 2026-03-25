@@ -126,7 +126,7 @@ const HRManager = ({ onNavigate }) => {
                     </div>
 
                     {/* Activity/Notices Card */}
-                    <div className="bg-[#5D0057] rounded-3xl p-8 text-white relative overflow-hidden shadow-xl">
+                    <div className="bg-[var(--brand-purple)] rounded-3xl p-8 text-white relative overflow-hidden shadow-xl">
                         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                             <div className="space-y-2">
                                 <span className="px-3 py-1 bg-white/20 rounded-full text-xs font-bold uppercase tracking-wider">Announcement</span>

@@ -6,7 +6,8 @@ import { auditService } from '../services/audit.service';
 import { AssessmentStatus, CurriculumType, Grade } from '@prisma/client';
 import { aiAssistantService } from '../services/ai-assistant.service';
 import { detailedToGeneralRating } from '../utils/rubric.util';
-import { cacheService } from '../services/cache.service';
+import { redisCacheService } from '../services/redis-cache.service';
+import { ApiError } from '../utils/error.util';
 
 // ── Cache TTLs ────────────────────────────────────────────────────────────────
 const TESTS_CACHE_TTL   = 300;  // 5 min — published tests change rarely
@@ -53,11 +54,7 @@ export const getFormativeAssessments = async (req: AuthRequest, res: Response) =
     });
   } catch (error: any) {
     console.error('Error fetching formative assessments:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch assessments',
-      error: error.message
-    });
+    throw new ApiError(500, 'Failed to fetch assessments: ' + error.message);
   }
 };
 
@@ -70,10 +67,7 @@ export const getBulkFormativeResults = async (req: AuthRequest, res: Response) =
     const { grade, stream, academicYear, term, learningArea } = req.query;
 
     if (!grade || !academicYear || !term) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required filters: grade, academicYear, term'
-      });
+      throw new ApiError(400, 'Missing required filters: grade, academicYear, term');
     }
 
     const whereClause: any = {
@@ -118,11 +112,7 @@ export const getBulkFormativeResults = async (req: AuthRequest, res: Response) =
     });
   } catch (error: any) {
     console.error('Error fetching bulk formative results:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch bulk formative results',
-      error: error.message
-    });
+    throw new ApiError(500, 'Failed to fetch bulk formative results: ' + error.message);
   }
 };
 
@@ -151,10 +141,7 @@ export const createFormativeAssessment = async (req: AuthRequest, res: Response)
     const teacherId = req.user?.userId;
 
     if (!teacherId || !learnerId || !learningArea || !overallRating) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required fields: learnerId, learningArea, overallRating'
-      });
+      throw new ApiError(400, 'Missing required fields: learnerId, learningArea, overallRating');
     }
 
     const assessment = await prisma.formativeAssessment.create({
@@ -189,11 +176,7 @@ export const createFormativeAssessment = async (req: AuthRequest, res: Response)
 
   } catch (error: any) {
     console.error('Error creating formative assessment:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to create assessment',
-      error: error.message
-    });
+    throw new ApiError(500, 'Failed to create assessment: ' + error.message);
   }
 };
 
@@ -205,7 +188,7 @@ export const recordFormativeResultsBulk = async (req: AuthRequest, res: Response
   try {
     const teacherId = req.user?.userId;
     if (!teacherId) {
-      return res.status(401).json({ success: false, message: 'Unauthorized' });
+      throw new ApiError(401, 'Unauthorized');
     }
 
     let assessments: any[];
@@ -247,11 +230,11 @@ export const recordFormativeResultsBulk = async (req: AuthRequest, res: Response
         remarks: r.remarks
       }));
     } else {
-      return res.status(400).json({ success: false, message: 'Invalid payload: expected assessments[] or results[]' });
+      throw new ApiError(400, 'Invalid payload: expected assessments[] or results[]');
     }
 
     if (assessments.length === 0) {
-      return res.status(400).json({ success: false, message: 'No assessments provided' });
+      throw new ApiError(400, 'No assessments provided');
     }
 
     // Validate each entry and collect any issues
@@ -435,11 +418,7 @@ export const deleteFormativeAssessment = async (req: AuthRequest, res: Response)
 
   } catch (error: any) {
     console.error('Error deleting formative assessment:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete assessment',
-      error: error.message
-    });
+    throw new ApiError(500, 'Failed to delete assessment: ' + error.message);
   }
 };
 
@@ -553,7 +532,7 @@ export const createSummativeTest = async (req: AuthRequest, res: Response) => {
 
       // FIX: deleteByPrefix busts ALL parameterised test list cache keys
       // (e.g. tests:TERM_1:2026:::, tests::::, etc.) not just a phantom 'tests:all'
-      cacheService.deleteByPrefix('tests:');
+      await redisCacheService.deleteByPrefix('tests:');
 
       await auditService.logChange({
         entityType: 'SummativeTest',
@@ -707,7 +686,7 @@ export const generateTestsBulk = async (req: AuthRequest, res: Response) => {
     }
 
     // FIX: bust all parameterised test list cache keys
-    cacheService.deleteByPrefix('tests:');
+    await redisCacheService.deleteByPrefix('tests:');
 
     let resultMessage = `Successfully generated ${createdTests.length} tests.`;
     if (duplicateCount > 0) {
@@ -741,7 +720,7 @@ export const getSummativeTests = async (req: AuthRequest, res: Response) => {
 
     // Parameterised cache key — all write operations bust via deleteByPrefix('tests:')
     const cacheKey = `tests:${term || ''}:${academicYear || ''}:${grade || ''}:${stream || ''}:${learningArea || ''}`;
-    const cached = cacheService.get<any[]>(cacheKey);
+    const cached = await redisCacheService.get<any[]>(cacheKey);
     if (cached) {
       return res.json({ success: true, data: cached, count: cached.length, _cached: true });
     }
@@ -771,7 +750,7 @@ export const getSummativeTests = async (req: AuthRequest, res: Response) => {
       orderBy: { testDate: 'desc' }
     });
 
-    cacheService.set(cacheKey, tests, TESTS_CACHE_TTL);
+    await redisCacheService.set(cacheKey, tests, TESTS_CACHE_TTL);
 
     res.json({
       success: true,
@@ -866,8 +845,8 @@ export const updateSummativeTest = async (req: AuthRequest, res: Response) => {
     });
 
     // FIX: bust all parameterised list keys + this specific test's individual key
-    cacheService.deleteByPrefix('tests:');
-    cacheService.delete(`test:${id}`);
+    await redisCacheService.deleteByPrefix('tests:');
+    await redisCacheService.delete(`test:${id}`);
 
     await auditService.logChange({
       entityType: 'SummativeTest',
@@ -884,11 +863,7 @@ export const updateSummativeTest = async (req: AuthRequest, res: Response) => {
 
   } catch (error: any) {
     console.error('Error updating summative test:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update test',
-      error: error.message
-    });
+    throw new ApiError(500, 'Failed to update test: ' + error.message);
   }
 };
 
@@ -922,8 +897,8 @@ export const deleteSummativeTest = async (req: AuthRequest, res: Response) => {
         prisma.summativeTest.delete({ where: { id } })
       ]);
 
-      cacheService.deleteByPrefix('tests:');
-      cacheService.delete(`test:${id}`);
+      await redisCacheService.deleteByPrefix('tests:');
+      await redisCacheService.delete(`test:${id}`);
 
       res.json({
         success: true,
@@ -946,8 +921,8 @@ export const deleteSummativeTest = async (req: AuthRequest, res: Response) => {
         }
       });
 
-      cacheService.deleteByPrefix('tests:');
-      cacheService.delete(`test:${id}`);
+      await redisCacheService.deleteByPrefix('tests:');
+      await redisCacheService.delete(`test:${id}`);
 
       res.json({
         success: true,
@@ -957,11 +932,7 @@ export const deleteSummativeTest = async (req: AuthRequest, res: Response) => {
 
   } catch (error: any) {
     console.error('Error deleting summative test:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete test',
-      error: error.message
-    });
+    throw new ApiError(500, 'Failed to delete test: ' + error.message);
   }
 };
 
@@ -976,7 +947,7 @@ export const deleteSummativeTestsBulk = async (req: AuthRequest, res: Response) 
     const { ids } = req.body;
 
     if (!ids || !Array.isArray(ids) || ids.length === 0) {
-      return res.status(400).json({ success: false, message: 'Invalid test IDs' });
+      throw new ApiError(400, 'Invalid assessment IDs');
     }
 
     const tests = await prisma.summativeTest.findMany({
@@ -1008,15 +979,11 @@ export const deleteSummativeTestsBulk = async (req: AuthRequest, res: Response) 
     }
 
     // FIX: bust after response (bulk ops don't return early so this always runs)
-    cacheService.deleteByPrefix('tests:');
+    await redisCacheService.deleteByPrefix('tests:');
 
   } catch (error: any) {
-    console.error('Error bulk deleting tests:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to bulk delete tests',
-      error: error.message
-    });
+    console.error('Error bulk deleting assessments:', error);
+    throw new ApiError(500, 'Failed to bulk delete assessments: ' + error.message);
   }
 };
 
@@ -1118,7 +1085,7 @@ export const recordSummativeResult = async (req: AuthRequest, res: Response) => 
     });
 
     // Bust result cache for this test
-    cacheService.delete(`results:${testId}`);
+    await redisCacheService.delete(`results:${testId}`);
 
     res.status(existingResult ? 200 : 201).json({
       success: true,
@@ -1128,11 +1095,7 @@ export const recordSummativeResult = async (req: AuthRequest, res: Response) => 
 
   } catch (error: any) {
     console.error('Error recording summative result:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to record result',
-      error: error.message
-    });
+    throw new ApiError(500, 'Failed to record result: ' + error.message);
   }
 };
 
@@ -1207,12 +1170,8 @@ export const getSummativeByLearner = async (req: AuthRequest, res: Response) => 
     });
 
   } catch (error: any) {
-    console.error('Error fetching summative results:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch results',
-      error: error.message
-    });
+    console.error('Error fetching summative results for learner:', error);
+    throw new ApiError(500, 'Failed to fetch results for learner: ' + error.message);
   }
 };
 
@@ -1225,7 +1184,7 @@ export const getTestResults = async (req: Request, res: Response) => {
     const { testId } = req.params;
 
     const cacheKey = `results:${testId}`;
-    const cached = cacheService.get<any[]>(cacheKey);
+    const cached = await redisCacheService.get<any[]>(cacheKey);
     if (cached) {
       return res.json({ success: true, data: cached, count: cached.length, _cached: true });
     }
@@ -1240,7 +1199,7 @@ export const getTestResults = async (req: Request, res: Response) => {
       orderBy: { marksObtained: 'desc' }
     });
 
-    cacheService.set(cacheKey, results, RESULTS_CACHE_TTL);
+    await redisCacheService.set(cacheKey, results, RESULTS_CACHE_TTL);
 
     res.json({
       success: true,
@@ -1519,7 +1478,7 @@ export const recordSummativeResultsBulk = async (req: AuthRequest, res: Response
     _rerankTestResultsAsync(testId);
 
     // ── 7. Bust result cache ──────────────────────────────────────────────────
-    cacheService.delete(`results:${testId}`);
+    await redisCacheService.delete(`results:${testId}`);
 
     const response: any = {
       success: true,
