@@ -49,10 +49,11 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
         setAvailableGrades(grades);
       } catch (error) {
         console.error('Failed to fetch grades:', error);
+        showError('Failed to load grades. Please ensure you are logged in and your session is active.');
       }
     };
     fetchGrades();
-  }, []);
+  }, [showError]);
 
   const initialFormData = React.useMemo(() => {
     const now = new Date();

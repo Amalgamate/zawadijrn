@@ -38,9 +38,9 @@ app.use(cors({
 // Response sanitization
 app.use(sanitizeResponse);
 
-// Body parsers — 10mb global limit for base64 assets (logos/stamps)
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Body parsers
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 console.log('[ROUTES_DEBUG] About to mount API routes...');
 // API Routes

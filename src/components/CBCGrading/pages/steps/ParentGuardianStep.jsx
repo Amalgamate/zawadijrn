@@ -74,10 +74,10 @@ const ParentGuardianStep = ({ formData = {}, onChange }) => {
   }, [formData.fatherDeceased, formData.motherDeceased]);
 
   const [selectedGuardian, setSelectedGuardian] = useState(defaultGuardianType);
-  const config = GUARDIAN_CONFIG[selectedGuardian];
+  const config = GUARDIAN_CONFIG[selectedGuardian] || GUARDIAN_CONFIG.FATHER;
 
   // Check if either parent is marked as deceased
-  const isEitherParentDeceased = formData.fatherDeceased || formData.motherDeceased;
+  const isEitherParentDeceased = !!formData.fatherDeceased || !!formData.motherDeceased;
 
   // Sync primary contact details when selected guardian changes or fields update
   const updatePrimaryContact = (type, currentFormData) => {
