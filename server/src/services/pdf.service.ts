@@ -36,12 +36,16 @@ async function generatePdfWithPuppeteer(html: string, options: any) {
             undefined;
 
         const launchConfig: any = {
-            headless: true,
+            headless: 'shell',
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
                 '--disable-dev-shm-usage',
-                '--disable-gpu'
+                '--disable-gpu',
+                '--no-zygote',
+                '--no-first-run',
+                '--disable-extensions',
+                '--disable-accelerated-2d-canvas'
             ]
         };
 
@@ -99,12 +103,16 @@ async function generateScreenshotWithPuppeteer(html: string, options: any) {
             undefined;
 
         const launchConfig: any = {
-            headless: true,
+            headless: 'shell',
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
                 '--disable-dev-shm-usage',
-                '--disable-gpu'
+                '--disable-gpu',
+                '--no-zygote',
+                '--no-first-run',
+                '--disable-extensions',
+                '--disable-accelerated-2d-canvas'
             ]
         };
 
