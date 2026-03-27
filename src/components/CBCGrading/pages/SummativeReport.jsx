@@ -90,6 +90,60 @@ const generateVectorPDF = async (elementId, filename, onProgress) => {
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
 
+    const commonOptions = {
+      scale: 2.5,
+      useCORS: true,
+      logging: false,
+      backgroundColor: '#ffffff',
+      width: 794,
+      height: 1123,
+      allowTaint: true,
+      onclone: (clonedDoc) => {
+        // Find the specific element being captured (could be the main elementId or a page element)
+        const el = clonedDoc.getElementById(elementId) || clonedDoc.querySelector('.pdf-report-page');
+        if (el) {
+          el.style.width = '794px';
+          el.style.minHeight = '1123px';
+          el.style.height = 'auto';
+          el.style.display = 'flex';
+          el.style.flexDirection = 'column';
+          el.style.visibility = 'visible';
+          el.style.opacity = '1';
+          el.style.position = 'relative';
+          el.style.left = '0';
+          el.style.overflow = 'visible';
+          
+          const allElements = el.querySelectorAll('*');
+          allElements.forEach(node => {
+            if (node.style) {
+              node.style.visibility = 'visible';
+              node.style.opacity = '1';
+            }
+          });
+        }
+
+        const inner = clonedDoc.querySelector('.report-card');
+        if (inner) {
+          inner.style.minHeight = '1123px';
+          inner.style.height = 'auto';
+          inner.style.overflow = 'visible';
+        }
+
+        const svgs = clonedDoc.getElementsByTagName('svg');
+        for (let i = 0; i < svgs.length; i++) {
+          svgs[i].style.display = 'block';
+          svgs[i].style.visibility = 'visible';
+          svgs[i].style.opacity = '1';
+          svgs[i].style.overflow = 'visible';
+        }
+
+        const scripts = clonedDoc.getElementsByTagName('script');
+        for (let i = scripts.length - 1; i >= 0; i--) {
+          scripts[i].parentNode.removeChild(scripts[i]);
+        }
+      }
+    };
+
     // Check if we are doing a bulk print (multiple pages)
     const pageElements = element.querySelectorAll('.pdf-report-page');
     
@@ -100,17 +154,12 @@ const generateVectorPDF = async (elementId, filename, onProgress) => {
         const pageEl = pageElements[i];
         if (onProgress) onProgress(`Capturing page ${i + 1} of ${pageElements.length}...`);
         
-        // Wait for potential images in each page
-        await new Promise(r => setTimeout(r, 200));
+        // Stabilize each page (Increased for reliability)
+        await new Promise(r => setTimeout(r, 600));
 
         const canvas = await html2canvas(pageEl, {
-          scale: 2.2, // Slightly lower for better performance in bulk
-          useCORS: true,
-          logging: false,
-          backgroundColor: '#ffffff',
-          width: 794,
-          height: 1123,
-          allowTaint: true
+          ...commonOptions,
+          scale: 2.2 // lower slightly for multi-page performance
         });
 
         const imgData = canvas.toDataURL('image/jpeg', 0.85);
@@ -121,68 +170,9 @@ const generateVectorPDF = async (elementId, filename, onProgress) => {
     } else {
       // Single page capture
       if (onProgress) onProgress('Capturing report layout...');
+      await new Promise(r => setTimeout(r, 600));
       
-      // Wait for React to fully settle and fonts to stabilize
-      await new Promise(r => setTimeout(r, 500));
-      
-      const canvas = await html2canvas(element, {
-        scale: 3,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        width: 794,
-        height: 1123,
-        allowTaint: true,
-        onclone: (clonedDoc) => {
-          // CRITICAL FIX: LearnerReportTemplate root is display:flex/column.
-          // Setting display:'block' here breaks all child alignment and causes
-          // the student name, grade boxes, and subject rows to overlap.
-          const el = clonedDoc.getElementById(elementId);
-          if (el) {
-            el.style.width = '794px';
-            el.style.minHeight = '1123px';
-            el.style.height = 'auto';           // let content breathe — no hard clip
-            el.style.display = 'flex';          // MUST be flex, never block
-            el.style.flexDirection = 'column';
-            el.style.visibility = 'visible';
-            el.style.opacity = '1';
-            el.style.position = 'relative';
-            el.style.left = '0';
-            el.style.overflow = 'visible';
-            
-            // Force all children of report-card to be visible
-            const allElements = el.querySelectorAll('*');
-            allElements.forEach(node => {
-              if (node.style) {
-                node.style.visibility = 'visible';
-                node.style.opacity = '1';
-              }
-            });
-          }
-          // Relax the inner .report-card fixed height so learners with
-          const inner = el?.querySelector('.report-card');
-          if (inner) {
-            inner.style.minHeight = '1123px';
-            inner.style.height = 'auto';
-            inner.style.overflow = 'visible';
-          }
-
-          // Force all SVGs to be visible
-          const svgs = clonedDoc.getElementsByTagName('svg');
-          for (let i = 0; i < svgs.length; i++) {
-            svgs[i].style.display = 'block';
-            svgs[i].style.visibility = 'visible';
-            svgs[i].style.opacity = '1';
-            svgs[i].style.overflow = 'visible';
-          }
-
-          // Strip all scripts to prevent MIME/execution errors
-          const scripts = clonedDoc.getElementsByTagName('script');
-          for (let i = scripts.length - 1; i >= 0; i--) {
-            scripts[i].parentNode.removeChild(scripts[i]);
-          }
-        }
-      });
+      const canvas = await html2canvas(element, commonOptions);
 
       const imgData = canvas.toDataURL('image/jpeg', 0.9);
       pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
@@ -238,6 +228,15 @@ const generateJPEG = async (elementId, filename, onProgress) => {
           el.style.position = 'relative';
           el.style.left = '0';
           el.style.overflow = 'visible';
+
+          // Force all children to be visible
+          const allElements = el.querySelectorAll('*');
+          allElements.forEach(node => {
+            if (node.style) {
+              node.style.visibility = 'visible';
+              node.style.opacity = '1';
+            }
+          });
         }
         // Also relax the inner card height in the clone
         const inner = el?.querySelector('.report-card');
