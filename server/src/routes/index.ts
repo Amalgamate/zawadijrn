@@ -32,6 +32,7 @@ import accountingRoutes from './accounting.routes';
 import inventoryRoutes from './inventory.routes';
 import subjectAssignmentRoutes from './subjectAssignment.routes';
 import noticeRoutes from './notice.routes';
+import pdfRoutes from './pdf.routes';
 import { issueCsrfToken } from '../middleware/csrf.middleware';
 import { authenticate } from '../middleware/auth.middleware';
 
@@ -80,5 +81,6 @@ router.use('/inventory', inventoryRoutes);
 router.use('/subject-assignments', subjectAssignmentRoutes);
 router.use('/communication', communicationRoutes);
 router.use('/notices', noticeRoutes);
+router.use('/pdf', pdfRoutes);
 
 export default router;

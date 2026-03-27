@@ -4,31 +4,11 @@
  */
 
 import express from 'express';
-import { z } from 'zod';
 import { reportController } from '../controllers/reportController';
 import { authenticate } from '../middleware/auth.middleware';
 import { rateLimit } from '../middleware/enhanced-rateLimit.middleware';
-import { validate } from '../middleware/validation.middleware';
-import { auditLog } from '../middleware/permissions.middleware';
 
 const router = express.Router();
-
-// Validation Schemas
-const generatePdfSchema = z.object({
-  html: z.string().min(1),
-  filename: z.string().min(1).max(255).optional(),
-  fileName: z.string().min(1).max(255).optional(),
-  format: z.enum(['A4', 'LETTER']).optional(),
-  margin: z.object({
-    top: z.number().optional(),
-    bottom: z.number().optional(),
-    left: z.number().optional(),
-    right: z.number().optional(),
-  }).optional(),
-  options: z.any().optional(),
-}).refine((payload) => !!(payload.filename || payload.fileName), {
-  message: 'filename or fileName is required'
-});
 
 // ============================================
 // FORMATIVE REPORT
@@ -99,23 +79,6 @@ router.get(
   authenticate,
   rateLimit({ windowMs: 60_000, maxRequests: 50 }),
   reportController.getLearnerAnalytics
-);
-
-// ============================================
-// PDF EXPORT
-// ============================================
-
-/**
- * Generate high-fidelity PDF from HTML
- * POST /api/reports/generate-pdf
- */
-router.post(
-  '/generate-pdf',
-  authenticate,
-  rateLimit({ windowMs: 60_000, maxRequests: 20 }),
-  validate(generatePdfSchema),
-  auditLog('GENERATE_PDF_REPORT'),
-  reportController.generatePdf
 );
 
 export default router;
