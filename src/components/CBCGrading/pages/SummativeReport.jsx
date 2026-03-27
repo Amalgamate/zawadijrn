@@ -728,31 +728,70 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
         <div style={{ width: '420px' }}>
           <h3 style={{ fontSize: '10px', fontWeight: '800', color: '#111827', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', marginBottom: '6px', paddingBottom: '2px' }}>Subject Performance</h3>
           <div style={{ width: '100%' }}>
-            {tableRows && tableRows.length > 0 ? (() => {
-              const chartW = 400, chartH = 96, barAreaH = 88;
-              const barW = Math.max(12, Math.floor((chartW - 32) / tableRows.length) - 6);
-              return (
-                <svg width={chartW} height={chartH + 18} style={{ display: 'block', overflow: 'visible' }}>
-                  <line x1="28" y1={chartH} x2={chartW} y2={chartH} stroke="#e2e8f0" strokeWidth="0.5"/>
-                  {tableRows.map((row, i) => {
-                    const barH = Math.max(2, (row.percentage / 100) * barAreaH);
-                    const x = 30 + i * (barW + 6);
-                    const y = chartH - barH;
-                    return (
-                      <g key={row.area}>
-                        <rect x={x} y={y} width={barW} height={barH} fill={CHART_COLORS[i % CHART_COLORS.length]} rx="2"/>
-                        <text x={x + barW/2} y={chartH + 11} textAnchor="middle" fontSize="8" fontWeight="bold" fill="#64748b" fontFamily="Poppins, Arial, sans-serif">
-                          {getAbbreviatedName(row.area).slice(0, 6)}
-                        </text>
-                        <text x={x + barW/2} y={y - 3} textAnchor="middle" fontSize="8" fontWeight="bold" fill="#374151" fontFamily="Poppins, Arial, sans-serif">
-                          {row.percentage}%
-                        </text>
-                      </g>
-                    );
-                  })}
-                </svg>
-              );
-            })() : (
+            {tableRows && tableRows.length > 0 ? (
+              <div style={{ 
+                height: '114px', 
+                width: '400px', 
+                display: 'flex', 
+                alignItems: 'flex-end', 
+                gap: '8px', 
+                padding: '0 10px 18px 10px', 
+                borderBottom: '0.8px solid #e2e8f0', 
+                position: 'relative',
+                boxSizing: 'border-box'
+              }}>
+                {tableRows.map((row, i) => {
+                  const barH = Math.max(4, Math.round((row.percentage / 100) * 88));
+                  const barW = Math.max(16, Math.floor((380 / tableRows.length) - 8));
+                  return (
+                    <div key={row.area} style={{ 
+                      flex: 1, 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      alignItems: 'center', 
+                      justifyContent: 'flex-end',
+                      height: '100%'
+                    }}>
+                      {/* Score Label */}
+                      <div style={{ 
+                        fontSize: '9px', 
+                        fontWeight: '900', 
+                        color: '#1e40af', 
+                        marginBottom: '2px',
+                        fontFamily: "'Poppins', sans-serif"
+                      }}>
+                        {row.percentage}%
+                      </div>
+                      
+                      {/* Bar */}
+                      <div style={{ 
+                        width: `${barW}px`, 
+                        height: `${barH}px`, 
+                        backgroundColor: CHART_COLORS[i % CHART_COLORS.length],
+                        borderRadius: '3px 3px 0 0',
+                        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1)'
+                      }} />
+                      
+                      {/* Subject Label (Absolute positioned below the baseline) */}
+                      <div style={{ 
+                        position: 'absolute', 
+                        bottom: '-16px', 
+                        fontSize: '8px', 
+                        fontWeight: '800', 
+                        color: '#64748b',
+                        textTransform: 'uppercase',
+                        fontFamily: "'Poppins', sans-serif",
+                        textAlign: 'center',
+                        width: 'auto',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {getAbbreviatedName(row.area).slice(0, 6)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80px', background: '#f8fafc', fontSize: '10px', color: '#9ca3af', fontWeight: 'bold', textTransform: 'uppercase' }}>No data</div>
             )}
           </div>
@@ -841,8 +880,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
                       <div style={{
                         height: '100%',
                         width: `${p.pct ?? 0}%`,
-                        background: p.pct !== null ? p.color : '#e2e8f0',
-                        transition: 'width 0.3s ease'
+                        background: p.pct !== null ? p.color : '#e2e8f0'
                       }} />
                     </div>
                     {p.subjects && (
