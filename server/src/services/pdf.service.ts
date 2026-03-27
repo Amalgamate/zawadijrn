@@ -12,10 +12,28 @@ export const pdfService = {
         try {
             console.log('📄 Starting PDF generation with Puppeteer...');
 
-            browser = await puppeteer.launch({
+            const executablePath =
+                process.env.PUPPETEER_EXECUTABLE_PATH ||
+                process.env.CHROME_PATH ||
+                process.env.REACT_APP_CHROME_PATH ||
+                undefined;
+
+            const launchConfig: any = {
                 headless: true,
-                args: ['--no-sandbox', '--disable-setuid-sandbox']
-            });
+                args: [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-gpu',
+                    '--single-process'
+                ]
+            };
+
+            if (executablePath) {
+                launchConfig.executablePath = executablePath;
+            }
+
+            browser = await puppeteer.launch(launchConfig);
 
             const page = await browser.newPage();
 

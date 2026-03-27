@@ -29,7 +29,12 @@ export const reportAPI = {
       if (blob.size < 100) console.warn('⚠️ PDF Blob is suspiciously small');
       return blob;
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'PDF Generation failed');
+      const serverMessage =
+        error.response?.data?.message ||
+        (error.response?.data && typeof error.response.data === 'string' ? error.response.data : undefined) ||
+        error.message ||
+        'PDF Generation failed';
+      throw new Error(`PDF Generation failed: ${serverMessage}`);
     }
   },
 };
