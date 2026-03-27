@@ -95,7 +95,7 @@ async function generatePdfWithPdfKit(html: string, options: any): Promise<Buffer
             });
 
             const chunks: Buffer[] = [];
-            doc.on('data', chunk => chunks.push(chunk));
+            doc.on('data', (chunk: Buffer) => chunks.push(chunk));
             doc.on('end', () => {
                 const pdfBuffer = Buffer.concat(chunks);
                 console.log(`✅ PDF generated with pdfkit: ${pdfBuffer.length} bytes`);
