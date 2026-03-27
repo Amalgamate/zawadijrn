@@ -399,6 +399,7 @@ export class NotificationController {
       academicYear,
       totalTests,
       averageScore,
+      overallGrade,
       subjects,
       pathwayPrediction,
       reportHtml,
