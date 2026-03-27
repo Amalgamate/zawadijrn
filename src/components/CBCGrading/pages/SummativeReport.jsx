@@ -534,7 +534,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
   return (
     <div className="report-card relative bg-white mx-auto overflow-hidden"
       style={{
-        fontFamily: "'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+        fontFamily: "'Poppins', 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
         lineHeight: '1.2',
         width: '794px', // 210mm at 96 DPI
         minHeight: '1123px', // ensure card is never shorter than A4
@@ -741,10 +741,10 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
                     return (
                       <g key={row.area}>
                         <rect x={x} y={y} width={barW} height={barH} fill={CHART_COLORS[i % CHART_COLORS.length]} rx="2"/>
-                        <text x={x + barW/2} y={chartH + 11} textAnchor="middle" fontSize="8" fontWeight="bold" fill="#64748b" fontFamily="Arial, sans-serif">
+                        <text x={x + barW/2} y={chartH + 11} textAnchor="middle" fontSize="8" fontWeight="bold" fill="#64748b" fontFamily="Poppins, Arial, sans-serif">
                           {getAbbreviatedName(row.area).slice(0, 6)}
                         </text>
-                        <text x={x + barW/2} y={y - 3} textAnchor="middle" fontSize="8" fontWeight="bold" fill="#374151" fontFamily="Arial, sans-serif">
+                        <text x={x + barW/2} y={y - 3} textAnchor="middle" fontSize="8" fontWeight="bold" fill="#374151" fontFamily="Poppins, Arial, sans-serif">
                           {row.percentage}%
                         </text>
                       </g>
