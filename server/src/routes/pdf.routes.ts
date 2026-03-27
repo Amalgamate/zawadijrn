@@ -54,4 +54,37 @@ router.post(
   }
 );
 
+router.post(
+  '/screenshot',
+  authenticate,
+  rateLimit({ windowMs: 60_000, maxRequests: 30 }),
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { html, options = {} } = req.body;
+
+      if (!html || typeof html !== 'string') {
+        return res.status(400).json({ success: false, message: 'html field is required and must be a string' });
+      }
+
+      if (html.length > 5_000_000) {
+        return res.status(413).json({ success: false, message: 'HTML payload too large (max 5 MB)' });
+      }
+
+      const imageBuffer = await pdfService.generateScreenshot(html, options);
+
+      res.set({
+        'Content-Type': options?.type === 'png' ? 'image/png' : 'image/jpeg',
+        'Content-Disposition': `attachment; filename="report.${options?.type === 'png' ? 'png' : 'jpg'}"`,
+        'Content-Length': imageBuffer.length,
+        'Cache-Control': 'no-store',
+      });
+
+      return res.end(imageBuffer);
+    } catch (err: any) {
+      console.error('[PDF Screenshot Route] Generation error:', err);
+      return res.status(500).json({ success: false, message: err.message || 'Screenshot generation failed' });
+    }
+  }
+);
+
 export default router;

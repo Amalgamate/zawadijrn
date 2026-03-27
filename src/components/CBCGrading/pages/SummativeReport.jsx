@@ -17,6 +17,55 @@ import { getAcademicYearOptions, getCurrentAcademicYear } from '../utils/academi
 import Toast from '../shared/Toast';
 
 /**
+ * Helper: turn element into self-contained HTML for backend rendering.
+ */
+const buildStandaloneHtml = async (elementId) => {
+  const element = document.getElementById(elementId);
+  if (!element) return { error: `Element #${elementId} not found` };
+
+  const allStyles = Array.from(document.styleSheets).map(sheet => {
+    try {
+      return Array.from(sheet.cssRules)
+        .filter(rule => rule.constructor.name !== 'CSSImportRule')
+        .map(rule => rule.cssText)
+        .join('\n');
+    } catch (_) { return ''; }
+  }).join('\n');
+
+  const clone = element.cloneNode(true);
+  await Promise.all(Array.from(clone.querySelectorAll('img')).map(async img => {
+    const src = img.getAttribute('src');
+    if (!src || src.startsWith('data:')) return;
+    try {
+      const res = await fetch(new URL(src, window.location.href).href);
+      const blob = await res.blob();
+      await new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onloadend = () => { img.src = reader.result; resolve(); };
+        reader.readAsDataURL(blob);
+      });
+    } catch (_) {
+      // keep original src on failure
+    }
+  }));
+
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    body { margin: 0; padding: 0; background: #fff; }
+    ${allStyles}
+  </style>
+</head>
+<body>${clone.innerHTML}</body>
+</html>`;
+
+  return { html };
+};
+
+/**
  * generateVectorPDF — serialises the DOM element and sends it to the
  * Puppeteer backend, returning a true vector PDF blob for download.
  *
@@ -28,26 +77,30 @@ const generateVectorPDF = async (elementId, filename, onProgress) => {
   const element = document.getElementById(elementId);
   if (!element) return { success: false, error: `Element #${elementId} not found` };
 
-  // 1. Collect all compiled CSS already applied to the page (Tailwind, app styles)
   if (onProgress) onProgress('Collecting styles...');
-  const allStyles = Array.from(document.styleSheets).map(sheet => {
-    try {
-      return Array.from(sheet.cssRules)
-        .filter(rule => rule.constructor.name !== 'CSSImportRule')
-        .map(rule => rule.cssText)
-        .join('\n');
-    } catch (_) { return ''; }
-  }).join('\n');
+  const build = await buildStandaloneHtml(elementId);
+  if (build.error) return { success: false, error: build.error };
 
-  // 2. Clone the element and embed all images as base64 data URIs
-  if (onProgress) onProgress('Embedding images...');
-  const clone = element.cloneNode(true);
-  await Promise.all(Array.from(clone.querySelectorAll('img')).map(async img => {
-    const src = img.getAttribute('src');
-    if (!src || src.startsWith('data:')) return;
-    try {
-      const res = await fetch(new URL(src, window.location.href).href);
-      const blob = await res.blob();
+  if (onProgress) onProgress('Generating PDF...');
+  const blob = await reportAPI.generatePdf({
+    html: build.html,
+    options: { format: 'A4', printBackground: true, margin: { top: '0', right: '0', bottom: '0', left: '0' } }
+  });
+
+  if (!blob || blob.size === 0) throw new Error('Server returned an empty PDF');
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+  if (onProgress) onProgress('Done!');
+  return { success: true };
+};
       await new Promise(resolve => {
         const reader = new FileReader();
         reader.onloadend = () => { img.src = reader.result; resolve(); };
@@ -105,41 +158,26 @@ const generateJPEG = async (elementId, filename, onProgress) => {
   const element = document.getElementById(elementId);
   if (!element) return { success: false, error: `Element #${elementId} not found` };
 
-  if (onProgress) onProgress('Rendering report...');
+  if (onProgress) onProgress('Collecting styles...');
+  const build = await buildStandaloneHtml(elementId);
+  if (build.error) return { success: false, error: build.error };
 
-  // html2canvas is already in the project bundle (used by simplePdfGenerator)
-  const html2canvas = (await import('html2canvas')).default;
-
-  const canvas = await html2canvas(element, {
-    scale: 2,              // 2× DPI — print-quality output
-    useCORS: true,
-    allowTaint: true,
-    backgroundColor: '#ffffff',
-    logging: false,
-    windowWidth: element.scrollWidth,
-    windowHeight: element.scrollHeight,
+  if (onProgress) onProgress('Generating JPEG...');
+  const blob = await reportAPI.generateScreenshot({
+    html: build.html,
+    options: { format: 'A4', type: 'jpeg', quality: 100 }
   });
 
-  if (onProgress) onProgress('Saving JPEG...');
+  if (!blob || blob.size === 0) throw new Error('Server returned an empty JPEG');
 
-  await new Promise((resolve, reject) => {
-    canvas.toBlob(
-      (blob) => {
-        if (!blob) { reject(new Error('Failed to create image blob')); return; }
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        setTimeout(() => URL.revokeObjectURL(url), 5000);
-        resolve();
-      },
-      'image/jpeg',
-      0.92  // quality: 0.92 = excellent, ~3-5× smaller than PNG
-    );
-  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
 
   if (onProgress) onProgress('Done!');
   return { success: true };

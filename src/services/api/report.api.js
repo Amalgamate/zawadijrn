@@ -22,37 +22,39 @@ export const reportAPI = {
     const queryString = new URLSearchParams(params).toString();
     return fetchWithAuth(`/reports/analytics/learner/${learnerId}${queryString ? `?${queryString}` : ''}`);
   },
+  /**
+   * Generate a true vector PDF via the Puppeteer backend.
+   * @param {Object} data - { html: string, options?: object }
+   * @returns {Promise<Blob>} PDF blob ready for download or URL.createObjectURL
+   */
   generatePdf: async (data) => {
-    try {
-      const response = await axiosInstance.post('/reports/generate-pdf', data, { responseType: 'blob' });
-      const blob = response.data;
-      
-      // Check if response is actually a PDF or error text
-      const contentType = response.headers['content-type'] || '';
-      if (contentType.includes('text/plain')) {
-        const errorText = await blob.text();
-        throw new Error(`Backend error: ${errorText}`);
-      }
-      
-      if (blob.size < 100) console.warn('⚠️ PDF Blob is suspiciously small:', blob.size, 'bytes');
-      return blob;
-    } catch (error) {
-      let errorMsg = error.message || 'PDF Generation failed';
-      
-      // Try to extract better error message
-      if (error.response?.data) {
-        try {
-          if (typeof error.response.data === 'string') {
-            errorMsg = error.response.data;
-          } else if (error.response.data.message) {
-            errorMsg = error.response.data.message;
-          }
-        } catch (e) {
-          // fallback to default
-        }
-      }
-      
-      throw new Error(`PDF Generation failed: ${errorMsg}`);
-    }
+    const { html, options = {} } = data || {};
+    if (!html) throw new Error('generatePdf: html is required');
+
+    const response = await axiosInstance.post('/pdf/generate', { html, options }, {
+      responseType: 'blob',
+      timeout: 60_000, // 60 s — Puppeteer can be slow on first boot
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    // axiosInstance returns response.data directly as a Blob
+    return response.data instanceof Blob
+      ? response.data
+      : new Blob([response.data], { type: 'application/pdf' });
+  },
+
+  generateScreenshot: async (data) => {
+    const { html, options = {} } = data || {};
+    if (!html) throw new Error('generateScreenshot: html is required');
+
+    const response = await axiosInstance.post('/pdf/screenshot', { html, options }, {
+      responseType: 'blob',
+      timeout: 60_000,
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    return response.data instanceof Blob
+      ? response.data
+      : new Blob([response.data], { type: 'image/jpeg' });
   },
 };
