@@ -122,6 +122,9 @@ const generateVectorPDF = async (elementId, filename, onProgress) => {
       // Single page capture
       if (onProgress) onProgress('Capturing report layout...');
       
+      // Wait for React to fully settle and fonts to stabilize
+      await new Promise(r => setTimeout(r, 500));
+      
       const canvas = await html2canvas(element, {
         scale: 3,
         useCORS: true,
@@ -146,6 +149,15 @@ const generateVectorPDF = async (elementId, filename, onProgress) => {
             el.style.position = 'relative';
             el.style.left = '0';
             el.style.overflow = 'visible';
+            
+            // Force all children of report-card to be visible
+            const allElements = el.querySelectorAll('*');
+            allElements.forEach(node => {
+              if (node.style) {
+                node.style.visibility = 'visible';
+                node.style.opacity = '1';
+              }
+            });
           }
           // Relax the inner .report-card fixed height so learners with
           const inner = el?.querySelector('.report-card');
@@ -202,6 +214,9 @@ const generateJPEG = async (elementId, filename, onProgress) => {
 
   try {
     if (onProgress) onProgress('Capturing high-resolution image...');
+    
+    // Wait for React to fully settle and styles to commit
+    await new Promise(r => setTimeout(r, 500));
     
     const canvas = await html2canvas(element, {
       scale: 3, // High scale for clear images
@@ -556,7 +571,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
           <img
             src={logoSrc}
             alt="School Logo"
-            style={{ height: '100px', width: 'auto', objectFit: 'contain', display: 'inline-block', margin: '0 auto' }}
+            style={{ height: '80px', width: 'auto', objectFit: 'contain', display: 'inline-block', margin: '0 auto' }}
             onError={(e) => { e.target.style.display = 'none'; }}
           />
             );
@@ -565,20 +580,20 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
 
         {/* School Info */}
         <h1 style={{ 
-          fontSize: '38px', 
+          fontSize: '32px', 
           fontWeight: '950', 
           color: brandingSettings?.brandColor || '#1E3A8A', 
-          margin: '0 0 2px 0', 
+          margin: '0 0 1px 0', 
           textTransform: 'uppercase', 
           letterSpacing: '0.5px',
           lineHeight: '1.0',
-          WebkitTextStroke: '1.4px ' + (brandingSettings?.brandColor || '#1E3A8A') // Extreme bold
+          WebkitTextStroke: '1.2px ' + (brandingSettings?.brandColor || '#1E3A8A') // Extreme bold
         }}>
           {user?.school?.name || brandingSettings?.schoolName || 'ACADEMIC SCHOOL'}
         </h1>
 
         {user?.school?.motto && (
-          <div style={{ fontSize: '11px', fontWeight: '800', color: '#64748b', marginTop: '6px', textTransform: 'uppercase', fontStyle: 'italic', letterSpacing: '0.5px' }}>
+          <div style={{ fontSize: '10px', fontWeight: '800', color: '#64748b', marginTop: '4px', textTransform: 'uppercase', fontStyle: 'italic', letterSpacing: '0.4px' }}>
             "{user.school.motto}"
           </div>
         )}
@@ -590,10 +605,10 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
         </div>
 
         {/* Separator Line */}
-        <div style={{ width: '100%', height: '3px', backgroundColor: brandingSettings?.brandColor || '#1e3a8a', marginTop: '16px', marginBottom: '12px' }}></div>
+        <div style={{ width: '100%', height: '2.5px', backgroundColor: brandingSettings?.brandColor || '#1e3a8a', marginTop: '10px', marginBottom: '6px' }}></div>
 
         {/* Report Title */}
-        <h2 style={{ fontSize: '18px', fontWeight: '900', color: '#000', margin: '4px 0 6px 0', textTransform: 'uppercase', letterSpacing: '4px', paddingTop: '10px' }}>
+        <h2 style={{ fontSize: '16px', fontWeight: '900', color: '#000', margin: '2px 0 3px 0', textTransform: 'uppercase', letterSpacing: '3px', paddingTop: '4px' }}>
           Summative Assessment Report
         </h2>
 
@@ -602,14 +617,14 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
           display: 'inline-flex', 
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: '11px', 
+          fontSize: '10px', 
           fontWeight: '800', 
           color: '#1E3A8A', 
-          marginTop: '10px', 
-          marginBottom: '8px', 
+          marginTop: '6px', 
+          marginBottom: '5px', 
           textTransform: 'uppercase', 
           backgroundColor: '#eff6ff', 
-          padding: '6px 20px', 
+          padding: '4px 16px', 
           borderRadius: '40px', 
           border: '1px solid #dbeafe',
           lineHeight: '1',
@@ -637,7 +652,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
         return (
           <div className="mb-3" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', border: '1px solid #e2e8f0', borderRadius: '4px', overflow: 'hidden', fontSize: '13px' }}>
             {/* LEFT: Learner Info */}
-            <div style={{ padding: '6px 12px', display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '2px 10px', alignContent: 'start' }}>
+            <div style={{ padding: '4px 12px', display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '1px 10px', alignContent: 'start' }}>
               <div style={{ fontWeight: '900', color: '#444' }}>NAME:</div>
               <div style={{ fontWeight: '900', color: '#000', textTransform: 'uppercase' }}>{learner.firstName} {learner.lastName}</div>
               <div style={{ fontWeight: '900', color: '#444' }}>ADM NO:</div>
@@ -649,19 +664,19 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
             </div>
             {/* RIGHT: Assessment Summary */}
             <div style={{ borderLeft: '1px solid #e2e8f0', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0' }}>
-              <div style={{ padding: '6px 12px', textAlign: 'center', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
+              <div style={{ padding: '4px 12px', textAlign: 'center', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
                 <div style={{ fontSize: '9px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '1px' }}>Subjects Assessed</div>
                 <div style={{ fontSize: '16px', fontWeight: '900', color: '#0f172a' }}>{tableRows.length}</div>
               </div>
-              <div style={{ padding: '6px 12px', textAlign: 'center', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
+              <div style={{ padding: '4px 12px', textAlign: 'center', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
                 <div style={{ fontSize: '9px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '1px' }}>Total Points</div>
                 <div style={{ fontSize: '16px', fontWeight: '900', color: '#0f172a' }}>{totalPoints}</div>
               </div>
-              <div style={{ padding: '6px 12px', textAlign: 'center', borderRight: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
+              <div style={{ padding: '4px 12px', textAlign: 'center', borderRight: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
                 <div style={{ fontSize: '9px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '1px' }}>Average Score</div>
                 <div style={{ fontSize: '16px', fontWeight: '900', color: '#0f172a' }}>{avgPct}%</div>
               </div>
-              <div style={{ padding: '6px 12px', textAlign: 'center', backgroundColor: '#eff6ff' }}>
+              <div style={{ padding: '4px 12px', textAlign: 'center', backgroundColor: '#eff6ff' }}>
                 <div style={{ fontSize: '9px', fontWeight: '800', color: '#1e40af', textTransform: 'uppercase', marginBottom: '1px' }}>Overall Grade</div>
                 <div style={{ fontSize: '16px', fontWeight: '900', color: '#1e3a8a' }}>{overallGrade}</div>
               </div>
@@ -674,10 +689,10 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
 
 
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', marginBottom: '8px', border: '1px solid #cbd5e1' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px', marginBottom: '6px', border: '1px solid #cbd5e1' }}>
           <thead>
             <tr style={{ backgroundColor: '#1e3a8a', color: 'white' }}>
-              <th style={{ padding: '8px 6px', textAlign: 'left', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.2)' }}>SUBJECT</th>
+              <th style={{ padding: '6px 6px', textAlign: 'left', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.2)' }}>SUBJECT</th>
               {testColumns.map(col => (
                 <th key={col} style={{ padding: '8px 6px', textAlign: 'center', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.2)', minWidth: '64px', whiteSpace: 'nowrap' }}>
                   {formatTestName(col)}
@@ -701,12 +716,12 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
                     ? getCBCGrade((score / (row.totalMarks / (row.testCount || 1))) * 100).grade
                     : null;
                   return (
-                    <td key={col} style={{ padding: '8px 6px', textAlign: 'center', color: '#000000', border: '1px solid #cbd5e1' }}>
-                      <div style={{ fontSize: '16px', fontWeight: '950', lineHeight: '1', color: '#0f172a' }}>
+                    <td key={col} style={{ padding: '5px 6px', textAlign: 'center', color: '#000000', border: '1px solid #cbd5e1' }}>
+                      <div style={{ fontSize: '15px', fontWeight: '950', lineHeight: '1.1', color: '#0f172a' }}>
                         {score !== null ? score : '—'}
                       </div>
                       {colGrade && (
-                        <div style={{ fontSize: '10px', fontWeight: '800', color: '#64748b', lineHeight: '1', marginTop: '2px', textTransform: 'uppercase' }}>{colGrade}</div>
+                        <div style={{ fontSize: '9px', fontWeight: '800', color: '#64748b', lineHeight: '1', marginTop: '1px', textTransform: 'uppercase' }}>{colGrade}</div>
                       )}
                     </td>
                   );
