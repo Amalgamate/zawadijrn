@@ -200,8 +200,22 @@ const generateJPEG = async (elementId, filename, onProgress) => {
         const el = clonedDoc.getElementById(elementId);
         if (el) {
           el.style.width = '794px';
-          el.style.height = '1123px';
-          el.style.display = 'flex';
+          el.style.minHeight = '1123px';
+          el.style.height = 'auto';           // let content breathe
+          el.style.display = 'flex';          // MUST be flex for layout preservation
+          el.style.flexDirection = 'column';
+          el.style.visibility = 'visible';
+          el.style.opacity = '1';
+          el.style.position = 'relative';
+          el.style.left = '0';
+          el.style.overflow = 'visible';
+        }
+        // Also relax the inner card height in the clone
+        const inner = el?.querySelector('.report-card');
+        if (inner) {
+          inner.style.minHeight = '1123px';
+          inner.style.height = 'auto';
+          inner.style.overflow = 'visible';
         }
       }
     });
@@ -525,17 +539,17 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
           fontSize: '38px', 
           fontWeight: '950', 
           color: brandingSettings?.brandColor || '#1E3A8A', 
-          margin: '0', 
+          margin: '0 0 4px 0', 
           textTransform: 'uppercase', 
-          letterSpacing: '0.5px', // Reduced for better canvas rendering
+          letterSpacing: '0.5px',
           lineHeight: '1.0',
-          WebkitTextStroke: '0.8px ' + (brandingSettings?.brandColor || '#1E3A8A') // Force extra boldness for canvas
+          WebkitTextStroke: '1.2px ' + (brandingSettings?.brandColor || '#1E3A8A') // Extra bold for professional look
         }}>
           {user?.school?.name || brandingSettings?.schoolName || 'ACADEMIC SCHOOL'}
         </h1>
 
         {user?.school?.motto && (
-          <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginTop: '2px', textTransform: 'uppercase', fontStyle: 'italic' }}>
+          <div style={{ fontSize: '11px', fontWeight: '800', color: '#64748b', marginTop: '6px', textTransform: 'uppercase', fontStyle: 'italic', letterSpacing: '0.5px' }}>
             "{user.school.motto}"
           </div>
         )}
@@ -547,10 +561,10 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
         </div>
 
         {/* Separator Line */}
-        <div style={{ width: '100%', height: '3px', backgroundColor: brandingSettings?.brandColor || '#1e3a8a', marginTop: '12px', marginBottom: '8px' }}></div>
+        <div style={{ width: '100%', height: '3px', backgroundColor: brandingSettings?.brandColor || '#1e3a8a', marginTop: '16px', marginBottom: '12px' }}></div>
 
         {/* Report Title */}
-        <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#000', margin: '0', textTransform: 'uppercase', letterSpacing: '2px' }}>
+        <h2 style={{ fontSize: '18px', fontWeight: '900', color: '#000', margin: '4px 0 0 0', textTransform: 'uppercase', letterSpacing: '4px', paddingTop: '4px' }}>
           Summative Assessment Report
         </h2>
 
