@@ -131,15 +131,29 @@ const generateVectorPDF = async (elementId, filename, onProgress) => {
         height: 1123,
         allowTaint: true,
         onclone: (clonedDoc) => {
+          // CRITICAL FIX: LearnerReportTemplate root is display:flex/column.
+          // Setting display:'block' here breaks all child alignment and causes
+          // the student name, grade boxes, and subject rows to overlap.
           const el = clonedDoc.getElementById(elementId);
           if (el) {
             el.style.width = '794px';
-            el.style.height = '1123px';
-            el.style.display = 'block';
+            el.style.minHeight = '1123px';
+            el.style.height = 'auto';           // let content breathe — no hard clip
+            el.style.display = 'flex';          // MUST be flex, never block
+            el.style.flexDirection = 'column';
             el.style.visibility = 'visible';
             el.style.opacity = '1';
             el.style.position = 'relative';
             el.style.left = '0';
+            el.style.overflow = 'visible';
+          }
+          // Relax the inner .report-card fixed height so learners with
+          // more subjects than average are never clipped at the bottom.
+          const inner = el?.querySelector('.report-card');
+          if (inner) {
+            inner.style.minHeight = '1123px';
+            inner.style.height = 'auto';
+            inner.style.overflow = 'visible';
           }
         }
       });
@@ -480,8 +494,9 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
         fontFamily: "'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
         lineHeight: '1.2',
         width: '794px', // 210mm at 96 DPI
-        height: '1123px', // 297mm at 96 DPI
-        padding: '30px 40px 60px 40px',
+        minHeight: '1123px', // ensure card is never shorter than A4
+        height: '1123px',    // 297mm at 96 DPI — kept for canvas crop boundary
+        padding: '30px 40px 30px 40px',
         boxSizing: 'border-box',
         display: 'flex',
         flexDirection: 'column',
@@ -605,15 +620,15 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
             <tr style={{ backgroundColor: '#1e3a8a', color: 'white' }}>
               <th style={{ padding: '8px 6px', textAlign: 'left', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.2)' }}>SUBJECT</th>
               {testColumns.map(col => (
-                <th key={col} style={{ padding: '8px 6px', textAlign: 'center', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.2)' }}>
+                <th key={col} style={{ padding: '8px 6px', textAlign: 'center', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.2)', minWidth: '64px', whiteSpace: 'nowrap' }}>
                   {formatTestName(col)}
                 </th>
               ))}
               {testColumns.length > 1 && (
-                <th style={{ padding: '8px 6px', textAlign: 'center', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.2)' }}>AVG %</th>
+                <th style={{ padding: '8px 6px', textAlign: 'center', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.2)', minWidth: '52px' }}>AVG %</th>
               )}
-              <th style={{ padding: '8px 6px', textAlign: 'left', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.2)' }}>GRADE</th>
-              <th style={{ padding: '8px 6px', textAlign: 'center', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.2)' }}>PTS</th>
+              <th style={{ padding: '8px 6px', textAlign: 'left', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.2)', minWidth: '52px' }}>GRADE</th>
+              <th style={{ padding: '8px 6px', textAlign: 'center', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.2)', minWidth: '36px' }}>PTS</th>
 
             </tr>
           </thead>
@@ -3657,7 +3672,11 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
       }
 
       {/* HIDDEN CAPTURE CONTAINERS — Used by html2canvas for PDF/WhatsApp generation */}
-      <div style={{ position: 'fixed', top: 0, left: 0, width: '794px', height: '1123px', opacity: 0, pointerEvents: 'none', zIndex: -100, overflow: 'hidden' }}>
+      {/* NOTE: visibility:hidden (NOT opacity:0) is required here.
+           html2canvas fails silently on opacity:0 and renders a blank/misaligned
+           canvas. visibility:hidden keeps the element in the layout tree so
+           html2canvas can read it, while remaining invisible to the user. */}
+      <div style={{ position: 'fixed', top: 0, left: 0, width: '794px', height: '1123px', visibility: 'hidden', pointerEvents: 'none', zIndex: -100, overflow: 'visible' }}>
         {/* Single Page Capture */}
         {(singleDownloadData || (reportData?.rows?.length === 1 && (reportData.type === 'LEARNER_REPORT' || reportData.type === 'LEARNER_TERMLY_REPORT'))) && (
           <div id="single-print-content">
@@ -3679,7 +3698,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
         {bulkDownloadData && bulkDownloadData.length > 0 && (
           <div id="bulk-print-content" style={{ display: 'flex', flexDirection: 'column' }}>
             {bulkDownloadData.map((row, idx) => (
-              <div key={idx} className="pdf-report-page" style={{ width: '794px', height: '1123px', overflow: 'hidden', backgroundColor: '#fff' }}>
+              <div key={idx} className="pdf-report-page" style={{ width: '794px', height: '1123px', overflow: 'visible', backgroundColor: '#fff' }}>
                 <LearnerReportTemplate 
                   learner={row.learner}
                   results={row.results || []}
