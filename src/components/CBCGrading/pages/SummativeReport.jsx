@@ -81,21 +81,6 @@ const generateVectorPDF = async (elementId, filename, onProgress) => {
   if (!element) return { success: false, error: `Element #${elementId} not found` };
 
   try {
-    if (onProgress) onProgress('Capturing report layout...');
-    
-    // Use a slightly higher scale for better resolution in PDF
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-      backgroundColor: '#ffffff',
-      windowWidth: element.scrollWidth,
-      windowHeight: element.scrollHeight
-    });
-
-    if (onProgress) onProgress('Preparing PDF pages...');
-    
-    const imgData = canvas.toDataURL('image/jpeg', 0.95);
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -104,15 +89,66 @@ const generateVectorPDF = async (elementId, filename, onProgress) => {
 
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
-    
-    // Fit the image to A4 while maintaining aspect ratio
-    const imgProps = pdf.getImageProperties(imgData);
-    const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
-    
-    // Add the image to the PDF
-    pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, imgHeight);
 
-    if (onProgress) onProgress('Downloading...');
+    // Check if we are doing a bulk print (multiple pages)
+    const pageElements = element.querySelectorAll('.pdf-report-page');
+    
+    if (pageElements && pageElements.length > 0) {
+      if (onProgress) onProgress(`Generating ${pageElements.length} pages...`);
+      
+      for (let i = 0; i < pageElements.length; i++) {
+        const pageEl = pageElements[i];
+        if (onProgress) onProgress(`Capturing page ${i + 1} of ${pageElements.length}...`);
+        
+        // Wait for potential images in each page
+        await new Promise(r => setTimeout(r, 200));
+
+        const canvas = await html2canvas(pageEl, {
+          scale: 2.2, // Slightly lower for better performance in bulk
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+          width: 794,
+          height: 1123,
+          allowTaint: true
+        });
+
+        const imgData = canvas.toDataURL('image/jpeg', 0.85);
+        
+        if (i > 0) pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+      }
+    } else {
+      // Single page capture
+      if (onProgress) onProgress('Capturing report layout...');
+      
+      const canvas = await html2canvas(element, {
+        scale: 3,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        width: 794,
+        height: 1123,
+        allowTaint: true,
+        onclone: (clonedDoc) => {
+          const el = clonedDoc.getElementById(elementId);
+          if (el) {
+            el.style.width = '794px';
+            el.style.height = '1123px';
+            el.style.display = 'block';
+            el.style.visibility = 'visible';
+            el.style.opacity = '1';
+            el.style.position = 'relative';
+            el.style.left = '0';
+          }
+        }
+      });
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.9);
+      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+    }
+
+    if (onProgress) onProgress('Finalizing PDF...');
     pdf.save(filename);
 
     if (onProgress) onProgress('Done!');
@@ -143,7 +179,17 @@ const generateJPEG = async (elementId, filename, onProgress) => {
       scale: 3, // High scale for clear images
       useCORS: true,
       logging: false,
-      backgroundColor: '#ffffff'
+      backgroundColor: '#ffffff',
+      width: 794,
+      height: 1123,
+      onclone: (clonedDoc) => {
+        const el = clonedDoc.getElementById(elementId);
+        if (el) {
+          el.style.width = '794px';
+          el.style.height = '1123px';
+          el.style.display = 'flex';
+        }
+      }
     });
 
     if (onProgress) onProgress('Finalizing image...');
@@ -431,16 +477,15 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
   return (
     <div className="report-card relative bg-white mx-auto overflow-hidden"
       style={{
-        fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+        fontFamily: "'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
         lineHeight: '1.2',
-        width: '210mm',
-        height: '297mm', // strict A4 height
-        maxHeight: '297mm',
-        padding: '8mm 8mm 20mm 8mm',
+        width: '794px', // 210mm at 96 DPI
+        height: '1123px', // 297mm at 96 DPI
+        padding: '30px 40px 60px 40px',
         boxSizing: 'border-box',
         display: 'flex',
         flexDirection: 'column',
-        overflow: 'hidden'
+        backgroundColor: '#ffffff'
       }}
     >
       {/* Header Section - Centered Professional Redesign */}
@@ -461,7 +506,16 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
         </div>
 
         {/* School Info */}
-        <h1 style={{ fontSize: '36px', fontWeight: '950', color: brandingSettings?.brandColor || '#1E3A8A', margin: '0', textTransform: 'uppercase', letterSpacing: '1.5px', lineHeight: '1.1' }}>
+        <h1 style={{ 
+          fontSize: '38px', 
+          fontWeight: '950', 
+          color: brandingSettings?.brandColor || '#1E3A8A', 
+          margin: '0', 
+          textTransform: 'uppercase', 
+          letterSpacing: '0.5px', // Reduced for better canvas rendering
+          lineHeight: '1.0',
+          WebkitTextStroke: '0.8px ' + (brandingSettings?.brandColor || '#1E3A8A') // Force extra boldness for canvas
+        }}>
           {user?.school?.name || brandingSettings?.schoolName || 'ACADEMIC SCHOOL'}
         </h1>
 
@@ -478,7 +532,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
         </div>
 
         {/* Separator Line */}
-        <div className="w-full h-1 mt-2 mb-2" style={{ backgroundColor: brandingSettings?.brandColor || '#1e3a8a' }}></div>
+        <div style={{ width: '100%', height: '3px', backgroundColor: brandingSettings?.brandColor || '#1e3a8a', marginTop: '12px', marginBottom: '8px' }}></div>
 
         {/* Report Title */}
         <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#000', margin: '0', textTransform: 'uppercase', letterSpacing: '2px' }}>
@@ -593,10 +647,10 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
         </table>
 
       {/* Chart + Pathway Insight — side by side */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '12px', marginBottom: '8px', alignItems: 'start' }}>
+      <div style={{ display: 'flex', gap: '30px', marginTop: '16px', marginBottom: '8px', alignItems: 'start' }}>
 
-        {/* LEFT: Bar Chart — half width, left-aligned */}
-        <div>
+        {/* LEFT: Bar Chart — fixed width to prevent squashing */}
+        <div style={{ width: '420px' }}>
           <h3 style={{ fontSize: '10px', fontWeight: '800', color: '#111827', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', marginBottom: '6px', paddingBottom: '2px' }}>Subject Performance</h3>
           <div style={{ width: '100%' }}>
             {tableRows && tableRows.length > 0 ? (() => {
@@ -612,10 +666,10 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
                     return (
                       <g key={row.area}>
                         <rect x={x} y={y} width={barW} height={barH} fill={CHART_COLORS[i % CHART_COLORS.length]} rx="2"/>
-                        <text x={x + barW/2} y={chartH + 11} textAnchor="middle" fontSize="7" fontWeight="bold" fill="#64748b" fontFamily="Arial, sans-serif">
-                          {getAbbreviatedName(row.area).slice(0, 5)}
+                        <text x={x + barW/2} y={chartH + 11} textAnchor="middle" fontSize="8" fontWeight="bold" fill="#64748b" fontFamily="Arial, sans-serif">
+                          {getAbbreviatedName(row.area).slice(0, 6)}
                         </text>
-                        <text x={x + barW/2} y={y - 3} textAnchor="middle" fontSize="7" fontWeight="bold" fill="#374151" fontFamily="Arial, sans-serif">
+                        <text x={x + barW/2} y={y - 3} textAnchor="middle" fontSize="8" fontWeight="bold" fill="#374151" fontFamily="Arial, sans-serif">
                           {row.percentage}%
                         </text>
                       </g>
@@ -687,25 +741,23 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
           const recommended = [...pathways]
             .filter(p => p.pct !== null)
             .sort((a, b) => b.pct - a.pct)[0];
-
           return (
-            <div style={{ borderLeft: '1px solid #e2e8f0', paddingLeft: '12px' }}>
+            <div style={{ flex: 1, borderLeft: '1px solid #e2e8f0', paddingLeft: '24px' }}>
               <h3 style={{ fontSize: '10px', fontWeight: '800', color: '#111827', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', marginBottom: '8px', paddingBottom: '2px' }}>Pathways Insight</h3>
 
-              {/* 3 pathway score bars */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '8px' }}>
                 {pathways.map(p => (
                   <div key={p.label}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                      <span style={{ fontSize: '10px', fontWeight: '800', color: '#374151' }}>{p.label}</span>
-                      <span style={{ fontSize: '10px', fontWeight: '900', color: p.pct !== null ? p.color : '#9ca3af' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1px' }}>
+                      <span style={{ fontSize: '9px', fontWeight: '800', color: '#374151', whiteSpace: 'nowrap' }}>{p.label}</span>
+                      <span style={{ fontSize: '9px', fontWeight: '900', color: p.pct !== null ? p.color : '#9ca3af' }}>
                         {p.pct !== null ? `${p.pct}%` : 'N/A'}
                         {recommended && p.label === recommended.label && (
                           <span style={{ marginLeft: '4px', fontSize: '8px', background: p.color, color: 'white', padding: '1px 4px', borderRadius: '3px', fontWeight: '800' }}>BEST FIT</span>
                         )}
                       </span>
                     </div>
-                    <div style={{ height: '6px', background: '#f1f5f9', overflow: 'hidden', marginBottom: '2px' }}>
+                    <div style={{ height: '7px', background: '#f1f5f9', overflow: 'hidden', marginBottom: '2px', marginTop: '4px' }}>
                       <div style={{
                         height: '100%',
                         width: `${p.pct ?? 0}%`,
@@ -726,7 +778,6 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
             </div>
           );
         })()}
-
       </div>
 
       {/* Grading Key — full width below */}
@@ -790,7 +841,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
       </div>{/* end CONTENT BODY */}
 
       {/* Class Teacher's Remarks — anchored just above the footer */}
-      <div style={{ position: 'absolute', bottom: '18mm', left: '8mm', right: '8mm' }}>
+      <div style={{ marginTop: 'auto', marginBottom: '10px' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
           <span style={{ fontSize: '10px', fontWeight: '900', color: '#475569', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
             Class Teacher's Remarks:
@@ -881,6 +932,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
   const [bulkDownloadData, setBulkDownloadData] = useState(null);
   const [isSingleDownloading, setIsSingleDownloading] = useState(false);
   const [singleCommentData, setSingleCommentData] = useState(null);
+  const [commentMap, setCommentMap] = useState({});
 
   const reportRef = useRef(null);
   const testGroupRef = useRef(null);
@@ -1276,7 +1328,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
         : `Summative_Report_${timestamp}.jpg`;
 
       const result = await generateJPEG(
-        'summative-report-content',
+        'single-print-content',
         filename,
         (msg) => { setPdfProgress(msg); console.log(`🖼️ JPEG: ${msg}`); }
       );
@@ -1318,7 +1370,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
 
 
       const result = await generateVectorPDF(
-        'summative-report-content',
+        'single-print-content',
         filename,
         (msg) => { setPdfProgress(msg); console.log(`📑 PDF: ${msg}`); }
       );
@@ -1576,14 +1628,24 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
     setIsSendingWhatsApp(true);
     setPdfProgress('Capturing report for WhatsApp...');
     try {
-      const element = document.getElementById('summative-report-content');
+      const element = document.getElementById('single-print-content');
       if (!element) throw new Error("Report element not found");
 
       // Generate JPEG base64 on frontend
       const canvas = await html2canvas(element, {
-        scale: 2,
+        scale: 2, // Scale 2 is enough for WhatsApp to save bandwidth
         useCORS: true,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        width: 794,
+        height: 1123,
+        onclone: (clonedDoc) => {
+          const el = clonedDoc.getElementById('single-print-content');
+          if (el) {
+            el.style.width = '794px';
+            el.style.height = '1123px';
+            el.style.display = 'flex';
+          }
+        }
       });
       
       const base64Image = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
@@ -1730,14 +1792,15 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
     }
 
     // Pre-fetch all comments before mounting cards (avoids N API calls during PDF render)
-    const commentMap = {};
+    const fetchedComments = {};
     for (const row of rowsToPrint) {
       try {
-        const res = await api.cbc.getComments(row.learner.id, { term: selectedTerm, academicYear: selectedYear });
-        if (res.success) commentMap[row.learner.id] = res.data;
+        const res = await api.cbc.getComments(row.learner.id, { term: selectedTerm, academicYear: academicYear });
+        if (res.success) fetchedComments[row.learner.id] = res.data;
       } catch (_) {}
     }
 
+    setCommentMap(fetchedComments);
     setBulkDownloadData(rowsToPrint);
     setIsBulkPrinting(true);
     setPdfProgress('🚀 Initializing bulk report engine...');
@@ -1908,8 +1971,28 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
     setWhatsAppProgress({ current: 0, total: rowsToSend.length, status: 'Initializing...' });
     // setShowWhatsAppConfirm(false); // Kept open for progress display
 
+    // 0. Pre-fetch all comments before mounting cards
+    setPdfProgress('🔍 Preparing assessment data...');
+    const commentMap = {};
+    for (const row of rowsToSend) {
+      try {
+        const res = await api.cbc.getComments(row.learner.id, { term: selectedTerm, academicYear: academicYear });
+        if (res.success) commentMap[row.learner.id] = res.data;
+      } catch (_) {}
+    }
+
+    // 1. Mount reports in the hidden bulk container
+    setBulkDownloadData(rowsToSend);
+    setCommentMap(commentMap); // Ensure the template gets the comments
+    
+    // Give DOM time to render
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
     let successCount = 0;
     let failCount = 0;
+
+    const bulkContainer = document.getElementById('bulk-print-content');
+    const pageEls = bulkContainer?.querySelectorAll('.pdf-report-page') || [];
 
     for (let i = 0; i < rowsToSend.length; i++) {
       const row = rowsToSend[i];
@@ -1919,12 +2002,26 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
       setWhatsAppProgress({
         current: i + 1,
         total: rowsToSend.length,
-        status: `Sending to ${learner.firstName}... (${i + 1}/${rowsToSend.length})`,
+        status: `Preparing image for ${learner.firstName}...`,
         percent: progress
       });
 
       try {
-        // format subjects
+        let reportImageBase64 = null;
+        
+        // Try to capture the specific page element from the bulk container
+        const pageEl = pageEls[i];
+        if (pageEl) {
+          const canvas = await html2canvas(pageEl, {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            width: 794,
+            height: 1123
+          });
+          reportImageBase64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+        }
+
         const subjects = {};
         const processedBatchTests = new Set();
         if (row.results) {
@@ -1936,7 +2033,6 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
             const rawName = r.learningArea || r.test?.learningArea || 'Subject';
             const subjectName = rawName.trim().toUpperCase();
 
-            // If multiple tests for one subject, we average them for the bulk view payload
             if (subjects[subjectName]) {
               subjects[subjectName].score = (subjects[subjectName].score + (r.score || 0)) / 2;
             } else {
@@ -1951,6 +2047,8 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
         const parentPhone = testNumber || getLearnerPhone(learner);
 
         if (parentPhone) {
+          setWhatsAppProgress(prev => ({ ...prev, status: `Sending to ${learner.firstName}...` }));
+          
           await api.notifications.sendAssessmentReportWhatsApp({
             learnerId: learner.id,
             learnerName: `${learner.firstName} ${learner.lastName}`,
@@ -1962,7 +2060,8 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
             averageScore: row.averageScore,
             overallGrade: row.grade,
             subjects: subjects,
-            pathwayPrediction: row.pathwayPrediction
+            pathwayPrediction: row.pathwayPrediction,
+            reportImageBase64 // ADDED THE IMAGE DATA
           });
           successCount++;
         } else {
@@ -1975,9 +2074,9 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
         failCount++;
       }
 
-      // 2.5 second delay between messages to respect policies and avoid rate limiting
+      // Interval between messages
       if (i < rowsToSend.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 2500));
+        await new Promise(resolve => setTimeout(resolve, 1500));
       }
     }
 
@@ -3556,6 +3655,47 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
           </div>
         )
       }
+
+      {/* HIDDEN CAPTURE CONTAINERS — Used by html2canvas for PDF/WhatsApp generation */}
+      <div style={{ position: 'fixed', top: 0, left: 0, width: '794px', height: '1123px', opacity: 0, pointerEvents: 'none', zIndex: -100, overflow: 'hidden' }}>
+        {/* Single Page Capture */}
+        {(singleDownloadData || (reportData?.rows?.length === 1 && (reportData.type === 'LEARNER_REPORT' || reportData.type === 'LEARNER_TERMLY_REPORT'))) && (
+          <div id="single-print-content">
+            <LearnerReportTemplate 
+              learner={singleDownloadData?.learner || reportData?.learner || reportData?.rows?.[0]?.learner}
+              results={singleDownloadData?.results || reportData?.results || reportData?.rows?.[0]?.results || []}
+              pathwayPrediction={singleDownloadData?.pathwayPrediction || reportData?.pathwayPrediction || reportData?.rows?.[0]?.pathwayPrediction}
+              term={selectedTerm || reportData?.term}
+              academicYear={academicYear || reportData?.academicYear}
+              brandingSettings={brandingSettings}
+              user={user}
+              streamConfigs={streamConfigs}
+              commentData={singleCommentData || (reportData?.results?.[0]?.remarks && reportData.results[0].remarks !== '-' ? { principalComment: reportData.results[0].remarks } : null)}
+            />
+          </div>
+        )}
+
+        {/* Bulk Pages Capture */}
+        {bulkDownloadData && bulkDownloadData.length > 0 && (
+          <div id="bulk-print-content" style={{ display: 'flex', flexDirection: 'column' }}>
+            {bulkDownloadData.map((row, idx) => (
+              <div key={idx} className="pdf-report-page" style={{ width: '794px', height: '1123px', overflow: 'hidden', backgroundColor: '#fff' }}>
+                <LearnerReportTemplate 
+                  learner={row.learner}
+                  results={row.results || []}
+                  pathwayPrediction={row.pathwayPrediction}
+                  term={selectedTerm || reportData?.term}
+                  academicYear={academicYear || reportData?.academicYear}
+                  brandingSettings={brandingSettings}
+                  user={user}
+                  streamConfigs={streamConfigs}
+                  commentData={commentMap?.[row?.learner?.id]}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* NOTIFICATION MODAL */}
       {
