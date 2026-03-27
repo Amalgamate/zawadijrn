@@ -41,8 +41,7 @@ async function generatePdfWithPuppeteer(html: string, options: any) {
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
                 '--disable-dev-shm-usage',
-                '--disable-gpu',
-                '--single-process'
+                '--disable-gpu'
             ]
         };
 
@@ -105,8 +104,7 @@ async function generateScreenshotWithPuppeteer(html: string, options: any) {
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
                 '--disable-dev-shm-usage',
-                '--disable-gpu',
-                '--single-process'
+                '--disable-gpu'
             ]
         };
 

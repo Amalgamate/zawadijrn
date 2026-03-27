@@ -519,10 +519,21 @@ export const generateDocument = async (options = {}) => {
   }
 
   // Resolve images in the provided HTML content to Base64
-  const tempDiv = document.createElement('div');
-  tempDiv.innerHTML = html;
-  await resolveImagesToBase64(tempDiv);
-  let processedHtml = tempDiv.innerHTML;
+  // If html is a full document (has <!DOCTYPE or <html>), process it directly
+  let processedHtml;
+  const isFullDocument = html.trimStart().toLowerCase().startsWith('<!doctype') || html.trimStart().toLowerCase().startsWith('<html');
+  if (isFullDocument) {
+    // Parse as a full document so images resolve correctly
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    await resolveImagesToBase64(doc.body);
+    processedHtml = doc.documentElement.outerHTML;
+  } else {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    await resolveImagesToBase64(tempDiv);
+    processedHtml = tempDiv.innerHTML;
+  }
 
   // Build Final HTML with Branding 
   let finalHtml = processedHtml;
@@ -768,15 +779,74 @@ export const generateStatementPDF = async (learner, invoices, payments, options 
 };
 
 /**
- * Wrapper for the new system
+ * High-Fidelity browser-side PDF generator.
+ * Renders each .report-card child of elementId as its own A4 page using
+ * html2canvas + jsPDF — no server, no Puppeteer, full design preserved.
  */
 export const generateHighFidelityPDF = async (elementId, filename, options = {}) => {
-  const element = document.getElementById(elementId);
-  return generateDocument({
-    html: element?.innerHTML || '',
-    fileName: filename,
-    ...options
-  });
+  const { onProgress } = options;
+
+  const container = document.getElementById(elementId);
+  if (!container) return { success: false, error: `Element #${elementId} not found` };
+
+  try {
+    // Find individual report cards — each becomes one A4 page
+    const cards = Array.from(container.querySelectorAll('.report-card'));
+    const targets = cards.length > 0 ? cards : [container];
+
+    if (onProgress) onProgress(`Rendering ${targets.length} report(s)...`);
+
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const A4_W = 210;
+    const A4_H = 297;
+
+    for (let i = 0; i < targets.length; i++) {
+      const card = targets[i];
+      if (onProgress) onProgress(`Capturing report ${i + 1} of ${targets.length}...`);
+
+      // Temporarily make the card block-visible at full width for capture
+      const prevPosition = card.style.position;
+      const prevLeft = card.style.left;
+      card.style.position = 'relative';
+      card.style.left = 'auto';
+
+      const canvas = await html2canvas(card, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        width: card.scrollWidth,
+        height: card.scrollHeight,
+        windowWidth: card.scrollWidth,
+      });
+
+      card.style.position = prevPosition;
+      card.style.left = prevLeft;
+
+      const imgData = canvas.toDataURL('image/png');
+      const imgW = A4_W;
+      const imgH = (canvas.height * imgW) / canvas.width;
+
+      if (i > 0) pdf.addPage();
+
+      // If card taller than A4, scale to fit; otherwise top-align
+      if (imgH <= A4_H) {
+        pdf.addImage(imgData, 'PNG', 0, 0, imgW, imgH);
+      } else {
+        // Scale down to fit one page
+        const scale = A4_H / imgH;
+        pdf.addImage(imgData, 'PNG', 0, 0, imgW * scale, A4_H);
+      }
+    }
+
+    if (onProgress) onProgress('Saving PDF...');
+    pdf.save(filename);
+    return { success: true };
+  } catch (err) {
+    console.error('generateHighFidelityPDF error:', err);
+    return { success: false, error: err.message };
+  }
 };
 
 const simplePdf = {

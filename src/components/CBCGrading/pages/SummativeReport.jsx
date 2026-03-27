@@ -410,11 +410,13 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
         fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
         lineHeight: '1.2',
         width: '210mm',
-        minHeight: '297mm',
+        height: '297mm', // strict A4 height
+        maxHeight: '297mm',
         padding: '8mm 8mm 20mm 8mm',
         boxSizing: 'border-box',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        overflow: 'hidden'
       }}
     >
       {/* Header Section - Centered Professional Redesign */}
@@ -517,7 +519,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
       })()}
 
       {/* === CONTENT BODY — grows to fill available space === */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '18px' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
 
 
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', marginBottom: '8px', border: '1px solid #cbd5e1' }}>
@@ -540,14 +542,14 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
           <tbody>
             {tableRows.map((row, idx) => (
               <tr key={row.area} style={{ backgroundColor: 'white', borderBottom: '1px solid #cbd5e1' }}>
-                <td style={{ padding: '6px 6px', fontWeight: '700', fontSize: '16px', color: '#000000', letterSpacing: '-0.2px', border: '1px solid #cbd5e1' }}>{row.area}</td>
+                <td style={{ padding: '6px 6px', fontWeight: '700', fontSize: '13px', color: '#000000', letterSpacing: '-0.2px', border: '1px solid #cbd5e1' }}>{row.area}</td>
                 {testColumns.map(col => {
                   const score = row.scoresByCol[col];
                   const colGrade = score !== null && row.totalMarks > 0
                     ? getCBCGrade((score / (row.totalMarks / (row.testCount || 1))) * 100).grade
                     : null;
                   return (
-                    <td key={col} style={{ padding: '6px 6px', textAlign: 'center', color: '#000000', fontWeight: '700', fontSize: '16px', border: '1px solid #cbd5e1' }}>
+                    <td key={col} style={{ padding: '6px 6px', textAlign: 'center', color: '#000000', fontWeight: '700', fontSize: '14px', border: '1px solid #cbd5e1' }}>
                       {score !== null ? score : '—'}
                       {colGrade && (
                         <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', lineHeight: '1', marginTop: '1px' }}>{colGrade}</div>
@@ -556,10 +558,10 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
                   );
                 })}
                 {testColumns.length > 1 && (
-                  <td style={{ padding: '6px 6px', textAlign: 'center', fontWeight: '700', fontSize: '16px', color: '#000000', border: '1px solid #cbd5e1' }}>{row.percentage}%</td>
+                  <td style={{ padding: '6px 6px', textAlign: 'center', fontWeight: '700', fontSize: '14px', color: '#000000', border: '1px solid #cbd5e1' }}>{row.percentage}%</td>
                 )}
-                <td style={{ padding: '6px 6px', textAlign: 'left', fontWeight: '700', fontSize: '16px', color: row.color, border: '1px solid #cbd5e1' }}>{row.grade}</td>
-                <td style={{ padding: '6px 6px', textAlign: 'center', fontWeight: '700', fontSize: '16px', color: '#000000', border: '1px solid #cbd5e1' }}>{row.points || '—'}</td>
+                <td style={{ padding: '6px 6px', textAlign: 'left', fontWeight: '700', fontSize: '14px', color: row.color, border: '1px solid #cbd5e1' }}>{row.grade}</td>
+                <td style={{ padding: '6px 6px', textAlign: 'center', fontWeight: '700', fontSize: '14px', color: '#000000', border: '1px solid #cbd5e1' }}>{row.points || '—'}</td>
 
               </tr>
             ))}
