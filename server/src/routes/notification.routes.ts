@@ -39,6 +39,22 @@ const sendAnnouncementSchema = z.object({
   classId: z.string().optional()
 });
 
+const sendAssessmentReportSchema = z.object({
+  learnerId: z.string().min(1),
+  learnerName: z.string().min(1),
+  learnerGrade: z.string().min(1),
+  parentPhone: z.string().min(1),
+  parentName: z.string().optional(),
+  term: z.string().min(1),
+  academicYear: z.any().optional(),
+  totalTests: z.number().optional(),
+  averageScore: z.any().optional(),
+  overallGrade: z.string().optional(),
+  subjects: z.any().optional(),
+  pathwayPrediction: z.any().optional(),
+  reportHtml: z.string().optional()
+});
+
 /**
  * @route   POST /api/notifications/assessment-complete
  * @desc    Send assessment completion notification to parent
@@ -109,7 +125,7 @@ router.post(
   authenticate,
   requirePermission('SEND_MESSAGES'),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
-  validate(sendNotificationSchema),
+  validate(sendAssessmentReportSchema),
   auditLog('SEND_ASSESSMENT_REPORT_SMS'),
   asyncHandler(notificationController.sendAssessmentReportSms.bind(notificationController))
 );
@@ -124,7 +140,7 @@ router.post(
   authenticate,
   requirePermission('SEND_MESSAGES'),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
-  validate(sendNotificationSchema),
+  validate(sendAssessmentReportSchema),
   auditLog('SEND_ASSESSMENT_REPORT_WHATSAPP'),
   asyncHandler(notificationController.sendAssessmentReportWhatsApp.bind(notificationController))
 );
