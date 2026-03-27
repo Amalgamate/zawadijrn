@@ -101,49 +101,6 @@ const generateVectorPDF = async (elementId, filename, onProgress) => {
   if (onProgress) onProgress('Done!');
   return { success: true };
 };
-      await new Promise(resolve => {
-        const reader = new FileReader();
-        reader.onloadend = () => { img.src = reader.result; resolve(); };
-        reader.readAsDataURL(blob);
-      });
-    } catch (_) { /* keep original src on failure */ }
-  }));
-
-  // 3. Build a fully self-contained HTML document
-  const html = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <style>
-    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    body { margin: 0; padding: 0; background: #fff; }
-    ${allStyles}
-  </style>
-</head>
-<body>${clone.innerHTML}</body>
-</html>`;
-
-  // 4. Send to Puppeteer backend and trigger download
-  if (onProgress) onProgress('Generating PDF...');
-  const blob = await reportAPI.generatePdf({
-    html,
-    options: { format: 'A4', printBackground: true, margin: { top: '0', right: '0', bottom: '0', left: '0' } }
-  });
-
-  if (!blob || blob.size === 0) throw new Error('Server returned an empty PDF');
-
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
-
-  if (onProgress) onProgress('Done!');
-  return { success: true };
-};
 
 
 /**
