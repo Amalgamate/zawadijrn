@@ -518,9 +518,9 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
       }}
     >
       {/* Header Section - Centered Professional Redesign */}
-      <div className="mb-6" style={{ textAlign: 'center' }}>
+      <div className="mb-4" style={{ textAlign: 'center' }}>
         {/* Logo Middle */}
-        <div className="mb-4">
+        <div className="mb-2">
           {(() => {
             const logoSrc = brandingSettings?.logoUrl || user?.school?.logoUrl || user?.school?.logo || user?.schoolLogo || user?.logoUrl || '/logo-new.png';
             return (
@@ -539,11 +539,11 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
           fontSize: '38px', 
           fontWeight: '950', 
           color: brandingSettings?.brandColor || '#1E3A8A', 
-          margin: '0 0 4px 0', 
+          margin: '0 0 2px 0', 
           textTransform: 'uppercase', 
           letterSpacing: '0.5px',
           lineHeight: '1.0',
-          WebkitTextStroke: '1.2px ' + (brandingSettings?.brandColor || '#1E3A8A') // Extra bold for professional look
+          WebkitTextStroke: '1.4px ' + (brandingSettings?.brandColor || '#1E3A8A') // Extreme bold
         }}>
           {user?.school?.name || brandingSettings?.schoolName || 'ACADEMIC SCHOOL'}
         </h1>
@@ -564,12 +564,12 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
         <div style={{ width: '100%', height: '3px', backgroundColor: brandingSettings?.brandColor || '#1e3a8a', marginTop: '16px', marginBottom: '12px' }}></div>
 
         {/* Report Title */}
-        <h2 style={{ fontSize: '18px', fontWeight: '900', color: '#000', margin: '4px 0 0 0', textTransform: 'uppercase', letterSpacing: '4px', paddingTop: '4px' }}>
+        <h2 style={{ fontSize: '18px', fontWeight: '900', color: '#000', margin: '4px 0 6px 0', textTransform: 'uppercase', letterSpacing: '4px', paddingTop: '10px' }}>
           Summative Assessment Report
         </h2>
 
         {/* Exam Name / Termly Details */}
-        <div style={{ display: 'inline-block', fontSize: '11px', fontWeight: '700', color: '#1E3A8A', marginTop: '2px', marginBottom: '8px', textTransform: 'uppercase', backgroundColor: '#eff6ff', padding: '2px 12px', borderRadius: '40px' }}>
+        <div style={{ display: 'inline-block', fontSize: '11px', fontWeight: '700', color: '#1E3A8A', marginTop: '10px', marginBottom: '8px', textTransform: 'uppercase', backgroundColor: '#eff6ff', padding: '4px 16px', borderRadius: '40px', border: '1px solid #dbeafe' }}>
           {Array.from(testTypesFound).map(t => t.replace(/_/g, ' ')).join(', ')} | {term ? (typeof term === 'string' ? term.replace(/_/g, ' ') : (term.label || '')) : 'TERM'} | {academicYear || new Date().getFullYear()} ACADEMIC YEAR
         </div>
       </div>
@@ -675,8 +675,14 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
           </tbody>
         </table>
 
-      {/* Chart + Pathway Insight — side by side */}
-      <div style={{ display: 'flex', gap: '30px', marginTop: '16px', marginBottom: '8px', alignItems: 'start' }}>
+      {/* Chart + Pathway Insight — ONLY FOR JUNIOR SECONDARY (GRADE 7, 8, 9) */}
+      {(() => {
+        const gradeStr = (learner.grade || '').toUpperCase();
+        const isJSS = ['GRADE_7', 'GRADE_8', 'GRADE_9', 'GRADE 7', 'GRADE 8', 'GRADE 9', '7', '8', '9'].some(g => gradeStr.includes(g));
+        if (!isJSS) return null;
+
+        return (
+          <div style={{ display: 'flex', gap: '30px', marginTop: '16px', marginBottom: '8px', alignItems: 'start' }}>
 
         {/* LEFT: Bar Chart — fixed width to prevent squashing */}
         <div style={{ width: '420px' }}>
@@ -808,6 +814,8 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
           );
         })()}
       </div>
+    );
+  })()}
 
       {/* Grading Key — full width below */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '30px', marginBottom: '2px' }}>
