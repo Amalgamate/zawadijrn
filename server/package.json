@@ -78,7 +78,6 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^7.0.13",
-    "pdfkit": "^0.18.0",
     "qrcode-terminal": "^0.12.0",
     "react-hot-toast": "^2.6.0",
     "resend": "^6.9.1",
@@ -90,7 +89,6 @@
   },
   "devDependencies": {
     "@types/jest": "^29.5.11",
-    "@types/pdfkit": "^0.17.5",
     "@types/prop-types": "^15.7.15",
     "@types/qrcode-terminal": "^0.12.2",
     "@types/superagent": "^4.1.20",
