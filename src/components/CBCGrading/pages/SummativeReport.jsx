@@ -12,9 +12,138 @@ import api, { configAPI, communicationAPI } from '../../../services/api';
 import { useAssessmentSetup } from '../hooks/useAssessmentSetup';
 import { getLearningAreasByGrade, getAllLearningAreas } from '../../../constants/learningAreas';
 import { useSchoolData } from '../../../contexts/SchoolDataContext';
-import { generateHighFidelityPDF } from '../../../utils/simplePdfGenerator';
+import { reportAPI } from '../../../services/api/report.api';
 import { getAcademicYearOptions, getCurrentAcademicYear } from '../utils/academicYear';
 import Toast from '../shared/Toast';
+
+/**
+ * generateVectorPDF — serialises the DOM element and sends it to the
+ * Puppeteer backend, returning a true vector PDF blob for download.
+ *
+ * @param {string}   elementId  - ID of the DOM container to render
+ * @param {string}   filename   - desired download filename (.pdf)
+ * @param {Function} onProgress - optional (msg: string) => void callback
+ */
+const generateVectorPDF = async (elementId, filename, onProgress) => {
+  const element = document.getElementById(elementId);
+  if (!element) return { success: false, error: `Element #${elementId} not found` };
+
+  // 1. Collect all compiled CSS already applied to the page (Tailwind, app styles)
+  if (onProgress) onProgress('Collecting styles...');
+  const allStyles = Array.from(document.styleSheets).map(sheet => {
+    try {
+      return Array.from(sheet.cssRules)
+        .filter(rule => rule.constructor.name !== 'CSSImportRule')
+        .map(rule => rule.cssText)
+        .join('\n');
+    } catch (_) { return ''; }
+  }).join('\n');
+
+  // 2. Clone the element and embed all images as base64 data URIs
+  if (onProgress) onProgress('Embedding images...');
+  const clone = element.cloneNode(true);
+  await Promise.all(Array.from(clone.querySelectorAll('img')).map(async img => {
+    const src = img.getAttribute('src');
+    if (!src || src.startsWith('data:')) return;
+    try {
+      const res = await fetch(new URL(src, window.location.href).href);
+      const blob = await res.blob();
+      await new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onloadend = () => { img.src = reader.result; resolve(); };
+        reader.readAsDataURL(blob);
+      });
+    } catch (_) { /* keep original src on failure */ }
+  }));
+
+  // 3. Build a fully self-contained HTML document
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    body { margin: 0; padding: 0; background: #fff; }
+    ${allStyles}
+  </style>
+</head>
+<body>${clone.innerHTML}</body>
+</html>`;
+
+  // 4. Send to Puppeteer backend and trigger download
+  if (onProgress) onProgress('Generating PDF...');
+  const blob = await reportAPI.generatePdf({
+    html,
+    options: { format: 'A4', printBackground: true, margin: { top: '0', right: '0', bottom: '0', left: '0' } }
+  });
+
+  if (!blob || blob.size === 0) throw new Error('Server returned an empty PDF');
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+  if (onProgress) onProgress('Done!');
+  return { success: true };
+};
+
+
+/**
+ * generateJPEG — captures the rendered report card as a high-quality JPEG
+ * using html2canvas (already in the project bundle) and triggers a download.
+ *
+ * @param {string}   elementId  - ID of the DOM container to capture
+ * @param {string}   filename   - desired download filename (.jpg)
+ * @param {Function} onProgress - optional (msg: string) => void callback
+ */
+const generateJPEG = async (elementId, filename, onProgress) => {
+  const element = document.getElementById(elementId);
+  if (!element) return { success: false, error: `Element #${elementId} not found` };
+
+  if (onProgress) onProgress('Rendering report...');
+
+  // html2canvas is already in the project bundle (used by simplePdfGenerator)
+  const html2canvas = (await import('html2canvas')).default;
+
+  const canvas = await html2canvas(element, {
+    scale: 2,              // 2× DPI — print-quality output
+    useCORS: true,
+    allowTaint: true,
+    backgroundColor: '#ffffff',
+    logging: false,
+    windowWidth: element.scrollWidth,
+    windowHeight: element.scrollHeight,
+  });
+
+  if (onProgress) onProgress('Saving JPEG...');
+
+  await new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) { reject(new Error('Failed to create image blob')); return; }
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+        resolve();
+      },
+      'image/jpeg',
+      0.92  // quality: 0.92 = excellent, ~3-5× smaller than PNG
+    );
+  });
+
+  if (onProgress) onProgress('Done!');
+  return { success: true };
+};
 
 
 const LEARNING_AREA_ABBREVIATIONS = {
@@ -155,7 +284,7 @@ const resolveTestGroup = (item) => {
 // ============================================================================
 // LEARNER REPORT TEMPLATE COMPONENT (Reusable for Bulk Print)
 // ============================================================================
-const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, academicYear, brandingSettings, user, streamConfigs, remarks }) => {
+const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, academicYear, brandingSettings, user, streamConfigs, remarks, commentData }) => {
   // --- DATA PREPARATION LOGIC ---
   const standardAreas = getLearningAreasByGrade(learner.grade);
   const resultAreas = new Set(results?.map(r => r.learningArea || 'General') || []);
@@ -278,68 +407,10 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
     };
   }).filter(row => row.testCount > 0);
 
-  // --- COMMENT STATE & LOGIC ---
-  const [commentData, setCommentData] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedComment, setEditedComment] = useState('');
-  const [isSavingComment, setIsSavingComment] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
-
-  // Debounced auto-save useEffect
-  useEffect(() => {
-    if (!isEditing || !isTyping) return;
-
-    const timer = setTimeout(() => {
-      handleSaveComment();
-      setIsTyping(false);
-    }, 2000); // 2 second debounce
-
-    return () => clearTimeout(timer);
-  }, [editedComment]);
-
-  useEffect(() => {
-    const fetchComment = async () => {
-      if (!learner?.id) return;
-      try {
-        const res = await api.cbc.getComments(learner.id, { term, academicYear });
-        if (res.success && res.data) {
-          setCommentData(res.data);
-          setEditedComment(res.data.classTeacherComment || '');
-        }
-      } catch (err) {
-        console.error('Error fetching comments:', err);
-      }
-    };
-    fetchComment();
-  }, [learner?.id, term, academicYear]);
-
-  const handleSaveComment = async () => {
-    if (!learner?.id) return;
-    try {
-      setIsSavingComment(true);
-      const payload = {
-        learnerId: learner.id,
-        term,
-        academicYear,
-        classTeacherComment: editedComment,
-        classTeacherName: user?.firstName ? `${user.firstName} ${user.lastName}` : 'Class Teacher',
-        classTeacherDate: new Date().toISOString(),
-        nextTermOpens: commentData?.nextTermOpens || new Date(new Date().setMonth(new Date().getMonth() + 3)).toISOString()
-      };
-
-      const res = await api.cbc.saveComments(payload);
-      if (res.success) {
-        setCommentData(res.data);
-      }
-    } catch (err) {
-      console.error('Error saving comment:', err);
-    } finally {
-      setIsSavingComment(false);
-    }
-  };
+  // commentData is now passed in as a prop from the parent (pre-fetched before bulk render)
 
   return (
-    <div className="relative bg-white mx-auto overflow-hidden"
+    <div className="report-card relative bg-white mx-auto overflow-hidden"
       style={{
         fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
         lineHeight: '1.2',
@@ -506,23 +577,33 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
         {/* LEFT: Bar Chart — half width, left-aligned */}
         <div>
           <h3 style={{ fontSize: '10px', fontWeight: '800', color: '#111827', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', marginBottom: '6px', paddingBottom: '2px' }}>Subject Performance</h3>
-          <div style={{ height: '80px', width: '100%' }}>
-            {tableRows && tableRows.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={tableRows.map(r => ({ ...r, area: getAbbreviatedName(r.area) }))} margin={{ top: 5, right: 5, left: -25, bottom: 0 }} barCategoryGap="25%">
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="area" interval={0} axisLine={{ stroke: '#e2e8f0' }} tickLine={false} tick={{ fontSize: 6, fontWeight: 'bold', fill: '#64748b' }} />
-                  <YAxis domain={[0, 100]} tick={{ fontSize: 6, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                  <Bar dataKey="percentage">
-                    {tableRows.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                    ))}
-                  </Bar>
-
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', background: '#f8fafc', fontSize: '10px', color: '#9ca3af', fontWeight: 'bold', textTransform: 'uppercase' }}>No data</div>
+          <div style={{ width: '100%' }}>
+            {tableRows && tableRows.length > 0 ? (() => {
+              const chartW = 280, chartH = 96, barAreaH = 88;
+              const barW = Math.max(8, Math.floor((chartW - 32) / tableRows.length) - 4);
+              return (
+                <svg width={chartW} height={chartH + 18} style={{ display: 'block', overflow: 'visible' }}>
+                  <line x1="28" y1={chartH} x2={chartW} y2={chartH} stroke="#e2e8f0" strokeWidth="0.5"/>
+                  {tableRows.map((row, i) => {
+                    const barH = Math.max(2, (row.percentage / 100) * barAreaH);
+                    const x = 30 + i * (barW + 4);
+                    const y = chartH - barH;
+                    return (
+                      <g key={row.area}>
+                        <rect x={x} y={y} width={barW} height={barH} fill={CHART_COLORS[i % CHART_COLORS.length]} rx="2"/>
+                        <text x={x + barW/2} y={chartH + 11} textAnchor="middle" fontSize="7" fontWeight="bold" fill="#64748b" fontFamily="Arial, sans-serif">
+                          {getAbbreviatedName(row.area).slice(0, 5)}
+                        </text>
+                        <text x={x + barW/2} y={y - 3} textAnchor="middle" fontSize="7" fontWeight="bold" fill="#374151" fontFamily="Arial, sans-serif">
+                          {row.percentage}%
+                        </text>
+                      </g>
+                    );
+                  })}
+                </svg>
+              );
+            })() : (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80px', background: '#f8fafc', fontSize: '10px', color: '#9ca3af', fontWeight: 'bold', textTransform: 'uppercase' }}>No data</div>
             )}
           </div>
         </div>
@@ -778,6 +859,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
   const [singleDownloadData, setSingleDownloadData] = useState(null);
   const [bulkDownloadData, setBulkDownloadData] = useState(null);
   const [isSingleDownloading, setIsSingleDownloading] = useState(false);
+  const [singleCommentData, setSingleCommentData] = useState(null);
 
   const reportRef = useRef(null);
   const testGroupRef = useRef(null);
@@ -1157,6 +1239,41 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
     })).sort((a, b) => a.name.localeCompare(b.name));
   }, [streamConfigs, learners, selectedGrade]);
 
+  const handleExportJPEG = async () => {
+    if (!reportData) {
+      showError('No report data to export. Please generate a report first.');
+      return;
+    }
+    if (isExporting) return;
+
+    setIsExporting(true);
+    try {
+      const timestamp = new Date().toISOString().split('T')[0];
+      const learner = reportData.learner || reportData.rows?.[0]?.learner;
+      const filename = learner
+        ? `${learner.firstName}_${learner.lastName}_Report_${timestamp}.jpg`
+        : `Summative_Report_${timestamp}.jpg`;
+
+      const result = await generateJPEG(
+        'summative-report-content',
+        filename,
+        (msg) => { setPdfProgress(msg); console.log(`🖼️ JPEG: ${msg}`); }
+      );
+
+      if (result?.success) {
+        showSuccess('Report saved as JPEG!');
+      } else {
+        showError(result?.error || 'JPEG export failed');
+      }
+    } catch (err) {
+      console.error('JPEG export error:', err);
+      showError(err?.message || 'Failed to export JPEG. Please try again.');
+    } finally {
+      setIsExporting(false);
+      setPdfProgress('');
+    }
+  };
+
   const handleExportPDF = async () => {
     if (!reportData) {
       showError(
@@ -1179,16 +1296,10 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
 
 
 
-      const result = await generateHighFidelityPDF(
+      const result = await generateVectorPDF(
         'summative-report-content',
         filename,
-        {
-          onProgress: (msg) => {
-            setPdfProgress(msg);
-            console.log(`📑 PDF Progress: ${msg}`);
-          },
-          includeLetterhead: false
-        }
+        (msg) => { setPdfProgress(msg); console.log(`📑 PDF: ${msg}`); }
       );
 
       if (result?.success) {
@@ -1210,14 +1321,10 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
     setIsExporting(true);
     try {
       setPdfProgress('Generating print preview...');
-      const result = await generateHighFidelityPDF(
+      const result = await generateVectorPDF(
         'summative-report-content',
         'Report_Print.pdf',
-        {
-          action: 'print',
-          onProgress: (msg) => setPdfProgress(msg),
-          includeLetterhead: false
-        }
+        (msg) => setPdfProgress(msg)
       );
       if (result?.success) {
         showSuccess('High-quality print preview opened!');
@@ -1578,6 +1685,15 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
       return;
     }
 
+    // Pre-fetch all comments before mounting cards (avoids N API calls during PDF render)
+    const commentMap = {};
+    for (const row of rowsToPrint) {
+      try {
+        const res = await api.cbc.getComments(row.learner.id, { term: selectedTerm, academicYear: selectedYear });
+        if (res.success) commentMap[row.learner.id] = res.data;
+      } catch (_) {}
+    }
+
     setBulkDownloadData(rowsToPrint);
     setIsBulkPrinting(true);
     setPdfProgress('🚀 Initializing bulk report engine...');
@@ -1591,18 +1707,36 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
 
       setPdfProgress('📄 Preparing report layouts...');
 
-      const result = await generateHighFidelityPDF('bulk-print-content', filename, {
-        onProgress: (msg) => {
-          console.log(`PDF Progress: ${msg}`);
-          setPdfProgress(msg);
-        },
-        docInfo: {
-          type: selectedType === 'LEARNER_REPORT' ? 'SUMMATIVE REPORT' : 'TERMLY REPORT',
-          ref: `BATCH-${selectedGrade}-${selectedTerm}`
-        },
-        brandingSettings, // Pass current branding
-        includeLetterhead: false
-      });
+      // Collect all compiled CSS already loaded in the page (Tailwind, app styles)
+      // Skip @import rules — Puppeteer runs headless with no CDN access
+      const allStyles = Array.from(document.styleSheets).map(sheet => {
+        try {
+          return Array.from(sheet.cssRules)
+            .filter(rule => !(rule instanceof CSSImportRule)) // skip @import
+            .map(rule => rule.cssText)
+            .join('\n');
+        } catch (e) {
+          return ''; // cross-origin sheet — skip silently
+        }
+      }).join('\n');
+
+      const element = document.getElementById('bulk-print-content');
+      const fullHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>${allStyles}</style>
+</head>
+<body style="margin:0;padding:0;background:#fff;">
+  ${element?.innerHTML || ''}
+</body>
+</html>`;
+
+      const result = await generateVectorPDF(
+        'bulk-print-content',
+        filename,
+        (msg) => { setPdfProgress(msg); console.log(`PDF: ${msg}`); }
+      );
 
       if (result.success) {
         showSuccess('✅ Bulk reports generated and downloaded successfully');
@@ -1625,6 +1759,15 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
 
   const handleSingleDownload = async (row) => {
     showInfo(`Downloading report for ${row.learner.firstName}...`);
+
+    // Pre-fetch comment for single download
+    try {
+      const res = await api.cbc.getComments(row.learner.id, { term: selectedTerm, academicYear: selectedYear });
+      setSingleCommentData(res.success ? res.data : null);
+    } catch (_) {
+      setSingleCommentData(null);
+    }
+
     setSingleDownloadData(row);
     setIsSingleDownloading(true);
 
@@ -1633,14 +1776,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
       await new Promise(resolve => setTimeout(resolve, 800));
 
       const filename = `${row.learner.firstName}_${row.learner.lastName}_Summative_Report.pdf`;
-      const result = await generateHighFidelityPDF('single-print-content', filename, {
-        docInfo: {
-          type: selectedType === 'LEARNER_REPORT' ? 'SUMMATIVE REPORT' : 'TERMLY REPORT',
-          ref: row.learner.admissionNumber
-        },
-        brandingSettings, // Pass current branding
-        includeLetterhead: false
-      });
+      const result = await generateVectorPDF('single-print-content', filename, (msg) => console.log(`PDF Progress: ${msg}`));
 
       if (result.success) {
         showSuccess(`Report for ${row.learner.firstName} downloaded`);
@@ -2528,7 +2664,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                   <button
                     onClick={handlePrintPDF}
                     disabled={isExporting}
-                    className="px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm font-semibold transition flex items-center gap-2 shadow-md shadow-indigo-100"
+                    className="hidden px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm font-semibold transition flex items-center gap-2 shadow-md shadow-indigo-100"
                   >
                     {isExporting ? <Loader size={18} className="animate-spin" /> : <Printer size={18} />}
                     Print Preview
@@ -2540,6 +2676,15 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                   >
                     {isExporting ? <Loader size={18} className="animate-spin" /> : <Download size={18} />}
                     Download PDF
+                  </button>
+                  <button
+                    onClick={handleExportJPEG}
+                    disabled={isExporting}
+                    className="px-6 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 text-sm font-semibold transition flex items-center gap-2 shadow-md shadow-orange-100"
+                    title="Save report card as a JPEG image"
+                  >
+                    {isExporting ? <Loader size={18} className="animate-spin" /> : <Download size={18} />}
+                    Download JPEG
                   </button>
                 </div>
               </>
@@ -3086,6 +3231,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                   pathwayPrediction={row.pathwayPrediction}
                   term={stagedTerm || selectedTerm}
                   academicYear={academicYear || setup.academicYear}
+                  commentData={commentMap?.[row?.learner?.id]}
                   brandingSettings={brandingSettings}
                   user={user}
                   streamConfigs={streamConfigs}
@@ -3105,6 +3251,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
               pathwayPrediction={singleDownloadData.pathwayPrediction}
               term={stagedTerm || selectedTerm}
               academicYear={academicYear || setup.academicYear}
+              commentData={singleCommentData}
               brandingSettings={brandingSettings}
               user={user}
               streamConfigs={streamConfigs}
