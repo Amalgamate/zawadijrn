@@ -666,19 +666,19 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
             <div style={{ borderLeft: '1px solid #e2e8f0', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0' }}>
               <div style={{ padding: '4px 12px', textAlign: 'center', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
                 <div style={{ fontSize: '9px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '1px' }}>Subjects Assessed</div>
-                <div style={{ fontSize: '16px', fontWeight: '900', color: '#0f172a' }}>{tableRows.length}</div>
+                <div style={{ fontSize: '16px', fontWeight: '500', color: '#0f172a' }}>{tableRows.length}</div>
               </div>
               <div style={{ padding: '4px 12px', textAlign: 'center', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
                 <div style={{ fontSize: '9px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '1px' }}>Total Points</div>
-                <div style={{ fontSize: '16px', fontWeight: '900', color: '#0f172a' }}>{totalPoints}</div>
+                <div style={{ fontSize: '16px', fontWeight: '500', color: '#0f172a' }}>{totalPoints}</div>
               </div>
               <div style={{ padding: '4px 12px', textAlign: 'center', borderRight: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
                 <div style={{ fontSize: '9px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '1px' }}>Average Score</div>
-                <div style={{ fontSize: '16px', fontWeight: '900', color: '#0f172a' }}>{avgPct}%</div>
+                <div style={{ fontSize: '16px', fontWeight: '500', color: '#0f172a' }}>{avgPct}%</div>
               </div>
               <div style={{ padding: '4px 12px', textAlign: 'center', backgroundColor: '#eff6ff' }}>
                 <div style={{ fontSize: '9px', fontWeight: '800', color: '#1e40af', textTransform: 'uppercase', marginBottom: '1px' }}>Overall Grade</div>
-                <div style={{ fontSize: '16px', fontWeight: '900', color: '#1e3a8a' }}>{overallGrade}</div>
+                <div style={{ fontSize: '16px', fontWeight: '500', color: '#1e3a8a' }}>{overallGrade}</div>
               </div>
             </div>
           </div>
@@ -717,7 +717,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
                     : null;
                   return (
                     <td key={col} style={{ padding: '5px 6px', textAlign: 'center', color: '#000000', border: '1px solid #cbd5e1' }}>
-                      <div style={{ fontSize: '15px', fontWeight: '950', lineHeight: '1.1', color: '#0f172a' }}>
+                      <div style={{ fontSize: '15px', fontWeight: '500', lineHeight: '1.1', color: '#0f172a' }}>
                         {score !== null ? score : '—'}
                       </div>
                       {colGrade && (
@@ -727,10 +727,10 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
                   );
                 })}
                 {testColumns.length > 1 && (
-                  <td style={{ padding: '6px 6px', textAlign: 'center', fontWeight: '900', fontSize: '15px', color: '#0f172a', border: '1px solid #cbd5e1' }}>{row.percentage}%</td>
+                  <td style={{ padding: '6px 6px', textAlign: 'center', fontWeight: '500', fontSize: '15px', color: '#0f172a', border: '1px solid #cbd5e1' }}>{row.percentage}%</td>
                 )}
-                <td style={{ padding: '6px 6px', textAlign: 'left', fontWeight: '900', fontSize: '15px', color: row.color, border: '1px solid #cbd5e1' }}>{row.grade}</td>
-                <td style={{ padding: '6px 6px', textAlign: 'center', fontWeight: '900', fontSize: '15px', color: '#0f172a', border: '1px solid #cbd5e1' }}>{row.points || '—'}</td>
+                <td style={{ padding: '6px 6px', textAlign: 'left', fontWeight: '500', fontSize: '15px', color: row.color, border: '1px solid #cbd5e1' }}>{row.grade}</td>
+                <td style={{ padding: '6px 6px', textAlign: 'center', fontWeight: '500', fontSize: '15px', color: '#0f172a', border: '1px solid #cbd5e1' }}>{row.points || '—'}</td>
 
               </tr>
             ))}
