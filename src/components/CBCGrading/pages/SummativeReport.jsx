@@ -57,6 +57,7 @@ const buildStandaloneHtml = async (elementId) => {
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     body { margin: 0; padding: 0; background: #fff; }
     ${allStyles}
+    @page { size: A4 portrait !important; margin: 0 !important; }
   </style>
 </head>
 <body>${clone.innerHTML}</body>
