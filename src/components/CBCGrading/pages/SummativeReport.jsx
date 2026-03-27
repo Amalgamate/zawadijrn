@@ -581,13 +581,13 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
         {/* School Info */}
         <h1 style={{ 
           fontSize: '32px', 
-          fontWeight: '950', 
+          fontWeight: '850', 
           color: brandingSettings?.brandColor || '#1E3A8A', 
           margin: '0 0 1px 0', 
           textTransform: 'uppercase', 
           letterSpacing: '0.5px',
           lineHeight: '1.0',
-          WebkitTextStroke: '1.2px ' + (brandingSettings?.brandColor || '#1E3A8A') // Extreme bold
+          WebkitTextStroke: '0.4px ' + (brandingSettings?.brandColor || '#1E3A8A') // Refined weight
         }}>
           {user?.school?.name || brandingSettings?.schoolName || 'ACADEMIC SCHOOL'}
         </h1>
