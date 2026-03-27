@@ -837,10 +837,14 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
               ].map((rowItems, idx) => (
                 <tr key={idx}>
                   {rowItems.map(g => (
-                    <td key={g.code} style={{ border: '1px solid #cbd5e1', padding: '4px 6px', textAlign: 'left', backgroundColor: idx % 2 === 0 ? '#f8fafc' : '#f1f5f9' }}>
-                      <span style={{ display: 'inline-block', fontWeight: '900', color: '#111827', marginRight: '5px', fontSize: '11px', width: '22px' }}>{g.code}</span>
-                      <span style={{ fontWeight: '800', color: '#374151', fontSize: '10px', display: 'inline-block', width: '45px' }}>{g.range}</span>
-                      <span style={{ fontWeight: '600', color: '#6b7280', fontSize: '10px' }}> ({g.label})</span>
+                    <td key={g.code} style={{ border: '1px solid #d1d5db', padding: '8px 10px', textAlign: 'left', backgroundColor: idx % 2 === 0 ? '#f8fafc' : '#ffffff' }}>
+                      <div style={{ lineHeight: '1.2' }}>
+                        <span style={{ fontWeight: '900', color: '#111827', fontSize: '12px', marginRight: '8px' }}>{g.code}</span>
+                        <span style={{ fontWeight: '700', color: '#374151', fontSize: '11px' }}>{g.range}</span>
+                      </div>
+                      <div style={{ fontWeight: '600', color: '#6b7280', fontSize: '10px', marginTop: '3px' }}>
+                        ({g.label})
+                      </div>
                     </td>
                   ))}
                 </tr>
