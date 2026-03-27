@@ -26,15 +26,33 @@ export const reportAPI = {
     try {
       const response = await axiosInstance.post('/reports/generate-pdf', data, { responseType: 'blob' });
       const blob = response.data;
-      if (blob.size < 100) console.warn('⚠️ PDF Blob is suspiciously small');
+      
+      // Check if response is actually a PDF or error text
+      const contentType = response.headers['content-type'] || '';
+      if (contentType.includes('text/plain')) {
+        const errorText = await blob.text();
+        throw new Error(`Backend error: ${errorText}`);
+      }
+      
+      if (blob.size < 100) console.warn('⚠️ PDF Blob is suspiciously small:', blob.size, 'bytes');
       return blob;
     } catch (error) {
-      const serverMessage =
-        error.response?.data?.message ||
-        (error.response?.data && typeof error.response.data === 'string' ? error.response.data : undefined) ||
-        error.message ||
-        'PDF Generation failed';
-      throw new Error(`PDF Generation failed: ${serverMessage}`);
+      let errorMsg = error.message || 'PDF Generation failed';
+      
+      // Try to extract better error message
+      if (error.response?.data) {
+        try {
+          if (typeof error.response.data === 'string') {
+            errorMsg = error.response.data;
+          } else if (error.response.data.message) {
+            errorMsg = error.response.data.message;
+          }
+        } catch (e) {
+          // fallback to default
+        }
+      }
+      
+      throw new Error(`PDF Generation failed: ${errorMsg}`);
     }
   },
 };

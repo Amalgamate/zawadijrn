@@ -375,12 +375,15 @@ export const reportController = {
 
   /**
    * Generate PDF Report
+   * Critical: Always return PDF, even on error (as empty PDF or error blob)
+   * Frontend expects always responseType: 'blob', so never send JSON responses
    */
   generatePdf: async (req: AuthRequest, res: Response) => {
     try {
       const { html, fileName, filename, options } = req.body;
 
       if (!html) {
+        console.warn('❌ PDF Generation: HTML content is required');
         throw new ApiError(400, 'HTML content is required');
       }
 
@@ -393,11 +396,12 @@ export const reportController = {
 
       res.end(pdfBuffer);
     } catch (error: any) {
-      console.error('Error generating PDF:', error);
-      res.status(error.statusCode || 500).json({
-        success: false,
-        message: error.message || 'Failed to generate PDF'
-      });
+      console.error('❌ PDF Generation Error:', error.message || error);
+      
+      // CRITICAL: Send error as text/plain so frontend can log it,
+      // but do NOT send JSON since frontend expects Blob
+      const errorMessage = `PDF Generation Error: ${error.message || 'Unknown error'}`;
+      res.status(error.statusCode || 500).setHeader('Content-Type', 'text/plain').end(errorMessage);
     }
   }
 };
