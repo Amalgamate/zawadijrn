@@ -13,7 +13,7 @@ export const pdfService = {
     /**
      * Generate PDF from HTML content (STUBBED)
      */
-    generatePdf: async (html: string, options: any = {}) => {
+    generatePdf: async (html: string, options: any = {}): Promise<Buffer> => {
         console.error('❌ Server-side PDF generation is deprecated. Use frontend rendering.');
         throw new ApiError(501, 'Server-side PDF generation is not supported on this environment. Please use the frontend export feature.');
     },
@@ -21,9 +21,10 @@ export const pdfService = {
     /**
      * Generate JPEG/PNG screenshot from HTML content (STUBBED)
      */
-    generateScreenshot: async (html: string, options: any = {}) => {
+    generateScreenshot: async (html: string, options: any = {}): Promise<Buffer> => {
         console.error('❌ Server-side screenshot generation is deprecated. Use frontend rendering.');
         throw new ApiError(501, 'Server-side screenshot generation is not supported on this environment. Please use the frontend export feature.');
     }
 };
+
 
