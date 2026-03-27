@@ -544,6 +544,8 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
     };
   }).filter(row => row.testCount > 0);
 
+  const isJSS = /\b(GRADE_7|GRADE_8|GRADE_9|7|8|9)\b/.test((learner.grade || '').toUpperCase());
+
   // commentData is now passed in as a prop from the parent (pre-fetched before bulk render)
 
   return (
@@ -740,16 +742,16 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
       {/* Chart + Pathway Insight Section */}
       <div style={{ display: 'flex', gap: '30px', marginTop: '16px', marginBottom: '8px', alignItems: 'start' }}>
         {/* LEFT: Bar Chart — Show for ALL grades */}
-        <div style={{ width: '420px' }}>
+        <div style={{ width: isJSS ? '420px' : '100%' }}>
           <h3 style={{ fontSize: '10px', fontWeight: '800', color: '#111827', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', marginBottom: '6px', paddingBottom: '2px' }}>Subject Performance</h3>
           <div style={{ width: '100%' }}>
             {tableRows && tableRows.length > 0 ? (
               <div style={{ 
                 height: '114px', 
-                width: '400px', 
+                width: '100%', 
                 display: 'flex', 
                 alignItems: 'flex-end', 
-                gap: '8px', 
+                gap: isJSS ? '8px' : '16px', 
                 padding: '0 10px 18px 10px', 
                 borderBottom: '0.8px solid #e2e8f0', 
                 position: 'relative',
@@ -757,7 +759,10 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
               }}>
                 {tableRows.map((row, i) => {
                   const barH = Math.max(4, Math.round((row.percentage / 100) * 88));
-                  const barW = Math.max(16, Math.floor((380 / tableRows.length) - 8));
+                  // Dynamically calculate bar width
+                  // max-width of container is ~770 if full, 400 if half
+                  const containerW = isJSS ? 400 : 770;
+                  const barW = Math.max(16, Math.floor((containerW / tableRows.length) - (isJSS ? 8 : 16)));
                   return (
                     <div key={row.area} style={{ 
                       flex: 1, 
@@ -814,8 +819,6 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
 
         {/* RIGHT: Pathway Insight — ONLY FOR JUNIOR SECONDARY (GRADE 7, 8, 9) */}
         {(() => {
-          const gradeStr = (learner.grade || '').toUpperCase();
-          const isJSS = ['GRADE_7', 'GRADE_8', 'GRADE_9', '7', '8', '9'].some(g => gradeStr.includes(g));
           if (!isJSS) return null;
 
           // Map each subject row to a pathway bucket
