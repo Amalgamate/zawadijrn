@@ -31,26 +31,47 @@ class RedisCacheService {
   private async initialize() {
     try {
       // Try to connect to Redis
-      const redisConfig = {
-        host: process.env.REDIS_HOST || 'localhost',
-        port: parseInt(process.env.REDIS_PORT || '6379', 10),
-        password: process.env.REDIS_PASSWORD || undefined,
-        db: parseInt(process.env.REDIS_DB || '0', 10),
-        retryStrategy: (times: number) => {
-          if (times > 3) {
-            console.log('[Cache] Redis connection failed, using memory fallback');
-            return null;
-          }
-          return Math.min(times * 50, 2000);
-        },
-        connectTimeout: 5000,
-        commandTimeout: 5000,
-        enableReadyCheck: false,
-        enableOfflineQueue: false,
-        maxRetriesPerRequest: 3,
-      };
+      let redisConfig: any;
 
-      this.redis = new Redis(redisConfig);
+      if (process.env.REDIS_URL) {
+        // Prefer connection string (URL) if provided
+        console.log('[Cache] Using REDIS_URL connection string');
+        this.redis = new Redis(process.env.REDIS_URL, {
+          retryStrategy: (times: number) => {
+            if (times > 3) {
+              console.log('[Cache] Redis connection failed, using memory fallback');
+              return null;
+            }
+            return Math.min(times * 50, 2000);
+          },
+          connectTimeout: 5000,
+          commandTimeout: 5000,
+          enableReadyCheck: false,
+          enableOfflineQueue: false,
+          maxRetriesPerRequest: 3,
+        });
+      } else {
+        // Fallback to individual components
+        redisConfig = {
+          host: process.env.REDIS_HOST || 'localhost',
+          port: parseInt(process.env.REDIS_PORT || '6379', 10),
+          password: process.env.REDIS_PASSWORD || undefined,
+          db: parseInt(process.env.REDIS_DB || '0', 10),
+          retryStrategy: (times: number) => {
+            if (times > 3) {
+              console.log('[Cache] Redis connection failed, using memory fallback');
+              return null;
+            }
+            return Math.min(times * 50, 2000);
+          },
+          connectTimeout: 5000,
+          commandTimeout: 5000,
+          enableReadyCheck: false,
+          enableOfflineQueue: false,
+          maxRetriesPerRequest: 3,
+        };
+        this.redis = new Redis(redisConfig);
+      }
 
       this.redis.on('connect', () => {
         this.useRedis = true;
