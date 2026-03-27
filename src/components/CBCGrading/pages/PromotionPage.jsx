@@ -41,14 +41,12 @@ const PromotionPage = ({ onPromote, showNotification }) => {
   const [classLearners, setClassLearners] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch configs (streams and grades)
+  // Fetch configs (streams and grades) - single-tenant: no schoolId needed
   useEffect(() => {
     const fetchConfigs = async () => {
       try {
-        if (user?.schoolId) {
-          const streamResp = await configAPI.getStreamConfigs(user.schoolId);
-          setAvailableStreams(streamResp?.data?.filter(s => s.active !== false) || []);
-        }
+        const streamResp = await configAPI.getStreamConfigs();
+        setAvailableStreams(streamResp?.data?.filter(s => s.active !== false) || []);
 
         const gradesResp = await configAPI.getGrades();
         if (gradesResp?.data) {
@@ -66,7 +64,7 @@ const PromotionPage = ({ onPromote, showNotification }) => {
       }
     };
     fetchConfigs();
-  }, [user?.schoolId]);
+  }, []);
 
   // Fetch learners when filters change
   useEffect(() => {

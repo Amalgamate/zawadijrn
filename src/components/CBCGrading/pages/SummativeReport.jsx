@@ -995,22 +995,13 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
   }, [contextGrades]);
 
   // Fetch stream configurations from backend (Source of Truth)
+  // Single-tenant: no schoolId needed, backend knows which school context
   useEffect(() => {
     const fetchStreamConfigs = async () => {
       try {
-        console.log('🔍 useEffect triggered - user prop:', user);
-
-        const schoolId = user?.schoolId || user?.school?.id || localStorage.getItem('currentSchoolId');
-        console.log('📍 Extracted schoolId:', schoolId);
-
-        if (!schoolId) {
-          console.warn('⚠️ No school ID found - cannot fetch stream configs');
-          setStreamConfigs([]);
-          return;
-        }
-
-        console.log('🔄 Fetching stream configurations for school:', schoolId);
-        const response = await configAPI.getStreamConfigs(schoolId);
+        console.log('🔍 Fetching stream configurations (single-tenant mode)');
+        
+        const response = await configAPI.getStreamConfigs();
 
         console.log('📦 Raw API Response:', response);
 

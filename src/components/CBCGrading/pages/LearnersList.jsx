@@ -54,21 +54,19 @@ const LearnersList = ({
   const canDeleteLearner = can('DELETE_LEARNER');
   const isTeacher = isRole('TEACHER');
 
-  // Fetch streams on mount
+  // Fetch streams on mount (single-tenant: no schoolId needed)
   useEffect(() => {
     const fetchStreams = async () => {
-      if (user?.schoolId) {
-        try {
-          const resp = await configAPI.getStreamConfigs(user.schoolId);
-          const arr = resp?.data || [];
-          setAvailableStreams(arr.filter(s => s.active !== false));
-        } catch (error) {
-          console.error('Failed to fetch streams:', error);
-        }
+      try {
+        const resp = await configAPI.getStreamConfigs();
+        const arr = resp?.data || [];
+        setAvailableStreams(arr.filter(s => s.active !== false));
+      } catch (error) {
+        console.error('Failed to fetch streams:', error);
       }
     };
     fetchStreams();
-  }, [user?.schoolId]);
+  }, []);
 
   // Server-side filtering effect
   useEffect(() => {
