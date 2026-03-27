@@ -148,12 +148,26 @@ const generateVectorPDF = async (elementId, filename, onProgress) => {
             el.style.overflow = 'visible';
           }
           // Relax the inner .report-card fixed height so learners with
-          // more subjects than average are never clipped at the bottom.
           const inner = el?.querySelector('.report-card');
           if (inner) {
             inner.style.minHeight = '1123px';
             inner.style.height = 'auto';
             inner.style.overflow = 'visible';
+          }
+
+          // Force all SVGs to be visible
+          const svgs = clonedDoc.getElementsByTagName('svg');
+          for (let i = 0; i < svgs.length; i++) {
+            svgs[i].style.display = 'block';
+            svgs[i].style.visibility = 'visible';
+            svgs[i].style.opacity = '1';
+            svgs[i].style.overflow = 'visible';
+          }
+
+          // Strip all scripts to prevent MIME/execution errors
+          const scripts = clonedDoc.getElementsByTagName('script');
+          for (let i = scripts.length - 1; i >= 0; i--) {
+            scripts[i].parentNode.removeChild(scripts[i]);
           }
         }
       });
@@ -216,6 +230,21 @@ const generateJPEG = async (elementId, filename, onProgress) => {
           inner.style.minHeight = '1123px';
           inner.style.height = 'auto';
           inner.style.overflow = 'visible';
+        }
+
+        // Force all SVGs to be visible (force the graph)
+        const svgs = clonedDoc.getElementsByTagName('svg');
+        for (let i = 0; i < svgs.length; i++) {
+          svgs[i].style.display = 'block';
+          svgs[i].style.visibility = 'visible';
+          svgs[i].style.opacity = '1';
+          svgs[i].style.overflow = 'visible';
+        }
+
+        // Strip all scripts to prevent MIME/execution errors in the clone
+        const scripts = clonedDoc.getElementsByTagName('script');
+        for (let i = scripts.length - 1; i >= 0; i--) {
+          scripts[i].parentNode.removeChild(scripts[i]);
         }
       }
     });
@@ -832,12 +861,8 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
       {/* Grading Key — full width below */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '30px', marginBottom: '2px' }}>
         <div style={{ flex: 1 }}>
+          <div style={{ fontSize: '10px', fontWeight: '900', color: '#374151', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.5px' }}>Grading Key</div>
           <table className="w-full page-break-inside-avoid" style={{ borderCollapse: 'collapse', tableLayout: 'fixed', borderTop: 'none' }}>
-            <thead>
-              <tr>
-                <td colSpan="4" style={{ fontSize: '10px', fontWeight: '800', color: '#374151', textTransform: 'uppercase', paddingBottom: '2px' }}>Grading Key</td>
-              </tr>
-            </thead>
             <tbody>
               {[
                 [
