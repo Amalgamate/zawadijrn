@@ -569,7 +569,23 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
         </h2>
 
         {/* Exam Name / Termly Details */}
-        <div style={{ display: 'inline-block', fontSize: '11px', fontWeight: '700', color: '#1E3A8A', marginTop: '10px', marginBottom: '8px', textTransform: 'uppercase', backgroundColor: '#eff6ff', padding: '4px 16px', borderRadius: '40px', border: '1px solid #dbeafe' }}>
+        <div style={{ 
+          display: 'inline-flex', 
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '11px', 
+          fontWeight: '800', 
+          color: '#1E3A8A', 
+          marginTop: '10px', 
+          marginBottom: '8px', 
+          textTransform: 'uppercase', 
+          backgroundColor: '#eff6ff', 
+          padding: '6px 20px', 
+          borderRadius: '40px', 
+          border: '1px solid #dbeafe',
+          lineHeight: '1',
+          letterSpacing: '0.5px'
+        }}>
           {Array.from(testTypesFound).map(t => t.replace(/_/g, ' ')).join(', ')} | {term ? (typeof term === 'string' ? term.replace(/_/g, ' ') : (term.label || '')) : 'TERM'} | {academicYear || new Date().getFullYear()} ACADEMIC YEAR
         </div>
       </div>
@@ -656,19 +672,21 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
                     ? getCBCGrade((score / (row.totalMarks / (row.testCount || 1))) * 100).grade
                     : null;
                   return (
-                    <td key={col} style={{ padding: '6px 6px', textAlign: 'center', color: '#000000', fontWeight: '700', fontSize: '14px', border: '1px solid #cbd5e1' }}>
-                      {score !== null ? score : '—'}
+                    <td key={col} style={{ padding: '8px 6px', textAlign: 'center', color: '#000000', border: '1px solid #cbd5e1' }}>
+                      <div style={{ fontSize: '16px', fontWeight: '950', lineHeight: '1', color: '#0f172a' }}>
+                        {score !== null ? score : '—'}
+                      </div>
                       {colGrade && (
-                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', lineHeight: '1', marginTop: '1px' }}>{colGrade}</div>
+                        <div style={{ fontSize: '10px', fontWeight: '800', color: '#64748b', lineHeight: '1', marginTop: '2px', textTransform: 'uppercase' }}>{colGrade}</div>
                       )}
                     </td>
                   );
                 })}
                 {testColumns.length > 1 && (
-                  <td style={{ padding: '6px 6px', textAlign: 'center', fontWeight: '700', fontSize: '14px', color: '#000000', border: '1px solid #cbd5e1' }}>{row.percentage}%</td>
+                  <td style={{ padding: '6px 6px', textAlign: 'center', fontWeight: '900', fontSize: '15px', color: '#0f172a', border: '1px solid #cbd5e1' }}>{row.percentage}%</td>
                 )}
-                <td style={{ padding: '6px 6px', textAlign: 'left', fontWeight: '700', fontSize: '14px', color: row.color, border: '1px solid #cbd5e1' }}>{row.grade}</td>
-                <td style={{ padding: '6px 6px', textAlign: 'center', fontWeight: '700', fontSize: '14px', color: '#000000', border: '1px solid #cbd5e1' }}>{row.points || '—'}</td>
+                <td style={{ padding: '6px 6px', textAlign: 'left', fontWeight: '900', fontSize: '15px', color: row.color, border: '1px solid #cbd5e1' }}>{row.grade}</td>
+                <td style={{ padding: '6px 6px', textAlign: 'center', fontWeight: '900', fontSize: '15px', color: '#0f172a', border: '1px solid #cbd5e1' }}>{row.points || '—'}</td>
 
               </tr>
             ))}
