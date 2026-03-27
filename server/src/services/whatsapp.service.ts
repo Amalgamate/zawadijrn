@@ -7,6 +7,7 @@
 
 import { Client, LocalAuth, MessageMedia } from 'whatsapp-web.js';
 import qrcode from 'qrcode-terminal';
+import { pdfService } from './pdf.service';
 
 const SINGLE_TENANT_ID = 'default';
 
@@ -18,6 +19,9 @@ const WHATSAPP_ANNOUNCEMENT_DELAY_MS = 100;
 interface WhatsAppMessage {
   to: string; // Phone number in international format (+254...)
   message: string;
+  mediaBuffer?: Buffer;
+  mediaType?: string;
+  mediaFileName?: string;
 }
 
 class WhatsAppService {
@@ -179,7 +183,18 @@ class WhatsAppService {
       }
 
       const formattedPhone = this.formatPhoneNumber(params.to);
-      const sentMessage = await this.client.sendMessage(formattedPhone, params.message);
+      let sentMessage;
+
+      if (params.mediaBuffer) {
+        const media = new MessageMedia(
+          params.mediaType || 'image/jpeg',
+          params.mediaBuffer.toString('base64'),
+          params.mediaFileName || 'attachment.jpg'
+        );
+        sentMessage = await this.client.sendMessage(formattedPhone, media, { caption: params.message });
+      } else {
+        sentMessage = await this.client.sendMessage(formattedPhone, params.message);
+      }
 
       return {
         success: true,
@@ -215,6 +230,7 @@ class WhatsAppService {
     subjects?: Record<string, string | { score: number, grade: string }>;
     pathwayPrediction?: { predictedPathway: string, confidence: number };
     schoolName?: string;
+    reportHtml?: string;
   }): Promise<{
     success: boolean;
     message: string;
@@ -280,9 +296,25 @@ class WhatsAppService {
       `*Overall Status:* ${overallGrade?.replace(/\d+/g, '') || 'N/A'}\n\n` +
       `_Generated on ${new Date().toLocaleDateString()}_`;
 
+    let mediaBuffer: Buffer | undefined;
+    if (data.reportHtml) {
+      try {
+        console.log(`[WhatsApp Service] Generating screenshot for ${learnerName}'s report...`);
+        const rawBuffer = await pdfService.generateScreenshot(data.reportHtml, { type: 'jpeg', quality: 90 });
+        mediaBuffer = Buffer.isBuffer(rawBuffer) ? rawBuffer : Buffer.from(rawBuffer);
+      } catch (e: any) {
+        console.error('[WhatsApp Service] Failed to generate report screenshot for WhatsApp', e);
+      }
+    }
+
     return await this.sendMessage({
       to: parentPhone,
-      message
+      message,
+      ...(mediaBuffer ? {
+        mediaBuffer,
+        mediaType: 'image/jpeg',
+        mediaFileName: `${learnerName.replace(/\s+/g, '_')}_Report.jpg`
+      } : {})
     });
   }
 

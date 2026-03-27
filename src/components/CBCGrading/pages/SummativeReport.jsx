@@ -1549,38 +1549,55 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
       `${row.pathwayPrediction ? `*Pathways Insight:*\n- Recommended: *${row.pathwayPrediction.predictedPathway}*\n- Confidence: ${row.pathwayPrediction.confidence}%\n- Careers: ${row.pathwayPrediction.careerRecommendations.slice(0, 2).join(', ')}\n\n` : ''}` +
       `_Generated on ${new Date().toLocaleDateString()}_`;
 
-    // 3.5 Open WhatsApp immediately (before async logs to prevent browser blocking)
-    let cleanPhone = parentPhone ? parentPhone.replace(/\D/g, '') : '';
-    if (cleanPhone.startsWith('0')) cleanPhone = '254' + cleanPhone.substring(1);
-
-    if (cleanPhone) {
-      window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(waMessage)}`, '_blank');
-    } else {
-      showError('Parent phone number is unavailable or invalid');
-      return;
-    }
-
-    // 4. Log communication to backend to track status
+    // 3.5 Use Backend API to send with image attachment
+    setIsSendingWhatsApp(true);
+    setPdfProgress('Generating report preview for WhatsApp...');
     try {
-      await api.notifications.logCommunication({
+      const build = await buildStandaloneHtml('summative-report-content');
+      if (build.error) {
+         showError("Could not capture report image for WhatsApp");
+         throw new Error(build.error);
+      }
+
+      setPdfProgress('Sending via WhatsApp...');
+      
+      const payload = {
         learnerId: learnerObj.id,
-        channel: 'WHATSAPP',
+        learnerName: `${learnerObj.firstName || ''} ${learnerObj.lastName || ''}`,
+        learnerGrade: learnerObj.grade,
+        parentPhone: parentPhone,
+        parentName: parentName,
         term: selectedTerm,
         academicYear: setup.academicYear,
-        assessmentType: 'SUMMATIVE'
-      });
+        totalTests: results.length,
+        averageScore: averageScore,
+        overallGrade: overallGrade,
+        subjects: areaSummary,
+        pathwayPrediction: row.pathwayPrediction,
+        reportHtml: build.html
+      };
 
-      // Update local UI state to reflect sent status
-      if (reportData?.rows) {
-        setReportData(prev => ({
-          ...prev,
-          rows: prev.rows.map(r => r.learner.id === learnerObj.id
-            ? { ...r, communication: { ...r.communication, hasSentWhatsApp: true, lastWhatsAppAt: new Date() } }
-            : r)
-        }));
+      const result = await api.notifications.sendAssessmentReportWhatsApp(payload);
+      
+      if (result?.success || result?.message === 'WhatsApp sent') {
+        showSuccess('WhatsApp sent successfully with the report image!');
+        if (reportData?.rows) {
+          setReportData(prev => ({
+            ...prev,
+            rows: prev.rows.map(r => r.learner.id === learnerObj.id
+              ? { ...r, communication: { ...r.communication, hasSentWhatsApp: true, lastWhatsAppAt: new Date() } }
+              : r)
+          }));
+        }
+      } else {
+        throw new Error(result?.error || 'Failed to send WhatsApp message');
       }
     } catch (e) {
-      console.error('Failed to log WhatsApp communication', e);
+      console.error('WhatsApp dispatch error:', e);
+      showError(e?.response?.data?.error || e.message || 'Failed to send WhatsApp message. Is the system WhatsApp connected?');
+    } finally {
+      setIsSendingWhatsApp(false);
+      setPdfProgress('');
     }
   };
 

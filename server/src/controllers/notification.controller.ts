@@ -402,6 +402,7 @@ export class NotificationController {
       overallGrade,
       subjects,
       pathwayPrediction,
+      reportHtml,
     } = req.body;
 
     // Validate required fields
@@ -425,7 +426,8 @@ export class NotificationController {
       overallGrade,
       subjects,
       pathwayPrediction,
-      schoolName
+      schoolName,
+      reportHtml
     } as any);
 
     // Audit log
