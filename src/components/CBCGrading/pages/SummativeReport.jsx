@@ -675,28 +675,21 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
           </tbody>
         </table>
 
-      {/* Chart + Pathway Insight — ONLY FOR JUNIOR SECONDARY (GRADE 7, 8, 9) */}
-      {(() => {
-        const gradeStr = (learner.grade || '').toUpperCase();
-        const isJSS = ['GRADE_7', 'GRADE_8', 'GRADE_9', 'GRADE 7', 'GRADE 8', 'GRADE 9', '7', '8', '9'].some(g => gradeStr.includes(g));
-        if (!isJSS) return null;
-
-        return (
-          <div style={{ display: 'flex', gap: '30px', marginTop: '16px', marginBottom: '8px', alignItems: 'start' }}>
-
-        {/* LEFT: Bar Chart — fixed width to prevent squashing */}
+      {/* Chart + Pathway Insight Section */}
+      <div style={{ display: 'flex', gap: '30px', marginTop: '16px', marginBottom: '8px', alignItems: 'start' }}>
+        {/* LEFT: Bar Chart — Show for ALL grades */}
         <div style={{ width: '420px' }}>
           <h3 style={{ fontSize: '10px', fontWeight: '800', color: '#111827', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', marginBottom: '6px', paddingBottom: '2px' }}>Subject Performance</h3>
           <div style={{ width: '100%' }}>
             {tableRows && tableRows.length > 0 ? (() => {
-              const chartW = 280, chartH = 96, barAreaH = 88;
-              const barW = Math.max(8, Math.floor((chartW - 32) / tableRows.length) - 4);
+              const chartW = 400, chartH = 96, barAreaH = 88;
+              const barW = Math.max(12, Math.floor((chartW - 32) / tableRows.length) - 6);
               return (
                 <svg width={chartW} height={chartH + 18} style={{ display: 'block', overflow: 'visible' }}>
                   <line x1="28" y1={chartH} x2={chartW} y2={chartH} stroke="#e2e8f0" strokeWidth="0.5"/>
                   {tableRows.map((row, i) => {
                     const barH = Math.max(2, (row.percentage / 100) * barAreaH);
-                    const x = 30 + i * (barW + 4);
+                    const x = 30 + i * (barW + 6);
                     const y = chartH - barH;
                     return (
                       <g key={row.area}>
@@ -718,8 +711,12 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
           </div>
         </div>
 
-        {/* RIGHT: Pathway Insight */}
+        {/* RIGHT: Pathway Insight — ONLY FOR JUNIOR SECONDARY (GRADE 7, 8, 9) */}
         {(() => {
+          const gradeStr = (learner.grade || '').toUpperCase();
+          const isJSS = ['GRADE_7', 'GRADE_8', 'GRADE_9', '7', '8', '9'].some(g => gradeStr.includes(g));
+          if (!isJSS) return null;
+
           // Map each subject row to a pathway bucket
           const PATHWAY_MAP = {
             STEM: [
@@ -776,6 +773,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
           const recommended = [...pathways]
             .filter(p => p.pct !== null)
             .sort((a, b) => b.pct - a.pct)[0];
+
           return (
             <div style={{ flex: 1, borderLeft: '1px solid #e2e8f0', paddingLeft: '24px' }}>
               <h3 style={{ fontSize: '10px', fontWeight: '800', color: '#111827', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', marginBottom: '8px', paddingBottom: '2px' }}>Pathways Insight</h3>
@@ -808,14 +806,10 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
                   </div>
                 ))}
               </div>
-
-              {/* AI prediction line has been removed as requested */}
             </div>
           );
         })()}
       </div>
-    );
-  })()}
 
       {/* Grading Key — full width below */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '30px', marginBottom: '2px' }}>
