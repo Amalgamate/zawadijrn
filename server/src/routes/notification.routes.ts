@@ -52,7 +52,8 @@ const sendAssessmentReportSchema = z.object({
   overallGrade: z.string().optional(),
   subjects: z.any().optional(),
   pathwayPrediction: z.any().optional(),
-  reportHtml: z.string().optional()
+  reportHtml: z.string().optional(),
+  reportImageBase64: z.string().optional()
 });
 
 /**

@@ -15,6 +15,8 @@ import { useSchoolData } from '../../../contexts/SchoolDataContext';
 import { reportAPI } from '../../../services/api/report.api';
 import { getAcademicYearOptions, getCurrentAcademicYear } from '../utils/academicYear';
 import Toast from '../shared/Toast';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 /**
  * Helper: turn element into self-contained HTML for backend rendering.
@@ -78,29 +80,47 @@ const generateVectorPDF = async (elementId, filename, onProgress) => {
   const element = document.getElementById(elementId);
   if (!element) return { success: false, error: `Element #${elementId} not found` };
 
-  if (onProgress) onProgress('Collecting styles...');
-  const build = await buildStandaloneHtml(elementId);
-  if (build.error) return { success: false, error: build.error };
+  try {
+    if (onProgress) onProgress('Capturing report layout...');
+    
+    // Use a slightly higher scale for better resolution in PDF
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: '#ffffff',
+      windowWidth: element.scrollWidth,
+      windowHeight: element.scrollHeight
+    });
 
-  if (onProgress) onProgress('Generating PDF...');
-  const blob = await reportAPI.generatePdf({
-    html: build.html,
-    options: { format: 'A4', printBackground: true, margin: { top: '0', right: '0', bottom: '0', left: '0' } }
-  });
+    if (onProgress) onProgress('Preparing PDF pages...');
+    
+    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
 
-  if (!blob || blob.size === 0) throw new Error('Server returned an empty PDF');
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    
+    // Fit the image to A4 while maintaining aspect ratio
+    const imgProps = pdf.getImageProperties(imgData);
+    const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+    
+    // Add the image to the PDF
+    pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, imgHeight);
 
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
+    if (onProgress) onProgress('Downloading...');
+    pdf.save(filename);
 
-  if (onProgress) onProgress('Done!');
-  return { success: true };
+    if (onProgress) onProgress('Done!');
+    return { success: true };
+  } catch (error) {
+    console.error('Frontend PDF Error:', error);
+    return { success: false, error: error.message || 'Failed to generate PDF locally' };
+  }
 };
 
 
@@ -116,29 +136,32 @@ const generateJPEG = async (elementId, filename, onProgress) => {
   const element = document.getElementById(elementId);
   if (!element) return { success: false, error: `Element #${elementId} not found` };
 
-  if (onProgress) onProgress('Collecting styles...');
-  const build = await buildStandaloneHtml(elementId);
-  if (build.error) return { success: false, error: build.error };
+  try {
+    if (onProgress) onProgress('Capturing high-resolution image...');
+    
+    const canvas = await html2canvas(element, {
+      scale: 3, // High scale for clear images
+      useCORS: true,
+      logging: false,
+      backgroundColor: '#ffffff'
+    });
 
-  if (onProgress) onProgress('Generating JPEG...');
-  const blob = await reportAPI.generateScreenshot({
-    html: build.html,
-    options: { format: 'A4', type: 'jpeg', quality: 100 }
-  });
+    if (onProgress) onProgress('Finalizing image...');
+    
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 
-  if (!blob || blob.size === 0) throw new Error('Server returned an empty JPEG');
-
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
-
-  if (onProgress) onProgress('Done!');
-  return { success: true };
+    if (onProgress) onProgress('Done!');
+    return { success: true };
+  } catch (error) {
+    console.error('Frontend JPEG Error:', error);
+    return { success: false, error: error.message || 'Failed to capture image locally' };
+  }
 };
 
 
@@ -1551,13 +1574,19 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
 
     // 3.5 Use Backend API to send with image attachment
     setIsSendingWhatsApp(true);
-    setPdfProgress('Generating report preview for WhatsApp...');
+    setPdfProgress('Capturing report for WhatsApp...');
     try {
-      const build = await buildStandaloneHtml('summative-report-content');
-      if (build.error) {
-         showError("Could not capture report image for WhatsApp");
-         throw new Error(build.error);
-      }
+      const element = document.getElementById('summative-report-content');
+      if (!element) throw new Error("Report element not found");
+
+      // Generate JPEG base64 on frontend
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff'
+      });
+      
+      const base64Image = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
 
       setPdfProgress('Sending via WhatsApp...');
       
@@ -1574,7 +1603,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
         overallGrade: overallGrade,
         subjects: areaSummary,
         pathwayPrediction: row.pathwayPrediction,
-        reportHtml: build.html
+        reportImageBase64: base64Image // Send the pre-rendered image string
       };
 
       const result = await api.notifications.sendAssessmentReportWhatsApp(payload);

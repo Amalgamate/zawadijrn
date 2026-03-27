@@ -231,6 +231,7 @@ class WhatsAppService {
     pathwayPrediction?: { predictedPathway: string, confidence: number };
     schoolName?: string;
     reportHtml?: string;
+    reportImageBase64?: string;
   }): Promise<{
     success: boolean;
     message: string;
@@ -297,7 +298,9 @@ class WhatsAppService {
       `_Generated on ${new Date().toLocaleDateString()}_`;
 
     let mediaBuffer: Buffer | undefined;
-    if (data.reportHtml) {
+    if (data.reportImageBase64) {
+      mediaBuffer = Buffer.from(data.reportImageBase64, 'base64');
+    } else if (data.reportHtml) {
       try {
         console.log(`[WhatsApp Service] Generating screenshot for ${learnerName}'s report...`);
         const rawBuffer = await pdfService.generateScreenshot(data.reportHtml, { type: 'jpeg', quality: 90 });
