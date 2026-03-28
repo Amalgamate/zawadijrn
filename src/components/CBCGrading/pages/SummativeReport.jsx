@@ -526,31 +526,31 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px', marginBottom: '6px', border: '1px solid #cbd5e1' }}>
           <thead>
             <tr style={{ backgroundColor: '#1e3a8a', color: 'white' }}>
-              <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: '900', border: '1.5px solid rgba(255,255,255,0.3)' }}>SUBJECT</th>
+              <th style={{ padding: '8px 10px', textAlign: 'left', fontWeight: '900', border: '1.5px solid rgba(255,255,255,0.3)' }}>SUBJECT</th>
               {testColumns.map(col => (
-                <th key={col} style={{ padding: '12px 6px', textAlign: 'center', fontWeight: '1000', border: '1.5px solid rgba(255,255,255,0.3)', minWidth: '76px', whiteSpace: 'nowrap' }}>
+                <th key={col} style={{ padding: '8px 6px', textAlign: 'center', fontWeight: '1000', border: '1.5px solid rgba(255,255,255,0.3)', minWidth: '76px', whiteSpace: 'nowrap' }}>
                   {formatTestName(col)}
                 </th>
               ))}
               {testColumns.length > 1 && (
-                <th style={{ padding: '12px 6px', textAlign: 'center', fontWeight: '1000', border: '1.5px solid rgba(255,255,255,0.3)', minWidth: '64px' }}>AVG %</th>
+                <th style={{ padding: '8px 6px', textAlign: 'center', fontWeight: '1000', border: '1.5px solid rgba(255,255,255,0.3)', minWidth: '64px' }}>AVG %</th>
               )}
-              <th style={{ padding: '12px 6px', textAlign: 'left', fontWeight: '1000', border: '1.5px solid rgba(255,255,255,0.3)', minWidth: '64px' }}>GRADE</th>
-              <th style={{ padding: '12px 6px', textAlign: 'center', fontWeight: '1000', border: '1.5px solid rgba(255,255,255,0.3)', minWidth: '44px' }}>PTS</th>
+              <th style={{ padding: '8px 6px', textAlign: 'left', fontWeight: '1000', border: '1.5px solid rgba(255,255,255,0.3)', minWidth: '64px' }}>GRADE</th>
+              <th style={{ padding: '8px 6px', textAlign: 'center', fontWeight: '1000', border: '1.5px solid rgba(255,255,255,0.3)', minWidth: '44px' }}>PTS</th>
 
             </tr>
           </thead>
           <tbody>
             {tableRows.map((row, idx) => (
               <tr key={row.area} style={{ backgroundColor: 'white', borderBottom: '1.5px solid #cbd5e1' }}>
-                <td style={{ padding: '12px 10px', fontWeight: '1000', fontSize: '14px', color: '#000', letterSpacing: '-0.2px', border: '1.5px solid #e2e8f0' }}>{row.area}</td>
+                <td style={{ padding: '8px 10px', fontWeight: '1000', fontSize: '13px', color: '#000', letterSpacing: '-0.2px', border: '1.5px solid #e2e8f0' }}>{row.area}</td>
                 {testColumns.map(col => {
                   const score = row.scoresByCol[col];
                   const colGrade = score !== null && row.totalMarks > 0
                     ? getCBCGrade((score / (row.totalMarks / (row.testCount || 1))) * 100).grade
                     : null;
                   return (
-                    <td key={col} style={{ padding: '12px 6px', textAlign: 'center', border: '1.5px solid #e2e8f0' }}>
+                    <td key={col} style={{ padding: '8px 6px', textAlign: 'center', border: '1.5px solid #e2e8f0' }}>
                       <div style={{ fontSize: '16px', fontWeight: '1000', lineHeight: '1.1', color: '#0f172a' }}>
                         {score !== null ? score : '—'}
                       </div>
@@ -561,10 +561,10 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
                   );
                 })}
                 {testColumns.length > 1 && (
-                  <td style={{ padding: '12px 6px', textAlign: 'center', fontWeight: '1000', fontSize: '16px', color: '#0f172a', border: '1.5px solid #e2e8f0' }}>{row.percentage}%</td>
+                  <td style={{ padding: '8px 6px', textAlign: 'center', fontWeight: '1000', fontSize: '15px', color: '#0f172a', border: '1.5px solid #e2e8f0' }}>{row.percentage}%</td>
                 )}
-                <td style={{ padding: '12px 6px', textAlign: 'left', fontWeight: '1000', fontSize: '16px', color: row.color, border: '1.5px solid #e2e8f0' }}>{row.grade}</td>
-                <td style={{ padding: '12px 6px', textAlign: 'center', fontWeight: '1000', fontSize: '16px', color: '#0f172a', border: '1.5px solid #e2e8f0' }}>{row.points || '—'}</td>
+                <td style={{ padding: '8px 6px', textAlign: 'left', fontWeight: '1000', fontSize: '15px', color: row.color, border: '1.5px solid #e2e8f0' }}>{row.grade}</td>
+                <td style={{ padding: '8px 6px', textAlign: 'center', fontWeight: '1000', fontSize: '15px', color: '#0f172a', border: '1.5px solid #e2e8f0' }}>{row.points || '—'}</td>
 
               </tr>
             ))}
