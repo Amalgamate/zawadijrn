@@ -170,6 +170,60 @@ const getCBCGrade = (percentage) => {
   return { grade: 'BE2', remark: 'Below Expectations 2 - Very Low', color: '#8B0000', points: 1 }; // Dark Red
 };
 
+// ============================================================================
+// PATHWAY & MESSAGING UTILITIES
+// ============================================================================
+const PATHWAY_MAP = {
+  STEM: [
+    'MATHEMATICS', 'MATH', 'MAT',
+    'INTEGRATED SCIENCE', 'INT SCI', 'I-SCI',
+    'SCIENCE AND TECHNOLOGY', 'SCITECH', 'SCIENCE & TECHNOLOGY',
+    'PRE-TECHNICAL STUDIES', 'PRE-TECH', 'P-TECH',
+    'AGRICULTURE', 'AGRI', 'HOMESCIENCE', 'H SCI',
+  ],
+  SOCIAL: [
+    'ENGLISH', 'ENG', 'KISWAHILI', 'KIS',
+    'SOCIAL STUDIES', 'SST', 'RELIGIOUS EDUCATION', 'REL',
+    'CHRISTIAN RELIGIOUS EDUCATION', 'CRE', 'ISLAMIC RELIGIOUS EDUCATION', 'IRE', 'RE',
+    'HISTORY', 'GEOGRAPHY',
+  ],
+  ARTS: [
+    'CREATIVE ARTS AND SPORTS', 'CREATIVE', 'CREA', 'CREATIVE ARTS & SPORTS',
+    'ART AND CRAFT', 'ART', 'MUSIC', 'MUS',
+    'PHYSICAL AND HEALTH EDUCATION', 'PHE', 'MOVEMENT AND CREATIVE ACTIVITIES',
+  ],
+};
+
+const calculatePathwayInsights = (results) => {
+  if (!results || results.length === 0) return { pathways: [], recommended: null };
+
+  const calcScore = (keywords) => {
+    const matched = results.filter(r =>
+      keywords.some(k => (r.learningArea || r.area || '').toUpperCase().includes(k))
+    );
+    if (matched.length === 0) return { pct: null };
+    const total = matched.reduce((s, r) => s + (r.score || 0), 0);
+    const max = matched.reduce((s, r) => s + (r.totalMarks || 0), 0);
+    return { pct: max > 0 ? Math.round((total / max) * 100) : null };
+  };
+
+  const stem = calcScore(PATHWAY_MAP.STEM);
+  const social = calcScore(PATHWAY_MAP.SOCIAL);
+  const arts = calcScore(PATHWAY_MAP.ARTS);
+
+  const pathways = [
+    { label: 'STEM', pct: stem.pct },
+    { label: 'Social Sciences', pct: social.pct },
+    { label: 'Arts & Sports', pct: arts.pct },
+  ];
+
+  const recommended = [...pathways]
+    .filter(p => p.pct !== null)
+    .sort((a, b) => b.pct - a.pct)[0] || null;
+
+  return { pathways, recommended };
+};
+
 const resolveTestGroup = (item) => {
   const explicitType = item?.testType;
   if (explicitType && String(explicitType).trim()) return explicitType;
@@ -329,86 +383,84 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
         backgroundColor: '#ffffff'
       }}
     >
-      {/* Header Section - Slimline Redesign */}
-      <div className="mb-2" style={{ textAlign: 'center' }}>
-        {/* Logo Middle */}
-        <div className="mb-1">
+      {/* Header Section - Ultra-Slim Horizontal Redesign */}
+      <div className="mb-2" style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '0 0 4px 0',
+        borderBottom: `2.5px solid ${brandingSettings?.brandColor || '#1e3a8a'}`,
+        gap: '24px'
+      }}>
+        {/* LEFT: Logo */}
+        <div style={{ flexShrink: 0 }}>
           {(() => {
             const logoSrc = brandingSettings?.logoUrl || user?.school?.logoUrl || user?.school?.logo || user?.schoolLogo || user?.logoUrl || '/logo-new.png';
             return (
               <img
                 src={logoSrc}
                 alt="School Logo"
-                style={{ height: '90px', width: 'auto', objectFit: 'contain', display: 'inline-block', margin: '0 auto' }}
+                style={{ height: '85px', width: 'auto', objectFit: 'contain', display: 'block' }}
                 onError={(e) => { e.target.style.display = 'none'; }}
               />
             );
           })()}
         </div>
 
-        {/* School Info */}
-        {/* School Name - SVG for perfect outline/stroke fidelity in PDF */}
-        <div style={{ margin: '0 auto', width: '100%', display: 'flex', justifyContent: 'center' }}>
-          <svg width="714" height="40" viewBox="0 0 714 40" style={{ display: 'block' }}>
-            <text
-              x="50%"
-              y="32"
-              textAnchor="middle"
-              style={{
-                fontSize: '28px',
-                fontWeight: '900',
-                fontFamily: "'Raleway', sans-serif",
-                fill: brandingSettings?.brandColor || '#1e3a8a', // Solid color
-                stroke: 'none',
-                textTransform: 'uppercase',
-                letterSpacing: '1px'
-              }}
-            >
+        {/* CENTER: Vertical Separator */}
+        <div style={{ width: '1.5px', height: '64px', backgroundColor: '#e2e8f0' }}></div>
+
+        {/* RIGHT: High-Density Text Stack */}
+        <div style={{ flex: 1, textAlign: 'left', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '1px' }}>
+          {/* School Name */}
+          <div style={{ width: '100%' }}>
+            <h1 style={{
+              fontSize: '24px',
+              fontWeight: '1000',
+              fontFamily: "'Raleway', sans-serif",
+              color: brandingSettings?.brandColor || '#1e3a8a',
+              textTransform: 'uppercase',
+              margin: 0,
+              lineHeight: '1',
+              letterSpacing: '0.5px'
+            }}>
               {user?.school?.name || brandingSettings?.schoolName || 'ACADEMIC SCHOOL'}
-            </text>
-          </svg>
-        </div>
-
-        {user?.school?.motto && (
-          <div style={{ fontSize: '10px', fontWeight: '800', color: '#64748b', marginTop: '2px', textTransform: 'uppercase', fontStyle: 'italic', letterSpacing: '0.4px' }}>
-            "{user.school.motto}"
+            </h1>
           </div>
-        )}
 
-        {/* Contact Details */}
-        <div style={{ fontSize: '11px', color: '#444', marginTop: '4px', fontWeight: '500', opacity: '0.8' }}>
-          {user?.school?.location && <span>{user.school.location}</span>}
-          {user?.school?.email && <span> • {user.school.email}</span>}
-        </div>
+          {/* Motto & Location Stack */}
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', fontSize: '9.5px', color: '#64748b', fontWeight: '800', textTransform: 'uppercase' }}>
+            {user?.school?.motto && <span style={{ fontStyle: 'italic' }}>"{user.school.motto}"</span>}
+            {user?.school?.location && (
+              <>
+                <span style={{ color: '#cbd5e1' }}>•</span>
+                <span>{user.school.location}</span>
+                {user?.school?.email && <> <span style={{ color: '#cbd5e1' }}>•</span> {user.school.email} </>}
+              </>
+            )}
+          </div>
 
-        {/* Separator Line */}
-        <div style={{ width: '100%', height: '2px', backgroundColor: brandingSettings?.brandColor || '#1e3a8a', marginTop: '6px', marginBottom: '4px' }}></div>
+          {/* Report Title */}
+          <h2 style={{ fontSize: '15px', fontWeight: '1000', color: '#000', margin: '4px 0 1px 0', textTransform: 'uppercase', letterSpacing: '1px', lineHeight: '1' }}>
+            Summative Assessment Report
+          </h2>
 
-        {/* Report Title */}
-        <h2 style={{ fontSize: '17px', fontWeight: '1000', color: '#000', margin: '2px 0 2px 0', textTransform: 'uppercase', letterSpacing: '4px', paddingTop: '2px' }}>
-          Summative Assessment Report
-        </h2>
-
-        {/* Exam Name / Termly Details */}
-        <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '10px',
-          fontWeight: '900',
-          color: brandingSettings?.brandColor || '#1E3A8A',
-          marginTop: '4px',
-          marginBottom: '6px',
-          textTransform: 'uppercase',
-          backgroundColor: '#ffffffff',
-          padding: '4px 20px',
-          borderRadius: '40px',
-          border: '1.2px solid #ffffffff',
-          lineHeight: '1.2',
-          letterSpacing: '0.8px',
-          minHeight: '22px'
-        }}>
-          {Array.from(testTypesFound).map(t => t.replace(/_/g, ' ')).join(', ')} | {term ? (typeof term === 'string' ? term.replace(/_/g, ' ') : (term.label || '')) : 'TERM'} | {academicYear || new Date().getFullYear()} ACADEMIC YEAR
+          {/* Exam Name / Termly Details Inline Row */}
+          <div style={{
+            fontSize: '9.5px',
+            fontWeight: '900',
+            color: brandingSettings?.brandColor || '#1E3A8A',
+            textTransform: 'uppercase',
+            display: 'flex',
+            gap: '12px',
+            alignItems: 'center',
+            letterSpacing: '0.5px'
+          }}>
+            <span style={{ backgroundColor: '#eff6ff', padding: '2px 8px', borderRadius: '4px' }}>
+              {Array.from(testTypesFound).map(t => t.replace(/_/g, ' ')).join(', ')}
+            </span>
+            <span>{term ? (typeof term === 'string' ? term.replace(/_/g, ' ') : (term.label || '')) : 'TERM'} | {academicYear || new Date().getFullYear()}</span>
+          </div>
         </div>
       </div>
 
@@ -1347,41 +1399,36 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
     const { grade: overallGrade } = getCBCGrade(parseFloat(averageScore));
 
     const processedSmsTests = new Set();
+    const { pathways, recommended } = calculatePathwayInsights(results);
+
     const subjects = results.reduce((acc, r) => {
-      // Deduplicate exact results
-      const resultKey = r.id || `${r.testId}-${r.score}`;
-      if (processedSmsTests.has(resultKey)) return acc;
-      processedSmsTests.add(resultKey);
-
-      const rawArea = r.learningArea || r.test?.learningArea || 'General';
-      const area = rawArea.trim().toUpperCase();
-
-      const pct = (r.totalMarks || r.test?.totalMarks) > 0 ? (r.score / (r.totalMarks || r.test?.totalMarks)) * 100 : 0;
-      const { grade } = getCBCGrade(pct);
-      const simpleGrade = grade.replace(/\d+/g, '');
-
-      // If multiple tests for one subject, average them for the summary
-      if (acc[area]) {
-        acc[area].score = Math.round((acc[area].score + r.score) / 2);
-      } else {
-        acc[area] = { score: Math.round(r.score), grade: simpleGrade };
-      }
+      const area = (r.learningArea || r.test?.learningArea || 'General').trim().toUpperCase();
+      if (!acc[area]) acc[area] = { score: 0, total: 0 };
+      acc[area].score += (r.score || 0);
+      acc[area].total += (r.totalMarks || 0);
       return acc;
     }, {});
 
     const subjectsList = Object.entries(subjects).map(([name, detail]) => {
       const shortName = getAbbreviatedName(name);
-      return `${shortName}: ${detail.score} ${detail.grade}`;
+      const pct = detail.total > 0 ? Math.round((detail.score / detail.total) * 100) : 0;
+      const { grade } = getCBCGrade(pct);
+      return `${shortName}: ${pct}% ${grade.replace(/\d+/g, '')}`;
     }).join('\n');
+
+    const pathwayText = pathways
+      .filter(p => p.pct !== null)
+      .map(p => `${p.label.substring(0, 4)}: ${p.pct}%`)
+      .join(', ');
 
     return `${schoolName.toUpperCase()}\n` +
       `Official Assessment Report\n\n` +
       `Dear ${parentName},\n` +
-      `Here is the assessment summary for\n${learner.firstName} ${learner.lastName} for ${termLabel}:\n\n` +
+      `Summary for ${learner.firstName} ${learner.lastName} (${termLabel}):\n\n` +
       `${subjectsList}\n\n` +
       `AVERAGE: ${averageScore}% ${overallGrade.replace(/\d+/g, '')}\n` +
-      `Total Marks: ${totalMarks} / ${maxPossibleMarks}\n` +
-      `Overall Status: ${overallGrade.replace(/\d+/g, '')}${row.pathwayPrediction ? `\n\nPathways Insight:\nPredicted: ${row.pathwayPrediction.predictedPathway}\nConfidence: ${row.pathwayPrediction.confidence}%` : ''}`;
+      (recommended ? `BEST FIT: ${recommended.label.toUpperCase()}\n(${pathwayText})\n` : '') +
+      `Status: ${overallGrade.replace(/\d+/g, '')}`;
   };
 
   const handleSendSMS = async (directRow = null) => {
@@ -1477,11 +1524,12 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
 
     // Aggregate results by area (to avoid duplicates in the WhatsApp message)
     // and normalize area names to avoid nearly-identical keys
+    const { pathways, recommended } = calculatePathwayInsights(results);
+
     const areaSummary = {};
     const processedTests = new Set();
 
     results.forEach(r => {
-      // Deduplicate if the same result appears twice in the array
       const resultKey = r.id || `${r.testId}-${r.score}`;
       if (processedTests.has(resultKey)) return;
       processedTests.add(resultKey);
@@ -1498,7 +1546,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
       const { grade } = getCBCGrade(percentage);
       return {
         area,
-        score: summary.score,
+        pct: Math.round(percentage),
         grade
       };
     }).sort((a, b) => a.area.localeCompare(b.area));
@@ -1510,7 +1558,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
 
     const subjectsListText = tableRows.map(r => {
       const name = getAbbreviatedName(r.area).toUpperCase().padEnd(10).slice(0, 10);
-      const score = Math.round(r.score).toString().padStart(5);
+      const score = (r.pct + "%").padStart(5);
       const grade = r.grade.replace(/\d+/g, '').padStart(5);
       return `${name}|${score} |${grade}`;
     }).join('\n');
@@ -1528,7 +1576,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
       `*${schoolName.toUpperCase()}*\n` +
       `_Official Assessment Report_\n\n` +
       `Dear *${parentName}*,\n` +
-      `Here is the assessment summary for\n*${learnerObj.firstName || ''} ${learnerObj.lastName || ''}* for *${termLabel}*:\n\n` +
+      `Assessment summary for\n*${learnerObj.firstName || ''} ${learnerObj.lastName || ''}* (*${termLabel}*):\n\n` +
       `\`\`\`\n` +
       `${tableHeader}\n` +
       `${separator}\n` +
@@ -1536,9 +1584,9 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
       `${separator}\n` +
       `${avgRow}\n` +
       `\`\`\`\n\n` +
-      `*Total Marks:* ${totalMarks} / ${maxPossibleMarks}\n` +
-      `*Overall Status:* ${overallGrade.replace(/\d+/g, '')}\n\n` +
-      `${row.pathwayPrediction ? `*Pathways Insight:*\n- Recommended: *${row.pathwayPrediction.predictedPathway}*\n- Confidence: ${row.pathwayPrediction.confidence}%\n- Careers: ${row.pathwayPrediction.careerRecommendations.slice(0, 2).join(', ')}\n\n` : ''}` +
+      `*Average Grade:* ${overallGrade.replace(/\d+/g, '')}\n` +
+      (recommended ? `*BEST FIT: ${recommended.label.toUpperCase()}*\n` +
+        pathways.filter(p => p.pct !== null).map(p => `-${p.label}: ${p.pct}%`).join('\n') + '\n\n' : '') +
       `_Generated on ${new Date().toLocaleDateString()}_`;
 
     // 3.5 Use Backend API to send with image attachment
