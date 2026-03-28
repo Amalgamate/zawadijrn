@@ -77,12 +77,10 @@ const StudentStatementsPage = () => {
 
   const handlePrintStatement = async () => {
     try {
-      showSuccess('Generating PDF preview...');
-      const result = await generateStatementPDF(selectedLearner, invoices, payments, {
-        action: 'print',
-        highFidelity: true
-      });
-      if (!result.success) throw new Error(result.error || 'Failed to generate PDF');
+      showSuccess('Opening print preview...');
+      const { printWindow } = await import('../../../utils/simplePdfGenerator');
+      const result = await printWindow('statement-content');
+      if (!result.success) throw new Error(result.error || 'Failed to open print preview');
     } catch (error) {
       showError('Failed to generate print preview');
       console.error(error);
@@ -92,11 +90,11 @@ const StudentStatementsPage = () => {
   const handleDownloadStatement = async () => {
     try {
       showSuccess('Generating PDF for download...');
+      const filename = `Statement_${selectedLearner?.firstName}_${selectedLearner?.lastName}_${new Date().getFullYear()}.pdf`;
       const result = await generateStatementPDF(selectedLearner, invoices, payments, {
-        action: 'download',
-        highFidelity: true
+        elementId: 'statement-content',
+        fileName: filename,
       });
-
       if (result.success) {
         showSuccess('Statement downloaded successfully');
       } else {
@@ -110,39 +108,20 @@ const StudentStatementsPage = () => {
 
   const handleEmailStatement = async () => {
     if (!selectedLearner) return;
-
     try {
       showSuccess('Preparing statement for email...');
-
-      const result = await generateStatementPDF(selectedLearner, invoices, payments, {
-        action: 'blob',
-        highFidelity: true
-      });
-
-      if (!result.success || !result.blob) {
-        throw new Error(result.error || 'Failed to generate PDF');
-      }
-
-      const reader = new FileReader();
-      reader.readAsDataURL(result.blob);
-      reader.onloadend = async () => {
-        const base64data = reader.result;
-
-        try {
-          showSuccess('Sending email...');
-          await api.fees.emailStatement(selectedLearner.id, {
-            pdfBase64: base64data
-          });
-          showSuccess('Statement sent successfully');
-        } catch (error) {
-          console.error('Email failed:', error);
-          showError(error.message || 'Failed to send email');
-        }
-      };
-
+      // Capture the statement DOM element as a PNG and convert to base64 for the email API
+      const { captureElement } = await import('../../../utils/simplePdfGenerator');
+      const el = document.getElementById('statement-content');
+      if (!el) throw new Error('Statement element not found');
+      const canvas = await captureElement(el);
+      const base64data = canvas.toDataURL('image/png');
+      showSuccess('Sending email...');
+      await api.fees.emailStatement(selectedLearner.id, { pdfBase64: base64data });
+      showSuccess('Statement sent successfully');
     } catch (error) {
       console.error('Failed to prepare statement:', error);
-      showError('Failed to prepare statement for emailing');
+      showError(error.message || 'Failed to prepare statement for emailing');
     }
   };
 

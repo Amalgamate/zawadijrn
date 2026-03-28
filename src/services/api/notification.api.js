@@ -14,7 +14,10 @@ export const notificationAPI = {
     fetchWithAuth('/notifications/sms/assessment-report', { method: 'POST', body: JSON.stringify(data) }),
   sendAssessmentReportWhatsApp: async (data) =>
     fetchWithAuth('/notifications/whatsapp/assessment-report', { method: 'POST', body: JSON.stringify(data) }),
-  testWhatsApp: async (phoneNumber) =>
-    fetchWithAuth('/notifications/test', { method: 'POST', body: JSON.stringify({ phoneNumber }) }),
+  testWhatsApp: async (phoneNumber, message) =>
+    fetchWithAuth('/notifications/test', { method: 'POST', body: JSON.stringify({ phoneNumber, message }) }),
   getWhatsAppStatus: async () => fetchWithAuth('/notifications/whatsapp/status'),
+  getWhatsAppQR: async () => fetchWithAuth('/notifications/whatsapp/qr'),
+  initializeWhatsApp: async () => fetchWithAuth('/notifications/whatsapp/initialize', { method: 'POST' }),
+  logoutWhatsApp: async () => fetchWithAuth('/notifications/whatsapp/logout', { method: 'POST' }),
 };

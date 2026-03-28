@@ -455,7 +455,19 @@ export class NotificationController {
     if (result.success) {
       res.json({ success: true, message: 'WhatsApp sent' });
     } else {
-      throw new ApiError(500, result.error || 'Failed to send WhatsApp');
+      // Return specific status codes for different types of "not ready" states
+      let statusCode = 500;
+      if (result.error?.includes('initializing') || result.error?.includes('disconnected')) {
+        statusCode = 503; // Service Unavailable
+      } else if (result.error?.includes('qr_needed')) {
+        statusCode = 401; // Unauthorized
+      }
+      
+      res.status(statusCode).json({ 
+        success: false, 
+        message: result.message || 'Failed to send WhatsApp',
+        error: result.error 
+      });
     }
   }
 
@@ -524,15 +536,17 @@ export class NotificationController {
    * POST /api/notifications/test
    */
   async testWhatsApp(req: AuthRequest, res: Response) {
-    const { phoneNumber } = req.body;
+    const { phoneNumber, message } = req.body;
 
     if (!phoneNumber) {
       throw new ApiError(400, 'Phone number is required');
     }
 
+    const testMsg = message || 'This is a test message from Zawadi JRN Academy. WhatsApp integration is working correctly!';
+
     const result = await whatsappService.sendMessage({
       to: phoneNumber,
-      message: 'This is a test message from Zawadi JRN Academy. WhatsApp integration is working correctly!'
+      message: testMsg
     } as any);
 
     res.json({

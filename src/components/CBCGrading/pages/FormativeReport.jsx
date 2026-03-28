@@ -80,15 +80,14 @@ const FormativeReport = ({ learners, brandingSettings, user }) => {
         brandColor: brandingSettings?.brandColor || '#1e3a8a'
       };
 
+      // generatePDFWithLetterhead now routes through the unified frontend engine.
+      // schoolInfo is accepted for back-compat but the letterhead is already
+      // rendered in the DOM by the report template itself.
       const result = await generatePDFWithLetterhead(
         'formative-report-content',
         filename,
         schoolInfo,
-        {
-          scale: 2,
-          multiPage: true,
-          onProgress
-        }
+        { onProgress }
       );
 
       if (result.success) {

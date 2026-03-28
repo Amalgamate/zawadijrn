@@ -100,12 +100,8 @@ const TermlyReport = ({ learners, brandingSettings, user }) => {
       const result = await generatePDFWithLetterhead(
         'termly-report-content',
         filename,
-        { ...schoolInfo, skipLetterhead: true },
-        {
-          scale: 2, // Higher quality
-          multiPage: true, // Support multiple pages if needed
-          onProgress
-        }
+        schoolInfo,
+        { onProgress }
       );
       if (result.success) {
         showSuccess('Report downloaded successfully!');

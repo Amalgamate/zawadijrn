@@ -6,11 +6,13 @@
 import React, { useState, useEffect } from 'react';
 import {
   Mail, MessageSquare, Send, Save,
-  TestTube, CheckCircle, XCircle, Loader
+  TestTube, CheckCircle, XCircle, Loader,
+  Phone, QrCode, RefreshCw, LogOut, Key
 } from 'lucide-react';
 import { useNotifications } from '../../hooks/useNotifications';
-import { communicationAPI } from '../../../../services/api';
+import { communicationAPI, notificationAPI } from '../../../../services/api';
 import { COMMUNICATION_DEFAULTS, TEST_MESSAGES } from '../../../../constants/communicationMessages';
+import { QRCodeSVG } from 'qrcode.react';
 
 const CommunicationSettings = () => {
   const { showSuccess, showError } = useNotifications();
@@ -19,8 +21,61 @@ const CommunicationSettings = () => {
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState(null);
 
+  // WhatsApp connection states
+  const [whatsappStatus, setWhatsappStatus] = useState({ status: 'disconnected', qrCode: null });
+  const [wsLoading, setWsLoading] = useState(false);
+  const [isPolling, setIsPolling] = useState(false);
+
   // Edit mode states
   const [editingTestContact, setEditingTestContact] = useState(false);
+
+  // WhatsApp status polling
+  useEffect(() => {
+    let interval;
+    if (activeTab === 'whatsapp' || isPolling) {
+      const checkStatus = async () => {
+        try {
+          const res = await notificationAPI.getWhatsAppStatus();
+          if (res.success) {
+            setWhatsappStatus(res.data);
+            if (res.data.status === 'authenticated') setIsPolling(false);
+          }
+        } catch (err) {
+          // Silently ignore — backend may be starting up
+        }
+      };
+      checkStatus();
+      interval = setInterval(checkStatus, 4000);
+    }
+    return () => clearInterval(interval);
+  }, [activeTab, isPolling]);
+
+  const handleInitializeWhatsApp = async () => {
+    try {
+      setWsLoading(true);
+      await notificationAPI.initializeWhatsApp();
+      setIsPolling(true);
+      showSuccess('WhatsApp starting — scan the QR code when it appears');
+    } catch (err) {
+      showError(err.message || 'Failed to start WhatsApp');
+    } finally {
+      setWsLoading(false);
+    }
+  };
+
+  const handleLogoutWhatsApp = async () => {
+    if (!window.confirm('Disconnect WhatsApp and clear the saved session?')) return;
+    try {
+      setWsLoading(true);
+      await notificationAPI.logoutWhatsApp();
+      setWhatsappStatus({ status: 'disconnected', qrCode: null });
+      showSuccess('Disconnected successfully');
+    } catch (err) {
+      showError(err.message || 'Failed to disconnect');
+    } finally {
+      setWsLoading(false);
+    }
+  };
 
   // Template State
   const [editingTemplate, setEditingTemplate] = useState('welcome');
@@ -54,6 +109,8 @@ const CommunicationSettings = () => {
   const [testContact, setTestContact] = useState('');
   const [testMessage, setTestMessage] = useState(TEST_MESSAGES.sms);
   const [schoolPhone, setSchoolPhone] = useState(''); // Store school phone for fallback
+
+  // Removed Deprecated Puppeteer QR Status Logic
 
   // Load Configuration on Mount
 
@@ -126,7 +183,6 @@ const CommunicationSettings = () => {
           }
 
 
-
         }
       } catch (error) {
         console.error('Error loading config:', error);
@@ -183,6 +239,7 @@ const CommunicationSettings = () => {
       // Refresh to get 'hasApiKey' flags updated? Use local state for now
       if (payload.sms?.apiKey) setSmsSettings(s => ({ ...s, hasApiKey: true }));
       if (payload.email?.apiKey) setEmailSettings(s => ({ ...s, hasApiKey: true, apiKey: '' }));
+      if (payload.whatsapp?.apiKey) setWhatsappSettings(s => ({ ...s, hasApiKey: true, apiKey: '' }));
 
     } catch (error) {
       console.error('Save Error:', error);
@@ -233,14 +290,45 @@ const CommunicationSettings = () => {
     }
   };
 
+  const handleTestWhatsApp = async () => {
+    if (testContact.length < 9) {
+      showError('Enter valid phone (e.g. 07... or 254...)');
+      return;
+    }
 
+    setTesting(true);
+    setTestResult(null);
+
+    try {
+      console.log('Sending WhatsApp test message to:', testContact);
+      const response = await notificationAPI.testWhatsApp(testContact, testMessage);
+      
+      setTestResult({
+        success: response.success,
+        message: response.message || 'WhatsApp message sent successfully!',
+        timestamp: new Date().toLocaleString()
+      });
+      showSuccess('WhatsApp test executed!');
+    } catch (error) {
+      console.error('Test WhatsApp Error:', error);
+      setTestResult({
+        success: false,
+        message: error.message || 'Failed to send WhatsApp message',
+        timestamp: new Date().toLocaleString(),
+        errorDetails: error.toString()
+      });
+      showError('Failed to send Test WhatsApp');
+    } finally {
+      setTesting(false);
+    }
+  };
   // Render Logic
   return (
     <div className="space-y-6">
       {/* Tabs */}
       <div className="bg-white rounded-xl shadow-md border border-gray-200 transition-colors duration-300">
         <div className="border-b border-gray-200 flex overflow-x-auto">
-          {['email', 'sms'].map((tab) => (
+          {['email', 'sms', 'whatsapp'].map((tab) => (
             <button
               key={tab}
               onClick={() => {
@@ -270,6 +358,7 @@ const CommunicationSettings = () => {
             >
               {tab === 'email' && <Mail size={20} />}
               {tab === 'sms' && <MessageSquare size={20} />}
+              {tab === 'whatsapp' && <Phone size={20} />}
               <span className="whitespace-nowrap">{tab.charAt(0).toUpperCase() + tab.slice(1)}</span>
             </button>
           ))}
@@ -805,8 +894,218 @@ const CommunicationSettings = () => {
         </div>
       )}
 
+      {/* WHATSAPP TAB */}
+      {activeTab === 'whatsapp' && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100 transition-colors duration-300">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-bold">WhatsApp Connection</h3>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setIsPolling(true); handleInitializeWhatsApp(); }}
+                  disabled={wsLoading || whatsappStatus.status === 'initializing'}
+                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                  title="Start / Refresh"
+                >
+                  <RefreshCw size={20} className={whatsappStatus.status === 'initializing' ? 'animate-spin' : ''} />
+                </button>
+                {whatsappStatus.status === 'authenticated' && (
+                  <button
+                    onClick={handleLogoutWhatsApp}
+                    disabled={wsLoading}
+                    className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition"
+                    title="Logout"
+                  >
+                    <LogOut size={20} />
+                  </button>
+                )}
+              </div>
+            </div>
 
+            <div className="space-y-6">
+              {/* Status pill */}
+              <div className="flex items-center gap-4 p-4 rounded-xl border border-gray-100 bg-gray-50">
+                <div className={`p-3 rounded-full ${
+                  whatsappStatus.status === 'authenticated' ? 'bg-green-100 text-green-600' :
+                  whatsappStatus.status === 'qr_needed'     ? 'bg-yellow-100 text-yellow-600' :
+                  whatsappStatus.status === 'initializing'  ? 'bg-blue-100 text-blue-600' :
+                  'bg-red-100 text-red-600'
+                }`}>
+                  <Phone size={24} />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-gray-900">Status:</span>
+                    <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase ${
+                      whatsappStatus.status === 'authenticated' ? 'bg-green-100 text-green-700' :
+                      whatsappStatus.status === 'qr_needed'     ? 'bg-yellow-100 text-yellow-700' :
+                      whatsappStatus.status === 'initializing'  ? 'bg-blue-100 text-blue-700' :
+                      'bg-red-100 text-red-700'
+                    }`}>
+                      {whatsappStatus.status.replace('_', ' ')}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {whatsappStatus.status === 'authenticated' ? '✅ Connected! You can now send assessment reports via WhatsApp.' :
+                     whatsappStatus.status === 'qr_needed'     ? 'Scan the QR code below with your WhatsApp phone.' :
+                     whatsappStatus.status === 'initializing'  ? 'Starting... QR code will appear shortly.' :
+                     'Not connected. Click the refresh button to start.'}
+                  </p>
+                </div>
+              </div>
 
+              {/* QR Code */}
+              {(whatsappStatus.status === 'qr_needed') && (
+                <div className="flex flex-col items-center gap-4 p-8 border-2 border-dashed border-gray-200 rounded-2xl">
+                  <div className="text-center">
+                    <h4 className="font-bold flex items-center justify-center gap-2"><QrCode size={18} className="text-green-600" /> Scan with WhatsApp</h4>
+                    <p className="text-xs text-gray-500 mt-1">Open WhatsApp → Linked Devices → Link a Device</p>
+                  </div>
+                  {whatsappStatus.qrCode ? (
+                    <div className="bg-white p-4 rounded-xl shadow border">
+                      <QRCodeSVG
+                        value={whatsappStatus.qrCode}
+                        size={220}
+                        bgColor={"#ffffff"}
+                        fgColor={"#000000"}
+                        level={"L"}
+                        includeMargin={false}
+                        className="w-56 h-56"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-56 h-56 bg-gray-50 rounded-xl flex items-center justify-center border">
+                      <Loader className="animate-spin text-gray-300" size={32} />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Authenticated view */}
+              {whatsappStatus.status === 'authenticated' && (
+                <div className="bg-green-50 border border-green-100 rounded-xl p-6 text-center space-y-2">
+                  <CheckCircle className="text-green-600 mx-auto" size={32} />
+                  <h4 className="font-bold text-gray-900">WhatsApp is Connected!</h4>
+                  <p className="text-sm text-gray-600">Bulk reports and reminders will now be delivered via WhatsApp. The session persists across server restarts.</p>
+                </div>
+              )}
+
+              {/* Disconnected / initializing view */}
+              {(whatsappStatus.status === 'disconnected' || whatsappStatus.status === 'initializing') && (
+                <div className="flex flex-col items-center justify-center py-10 gap-4">
+                  {whatsappStatus.status === 'initializing' ? (
+                    <>
+                      <div className="w-14 h-14 border-4 border-blue-100 border-t-blue-500 rounded-full animate-spin" />
+                      <p className="text-gray-500 font-medium">Starting WhatsApp service...</p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-14 h-14 bg-gray-100 text-gray-400 rounded-full flex items-center justify-center">
+                        <Phone size={28} />
+                      </div>
+                      <p className="text-gray-500 font-medium">WhatsApp not connected</p>
+                      <button
+                        onClick={handleInitializeWhatsApp}
+                        disabled={wsLoading}
+                        className="px-8 py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition shadow disabled:opacity-50"
+                      >
+                        {wsLoading ? 'Starting...' : '📱 Connect WhatsApp'}
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Test WhatsApp block (only visible when authenticated) */}
+          {whatsappStatus.status === 'authenticated' && (
+            <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100 transition-colors duration-300">
+              <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                <TestTube size={20} className="text-green-600" />
+                Test WhatsApp
+              </h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Recipient Phone</label>
+                  {!editingTestContact ? (
+                    <div className="flex items-center justify-between px-4 py-2 border rounded-lg bg-gray-50">
+                      <span className="text-gray-800 font-mono font-semibold">{testContact}</span>
+                      <button
+                        onClick={() => setEditingTestContact(true)}
+                        className="p-1 text-green-600 hover:bg-green-100 rounded transition"
+                        title="Edit Phone Number"
+                      >
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                        </svg>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="tel"
+                        value={testContact}
+                        onChange={(e) => {
+                          const newValue = e.target.value;
+                          setTestContact(newValue);
+                          if (newValue) {
+                            localStorage.setItem('testContactPhone', newValue);
+                          }
+                        }}
+                        className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
+                        placeholder="254712345678"
+                        autoFocus
+                      />
+                      <button
+                        onClick={() => setEditingTestContact(false)}
+                        className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+                      >
+                        ✓
+                      </button>
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-500 mt-1">💾 Auto-saved to your browser</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Message</label>
+                  <textarea
+                    value={testMessage}
+                    onChange={(e) => setTestMessage(e.target.value)}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
+                    placeholder="Enter a test message"
+                    rows={3}
+                  />
+                </div>
+
+                <button
+                  onClick={handleTestWhatsApp}
+                  disabled={testing || !testContact}
+                  className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                >
+                  {testing ? <Loader size={20} className="animate-spin" /> : <Send size={20} />}
+                  {testing ? 'Sending...' : 'Send Test WhatsApp'}
+                </button>
+
+                {testResult && (
+                  <div className={`p-4 rounded-lg border ${testResult.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                    <div className="flex items-start gap-3">
+                      {testResult.success ? <CheckCircle className="text-green-600" size={20} /> : <XCircle className="text-red-600" size={20} />}
+                      <div>
+                        <p className="font-semibold">{testResult.message}</p>
+                        <p className="text-xs text-gray-600 mt-1">{testResult.timestamp}</p>
+                        {testResult.errorDetails && (
+                          <p className="text-xs text-red-700 mt-2 font-mono whitespace-pre-wrap">{testResult.errorDetails}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

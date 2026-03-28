@@ -456,7 +456,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
             alignItems: 'center',
             letterSpacing: '0.5px'
           }}>
-            <span style={{ backgroundColor: '#eff6ff', padding: '2px 8px', borderRadius: '4px' }}>
+            <span>
               {Array.from(testTypesFound).map(t => t.replace(/_/g, ' ')).join(', ')}
             </span>
             <span>{term ? (typeof term === 'string' ? term.replace(/_/g, ' ') : (term.label || '')) : 'TERM'} | {academicYear || new Date().getFullYear()}</span>
@@ -1603,6 +1603,11 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
 
       setPdfProgress('Sending via WhatsApp...');
 
+      const subjectsPayload = {};
+      tableRows.forEach(r => {
+        subjectsPayload[r.area] = { score: r.pct, grade: r.grade };
+      });
+
       const payload = {
         learnerId: learnerObj.id,
         learnerName: `${learnerObj.firstName || ''} ${learnerObj.lastName || ''}`,
@@ -1614,7 +1619,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
         totalTests: results.length,
         averageScore: averageScore,
         overallGrade: overallGrade,
-        subjects: areaSummary,
+        subjects: subjectsPayload,
         pathwayPrediction: row.pathwayPrediction,
         reportImageBase64: base64Image // Send the pre-rendered image string
       };
@@ -1636,7 +1641,23 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
       }
     } catch (e) {
       console.error('WhatsApp dispatch error:', e);
-      showError(e?.response?.data?.error || e.message || 'Failed to send WhatsApp message. Is the system WhatsApp connected?');
+      
+      const status = e?.response?.status;
+      const errorMsg = e?.response?.data?.message || e.message;
+      
+      if (status === 503 || errorMsg?.includes('initializing')) {
+        showError('WhatsApp is starting up. Please wait a moment for the connection to stabilize, then try again.', { duration: 5000 });
+      } else if (status === 401 || errorMsg?.includes('qr_needed')) {
+        showError(
+          <div>
+            WhatsApp needs authentication.<br/>
+            Please go to <strong>WhatsApp Settings</strong> to scan the QR code.
+          </div>, 
+          { duration: 6000 }
+        );
+      } else {
+        showError(errorMsg || 'Failed to send WhatsApp message. Is the system WhatsApp connected?');
+      }
     } finally {
       setIsSendingWhatsApp(false);
       setPdfProgress('');

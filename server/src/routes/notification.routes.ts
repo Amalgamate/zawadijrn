@@ -193,6 +193,30 @@ router.get(
 );
 
 /**
+ * @route   POST /api/notifications/whatsapp/initialize
+ * @desc    Initialize WhatsApp service
+ * @access  Authenticated
+ */
+router.post(
+  '/whatsapp/initialize',
+  authenticate,
+  rateLimit({ windowMs: 60_000, maxRequests: 5 }),
+  asyncHandler(whatsappStatusController.initialize.bind(whatsappStatusController))
+);
+
+/**
+ * @route   POST /api/notifications/whatsapp/logout
+ * @desc    Logout WhatsApp and clear session
+ * @access  Authenticated
+ */
+router.post(
+  '/whatsapp/logout',
+  authenticate,
+  rateLimit({ windowMs: 60_000, maxRequests: 5 }),
+  asyncHandler(whatsappStatusController.logout.bind(whatsappStatusController))
+);
+
+/**
  * @route   GET /api/notifications/audit-logs
  * @desc    Get message history audit logs (SMS & WhatsApp)
  * @access  Authenticated

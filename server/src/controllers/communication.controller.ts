@@ -38,6 +38,12 @@ export const getCommunicationConfig = async (req: AuthRequest, res: Response) =>
                 birthdays: {
                     enabled: false,
                     template: SMS_MESSAGES.birthdayStandard('{learnerName}', '{schoolName}', '{gradeName}')
+                },
+                whatsapp: {
+                    enabled: false,
+                    provider: 'ultramsg',
+                    hasApiKey: false,
+                    instanceId: ''
                 }
             }
         });
@@ -78,6 +84,12 @@ export const getCommunicationConfig = async (req: AuthRequest, res: Response) =>
                 enabled: config.birthdayEnabled,
                 template: config.birthdayMessageTemplate || SMS_MESSAGES.birthdayStandard('{learnerName}', '{schoolName}', '{gradeName}')
             },
+            whatsapp: {
+                enabled: config.whatsappEnabled,
+                provider: config.whatsappProvider,
+                hasApiKey: !!config.whatsappApiKey,
+                instanceId: config.whatsappInstanceId || ''
+            },
             createdAt: config.createdAt,
             updatedAt: config.updatedAt
         }
@@ -89,7 +101,7 @@ export const getCommunicationConfig = async (req: AuthRequest, res: Response) =>
  * POST /api/communication/config
  */
 export const saveCommunicationConfig = async (req: AuthRequest, res: Response) => {
-    const { sms, email, mpesa, birthdays } = req.body;
+    const { sms, email, mpesa, birthdays, whatsapp } = req.body;
     const data: any = {};
 
     if (sms) {
@@ -143,6 +155,13 @@ export const saveCommunicationConfig = async (req: AuthRequest, res: Response) =
     if (birthdays) {
         data.birthdayEnabled = birthdays.enabled !== undefined ? birthdays.enabled : false;
         data.birthdayMessageTemplate = birthdays.template || null;
+    }
+
+    if (whatsapp) {
+        data.whatsappProvider = whatsapp.provider || 'ultramsg';
+        data.whatsappEnabled = whatsapp.enabled !== undefined ? whatsapp.enabled : false;
+        if (whatsapp.apiKey) data.whatsappApiKey = encrypt(whatsapp.apiKey);
+        if (whatsapp.instanceId !== undefined) data.whatsappInstanceId = whatsapp.instanceId;
     }
 
     const existingConfig = await prisma.communicationConfig.findFirst();

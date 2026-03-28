@@ -1065,6 +1065,10 @@ model CommunicationConfig {
   birthdayMessageTemplate String?  @default("Happy Birthday {learnerName}! Best wishes from {schoolName}.")
   emailTemplates          Json?
   smsUsername             String?
+  whatsappProvider        String?  @default("ultramsg")
+  whatsappApiKey          String?
+  whatsappInstanceId      String?
+  whatsappEnabled         Boolean  @default(false)
 
   @@map("communication_configs")
 }

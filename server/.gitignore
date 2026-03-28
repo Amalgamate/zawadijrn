@@ -22,7 +22,9 @@ yarn-error.log*
 otp-debug.log
 pred.log
 
-# WhatsApp Web session data
+# WhatsApp session data (Baileys — contains auth tokens, never commit)
+whatsapp-auth/
+# Legacy wwebjs entries (no longer used)
 .wwebjs_auth/
 .wwebjs_cache/
 

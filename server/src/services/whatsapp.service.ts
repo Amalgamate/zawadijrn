@@ -1,499 +1,311 @@
 /**
- * WhatsApp Service using WhatsApp Web (whatsapp-web.js)
- * Handles sending WhatsApp messages through WhatsApp Web automation
- * 
- * @module services/whatsapp.service
+ * WhatsApp Service — Powered by Baileys (Free, WebSocket-based, No Puppeteer)
+ * @see https://github.com/WhiskeySockets/Baileys
  */
 
-import { Client, LocalAuth, MessageMedia } from 'whatsapp-web.js';
-import qrcode from 'qrcode-terminal';
-import { pdfService } from './pdf.service';
+import makeWASocket, {
+  useMultiFileAuthState,
+  DisconnectReason,
+  fetchLatestBaileysVersion,
+  makeCacheableSignalKeyStore,
+  proto,
+  MediaType,
+  Browsers,
+} from '@whiskeysockets/baileys';
+import { Boom } from '@hapi/boom';
+import * as path from 'path';
+import * as fs from 'fs';
+import * as pino from 'pino';
 
-const SINGLE_TENANT_ID = 'default';
+// Auth state persisted to disk — survives server restarts
+const AUTH_FOLDER = path.resolve(__dirname, '../../whatsapp-auth');
 
-/** Delay between bulk WhatsApp messages to avoid rate limiting */
-const WHATSAPP_BULK_DELAY_MS = 2500;
-/** Delay between announcement messages */
-const WHATSAPP_ANNOUNCEMENT_DELAY_MS = 100;
-
-interface WhatsAppMessage {
-  to: string; // Phone number in international format (+254...)
-  message: string;
-  mediaBuffer?: Buffer;
-  mediaType?: string;
-  mediaFileName?: string;
-}
+type ConnectionStatus = 'disconnected' | 'qr_needed' | 'authenticated' | 'initializing';
 
 class WhatsAppService {
-  private client: Client | null = null;
-  private isReady: boolean = false;
-  private isInitializing: boolean = false;
+  private sock: ReturnType<typeof makeWASocket> | null = null;
+  private status: ConnectionStatus = 'disconnected';
   private qrCode: string | null = null;
-  private connectionStatus: 'disconnected' | 'qr_needed' | 'authenticated' | 'initializing' = 'disconnected';
+  private reconnectTimeout: NodeJS.Timeout | null = null;
 
   constructor() {
-    // We no longer auto-initialize a global client
+    console.log('[WhatsApp] Baileys service ready. Call initialize() to connect.');
+    // Auto-connect on startup if auth already exists
+    if (fs.existsSync(path.join(AUTH_FOLDER, 'creds.json'))) {
+      console.log('[WhatsApp] Found existing session — reconnecting...');
+      this.initialize().catch(err => console.error('[WhatsApp] Auto-reconnect failed:', err));
+    }
   }
 
-  /**
-   * Initialize WhatsApp Web client
-   */
-  async initialize() {
-    if (this.isInitializing || this.client) {
-      return;
-    }
+  getStatus(): { status: ConnectionStatus; qrCode: string | null } {
+    return { status: this.status, qrCode: this.qrCode };
+  }
 
-    this.isInitializing = true;
-    this.connectionStatus = 'initializing';
+  async initialize(): Promise<void> {
+    if (this.status === 'initializing' || this.status === 'authenticated') return;
 
-    console.log(`[WhatsApp Service] Initializing WhatsApp Web client...`);
+    this.status = 'initializing';
+    this.qrCode = null;
 
     try {
-      this.client = new Client({
-        authStrategy: new LocalAuth({
-          clientId: SINGLE_TENANT_ID,
-          dataPath: `./.wwebjs_auth`
-        }),
-        puppeteer: {
-          headless: true,
-          args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-accelerated-2d-canvas',
-            '--no-first-run',
-            '--no-zygote',
-            '--disable-gpu',
-            '--disable-canvas-aa',
-            '--disable-2d-canvas-clip-aa',
-            '--disable-gl-drawing-for-tests',
-            '--disable-extensions',
-            '--mute-audio'
-          ]
+      if (!fs.existsSync(AUTH_FOLDER)) fs.mkdirSync(AUTH_FOLDER, { recursive: true });
+
+      const { state, saveCreds } = await useMultiFileAuthState(AUTH_FOLDER);
+      const { version } = await fetchLatestBaileysVersion();
+
+      const logger = (pino as any).default
+        ? (pino as any).default({ level: 'silent' })
+        : (pino as any)({ level: 'silent' });
+
+      this.sock = makeWASocket({
+        version,
+        auth: {
+          creds: state.creds,
+          keys: makeCacheableSignalKeyStore(state.keys, logger),
+        },
+        logger,
+        browser: Browsers.macOS('Desktop'),
+        generateHighQualityLinkPreview: false,
+        syncFullHistory: false,
+      });
+
+      // Save auth credentials whenever they update
+      this.sock.ev.on('creds.update', saveCreds);
+
+      this.sock.ev.on('connection.update', (update) => {
+        const { connection, lastDisconnect, qr } = update;
+
+        if (qr) {
+          // QR code available — store as raw string, frontend renders it via qrserver API
+          this.qrCode = qr;
+          this.status = 'qr_needed';
+          console.log('[WhatsApp] QR code ready — waiting for scan...');
+        }
+
+        if (connection === 'close') {
+          this.status = 'disconnected';
+          this.qrCode = null;
+          
+          const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
+          const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+
+          console.log('[WhatsApp] Connection closed. Status code:', statusCode, '| Reconnect:', shouldReconnect);
+          
+          if (lastDisconnect?.error) {
+            console.error('[WhatsApp] Disconnect error details:', lastDisconnect.error);
+          }
+
+          if (statusCode === DisconnectReason.loggedOut) {
+            console.log('[WhatsApp] Session invalid or logged out. Clearing auth data to generate a fresh QR code...');
+            if (fs.existsSync(AUTH_FOLDER)) {
+              fs.rmSync(AUTH_FOLDER, { recursive: true, force: true });
+            }
+          }
+
+          if (shouldReconnect) {
+            console.log('[WhatsApp] Reconnecting in 3 seconds...');
+            // Reconnect after 3 seconds with disconnected status so initialize() bypasses the lock
+            this.status = 'disconnected';
+            this.reconnectTimeout = setTimeout(() => {
+              this.initialize().catch(console.error);
+            }, 3000);
+          }
+        }
+
+        if (connection === 'open') {
+          this.status = 'authenticated';
+          this.qrCode = null;
+          console.log('[WhatsApp] ✅ Connected and authenticated!');
         }
       });
-
-      // QR Code event
-      this.client.on('qr', (qr) => {
-        this.qrCode = qr;
-        this.connectionStatus = 'qr_needed';
-        console.log(`[WhatsApp Service] QR Code generated`);
-      });
-
-      // Ready event
-      this.client.on('ready', () => {
-        this.isReady = true;
-        this.connectionStatus = 'authenticated';
-        this.qrCode = null;
-        console.log(`[WhatsApp Service] ✅ WhatsApp Client is ready!`);
-      });
-
-      // Authenticated event
-      this.client.on('authenticated', () => {
-        console.log(`[WhatsApp Service] ✅ WhatsApp authenticated successfully`);
-        this.connectionStatus = 'authenticated';
-      });
-
-      // Disconnected event
-      this.client.on('disconnected', (reason: any) => {
-        console.log(`[WhatsApp Service] ⚠️ WhatsApp disconnected:`, reason);
-        this.isReady = false;
-        this.connectionStatus = 'disconnected';
-        this.client = null;
-        this.isInitializing = false;
-      });
-
-      // Auth failure event
-      this.client.on('auth_failure', (msg: any) => {
-        console.error(`[WhatsApp Service] ❌ Auth failure:`, msg);
-        this.connectionStatus = 'qr_needed';
-      });
-
-      await this.client.initialize();
-      this.isInitializing = false;
-
-    } catch (error: any) {
-      console.error(`[WhatsApp Service] ❌ Initialization error:`, error.message);
-      this.isInitializing = false;
-      this.connectionStatus = 'disconnected';
-      this.client = null;
+    } catch (err) {
+      this.status = 'disconnected';
+      console.error('[WhatsApp] Initialization error:', err);
+      throw err;
     }
   }
 
-  /**
-   * Get current connection status
-   */
-  getStatus(): {
-    status: 'disconnected' | 'qr_needed' | 'authenticated' | 'initializing';
-    qrCode: string | null;
-  } {
-    return {
-      status: this.connectionStatus,
-      qrCode: this.qrCode
-    };
-  }
-
-  /**
-   * Format phone number to WhatsApp format
-   */
-  private formatPhoneNumber(phone: string): string {
-    const hasPlus = phone.trim().startsWith('+');
-    let formatted = phone.replace(/[\s\-\(\)]/g, '');
-    // Strip leading + for processing
-    if (formatted.startsWith('+')) formatted = formatted.substring(1);
-
-    // Kenyan local: 07... or 01...
-    if (formatted.startsWith('07') || formatted.startsWith('01')) {
-      formatted = '254' + formatted.substring(1);
-    }
-    // Already 254...
-    else if (!formatted.startsWith('254') && formatted.length === 9) {
-      formatted = '254' + formatted; // 9-digit local assumed Kenyan
-    }
-    // Non-Kenyan international number (had a + prefix) — keep as-is
-    else if (hasPlus && !formatted.startsWith('254')) {
-      // formatted is already digits-only, return as-is with @c.us
-    }
-    // Default: ensure starts with country code
-    else if (!formatted.startsWith('254') && !hasPlus) {
-      formatted = '254' + formatted;
-    }
-
-    return `${formatted}@c.us`;
-  }
-
-  /**
-   * Send WhatsApp message
-   */
-  async sendMessage(params: WhatsAppMessage): Promise<{
-    success: boolean;
-    messageId?: string;
-    message: string;
-    error?: string;
-  }> {
+  async logout(): Promise<{ success: boolean; message: string }> {
     try {
-      if (!this.client || !this.isReady) {
-        // Trigger initialization if not already in progress
-        this.initialize();
-        return {
-          success: false,
-          message: 'WhatsApp client is not ready. Please go to settings to authenticate.',
-          error: `Status: ${this.connectionStatus}`
-        };
+      if (this.sock) {
+        await this.sock.logout();
+        this.sock = null;
       }
+      // Remove saved auth so next initialize() generates fresh QR
+      if (fs.existsSync(AUTH_FOLDER)) {
+        fs.rmSync(AUTH_FOLDER, { recursive: true, force: true });
+      }
+      this.status = 'disconnected';
+      this.qrCode = null;
+      return { success: true, message: 'Logged out and session cleared.' };
+    } catch (err: any) {
+      return { success: false, message: err.message };
+    }
+  }
 
-      const formattedPhone = this.formatPhoneNumber(params.to);
-      let sentMessage;
+  async stopClient(): Promise<void> {
+    if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
+    if (this.sock) {
+      this.sock.end(undefined);
+      this.sock = null;
+    }
+    this.status = 'disconnected';
+  }
+
+  private formatPhone(phone: string): string {
+    let clean = phone.replace(/[^0-9]/g, '');
+    if (clean.startsWith('0')) clean = '254' + clean.slice(1);
+    if (!clean.startsWith('254')) clean = '254' + clean;
+    return clean + '@s.whatsapp.net';
+  }
+
+  async sendMessage(params: {
+    to: string;
+    message: string;
+    mediaBuffer?: Buffer;
+    mediaType?: string;
+    mediaFileName?: string;
+    mediaBase64?: string;
+  }): Promise<{ success: boolean; message: string; messageId?: string; error?: string }> {
+    if (!this.sock || this.status !== 'authenticated') {
+      return { success: false, message: 'WhatsApp is not connected. Please scan the QR code first.' };
+    }
+
+    try {
+      const jid = this.formatPhone(params.to);
+
+      let buffer: Buffer | null = null;
+      let mimeType: string = params.mediaType || 'application/pdf';
+      let fileName: string = params.mediaFileName || 'document.pdf';
 
       if (params.mediaBuffer) {
-        const media = new MessageMedia(
-          params.mediaType || 'image/jpeg',
-          params.mediaBuffer.toString('base64'),
-          params.mediaFileName || 'attachment.jpg'
-        );
-        sentMessage = await this.client.sendMessage(formattedPhone, media, { caption: params.message });
-      } else {
-        sentMessage = await this.client.sendMessage(formattedPhone, params.message);
+        buffer = params.mediaBuffer;
+      } else if (params.mediaBase64) {
+        // Convert base64 data URL to Buffer
+        const matches = (params.mediaBase64 as string).match(/^data:([^;]+);base64,(.+)$/);
+        if (matches) {
+          mimeType = matches[1];
+          buffer = Buffer.from(matches[2], 'base64');
+        } else {
+          // Assume raw base64 string
+          buffer = Buffer.from(params.mediaBase64, 'base64');
+        }
       }
 
-      return {
-        success: true,
-        messageId: sentMessage.id.id,
-        message: 'WhatsApp message sent successfully'
-      };
-
-    } catch (error: any) {
-      console.error(`[WhatsApp Service] ❌ Error sending message:`, error.message);
-      return {
-        success: false,
-        message: 'Failed to send WhatsApp message',
-        error: error.message
-      };
-    }
-  }
-
-  /**
-   * Send assessment report via WhatsApp to parent
-   */
-  async sendAssessmentReport(data: {
-    learnerId: string;
-    learnerName: string;
-    learnerGrade: string;
-    parentPhone: string;
-    parentName?: string;
-    term: string;
-    totalTests: number;
-    averageScore?: string;
-    overallGrade?: string;
-    totalMarks?: number;
-    maxPossibleMarks?: number;
-    subjects?: Record<string, string | { score: number, grade: string }>;
-    pathwayPrediction?: { predictedPathway: string, confidence: number };
-    schoolName?: string;
-    reportHtml?: string;
-    reportImageBase64?: string;
-  }): Promise<{
-    success: boolean;
-    message: string;
-    error?: string;
-  }> {
-    const { parentPhone, parentName, learnerName, learnerGrade, term, averageScore, overallGrade, subjects, pathwayPrediction } = data;
-
-    const greeting = parentName ? `Dear *${parentName.trim()}*,` : 'Dear *Parent*,';
-    const schoolNameHeader = data.schoolName ? `*${data.schoolName.toUpperCase()}*` : '*SCHOOL REPORT*';
-
-    const LEARNING_AREA_MAP: Record<string, string> = {
-      'MATHEMATICS': 'MAT', 'ENGLISH': 'ENG', 'KISWAHILI': 'KIS',
-      'SCIENCE AND TECHNOLOGY': 'SCITECH', 'SOCIAL STUDIES': 'SST',
-      'CHRISTIAN RELIGIOUS EDUCATION': 'CRE', 'ISLAMIC RELIGIOUS EDUCATION': 'IRE',
-      'CREATIVE ARTS AND SPORTS': 'CREATIVE', 'AGRICULTURE': 'AGRI',
-      'ENVIRONMENTAL ACTIVITIES': 'ENV', 'MATHEMATICAL ACTIVITIES': 'MAT',
-      'ENGLISH LANGUAGE ACTIVITIES': 'ENG', 'KISWAHILI LANGUAGE ACTIVITIES': 'KIS',
-      'RELIGIOUS EDUCATION': 'RE'
-    };
-
-    let subjectsSummary = '';
-    if (subjects && Object.keys(subjects).length > 0) {
-      const tableHeader = `SUBJECT   |  SCR |  GRD`;
-      const separator = `----------|-----|----`;
-
-      const subRows = Object.entries(subjects).map(([name, detail]) => {
-        const upper = name.toUpperCase().trim();
-        const code = LEARNING_AREA_MAP[upper] || (name.length > 10 ? name.substring(0, 10).toUpperCase() : name.toUpperCase());
-        const displayCode = code.padEnd(10).slice(0, 10);
-
-        let scoreStr = '';
-        let gradeStr = '';
-
-        if (typeof detail === 'string') {
-          scoreStr = ' - '.padStart(5);
-          gradeStr = detail.padStart(5);
+      if (buffer) {
+        if (!fileName) fileName = mimeType.includes('image') ? 'report.jpg' : 'document.pdf';
+        
+        let mediaOptions: any;
+        // Choose between image and document based on mimeType
+        if (mimeType.startsWith('image/')) {
+          mediaOptions = { 
+            image: buffer, 
+            caption: params.message 
+          };
         } else {
-          scoreStr = Math.round(detail.score).toString().padStart(5);
-          gradeStr = detail.grade.replace(/\d+/g, '').padStart(5);
+          mediaOptions = {
+            document: buffer,
+            mimetype: mimeType,
+            fileName,
+            caption: params.message,
+          };
         }
 
-        return `${displayCode}|${scoreStr} |${gradeStr}`;
+        const sent = await this.sock.sendMessage(jid, mediaOptions);
+        return { success: true, message: 'Sent', messageId: sent?.key?.id ?? undefined };
+      }
+
+      // Plain text
+      const sent = await this.sock.sendMessage(jid, { text: params.message });
+      return { success: true, message: 'Sent', messageId: sent?.key?.id ?? undefined };
+    } catch (err: any) {
+      console.error('[WhatsApp] Send error:', err);
+      return { success: false, message: err.message, error: err.message };
+    }
+  }
+
+  async sendAssessmentReport(data: any): Promise<{ success: boolean; message: string; error?: string }> {
+    // 1. Build a text-based summary of scores
+    let subjectsText = '';
+    if (data.subjects && typeof data.subjects === 'object') {
+      const header = `SUBJECT   | SCR | GRD`;
+      const sep    = `----------|-----|----`;
+      
+      const rows = Object.entries(data.subjects).map(([name, info]: [string, any]) => {
+        const subName = name.toUpperCase().padEnd(10).slice(0, 10);
+        const score = (info.score + '%').padStart(4);
+        const grade = (info.grade || '').padStart(4);
+        return `${subName}|${score} |${grade}`;
       });
 
-      const avgLabel = "AVERAGE".padEnd(10);
-      const avgScore = (averageScore + "%").padStart(6);
-      const avgGrade = (overallGrade || '').replace(/\d+/g, '').padStart(4);
-      const avgRow = `${avgLabel}|${avgScore}|${avgGrade}`;
-
-      subjectsSummary = `\n\`\`\`\n${tableHeader}\n${separator}\n${subRows.join('\n')}\n${separator}\n${avgRow}\n\`\`\``;
+      subjectsText = `\`\`\`\n${header}\n${sep}\n${rows.join('\n')}\n\`\`\`\n\n`;
     }
 
-    const pathwaySnippet = pathwayPrediction ? `\n*AI Pathway Insight:* ${pathwayPrediction.predictedPathway} (${pathwayPrediction.confidence}% confidence)\n` : '';
+    const averageText = data.averageScore ? `*Average:* ${data.averageScore}% (${data.overallGrade || ''})\n` : '';
+    const schoolName = data.schoolName || 'Zawadi Academy';
 
-    const message = `${schoolNameHeader}\n` +
-      `Official Assessment Report\n\n` +
-      `${greeting}\n` +
-      `Here is the assessment summary for\n` +
-      `*${learnerName}* for *${term}*:\n` +
-      `${subjectsSummary}\n` +
-      `${pathwaySnippet}\n` +
-      `*Total Marks:* ${data.totalMarks || 'N/A'} / ${data.maxPossibleMarks || 'N/A'}\n` +
-      `*Overall Status:* ${overallGrade?.replace(/\d+/g, '') || 'N/A'}\n\n` +
-      `_Generated on ${new Date().toLocaleDateString()}_`;
+    const message = 
+      `*${schoolName.toUpperCase()}*\n` +
+      `_Assessment Report: ${data.term || ''}_\n\n` +
+      `Dear *${data.parentName || 'Parent'}*,\n` +
+      `Results for *${data.learnerName}*:\n\n` +
+      subjectsText +
+      averageText +
+      `Please find the detailed report attached below.\n\n` +
+      `_Sent via Zawadi SMS System_`;
 
-    let mediaBuffer: Buffer | undefined;
-    if (data.reportImageBase64) {
-      mediaBuffer = Buffer.from(data.reportImageBase64, 'base64');
-    } else if (data.reportHtml) {
-      try {
-        console.log(`[WhatsApp Service] Generating screenshot for ${learnerName}'s report...`);
-        const rawBuffer = await pdfService.generateScreenshot(data.reportHtml, { type: 'jpeg', quality: 90 });
-        mediaBuffer = Buffer.isBuffer(rawBuffer) ? rawBuffer : Buffer.from(rawBuffer);
-      } catch (e: any) {
-        console.error('[WhatsApp Service] Failed to generate report screenshot for WhatsApp', e);
-      }
-    }
-
-    return await this.sendMessage({
-      to: parentPhone,
+    return this.sendMessage({
+      to: data.parentPhone,
       message,
-      ...(mediaBuffer ? {
-        mediaBuffer,
-        mediaType: 'image/jpeg',
-        mediaFileName: `${learnerName.replace(/\s+/g, '_')}_Report.jpg`
-      } : {})
+      mediaBase64: data.reportImageBase64,
+      mediaType: 'image/jpeg',
+      mediaFileName: `${data.learnerName}_Report.jpg`,
     });
   }
 
-  /**
-   * Send assessment notification to parent
-   */
-  async sendAssessmentNotification(params: {
-    parentPhone: string;
-    parentName: string;
-    learnerName: string;
-    assessmentType: string;
-    subject?: string;
-    grade?: string;
-    term?: string;
-  }): Promise<{
-    success: boolean;
-    message: string;
-    error?: string;
-  }> {
-    const { parentPhone, parentName, learnerName, assessmentType, subject, grade, term } = params;
+  async sendCustomMessage(params: any): Promise<{ success: boolean; message: string; error?: string }> {
+    return this.sendMessage({ to: params.parentPhone, message: params.message });
+  }
 
-    let message = `Dear ${parentName},\n\n`;
-    message += `${assessmentType} assessment has been completed for ${learnerName}`;
-    if (subject) message += ` in ${subject}`;
-    if (grade) message += `.\n\nGrade: ${grade}`;
-    if (term) message += `\nTerm: ${term}`;
-    message += `\n\nYou can view the full report in the parent portal.`;
-    message += `\n\n_This is an automated notification._`;
-
-    return await this.sendMessage({
-      to: parentPhone,
-      message
+  async sendAnnouncement(params: any): Promise<{ success: boolean; message: string; error?: string }> {
+    return this.sendMessage({
+      to: params.parentPhone,
+      message: `*${params.title}*\n\n${params.content}`,
     });
   }
 
-  /**
-   * Send bulk assessment notifications with batching
-   */
-  async sendBulkAssessmentNotifications(notifications: Array<any>): Promise<{
-    success: boolean;
-    sent: number;
-    failed: number;
-    message: string;
-  }> {
-    let sent = 0;
-    let failed = 0;
-
-    for (const notification of notifications) {
-      try {
-        const result = await this.sendAssessmentNotification({ ...notification });
-        if (result.success) sent++;
-        else failed++;
-        await new Promise(resolve => setTimeout(resolve, WHATSAPP_BULK_DELAY_MS));
-      } catch (error) {
-        failed++;
-      }
-    }
-
-    return {
-      success: sent > 0,
-      sent,
-      failed,
-      message: `Sent ${sent} messages, ${failed} failed`
-    };
+  async sendFeeReminder(params: any): Promise<{ success: boolean; message: string; error?: string }> {
+    return this.sendMessage({ to: params.parentPhone, message: params.message || 'Fee Reminder' });
   }
 
-  /**
-   * Send bulk custom messages with batching
-   */
-  async sendBulkMessages(recipients: Array<{ phone: string, message: string }>): Promise<{
-    success: boolean;
-    sent: number;
-    failed: number;
-    results: Array<{ phone: string, success: boolean, messageId?: string, error?: string }>;
-  }> {
+  async sendAssessmentNotification(params: any): Promise<{ success: boolean; message: string; error?: string }> {
+    return this.sendMessage({ to: params.parentPhone, message: params.message });
+  }
+
+  async sendBulkMessages(messages: Array<{ phone: string; message: string; mediaBuffer?: Buffer; mediaType?: string; mediaFileName?: string }>): Promise<{ sent: number; failed: number; results: Array<any> }> {
     let sent = 0;
     let failed = 0;
     const results = [];
-
-    console.log(`📱 [WhatsApp Service] Starting bulk message send to ${recipients.length} recipients`);
-
-    for (const recipient of recipients) {
-      try {
-        const result = await this.sendMessage({ to: recipient.phone, message: recipient.message });
-        results.push({
-          phone: recipient.phone,
-          success: result.success,
-          messageId: result.messageId,
-          error: result.error
-        });
-        if (result.success) sent++;
-        else failed++;
-
-        // Add a delay between messages to avoid being flagged as spam by WhatsApp
-        await new Promise(resolve => setTimeout(resolve, WHATSAPP_BULK_DELAY_MS));
-      } catch (error: any) {
-        results.push({ phone: recipient.phone, success: false, error: error.message });
-        failed++;
-      }
+    for (const msg of messages) {
+      // 1-second delay between messages to avoid rate-limiting
+      await new Promise(r => setTimeout(r, 1000));
+      const res = await this.sendMessage({ to: msg.phone, message: msg.message, mediaBuffer: msg.mediaBuffer, mediaType: msg.mediaType, mediaFileName: msg.mediaFileName });
+      if (res.success) sent++; else failed++;
+      results.push({ success: res.success, phone: msg.phone, error: res.error });
     }
-
-    return {
-      success: sent > 0,
-      sent,
-      failed,
-      results
-    };
+    return { sent, failed, results };
   }
 
-  /**
-   * Send custom message to parent
-   */
-  async sendCustomMessage(params: {
-    parentPhone: string;
-    message: string;
-  }): Promise<{
-    success: boolean;
-    message: string;
-    error?: string;
-  }> {
-    return await this.sendMessage({
-      to: params.parentPhone,
-      message: params.message
-    });
+  async sendBulkAnnouncement(recipients: string[], messageText: string): Promise<{ success: boolean; sent: number; failed: number; message: string }> {
+    const messages = recipients.map(phone => ({ phone, message: messageText }));
+    const result = await this.sendBulkMessages(messages);
+    return { success: result.sent > 0, sent: result.sent, failed: result.failed, message: `Sent ${result.sent}/${recipients.length}` };
   }
 
-  /**
-   * Send fee reminder to parent
-   */
-  async sendFeeReminder(params: {
-    parentPhone: string;
-    parentName: string;
-    learnerName: string;
-    amountDue: number;
-    dueDate: string;
-  }): Promise<{
-    success: boolean;
-    message: string;
-    error?: string;
-  }> {
-    const message = `Dear *${params.parentName}*,\n\n` +
-      `This is a friendly reminder regarding school fees for *${params.learnerName}*.\n\n` +
-      `*Amount Due:* KES ${params.amountDue.toLocaleString()}\n` +
-      `*Due Date:* ${params.dueDate}\n\n` +
-      `Please make payment at your earliest convenience.\n\n` +
-      `For any queries, contact the school administration.\n\n` +
-      `_This is an automated reminder._`;
-
-    return await this.sendMessage({
-      to: params.parentPhone,
-      message
-    });
-  }
-
-  /**
-   * Send general announcement to parent
-   */
-  async sendAnnouncement(params: {
-    parentPhone: string;
-    parentName: string;
-    title: string;
-    content: string;
-  }): Promise<{
-    success: boolean;
-    message: string;
-    error?: string;
-  }> {
-    const message = `Dear *${params.parentName}*,\n\n` +
-      `*${params.title}*\n\n` +
-      `${params.content}\n\n` +
-      `Regards,\nSchool Administration`;
-
-    return await this.sendMessage({
-      to: params.parentPhone,
-      message
-    });
+  async sendBulkAssessmentNotifications(notifications: Array<any>): Promise<{ success: boolean; sent: number; failed: number }> {
+    const messages = notifications.map(n => ({ phone: n.parentPhone, message: n.message }));
+    const result = await this.sendBulkMessages(messages);
+    return { success: result.sent > 0, sent: result.sent, failed: result.failed };
   }
 }
 

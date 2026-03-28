@@ -20,7 +20,8 @@ class WhatsAppStatusController {
                 success: true,
                 data: {
                     status: status.status,
-                    hasQRCode: !!status.qrCode
+                    hasQRCode: !!status.qrCode,
+                    qrCode: status.qrCode  // Include raw QR string for frontend rendering
                 }
             });
         } catch (error: any) {
@@ -64,18 +65,52 @@ class WhatsAppStatusController {
             });
         } catch (error: any) {
             console.error('[WhatsApp Status] Error getting QR code:', error);
-            if (error instanceof ApiError) {
-                res.status(error.statusCode).json({
-                    success: false,
-                    message: error.message
-                });
-            } else {
-                res.status(500).json({
-                    success: false,
-                    message: 'Failed to get QR code',
-                    error: error.message
-                });
-            }
+            res.status(500).json({
+                success: false,
+                message: 'Failed to get QR code',
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * Initialize WhatsApp service
+     */
+    async initialize(req: AuthRequest, res: Response) {
+        try {
+            // This triggers the internal initialization if not already running
+            whatsappService.initialize();
+            
+            const status = whatsappService.getStatus();
+            res.json({
+                success: true,
+                message: 'WhatsApp initialization started',
+                data: { status: status.status }
+            });
+        } catch (error: any) {
+            console.error('[WhatsApp Status] Error initializing:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to initialize WhatsApp',
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * Logout WhatsApp service
+     */
+    async logout(req: AuthRequest, res: Response) {
+        try {
+            const result = await whatsappService.logout();
+            res.json(result);
+        } catch (error: any) {
+            console.error('[WhatsApp Status] Error logging out:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to logout WhatsApp',
+                error: error.message
+            });
         }
     }
 }
