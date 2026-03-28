@@ -15,271 +15,38 @@ import { useSchoolData } from '../../../contexts/SchoolDataContext';
 import { reportAPI } from '../../../services/api/report.api';
 import { getAcademicYearOptions, getCurrentAcademicYear } from '../utils/academicYear';
 import Toast from '../shared/Toast';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
+import {
+  captureSingleReport,
+  captureBulkReports,
+  captureElement,
+  printWindow as pdfPrintWindow,
+} from '../../../utils/simplePdfGenerator';
 
-/**
- * Helper: turn element into self-contained HTML for backend rendering.
- */
-const buildStandaloneHtml = async (elementId) => {
-  const element = document.getElementById(elementId);
-  if (!element) return { error: `Element #${elementId} not found` };
+// ── Local aliases kept so call-sites below don't need to change ─────────────
+const generateVectorPDF = (elementId, filename, onProgress) =>
+  captureSingleReport(elementId, filename, { onProgress });
 
-  const allStyles = Array.from(document.styleSheets).map(sheet => {
-    try {
-      return Array.from(sheet.cssRules)
-        .filter(rule => rule.constructor.name !== 'CSSImportRule')
-        .map(rule => rule.cssText)
-        .join('\n');
-    } catch (_) { return ''; }
-  }).join('\n');
+const generateBulkPDF = (elementId, filename, onProgress) =>
+  captureBulkReports(elementId, filename, { onProgress });
 
-  const clone = element.cloneNode(true);
-  await Promise.all(Array.from(clone.querySelectorAll('img')).map(async img => {
-    const src = img.getAttribute('src');
-    if (!src || src.startsWith('data:')) return;
-    try {
-      const res = await fetch(new URL(src, window.location.href).href);
-      const blob = await res.blob();
-      await new Promise(resolve => {
-        const reader = new FileReader();
-        reader.onloadend = () => { img.src = reader.result; resolve(); };
-        reader.readAsDataURL(blob);
-      });
-    } catch (_) {
-      // keep original src on failure
-    }
-  }));
-
-  const html = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <style>
-    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    body { margin: 0; padding: 0; background: #fff; }
-    ${allStyles}
-    @page { size: A4 portrait !important; margin: 0 !important; }
-  </style>
-</head>
-<body>${clone.innerHTML}</body>
-</html>`;
-
-  return { html };
-};
-
-/**
- * generateVectorPDF — serialises the DOM element and sends it to the
- * Puppeteer backend, returning a true vector PDF blob for download.
- *
- * @param {string}   elementId  - ID of the DOM container to render
- * @param {string}   filename   - desired download filename (.pdf)
- * @param {Function} onProgress - optional (msg: string) => void callback
- */
-const generateVectorPDF = async (elementId, filename, onProgress) => {
-  const element = document.getElementById(elementId);
-  if (!element) return { success: false, error: `Element #${elementId} not found` };
-
-  try {
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4'
-    });
-
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-
-    const commonOptions = {
-      scale: 2.5,
-      useCORS: true,
-      logging: false,
-      backgroundColor: '#ffffff',
-      width: 794,
-      height: 1123,
-      allowTaint: true,
-      onclone: (clonedDoc) => {
-        // Find the specific element being captured (could be the main elementId or a page element)
-        const el = clonedDoc.getElementById(elementId) || clonedDoc.querySelector('.pdf-report-page');
-        if (el) {
-          el.style.width = '794px';
-          el.style.minHeight = '1123px';
-          el.style.height = 'auto';
-          el.style.display = 'flex';
-          el.style.flexDirection = 'column';
-          el.style.visibility = 'visible';
-          el.style.opacity = '1';
-          el.style.position = 'relative';
-          el.style.left = '0';
-          el.style.overflow = 'visible';
-          
-          const allElements = el.querySelectorAll('*');
-          allElements.forEach(node => {
-            if (node.style) {
-              node.style.visibility = 'visible';
-              node.style.opacity = '1';
-            }
-          });
-        }
-
-        const inner = clonedDoc.querySelector('.report-card');
-        if (inner) {
-          inner.style.minHeight = '1123px';
-          inner.style.height = 'auto';
-          inner.style.overflow = 'visible';
-        }
-
-        const svgs = clonedDoc.getElementsByTagName('svg');
-        for (let i = 0; i < svgs.length; i++) {
-          svgs[i].style.display = 'block';
-          svgs[i].style.visibility = 'visible';
-          svgs[i].style.opacity = '1';
-          svgs[i].style.overflow = 'visible';
-        }
-
-        const scripts = clonedDoc.getElementsByTagName('script');
-        for (let i = scripts.length - 1; i >= 0; i--) {
-          scripts[i].parentNode.removeChild(scripts[i]);
-        }
-      }
-    };
-
-    // Check if we are doing a bulk print (multiple pages)
-    const pageElements = element.querySelectorAll('.pdf-report-page');
-    
-    if (pageElements && pageElements.length > 0) {
-      if (onProgress) onProgress(`Generating ${pageElements.length} pages...`);
-      
-      for (let i = 0; i < pageElements.length; i++) {
-        const pageEl = pageElements[i];
-        if (onProgress) onProgress(`Capturing page ${i + 1} of ${pageElements.length}...`);
-        
-        // Stabilize each page (Increased for reliability)
-        await new Promise(r => setTimeout(r, 600));
-
-        const canvas = await html2canvas(pageEl, {
-          ...commonOptions,
-          scale: 2.2 // lower slightly for multi-page performance
-        });
-
-        const imgData = canvas.toDataURL('image/jpeg', 0.85);
-        
-        if (i > 0) pdf.addPage();
-        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-      }
-    } else {
-      // Single page capture
-      if (onProgress) onProgress('Capturing report layout...');
-      await new Promise(r => setTimeout(r, 600));
-      
-      const canvas = await html2canvas(element, commonOptions);
-
-      const imgData = canvas.toDataURL('image/jpeg', 0.9);
-      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-    }
-
-    if (onProgress) onProgress('Finalizing PDF...');
-    pdf.save(filename);
-
-    if (onProgress) onProgress('Done!');
-    return { success: true };
-  } catch (error) {
-    console.error('Frontend PDF Error:', error);
-    return { success: false, error: error.message || 'Failed to generate PDF locally' };
-  }
-};
-
-
-/**
- * generateJPEG — captures the rendered report card as a high-quality JPEG
- * using html2canvas (already in the project bundle) and triggers a download.
- *
- * @param {string}   elementId  - ID of the DOM container to capture
- * @param {string}   filename   - desired download filename (.jpg)
- * @param {Function} onProgress - optional (msg: string) => void callback
- */
+// Capture as JPEG/PNG remains frontend-only (routed via captureElement)
 const generateJPEG = async (elementId, filename, onProgress) => {
-  const element = document.getElementById(elementId);
-  if (!element) return { success: false, error: `Element #${elementId} not found` };
-
   try {
-    if (onProgress) onProgress('Capturing high-resolution image...');
-    
-    // Wait for React to fully settle and styles to commit
-    await new Promise(r => setTimeout(r, 500));
-    
-    const canvas = await html2canvas(element, {
-      scale: 3, // High scale for clear images
-      useCORS: true,
-      logging: false,
-      backgroundColor: '#ffffff',
-      width: 794,
-      height: 1123,
-      onclone: (clonedDoc) => {
-        const el = clonedDoc.getElementById(elementId);
-        if (el) {
-          el.style.width = '794px';
-          el.style.minHeight = '1123px';
-          el.style.height = 'auto';           // let content breathe
-          el.style.display = 'flex';          // MUST be flex for layout preservation
-          el.style.flexDirection = 'column';
-          el.style.visibility = 'visible';
-          el.style.opacity = '1';
-          el.style.position = 'relative';
-          el.style.left = '0';
-          el.style.overflow = 'visible';
-
-          // Force all children to be visible
-          const allElements = el.querySelectorAll('*');
-          allElements.forEach(node => {
-            if (node.style) {
-              node.style.visibility = 'visible';
-              node.style.opacity = '1';
-            }
-          });
-        }
-        // Also relax the inner card height in the clone
-        const inner = el?.querySelector('.report-card');
-        if (inner) {
-          inner.style.minHeight = '1123px';
-          inner.style.height = 'auto';
-          inner.style.overflow = 'visible';
-        }
-
-        // Force all SVGs to be visible (force the graph)
-        const svgs = clonedDoc.getElementsByTagName('svg');
-        for (let i = 0; i < svgs.length; i++) {
-          svgs[i].style.display = 'block';
-          svgs[i].style.visibility = 'visible';
-          svgs[i].style.opacity = '1';
-          svgs[i].style.overflow = 'visible';
-        }
-
-        // Strip all scripts to prevent MIME/execution errors in the clone
-        const scripts = clonedDoc.getElementsByTagName('script');
-        for (let i = scripts.length - 1; i >= 0; i--) {
-          scripts[i].parentNode.removeChild(scripts[i]);
-        }
-      }
-    });
-
-    if (onProgress) onProgress('Finalizing image...');
-    
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+    const el = document.getElementById(elementId);
+    if (!el) return { success: false, error: 'Element not found' };
+    if (onProgress) onProgress('Capturing image...');
+    const canvas = await captureElement(el);
     const link = document.createElement('a');
-    link.href = dataUrl;
     link.download = filename;
-    document.body.appendChild(link);
+    link.href = canvas.toDataURL('image/jpeg', 0.9);
     link.click();
-    document.body.removeChild(link);
-
-    if (onProgress) onProgress('Done!');
     return { success: true };
-  } catch (error) {
-    console.error('Frontend JPEG Error:', error);
-    return { success: false, error: error.message || 'Failed to capture image locally' };
+  } catch (err) {
+    return { success: false, error: err.message };
   }
 };
+
+// (Legacy dead code fully removed — see simplePdfGenerator.js)
 
 
 const LEARNING_AREA_ABBREVIATIONS = {
@@ -550,7 +317,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
   return (
     <div className="report-card relative bg-white mx-auto overflow-hidden"
       style={{
-        fontFamily: "'Poppins', 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+        fontFamily: "'Raleway', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
         lineHeight: '1.2',
         width: '794px', // 210mm at 96 DPI
         minHeight: '1123px', // ensure card is never shorter than A4
@@ -562,74 +329,84 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
         backgroundColor: '#ffffff'
       }}
     >
-      {/* Header Section - Centered Professional Redesign */}
-      <div className="mb-4" style={{ textAlign: 'center' }}>
+      {/* Header Section - Slimline Redesign */}
+      <div className="mb-2" style={{ textAlign: 'center' }}>
         {/* Logo Middle */}
-        <div className="mb-2">
+        <div className="mb-1">
           {(() => {
             const logoSrc = brandingSettings?.logoUrl || user?.school?.logoUrl || user?.school?.logo || user?.schoolLogo || user?.logoUrl || '/logo-new.png';
             return (
-          <img
-            src={logoSrc}
-            alt="School Logo"
-            style={{ height: '80px', width: 'auto', objectFit: 'contain', display: 'inline-block', margin: '0 auto' }}
-            onError={(e) => { e.target.style.display = 'none'; }}
-          />
+              <img
+                src={logoSrc}
+                alt="School Logo"
+                style={{ height: '90px', width: 'auto', objectFit: 'contain', display: 'inline-block', margin: '0 auto' }}
+                onError={(e) => { e.target.style.display = 'none'; }}
+              />
             );
           })()}
         </div>
 
         {/* School Info */}
-        <h1 style={{ 
-          fontSize: '32px', 
-          fontWeight: '850', 
-          color: brandingSettings?.brandColor || '#1E3A8A', 
-          margin: '0 0 1px 0', 
-          textTransform: 'uppercase', 
-          letterSpacing: '0.5px',
-          lineHeight: '1.0',
-          WebkitTextStroke: '0.4px ' + (brandingSettings?.brandColor || '#1E3A8A') // Refined weight
-        }}>
-          {user?.school?.name || brandingSettings?.schoolName || 'ACADEMIC SCHOOL'}
-        </h1>
+        {/* School Name - SVG for perfect outline/stroke fidelity in PDF */}
+        <div style={{ margin: '0 auto', width: '100%', display: 'flex', justifyContent: 'center' }}>
+          <svg width="714" height="40" viewBox="0 0 714 40" style={{ display: 'block' }}>
+            <text
+              x="50%"
+              y="32"
+              textAnchor="middle"
+              style={{
+                fontSize: '28px',
+                fontWeight: '900',
+                fontFamily: "'Raleway', sans-serif",
+                fill: brandingSettings?.brandColor || '#1e3a8a', // Solid color
+                stroke: 'none',
+                textTransform: 'uppercase',
+                letterSpacing: '1px'
+              }}
+            >
+              {user?.school?.name || brandingSettings?.schoolName || 'ACADEMIC SCHOOL'}
+            </text>
+          </svg>
+        </div>
 
         {user?.school?.motto && (
-          <div style={{ fontSize: '10px', fontWeight: '800', color: '#64748b', marginTop: '4px', textTransform: 'uppercase', fontStyle: 'italic', letterSpacing: '0.4px' }}>
+          <div style={{ fontSize: '10px', fontWeight: '800', color: '#64748b', marginTop: '2px', textTransform: 'uppercase', fontStyle: 'italic', letterSpacing: '0.4px' }}>
             "{user.school.motto}"
           </div>
         )}
 
         {/* Contact Details */}
-        <div style={{ fontSize: '11px', color: '#444', marginTop: '6px', fontWeight: '500', opacity: '0.8' }}>
+        <div style={{ fontSize: '11px', color: '#444', marginTop: '4px', fontWeight: '500', opacity: '0.8' }}>
           {user?.school?.location && <span>{user.school.location}</span>}
           {user?.school?.email && <span> • {user.school.email}</span>}
         </div>
 
         {/* Separator Line */}
-        <div style={{ width: '100%', height: '2.5px', backgroundColor: brandingSettings?.brandColor || '#1e3a8a', marginTop: '10px', marginBottom: '6px' }}></div>
+        <div style={{ width: '100%', height: '2px', backgroundColor: brandingSettings?.brandColor || '#1e3a8a', marginTop: '6px', marginBottom: '4px' }}></div>
 
         {/* Report Title */}
-        <h2 style={{ fontSize: '16px', fontWeight: '900', color: '#000', margin: '2px 0 3px 0', textTransform: 'uppercase', letterSpacing: '3px', paddingTop: '4px' }}>
+        <h2 style={{ fontSize: '17px', fontWeight: '1000', color: '#000', margin: '2px 0 2px 0', textTransform: 'uppercase', letterSpacing: '4px', paddingTop: '2px' }}>
           Summative Assessment Report
         </h2>
 
         {/* Exam Name / Termly Details */}
-        <div style={{ 
-          display: 'inline-flex', 
+        <div style={{
+          display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: '10px', 
-          fontWeight: '800', 
-          color: '#1E3A8A', 
-          marginTop: '6px', 
-          marginBottom: '5px', 
-          textTransform: 'uppercase', 
-          backgroundColor: '#eff6ff', 
-          padding: '4px 16px', 
-          borderRadius: '40px', 
-          border: '1px solid #dbeafe',
-          lineHeight: '1',
-          letterSpacing: '0.5px'
+          fontSize: '10px',
+          fontWeight: '900',
+          color: brandingSettings?.brandColor || '#1E3A8A',
+          marginTop: '4px',
+          marginBottom: '6px',
+          textTransform: 'uppercase',
+          backgroundColor: '#ffffffff',
+          padding: '4px 20px',
+          borderRadius: '40px',
+          border: '1.2px solid #ffffffff',
+          lineHeight: '1.2',
+          letterSpacing: '0.8px',
+          minHeight: '22px'
         }}>
           {Array.from(testTypesFound).map(t => t.replace(/_/g, ' ')).join(', ')} | {term ? (typeof term === 'string' ? term.replace(/_/g, ' ') : (term.label || '')) : 'TERM'} | {academicYear || new Date().getFullYear()} ACADEMIC YEAR
         </div>
@@ -651,35 +428,39 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
         else if (avgPct >= 21) overallGrade = 'AE2';
         else if (avgPct >= 11) overallGrade = 'BE1';
         return (
-          <div className="mb-3" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', border: '1px solid #e2e8f0', borderRadius: '4px', overflow: 'hidden', fontSize: '13px' }}>
+          <div className="mb-3" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 0.8fr)', border: '1.2px solid #e2e8f0', borderRadius: '4px', overflow: 'hidden', fontSize: '12.5px', lineHeight: '1.2' }}>
             {/* LEFT: Learner Info */}
-            <div style={{ padding: '4px 12px', display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '1px 10px', alignContent: 'start' }}>
-              <div style={{ fontWeight: '900', color: '#444' }}>NAME:</div>
-              <div style={{ fontWeight: '900', color: '#000', textTransform: 'uppercase' }}>{learner.firstName} {learner.lastName}</div>
-              <div style={{ fontWeight: '900', color: '#444' }}>ADM NO:</div>
-              <div style={{ fontWeight: '900', color: '#000' }}>{learner.admissionNumber || '—'}</div>
-              <div style={{ fontWeight: '900', color: '#444' }}>GRADE:</div>
-              <div style={{ fontWeight: '900', textTransform: 'uppercase', color: '#000' }}>{learner.grade?.replace(/_/g, ' ')}</div>
-              <div style={{ fontWeight: '900', color: '#444' }}>STREAM:</div>
-              <div style={{ fontWeight: '900', textTransform: 'uppercase', color: '#000' }}>{learner.stream || 'A'}</div>
+            <div style={{ padding: '8px 14px', display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '2px 10px', alignContent: 'center', borderRight: '1px solid #e2e8f0' }}>
+              <div style={{ fontWeight: '900', color: '#64748b', fontSize: '11px' }}>NAME:</div>
+              <div style={{ fontWeight: '1000', color: '#000', textTransform: 'uppercase' }}>{learner.firstName} {learner.lastName}</div>
+              <div style={{ fontWeight: '900', color: '#64748b', fontSize: '11px' }}>ADM NO:</div>
+              <div style={{ fontWeight: '1000', color: '#000' }}>{learner.admissionNumber || '—'}</div>
+              <div style={{ fontWeight: '900', color: '#64748b', fontSize: '11px' }}>GRADE:</div>
+              <div style={{ fontWeight: '1000', textTransform: 'uppercase', color: '#1e40af' }}>{learner.grade?.replace(/_/g, ' ')}</div>
+              <div style={{ fontWeight: '900', color: '#64748b', fontSize: '11px' }}>STREAM:</div>
+              <div style={{ fontWeight: '1000', color: '#000' }}>{learner.stream || 'A'}</div>
             </div>
             {/* RIGHT: Assessment Summary */}
-            <div style={{ borderLeft: '1px solid #e2e8f0', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0' }}>
-              <div style={{ padding: '4px 12px', textAlign: 'center', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
-                <div style={{ fontSize: '9px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '1px' }}>Subjects Assessed</div>
-                <div style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a' }}>{tableRows.length}</div>
+            <div style={{ display: 'grid', gridTemplateRows: '1fr 1fr', height: '100%' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+                <div style={{ padding: '8px 4px', textAlign: 'center', borderRight: '1.2px solid #e2e8f0', borderBottom: '1.2px solid #e2e8f0', display: 'flex', flexDirection: 'column', justifyContent: 'center', backgroundColor: '#f8fafc', gap: '2px' }}>
+                  <div style={{ fontSize: '8px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Subjects</div>
+                  <div style={{ fontSize: '16px', fontWeight: '1000', color: '#0f172a' }}>{tableRows.length}</div>
+                </div>
+                <div style={{ padding: '8px 4px', textAlign: 'center', borderBottom: '1.2px solid #e2e8f0', display: 'flex', flexDirection: 'column', justifyContent: 'center', backgroundColor: '#f8fafc', gap: '2px' }}>
+                  <div style={{ fontSize: '8px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Points</div>
+                  <div style={{ fontSize: '16px', fontWeight: '1000', color: '#0f172a' }}>{totalPoints}</div>
+                </div>
               </div>
-              <div style={{ padding: '4px 12px', textAlign: 'center', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
-                <div style={{ fontSize: '9px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '1px' }}>Total Points</div>
-                <div style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a' }}>{totalPoints}</div>
-              </div>
-              <div style={{ padding: '4px 12px', textAlign: 'center', borderRight: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
-                <div style={{ fontSize: '9px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: '1px' }}>Average Score</div>
-                <div style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a' }}>{avgPct}%</div>
-              </div>
-              <div style={{ padding: '4px 12px', textAlign: 'center', backgroundColor: '#eff6ff' }}>
-                <div style={{ fontSize: '9px', fontWeight: '800', color: '#1e40af', textTransform: 'uppercase', marginBottom: '1px' }}>Overall Grade</div>
-                <div style={{ fontSize: '16px', fontWeight: '700', color: '#1e3a8a' }}>{overallGrade}</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+                <div style={{ padding: '8px 4px', textAlign: 'center', borderRight: '1.2px solid #e2e8f0', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '2px' }}>
+                  <div style={{ fontSize: '8px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Average</div>
+                  <div style={{ fontSize: '16px', fontWeight: '1000', color: '#0f172a' }}>{avgPct}%</div>
+                </div>
+                <div style={{ padding: '8px 4px', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', backgroundColor: '#f1f5f9', gap: '2px' }}>
+                  <div style={{ fontSize: '8px', fontWeight: '900', color: '#1e40af', textTransform: 'uppercase' }}>Grade</div>
+                  <div style={{ fontSize: '16px', fontWeight: '1000', color: '#1e40af' }}>{overallGrade}</div>
+                </div>
               </div>
             </div>
           </div>
@@ -693,283 +474,286 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px', marginBottom: '6px', border: '1px solid #cbd5e1' }}>
           <thead>
             <tr style={{ backgroundColor: '#1e3a8a', color: 'white' }}>
-              <th style={{ padding: '6px 6px', textAlign: 'left', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.2)' }}>SUBJECT</th>
+              <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: '900', border: '1.5px solid rgba(255,255,255,0.3)' }}>SUBJECT</th>
               {testColumns.map(col => (
-                <th key={col} style={{ padding: '8px 6px', textAlign: 'center', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.2)', minWidth: '64px', whiteSpace: 'nowrap' }}>
+                <th key={col} style={{ padding: '12px 6px', textAlign: 'center', fontWeight: '1000', border: '1.5px solid rgba(255,255,255,0.3)', minWidth: '76px', whiteSpace: 'nowrap' }}>
                   {formatTestName(col)}
                 </th>
               ))}
               {testColumns.length > 1 && (
-                <th style={{ padding: '8px 6px', textAlign: 'center', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.2)', minWidth: '52px' }}>AVG %</th>
+                <th style={{ padding: '12px 6px', textAlign: 'center', fontWeight: '1000', border: '1.5px solid rgba(255,255,255,0.3)', minWidth: '64px' }}>AVG %</th>
               )}
-              <th style={{ padding: '8px 6px', textAlign: 'left', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.2)', minWidth: '52px' }}>GRADE</th>
-              <th style={{ padding: '8px 6px', textAlign: 'center', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.2)', minWidth: '36px' }}>PTS</th>
+              <th style={{ padding: '12px 6px', textAlign: 'left', fontWeight: '1000', border: '1.5px solid rgba(255,255,255,0.3)', minWidth: '64px' }}>GRADE</th>
+              <th style={{ padding: '12px 6px', textAlign: 'center', fontWeight: '1000', border: '1.5px solid rgba(255,255,255,0.3)', minWidth: '44px' }}>PTS</th>
 
             </tr>
           </thead>
           <tbody>
             {tableRows.map((row, idx) => (
-              <tr key={row.area} style={{ backgroundColor: 'white', borderBottom: '1px solid #cbd5e1' }}>
-                <td style={{ padding: '6px 6px', fontWeight: '700', fontSize: '13px', color: '#000000', letterSpacing: '-0.2px', border: '1px solid #cbd5e1' }}>{row.area}</td>
+              <tr key={row.area} style={{ backgroundColor: 'white', borderBottom: '1.5px solid #cbd5e1' }}>
+                <td style={{ padding: '12px 10px', fontWeight: '1000', fontSize: '14px', color: '#000', letterSpacing: '-0.2px', border: '1.5px solid #e2e8f0' }}>{row.area}</td>
                 {testColumns.map(col => {
                   const score = row.scoresByCol[col];
                   const colGrade = score !== null && row.totalMarks > 0
                     ? getCBCGrade((score / (row.totalMarks / (row.testCount || 1))) * 100).grade
                     : null;
                   return (
-                    <td key={col} style={{ padding: '5px 6px', textAlign: 'center', color: '#000000', border: '1px solid #cbd5e1' }}>
-                      <div style={{ fontSize: '15px', fontWeight: '700', lineHeight: '1.1', color: '#0f172a' }}>
+                    <td key={col} style={{ padding: '12px 6px', textAlign: 'center', border: '1.5px solid #e2e8f0' }}>
+                      <div style={{ fontSize: '16px', fontWeight: '1000', lineHeight: '1.1', color: '#0f172a' }}>
                         {score !== null ? score : '—'}
                       </div>
                       {colGrade && (
-                        <div style={{ fontSize: '9px', fontWeight: '800', color: '#64748b', lineHeight: '1', marginTop: '1px', textTransform: 'uppercase' }}>{colGrade}</div>
+                        <div style={{ fontSize: '9px', fontWeight: '1000', color: '#64748b', lineHeight: '1', marginTop: '2px', textTransform: 'uppercase' }}>{colGrade}</div>
                       )}
                     </td>
                   );
                 })}
                 {testColumns.length > 1 && (
-                  <td style={{ padding: '6px 6px', textAlign: 'center', fontWeight: '700', fontSize: '15px', color: '#0f172a', border: '1px solid #cbd5e1' }}>{row.percentage}%</td>
+                  <td style={{ padding: '12px 6px', textAlign: 'center', fontWeight: '1000', fontSize: '16px', color: '#0f172a', border: '1.5px solid #e2e8f0' }}>{row.percentage}%</td>
                 )}
-                <td style={{ padding: '6px 6px', textAlign: 'left', fontWeight: '700', fontSize: '15px', color: row.color, border: '1px solid #cbd5e1' }}>{row.grade}</td>
-                <td style={{ padding: '6px 6px', textAlign: 'center', fontWeight: '700', fontSize: '15px', color: '#0f172a', border: '1px solid #cbd5e1' }}>{row.points || '—'}</td>
+                <td style={{ padding: '12px 6px', textAlign: 'left', fontWeight: '1000', fontSize: '16px', color: row.color, border: '1.5px solid #e2e8f0' }}>{row.grade}</td>
+                <td style={{ padding: '12px 6px', textAlign: 'center', fontWeight: '1000', fontSize: '16px', color: '#0f172a', border: '1.5px solid #e2e8f0' }}>{row.points || '—'}</td>
 
               </tr>
             ))}
           </tbody>
         </table>
 
-      {/* Chart + Pathway Insight Section */}
-      <div style={{ display: 'flex', gap: '30px', marginTop: '16px', marginBottom: '8px', alignItems: 'start' }}>
-        {/* LEFT: Bar Chart — Show for ALL grades */}
-        <div style={{ width: isJSS ? '420px' : '100%' }}>
-          <h3 style={{ fontSize: '10px', fontWeight: '800', color: '#111827', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', marginBottom: '6px', paddingBottom: '2px' }}>Subject Performance</h3>
-          <div style={{ width: '100%' }}>
-            {tableRows && tableRows.length > 0 ? (
-              <div style={{ 
-                height: '114px', 
-                width: '100%', 
-                display: 'flex', 
-                alignItems: 'flex-end', 
-                gap: isJSS ? '8px' : '16px', 
-                padding: '0 10px 18px 10px', 
-                borderBottom: '0.8px solid #e2e8f0', 
-                position: 'relative',
-                boxSizing: 'border-box'
-              }}>
-                {tableRows.map((row, i) => {
-                  const barH = Math.max(4, Math.round((row.percentage / 100) * 88));
-                  // Dynamically calculate bar width
-                  // max-width of container is ~770 if full, 400 if half
-                  const containerW = isJSS ? 400 : 770;
-                  const barW = Math.max(16, Math.floor((containerW / tableRows.length) - (isJSS ? 8 : 16)));
-                  return (
-                    <div key={row.area} style={{ 
-                      flex: 1, 
-                      display: 'flex', 
-                      flexDirection: 'column', 
-                      alignItems: 'center', 
-                      justifyContent: 'flex-end',
-                      height: '100%'
-                    }}>
-                      {/* Score Label */}
-                      <div style={{ 
-                        fontSize: '9px', 
-                        fontWeight: '900', 
-                        color: '#1e40af', 
-                        marginBottom: '2px',
-                        fontFamily: "'Poppins', sans-serif"
+        {/* Chart + Pathway Insight Section */}
+        <div style={{ display: 'flex', gap: '30px', marginTop: '16px', marginBottom: '8px', alignItems: 'start' }}>
+          {/* LEFT: Bar Chart — Show for ALL grades */}
+          <div style={{ width: isJSS ? '420px' : '100%' }}>
+            <h3 style={{ fontSize: '10px', fontWeight: '800', color: '#111827', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', marginBottom: '6px', paddingBottom: '2px' }}>Subject Performance</h3>
+            <div style={{ width: '100%' }}>
+              {tableRows && tableRows.length > 0 ? (
+                <div style={{
+                  height: '114px',
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'flex-end',
+                  gap: isJSS ? '8px' : '16px',
+                  padding: '12px 10px 18px 10px',
+                  borderBottom: '0.8px solid #e2e8f0',
+                  position: 'relative',
+                  boxSizing: 'border-box'
+                }}>
+                  {tableRows.map((row, i) => {
+                    const barH = Math.max(4, Math.round((row.percentage / 100) * 88));
+                    // Dynamically calculate bar width
+                    // max-width of container is ~770 if full, 400 if half
+                    const containerW = isJSS ? 400 : 770;
+                    const barW = Math.max(16, Math.floor((containerW / tableRows.length) - (isJSS ? 8 : 16)));
+                    return (
+                      <div key={row.area} style={{
+                        flex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'flex-end',
+                        height: '100%'
                       }}>
-                        {row.percentage}%
+                        {/* Score Label - Increased spacing from bar */}
+                        <div style={{
+                          fontSize: '9px',
+                          fontWeight: '1000',
+                          color: '#1e40af',
+                          marginBottom: '6px',
+                          fontFamily: "'Raleway', sans-serif",
+                          background: 'white',
+                          padding: '0 2px',
+                          zIndex: 2
+                        }}>
+                          {row.percentage}%
+                        </div>
+
+                        {/* Bar */}
+                        <div style={{
+                          width: `${barW}px`,
+                          height: `${barH}px`,
+                          backgroundColor: CHART_COLORS[i % CHART_COLORS.length],
+                          borderRadius: '3px 3px 0 0',
+                          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1)'
+                        }} />
+
+                        {/* Subject Label (Absolute positioned below the baseline) */}
+                        <div style={{
+                          position: 'absolute',
+                          bottom: '-16px',
+                          fontSize: '8px',
+                          fontWeight: '800',
+                          color: '#64748b',
+                          textTransform: 'uppercase',
+                          fontFamily: "'Raleway', sans-serif",
+                          textAlign: 'center',
+                          width: 'auto',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {getAbbreviatedName(row.area).slice(0, 6)}
+                        </div>
                       </div>
-                      
-                      {/* Bar */}
-                      <div style={{ 
-                        width: `${barW}px`, 
-                        height: `${barH}px`, 
-                        backgroundColor: CHART_COLORS[i % CHART_COLORS.length],
-                        borderRadius: '3px 3px 0 0',
-                        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1)'
-                      }} />
-                      
-                      {/* Subject Label (Absolute positioned below the baseline) */}
-                      <div style={{ 
-                        position: 'absolute', 
-                        bottom: '-16px', 
-                        fontSize: '8px', 
-                        fontWeight: '800', 
-                        color: '#64748b',
-                        textTransform: 'uppercase',
-                        fontFamily: "'Poppins', sans-serif",
-                        textAlign: 'center',
-                        width: 'auto',
-                        whiteSpace: 'nowrap'
-                      }}>
-                        {getAbbreviatedName(row.area).slice(0, 6)}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80px', background: '#f8fafc', fontSize: '10px', color: '#9ca3af', fontWeight: 'bold', textTransform: 'uppercase' }}>No data</div>
-            )}
-          </div>
-        </div>
-
-        {/* RIGHT: Pathway Insight — ONLY FOR JUNIOR SECONDARY (GRADE 7, 8, 9) */}
-        {(() => {
-          if (!isJSS) return null;
-
-          // Map each subject row to a pathway bucket
-          const PATHWAY_MAP = {
-            STEM: [
-              'MATHEMATICS', 'MATH', 'MAT',
-              'INTEGRATED SCIENCE', 'INT SCI', 'I-SCI',
-              'SCIENCE AND TECHNOLOGY', 'SCITECH', 'SCIENCE & TECHNOLOGY',
-              'PRE-TECHNICAL STUDIES', 'PRE-TECH', 'P-TECH',
-              'AGRICULTURE', 'AGRI',
-              'HOMESCIENCE', 'H SCI',
-            ],
-            SOCIAL: [
-              'ENGLISH', 'ENG',
-              'KISWAHILI', 'KIS',
-              'SOCIAL STUDIES', 'SST',
-              'RELIGIOUS EDUCATION', 'REL',
-              'CHRISTIAN RELIGIOUS EDUCATION', 'CRE',
-              'ISLAMIC RELIGIOUS EDUCATION', 'IRE', 'RE',
-              'HISTORY', 'GEOGRAPHY',
-            ],
-            ARTS: [
-              'CREATIVE ARTS AND SPORTS', 'CREATIVE', 'CREA',
-              'CREATIVE ARTS & SPORTS',
-              'ART AND CRAFT', 'ART',
-              'MUSIC', 'MUS',
-              'PHYSICAL AND HEALTH EDUCATION', 'PHE',
-              'MOVEMENT AND CREATIVE ACTIVITIES',
-            ],
-          };
-
-          const calcPathwayScore = (keywords) => {
-            const matched = tableRows.filter(r =>
-              keywords.some(k => r.area.toUpperCase().includes(k.toUpperCase()))
-            );
-            if (matched.length === 0) return { pct: null, subjects: '' };
-            const total = matched.reduce((s, r) => s + r.totalScore, 0);
-            const max = matched.reduce((s, r) => s + r.totalMarks, 0);
-            return {
-              pct: max > 0 ? Math.round((total / max) * 100) : null,
-              subjects: matched.map(r => getAbbreviatedName(r.area)).join(', ')
-            };
-          };
-
-          const stem   = calcPathwayScore(PATHWAY_MAP.STEM);
-          const social = calcPathwayScore(PATHWAY_MAP.SOCIAL);
-          const arts   = calcPathwayScore(PATHWAY_MAP.ARTS);
-
-          const pathways = [
-            { label: 'STEM',            pct: stem.pct,   subjects: stem.subjects,   color: '#2563eb', bg: '#eff6ff' },
-            { label: 'Social Sciences', pct: social.pct, subjects: social.subjects, color: '#16a34a', bg: '#f0fdf4' },
-            { label: 'Arts & Sports',   pct: arts.pct,   subjects: arts.subjects,   color: '#d97706', bg: '#fffbeb' },
-          ];
-
-          // Recommended pathway = highest scoring one
-          const recommended = [...pathways]
-            .filter(p => p.pct !== null)
-            .sort((a, b) => b.pct - a.pct)[0];
-
-          return (
-            <div style={{ flex: 1, borderLeft: '1px solid #e2e8f0', paddingLeft: '24px' }}>
-              <h3 style={{ fontSize: '10px', fontWeight: '800', color: '#111827', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', marginBottom: '8px', paddingBottom: '2px' }}>Pathways Insight</h3>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '8px' }}>
-                {pathways.map(p => (
-                  <div key={p.label}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1px' }}>
-                      <span style={{ fontSize: '9px', fontWeight: '800', color: '#374151', whiteSpace: 'nowrap' }}>{p.label}</span>
-                      <span style={{ fontSize: '9px', fontWeight: '900', color: p.pct !== null ? p.color : '#9ca3af' }}>
-                        {p.pct !== null ? `${p.pct}%` : 'N/A'}
-                        {recommended && p.label === recommended.label && (
-                          <span style={{ marginLeft: '4px', fontSize: '8px', background: p.color, color: 'white', padding: '1px 4px', borderRadius: '3px', fontWeight: '800' }}>BEST FIT</span>
-                        )}
-                      </span>
-                    </div>
-                    <div style={{ height: '7px', background: '#f1f5f9', overflow: 'hidden', marginBottom: '2px', marginTop: '4px' }}>
-                      <div style={{
-                        height: '100%',
-                        width: `${p.pct ?? 0}%`,
-                        background: p.pct !== null ? p.color : '#e2e8f0'
-                      }} />
-                    </div>
-                    {p.subjects && (
-                      <div style={{ fontSize: '8px', color: '#9ca3af', fontStyle: 'italic', lineHeight: '1' }}>
-                        ({p.subjects})
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80px', background: '#f8fafc', fontSize: '10px', color: '#9ca3af', fontWeight: 'bold', textTransform: 'uppercase' }}>No data</div>
+              )}
             </div>
-          );
-        })()}
-      </div>
+          </div>
 
-      {/* Grading Key — full width below */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '30px', marginBottom: '2px' }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: '10px', fontWeight: '900', color: '#374151', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.5px' }}>Grading Key</div>
-          <table className="w-full page-break-inside-avoid" style={{ borderCollapse: 'collapse', tableLayout: 'fixed', borderTop: 'none' }}>
-            <tbody>
-              {[
-                [
-                  { code: 'EE1', range: '90–100%', label: 'Outstanding' },
-                  { code: 'EE2', range: '75–89%', label: 'Very High' },
-                  { code: 'ME1', range: '58–74%', label: 'High Average' },
-                  { code: 'ME2', range: '41–57%', label: 'Average' }
-                ],
-                [
-                  { code: 'AE1', range: '31–40%', label: 'Low Average' },
-                  { code: 'AE2', range: '21–30%', label: 'Below Average' },
-                  { code: 'BE1', range: '11–20%', label: 'Low' },
-                  { code: 'BE2', range: '0–10%', label: 'Very Low' }
-                ],
-              ].map((rowItems, idx) => (
-                <tr key={idx}>
-                  {rowItems.map(g => (
-                    <td key={g.code} style={{ border: '1px solid #d1d5db', padding: '8px 10px', textAlign: 'left', backgroundColor: idx % 2 === 0 ? '#f8fafc' : '#ffffff' }}>
-                      <div style={{ lineHeight: '1.2' }}>
-                        <span style={{ fontWeight: '900', color: '#111827', fontSize: '12px', marginRight: '8px' }}>{g.code}</span>
-                        <span style={{ fontWeight: '700', color: '#374151', fontSize: '11px' }}>{g.range}</span>
-                      </div>
-                      <div style={{ fontWeight: '600', color: '#6b7280', fontSize: '10px', marginTop: '3px' }}>
-                        ({g.label})
-                      </div>
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* School Stamp */}
-        <div style={{ minWidth: '200px', textAlign: 'right', alignSelf: 'center', marginRight: '20px' }}>
+          {/* RIGHT: Pathway Insight — ONLY FOR JUNIOR SECONDARY (GRADE 7, 8, 9) */}
           {(() => {
-            const stampSrc = brandingSettings?.stampUrl || user?.school?.stampUrl || user?.schoolStamp || user?.stampUrl;
-            if (!stampSrc) return null;
+            if (!isJSS) return null;
+
+            // Map each subject row to a pathway bucket
+            const PATHWAY_MAP = {
+              STEM: [
+                'MATHEMATICS', 'MATH', 'MAT',
+                'INTEGRATED SCIENCE', 'INT SCI', 'I-SCI',
+                'SCIENCE AND TECHNOLOGY', 'SCITECH', 'SCIENCE & TECHNOLOGY',
+                'PRE-TECHNICAL STUDIES', 'PRE-TECH', 'P-TECH',
+                'AGRICULTURE', 'AGRI',
+                'HOMESCIENCE', 'H SCI',
+              ],
+              SOCIAL: [
+                'ENGLISH', 'ENG',
+                'KISWAHILI', 'KIS',
+                'SOCIAL STUDIES', 'SST',
+                'RELIGIOUS EDUCATION', 'REL',
+                'CHRISTIAN RELIGIOUS EDUCATION', 'CRE',
+                'ISLAMIC RELIGIOUS EDUCATION', 'IRE', 'RE',
+                'HISTORY', 'GEOGRAPHY',
+              ],
+              ARTS: [
+                'CREATIVE ARTS AND SPORTS', 'CREATIVE', 'CREA',
+                'CREATIVE ARTS & SPORTS',
+                'ART AND CRAFT', 'ART',
+                'MUSIC', 'MUS',
+                'PHYSICAL AND HEALTH EDUCATION', 'PHE',
+                'MOVEMENT AND CREATIVE ACTIVITIES',
+              ],
+            };
+
+            const calcPathwayScore = (keywords) => {
+              const matched = tableRows.filter(r =>
+                keywords.some(k => r.area.toUpperCase().includes(k.toUpperCase()))
+              );
+              if (matched.length === 0) return { pct: null, subjects: '' };
+              const total = matched.reduce((s, r) => s + r.totalScore, 0);
+              const max = matched.reduce((s, r) => s + r.totalMarks, 0);
+              return {
+                pct: max > 0 ? Math.round((total / max) * 100) : null,
+                subjects: matched.map(r => getAbbreviatedName(r.area)).join(', ')
+              };
+            };
+
+            const stem = calcPathwayScore(PATHWAY_MAP.STEM);
+            const social = calcPathwayScore(PATHWAY_MAP.SOCIAL);
+            const arts = calcPathwayScore(PATHWAY_MAP.ARTS);
+
+            const pathways = [
+              { label: 'STEM', pct: stem.pct, subjects: stem.subjects, color: '#2563eb', bg: '#eff6ff' },
+              { label: 'Social Sciences', pct: social.pct, subjects: social.subjects, color: '#16a34a', bg: '#f0fdf4' },
+              { label: 'Arts & Sports', pct: arts.pct, subjects: arts.subjects, color: '#d97706', bg: '#fffbeb' },
+            ];
+
+            // Recommended pathway = highest scoring one
+            const recommended = [...pathways]
+              .filter(p => p.pct !== null)
+              .sort((a, b) => b.pct - a.pct)[0];
+
             return (
-              <div style={{ textAlign: 'center' }}>
-                <img
-                  src={stampSrc}
-                  alt="School Stamp"
-                  style={{ height: '140px', width: 'auto', objectFit: 'contain', display: 'block', margin: '0 auto', opacity: '0.9' }}
-                  onError={(e) => { e.target.style.display = 'none'; }}
-                />
-                <div style={{ fontSize: '8px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', marginTop: '4px' }}>OFFICIAL STAMP</div>
+              <div style={{ flex: 1, borderLeft: '1px solid #e2e8f0', paddingLeft: '24px' }}>
+                <h3 style={{ fontSize: '10px', fontWeight: '800', color: '#111827', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', marginBottom: '8px', paddingBottom: '2px' }}>Pathways Insight</h3>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '8px' }}>
+                  {pathways.map(p => (
+                    <div key={p.label}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1px' }}>
+                        <span style={{ fontSize: '9px', fontWeight: '800', color: '#374151', whiteSpace: 'nowrap' }}>{p.label}</span>
+                        <span style={{ fontSize: '9px', fontWeight: '900', color: p.pct !== null ? p.color : '#9ca3af' }}>
+                          {p.pct !== null ? `${p.pct}%` : 'N/A'}
+                          {recommended && p.label === recommended.label && (
+                            <span style={{ marginLeft: '8px', fontSize: '9px', color: '#ef4444', fontWeight: '1000', textTransform: 'uppercase' }}>BEST FIT</span>
+                          )}
+                        </span>
+                      </div>
+                      <div style={{ height: '7px', background: '#f1f5f9', overflow: 'hidden', marginBottom: '4px', marginTop: '6px' }}>
+                        <div style={{
+                          height: '100%',
+                          width: `${p.pct ?? 0}%`,
+                          background: p.pct !== null ? p.color : '#e2e8f0'
+                        }} />
+                      </div>
+                      {p.subjects && (
+                        <div style={{ fontSize: '8px', color: '#9ca3af', fontStyle: 'italic', lineHeight: '1' }}>
+                          ({p.subjects})
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             );
           })()}
         </div>
-      </div>
+
+        {/* Grading Key — full width below */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '30px', marginBottom: '2px' }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '10px', fontWeight: '900', color: '#374151', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.5px' }}>Grading Key</div>
+            <table className="w-full page-break-inside-avoid" style={{ borderCollapse: 'collapse', tableLayout: 'fixed', borderTop: 'none' }}>
+              <tbody>
+                {[
+                  [
+                    { code: 'EE1', range: '90–100%', label: 'Outstanding' },
+                    { code: 'EE2', range: '75–89%', label: 'Very High' },
+                    { code: 'ME1', range: '58–74%', label: 'High Average' },
+                    { code: 'ME2', range: '41–57%', label: 'Average' }
+                  ],
+                  [
+                    { code: 'AE1', range: '31–40%', label: 'Low Average' },
+                    { code: 'AE2', range: '21–30%', label: 'Below Average' },
+                    { code: 'BE1', range: '11–20%', label: 'Low' },
+                    { code: 'BE2', range: '0–10%', label: 'Very Low' }
+                  ],
+                ].map((rowItems, idx) => (
+                  <tr key={idx}>
+                    {rowItems.map(g => (
+                      <td key={g.code} style={{ border: '1px solid #d1d5db', padding: '8px 10px', textAlign: 'left', backgroundColor: idx % 2 === 0 ? '#f8fafc' : '#ffffff' }}>
+                        <div style={{ lineHeight: '1.2' }}>
+                          <span style={{ fontWeight: '900', color: '#111827', fontSize: '12px', marginRight: '8px' }}>{g.code}</span>
+                          <span style={{ fontWeight: '700', color: '#374151', fontSize: '11px' }}>{g.range}</span>
+                        </div>
+                        <div style={{ fontWeight: '600', color: '#6b7280', fontSize: '10px', marginTop: '3px' }}>
+                          ({g.label})
+                        </div>
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* School Stamp */}
+          <div style={{ minWidth: '200px', textAlign: 'right', alignSelf: 'center', marginRight: '20px' }}>
+            {(() => {
+              const stampSrc = brandingSettings?.stampUrl || user?.school?.stampUrl || user?.schoolStamp || user?.stampUrl;
+              if (!stampSrc) return null;
+              return (
+                <div style={{ textAlign: 'center' }}>
+                  <img
+                    src={stampSrc}
+                    alt="School Stamp"
+                    style={{ height: '140px', width: 'auto', objectFit: 'contain', display: 'block', margin: '0 auto', opacity: '0.9' }}
+                    onError={(e) => { e.target.style.display = 'none'; }}
+                  />
+                  <div style={{ fontSize: '8px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', marginTop: '4px' }}>OFFICIAL STAMP</div>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
 
       </div>{/* end CONTENT BODY */}
 
@@ -1288,7 +1072,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
     const fetchStreamConfigs = async () => {
       try {
         console.log('🔍 Fetching stream configurations (single-tenant mode)');
-        
+
         const response = await configAPI.getStreamConfigs();
 
         console.log('📦 Raw API Response:', response);
@@ -1526,16 +1310,16 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
     if (!reportData) return;
     setIsExporting(true);
     try {
-      setPdfProgress('Generating print preview...');
-      const result = await generateVectorPDF(
+      setPdfProgress('Opening print preview...');
+      // CRITICAL FIX: Use pdfPrintWindow (printWindow) for a real browser print preview
+      const result = await pdfPrintWindow(
         'summative-report-content',
-        'Report_Print.pdf',
-        (msg) => setPdfProgress(msg)
+        { onProgress: (msg) => setPdfProgress(msg) }
       );
       if (result?.success) {
         showSuccess('High-quality print preview opened!');
       } else {
-        showError(result?.error || 'Failed to generate print preview');
+        showError(result?.error || 'Failed to open print preview');
       }
     } catch (err) {
       console.error('Print error:', err);
@@ -1765,26 +1549,12 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
       if (!element) throw new Error("Report element not found");
 
       // Generate JPEG base64 on frontend
-      const canvas = await html2canvas(element, {
-        scale: 2, // Scale 2 is enough for WhatsApp to save bandwidth
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        width: 794,
-        height: 1123,
-        onclone: (clonedDoc) => {
-          const el = clonedDoc.getElementById('single-print-content');
-          if (el) {
-            el.style.width = '794px';
-            el.style.height = '1123px';
-            el.style.display = 'flex';
-          }
-        }
-      });
-      
+      // captureElement uses the shared options (scale=3, font-ready, etc.)
+      const canvas = await captureElement(element);
       const base64Image = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
 
       setPdfProgress('Sending via WhatsApp...');
-      
+
       const payload = {
         learnerId: learnerObj.id,
         learnerName: `${learnerObj.firstName || ''} ${learnerObj.lastName || ''}`,
@@ -1802,7 +1572,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
       };
 
       const result = await api.notifications.sendAssessmentReportWhatsApp(payload);
-      
+
       if (result?.success || result?.message === 'WhatsApp sent') {
         showSuccess('WhatsApp sent successfully with the report image!');
         if (reportData?.rows) {
@@ -1930,7 +1700,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
       try {
         const res = await api.cbc.getComments(row.learner.id, { term: selectedTerm, academicYear: academicYear });
         if (res.success) fetchedComments[row.learner.id] = res.data;
-      } catch (_) {}
+      } catch (_) { }
     }
 
     setCommentMap(fetchedComments);
@@ -1972,7 +1742,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
 </body>
 </html>`;
 
-      const result = await generateVectorPDF(
+      const result = await generateBulkPDF(
         'bulk-print-content',
         filename,
         (msg) => { setPdfProgress(msg); console.log(`PDF: ${msg}`); }
@@ -2111,13 +1881,13 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
       try {
         const res = await api.cbc.getComments(row.learner.id, { term: selectedTerm, academicYear: academicYear });
         if (res.success) commentMap[row.learner.id] = res.data;
-      } catch (_) {}
+      } catch (_) { }
     }
 
     // 1. Mount reports in the hidden bulk container
     setBulkDownloadData(rowsToSend);
     setCommentMap(commentMap); // Ensure the template gets the comments
-    
+
     // Give DOM time to render
     await new Promise(resolve => setTimeout(resolve, 2000));
 
@@ -2141,17 +1911,11 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
 
       try {
         let reportImageBase64 = null;
-        
+
         // Try to capture the specific page element from the bulk container
         const pageEl = pageEls[i];
         if (pageEl) {
-          const canvas = await html2canvas(pageEl, {
-            scale: 2,
-            useCORS: true,
-            backgroundColor: '#ffffff',
-            width: 794,
-            height: 1123
-          });
+          const canvas = await captureElement(pageEl);
           reportImageBase64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
         }
 
@@ -2181,7 +1945,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
 
         if (parentPhone) {
           setWhatsAppProgress(prev => ({ ...prev, status: `Sending to ${learner.firstName}...` }));
-          
+
           await api.notifications.sendAssessmentReportWhatsApp({
             learnerId: learner.id,
             learnerName: `${learner.firstName} ${learner.lastName}`,
@@ -3798,7 +3562,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
         {/* Single Page Capture */}
         {(singleDownloadData || (reportData?.rows?.length === 1 && (reportData.type === 'LEARNER_REPORT' || reportData.type === 'LEARNER_TERMLY_REPORT'))) && (
           <div id="single-print-content">
-            <LearnerReportTemplate 
+            <LearnerReportTemplate
               learner={singleDownloadData?.learner || reportData?.learner || reportData?.rows?.[0]?.learner}
               results={singleDownloadData?.results || reportData?.results || reportData?.rows?.[0]?.results || []}
               pathwayPrediction={singleDownloadData?.pathwayPrediction || reportData?.pathwayPrediction || reportData?.rows?.[0]?.pathwayPrediction}
@@ -3817,7 +3581,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
           <div id="bulk-print-content" style={{ display: 'flex', flexDirection: 'column' }}>
             {bulkDownloadData.map((row, idx) => (
               <div key={idx} className="pdf-report-page" style={{ width: '794px', height: '1123px', overflow: 'visible', backgroundColor: '#fff' }}>
-                <LearnerReportTemplate 
+                <LearnerReportTemplate
                   learner={row.learner}
                   results={row.results || []}
                   pathwayPrediction={row.pathwayPrediction}

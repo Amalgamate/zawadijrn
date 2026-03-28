@@ -108,7 +108,7 @@ export const hexToRgb = (hex) => {
  */
 export const getOfficialLetterheadHTML = (branding, docInfo) => {
     return `
-        <div style="background-color: ${branding.brandColor}; padding: 30px; color: white; display: flex; justify-content: space-between; align-items: center; font-family: 'Inter', sans-serif;">
+        <div style="background-color: ${branding.brandColor}; padding: 30px; color: white; display: flex; justify-content: space-between; align-items: center; font-family: 'Raleway', sans-serif;">
             <div style="display: flex; align-items: center; gap: 20px;">
                 ${branding.logo ? `<img src="${branding.logo}" style="width: 80px; height: 80px; object-fit: contain; background: white; border-radius: 8px; padding: 5px;" />` : ''}
                 <div>
