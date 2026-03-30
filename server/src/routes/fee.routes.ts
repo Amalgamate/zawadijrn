@@ -184,7 +184,7 @@ router.post(
  */
 router.delete(
   '/invoices/reset',
-  requireRole(['ACCOUNTANT', 'ADMIN', 'SUPER_ADMIN']),
+  requireRole(['SUPER_ADMIN']),
   rateLimit({ windowMs: 60_000, maxRequests: 5 }),
   auditLog('RESET_INVOICES'),
   asyncHandler(feeController.resetInvoices.bind(feeController))

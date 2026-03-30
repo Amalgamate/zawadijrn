@@ -17,7 +17,7 @@ const TermlyReportTemplate = ({ reportData, id = "termly-report-content" }) => {
                 className="bg-white text-gray-900 font-sans p-10 mx-auto shadow-sm print:shadow-none mb-4 print:mb-0"
                 style={{
                     width: '794px',
-                    height: '1123px', // EXACT A4 Height at 96dpi
+                    height: '1123px',
                     display: 'flex',
                     flexDirection: 'column',
                     boxSizing: 'border-box',
@@ -78,7 +78,7 @@ const TermlyReportTemplate = ({ reportData, id = "termly-report-content" }) => {
                     </div>
                 </div>
 
-                {/* 3. PERFORMANCE TABLE - BALANCED */}
+                {/* 3. PERFORMANCE TABLE */}
                 <div className="mb-6 flex-grow flex flex-col border border-gray-900 rounded-sm overflow-hidden shadow-md bg-white">
                     <table className="w-full text-left border-collapse">
                         <thead>
@@ -98,7 +98,6 @@ const TermlyReportTemplate = ({ reportData, id = "termly-report-content" }) => {
                                     </td>
                                 </tr>
                             ))}
-                            {/* Fill remaining space to keep table size consistent */}
                             {Array.from({ length: Math.max(0, 10 - (reportData.summative?.summary?.bySubject?.length || 0)) }).map((_, i) => (
                                 <tr key={`empty-${i}`} className="h-9">
                                     <td className="border-r border-gray-100"></td>
@@ -110,7 +109,7 @@ const TermlyReportTemplate = ({ reportData, id = "termly-report-content" }) => {
                     </table>
                 </div>
 
-                {/* 4. PERFORMANCE SUMMARY & KEY - COMPACT SIDE-BY-SIDE */}
+                {/* 4. PERFORMANCE SUMMARY & KEY */}
                 <div className="grid grid-cols-2 gap-6 mb-6">
                     <div className="bg-gray-50 border border-gray-200 rounded p-4">
                         <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 border-b pb-1">Teacher's General Remarks</h4>
@@ -129,7 +128,7 @@ const TermlyReportTemplate = ({ reportData, id = "termly-report-content" }) => {
                     </div>
                 </div>
 
-                {/* 5. CORPORATE FOOTER WITH SIGNATURES - FIXED AT BOTTOM */}
+                {/* 5. CORPORATE FOOTER */}
                 <div className="mt-auto border-t-2 pt-6" style={{ borderColor: brandColor }}>
                     <div className="grid grid-cols-3 gap-10 mb-6">
                         <div className="text-center">
@@ -167,7 +166,93 @@ const TermlyReportTemplate = ({ reportData, id = "termly-report-content" }) => {
                 </div>
             </div>
 
-            {/* PAGE 2: AI PATHWAY PREDICTION (Conditional) */}
+            {/* PAGE 2: QUALITATIVE ASSESSMENT (Competencies, Values, Co-curricular) */}
+            <div
+                className="bg-white text-gray-900 font-sans p-10 mx-auto shadow-sm print:shadow-none mb-4 print:mb-0"
+                style={{
+                    width: '794px',
+                    height: '1123px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    boxSizing: 'border-box',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    border: '1px solid #eee'
+                }}
+            >
+                <h3 className="text-lg font-black uppercase tracking-widest mb-6 border-b-2 pb-2" style={{ color: brandColor, borderColor: brandColor }}>
+                    Qualitative Assessment & Co-Curricular
+                </h3>
+
+                <div className="grid grid-cols-2 gap-8 flex-grow">
+                    {/* Core Competencies */}
+                    <div className="space-y-4">
+                        <h4 className="text-xs font-black bg-gray-100 p-2 rounded uppercase tracking-wider">Core Competencies</h4>
+                        <div className="space-y-3">
+                            {[
+                                { label: 'Communication & Collaboration', val: reportData.coreCompetencies?.communication },
+                                { label: 'Critical Thinking & Problem Solving', val: reportData.coreCompetencies?.criticalThinking },
+                                { label: 'Creativity & Imagination', val: reportData.coreCompetencies?.creativity },
+                                { label: 'Citizenship', val: reportData.coreCompetencies?.citizenship },
+                                { label: 'Learning to Learn', val: reportData.coreCompetencies?.learningToLearn },
+                                { label: 'Self-Efficacy', val: reportData.coreCompetencies?.selfEfficacy },
+                                { label: 'Digital Literacy', val: reportData.coreCompetencies?.digitalLiteracy }
+                            ].map((item, i) => (
+                                <div key={i} className="flex justify-between items-center border-b border-gray-50 pb-1">
+                                    <span className="text-[10px] font-bold text-gray-600">{item.label}</span>
+                                    <span className="text-xs font-black" style={{ color: brandColor }}>{item.val || 'ME'}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Values Assessment */}
+                    <div className="space-y-4">
+                        <h4 className="text-xs font-black bg-gray-100 p-2 rounded uppercase tracking-wider">Values Assessment</h4>
+                        <div className="space-y-3">
+                            {[
+                                { label: 'Love', val: reportData.values?.love },
+                                { label: 'Responsibility', val: reportData.values?.responsibility },
+                                { label: 'Respect', val: reportData.values?.respect },
+                                { label: 'Unity', val: reportData.values?.unity },
+                                { label: 'Peace', val: reportData.values?.peace },
+                                { label: 'Patriotism', val: reportData.values?.patriotism },
+                                { label: 'Integrity', val: reportData.values?.integrity }
+                            ].map((item, i) => (
+                                <div key={i} className="flex justify-between items-center border-b border-gray-50 pb-1">
+                                    <span className="text-[10px] font-bold text-gray-600">{item.label}</span>
+                                    <span className="text-xs font-black" style={{ color: brandColor }}>{item.val || 'ME'}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Co-Curricular Activities */}
+                <div className="mt-8">
+                    <h4 className="text-xs font-black bg-gray-100 p-2 rounded uppercase tracking-wider mb-4">Co-Curricular Activities</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                        {(reportData.coCurricular || []).length > 0 ? (
+                            reportData.coCurricular.map((activity, i) => (
+                                <div key={i} className="bg-gray-50 p-3 rounded border border-gray-100">
+                                    <p className="text-[10px] font-black text-gray-400 uppercase mb-1">{activity.activityName}</p>
+                                    <p className="text-xs font-bold text-gray-700">{activity.remarks || 'Active participation and good teamwork shown.'}</p>
+                                </div>
+                            ))
+                        ) : (
+                            <p className="text-xs italic text-gray-400 col-span-2">No co-curricular activities recorded for this term.</p>
+                        )}
+                    </div>
+                </div>
+
+                {/* Footer on Page 2 */}
+                <div className="mt-auto pt-4 border-t border-gray-100 flex justify-between items-center text-[8px] font-bold text-gray-400 uppercase tracking-widest">
+                    <span>{reportData.learner.firstName} {reportData.learner.lastName}</span>
+                    <span>Page 2 of {reportData.pathwayPrediction ? '3' : '2'}</span>
+                </div>
+            </div>
+
+            {/* PAGE 3: AI PATHWAY PREDICTION */}
             {reportData.pathwayPrediction && (
                 <div className="mx-auto shadow-sm print:shadow-none bg-white">
                     <PathwayPredictionPage data={reportData} brandColor={brandColor} />

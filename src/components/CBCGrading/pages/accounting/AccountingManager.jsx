@@ -28,22 +28,16 @@ const AccountingManager = ({ user }) => {
         const fetchDashboardData = async () => {
             try {
                 setLoading(true);
-                // In a real implementation, we would fetch these from the API
-                // For now, using mock data for the UI demonstration
-                setStats({
-                    cashOnHand: 1250000,
-                    accountsReceivable: 450000,
-                    accountsPayable: 180000,
-                    netProfit: 320000
-                });
-
-                // Mock recent entries
-                setRecentEntries([
-                    { id: 1, date: '2026-02-23', description: 'School Fees - Grade 4', type: 'INCOME', amount: 45000, status: 'POSTED' },
-                    { id: 2, date: '2026-02-22', description: 'Electricity Bill', type: 'EXPENSE', amount: 12500, status: 'POSTED' },
-                    { id: 3, date: '2026-02-21', description: 'Stationery Purchase', type: 'EXPENSE', amount: 8400, status: 'POSTED' },
-                    { id: 4, date: '2026-02-20', description: 'Salary Disbursement - Feb', type: 'EXPENSE', amount: 850000, status: 'POSTED' }
-                ]);
+                const response = await accountingAPI.getDashboardStats();
+                if (response.success) {
+                    setStats({
+                        cashOnHand: response.data.cashActual,
+                        accountsReceivable: response.data.accountsReceivable,
+                        accountsPayable: response.data.accountsPayable,
+                        netProfit: response.data.netProfit
+                    });
+                    setRecentEntries(response.data.recentEntries);
+                }
             } catch (error) {
                 console.error('Error fetching accounting data:', error);
             } finally {

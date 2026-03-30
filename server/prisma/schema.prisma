@@ -3,9 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -560,6 +559,7 @@ model SummativeResult {
   marksObtained    Int
   percentage       Float
   grade            SummativeGrade
+  cbcGrade         String?
   status           TestStatus
   moderationStatus ModerationStatus         @default(DRAFT)
   position         Int?

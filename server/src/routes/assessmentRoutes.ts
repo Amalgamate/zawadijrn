@@ -11,7 +11,7 @@ import { authenticate } from '../middleware/auth.middleware';
 import { requireSchoolContext } from '../middleware/school.middleware';
 import { rateLimit } from '../middleware/enhanced-rateLimit.middleware';
 import { validate } from '../middleware/validation.middleware';
-import { auditLog, ResourceAccessControl } from '../middleware/permissions.middleware';
+import { auditLog, ResourceAccessControl, requireRole } from '../middleware/permissions.middleware';
 import { checkNotLocked } from '../middleware/workflow.authorization';
 
 const router = express.Router();
@@ -183,6 +183,7 @@ router.delete(
 router.post(
   '/tests',
   authenticate,
+  requireRole(['ADMIN', 'SUPER_ADMIN']),
   rateLimit({ windowMs: 60_000, maxRequests: 20 }),
   validate(createSummativeTestSchema),
   auditLog('CREATE_SUMMATIVE_TEST'),
@@ -193,6 +194,7 @@ router.post(
 router.post(
   '/tests/bulk',
   authenticate,
+  requireRole(['ADMIN', 'SUPER_ADMIN']),
   rateLimit({ windowMs: 60_000, maxRequests: 50 }),
   auditLog('GENERATE_TESTS_BULK'),
   assessmentController.generateTestsBulk
@@ -224,6 +226,7 @@ router.put(
 router.delete(
   '/tests/bulk',
   authenticate,
+  requireRole(['ADMIN', 'SUPER_ADMIN']),
   rateLimit({ windowMs: 60_000, maxRequests: 5 }),
   auditLog('DELETE_TESTS_BULK'),
   assessmentController.deleteSummativeTestsBulk
@@ -232,6 +235,7 @@ router.delete(
 router.delete(
   '/tests/:id',
   authenticate,
+  requireRole(['ADMIN', 'SUPER_ADMIN']),
   ResourceAccessControl.canAccessAssessment(),
   rateLimit({ windowMs: 60_000, maxRequests: 10 }),
   auditLog('DELETE_SUMMATIVE_TEST'),
@@ -292,6 +296,7 @@ router.get(
 router.post(
   '/setup/create-scales',
   authenticate,
+  requireRole(['SUPER_ADMIN']),
   rateLimit({ windowMs: 60_000, maxRequests: 5 }),
   auditLog('SETUP_CREATE_SCALES'),
   setupController.bulkCreateGradingScales
@@ -300,6 +305,7 @@ router.post(
 router.post(
   '/setup/create-tests',
   authenticate,
+  requireRole(['SUPER_ADMIN']),
   rateLimit({ windowMs: 60_000, maxRequests: 5 }),
   auditLog('SETUP_CREATE_TESTS'),
   setupController.bulkCreateSummativeTests
@@ -308,6 +314,7 @@ router.post(
 router.post(
   '/setup/complete',
   authenticate,
+  requireRole(['SUPER_ADMIN']),
   rateLimit({ windowMs: 60_000, maxRequests: 5 }),
   auditLog('SETUP_COMPLETE_SCHOOL'),
   setupController.completeSchoolSetup
@@ -316,6 +323,7 @@ router.post(
 router.post(
   '/setup/reset',
   authenticate,
+  requireRole(['SUPER_ADMIN']),
   rateLimit({ windowMs: 60_000, maxRequests: 5 }),
   auditLog('SETUP_RESET_DATABASE'),
   setupController.resetAssessments

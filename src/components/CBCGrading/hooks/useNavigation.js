@@ -8,7 +8,7 @@ import {
     Shirt, ClipboardList
 } from 'lucide-react';
 
-const focusModules = ['dashboard', 'communications', 'planner', 'learners', 'teachers', 'parents', 'assessment', 'learning-hub', 'timetable', 'attendance', 'docs-center', 'knowledge-base', 'facilities', 'settings', 'hr', 'finance', 'inventory'];
+const focusModules = ['dashboard', 'communications', 'planner', 'learners', 'teachers', 'parents', 'assessment', 'learning-hub', 'timetable', 'attendance', 'docs-center', 'knowledge-base', 'facilities', 'settings', 'hr', 'finance', 'inventory', 'library', 'transport', 'biometric'];
 
 export const allNavSections = [
     {
@@ -184,7 +184,7 @@ export const allNavSections = [
         id: 'library',
         label: 'Library Management',
         icon: BookOpen,
-        permission: 'LIBRARY_MANAGEMENT',
+        permission: null,
         items: [
             { id: 'library-catalog',     label: 'Book Catalog',           path: 'library-catalog',     permission: 'LIBRARY_MANAGEMENT', comingSoon: true },
             { id: 'library-circulation', label: 'Borrow/Return Tracking', path: 'library-circulation', permission: 'LIBRARY_MANAGEMENT', comingSoon: true },
@@ -197,7 +197,7 @@ export const allNavSections = [
         id: 'transport',
         label: 'Transport & Hostel',
         icon: Truck,
-        permission: 'TRANSPORT_MANAGEMENT',
+        permission: null,
         items: [
             { id: 'transport-routes',   label: 'Bus Routes & Roster',    path: 'transport-routes',   permission: 'TRANSPORT_MANAGEMENT', comingSoon: true },
             { id: 'transport-tracking', label: 'GPS Tracking',           path: 'transport-tracking', permission: 'TRANSPORT_MANAGEMENT', comingSoon: true },
@@ -265,7 +265,7 @@ export const allNavSections = [
         id: 'biometric',
         label: 'Biometric Attendance',
         icon: Fingerprint,
-        permission: 'BIOMETRIC_ATTENDANCE',
+        permission: null,
         items: [
             { id: 'biometric-devices',    label: 'Device Management',      path: 'biometric-devices',    permission: 'BIOMETRIC_ATTENDANCE', comingSoon: true },
             { id: 'biometric-enrollment', label: 'Fingerprint Enrollment', path: 'biometric-enrollment', permission: 'BIOMETRIC_ATTENDANCE', comingSoon: true },
@@ -363,7 +363,7 @@ export const useNavigation = () => {
             );
         }
         return navSections.filter(s =>
-            ['learners', 'teachers', 'parents', 'assessment', 'learning-hub', 'timetable', 'attendance'].includes(s.id)
+            ['learners', 'teachers', 'parents', 'assessment', 'learning-hub', 'timetable', 'attendance', 'library', 'transport', 'biometric'].includes(s.id)
         );
     }, [navSections, role]);
 

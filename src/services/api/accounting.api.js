@@ -25,4 +25,5 @@ export const accountingAPI = {
     fetchWithAuth(`/accounting/reports?type=${type}&startDate=${startDate}&endDate=${endDate}`),
   getTrialBalance: async (startDate, endDate) =>
     fetchWithAuth(`/accounting/reports/trial-balance?startDate=${startDate}&endDate=${endDate}`),
+  getDashboardStats: async () => fetchWithAuth('/accounting/dashboard-stats'),
 };

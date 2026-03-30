@@ -405,6 +405,42 @@ export class AccountingService {
             }
         };
     }
+
+    /**
+     * Get summary stats for Accounting Dashboard
+     */
+    async getDashboardStats() {
+        const now = new Date();
+        
+        // Use getFinancialReport logic for the current year
+        const report = await this.getFinancialReport(new Date(now.getFullYear(), 0, 1), now);
+        
+        // Fetch recent entries across all journals
+        const recentEntries = await prisma.journalEntry.findMany({
+            where: { status: 'POSTED' },
+            take: 5,
+            orderBy: { date: 'desc' },
+            include: { 
+                journal: true,
+                items: { include: { account: true } }
+            }
+        });
+
+        return {
+            cashOnHand: report.trialBalance.filter(a => a.type === 'ASSET_CASH').reduce((sum, a) => sum + a.balance, 0),
+            accountsReceivable: report.trialBalance.find(a => a.code === '1100')?.balance || 0,
+            accountsPayable: report.trialBalance.find(a => a.code === '2000')?.balance || 0,
+            netProfit: report.profitLoss.netProfit,
+            recentEntries: recentEntries.map(e => ({
+                id: e.id,
+                date: e.date,
+                description: e.reference || e.items[0]?.label || 'Journal Entry',
+                type: e.journal.type === 'SALES' ? 'INCOME' : 'EXPENSE',
+                amount: e.items.reduce((sum, i) => sum + Number(i.debit), 0) / 2,
+                status: e.status
+            }))
+        };
+    }
 }
 
 export const accountingService = new AccountingService();

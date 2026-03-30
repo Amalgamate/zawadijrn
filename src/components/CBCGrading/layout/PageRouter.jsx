@@ -284,6 +284,22 @@ const PageRouter = ({
           case 'learning-hub-assignments':
           case 'learning-hub-lesson-plans':
           case 'learning-hub-library':
+          case 'library-catalog':
+          case 'library-circulation':
+          case 'library-fees':
+          case 'library-inventory':
+          case 'library-members':
+          case 'transport-routes':
+          case 'transport-tracking':
+          case 'transport-drivers':
+          case 'hostel-allocation':
+          case 'hostel-fees':
+          case 'transport-reports':
+          case 'biometric-devices':
+          case 'biometric-enrollment':
+          case 'biometric-logs':
+          case 'biometric-reports':
+          case 'biometric-api':
             return <LearningHubPage />;
 
           case 'comm-notices': return <NoticesPage initialTab={pageParams.activeTab} />;

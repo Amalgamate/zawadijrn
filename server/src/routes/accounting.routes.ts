@@ -125,7 +125,20 @@ router.get(
   authenticate,
   authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
   rateLimit({ windowMs: 60_000, maxRequests: 50 }),
-  accountingController.getTrialBalance
+    accountingController.getTrialBalance
+);
+
+/**
+ * @route   GET /api/accounting/dashboard-stats
+ * @desc    Get dashboard metrics (Cash, AR, AP, Net Profit)
+ * @access  ADMIN, SUPER_ADMIN, ACCOUNTANT
+ */
+router.get(
+  '/dashboard-stats',
+  authenticate,
+  authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+  rateLimit({ windowMs: 60_000, maxRequests: 60 }),
+  accountingController.getDashboardStats
 );
 
 // ============================================

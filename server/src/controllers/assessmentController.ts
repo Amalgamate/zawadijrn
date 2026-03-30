@@ -1033,6 +1033,11 @@ export const recordSummativeResult = async (req: AuthRequest, res: Response) => 
 
     const percentage = (marks / test.totalMarks) * 100;
     const grade = ranges ? gradingService.calculateGradeSync(percentage, ranges) : 'E';
+    
+    // Calculate CBC Rating (EE1-BE2)
+    const cbcSystem = await gradingService.getGradingSystem('CBC');
+    const cbcGrade = cbcSystem.ranges ? gradingService.calculateRatingSync(percentage, cbcSystem.ranges) : 'BE2';
+    
     const status = percentage >= test.passMarks ? 'PASS' : 'FAIL';
 
     let finalRemarks = remarks;
@@ -1054,6 +1059,7 @@ export const recordSummativeResult = async (req: AuthRequest, res: Response) => 
         marksObtained: marks,
         percentage,
         grade,
+        cbcGrade,
         status,
         recordedBy,
         remarks: finalRemarks,
@@ -1065,6 +1071,7 @@ export const recordSummativeResult = async (req: AuthRequest, res: Response) => 
         marksObtained: marks,
         percentage,
         grade,
+        cbcGrade,
         status,
         recordedBy,
         remarks: finalRemarks,
@@ -1369,6 +1376,10 @@ export const recordSummativeResultsBulk = async (req: AuthRequest, res: Response
     }
     const ranges = gradingSystem?.ranges;
 
+    // ── 1.5 Fetch CBC grading scale for rating calculation ──────────────────
+    const cbcSystem = await gradingService.getGradingSystem('CBC');
+    const cbcRanges = cbcSystem?.ranges || [];
+
     // ── 2. Pre-fetch ALL existing results in ONE query ────────────────────────
     const existingResults = await prisma.summativeResult.findMany({
       where: { testId },
@@ -1401,6 +1412,7 @@ export const recordSummativeResultsBulk = async (req: AuthRequest, res: Response
 
       const percentage = (marks / test.totalMarks) * 100;
       const grade = ranges ? gradingService.calculateGradeSync(percentage, ranges) : 'E';
+      const cbcGrade = cbcRanges.length > 0 ? gradingService.calculateRatingSync(percentage, cbcRanges) : 'BE2';
       const status = percentage >= test.passMarks ? 'PASS' : 'FAIL';
 
       let remarks = item.remarks;
@@ -1424,12 +1436,13 @@ export const recordSummativeResultsBulk = async (req: AuthRequest, res: Response
             marksObtained: marks, 
             percentage, 
             grade, 
+            cbcGrade,
             status, 
             remarks, 
             teacherComment: item.teacherComment,
             recordedBy
           },
-          create: { testId, learnerId: item.learnerId, marksObtained: marks, percentage, grade, status, recordedBy, remarks, teacherComment: item.teacherComment },
+          create: { testId, learnerId: item.learnerId, marksObtained: marks, percentage, grade, cbcGrade, status, recordedBy, remarks, teacherComment: item.teacherComment },
           select: { id: true, learnerId: true }
         })
       );

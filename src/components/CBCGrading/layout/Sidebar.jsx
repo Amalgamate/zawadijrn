@@ -26,7 +26,7 @@ const findDefaultPath = (items) => {
       const path = findDefaultPath(item.items);
       if (path) return path;
     } else {
-      if (!item.comingSoon && !item.greyedOut && item.path) {
+      if (!item.greyedOut && item.path) {
         return item.path;
       }
     }
@@ -436,9 +436,9 @@ const NavSection = React.memo(({
                           {item.items.map(subItem => (
                             <button
                               key={subItem.id}
-                              onClick={() => (subItem.comingSoon || subItem.greyedOut) ? null : onNavigate(subItem.path)}
+                              onClick={() => subItem.greyedOut ? null : onNavigate(subItem.path)}
                               onMouseEnter={() => prefetchModule(subItem.path)}
-                              disabled={subItem.comingSoon || subItem.greyedOut}
+                              disabled={subItem.greyedOut}
                               className={`w-full text-left px-3 py-1.5 rounded-r-md text-sm transition flex items-center justify-between ${
                                 subItem.comingSoon || subItem.greyedOut
                                   ? 'text-gray-600 cursor-not-allowed'
@@ -467,9 +467,9 @@ const NavSection = React.memo(({
                 return (
                   <button
                     key={item.id}
-                    onClick={() => (item.comingSoon || item.greyedOut) ? null : onNavigate(item.path)}
+                    onClick={() => item.greyedOut ? null : onNavigate(item.path)}
                     onMouseEnter={() => prefetchModule(item.path)}
-                    disabled={item.comingSoon || item.greyedOut}
+                    disabled={item.greyedOut}
                     className={`w-full text-left px-3 py-1.5 rounded-r-md text-sm transition flex items-center justify-between ${
                       item.comingSoon || item.greyedOut
                         ? 'text-gray-600 cursor-not-allowed'
@@ -492,9 +492,9 @@ const NavSection = React.memo(({
         </>
       ) : (
         <button
-          onClick={() => (section.comingSoon || section.greyedOut) ? null : onNavigate(section.id)}
+          onClick={() => section.greyedOut ? null : onNavigate(section.id)}
           onMouseEnter={() => prefetchModule(section.id)}
-          disabled={section.comingSoon || section.greyedOut}
+          disabled={section.greyedOut}
           className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all duration-200 group ${
             section.comingSoon || section.greyedOut
               ? 'text-gray-500 opacity-50 cursor-not-allowed border border-dashed border-white/5'
