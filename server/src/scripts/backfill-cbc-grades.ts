@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { gradingService } from '../src/services/grading.service';
+import { gradingService } from '../services/grading.service';
 
 const prisma = new PrismaClient();
 
