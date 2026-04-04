@@ -1379,7 +1379,7 @@ model BookLoan {
 
 model Fine {
   id          String      @id @default(uuid())
-  loanId      String
+  loanId      String?
   memberId    String
   amount      Decimal     @db.Decimal(10, 2)
   reason      FineReason
@@ -1392,7 +1392,7 @@ model Fine {
   updatedAt   DateTime    @updatedAt
 
   // Relations
-  loan        BookLoan    @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  loan        BookLoan?   @relation(fields: [loanId], references: [id], onDelete: Cascade)
   member      LibraryMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
   waivedBy    User?       @relation("FineWaivers", fields: [waivedById], references: [id])
 
