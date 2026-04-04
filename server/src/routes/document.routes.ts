@@ -6,6 +6,7 @@
 import { Router } from 'express';
 import { documentController } from '../controllers/document.controller';
 import { authenticate } from '../middleware/auth.middleware';
+import { requireRole } from '../middleware/permissions.middleware';
 import { requireSchoolContext } from '../middleware/school.middleware';
 import { auditLog } from '../middleware/permissions.middleware';
 import { uploadSingle, uploadMultiple } from '../middleware/upload.middleware';
@@ -83,6 +84,7 @@ router.get(
  */
 router.put(
   '/:id',
+  requireRole(['SUPER_ADMIN', 'ADMIN']),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
   auditLog('UPDATE_DOCUMENT'),
   documentController.updateDocument.bind(documentController)
@@ -95,6 +97,7 @@ router.put(
  */
 router.delete(
   '/:id',
+  requireRole(['SUPER_ADMIN', 'ADMIN']),
   rateLimit({ windowMs: 60_000, maxRequests: 20 }),
   auditLog('DELETE_DOCUMENT'),
   documentController.deleteDocument.bind(documentController)

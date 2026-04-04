@@ -2,9 +2,27 @@
 import { PrismaClient, Grade, Term, SummativeGrade, TestStatus } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 const prisma = new PrismaClient();
+
+async function loadWorksheetRows(filePath: string): Promise<any[][]> {
+    const workbook = new ExcelJS.Workbook();
+
+    if (filePath.toLowerCase().endsWith('.csv')) {
+        await workbook.csv.readFile(filePath);
+    } else {
+        await workbook.xlsx.readFile(filePath);
+    }
+
+    const worksheet = workbook.worksheets[0];
+    if (!worksheet) return [];
+
+    return worksheet.getSheetValues().slice(1).map((row: any) => {
+        if (!Array.isArray(row)) return [];
+        return row.slice(1);
+    });
+}
 
 // Configuration
 const ACADEMIC_YEAR = 2026;
@@ -71,9 +89,7 @@ async function main() {
 
         console.log(`\n📂 Processing SCORES for ${fileInfo.filename} (${fileInfo.grade})`);
 
-        const workbook = XLSX.readFile(filePath);
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
+        const rows = await loadWorksheetRows(filePath);
 
         // Find Header Row
         let headerRowIndex = -1;

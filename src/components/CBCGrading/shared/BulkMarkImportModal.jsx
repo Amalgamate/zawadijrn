@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, UploadCloud, FileText, CheckCircle, AlertCircle, Loader, Search } from 'lucide-react';
-import * as XLSX from 'xlsx'; // Assuming XLSX library is available or can be added
+import ExcelJS from 'exceljs';
 
 const BulkMarkImportModal = ({ show, onClose, onImport, learners, totalMarks }) => {
   const [file, setFile] = useState(null);
@@ -16,22 +16,58 @@ const BulkMarkImportModal = ({ show, onClose, onImport, learners, totalMarks }) 
     setError(null);
   };
 
+  const parseCsv = (text) => {
+    return text
+      .split(/\r?\n/)
+      .filter(line => line.trim().length > 0)
+      .map(line => line.split(',').map(cell => cell.trim()));
+  };
+
+  const worksheetToArray = (worksheet) => {
+    const rows = [];
+    worksheet.eachRow({ includeEmpty: true }, (row) => {
+      const rowValues = [];
+      row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+        rowValues[colNumber - 1] = cell.value;
+      });
+      rows.push(rowValues);
+    });
+    return rows;
+  };
+
   const parseExcelFile = (file) => {
     return new Promise((resolve, reject) => {
+      const fileName = file.name.toLowerCase();
+      if (fileName.endsWith('.csv')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            resolve(parseCsv(e.target.result));
+          } catch (err) {
+            reject(new Error('Error parsing CSV file.'));
+          }
+        };
+        reader.onerror = () => reject(new Error('Error reading file.'));
+        reader.readAsText(file);
+        return;
+      }
+
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         try {
-          const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: 'array' });
-          const sheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[sheetName];
-          const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-          resolve(json);
+          const workbook = new ExcelJS.Workbook();
+          await workbook.xlsx.load(e.target.result);
+          const worksheet = workbook.worksheets[0];
+          if (!worksheet) {
+            reject(new Error('No worksheet found.'));
+            return;
+          }
+          resolve(worksheetToArray(worksheet));
         } catch (err) {
-          reject(new Error("Error parsing Excel file. Ensure it's a valid .xlsx or .xls file."));
+          reject(new Error('Error parsing Excel file. Ensure it is a valid .xlsx file.'));
         }
       };
-      reader.onerror = (err) => reject(new Error("Error reading file."));
+      reader.onerror = () => reject(new Error('Error reading file.'));
       reader.readAsArrayBuffer(file);
     });
   };

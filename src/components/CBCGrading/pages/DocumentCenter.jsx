@@ -107,12 +107,18 @@ const DocumentCenter = () => {
         window.open(doc.url, '_blank');
     };
 
+    const isImage = (type) => {
+        if (!type) return false;
+        const t = type.toLowerCase();
+        return t.includes('image') || t.includes('png') || t.includes('jpg') || t.includes('jpeg') || t.includes('webp') || t.includes('gif');
+    };
+
     const getFileIcon = (type) => {
         if (!type) return <File className="text-gray-400" size={24} />;
         const t = type.toLowerCase();
         if (t.includes('pdf')) return <FileText className="text-red-500" size={24} />;
         if (t.includes('excel') || t.includes('sheet') || t.includes('csv')) return <FileSpreadsheet className="text-green-600" size={24} />;
-        if (t.includes('image') || t.includes('png') || t.includes('jpg')) return <Image className="text-purple-500" size={24} />;
+        if (isImage(t)) return <Image className="text-purple-500" size={24} />;
         if (t.includes('word') || t.includes('doc')) return <FileText className="text-blue-500" size={24} />;
         return <File className="text-gray-400" size={24} />;
     };
@@ -138,7 +144,7 @@ const DocumentCenter = () => {
                 label: "Refresh",
                 icon: RefreshCw,
                 onClick: () => fetchDocuments({ category: activeCategory !== 'all' ? activeCategory : undefined }),
-                className: loading ? "animate-spin" : ""
+                isLoading: loading
             }}
         >
             <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
@@ -232,8 +238,10 @@ const DocumentCenter = () => {
                                             className="group relative bg-white border border-gray-100 hover:border-brand-teal/30 hover:shadow-xl hover:shadow-brand-teal/5 rounded-2xl p-5 transition-all duration-300 cursor-pointer flex flex-col items-center text-center"
                                             onClick={() => handleDownload(file)}
                                         >
-                                            <div className="w-16 h-16 mb-4 bg-gray-50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                                                {getFileIcon(file.type)}
+                                            <div className="w-16 h-16 mb-4 bg-gray-50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm overflow-hidden border border-gray-100">
+                                                {isImage(file.type) && file.url ? (
+                                                    <img src={file.url} alt={file.name} loading="lazy" className="w-full h-full object-cover" />
+                                                ) : getFileIcon(file.type)}
                                             </div>
                                             <h3 className="text-sm font-bold text-gray-800 truncate w-full mb-1 px-2" title={file.name}>
                                                 {file.name}
@@ -258,8 +266,12 @@ const DocumentCenter = () => {
                                             className="group flex items-center gap-4 p-4 hover:bg-gray-50 rounded-2xl transition cursor-pointer border border-transparent hover:border-gray-100"
                                             onClick={() => handleDownload(file)}
                                         >
-                                            <div className="p-2 bg-gray-50 rounded-lg">
-                                                {React.cloneElement(getFileIcon(file.type), { size: 20 })}
+                                            <div className="w-10 h-10 p-1 bg-gray-50 rounded-lg flex items-center justify-center overflow-hidden shrink-0 shadow-sm border border-gray-100">
+                                                {isImage(file.type) && file.url ? (
+                                                    <img src={file.url} alt={file.name} loading="lazy" className="w-full h-full object-cover rounded-md" />
+                                                ) : (
+                                                    React.cloneElement(getFileIcon(file.type), { size: 20 })
+                                                )}
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-bold text-gray-800 truncate">{file.name}</p>

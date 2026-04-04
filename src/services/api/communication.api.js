@@ -13,6 +13,9 @@ export const communicationAPI = {
   getBirthdaysToday: async () => fetchWithAuth('/communication/birthdays/today'),
   sendBirthdayWishes: async (data) =>
     fetchWithAuth('/communication/birthdays/send', { method: 'POST', body: JSON.stringify(data) }),
+  getInboxMessages: async () => fetchWithAuth('/communication/messages/inbox'),
+  markMessageRead: async (receiptId) =>
+    fetchWithAuth(`/communication/messages/receipts/${receiptId}/read`, { method: 'PATCH' }),
   getRecipients: async (grade) => {
     const params = grade ? `?grade=${encodeURIComponent(grade)}` : '';
     return fetchWithAuth(`/communication/recipients${params}`);

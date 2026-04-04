@@ -4,6 +4,7 @@
  */
 
 import { ApiError } from './error.util';
+import logger from './logger';
 
 interface EnvConfig {
   nodeEnv: 'development' | 'production' | 'test';
@@ -69,8 +70,7 @@ export const validateEnvironmentConfig = (): EnvConfig => {
   }
 
   if (errors.length > 0) {
-    console.error('❌ Environment Configuration Errors:');
-    errors.forEach((error) => console.error(`  - ${error}`));
+    logger.error({ errors }, '❌ Environment Configuration Errors');
     throw new Error(`Invalid environment configuration. ${errors.length} error(s) found.`);
   }
 
@@ -86,7 +86,7 @@ export const validateEnvironmentConfig = (): EnvConfig => {
     emailProvider: process.env.EMAIL_PROVIDER
   };
 
-  console.log('✅ Environment configuration validated');
+  logger.info('✅ Environment configuration validated');
   return config;
 };
 
@@ -131,21 +131,10 @@ export const checkSecurityBestPractices = (): string[] => {
  * Display security checklist
  */
 export const displaySecurityChecklist = (): void => {
-  console.log('\n🔒 Security Checklist:');
-  console.log('✅ Environment variables validated');
-  console.log('✅ JWT secrets configured');
-  console.log('✅ Database connection secured');
-  console.log('✅ CORS configured');
-  console.log('✅ Helmet security headers enabled');
-  console.log('✅ Rate limiting implemented');
-  console.log('✅ Error handling sanitized');
-  console.log('✅ Request validation enabled');
-  console.log('✅ Response sanitization enabled');
+  logger.info('🔒 Security Checklist: Environment validated, JWT configured, DB secured, CORS configured, Helmet enabled, Rate limiting implemented, Error handling sanitized, Request validation enabled, Response sanitization enabled');
   
   const warnings = checkSecurityBestPractices();
   if (warnings.length > 0) {
-    console.log('\n⚠️  Security Warnings:');
-    warnings.forEach((warning) => console.log(`  ${warning}`));
+    logger.warn({ warnings }, '⚠️  Security Warnings detected');
   }
-  console.log();
 };

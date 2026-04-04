@@ -9,14 +9,24 @@ import { rateLimit } from '../middleware/enhanced-rateLimit.middleware';
 const router = Router();
 
 // Validation schemas
+const createAccountSchema = z.object({
+  code: z.string().min(1),
+  name: z.string().min(1),
+  type: z.enum(['ASSET_NON_CURRENT', 'ASSET_RECEIVABLE', 'ASSET_CASH', 'ASSET_CURRENT', 'LIABILITY_PAYABLE', 'LIABILITY_CURRENT', 'LIABILITY_NON_CURRENT', 'EQUITY', 'REVENUE', 'EXPENSE']),
+  parentId: z.string().optional()
+});
+
 const createJournalEntrySchema = z.object({
-  date: z.string().datetime(),
-  description: z.string().min(1).max(500),
-  entries: z.array(z.object({
+  // Accept both full ISO datetime and bare date strings (YYYY-MM-DD)
+  date: z.string().optional(),
+  reference: z.string().optional(),
+  journalId: z.string().min(1),
+  items: z.array(z.object({
     accountId: z.string().min(1),
     debit: z.number().min(0).optional(),
-    credit: z.number().min(0).optional()
-  }))
+    credit: z.number().min(0).optional(),
+    label: z.string().optional()
+  })).min(2, 'A journal entry requires at least 2 line items')
 });
 
 const createVendorSchema = z.object({
@@ -27,11 +37,14 @@ const createVendorSchema = z.object({
 });
 
 const recordExpenseSchema = z.object({
-  vendorId: z.string().min(1),
+  vendorId: z.string().min(1).optional(),
   amount: z.number().min(0),
   category: z.string().min(1),
-  description: z.string().max(500).optional(),
-  date: z.string().datetime()
+  description: z.string().max(500),
+  date: z.string().datetime().optional(),
+  accountId: z.string().min(1),
+  paymentAccountId: z.string().min(1),
+  reference: z.string().optional()
 });
 
 // ============================================
@@ -49,6 +62,20 @@ router.get(
   authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   accountingController.getAccounts
+);
+
+/**
+ * @route   POST /api/accounting/accounts
+ * @desc    Create new account
+ * @access  ADMIN, SUPER_ADMIN, ACCOUNTANT
+ */
+router.post(
+  '/accounts',
+  authenticate,
+  authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+  validate(createAccountSchema),
+  auditLog('CREATE_ACCOUNT'),
+  accountingController.createAccount
 );
 
 /**
@@ -109,6 +136,18 @@ router.put(
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
   auditLog('POST_JOURNAL_ENTRY'),
   accountingController.postJournalEntry
+);
+
+/**
+ * @route   GET /api/accounting/entries
+ * @desc    Get journal entries with filters
+ * @access  ADMIN, SUPER_ADMIN, ACCOUNTANT
+ */
+router.get(
+  '/entries',
+  authenticate,
+  authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+  accountingController.getJournalEntries
 );
 
 // ============================================
@@ -174,6 +213,18 @@ router.post(
 );
 
 /**
+ * @route   GET /api/accounting/expenses
+ * @desc    Get all recorded expenses
+ * @access  ADMIN, SUPER_ADMIN, ACCOUNTANT
+ */
+router.get(
+  '/expenses',
+  authenticate,
+  authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+  accountingController.getExpenses
+);
+
+/**
  * @route   POST /api/accounting/expenses
  * @desc    Record expense
  * @access  ADMIN, SUPER_ADMIN, ACCOUNTANT
@@ -231,6 +282,18 @@ router.post(
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
   auditLog('RECONCILE_BANK_ENTRY'),
   accountingController.reconcileLine
+);
+
+/**
+ * @route   GET /api/accounting/bank-statements/:lineId/suggest-matches
+ * @desc    Get suggested journal matches for a bank line
+ * @access  ADMIN, SUPER_ADMIN, ACCOUNTANT
+ */
+router.get(
+  '/bank-statements/:lineId/suggest-matches',
+  authenticate,
+  authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+  accountingController.suggestMatches
 );
 
 export default router;

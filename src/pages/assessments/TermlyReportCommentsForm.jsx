@@ -22,8 +22,8 @@ const EMPTY_FORM = {
   nextTermOpens: '',
 };
 
-const TermlyReportCommentsForm = ({ onBack, onSuccess }) => {
-  const [formData, setFormData] = useState(EMPTY_FORM);
+const TermlyReportCommentsForm = ({ onBack, onSuccess, prefill }) => {
+  const [formData, setFormData] = useState({ ...EMPTY_FORM, ...prefill });
   const [errors, setErrors] = useState({});
   const [saveStatus, setSaveStatus] = useState('');
 

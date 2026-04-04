@@ -80,14 +80,14 @@ const Sidebar = React.memo(({
 
   const {
     navSections,
-    educationSections,
-    sharedSections,
-    schoolSections,
-    facilitiesSections,
     dashboardSection,
     communicationSection,
-    settingsSection,
-    helpSection
+    schoolSections,
+    lmsSection,
+    studentLmsSection,
+    backOfficeSections,
+    docsCenterSection,
+    systemAdminSections
   } = useNavigation();
 
   const handleSectionClick = (section) => {
@@ -105,37 +105,41 @@ const Sidebar = React.memo(({
   };
 
   const [activeCategory, setActiveCategory] = useState(() => {
-    const learningRoles = ['TEACHER', 'PARENT'];
-    const schoolRoles   = ['ACCOUNTANT', 'RECEPTIONIST', 'ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM'];
-    if (learningRoles.includes(role)) return 'learning';
-    if (schoolRoles.includes(role))   return 'school';
-    return 'learning';
+    const adminRoles = ['ADMIN', 'SUPER_ADMIN'];
+    const schoolRoles = ['ACCOUNTANT', 'RECEPTIONIST', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM'];
+    if (adminRoles.includes(role)) return 'school';
+    if (schoolRoles.includes(role)) return 'backOffice';
+    return 'school';
   });
 
   const toggleCategory = (category) => {
     setActiveCategory(prev => prev === category ? null : category);
   };
 
-  // Auto-expand category based on current page
   React.useEffect(() => {
-    const isSchool = schoolSections.some(s =>
-      s.id === currentPage || s.items.some(i => i.path === currentPage)
-    );
-    const isUtilities = sharedSections.some(s =>
-      s.id === currentPage || s.items.some(i => i.path === currentPage)
-    );
+    const isSchool = schoolSections.some(s => s.id === currentPage || s.items.some(i => i.path === currentPage));
+    const isBackOffice = backOfficeSections.some(s => s.id === currentPage || s.items.some(i => i.path === currentPage));
+    const isAdmin = systemAdminSections.some(s => s.id === currentPage || s.items.some(i => i.path === currentPage));
 
     if (isSchool) setActiveCategory('school');
-    else if (isUtilities) setActiveCategory('utilities');
-    else if (currentPage.startsWith('settings-')) setActiveCategory('settings');
-  }, [currentPage, schoolSections, sharedSections]);
+    else if (isBackOffice) setActiveCategory('backOffice');
+    else if (isAdmin) setActiveCategory('admin');
+  }, [currentPage, schoolSections, backOfficeSections, systemAdminSections]);
 
   return (
     <div className={`${sidebarOpen ? 'w-52' : 'w-20'} bg-[var(--brand-purple)] text-white transition-all duration-300 flex flex-col border-r border-white/10 shadow-lg`}>
       {/* Logo/Brand */}
       <div className="h-20 p-5 border-b border-white/10 bg-[var(--brand-purple-dark)] relative overflow-hidden">
         <div className="flex items-center gap-3 justify-center overflow-hidden relative z-10">
-          {sidebarOpen ? (
+          {brandingSettings?.logoUrl ? (
+            <div className={`transition-all duration-300 flex items-center justify-center ${sidebarOpen ? 'w-full px-2' : 'w-10 h-10'}`}>
+              <img 
+                src={brandingSettings.logoUrl} 
+                alt="School Logo" 
+                className={`${sidebarOpen ? 'h-12 object-contain' : 'w-full h-full object-cover rounded-lg shadow-sm'}`} 
+              />
+            </div>
+          ) : sidebarOpen ? (
             <h1 className="text-xl font-bold text-white tracking-widest truncate w-full text-center hover:drop-shadow-lg transition-shadow duration-300">
               {brandingSettings?.schoolName || 'ZAWADI JUNIOR ACADEMY'}
             </h1>
@@ -158,7 +162,7 @@ const Sidebar = React.memo(({
             <button
               onClick={() => onNavigate(dashboardSection.id)}
               onMouseEnter={() => prefetchModule(dashboardSection.id)}
-              className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-300 group relative overflow-hidden ${
+              className={`w-full text-left flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-300 group relative overflow-hidden ${
                 currentPage === dashboardSection.id
                   ? 'bg-brand-teal/40 text-white border border-brand-teal/50 shadow-lg shadow-brand-teal/20'
                   : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10'
@@ -167,11 +171,11 @@ const Sidebar = React.memo(({
               <div className="min-w-[20px] flex justify-center relative z-10 group-hover:scale-110 transition-transform duration-300">
                 <dashboardSection.icon size={20} />
               </div>
-              {sidebarOpen && <span className="text-sm font-bold tracking-tight relative z-10">{dashboardSection.label}</span>}
+              {sidebarOpen && <span className="text-left text-sm font-bold tracking-tight relative z-10">{dashboardSection.label}</span>}
             </button>
           )}
 
-          {/* Communications */}
+          {/* Communications / Inbox */}
           {communicationSection && (
             <NavSection
               section={communicationSection}
@@ -185,26 +189,7 @@ const Sidebar = React.memo(({
             />
           )}
 
-          {/* Education / Learning */}
-          {educationSections.length > 0 && (
-            <div className="space-y-1">
-              {educationSections.map(section => (
-                <NavSection
-                  key={section.id}
-                  section={section}
-                  expandedSections={expandedSections}
-                  handleSectionClick={handleSectionClick}
-                  sidebarOpen={sidebarOpen}
-                  expandedSubSections={expandedSubSections}
-                  toggleSubSection={toggleSubSection}
-                  currentPage={currentPage}
-                  onNavigate={onNavigate}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Back Office */}
+          {/* School Operations */}
           {schoolSections.length > 0 && (
             <div className="space-y-1">
               {sidebarOpen && (
@@ -216,7 +201,7 @@ const Sidebar = React.memo(({
                     <div className="min-w-[20px] flex justify-center">
                       <School size={18} className="opacity-70" />
                     </div>
-                    <span className="uppercase tracking-wider font-bold text-brand-teal">Back Office Management</span>
+                    <span className="uppercase tracking-wider font-bold text-brand-teal">School</span>
                   </div>
                   <ChevronDown size={14} className={`transition-transform duration-300 ${activeCategory === 'school' ? 'rotate-180' : ''}`} />
                 </button>
@@ -241,45 +226,54 @@ const Sidebar = React.memo(({
             </div>
           )}
 
-          {/* Facilities */}
-          {facilitiesSections.length > 0 && (
-            <div className="space-y-1">
-              {facilitiesSections.map(section => (
-                <NavSection
-                  key={section.id}
-                  section={section}
-                  expandedSections={expandedSections}
-                  handleSectionClick={handleSectionClick}
-                  sidebarOpen={sidebarOpen}
-                  expandedSubSections={expandedSubSections}
-                  toggleSubSection={toggleSubSection}
-                  currentPage={currentPage}
-                  onNavigate={onNavigate}
-                />
-              ))}
-            </div>
+          {/* LMS — Standalone module, above Back Office */}
+          {lmsSection && (
+            <NavSection
+              section={lmsSection}
+              expandedSections={expandedSections}
+              handleSectionClick={handleSectionClick}
+              sidebarOpen={sidebarOpen}
+              expandedSubSections={expandedSubSections}
+              toggleSubSection={toggleSubSection}
+              currentPage={currentPage}
+              onNavigate={onNavigate}
+            />
           )}
 
-          {/* Utilities */}
-          {sharedSections.length > 0 && (
+          {/* Student Portal — shown only when studentLmsSection is available (STUDENT role) */}
+          {studentLmsSection && (
+            <NavSection
+              section={studentLmsSection}
+              expandedSections={expandedSections}
+              handleSectionClick={handleSectionClick}
+              sidebarOpen={sidebarOpen}
+              expandedSubSections={expandedSubSections}
+              toggleSubSection={toggleSubSection}
+              currentPage={currentPage}
+              onNavigate={onNavigate}
+            />
+          )}
+
+          {/* Back Office */}
+          {backOfficeSections.length > 0 && (
             <div className="space-y-1">
               {sidebarOpen && (
                 <button
-                  onClick={() => toggleCategory('utilities')}
+                  onClick={() => toggleCategory('backOffice')}
                   className="w-full flex items-center justify-between px-3 py-2.5 text-xs font-bold text-gray-400 hover:text-gray-200 transition-all duration-300 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/10"
                 >
                   <div className="flex items-center gap-2">
                     <div className="min-w-[20px] flex justify-center">
                       <Boxes size={18} className="opacity-70" />
                     </div>
-                    <span className="uppercase tracking-wider font-semibold">Utilities</span>
+                    <span className="uppercase tracking-wider font-bold text-brand-teal">Back Office</span>
                   </div>
-                  <ChevronDown size={14} className={`transition-transform duration-300 ${activeCategory === 'utilities' ? 'rotate-180' : ''}`} />
+                  <ChevronDown size={14} className={`transition-transform duration-300 ${activeCategory === 'backOffice' ? 'rotate-180' : ''}`} />
                 </button>
               )}
-              {(!sidebarOpen || activeCategory === 'utilities') && (
+              {(!sidebarOpen || activeCategory === 'backOffice') && (
                 <div className={sidebarOpen ? 'animate-in fade-in slide-in-from-top-1 duration-200' : ''}>
-                  {sharedSections.map(section => (
+                  {backOfficeSections.map(section => (
                     <NavSection
                       key={section.id}
                       section={section}
@@ -297,34 +291,10 @@ const Sidebar = React.memo(({
             </div>
           )}
 
-          {/* Help & Support */}
-          {helpSection && (
-            <div className="mt-4 pt-4 border-t border-white/10">
-              <button
-                onClick={() => onNavigate(helpSection.id)}
-                onMouseEnter={() => prefetchModule(helpSection.id)}
-                className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-300 group relative overflow-hidden ${
-                  currentPage === helpSection.id
-                    ? 'bg-cyan-500/30 text-white border border-cyan-500/50 shadow-lg shadow-cyan-500/10'
-                    : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10'
-                }`}
-              >
-                <div className="min-w-[20px] flex justify-center relative z-10 group-hover:scale-110 transition-transform duration-300">
-                  <helpSection.icon size={20} />
-                </div>
-                {sidebarOpen && <span className="text-sm font-bold tracking-tight relative z-10">{helpSection.label}</span>}
-              </button>
-            </div>
-          )}
-        </div>
-      </nav>
-
-      {/* Settings (Admin Only) */}
-      <div className="p-3 border-t border-white/10 bg-[var(--brand-purple-dark)]">
-        {settingsSection && (
-          <div className="mb-2">
+          {/* Documents Standalone */}
+          {docsCenterSection && (
             <NavSection
-              section={settingsSection}
+              section={docsCenterSection}
               expandedSections={expandedSections}
               handleSectionClick={handleSectionClick}
               sidebarOpen={sidebarOpen}
@@ -332,8 +302,34 @@ const Sidebar = React.memo(({
               toggleSubSection={toggleSubSection}
               currentPage={currentPage}
               onNavigate={onNavigate}
-              isBottom={true}
             />
+          )}
+        </div>
+      </nav>
+
+      {/* System Admin */}
+      <div className="p-3 border-t border-white/10 bg-[var(--brand-purple-dark)]">
+        {systemAdminSections.length > 0 && (
+          <div className="space-y-1 mb-2">
+            {sidebarOpen && (
+              <div className="px-3 pb-1 text-[10px] font-black uppercase tracking-widest text-gray-500">
+                System Admin
+              </div>
+            )}
+            {systemAdminSections.map(section => (
+              <NavSection
+                key={section.id}
+                section={section}
+                expandedSections={expandedSections}
+                handleSectionClick={handleSectionClick}
+                sidebarOpen={sidebarOpen}
+                expandedSubSections={expandedSubSections}
+                toggleSubSection={toggleSubSection}
+                currentPage={currentPage}
+                onNavigate={onNavigate}
+                isBottom={true}
+              />
+            ))}
           </div>
         )}
 
@@ -380,7 +376,7 @@ const NavSection = React.memo(({
                 if (defaultPath) prefetchModule(defaultPath);
               }
             }}
-            className={`w-full flex items-center justify-between px-3 py-3 rounded-lg transition-all duration-300 group relative overflow-hidden ${
+            className={`w-full text-left flex items-center justify-between px-3 py-3 rounded-lg transition-all duration-300 group relative overflow-hidden ${
               section.id === 'assessment'
                 ? (expandedSections[section.id]
                     ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-lg shadow-amber-500/10'
@@ -390,11 +386,11 @@ const NavSection = React.memo(({
                     : 'text-gray-400 hover:bg-white/5 hover:text-white border border-transparent hover:border-white/10')
             }`}
           >
-            <div className="flex items-center gap-3 flex-1 relative z-10">
+            <div className="flex items-center gap-3 flex-1 relative z-10 justify-start">
               <div className="min-w-[20px] flex justify-center group-hover:scale-110 transition-transform duration-300">
                 <section.icon size={20} className={section.id === 'assessment' ? 'text-amber-400' : ''} />
               </div>
-              {sidebarOpen && <span className="text-sm font-bold tracking-tight">{section.label}</span>}
+              {sidebarOpen && <span className="text-left text-sm font-bold tracking-tight">{section.label}</span>}
             </div>
             {sidebarOpen && (
               <ChevronDown
@@ -414,12 +410,12 @@ const NavSection = React.memo(({
                       <button
                         onClick={() => item.greyedOut ? null : toggleSubSection(item.id)}
                         disabled={item.greyedOut}
-                        className={`w-full flex items-center justify-between px-3 py-1.5 text-xs font-medium transition-colors ${
+                        className={`w-full text-left flex items-center justify-between px-3 py-2 text-sm font-semibold transition-colors ${
                           item.greyedOut
                             ? 'text-gray-600 opacity-50 cursor-not-allowed'
                             : (isGroupActive
-                                ? 'text-[#0D9488] bg-white/5 rounded-md'
-                                : 'text-gray-500 hover:text-gray-300')
+                                ? 'text-white bg-white/10 rounded-md'
+                                : 'text-teal-200 hover:text-white')
                         }`}
                       >
                         <div className="flex items-center gap-2">
@@ -439,12 +435,12 @@ const NavSection = React.memo(({
                               onClick={() => subItem.greyedOut ? null : onNavigate(subItem.path)}
                               onMouseEnter={() => prefetchModule(subItem.path)}
                               disabled={subItem.greyedOut}
-                              className={`w-full text-left px-3 py-1.5 rounded-r-md text-sm transition flex items-center justify-between ${
+                              className={`w-full text-left px-3 py-1.5 rounded-r-md text-xs transition flex items-center justify-between ${
                                 subItem.comingSoon || subItem.greyedOut
                                   ? 'text-gray-600 cursor-not-allowed'
                                   : (currentPage === subItem.path
-                                      ? 'bg-white/5 text-[#0D9488] font-medium border-l-2 border-[#0D9488]'
-                                      : 'text-gray-400 hover:text-white hover:bg-white/5 border-l-2 border-transparent')
+                                      ? 'bg-white/5 text-white font-medium border-l-2 border-white'
+                                      : 'text-gray-300 hover:text-white hover:bg-white/5 border-l-2 border-transparent')
                               }`}
                             >
                               <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -474,8 +470,8 @@ const NavSection = React.memo(({
                       item.comingSoon || item.greyedOut
                         ? 'text-gray-600 cursor-not-allowed'
                         : (currentPage === item.path
-                            ? 'bg-white/5 text-[#0D9488] font-medium border-l-2 border-[#0D9488]'
-                            : 'text-gray-400 hover:text-white hover:bg-white/5 border-l-2 border-transparent')
+                            ? 'bg-white/5 text-white font-medium border-l-2 border-white'
+                            : 'text-teal-200 hover:text-white hover:bg-white/5 border-l-2 border-transparent')
                     }`}
                   >
                     <span className="truncate">{item.label}</span>
@@ -495,7 +491,7 @@ const NavSection = React.memo(({
           onClick={() => section.greyedOut ? null : onNavigate(section.id)}
           onMouseEnter={() => prefetchModule(section.id)}
           disabled={section.greyedOut}
-          className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all duration-200 group ${
+          className={`w-full text-left flex items-center gap-3 px-3 py-2 rounded-md transition-all duration-200 group ${
             section.comingSoon || section.greyedOut
               ? 'text-gray-500 opacity-50 cursor-not-allowed border border-dashed border-white/5'
               : (currentPage === section.id

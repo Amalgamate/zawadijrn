@@ -3,6 +3,7 @@ import prisma from '../config/database';
 import { encrypt } from '../utils/encryption.util';
 import { SmsService } from '../services/sms.service';
 import { EmailService } from '../services/email-resend.service';
+import messageService from '../services/message.service';
 import { AuthRequest } from '../middleware/permissions.middleware';
 import { whatsappService } from '../services/whatsapp.service';
 import { ApiError } from '../utils/error.util';
@@ -186,22 +187,37 @@ export const saveCommunicationConfig = async (req: AuthRequest, res: Response) =
  * POST /api/communication/test/sms
  */
 export const sendTestSms = async (req: AuthRequest, res: Response) => {
-    const { phoneNumber, message } = req.body;
+    const { phoneNumber, message, scheduledFor } = req.body;
 
     if (!phoneNumber || !message) {
         throw new ApiError(400, 'phoneNumber and message are required');
     }
 
-    const result = await SmsService.sendSms(phoneNumber, message);
+    const senderId = req.user?.userId || 'system';
+    const senderType = (req.user?.role || 'ADMIN') as any;
+
+    const result = await messageService.createAndDispatchMessage({
+        senderId,
+        senderType,
+        recipientType: 'INDIVIDUAL',
+        recipients: [{ recipientPhone: phoneNumber }],
+        subject: undefined,
+        body: message,
+        messageType: 'SMS',
+        scheduledFor: scheduledFor ? new Date(scheduledFor) : undefined
+    });
 
     if (!result.success) {
-        throw new ApiError(400, result.error || 'Failed to send SMS');
+        throw new ApiError(400, (result as any).error || 'Failed to send SMS');
     }
 
     res.status(200).json({
         success: true,
-        message: 'SMS sent successfully',
-        data: { messageId: result.messageId, provider: result.provider }
+        message: result.scheduled ? 'SMS scheduled successfully' : 'SMS sent successfully',
+        data: {
+            messageId: result.message?.id,
+            scheduled: !!result.scheduled
+        }
     });
 };
 
@@ -375,6 +391,31 @@ export const sendBirthdayWishes = async (req: AuthRequest, res: Response) => {
         message: `Processed ${results.length} birthday messages. ${successCount} sent, ${failCount} failed.`,
         data: { results }
     });
+};
+
+/**
+ * Get Inbox Messages
+ * GET /api/communication/messages/inbox
+ */
+export const getInboxMessages = async (req: AuthRequest, res: Response) => {
+    const userId = req.user?.userId;
+    if (!userId) throw new ApiError(401, 'Authentication required');
+
+    const messages = await messageService.getInboxMessages(userId);
+    res.status(200).json({ success: true, data: messages });
+};
+
+/**
+ * Mark a message receipt as read
+ * PATCH /api/communication/messages/receipts/:id/read
+ */
+export const markMessageRead = async (req: AuthRequest, res: Response) => {
+    const userId = req.user?.userId;
+    const { id } = req.params;
+    if (!userId) throw new ApiError(401, 'Authentication required');
+
+    const receipt = await messageService.markReceiptRead(id, userId);
+    res.status(200).json({ success: true, data: receipt });
 };
 
 /**

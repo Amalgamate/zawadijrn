@@ -111,72 +111,40 @@ export class FeeTypeController {
     }
 
     // Seed default fee types for a school (idempotent - only creates missing types)
-    static async seedDefaults(req: Request, res: Response) {
-        const defaultFeeTypes = [
-            { code: 'TUITION', name: 'Tuition', category: 'ACADEMIC' as const, description: 'School tuition fees' },
-            { code: 'ACTIVITY', name: 'Activity Fee', category: 'EXTRA_CURRICULAR' as const, description: 'Co-curricular activities' },
-            { code: 'TRANSPORT', name: 'Transport', category: 'TRANSPORT' as const, description: 'School transport' },
-            { code: 'MEALS', name: 'Meals', category: 'BOARDING' as const, description: 'School meals and catering' },
-            { code: 'EXAM', name: 'Examination Fee', category: 'ACADEMIC' as const, description: 'Examination fees' },
-            { code: 'LIBRARY', name: 'Library', category: 'ACADEMIC' as const, description: 'Library resources and materials' },
-            { code: 'SPORTS', name: 'Sports Fee', category: 'EXTRA_CURRICULAR' as const, description: 'Sports programs and facilities' },
-            { code: 'TECHNOLOGY', name: 'Technology Fee', category: 'ACADEMIC' as const, description: 'Computer lab and tech resources' },
-            { code: 'MISC', name: 'Miscellaneous', category: 'OTHER' as const, description: 'Other school charges' }
-        ];
+    private static readonly DEFAULT_FEE_TYPES = [
+        { code: 'TUITION', name: 'Tuition', category: 'ACADEMIC' as const, description: 'School tuition fees' },
+        { code: 'ACTIVITY', name: 'Activity Fee', category: 'EXTRA_CURRICULAR' as const, description: 'Co-curricular activities' },
+        { code: 'TRANSPORT', name: 'Transport', category: 'TRANSPORT' as const, description: 'School transport' },
+        { code: 'MEALS', name: 'Meals', category: 'BOARDING' as const, description: 'School meals and catering' },
+        { code: 'EXAM', name: 'Examination Fee', category: 'ACADEMIC' as const, description: 'Examination fees' },
+        { code: 'LIBRARY', name: 'Library', category: 'ACADEMIC' as const, description: 'Library resources and materials' },
+        { code: 'SPORTS', name: 'Sports Fee', category: 'EXTRA_CURRICULAR' as const, description: 'Sports programs and facilities' },
+        { code: 'TECHNOLOGY', name: 'Technology Fee', category: 'ACADEMIC' as const, description: 'Computer lab and tech resources' },
+        { code: 'MISC', name: 'Miscellaneous', category: 'OTHER' as const, description: 'Other school charges' }
+    ];
 
-        try {
-            let createdCount = 0;
-            let skippedCount = 0;
-            const created = [];
-
-            // Idempotent seeding - only create missing fee types
-            for (const feeType of defaultFeeTypes) {
-                try {
-                    // Check if this fee type already exists
-                    const existing = await prisma.feeType.findFirst({
-                        where: { code: feeType.code }
-                    });
-
-                    if (existing) {
-                        skippedCount++;
-                        console.log(`Fee type ${feeType.code} already exists (skipped)`);
-                        continue;
-                    }
-
-                    const newType = await prisma.feeType.create({
-                        data: {
-                            code: feeType.code,
-                            name: feeType.name,
-                            category: feeType.category,
-                            description: feeType.description,
-                            isActive: true
-                        }
-                    });
-                    created.push(newType);
-                    createdCount++;
-                } catch (error: any) {
-                    if (error.code === 'P2002') {
-                        // Unique constraint violation - skip
-                        skippedCount++;
-                        console.log(`Fee type ${feeType.code} already exists (skipped)`);
-                    } else {
-                        throw error;
-                    }
+    private static async ensureDefaultFeeTypes(): Promise<void> {
+        for (const feeType of FeeTypeController.DEFAULT_FEE_TYPES) {
+            await prisma.feeType.upsert({
+                where: { code: feeType.code },
+                update: {},
+                create: {
+                    code: feeType.code,
+                    name: feeType.name,
+                    category: feeType.category,
+                    description: feeType.description,
+                    isActive: true
                 }
-            }
+            });
+        }
+    }
 
-            const allMessage = skippedCount > 0 
-                ? `Created ${createdCount} new fee types (${skippedCount} already existed)`
-                : createdCount === 0 
-                ? 'All 9 default fee types already exist'
-                : `Successfully seeded ${createdCount} default fee types`;
-
+    static async seedDefaults(req: Request, res: Response) {
+        try {
+            await FeeTypeController.ensureDefaultFeeTypes();
             res.json({
-                message: allMessage,
-                created: createdCount,
-                skipped: skippedCount,
-                total: defaultFeeTypes.length,
-                feeTypes: created
+                message: 'Default fee types have been ensured',
+                total: FeeTypeController.DEFAULT_FEE_TYPES.length,
             });
         } catch (error: any) {
             if (error instanceof ApiError) {
@@ -231,10 +199,9 @@ export class FeeTypeController {
         };
 
         try {
-            // Get all fee types for this school
-            const feeTypes = await prisma.feeType.findMany({
-                where: {}
-            });
+            // Ensure the default fee types exist before seeding structures
+            await FeeTypeController.ensureDefaultFeeTypes();
+            const feeTypes = await prisma.feeType.findMany({ where: {} });
 
             if (feeTypes.length === 0) {
                 throw new ApiError(400, 'No fee types found. Seed fee types first.');

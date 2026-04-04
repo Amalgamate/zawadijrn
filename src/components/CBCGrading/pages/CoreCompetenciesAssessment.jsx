@@ -4,18 +4,25 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Save, User, BookOpen, Edit3, ArrowRight } from 'lucide-react';
+import { Save, BookOpen, Edit3, ArrowRight } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
 import api from '../../../services/api';
 import SmartLearnerSearch from '../shared/SmartLearnerSearch';
-import { getCurrentAcademicYear } from '../utils/academicYear';
-import { TERMS } from '../../../constants/terms';
-import { CBC_RATINGS, getRatingByValue } from '../../../constants/ratings';
+import { CBC_RATINGS } from '../../../constants/ratings';
 import { useAssessmentSetup } from '../hooks/useAssessmentSetup';
 import { useLearnerSelection } from '../hooks/useLearnerSelection';
 import { useRatings } from '../hooks/useRatings';
 import { useTeacherWorkload } from '../hooks/useTeacherWorkload';
 import { validateCompetenciesAssessment, formatValidationErrors } from '../../../utils/validation/assessmentValidators';
+
+const DEFAULT_BULK_COMPETENCY_RATINGS = {
+  communication: 'ME1',
+  criticalThinking: 'ME1',
+  creativity: 'ME1',
+  collaboration: 'ME1',
+  citizenship: 'ME1',
+  learningToLearn: 'ME1'
+};
 
 const CoreCompetenciesAssessment = ({ learners }) => {
   const { showSuccess, showError } = useNotifications();
@@ -43,6 +50,77 @@ const CoreCompetenciesAssessment = ({ learners }) => {
   // View state for setup/assess workflow
   const [viewMode, setViewMode] = useState('setup');
   const [saving, setSaving] = useState(false);
+  const [bulkEntries, setBulkEntries] = useState({});
+
+  const initializeBulkEntries = useCallback(() => {
+    const entries = {};
+    selection.filteredLearners.forEach(learner => {
+      entries[learner.id] = {
+        ...DEFAULT_BULK_COMPETENCY_RATINGS,
+        comment: ''
+      };
+    });
+    setBulkEntries(entries);
+  }, [selection.filteredLearners]);
+
+  useEffect(() => {
+    if (viewMode === 'bulk') {
+      initializeBulkEntries();
+    }
+  }, [viewMode, initializeBulkEntries]);
+
+  const updateBulkEntry = (learnerId, field, value) => {
+    setBulkEntries(prev => ({
+      ...prev,
+      [learnerId]: {
+        ...prev[learnerId],
+        [field]: value
+      }
+    }));
+  };
+
+  const handleBulkSave = async () => {
+    if (selection.filteredLearners.length === 0) {
+      showError('No learners found for this grade and stream');
+      return;
+    }
+
+    const records = selection.filteredLearners.map(learner => {
+      const entry = bulkEntries[learner.id] || DEFAULT_BULK_COMPETENCY_RATINGS;
+      return {
+        learnerId: learner.id,
+        term: setup.selectedTerm,
+        academicYear: setup.academicYear,
+        communication: entry.communication,
+        communicationComment: entry.comment || '',
+        criticalThinking: entry.criticalThinking,
+        criticalThinkingComment: entry.comment || '',
+        creativity: entry.creativity,
+        creativityComment: entry.comment || '',
+        collaboration: entry.collaboration,
+        collaborationComment: entry.comment || '',
+        citizenship: entry.citizenship,
+        citizenshipComment: entry.comment || '',
+        learningToLearn: entry.learningToLearn,
+        learningToLearnComment: entry.comment || ''
+      };
+    });
+
+    setSaving(true);
+    try {
+      const response = await api.cbc.saveCompetenciesBulk({ records });
+      if (response.success) {
+        showSuccess('Bulk core competency records saved successfully');
+        setViewMode('setup');
+      } else {
+        throw new Error(response.message || 'Failed to save bulk competencies');
+      }
+    } catch (error) {
+      showError(error.message || 'Failed to save bulk competencies');
+    } finally {
+      setSaving(false);
+    }
+  };
 
 
   // Competency definitions (component-specific)
@@ -230,14 +308,120 @@ const CoreCompetenciesAssessment = ({ learners }) => {
             </div>
           </div>
 
-          <div className="flex justify-end pt-6 border-t border-gray-100">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-3 pt-6 border-t border-gray-100">
+            <div className="text-sm text-gray-500">
+              {selection.filteredLearners.length > 0
+                ? `${selection.filteredLearners.length} learner${selection.filteredLearners.length > 1 ? 's' : ''} available for bulk entry`
+                : 'Select grade and stream to enable bulk entry'}
+            </div>
+            <div className="flex flex-wrap justify-end gap-3">
+              <button
+                onClick={() => setViewMode('bulk')}
+                disabled={!setup.selectedGrade || !setup.selectedStream || selection.filteredLearners.length === 0}
+                className="flex items-center gap-2 px-6 py-3 border border-purple-600 text-purple-600 rounded-xl hover:bg-purple-50 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Bulk Entry
+              </button>
+              <button
+                onClick={handleStartAssessment}
+                disabled={!selection.selectedLearnerId}
+                className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl hover:from-purple-700 hover:to-indigo-700 transition-all font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              >
+                Start Assessment
+                <ArrowRight size={20} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {viewMode === 'bulk' && (
+        <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100 max-w-6xl mx-auto mt-8">
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4 text-purple-600">
+              <BookOpen size={32} />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800">Bulk Core Competencies Entry</h2>
+            <p className="text-gray-500">Enter competencies for all learners in the selected grade and stream without leaving the page.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="bg-gray-50 p-4 rounded-xl">
+              <p className="text-xs uppercase tracking-widest text-gray-500">Grade / Stream</p>
+              <p className="font-bold text-gray-800">{setup.selectedGrade || 'N/A'} {setup.selectedStream ? ` / ${setup.selectedStream}` : ''}</p>
+            </div>
+            <div className="bg-gray-50 p-4 rounded-xl">
+              <p className="text-xs uppercase tracking-widest text-gray-500">Term</p>
+              <p className="font-bold text-gray-800">{setup.terms.find(t => t.value === setup.selectedTerm)?.label || setup.selectedTerm}</p>
+            </div>
+            <div className="bg-gray-50 p-4 rounded-xl">
+              <p className="text-xs uppercase tracking-widest text-gray-500">Year</p>
+              <p className="font-bold text-gray-800">{setup.academicYear}</p>
+            </div>
+          </div>
+
+          {selection.filteredLearners.length === 0 ? (
+            <div className="text-center py-16 text-gray-500">No learners found for the selected grade and stream.</div>
+          ) : (
+            <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
+              {selection.filteredLearners.map((learner) => {
+                const entry = bulkEntries[learner.id] || DEFAULT_BULK_COMPETENCY_RATINGS;
+                return (
+                  <div key={learner.id} className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+                      <div>
+                        <p className="text-sm text-gray-500">{learner.admissionNumber}</p>
+                        <h3 className="font-bold text-gray-800">{learner.firstName} {learner.lastName}</h3>
+                      </div>
+                      <div className="text-sm text-gray-500">Learner {selection.filteredLearners.indexOf(learner) + 1} of {selection.filteredLearners.length}</div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                      {Object.entries(competencyDefinitions).map(([key, definition]) => (
+                        <div key={key} className="space-y-2">
+                          <label className="block text-xs font-semibold uppercase text-gray-500">{definition.name}</label>
+                          <select
+                            value={entry[key] || 'ME1'}
+                            onChange={(e) => updateBulkEntry(learner.id, key, e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-purple-500 focus:ring-purple-500"
+                          >
+                            {CBC_RATINGS.map(r => (
+                              <option key={r.value} value={r.value}>{r.label}</option>
+                            ))}
+                          </select>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-4">
+                      <label className="block text-xs font-semibold uppercase text-gray-500 mb-2">Learner-specific comment</label>
+                      <textarea
+                        value={entry.comment || ''}
+                        onChange={(e) => updateBulkEntry(learner.id, 'comment', e.target.value)}
+                        rows={2}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-purple-500 focus:ring-purple-500 resize-none"
+                        placeholder="Optional comment for this learner"
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="flex flex-col md:flex-row justify-between items-center gap-3 pt-6 border-t border-gray-100">
             <button
-              onClick={handleStartAssessment}
-              disabled={!selection.selectedLearnerId}
-              className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl hover:from-purple-700 hover:to-indigo-700 transition-all font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              onClick={() => setViewMode('setup')}
+              className="px-6 py-3 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition"
             >
-              Start Assessment
-              <ArrowRight size={20} />
+              Back to Single Entry
+            </button>
+            <button
+              onClick={handleBulkSave}
+              disabled={saving || selection.filteredLearners.length === 0}
+              className="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl hover:from-purple-700 hover:to-indigo-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? 'Saving...' : 'Save Bulk Records'}
             </button>
           </div>
         </div>

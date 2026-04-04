@@ -28,7 +28,11 @@ import {
   Clock,
   Briefcase,
   X,
-  Filter
+  Filter,
+  UserPlus,
+  Receipt,
+  ClipboardCheck,
+  Package
 } from 'lucide-react';
 
 // Professional Metric Card with Premium Styling
@@ -579,6 +583,31 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
+      {/* Quick Shortcuts */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        {[
+          { label: 'Admissions', icon: UserPlus, color: 'bg-blue-50 text-blue-600', path: 'learners-admissions' },
+          { label: 'Collect Fees', icon: Receipt, color: 'bg-emerald-50 text-emerald-600', path: 'fees-collection' },
+          { label: 'Attendance', icon: ClipboardCheck, color: 'bg-amber-50 text-amber-600', path: 'attendance-daily' },
+          { label: 'Assessments', icon: BookOpen, color: 'bg-purple-50 text-purple-600', path: 'assess-summative-assessment' },
+          { label: 'Inventory', icon: Package, color: 'bg-rose-50 text-rose-600', path: 'inventory-items' },
+          { label: 'Academic Settings', icon: Settings, color: 'bg-slate-100 text-slate-600', path: 'settings-academic' },
+        ].map((shortcut, idx) => (
+          <button
+            key={idx}
+            onClick={() => onNavigate(shortcut.path)}
+            className="group flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:border-brand-purple/50 transition-all duration-300 active:scale-95"
+          >
+            <div className={`p-3 rounded-xl ${shortcut.color} group-hover:scale-110 transition-transform duration-300 mb-3`}>
+              <shortcut.icon size={24} strokeWidth={2.5} />
+            </div>
+            <span className="text-[11px] font-black uppercase tracking-widest text-gray-600 group-hover:text-gray-900 text-center">
+              {shortcut.label}
+            </span>
+          </button>
+        ))}
+      </div>
+
       {/* Tabs Navigation */}
       <div className="flex items-center border-b border-gray-200 bg-white px-2 rounded-lg shadow-md border border-gray-200">
         <TabButton id="overview" label="General Overview" icon={Activity} active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />

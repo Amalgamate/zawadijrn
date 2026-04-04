@@ -105,8 +105,7 @@ async function seedClasses() {
                 grade: grade as any,
                 stream: stream,
                 academicYear: ACADEMIC_YEAR,
-                term: CURRENT_TERM as any,
-                schoolId: school.id
+                term: CURRENT_TERM as any
               }
             });
 
@@ -121,7 +120,6 @@ async function seedClasses() {
             const newClass = await prisma.class.create({
               data: {
                 classCode: `CLS-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                schoolId: school.id,
                 name: className,
                 grade: grade as any,
                 stream: stream,
@@ -171,22 +169,17 @@ async function seedClasses() {
     console.log('\n📋 Current Classes in Database:');
     console.log('━'.repeat(70));
 
-    for (const school of schools) {
-      const classCount = await prisma.class.count({
-        where: { schoolId: school.id }
-      });
-      console.log(`${school.name}: ${classCount} classes`);
+    const totalClassCount = await prisma.class.count();
+    console.log(`Total classes: ${totalClassCount}`);
 
-      const classesGroupedByGrade = await prisma.class.groupBy({
-        by: ['grade'],
-        where: { schoolId: school.id },
-        _count: true
-      });
+    const classesGroupedByGrade = await prisma.class.groupBy({
+      by: ['grade'],
+      _count: true
+    });
 
-      for (const gradeGroup of classesGroupedByGrade) {
-        const gradeName = GRADE_DISPLAY_NAMES[gradeGroup.grade as string] || gradeGroup.grade;
-        console.log(`   └─ ${gradeName}: ${gradeGroup._count} stream(s)`);
-      }
+    for (const gradeGroup of classesGroupedByGrade) {
+      const gradeName = GRADE_DISPLAY_NAMES[gradeGroup.grade as string] || gradeGroup.grade;
+      console.log(`   └─ ${gradeName}: ${gradeGroup._count} stream(s)`);
     }
 
     console.log('━'.repeat(70));

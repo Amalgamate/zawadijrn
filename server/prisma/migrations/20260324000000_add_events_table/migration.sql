@@ -1,5 +1,5 @@
 -- CreateTable
-CREATE TABLE "events" (
+CREATE TABLE IF NOT EXISTS "events" (
     "id" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "description" TEXT,
@@ -22,8 +22,8 @@ CREATE TABLE "events" (
 );
 
 -- CreateIndex
-CREATE INDEX "events_creatorId_idx" ON "events"("creatorId");
-CREATE INDEX "events_startDate_endDate_idx" ON "events"("startDate", "endDate");
+CREATE INDEX IF NOT EXISTS "events_creatorId_idx" ON "events"("creatorId");
+CREATE INDEX IF NOT EXISTS "events_startDate_endDate_idx" ON "events"("startDate", "endDate");
 
 -- AddForeignKey
 ALTER TABLE "events" ADD CONSTRAINT "events_creatorId_fkey" FOREIGN KEY ("creatorId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

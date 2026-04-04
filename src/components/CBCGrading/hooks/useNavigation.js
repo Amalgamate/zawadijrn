@@ -5,10 +5,10 @@ import {
     TrendingUp, Zap, CheckSquare, Settings, BookOpen,
     Users2, Truck, Fingerprint, CreditCard, PieChart,
     Package, Building2, HelpCircle, Receipt, FileText,
-    Shirt, ClipboardList
+    Shirt, ClipboardList, Video, PlayCircle
 } from 'lucide-react';
 
-const focusModules = ['dashboard', 'communications', 'planner', 'learners', 'teachers', 'parents', 'assessment', 'learning-hub', 'timetable', 'attendance', 'docs-center', 'knowledge-base', 'facilities', 'settings', 'hr', 'finance', 'inventory', 'library', 'transport', 'biometric'];
+const focusModules = ['dashboard', 'communications', 'planner', 'learners', 'teachers', 'parents', 'assessment', 'learning-hub', 'lms', 'attendance', 'docs-center', 'facilities', 'settings', 'hr', 'finance', 'inventory', 'library', 'transport', 'biometric'];
 
 export const allNavSections = [
     {
@@ -136,12 +136,19 @@ export const allNavSections = [
         ]
     },
     {
-        id: 'timetable',
-        label: 'Timetable',
-        icon: Calendar,
-        permission: 'ACCESS_TIMETABLE',
-        items: []
+        id: 'lms',
+        label: 'Learning Management',
+        icon: PlayCircle,
+        permission: 'ACCESS_LMS',
+        items: [
+            { id: 'lms-courses',      label: 'Courses',           path: 'lms-courses',      permission: 'ACCESS_LMS' },
+            { id: 'lms-content',      label: 'Content Library',   path: 'lms-content',      permission: 'ACCESS_LMS' },
+            { id: 'lms-enrollments',  label: 'Enrollments',       path: 'lms-enrollments',  permission: 'ACCESS_LMS' },
+            { id: 'lms-progress',     label: 'Progress Tracking', path: 'lms-progress',     permission: 'ACCESS_LMS' },
+            { id: 'lms-reports',      label: 'Learning Reports',  path: 'lms-reports',      permission: 'ACCESS_LMS' }
+        ]
     },
+
     {
         id: 'attendance',
         label: 'Attendance',
@@ -156,13 +163,6 @@ export const allNavSections = [
         id: 'docs-center',
         label: 'Docs',
         icon: FileText,
-        permission: null,
-        items: []
-    },
-    {
-        id: 'knowledge-base',
-        label: 'Knowledge Base',
-        icon: BookOpen,
         permission: null,
         items: []
     },
@@ -186,11 +186,11 @@ export const allNavSections = [
         icon: BookOpen,
         permission: null,
         items: [
-            { id: 'library-catalog',     label: 'Book Catalog',           path: 'library-catalog',     permission: 'LIBRARY_MANAGEMENT', comingSoon: true },
-            { id: 'library-circulation', label: 'Borrow/Return Tracking', path: 'library-circulation', permission: 'LIBRARY_MANAGEMENT', comingSoon: true },
-            { id: 'library-fees',        label: 'Late Fee Automation',    path: 'library-fees',        permission: 'LIBRARY_MANAGEMENT', comingSoon: true },
-            { id: 'library-inventory',   label: 'Inventory Reports',      path: 'library-inventory',   permission: 'LIBRARY_MANAGEMENT', comingSoon: true },
-            { id: 'library-members',     label: 'Member Management',      path: 'library-members',     permission: 'LIBRARY_MANAGEMENT', comingSoon: true }
+            { id: 'library-catalog',     label: 'Book Catalog',           path: 'library-catalog',     permission: 'LIBRARY_MANAGEMENT' },
+            { id: 'library-circulation', label: 'Borrow/Return Tracking', path: 'library-circulation', permission: 'LIBRARY_MANAGEMENT' },
+            { id: 'library-fees',        label: 'Late Fee Automation',    path: 'library-fees',        permission: 'LIBRARY_MANAGEMENT' },
+            { id: 'library-inventory',   label: 'Inventory Reports',      path: 'library-inventory',   permission: 'LIBRARY_MANAGEMENT' },
+            { id: 'library-members',     label: 'Member Management',      path: 'library-members',     permission: 'LIBRARY_MANAGEMENT' }
         ]
     },
     {
@@ -199,12 +199,12 @@ export const allNavSections = [
         icon: Truck,
         permission: null,
         items: [
-            { id: 'transport-routes',   label: 'Bus Routes & Roster',    path: 'transport-routes',   permission: 'TRANSPORT_MANAGEMENT', comingSoon: true },
-            { id: 'transport-tracking', label: 'GPS Tracking',           path: 'transport-tracking', permission: 'TRANSPORT_MANAGEMENT', comingSoon: true },
-            { id: 'transport-drivers',  label: 'Driver Management',      path: 'transport-drivers',  permission: 'TRANSPORT_MANAGEMENT', comingSoon: true },
-            { id: 'hostel-allocation',  label: 'Hostel Room Allocation', path: 'hostel-allocation',  permission: 'TRANSPORT_MANAGEMENT', comingSoon: true },
-            { id: 'hostel-fees',        label: 'Transport/Hostel Fees',  path: 'hostel-fees',        permission: 'TRANSPORT_MANAGEMENT', comingSoon: true },
-            { id: 'transport-reports',  label: 'Transport Reports',      path: 'transport-reports',  permission: 'TRANSPORT_MANAGEMENT', comingSoon: true }
+            { id: 'transport-routes',   label: 'Bus Routes & Roster',    path: 'transport-routes',   permission: 'TRANSPORT_MANAGEMENT' },
+            { id: 'transport-tracking', label: 'GPS Tracking',           path: 'transport-tracking', permission: 'TRANSPORT_MANAGEMENT' },
+            { id: 'transport-drivers',  label: 'Driver Management',      path: 'transport-drivers',  permission: 'TRANSPORT_MANAGEMENT' },
+            { id: 'hostel-allocation',  label: 'Hostel Room Allocation', path: 'hostel-allocation',  permission: 'TRANSPORT_MANAGEMENT' },
+            { id: 'hostel-fees',        label: 'Transport/Hostel Fees',  path: 'hostel-fees',        permission: 'TRANSPORT_MANAGEMENT' },
+            { id: 'transport-reports',  label: 'Transport Reports',      path: 'transport-reports',  permission: 'TRANSPORT_MANAGEMENT' }
         ]
     },
     {
@@ -265,13 +265,13 @@ export const allNavSections = [
         id: 'biometric',
         label: 'Biometric Attendance',
         icon: Fingerprint,
-        permission: null,
+        permission: 'BIOMETRIC_ATTENDANCE',
         items: [
-            { id: 'biometric-devices',    label: 'Device Management',      path: 'biometric-devices',    permission: 'BIOMETRIC_ATTENDANCE', comingSoon: true },
-            { id: 'biometric-enrollment', label: 'Fingerprint Enrollment', path: 'biometric-enrollment', permission: 'BIOMETRIC_ATTENDANCE', comingSoon: true },
-            { id: 'biometric-logs',       label: 'Attendance Logs',        path: 'biometric-logs',       permission: 'BIOMETRIC_ATTENDANCE', comingSoon: true },
-            { id: 'biometric-reports',    label: 'Biometric Reports',      path: 'biometric-reports',    permission: 'BIOMETRIC_ATTENDANCE', comingSoon: true },
-            { id: 'biometric-api',        label: 'API Integration',        path: 'biometric-api',        permission: 'BIOMETRIC_ATTENDANCE', comingSoon: true }
+            { id: 'biometric-dashboard',  label: 'Biometric Authority',    path: 'biometric-dashboard',  permission: 'BIOMETRIC_ATTENDANCE' },
+            { id: 'biometric-enrollment', label: 'Fingerprint Enrollment', path: 'biometric-dashboard?tab=enrollment', permission: 'ENROLL_FINGERPRINTS' },
+            { id: 'biometric-devices',    label: 'Terminal Management',    path: 'biometric-dashboard?tab=devices',    permission: 'MANAGE_BIOMETRIC_DEVICES' },
+            { id: 'biometric-logs',       label: 'Attendance Data Feed',   path: 'biometric-dashboard?tab=logs',       permission: 'VIEW_BIOMETRIC_LOGS' },
+            { id: 'biometric-api',        label: 'API & Bridge Info',      path: 'biometric-dashboard?tab=config',     permission: 'CONFIGURE_BIOMETRIC_API' }
         ]
     },
     {
@@ -332,6 +332,7 @@ export const useNavigation = () => {
         return allNavSections.filter(section => {
             if (!focusModules.includes(section.id)) return false;
             if (section.id === 'settings') return false;
+            if (role === 'STUDENT' && section.id === 'lms') return false;
             if (section.permission && !can(section.permission)) return false;
             if (section.items.length > 0) {
                 const visibleItems = processItems(section.items);
@@ -342,49 +343,43 @@ export const useNavigation = () => {
             ...section,
             items: processItems(section.items)
         }));
-    }, [can]);
-
-    const settingsSection = useMemo(() => {
-        if (role === 'TEACHER') return null;
-        const section = allNavSections.find(s => s.id === 'settings');
-        if (!section || !can(section.permission)) return null;
-        const isItemVisible = (item) => !item.permission || can(item.permission);
-        return { ...section, items: section.items.filter(isItemVisible) };
     }, [can, role]);
 
-    const educationSections = useMemo(() => {
-        if (role === 'TEACHER') {
-            return navSections.filter(s => ['learners', 'assessment', 'planner', 'timetable', 'learning-hub', 'attendance'].includes(s.id));
-        }
+    const dashboardSection = navSections.find(s => s.id === 'dashboard');
+    const lmsSection = navSections.find(s => s.id === 'lms');
+    const studentLmsSection = useMemo(() => {
+        if (role !== 'STUDENT') return null;
+        return {
+            id: 'student-portal',
+            label: 'Student Portal',
+            icon: PlayCircle,
+            items: [
+                { id: 'student-courses', label: 'My Courses', path: 'student-courses', permission: null },
+                { id: 'student-assignments', label: 'Assignments', path: 'student-assignments', permission: null },
+                { id: 'student-progress', label: 'Progress', path: 'student-progress', permission: null }
+            ]
+        };
+    }, [role]);
+
+    const schoolSections = useMemo(() => {
         if (role === 'ACCOUNTANT') {
-            return navSections.filter(s =>
-                !['learning-hub', 'timetable'].includes(s.id) &&
-                ['learners', 'assessment', 'attendance'].includes(s.id)
-            );
+            return navSections.filter(s => ['learners', 'assessment', 'attendance'].includes(s.id));
         }
-        return navSections.filter(s =>
-            ['learners', 'teachers', 'parents', 'assessment', 'learning-hub', 'timetable', 'attendance', 'library', 'transport', 'biometric'].includes(s.id)
+        return navSections.filter(s => 
+            ['learners', 'teachers', 'parents', 'assessment', 'planner', 'timetable', 'learning-hub', 'attendance', 'facilities'].includes(s.id)
         );
     }, [navSections, role]);
 
-    const sharedSections = useMemo(() => {
+    const backOfficeSections = useMemo(() => {
         if (role === 'TEACHER') return [];
-        return navSections.filter(s => ['docs-center', 'knowledge-base'].includes(s.id));
-    }, [navSections, role]);
-
-    const schoolSections = useMemo(() => {
-        if (role === 'TEACHER') return [];
-        return navSections.filter(s =>
+        return navSections.filter(s => 
             ['hr', 'finance', 'inventory', 'library', 'transport', 'biometric'].includes(s.id)
         );
     }, [navSections, role]);
 
-    const facilitiesSections = useMemo(() => {
-        if (role === 'TEACHER') return [];
-        return navSections.filter(s => s.id === 'facilities');
-    }, [navSections, role]);
-
-    const dashboardSection = navSections.find(s => s.id === 'dashboard');
+    const docsCenterSection = useMemo(() => {
+        return navSections.find(s => s.id === 'docs-center');
+    }, [navSections]);
 
     const communicationSection = useMemo(() => {
         const section = navSections.find(s => s.id === 'communications');
@@ -395,20 +390,28 @@ export const useNavigation = () => {
         return section;
     }, [navSections, role]);
 
-    const helpSection = useMemo(() => {
-        if (role === 'TEACHER') return null;
-        return navSections.find(s => s.id === 'help');
-    }, [navSections, role]);
+    const systemAdminSections = useMemo(() => {
+        if (role === 'TEACHER') return [];
+        const isItemVisible = (item) => !item.permission || can(item.permission);
+        
+        return allNavSections
+            .filter(s => ['settings', 'help'].includes(s.id))
+            .filter(section => !section.permission || can(section.permission))
+            .map(section => ({
+                ...section,
+                items: section.items ? section.items.filter(isItemVisible) : []
+            }));
+    }, [can, role]);
 
     return {
         navSections,
-        settingsSection,
-        educationSections,
-        sharedSections,
-        schoolSections,
-        facilitiesSections,
         dashboardSection,
         communicationSection,
-        helpSection
+        schoolSections,
+        lmsSection,
+        studentLmsSection,
+        backOfficeSections,
+        docsCenterSection,
+        systemAdminSections
     };
 };

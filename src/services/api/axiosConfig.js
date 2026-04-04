@@ -5,16 +5,14 @@ const getApiBaseUrl = () => {
     const viteApiUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
     if (viteApiUrl) return viteApiUrl;
     if (window.location.hostname !== 'localhost') return `${window.location.origin}/api`;
-    return 'http://localhost:5000/api';
+    return 'https://zawadijrn.vercel.app/api';
 };
 
 export const API_BASE_URL = getApiBaseUrl();
 
 const axiosInstance = axios.create({
     baseURL: API_BASE_URL,
-    headers: {
-        'Content-Type': 'application/json',
-    },
+    headers: {},
     // Fail fast instead of hanging indefinitely
     timeout: 30_000,
     // Keep-Alive so the TCP connection is reused across requests (major win)
@@ -31,6 +29,21 @@ axiosInstance.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
+// ── Refresh Queue Mechanism ───────────────────────────────────────────────────
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+    failedQueue.forEach(prom => {
+        if (error) {
+            prom.reject(error);
+        } else {
+            prom.resolve(token);
+        }
+    });
+    failedQueue = [];
+};
+
 // ── Response interceptor ──────────────────────────────────────────────────────
 axiosInstance.interceptors.response.use(
     (response) => response,
@@ -38,7 +51,26 @@ axiosInstance.interceptors.response.use(
         const originalRequest = error.config;
 
         if (error.response?.status === 401 && !originalRequest._retry) {
+            // If the failure was on the refresh endpoint itself, just clear auth
+            if (originalRequest.url.includes('/auth/refresh')) {
+                _clearAuth();
+                return Promise.reject(error);
+            }
+
+            if (isRefreshing) {
+                return new Promise(function(resolve, reject) {
+                    failedQueue.push({ resolve, reject });
+                }).then(token => {
+                    originalRequest.headers['Authorization'] = 'Bearer ' + token;
+                    return axiosInstance(originalRequest);
+                }).catch(err => {
+                    return Promise.reject(err);
+                });
+            }
+
             originalRequest._retry = true;
+            isRefreshing = true;
+
             const refreshToken = localStorage.getItem('refreshToken');
 
             if (refreshToken) {
@@ -50,12 +82,18 @@ axiosInstance.interceptors.response.use(
                         localStorage.setItem('refreshToken', newRefreshToken);
                         axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
                         originalRequest.headers['Authorization'] = `Bearer ${token}`;
+                        
+                        processQueue(null, token);
+                        isRefreshing = false;
                         return axiosInstance(originalRequest);
                     }
                 } catch (_refreshError) {
+                    processQueue(_refreshError, null);
+                    isRefreshing = false;
                     _clearAuth();
                 }
             } else {
+                isRefreshing = false;
                 _clearAuth();
             }
         }
@@ -68,6 +106,10 @@ function _clearAuth() {
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
     if (!window.location.pathname.includes('/login')) {
+        // Signal the login page to show a session-expired message.
+        // sessionStorage is cleared when the tab closes, so this won't
+        // linger across future intentional logins.
+        sessionStorage.setItem('session_expired', '1');
         window.location.href = '/';
     }
 }

@@ -3,7 +3,7 @@
  * Handles cross-term and longitudinal data analysis for learners and classes.
  */
 
-import { PrismaClient, Term, DetailedRubricRating, SummativeGrade } from '@prisma/client';
+import { PrismaClient, Term, DetailedRubricRating } from '@prisma/client';
 import prisma from '../config/database';
 import { calculationService } from './calculation.service';
 

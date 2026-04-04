@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { feeAPI, configAPI } from '../../../services/api';
+import { refreshBus } from '../../../utils/refreshBus';
 
 /**
  * Custom hook to handle complex learner actions
@@ -33,6 +34,7 @@ export const useLearnerActions = ({
       if (result?.success) {
         showSuccess('Student updated successfully!');
         setEditingLearner(null);
+        refreshBus.emit('learners');
       } else {
         showError('Error updating student: ' + (result?.error || 'Unknown error'));
       }
@@ -42,6 +44,7 @@ export const useLearnerActions = ({
 
       if (result.success) {
         showSuccess('Student added successfully!');
+        refreshBus.emit('learners');
 
         // Handle Automatic Invoice Generation
         if (generateInvoice) {
@@ -117,6 +120,7 @@ export const useLearnerActions = ({
       const result = await deleteLearner(learnerId);
       if (result.success) {
         showSuccess('Student deleted successfully');
+        refreshBus.emit('learners');
       } else {
         showSuccess('Error deleting student: ' + result.error);
       }

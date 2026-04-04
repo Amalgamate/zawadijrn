@@ -2,8 +2,21 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { hrService } from '../services/hr.service';
 import { ApiError } from '../utils/error.util';
+import { SmsService } from '../services/sms.service';
 
 export class HRController {
+    async getDashboardStats(req: AuthRequest, res: Response) {
+        try {
+            const month = req.query.month ? Number(req.query.month) : new Date().getMonth() + 1;
+            const year = req.query.year ? Number(req.query.year) : new Date().getFullYear();
+            const stats = await hrService.getDashboardStats(month, year);
+            res.json({ success: true, data: stats });
+        } catch (error: any) {
+            console.error('[HR Controller] Error fetching dashboard stats:', error);
+            res.status(error.statusCode || 500).json({ success: false, message: error.message });
+        }
+    }
+
     async clockIn(req: AuthRequest, res: Response) {
         try {
             const userId = req.user?.userId;
@@ -176,6 +189,12 @@ export class HRController {
 
             const review = await hrService.createPerformanceReview({ ...data, reviewerId });
             res.status(201).json({ success: true, message: 'Performance review created', data: review });
+
+            if (review.user?.phone) {
+                const reviewerName = `${review.reviewer?.firstName || 'HR'} ${review.reviewer?.lastName || ''}`.trim();
+                const message = `Hello ${review.user.firstName}, your performance review for the period ${new Date(data.periodStart).toLocaleDateString()} - ${new Date(data.periodEnd).toLocaleDateString()} has been added by ${reviewerName}. Please check your HR portal.`;
+                SmsService.sendSms(review.user.phone, message).catch(console.error);
+            }
         } catch (error: any) {
             res.status(error.statusCode || 500).json({ success: false, message: error.message });
         }
@@ -188,6 +207,11 @@ export class HRController {
 
             const updated = await hrService.updatePerformanceReview(id, data);
             res.json({ success: true, message: 'Performance review updated', data: updated });
+
+            if (updated.user?.phone) {
+                const message = `Hello ${updated.user.firstName}, your performance review has been updated. Please review the latest feedback on your HR dashboard.`;
+                SmsService.sendSms(updated.user.phone, message).catch(console.error);
+            }
         } catch (error: any) {
             res.status(error.statusCode || 500).json({ success: false, message: error.message });
         }

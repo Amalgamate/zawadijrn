@@ -8,7 +8,7 @@ import PathwayPredictionPage from './PathwayPredictionPage';
 const TermlyReportTemplate = ({ reportData, id = "termly-report-content" }) => {
     if (!reportData) return null;
 
-    const brandColor = reportData.brandColor || '#4a0404'; // Deep Maroon
+    const brandColor = reportData.brandColor || '#1e3a8a'; // Deep navy default — schools override via branding settings
 
     return (
         <div id={id} className="bg-gray-100 pb-10 print:p-0 print:bg-white">
@@ -17,12 +17,11 @@ const TermlyReportTemplate = ({ reportData, id = "termly-report-content" }) => {
                 className="bg-white text-gray-900 font-sans p-10 mx-auto shadow-sm print:shadow-none mb-4 print:mb-0"
                 style={{
                     width: '794px',
-                    height: '1123px',
+                    minHeight: '1123px',
                     display: 'flex',
                     flexDirection: 'column',
                     boxSizing: 'border-box',
                     position: 'relative',
-                    overflow: 'hidden',
                     border: '1px solid #eee'
                 }}
             >
@@ -130,10 +129,13 @@ const TermlyReportTemplate = ({ reportData, id = "termly-report-content" }) => {
 
                 {/* 5. CORPORATE FOOTER */}
                 <div className="mt-auto border-t-2 pt-6" style={{ borderColor: brandColor }}>
-                    <div className="grid grid-cols-3 gap-10 mb-6">
+                    <div className="grid grid-cols-3 gap-10 mb-4">
                         <div className="text-center">
                             <div className="border-b border-gray-300 h-8 mb-1"></div>
                             <p className="text-[9px] font-black text-gray-500 uppercase">Class Teacher</p>
+                            {reportData.comments?.classTeacherName && (
+                                <p className="text-[9px] font-bold text-gray-700 mt-0.5">{reportData.comments.classTeacherName}</p>
+                            )}
                         </div>
                         <div className="text-center flex flex-col items-center justify-center">
                             {reportData.schoolStamp ? (
@@ -152,8 +154,18 @@ const TermlyReportTemplate = ({ reportData, id = "termly-report-content" }) => {
                         <div className="text-center">
                             <div className="border-b border-gray-300 h-8 mb-1"></div>
                             <p className="text-[9px] font-black text-gray-500 uppercase">Head Teacher</p>
+                            {reportData.comments?.headTeacherName && (
+                                <p className="text-[9px] font-bold text-gray-700 mt-0.5">{reportData.comments.headTeacherName}</p>
+                            )}
                         </div>
                     </div>
+
+                    {/* Next Term Opens */}
+                    {reportData.comments?.nextTermOpens && (
+                        <div className="text-center mb-3 py-1.5 border border-gray-200 rounded text-[9px] font-bold text-gray-600 uppercase tracking-wider">
+                            Next Term Opens: <span style={{ color: brandColor }}>{reportData.comments.nextTermOpens}</span>
+                        </div>
+                    )}
 
                     <div className="bg-gray-900 text-white p-3 rounded-sm text-center">
                         <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-1">
@@ -171,12 +183,11 @@ const TermlyReportTemplate = ({ reportData, id = "termly-report-content" }) => {
                 className="bg-white text-gray-900 font-sans p-10 mx-auto shadow-sm print:shadow-none mb-4 print:mb-0"
                 style={{
                     width: '794px',
-                    height: '1123px',
+                    minHeight: '1123px',
                     display: 'flex',
                     flexDirection: 'column',
                     boxSizing: 'border-box',
                     position: 'relative',
-                    overflow: 'hidden',
                     border: '1px solid #eee'
                 }}
             >
@@ -194,13 +205,11 @@ const TermlyReportTemplate = ({ reportData, id = "termly-report-content" }) => {
                                 { label: 'Critical Thinking & Problem Solving', val: reportData.coreCompetencies?.criticalThinking },
                                 { label: 'Creativity & Imagination', val: reportData.coreCompetencies?.creativity },
                                 { label: 'Citizenship', val: reportData.coreCompetencies?.citizenship },
-                                { label: 'Learning to Learn', val: reportData.coreCompetencies?.learningToLearn },
-                                { label: 'Self-Efficacy', val: reportData.coreCompetencies?.selfEfficacy },
-                                { label: 'Digital Literacy', val: reportData.coreCompetencies?.digitalLiteracy }
+                                { label: 'Learning to Learn', val: reportData.coreCompetencies?.learningToLearn }
                             ].map((item, i) => (
                                 <div key={i} className="flex justify-between items-center border-b border-gray-50 pb-1">
                                     <span className="text-[10px] font-bold text-gray-600">{item.label}</span>
-                                    <span className="text-xs font-black" style={{ color: brandColor }}>{item.val || 'ME'}</span>
+                                    <span className="text-xs font-black" style={{ color: brandColor }}>{item.val ?? 'Not recorded'}</span>
                                 </div>
                             ))}
                         </div>
@@ -221,7 +230,7 @@ const TermlyReportTemplate = ({ reportData, id = "termly-report-content" }) => {
                             ].map((item, i) => (
                                 <div key={i} className="flex justify-between items-center border-b border-gray-50 pb-1">
                                     <span className="text-[10px] font-bold text-gray-600">{item.label}</span>
-                                    <span className="text-xs font-black" style={{ color: brandColor }}>{item.val || 'ME'}</span>
+                                    <span className="text-xs font-black" style={{ color: brandColor }}>{item.val ?? 'Not recorded'}</span>
                                 </div>
                             ))}
                         </div>

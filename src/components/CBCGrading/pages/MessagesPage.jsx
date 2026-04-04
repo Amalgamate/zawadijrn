@@ -27,6 +27,7 @@ const MessagesPage = () => {
   const [composeMessage, setComposeMessage] = useState('');
   const [isSendingCompose, setIsSendingCompose] = useState(false);
   const [composeSendReport, setComposeSendReport] = useState([]);
+  const [composeScheduledFor, setComposeScheduledFor] = useState('');
   const [inboxMessages, setInboxMessages] = useState([]);
   const [showComposeReport, setShowComposeReport] = useState(false);
 
@@ -100,12 +101,47 @@ const MessagesPage = () => {
 
   const { grades: fetchedGrades } = useSchoolData();
 
+  const fetchInboxMessages = useCallback(async () => {
+    try {
+      const response = await api.communication.getInboxMessages();
+      if (response?.success && Array.isArray(response.data)) {
+        const mapped = response.data.map((receipt) => ({
+          id: receipt.messageId,
+          receiptId: receipt.id,
+          subject: receipt.message?.subject || 'New message',
+          preview: receipt.message?.body ? receipt.message.body.slice(0, 160) : '',
+          sender: receipt.message?.senderType || 'System',
+          senderRole: receipt.message?.senderType || 'System',
+          date: receipt.createdAt ? new Date(receipt.createdAt).toLocaleString() : '',
+          read: receipt.status === 'READ' || !!receipt.readAt
+        }));
+        setInboxMessages(mapped);
+      }
+    } catch (error) {
+      console.error('Failed to load inbox messages:', error);
+    }
+  }, []);
+
   // Fetch active grades on mount
   useEffect(() => {
     if (fetchedGrades && fetchedGrades.length > 0) {
       setActiveGrades(fetchedGrades);
     }
   }, [fetchedGrades]);
+
+  useEffect(() => {
+    fetchInboxMessages();
+  }, [fetchInboxMessages]);
+
+  const handleMarkMessageRead = async (receiptId) => {
+    if (!receiptId) return;
+    try {
+      await api.communication.markMessageRead(receiptId);
+      setInboxMessages((prev) => prev.map((msg) => msg.receiptId === receiptId ? { ...msg, read: true } : msg));
+    } catch (error) {
+      console.error('Failed to mark message as read:', error);
+    }
+  };
 
   // Fetch recipients when grade changes
   useEffect(() => {
@@ -359,6 +395,16 @@ const MessagesPage = () => {
       return;
     }
 
+    let scheduledForValue;
+    if (composeScheduledFor) {
+      const scheduledDate = new Date(composeScheduledFor);
+      if (Number.isNaN(scheduledDate.getTime()) || scheduledDate <= new Date()) {
+        showError('Schedule must be a future date and time');
+        return;
+      }
+      scheduledForValue = scheduledDate.toISOString();
+    }
+
     const confirmed = window.confirm(
       `Send message to ${recipients.length} recipient${recipients.length > 1 ? 's' : ''}?\n\nMessage: "${composeMessage.substring(0, 50)}${composeMessage.length > 50 ? '...' : ''}"`
     );
@@ -385,7 +431,8 @@ const MessagesPage = () => {
 
           const response = await api.communication.sendTestSMS({
             phoneNumber: formattedPhone,
-            message: composeMessage
+            message: composeMessage,
+            ...(scheduledForValue ? { scheduledFor: scheduledForValue } : {})
           });
 
           messageId = response?.messageId || response?.id || `MSG-${Date.now()}-${i}`;
@@ -428,6 +475,7 @@ const MessagesPage = () => {
     setComposeCsvFile(null);
     setComposeSubject('');
     setComposeMessage('');
+    setComposeScheduledFor('');
   };
 
   return (
@@ -647,17 +695,17 @@ const MessagesPage = () => {
             </div>
           </div>
 
-          {/* Recipients summary */}
-          {composeInputMode === 'bulk' && composePhones.length > 0 && (
-            <Card className="bg-blue-50 border-blue-200">
-              <CardContent className="p-3">
-                <p className="text-sm">
-                  <span className="font-bold text-blue-700">Recipients: </span>
-                  <span className="text-blue-600">{composePhones.length} phone numbers</span>
-                </p>
-              </CardContent>
-            </Card>
-          )}
+            <div className="space-y-2">
+              <Label htmlFor="scheduledFor" className="font-bold">Schedule Send</Label>
+              <Input
+                id="scheduledFor"
+                type="datetime-local"
+                value={composeScheduledFor}
+                onChange={(e) => setComposeScheduledFor(e.target.value)}
+                disabled={isSendingCompose}
+              />
+              <p className="text-xs text-gray-500">Leave blank to send immediately or schedule a future delivery.</p>
+            </div>
 
           <DialogFooter>
             <Button

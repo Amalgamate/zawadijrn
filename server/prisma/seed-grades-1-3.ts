@@ -1,9 +1,27 @@
 import { PrismaClient, Term, Grade, SummativeGrade, TestStatus, AssessmentStatus } from '@prisma/client';
-import * as XLSX from 'xlsx';
 import * as path from 'path';
 import * as fs from 'fs';
+import ExcelJS from 'exceljs';
 
 const prisma = new PrismaClient();
+
+async function loadWorksheetRows(filePath: string): Promise<any[][]> {
+    const workbook = new ExcelJS.Workbook();
+
+    if (filePath.toLowerCase().endsWith('.csv')) {
+        await workbook.csv.readFile(filePath);
+    } else {
+        await workbook.xlsx.readFile(filePath);
+    }
+
+    const worksheet = workbook.worksheets[0];
+    if (!worksheet) return [];
+
+    return worksheet.getSheetValues().slice(1).map((row: any) => {
+        if (!Array.isArray(row)) return [];
+        return row.slice(1);
+    });
+}
 
 const SCHOOL_ID = 'cd01e480-117b-48ca-9b16-3c829f0337ff';
 const BRANCH_ID = '729dce71-511a-413e-b7f1-087c14cddf2a';
@@ -40,9 +58,16 @@ function normalizeName(name: string): string {
 async function loadParentData() {
     console.log('📖 Loading parent data from Students Database.csv...');
     const csvPath = path.join(__dirname, '..', '..', 'templates', 'Students Database.csv');
-    const workbook = XLSX.readFile(csvPath);
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const data = XLSX.utils.sheet_to_json(sheet) as any[];
+    const rows = await loadWorksheetRows(csvPath);
+    const headers = rows[0]?.map((header: any) => header?.toString().trim()) || [];
+    const dataRows = rows.slice(1);
+    const data = dataRows.map((row) => {
+        const record: Record<string, any> = {};
+        headers.forEach((header: any, idx: number) => {
+            if (header) record[header] = row[idx];
+        });
+        return record;
+    });
 
     const parentMap: Record<string, any> = {};
     data.forEach(row => {
@@ -69,9 +94,7 @@ async function seedGrade(fileName: string, gradeEnum: Grade, parentMap: Record<s
         return;
     }
 
-    const workbook = XLSX.readFile(filePath);
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
+    const rows = await loadWorksheetRows(filePath);
 
     const headers = rows[0].map(h => h?.toString().trim());
     const dataRows = rows.slice(1);

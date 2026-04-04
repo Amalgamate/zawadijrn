@@ -8,6 +8,8 @@ import {
     sendTestEmail,
     getBirthdaysToday,
     sendBirthdayWishes,
+    getInboxMessages,
+    markMessageRead,
     getBroadcastRecipients,
     getStaffContacts,
     createContactGroup,
@@ -70,7 +72,8 @@ const saveCommunicationConfigSchema = z.object({
 const sendTestSmsSchema = z.object({
     schoolId: z.string().optional(),
     phoneNumber: z.string().min(9),
-    message: z.string().min(1).max(1000)
+    message: z.string().min(1).max(1000),
+    scheduledFor: z.string().optional()
 });
 
 const sendTestEmailSchema = z.object({
@@ -127,6 +130,22 @@ router.post(
     rateLimit({ windowMs: 60_000, maxRequests: 30 }),
     validate(sendTestSmsSchema),
     sendTestSms
+);
+
+// Get Inbox Messages
+// Allowed: any authenticated user
+router.get(
+    '/messages/inbox',
+    rateLimit({ windowMs: 60_000, maxRequests: 100 }),
+    getInboxMessages
+);
+
+// Mark Receipt Read
+// Allowed: any authenticated user
+router.patch(
+    '/messages/receipts/:id/read',
+    rateLimit({ windowMs: 60_000, maxRequests: 100 }),
+    markMessageRead
 );
 
 // Send Test Email

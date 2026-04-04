@@ -28,7 +28,7 @@ import VirtualizedTable from '../../shared/VirtualizedTable';
 import { getAcademicYearOptions, getCurrentAcademicYear } from '../../utils/academicYear';
 import { learningAreas } from '../../data/learningAreas';
 import { gradeStructure } from '../../data/gradeStructure';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { toast } from 'react-hot-toast';
 
 // ============================================================================
@@ -389,7 +389,7 @@ const SummaryReportPage = () => {
 
 
   // Export to Excel
-  const exportToExcel = () => {
+  const exportToExcel = async () => {
     if (!matrixData) return;
 
     const exportRows = matrixData.rows.map(r => {
@@ -409,10 +409,22 @@ const SummaryReportPage = () => {
       return row;
     });
 
-    const ws = XLSX.utils.json_to_sheet(exportRows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Assessment Matrix");
-    XLSX.writeFile(wb, `AssessmentMatrix_${stagedGrade}_${stagedTerm}_${stagedYear}.xlsx`);
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Assessment Matrix');
+    const headers = Object.keys(exportRows[0] || {});
+    worksheet.columns = headers.map(header => ({ header, key: header, width: 18 }));
+    exportRows.forEach(row => worksheet.addRow(row));
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `AssessmentMatrix_${stagedGrade}_${stagedTerm}_${stagedYear}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   };
 
   // Rendering Helpers

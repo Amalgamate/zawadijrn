@@ -5,6 +5,49 @@ import { EmailService } from './email.service';
 import { whatsappService } from './whatsapp.service';
 import { accountingService } from './accounting.service';
 
+const SKIP_FEE_NOTIFICATIONS = process.env.SKIP_FEE_NOTIFICATIONS === 'true' || process.env.NODE_ENV === 'test';
+
+const INVOICE_NUMBER_RETRY_COUNT = 3;
+
+function parseInvoiceNumber(raw: string | null): number {
+  if (!raw) return 0;
+  const match = raw.match(/(\d+)$/);
+  return match ? parseInt(match[1], 10) : 0;
+}
+
+async function getNextInvoiceNumber(client: any, academicYear: number): Promise<string> {
+  const result = await client.feeInvoice.aggregate({
+    _max: { invoiceNumber: true },
+    where: { academicYear }
+  });
+
+  const currentMax = result._max.invoiceNumber as string | null;
+  const nextSequence = parseInvoiceNumber(currentMax) + 1;
+  return `INV-${academicYear}-${String(nextSequence).padStart(6, '0')}`;
+}
+
+async function createInvoiceWithSafeNumber(client: any, invoiceData: any, include: any): Promise<any> {
+  let lastError: any;
+
+  for (let attempt = 1; attempt <= INVOICE_NUMBER_RETRY_COUNT; attempt++) {
+    const invoiceNumber = await getNextInvoiceNumber(client, invoiceData.academicYear);
+    try {
+      return await client.feeInvoice.create({
+        data: { ...invoiceData, invoiceNumber },
+        include
+      });
+    } catch (error: any) {
+      lastError = error;
+      if (error?.code === 'P2002' && attempt < INVOICE_NUMBER_RETRY_COUNT) {
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  throw lastError;
+}
+
 export class FeeService {
     /**
      * Automatically generate an invoice for a learner based on their grade and the active term.
@@ -49,7 +92,7 @@ export class FeeService {
                 where: {
                     academicYear,
                     term,
-                    grade,
+                    grade: grade as any,
                     active: true
                 },
                 include: {
@@ -82,36 +125,33 @@ export class FeeService {
             const dueDate = new Date();
             dueDate.setDate(dueDate.getDate() + 14);
 
-            const totalAmount = feeStructure.feeItems.reduce((sum, item) => sum + Number(item.amount), 0);
+            const totalAmount = (feeStructure as any).feeItems.reduce((sum: number, item: any) => sum + Number(item.amount), 0);
 
             // 6. Create Invoice
-            const count = await prisma.feeInvoice.count();
-            const invoiceNumber = `INV-${academicYear}-${String(count + 1).padStart(6, '0')}`;
-
-            const newInvoice = await prisma.feeInvoice.create({
-                data: {
-                    invoiceNumber,
-                    learnerId,
-                    feeStructureId: feeStructure.id,
-                    term,
-                    academicYear,
-                    dueDate,
-                    totalAmount,
-                    paidAmount: 0,
-                    balance: totalAmount,
-                    status: 'PENDING',
-                    issuedBy: 'SYSTEM'
-                },
-                include: {
-                    learner: true
-                }
+            const newInvoice = await createInvoiceWithSafeNumber(prisma, {
+                learnerId,
+                feeStructureId: feeStructure.id,
+                term,
+                academicYear,
+                dueDate,
+                totalAmount,
+                paidAmount: 0,
+                balance: totalAmount,
+                status: 'PENDING',
+                issuedBy: 'SYSTEM'
+            }, {
+                learner: true
             });
 
             // Post to Accounting Ledger
-            await accountingService.postFeeInvoiceToLedger(newInvoice);
+            try {
+                await accountingService.postFeeInvoiceToLedger(newInvoice);
+            } catch (ledgerError: any) {
+                console.warn(`[FeeService] Failed to post invoice to ledger: ${ledgerError?.message || ledgerError}`);
+            }
 
-            // 7. Trigger Notifications
-            if (learner.parent && learner.parent.phone) {
+            // 7. Trigger Notifications (best-effort, do not block invoice creation)
+            if (!SKIP_FEE_NOTIFICATIONS && learner.parent && learner.parent.phone) {
                 const parentPhone = learner.parent.phone;
                 const parentName = `${learner.parent.firstName} ${learner.parent.lastName}`;
                 const learnerName = `${learner.firstName} ${learner.lastName}`;
@@ -120,42 +160,51 @@ export class FeeService {
                 const school = await prisma.school.findFirst();
                 const schoolName = school?.name || 'School';
 
-                // SMS
-                await SmsService.sendFeeInvoiceNotification({
-                    parentPhone,
-                    parentName,
-                    learnerName,
-                    invoiceNumber,
-                    term: `${term.replace('_', ' ')} ${academicYear}`,
-                    amount: totalAmount,
-                    dueDate: dueDate.toLocaleDateString()
-                });
-
-                // WhatsApp
-                await whatsappService.sendFeeReminder({
-                    parentPhone,
-                    parentName,
-                    learnerName,
-                    amountDue: totalAmount,
-                    dueDate: dueDate.toLocaleDateString()
-                });
-
-                // Email
-                if (learner.parent.email) {
-                    await EmailService.sendFeeInvoiceEmail({
-                        to: learner.parent.email,
-                        schoolName,
+                try {
+                    await SmsService.sendFeeInvoiceNotification({
+                        parentPhone,
                         parentName,
                         learnerName,
-                        invoiceNumber,
+                        invoiceNumber: newInvoice.invoiceNumber,
                         term: `${term.replace('_', ' ')} ${academicYear}`,
                         amount: totalAmount,
-                        dueDate: dueDate.toLocaleDateString(),
-                        feeItems: feeStructure.feeItems.map(item => ({
-                            name: item.feeType.name,
-                            amount: Number(item.amount)
-                        }))
+                        dueDate: dueDate.toLocaleDateString()
                     });
+                } catch (smsError: any) {
+                    console.warn(`[FeeService] SMS notification failed: ${smsError?.message || smsError}`);
+                }
+
+                try {
+                    await whatsappService.sendFeeReminder({
+                        parentPhone,
+                        parentName,
+                        learnerName,
+                        amountDue: totalAmount,
+                        dueDate: dueDate.toLocaleDateString()
+                    });
+                } catch (whatsappError: any) {
+                    console.warn(`[FeeService] WhatsApp notification failed: ${whatsappError?.message || whatsappError}`);
+                }
+
+                if (learner.parent.email) {
+                    try {
+                        await EmailService.sendFeeInvoiceEmail({
+                            to: learner.parent.email,
+                            schoolName,
+                            parentName,
+                            learnerName,
+                            invoiceNumber: newInvoice.invoiceNumber,
+                            term: `${term.replace('_', ' ')} ${academicYear}`,
+                            amount: totalAmount,
+                            dueDate: dueDate.toLocaleDateString(),
+                            feeItems: (feeStructure as any).feeItems.map((item: any) => ({
+                                name: item.feeType.name,
+                                amount: Number(item.amount)
+                            }))
+                        });
+                    } catch (emailError: any) {
+                        console.warn(`[FeeService] Email notification failed: ${emailError?.message || emailError}`);
+                    }
                 }
             }
 

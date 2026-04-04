@@ -33,6 +33,11 @@ import inventoryRoutes from './inventory.routes';
 import subjectAssignmentRoutes from './subjectAssignment.routes';
 import noticeRoutes from './notice.routes';
 import pdfRoutes from './pdf.routes';
+import biometricRoutes from './biometric.routes';
+import idTemplateRoutes from './idTemplate.routes';
+import libraryRoutes from './library.routes';
+import transportRoutes from './transport.routes';
+import lmsRoutes from './lms.routes';
 import { issueCsrfToken } from '../middleware/csrf.middleware';
 import { authenticate } from '../middleware/auth.middleware';
 
@@ -46,7 +51,9 @@ router.use('/diagnostics', diagnosticsRoutes);
 router.use('/migrations', migrationRoutes);
 router.use('/auth', authRoutes);
 router.use('/books', bookRoutes);
+router.use('/library', libraryRoutes);
 router.use('/schools', schoolRoutes);
+router.use('/biometric', biometricRoutes);
 router.get('/auth/csrf', issueCsrfToken);
 
 // ============================================
@@ -82,5 +89,8 @@ router.use('/subject-assignments', subjectAssignmentRoutes);
 router.use('/communication', communicationRoutes);
 router.use('/notices', noticeRoutes);
 router.use('/pdf', pdfRoutes);
+router.use('/id-templates', idTemplateRoutes);
+router.use('/transport', transportRoutes);
+router.use('/lms', lmsRoutes);
 
 export default router;

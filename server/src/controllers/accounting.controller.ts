@@ -9,10 +9,20 @@ export class AccountingController {
      */
     async getAccounts(req: AuthRequest, res: Response) {
         try {
-            const accounts = await accountingService.getAccounts();
+            const includeBalances = req.query.balances === 'true';
+            const accounts = await accountingService.getAccounts(includeBalances);
             res.json({ success: true, data: accounts });
         } catch (error: any) {
             res.status(error.statusCode || 500).json({ success: false, message: error.message });
+        }
+    }
+
+    async createAccount(req: AuthRequest, res: Response) {
+        try {
+            const account = await accountingService.createAccount(req.body);
+            res.status(201).json({ success: true, message: 'Account created', data: account });
+        } catch (error: any) {
+            res.status(400).json({ success: false, message: error.message });
         }
     }
 
@@ -21,7 +31,22 @@ export class AccountingController {
             const journals = await accountingService.getJournals();
             res.json({ success: true, data: journals });
         } catch (error: any) {
-            res.status(error.statusCode || 500).json({ success: false, message: error.message });
+            res.status(500).json({ success: false, message: error.message });
+        }
+    }
+
+    async getJournalEntries(req: AuthRequest, res: Response) {
+        try {
+            const { journalId, status, startDate, endDate } = req.query;
+            const entries = await accountingService.getJournalEntries({
+                journalId: journalId as string,
+                status: status as string,
+                startDate: startDate ? new Date(startDate as string) : undefined,
+                endDate: endDate ? new Date(endDate as string) : undefined
+            });
+            res.json({ success: true, data: entries });
+        } catch (error: any) {
+            res.status(500).json({ success: false, message: error.message });
         }
     }
 
@@ -72,6 +97,15 @@ export class AccountingController {
         }
     }
 
+    async getExpenses(req: AuthRequest, res: Response) {
+        try {
+            const expenses = await accountingService.getExpenses();
+            res.json({ success: true, data: expenses });
+        } catch (error: any) {
+            res.status(500).json({ success: false, message: error.message });
+        }
+    }
+
     async createVendor(req: AuthRequest, res: Response) {
         try {
             const vendor = await accountingService.createVendor(req.body);
@@ -113,6 +147,16 @@ export class AccountingController {
             const { lineId, journalItemId } = req.body;
             const reconciled = await accountingService.reconcileStatementLine(lineId, journalItemId);
             res.json({ success: true, message: 'Line reconciled', data: reconciled });
+        } catch (error: any) {
+            res.status(400).json({ success: false, message: error.message });
+        }
+    }
+
+    async suggestMatches(req: AuthRequest, res: Response) {
+        try {
+            const { lineId } = req.params;
+            const suggestions = await accountingService.suggestMatches(lineId);
+            res.json({ success: true, data: suggestions });
         } catch (error: any) {
             res.status(400).json({ success: false, message: error.message });
         }

@@ -3,7 +3,7 @@ import { authenticate } from '../../middleware/auth.middleware';
 import { AuthRequest } from '../../middleware/auth.middleware';
 import { rateLimit } from '../../middleware/enhanced-rateLimit.middleware';
 import { auditLog } from '../../middleware/permissions.middleware';
-import { Grade } from '@prisma/client';
+
 import prisma from '../../config/database';
 import multer from 'multer';
 import csvParser from 'csv-parser';
@@ -45,11 +45,11 @@ const learnerSchema = z.object({
  * Handles variants like "Play Group", "PLAY GROUP", "Playgroup", "PLAYGROUP",
  * "Grade 1", "GRADE 1", "GRADE_1", "1", "PP1", "PP2", etc.
  */
-function resolveGrade(raw: string): Grade {
+function resolveGrade(raw: string): string {
   // Strip all spaces and underscores, uppercase — gives a canonical token
   const normalised = raw.toUpperCase().replace(/[\s_]+/g, '');
 
-  const gradeMap: { [key: string]: Grade } = {
+  const gradeMap: { [key: string]: string } = {
     // Playgroup — all spacing variants collapse to PLAYGROUP
     'PLAYGROUP': 'PLAYGROUP',
     'PLAYGRP':   'PLAYGROUP',

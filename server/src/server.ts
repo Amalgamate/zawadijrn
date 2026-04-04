@@ -6,10 +6,13 @@ import routes from './routes';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 import { sanitizeResponse, hideSensitiveHeaders, securityHeaders } from './middleware/response-sanitization.middleware';
 import { ipRateLimit } from './middleware/enhanced-rateLimit.middleware';
+import pinoHttp from 'pino-http';
+import logger from './utils/logger';
 
 const app: Application = express();
 
-console.log('[ROUTES_DEBUG] Routes module loaded:', !!routes);
+// Use pino-http for structured request/response logging
+app.use(pinoHttp({ logger }));
 
 // Trust proxy
 app.set('trust proxy', 1);
@@ -28,24 +31,21 @@ app.use(cors({
 }));
 
 // Global IP-based rate limiting  
-// DISABLED TEMPORARILY FOR DEBUGGING - was causing request timeout
-// app.use(ipRateLimit({
-//   windowMs: 15 * 60 * 1000, // 15 minutes
-//   maxRequests: 1000, // 1000 requests per 15 minutes
-//   message: 'Too many requests from this IP. Please try again later.'
-// }));
+app.use(ipRateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  maxRequests: 1000, // 1000 requests per 15 minutes
+  message: 'Too many requests from this IP. Please try again later.'
+}));
 
 // Response sanitization
 app.use(sanitizeResponse);
 
 // Body parsers
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-console.log('[ROUTES_DEBUG] About to mount API routes...');
 // API Routes
 app.use('/api', routes);
-console.log('[ROUTES_DEBUG] API routes mounted successfully');
 
 // DEBUG: Simple endpoint that bypasses all other middleware for diagnostics
 app.get('/status', (_req, res) => {

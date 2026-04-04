@@ -128,6 +128,13 @@ const buildOnclone = () => (_clonedDoc, clonedEl) => {
 
 /**
  * Shared html2canvas options applied to every single capture call.
+ *
+ * NOTE: `height` and `windowHeight` are intentionally omitted.
+ * Hard-coding 1123px clips reports that contain more than ~9 subjects.
+ * html2canvas reads el.scrollHeight naturally when height is not forced,
+ * so tall reports expand correctly while normal A4 reports are unaffected.
+ * The jsPDF page is always written at A4_H_MM — the extra canvas pixels
+ * are scaled down to fit, which is the correct behaviour.
  */
 const captureOptions = () => ({
   scale: CAPTURE_SCALE,
@@ -136,11 +143,15 @@ const captureOptions = () => ({
   logging: false,
   backgroundColor: '#ffffff',
   width: A4_W_PX,
-  height: A4_H_PX,
-  windowWidth: A4_W_PX,  // Force layout engine to A4 width
-  windowHeight: A4_H_PX, // Force layout engine to A4 height
+  windowWidth: A4_W_PX, // Force layout engine to A4 width
   onclone: buildOnclone(),
 });
+
+const createAbortError = (message = 'Bulk PDF generation cancelled') => {
+  const error = new Error(message);
+  error.name = 'AbortError';
+  return error;
+};
 
 /**
  * Capture a single DOM element to a canvas.
@@ -149,9 +160,13 @@ const captureOptions = () => ({
  * @param {HTMLElement} el
  * @returns {Promise<HTMLCanvasElement>}
  */
-export const captureElement = async (el) => {
+export const captureElement = async (el, opts = {}) => {
+  const { signal } = opts;
+  if (signal?.aborted) throw createAbortError();
   await waitForFonts();
+  if (signal?.aborted) throw createAbortError();
   await nextPaint();
+  if (signal?.aborted) throw createAbortError();
   return html2canvas(el, captureOptions());
 };
 
@@ -175,14 +190,20 @@ const newA4Pdf = () =>
  * Run an array of async task factories with a maximum concurrency limit.
  * Results are returned in the same order as tasks.
  */
-const runWithConcurrency = async (tasks, concurrency) => {
+const runWithConcurrency = async (tasks, concurrency, signal) => {
   const results = new Array(tasks.length);
   let nextIndex = 0;
 
   const worker = async () => {
-    while (nextIndex < tasks.length) {
+    while (true) {
+      if (signal?.aborted) break;
       const idx = nextIndex++;
-      results[idx] = await tasks[idx]();
+      if (idx >= tasks.length) break;
+      try {
+        results[idx] = await tasks[idx]();
+      } catch (err) {
+        results[idx] = err;
+      }
     }
   };
 
@@ -204,17 +225,20 @@ const runWithConcurrency = async (tasks, concurrency) => {
  * @returns {Promise<{ success: boolean, error?: string }>}
  */
 export const captureSingleReport = async (elementId, filename, opts = {}) => {
-  const { onProgress } = opts;
+  const { onProgress, signal } = opts;
   const el = document.getElementById(elementId);
   if (!el) return { success: false, error: `Element #${elementId} not found` };
 
   try {
+    if (signal?.aborted) return { success: false, error: 'Bulk PDF generation cancelled' };
     if (onProgress) onProgress('Waiting for fonts…');
     await waitForFonts();
     await nextPaint();
+    if (signal?.aborted) return { success: false, error: 'Bulk PDF generation cancelled' };
 
     if (onProgress) onProgress('Capturing report…');
     const canvas = await html2canvas(el, captureOptions());
+    if (signal?.aborted) return { success: false, error: 'Bulk PDF generation cancelled' };
 
     if (onProgress) onProgress('Building PDF…');
     const pdf = newA4Pdf();
@@ -227,7 +251,7 @@ export const captureSingleReport = async (elementId, filename, opts = {}) => {
     return { success: true };
   } catch (err) {
     console.error('[captureSingleReport]', err);
-    return { success: false, error: err.message };
+    return { success: false, error: err.name === 'AbortError' ? 'Bulk PDF generation cancelled' : err.message };
   }
 };
 
@@ -245,7 +269,7 @@ export const captureSingleReport = async (elementId, filename, opts = {}) => {
  * @returns {Promise<{ success: boolean, error?: string }>}
  */
 export const captureBulkReports = async (elementId, filename, opts = {}) => {
-  const { onProgress } = opts;
+  const { onProgress, signal } = opts;
   const container = document.getElementById(elementId);
   if (!container) return { success: false, error: `Element #${elementId} not found` };
 
@@ -257,23 +281,33 @@ export const captureBulkReports = async (elementId, filename, opts = {}) => {
   }
 
   try {
+    if (signal?.aborted) return { success: false, error: 'Bulk PDF generation cancelled' };
     if (onProgress) onProgress('Waiting for fonts…');
     await waitForFonts();
     await nextPaint();
+    if (signal?.aborted) return { success: false, error: 'Bulk PDF generation cancelled' };
 
     if (onProgress) onProgress(`Capturing ${pages.length} report(s) — please wait…`);
 
     let completed = 0;
 
     const tasks = pages.map((pageEl) => async () => {
+      if (signal?.aborted) throw createAbortError();
       const canvas = await html2canvas(pageEl, captureOptions());
+      if (signal?.aborted) throw createAbortError();
       completed++;
       if (onProgress) onProgress(`Captured ${completed} of ${pages.length} pages…`);
       return canvas;
     });
+    
+    // Pass signal to the worker loop so it stops immediately
+    const canvases = await runWithConcurrency(tasks, BULK_CONCURRENCY, signal);
+    const abortError = canvases.find(result => result instanceof Error && result.name === 'AbortError');
+    if (abortError) throw abortError;
+    const failedError = canvases.find(result => result instanceof Error);
+    if (failedError) throw failedError;
 
-    const canvases = await runWithConcurrency(tasks, BULK_CONCURRENCY);
-
+    if (signal?.aborted) return { success: false, error: 'Bulk PDF generation cancelled' };
     if (onProgress) onProgress('Building PDF…');
     const pdf = newA4Pdf();
     canvases.forEach((canvas, i) => addCanvasToPdf(pdf, canvas, i > 0));
@@ -285,7 +319,7 @@ export const captureBulkReports = async (elementId, filename, opts = {}) => {
     return { success: true };
   } catch (err) {
     console.error('[captureBulkReports]', err);
-    return { success: false, error: err.message };
+    return { success: false, error: err.name === 'AbortError' ? 'Bulk PDF generation cancelled' : err.message };
   }
 };
 

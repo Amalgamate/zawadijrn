@@ -48,17 +48,57 @@ export class AccountingService {
         ]);
     }
 
-    async getAccounts() {
-        return prisma.account.findMany({
+    async getAccounts(includeBalances = false) {
+        const accounts = await prisma.account.findMany({
             where: { isActive: true },
             orderBy: { code: 'asc' }
         });
+
+        if (!includeBalances) return accounts;
+
+        // Calculate balances (simplified - today's total)
+        const items = await prisma.journalItem.findMany({
+            where: { entry: { status: 'POSTED' } }
+        });
+
+        return accounts.map(acc => {
+            const accItems = items.filter(i => i.accountId === acc.id);
+            const debits = accItems.reduce((sum, i) => sum + Number(i.debit), 0);
+            const credits = accItems.reduce((sum, i) => sum + Number(i.credit), 0);
+            
+            const isDebitNormal = acc.type.startsWith('ASSET') || acc.type === 'EXPENSE';
+            const balance = isDebitNormal ? debits - credits : credits - debits;
+
+            return { ...acc, balance };
+        });
+    }
+
+    async createAccount(data: { code: string; name: string; type: AccountType; parentId?: string }) {
+        return prisma.account.create({ data });
     }
 
     async getJournals() {
         return prisma.journal.findMany({
             where: { isActive: true },
             orderBy: { code: 'asc' }
+        });
+    }
+
+    async getJournalEntries(filters?: { journalId?: string; status?: string; startDate?: Date; endDate?: Date }) {
+        return prisma.journalEntry.findMany({
+            where: {
+                journalId: filters?.journalId,
+                status: filters?.status,
+                date: {
+                    gte: filters?.startDate,
+                    lte: filters?.endDate
+                }
+            },
+            include: {
+                journal: true,
+                items: { include: { account: true } }
+            },
+            orderBy: { date: 'desc' }
         });
     }
 
@@ -238,8 +278,17 @@ export class AccountingService {
 
     async getVendors() {
         return prisma.vendor.findMany({
-            where: { isActive: true },
             orderBy: { name: 'asc' }
+        });
+    }
+
+    async getExpenses() {
+        return prisma.expense.findMany({
+            include: {
+                account: true,
+                vendor: true
+            },
+            orderBy: { date: 'desc' }
         });
     }
 
@@ -327,29 +376,86 @@ export class AccountingService {
             where: { id: lineId },
             data: {
                 journalItemId,
-                status: 'MATCHED'
+                status: 'RECONCILED'
+            }
+        });
+    }
+
+    /**
+     * Auto-match bank statement lines to journal items
+     */
+    async suggestMatches(lineId: string) {
+        const line = await prisma.bankStatementLine.findUnique({
+            where: { id: lineId }
+        });
+
+        if (!line) throw new Error('Statement line not found');
+
+        // Look for journal items that:
+        // 1. Are not already reconciled (not linked to any BankStatementLine)
+        // 2. Match the amount (absolute value)
+        // 3. Are within a date range (e.g., +/- 7 days)
+        const startDate = new Date(line.date);
+        startDate.setDate(startDate.getDate() - 7);
+        const endDate = new Date(line.date);
+        endDate.setDate(endDate.getDate() + 7);
+
+        const amount = Math.abs(Number(line.amount));
+
+        return prisma.journalItem.findMany({
+            where: {
+                bankStatementLine: { is: null }, // Not reconciled
+                OR: [
+                    { debit: amount },
+                    { credit: amount }
+                ],
+                entry: {
+                    date: { gte: startDate, lte: endDate },
+                    status: 'POSTED'
+                }
+            },
+            include: {
+                entry: true,
+                account: true
             }
         });
     }
 
     async getFinancialReport(startDate: Date, endDate: Date) {
-        // 1. Trial Balance (Existing logic)
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+
+        // 1. Fetch Trial Balance logic
         const accountsWithBalance = await prisma.account.findMany({
             include: {
                 journalItems: {
                     where: {
                         entry: {
                             status: 'POSTED',
-                            date: { gte: startDate, lte: endDate }
+                            date: { lte: end } // Fetch all history up to endDate for perpetual balance sheets
                         }
+                    },
+                    include: {
+                        entry: { select: { date: true } }
                     }
                 }
             }
         });
 
         const trialBalance = accountsWithBalance.map(acc => {
-            const debits = acc.journalItems.reduce((sum, item) => sum + Number(item.debit), 0);
-            const credits = acc.journalItems.reduce((sum, item) => sum + Number(item.credit), 0);
+            const isPL = acc.type === 'REVENUE' || acc.type === 'EXPENSE';
+
+            // Filter P&L accounts strictly by the period [startDate, endDate]
+            // Balance Sheet accounts evaluate perpetually up to endDate
+            const relevantItems = acc.journalItems.filter(item => {
+                if (isPL) {
+                    return item.entry.date >= startDate && item.entry.date <= end;
+                }
+                return true;
+            });
+
+            const debits = relevantItems.reduce((sum, item) => sum + Number(item.debit), 0);
+            const credits = relevantItems.reduce((sum, item) => sum + Number(item.credit), 0);
 
             // Assets & Expenses increase with Debit
             const isDebitNormal = acc.type.startsWith('ASSET') || acc.type === 'EXPENSE';
@@ -411,34 +517,51 @@ export class AccountingService {
      */
     async getDashboardStats() {
         const now = new Date();
-        
-        // Use getFinancialReport logic for the current year
+
+        // Year-to-date results for profit/loss, but use full ledger balances for cash/receivables/payables.
         const report = await this.getFinancialReport(new Date(now.getFullYear(), 0, 1), now);
-        
-        // Fetch recent entries across all journals
+        const accounts = await this.getAccounts(true) as Array<{ type: AccountType; balance?: number }>;
+
+        const cashOnHand = accounts
+            .filter(acc => acc.type === AccountType.ASSET_CASH)
+            .reduce((sum, acc) => sum + Number(acc.balance || 0), 0);
+        const accountsReceivable = accounts
+            .filter(acc => acc.type === AccountType.ASSET_RECEIVABLE)
+            .reduce((sum, acc) => sum + Number(acc.balance || 0), 0);
+        const accountsPayable = accounts
+            .filter(acc => acc.type === AccountType.LIABILITY_PAYABLE)
+            .reduce((sum, acc) => sum + Number(acc.balance || 0), 0);
+
         const recentEntries = await prisma.journalEntry.findMany({
             where: { status: 'POSTED' },
             take: 5,
             orderBy: { date: 'desc' },
-            include: { 
+            include: {
                 journal: true,
                 items: { include: { account: true } }
             }
         });
 
         return {
-            cashOnHand: report.trialBalance.filter(a => a.type === 'ASSET_CASH').reduce((sum, a) => sum + a.balance, 0),
-            accountsReceivable: report.trialBalance.find(a => a.code === '1100')?.balance || 0,
-            accountsPayable: report.trialBalance.find(a => a.code === '2000')?.balance || 0,
+            cashActual: cashOnHand,
+            cashOnHand,
+            accountsReceivable,
+            accountsPayable,
             netProfit: report.profitLoss.netProfit,
-            recentEntries: recentEntries.map(e => ({
-                id: e.id,
-                date: e.date,
-                description: e.reference || e.items[0]?.label || 'Journal Entry',
-                type: e.journal.type === 'SALES' ? 'INCOME' : 'EXPENSE',
-                amount: e.items.reduce((sum, i) => sum + Number(i.debit), 0) / 2,
-                status: e.status
-            }))
+            recentEntries: recentEntries.map(e => {
+                const totalDebit = e.items.reduce((sum, item) => sum + Number(item.debit || 0), 0);
+                const totalCredit = e.items.reduce((sum, item) => sum + Number(item.credit || 0), 0);
+                const amount = Math.max(totalDebit, totalCredit);
+
+                return {
+                    id: e.id,
+                    date: e.date,
+                    description: e.reference || e.items[0]?.label || e.journal.name || 'Journal Entry',
+                    type: e.journal.type === 'SALES' ? 'INCOME' : 'EXPENSE',
+                    amount,
+                    status: e.status
+                };
+            })
         };
     }
 }

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import Sidebar from './layout/Sidebar';
 import Header from './layout/Header';
 import MobileAppShell from './layout/MobileAppShell';
@@ -17,6 +17,7 @@ import { useUIStore } from '../../store/useUIStore';
 
 // Utils
 import { clearAllSchoolData } from '../../utils/schoolDataCleanup';
+import { refreshBus } from '../../utils/refreshBus';
 
 /**
  * CBCGradingSystem - Orchestration Layer
@@ -30,7 +31,8 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
   const { 
     sidebarOpen, setSidebarOpen, 
     currentPage, setCurrentPage, 
-    pageParams, toggleSection, expandedSections 
+    pageParams, toggleSection, expandedSections,
+    goBack, goForward
   } = useUIStore();
 
   // Dialog & Modal States
@@ -50,14 +52,51 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
   // Navigation with History & Params
   const handleNavigate = useCallback((page, params = {}) => {
     if (params.learner) setEditingLearner(params.learner);
-    setCurrentPage(page, params);
+    setCurrentPage(page, params); // Updates zustand
 
+    // Push real browser history. We prefix the URL with a tiny harmless hash so the browser 
+    // actually logs a new distinct entry that the back button can pop.
     try {
-      window.history.pushState({ page, params }, `CBC - ${page}`, window.location.href);
+      const uniqueHash = `#${page}`;
+      window.history.pushState(
+          { appPage: page, appParams: params }, 
+          '', 
+          window.location.pathname + window.location.search + uniqueHash
+      );
     } catch (e) {
       console.error('History push failed:', e);
     }
   }, [setCurrentPage]);
+
+  // Intercept browser back/forward — prevent escaping to /auth/login
+  useEffect(() => {
+    // Make sure our very first load anchors the current app page in the real browser history
+    if (!window.history.state?.appPage) {
+        window.history.replaceState({ appPage: currentPage, appParams: pageParams }, '', window.location.href);
+    }
+
+    const handlePopState = (event) => {
+      const state = event.state;
+      if (state && state.appPage) {
+        // Safe in-app navigation
+        if (state.appParams?.learner) setEditingLearner(state.appParams.learner);
+        
+        // Use useUIStore.setState directly to avoid circular dependency in useEffect
+        useUIStore.setState({ 
+            currentPage: state.appPage, 
+            pageParams: state.appParams || {} 
+        });
+      } else {
+        // User hit back too far and escaped the initial app boundary. 
+        // We push them FORWARD again into the app immediately
+        window.history.pushState({ appPage: 'dashboard', appParams: {} }, '', window.location.href);
+        useUIStore.setState({ currentPage: 'dashboard', pageParams: {} });
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []); // Only register once
 
   // Combined Learner Actions
   const learnerActions = useLearnerActions({
@@ -100,6 +139,7 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
       notify.showSuccess(`Tutor ${editingTeacher ? 'updated' : 'added'} successfully!`);
       setCurrentPage('teachers-list');
       setEditingTeacher(null);
+      refreshBus.emit('teachers');
     } else {
       notify.showError(`Error: ${result.error}`);
     }
@@ -121,6 +161,7 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
       notify.showSuccess(`Parent ${editingParent ? 'updated' : 'added'} successfully!`);
       setShowParentModal(false);
       setEditingParent(null);
+      refreshBus.emit('parents');
     } else {
       notify.showError(`Error: ${result.error}`);
     }

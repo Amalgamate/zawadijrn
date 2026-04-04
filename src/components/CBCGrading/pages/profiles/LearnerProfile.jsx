@@ -63,7 +63,7 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                 setInvoices(Array.isArray(data) ? data : []);
             } else if (targetTab === 'academic') {
                 const data = await api.assessments.getSummativeByLearner(currentLearner.id);
-                setAssessments(data || []);
+                setAssessments(data?.success ? data.data : (Array.isArray(data) ? data : (data?.data || [])));
             }
         } catch (error) {
             console.error('Error fetching tab data:', error);

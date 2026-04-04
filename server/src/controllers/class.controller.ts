@@ -7,7 +7,7 @@ import { Response } from 'express';
 import prisma from '../config/database';
 import { ApiError } from '../utils/error.util';
 import { AuthRequest } from '../middleware/permissions.middleware';
-import { Grade, Term } from '@prisma/client';
+import { Term } from '@prisma/client';
 import { configService } from '../services/config.service';
 
 export class ClassController {
@@ -56,7 +56,7 @@ export class ClassController {
     const { grade, stream, academicYear, term, active = 'true' } = req.query;
     const whereClause: any = {};
 
-    if (grade) whereClause.grade = grade as Grade;
+    if (grade) whereClause.grade = grade as string;
     if (stream) whereClause.stream = stream as any;
 
     if (academicYear) whereClause.academicYear = parseInt(academicYear as string);
@@ -74,12 +74,36 @@ export class ClassController {
       where: whereClause,
       include: {
         teacher: { select: { id: true, firstName: true, lastName: true, email: true } },
-        _count: { select: { enrollments: true } },
+        _count: { select: { enrollments: { where: { active: true } } } },
       },
       orderBy: [{ grade: 'asc' }, { stream: 'asc' }],
     });
 
-    res.json({ success: true, data: classes, count: classes.length });
+    // Augment each class with a learner count by grade (covers students admitted
+    // without an explicit ClassEnrollment record)
+    const classesWithOccupancy = await Promise.all(classes.map(async (cls) => {
+      const enrollmentCount = cls._count.enrollments;
+
+      // If no enrollment records, fall back to counting learners by grade+stream
+      let occupancy = enrollmentCount;
+      if (enrollmentCount === 0) {
+        occupancy = await prisma.learner.count({
+          where: {
+            grade: cls.grade,
+            ...(cls.stream ? { stream: cls.stream } : {}),
+            status: 'ACTIVE',
+            archived: false,
+          },
+        });
+      }
+
+      return {
+        ...cls,
+        _count: { ...cls._count, enrollments: occupancy },
+      };
+    }));
+
+    res.json({ success: true, data: classesWithOccupancy, count: classesWithOccupancy.length });
   }
 
   async getClassById(req: AuthRequest, res: Response) {
@@ -135,13 +159,13 @@ export class ClassController {
     const finalName = name || `${grade} ${finalStream}`;
 
     const existingClass = await prisma.class.findFirst({
-      where: { grade: grade as Grade, stream: finalStream as any, academicYear: finalYear, term: finalTerm as Term }
+      where: { grade: grade as string, stream: finalStream as any, academicYear: finalYear, term: finalTerm as Term }
     });
     if (existingClass) throw new ApiError(409, 'Class already exists for this term');
 
     const classCode = await this.generateClassCode();
     const newClass = await prisma.class.create({
-      data: { classCode, name: finalName, grade: grade as Grade, stream: finalStream as any, teacherId, academicYear: finalYear, term: finalTerm as Term, capacity, room },
+      data: { classCode, name: finalName, grade: grade as string, stream: finalStream as any, teacherId, academicYear: finalYear, term: finalTerm as Term, capacity, room },
       include: { teacher: { select: { id: true, firstName: true, lastName: true } } }
     });
 

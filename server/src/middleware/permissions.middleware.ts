@@ -56,6 +56,7 @@ export const requirePermission = (permission: Permission) => {
       }
 
       if (!hasPermission(userRole, permission)) {
+        console.warn(`[PERMISSIONS] 403 Forbidden: User ${req.user?.email} (${userRole}) lacks permission ${permission} for ${req.method} ${req.originalUrl}`);
         res.status(403).json({
           success: false,
           message: 'Insufficient permissions',

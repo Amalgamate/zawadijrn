@@ -7,8 +7,6 @@ import {
     Plus,
     FileText,
     History,
-    Search,
-    PieChart as PieChartIcon,
     TrendingUp,
     AlertCircle
 } from 'lucide-react';
@@ -26,18 +24,24 @@ const AccountingManager = ({ user }) => {
 
     useEffect(() => {
         const fetchDashboardData = async () => {
+            setLoading(true);
+
             try {
-                setLoading(true);
                 const response = await accountingAPI.getDashboardStats();
-                if (response.success) {
-                    setStats({
-                        cashOnHand: response.data.cashActual,
-                        accountsReceivable: response.data.accountsReceivable,
-                        accountsPayable: response.data.accountsPayable,
-                        netProfit: response.data.netProfit
-                    });
-                    setRecentEntries(response.data.recentEntries);
+                const payload = response?.data ?? response;
+
+                if (response && response.success === false) {
+                    console.error('Accounting dashboard API returned an error:', response.message);
+                    return;
                 }
+
+                setStats({
+                    cashOnHand: payload?.cashOnHand ?? payload?.cashActual ?? 0,
+                    accountsReceivable: payload?.accountsReceivable ?? 0,
+                    accountsPayable: payload?.accountsPayable ?? 0,
+                    netProfit: payload?.netProfit ?? 0
+                });
+                setRecentEntries(payload?.recentEntries ?? []);
             } catch (error) {
                 console.error('Error fetching accounting data:', error);
             } finally {
@@ -54,6 +58,16 @@ const AccountingManager = ({ user }) => {
             currency: 'KES',
         }).format(amount);
     };
+
+    if (loading) {
+        return (
+            <div className="p-6">
+                <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+                    <p className="text-sm text-gray-500">Loading accounting dashboard...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="p-6 space-y-6 animate-in fade-in duration-500">

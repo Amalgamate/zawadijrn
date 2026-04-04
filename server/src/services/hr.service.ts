@@ -109,6 +109,40 @@ export class HRService {
         });
     }
 
+    async getDashboardStats(month: number, year: number) {
+        const [staffCount, pendingLeaveCount, payrollDraftsCount, payrollGeneratedCount, recentRequests] = await Promise.all([
+            prisma.user.count({
+                where: {
+                    role: { notIn: ['PARENT', 'SUPER_ADMIN'] },
+                    archived: false,
+                    status: 'ACTIVE'
+                }
+            }),
+            prisma.leaveRequest.count({ where: { status: 'PENDING' } }),
+            prisma.payrollRecord.count({ where: { month, year, status: 'DRAFT' } }),
+            prisma.payrollRecord.count({ where: { month, year, status: 'GENERATED' } }),
+            prisma.leaveRequest.findMany({
+                where: { status: 'PENDING' },
+                include: {
+                    user: {
+                        select: { firstName: true, lastName: true, role: true }
+                    },
+                    leaveType: true
+                },
+                orderBy: { createdAt: 'desc' },
+                take: 5
+            })
+        ]);
+
+        return {
+            staffCount,
+            pendingLeaveCount,
+            payrollDraftsCount,
+            payrollGeneratedCount,
+            recentRequests
+        };
+    }
+
     async approveLeaveRequest(requestId: string, approvedById: string, approved: boolean, rejectionReason?: string) {
         return prisma.leaveRequest.update({
             where: { id: requestId },
@@ -400,6 +434,14 @@ export class HRService {
                 comments: data.comments,
                 goals: data.goals || [],
                 status: data.status || 'COMPLETED'
+            },
+            include: {
+                user: {
+                    select: { firstName: true, lastName: true, phone: true, email: true }
+                },
+                reviewer: {
+                    select: { firstName: true, lastName: true }
+                }
             }
         });
     }
@@ -415,6 +457,14 @@ export class HRService {
                 comments: data.comments,
                 goals: data.goals,
                 status: data.status
+            },
+            include: {
+                user: {
+                    select: { firstName: true, lastName: true, phone: true, email: true }
+                },
+                reviewer: {
+                    select: { firstName: true, lastName: true }
+                }
             }
         });
     }

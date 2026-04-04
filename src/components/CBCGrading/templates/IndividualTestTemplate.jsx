@@ -15,12 +15,11 @@ const IndividualTestTemplate = ({ testData, learner, reportData = {}, id = "indi
             className="bg-white text-gray-900 font-sans p-10 mx-auto"
             style={{
                 width: '794px',
-                height: '1123px', // EXACT A4 Height at 96dpi
+                minHeight: '1123px', // EXACT A4 Height at 96dpi
                 display: 'flex',
                 flexDirection: 'column',
                 boxSizing: 'border-box',
                 position: 'relative',
-                overflow: 'hidden',
                 border: '1px solid #eee'
             }}
         >

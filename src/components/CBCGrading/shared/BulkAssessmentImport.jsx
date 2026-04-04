@@ -4,7 +4,7 @@ import {
     AlertCircle, Loader, Search, Info,
     AlertTriangle, Settings, FileDown
 } from 'lucide-react';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import api from '../../../services/api';
 import { useNotifications } from '../hooks/useNotifications';
 
@@ -66,14 +66,39 @@ const BulkAssessmentImport = ({
         setHeaders([]);
         setStep(1);
 
+        const parseCsv = (text) => {
+            return text
+                .split(/\r?\n/)
+                .filter(line => line.trim().length > 0)
+                .map(line => line.split(',').map(cell => cell.trim()));
+        };
+
+        const arrayFromWorksheet = (worksheet) => {
+            const data = [];
+            worksheet.eachRow({ includeEmpty: true }, (row) => {
+                const rowValues = [];
+                row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+                    rowValues[colNumber - 1] = cell.value;
+                });
+                data.push(rowValues);
+            });
+            return data;
+        };
+
         const reader = new FileReader();
-        reader.onload = (evt) => {
+        reader.onload = async (evt) => {
             try {
-                const bstr = evt.target.result;
-                const wb = XLSX.read(bstr, { type: 'binary' });
-                const wsname = wb.SheetNames[0];
-                const ws = wb.Sheets[wsname];
-                const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+                let data = [];
+                if (selectedFile.name.toLowerCase().endsWith('.csv')) {
+                    data = parseCsv(evt.target.result);
+                } else {
+                    const workbook = new ExcelJS.Workbook();
+                    await workbook.xlsx.load(evt.target.result);
+                    const worksheet = workbook.worksheets[0];
+                    if (worksheet) {
+                        data = arrayFromWorksheet(worksheet);
+                    }
+                }
 
                 if (data.length > 0) {
                     setHeaders(data[0].filter(h => h && h.trim()));
@@ -88,7 +113,11 @@ const BulkAssessmentImport = ({
                 setParsing(false);
             }
         };
-        reader.readAsBinaryString(selectedFile);
+        if (selectedFile.name.toLowerCase().endsWith('.csv')) {
+            reader.readAsText(selectedFile);
+        } else {
+            reader.readAsArrayBuffer(selectedFile);
+        }
     };
 
     const handleMappingChange = (csvCol, learningArea) => {

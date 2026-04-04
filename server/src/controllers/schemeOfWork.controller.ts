@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import prisma from '../config/database';
 import { ApiError } from '../utils/error.util';
+import { EmailService } from '../services/email.service';
+import { SmsService } from '../services/sms.service';
 import { z } from 'zod';
 
 // Schema for a single week row
@@ -317,7 +319,7 @@ export class SchemeOfWorkController {
         reviewComment: remarks || null
       },
       include: {
-        teacher: { select: { id: true, firstName: true, lastName: true } }
+        teacher: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } }
       }
     });
 
@@ -326,6 +328,39 @@ export class SchemeOfWorkController {
       message: `Scheme of Work has been ${status.toLowerCase()}`,
       data: updated
     });
+
+    // Notify submitting teacher of review decision
+    (async () => {
+      try {
+        const teacher = updated.teacher;
+        if (!teacher) return;
+
+        const schemeName = `${updated.learningArea} (${updated.grade})`;
+        const subject = `Scheme of Work ${status.toLowerCase()}`;
+        const messageText = `Your Scheme of Work for ${schemeName} in ${updated.term} ${updated.academicYear} has been ${status.toLowerCase()}.${remarks ? ` Remarks: ${remarks}` : ''}`;
+        const html = `
+          <p>Dear ${teacher.firstName},</p>
+          <p>Your Scheme of Work for <strong>${schemeName}</strong> in <strong>${updated.term} ${updated.academicYear}</strong> has been <strong>${status.toLowerCase()}</strong>.</p>
+          ${remarks ? `<p><strong>Reviewer remarks:</strong> ${remarks}</p>` : ''}
+          <p>Thank you.</p>
+        `;
+
+        if (teacher.email) {
+          await EmailService.sendNotificationEmail({
+            to: teacher.email,
+            subject,
+            text: messageText,
+            html
+          });
+        }
+
+        if (!teacher.email && teacher.phone) {
+          await SmsService.sendSms(teacher.phone, messageText);
+        }
+      } catch (notifyError) {
+        console.error('Failed to notify teacher of scheme review:', notifyError);
+      }
+    })();
   }
 
   // Delete

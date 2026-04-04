@@ -14,7 +14,7 @@ const InventoryStores = () => {
         try {
             setLoading(true);
             const data = await api.inventory.getStores();
-            setStores(data || []);
+            setStores(data?.success ? data.data : (data || []));
         } catch (error) {
             console.error('Error fetching stores:', error);
         } finally {

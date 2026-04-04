@@ -14,6 +14,7 @@ import { Button, Input, Card, CardContent, CardHeader, CardTitle } from '../../.
 import TeacherClassAssignmentModal from '../shared/TeacherClassAssignmentModal';
 import { useNotifications } from '../hooks/useNotifications';
 import { useSchoolData } from '../../../contexts/SchoolDataContext';
+import { useRefreshListener } from '../../../utils/refreshBus';
 
 const ClassList = () => {
   const navigateTo = usePageNavigation();
@@ -39,6 +40,12 @@ const ClassList = () => {
       fetchClasses(sid);
     }
   }, [user]);
+
+  // Auto-refresh when any save in AcademicSettings fires the 'classes' event
+  useRefreshListener('classes', () => {
+    const sid = schoolId || getCurrentSchoolId();
+    if (sid) fetchClasses(sid);
+  });
 
   const fetchClasses = async (sid) => {
     setLoading(true);
@@ -131,8 +138,12 @@ const ClassList = () => {
       ) : (
         <div className="space-y-3">
           {filteredClasses.map(classItem => {
-            const { male, female } = getGenderSplit(classItem.studentCount || 0, classItem.capacity || 40);
-            const utilization = ((classItem.studentCount || 0) / (classItem.capacity || 40)) * 100;
+            const studentCount = classItem._count?.enrollments || 0;
+            const { male, female } = getGenderSplit(studentCount, classItem.capacity || 40);
+            const utilization = (studentCount / (classItem.capacity || 40)) * 100;
+            const teacherName = classItem.teacher 
+              ? `${classItem.teacher.firstName} ${classItem.teacher.lastName}` 
+              : 'Unassigned';
 
             return (
               <Card
@@ -153,9 +164,9 @@ const ClassList = () => {
                     <div className="bg-amber-50 rounded-lg p-4 border border-amber-100 flex flex-col justify-between group/teacher relative">
                       <div>
                         <p className="text-xs font-bold text-amber-900 uppercase tracking-tight mb-2">Teacher</p>
-                        <p className="text-sm font-bold text-gray-900">{classItem.teacher || 'Unassigned'}</p>
-                        {classItem.teacherPhone && (
-                          <p className="text-xs text-gray-600 mt-2">{classItem.teacherPhone}</p>
+                        <p className="text-sm font-bold text-gray-900">{teacherName}</p>
+                        {classItem.teacher?.phone && (
+                          <p className="text-xs text-gray-600 mt-2">{classItem.teacher.phone}</p>
                         )}
                       </div>
                       <Button
@@ -175,7 +186,7 @@ const ClassList = () => {
                     <div className="space-y-3">
                       <div className="bg-blue-50 rounded-lg p-3 border border-blue-100 text-center">
                         <p className="text-xs font-bold text-blue-900 uppercase tracking-tight mb-1">Enrollment</p>
-                        <p className="text-2xl font-black text-blue-600">{classItem.studentCount || 0}/{classItem.capacity}</p>
+                        <p className="text-2xl font-black text-blue-600">{studentCount}/{classItem.capacity}</p>
                         <div className="flex justify-center gap-2 mt-2 text-xs font-bold">
                           <span className="text-blue-700">♂ {male}</span>
                           <span className="text-pink-600">♀ {female}</span>

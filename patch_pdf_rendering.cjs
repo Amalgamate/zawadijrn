@@ -1,5 +1,10 @@
 /**
- * patch_pdf_rendering.js
+ * patch_pdf_rendering.js  —  OBSOLETE — DO NOT RUN
+ * ─────────────────────────────────────────────────────────────────────────────
+ * All fixes from this patch have been permanently applied to SummativeReport.jsx
+ * and the PDF engine has been fully rewritten in simplePdfGenerator.js.
+ * This script is kept for historical reference only. All patterns it targeted
+ * no longer exist in the codebase, so running it will skip all fixes safely.
  * ─────────────────────────────────────────────────────────────────────────────
  * Run once from the project root:
  *   node patch_pdf_rendering.js

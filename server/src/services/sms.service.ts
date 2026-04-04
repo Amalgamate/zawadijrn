@@ -288,7 +288,38 @@ export class SmsService {
             }
 
             if (!config) {
-                console.error(`[SmsService] Configuration Error: SMS not configured.`);
+                // Env-var fallback — allows OTP SMS to work even after a DB reset,
+                // without requiring the admin to log in and reconfigure first.
+                const atApiKey = process.env.AT_API_KEY || process.env.AFRICASTALKING_API_KEY;
+                const atUsername = process.env.AT_USERNAME || process.env.AFRICASTALKING_USERNAME;
+                const msApiKey = process.env.MOBILESASA_API_KEY;
+
+                if (atApiKey && atUsername) {
+                    console.warn('[SmsService] No DB config found — using Africa\'s Talking env-var fallback.');
+                    // Build a synthetic config — encrypt is not needed when value comes from env
+                    const { encrypt } = await import('../utils/encryption.util');
+                    const syntheticConfig = {
+                        smsEnabled: true,
+                        smsProvider: 'africastalking',
+                        smsApiKey: encrypt(atApiKey),
+                        smsUsername: atUsername,
+                        smsSenderId: process.env.AT_SENDER_ID || null,
+                    };
+                    return this.sendViaAfricasTalking(syntheticConfig, this.formatPhoneNumber(phone), message);
+                } else if (msApiKey) {
+                    console.warn('[SmsService] No DB config found — using MobileSasa env-var fallback.');
+                    const { encrypt } = await import('../utils/encryption.util');
+                    const syntheticConfig = {
+                        smsEnabled: true,
+                        smsProvider: 'mobilesasa',
+                        smsApiKey: encrypt(msApiKey),
+                        smsSenderId: process.env.MOBILESASA_SENDER_ID || 'MOBILESASA',
+                        smsBaseUrl: process.env.MOBILESASA_BASE_URL || 'https://api.mobilesasa.com',
+                    };
+                    return this.sendViaMobileSasa(syntheticConfig, this.formatPhoneNumber(phone), message);
+                }
+
+                console.error(`[SmsService] Configuration Error: SMS not configured (no DB config, no env vars).`);
                 return { success: false, error: 'SMS service is not configured.' };
             }
 

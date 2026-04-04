@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import api, { configAPI } from '../services/api';
-import { GRADES } from '../constants/grades'; // For sorting
+import { GRADES } from '../constants/grades';
+import { useRefreshListener } from '../utils/refreshBus';
 
 const SchoolDataContext = createContext();
 
@@ -65,6 +66,10 @@ export const SchoolDataProvider = ({ children }) => {
     useEffect(() => {
         fetchSchoolData();
     }, [fetchSchoolData]);
+
+    // Auto-refresh when classes or streams are created/updated anywhere in the app
+    useRefreshListener('classes', fetchSchoolData);
+    useRefreshListener('streams', fetchSchoolData);
 
     const value = useMemo(() => ({
         classes,

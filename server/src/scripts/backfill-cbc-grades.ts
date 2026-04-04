@@ -12,7 +12,12 @@ async function backfillCbcGrades() {
       where: {
         OR: [
           { cbcGrade: null },
-          { cbcGrade: '' }
+          { cbcGrade: '' },
+          { cbcGrade: 'A' },
+          { cbcGrade: 'B' },
+          { cbcGrade: 'C' },
+          { cbcGrade: 'D' },
+          { cbcGrade: 'E' }
         ]
       },
       include: {

@@ -7,7 +7,7 @@ import { Response } from 'express';
 import prisma from '../config/database';
 import { ApiError } from '../utils/error.util';
 import { AuthRequest } from '../middleware/permissions.middleware';
-import { Grade, UserRole } from '@prisma/client';
+import { UserRole } from '@prisma/client';
 
 export class SubjectAssignmentController {
 
@@ -18,7 +18,7 @@ export class SubjectAssignmentController {
         const { grade, teacherId, learningAreaId } = req.query;
 
         const where: any = {};
-        if (grade) where.grade = grade as Grade;
+        if (grade) where.grade = grade as string;
         if (teacherId) where.teacherId = teacherId as string;
         if (learningAreaId) where.learningAreaId = learningAreaId as string;
 
@@ -68,14 +68,14 @@ export class SubjectAssignmentController {
                 teacherId_learningAreaId_grade: {
                     teacherId,
                     learningAreaId,
-                    grade: grade as Grade
+                    grade: grade as string
                 }
             },
             update: { active: true },
             create: {
                 teacherId,
                 learningAreaId,
-                grade: grade as Grade
+                grade: grade as string
             }
         });
 
@@ -108,7 +108,7 @@ export class SubjectAssignmentController {
         const assignments = await prisma.subjectAssignment.findMany({
             where: {
                 learningAreaId: learningAreaId as string,
-                grade: grade as Grade,
+                grade: grade as string,
                 active: true
             },
             include: {

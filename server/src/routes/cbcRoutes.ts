@@ -7,9 +7,9 @@ import express from 'express';
 import { z } from 'zod';
 import * as cbcController from '../controllers/cbcController';
 import { authenticate } from '../middleware/auth.middleware';
+import { requirePermission, auditLog } from '../middleware/permissions.middleware';
 import { rateLimit } from '../middleware/enhanced-rateLimit.middleware';
 import { validate } from '../middleware/validation.middleware';
-import { auditLog } from '../middleware/permissions.middleware';
 
 const router = express.Router();
 
@@ -101,6 +101,7 @@ const reportCommentsSchema = z.object({
 router.post(
   '/competencies',
   authenticate,
+  requirePermission('ACCESS_ASSESSMENT_MODULE'),
   rateLimit({ windowMs: 60_000, maxRequests: 50 }),
   validate(competenciesSchema),
   auditLog('SAVE_COMPETENCIES'),
@@ -111,6 +112,7 @@ router.post(
 router.post(
   '/competencies/bulk',
   authenticate,
+  requirePermission('ACCESS_ASSESSMENT_MODULE'),
   rateLimit({ windowMs: 60_000, maxRequests: 10 }),
   validate(competenciesBulkSchema),
   auditLog('SAVE_COMPETENCIES_BULK'),
@@ -131,6 +133,7 @@ router.get(
 router.post(
   '/values',
   authenticate,
+  requirePermission('ACCESS_ASSESSMENT_MODULE'),
   rateLimit({ windowMs: 60_000, maxRequests: 50 }),
   validate(valuesSchema),
   auditLog('SAVE_VALUES'),
@@ -141,6 +144,7 @@ router.post(
 router.post(
   '/values/bulk',
   authenticate,
+  requirePermission('ACCESS_ASSESSMENT_MODULE'),
   rateLimit({ windowMs: 60_000, maxRequests: 10 }),
   validate(valuesBulkSchema),
   auditLog('SAVE_VALUES_BULK'),
@@ -161,6 +165,7 @@ router.get(
 router.post(
   '/cocurricular',
   authenticate,
+  requirePermission('ACCESS_ASSESSMENT_MODULE'),
   rateLimit({ windowMs: 60_000, maxRequests: 50 }),
   validate(coCurricularSchema),
   auditLog('CREATE_COCURRICULAR'),
@@ -171,6 +176,7 @@ router.post(
 router.post(
   '/cocurricular/bulk',
   authenticate,
+  requirePermission('ACCESS_ASSESSMENT_MODULE'),
   rateLimit({ windowMs: 60_000, maxRequests: 10 }),
   validate(coCurricularBulkSchema),
   auditLog('CREATE_COCURRICULAR_BULK'),
@@ -189,6 +195,7 @@ router.get(
 router.put(
   '/cocurricular/:id',
   authenticate,
+  requirePermission('ACCESS_ASSESSMENT_MODULE'),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
   auditLog('UPDATE_COCURRICULAR'),
   cbcController.updateCoCurricular
@@ -197,6 +204,7 @@ router.put(
 router.delete(
   '/cocurricular/:id',
   authenticate,
+  requirePermission('ACCESS_ASSESSMENT_MODULE'),
   rateLimit({ windowMs: 60_000, maxRequests: 10 }),
   auditLog('DELETE_COCURRICULAR'),
   cbcController.deleteCoCurricular
@@ -209,6 +217,7 @@ router.delete(
 router.post(
   '/comments',
   authenticate,
+  requirePermission('ACCESS_ASSESSMENT_MODULE'),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
   validate(reportCommentsSchema),
   auditLog('SAVE_REPORT_COMMENTS'),

@@ -13,6 +13,7 @@ import academicYearConfig from '../../utils/academicYear';
 import { toInputDate } from '../../utils/dateHelpers';
 import { gradeStructure } from '../../data/gradeStructure';
 import { useSchoolData } from '../../../../contexts/SchoolDataContext';
+import { refreshBus } from '../../../../utils/refreshBus';
 import HierarchicalLearningAreas from './HierarchicalLearningAreas';
 import SubjectAllocationPage from './SubjectAllocationPage';
 import PerformanceLevelManager from './PerformanceLevelManager';
@@ -139,21 +140,14 @@ const AcademicSettings = () => {
       });
 
       await loadLearningAreas();
+      refreshBus.emit('learning-areas');
     } catch (error) {
       console.error('Error seeding learning areas:', error);
       const errorMsg = error?.response?.data?.error || error?.message || 'Failed to seed learning areas';
-
       toast.error(`❌ ${errorMsg}`, {
         duration: 5000,
         position: 'top-right',
-        style: {
-          background: '#ef4444',
-          color: '#fff',
-          fontWeight: '600',
-          fontSize: '14px',
-          padding: '16px',
-          borderRadius: '8px'
-        }
+        style: { background: '#ef4444', color: '#fff', fontWeight: '600', fontSize: '14px', padding: '16px', borderRadius: '8px' }
       });
     } finally {
       setSeedingLearningAreas(false);
@@ -169,6 +163,7 @@ const AcademicSettings = () => {
       const result = await configAPI.seedClasses();
       notifySuccess(`✏️ Classes seeded! Created: ${result.created || 0}, Skipped: ${result.skipped || 0}`);
       await loadConfigs();
+      refreshBus.emit('classes');
     } catch (error) {
       console.error('Error seeding classes:', error);
       showError(error?.message || 'Failed to seed classes');
@@ -186,6 +181,7 @@ const AcademicSettings = () => {
       const result = await configAPI.seedStreams();
       notifySuccess(`🌊 Streams seeded! Created: ${result.created || 0}, Skipped: ${result.skipped || 0}`);
       await loadConfigs();
+      refreshBus.emit('streams');
     } catch (error) {
       console.error('Error seeding streams:', error);
       showError(error?.message || 'Failed to seed streams');
@@ -359,7 +355,8 @@ const AcademicSettings = () => {
       setShowStreamModal(false);
       setEditingStream(null);
       setStreamFormData({ name: '', active: true });
-      await loadConfigs(); // Make sure to wait for reload
+      await loadConfigs();
+      refreshBus.emit('streams');
     } catch (error) {
       console.error('Error saving stream:', error);
       console.error('Error details:', {
@@ -388,6 +385,7 @@ const AcademicSettings = () => {
       await configAPI.deleteStreamConfig(id);
       setStreamConfigs(prev => prev.filter(s => s.id !== id));
       showSuccess('Stream deleted');
+      refreshBus.emit('streams');
     } catch (error) {
       showError(error.message || 'Failed to delete stream');
     }
@@ -488,18 +486,9 @@ const AcademicSettings = () => {
 
       setShowClassModal(false);
       setEditingClass(null);
-      setClassFormData({
-        name: '',
-        grade: '',
-        stream: '',
-        teacherId: '',
-        capacity: 40,
-        room: '',
-        academicYear: new Date().getFullYear(),
-        term: 'TERM_1',
-        active: true
-      });
+      setClassFormData({ name: '', grade: '', stream: '', teacherId: '', capacity: 40, room: '', academicYear: new Date().getFullYear(), term: 'TERM_1', active: true });
       await loadConfigs();
+      refreshBus.emit('classes');
     } catch (error) {
       console.error('Error saving class:', error);
       // Show the actual error message from the server if available
@@ -515,6 +504,7 @@ const AcademicSettings = () => {
       await configAPI.deleteClass(id);
       setClassConfigs(prev => prev.filter(c => c.id !== id));
       notifySuccess('🗑️ Class deleted successfully');
+      refreshBus.emit('classes');
     } catch (error) {
       showError(error.message || 'Failed to delete class');
     }
@@ -542,6 +532,7 @@ const AcademicSettings = () => {
       setEditingArea(null);
       setFormData({ name: '', shortName: '', gradeLevel: dynamicGrades.length > 0 ? dynamicGrades[0] : 'GRADE_1', color: '#3b82f6', icon: '📚', description: '' });
       await loadLearningAreas();
+      refreshBus.emit('learning-areas');
     } catch (error) {
       console.error('Error saving learning area:', error);
       showError(error.message || 'Failed to save learning area');
@@ -876,8 +867,7 @@ const AcademicSettings = () => {
               <p className="text-sm text-gray-600 mt-1">Organized by grade level with curriculum strands</p>
             </div>
             <div className="flex gap-2">
-              {/* Hiding seeding buttons for now
-               <button
+              <button
                 onClick={handleSeedLearningAreas}
                 disabled={seedingLearningAreas || deletingLearningAreas}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg transition font-semibold ${seedingLearningAreas
@@ -888,7 +878,7 @@ const AcademicSettings = () => {
               >
                 {seedingLearningAreas ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    <Loader size={16} className="animate-spin" />
                     <span>Seeding...</span>
                   </>
                 ) : (
@@ -898,7 +888,6 @@ const AcademicSettings = () => {
                   </>
                 )}
               </button>
-              */}
 
               {selectedLearningAreas.length > 0 && (
                 <button
@@ -1015,7 +1004,7 @@ const AcademicSettings = () => {
                   <th className="p-4 font-semibold text-gray-600">Grade</th>
                   <th className="p-4 font-semibold text-gray-600">Stream</th>
                   <th className="p-4 font-semibold text-gray-600">Teacher</th>
-                  <th className="p-4 font-semibold text-gray-600">Capacity</th>
+                  <th className="p-4 font-semibold text-gray-600">Enrolled</th>
                   <th className="p-4 font-semibold text-gray-600">Status</th>
                   <th className="p-4 font-semibold text-gray-600">Actions</th>
                 </tr>
@@ -1028,13 +1017,25 @@ const AcademicSettings = () => {
                 ) : (
                   classConfigs.map(classItem => {
                     const teacher = teachers.find(t => t.id === classItem.teacherId);
+                    const enrolled = classItem._count?.enrollments || 0;
+                    const capacity = classItem.capacity || 40;
+                    const pct = Math.min(Math.round((enrolled / capacity) * 100), 100);
+                    const barColor = pct >= 90 ? 'bg-red-500' : pct >= 70 ? 'bg-amber-400' : 'bg-emerald-500';
                     return (
                       <tr key={classItem.id} className="border-b hover:bg-gray-50">
                         <td className="p-4 font-medium">{classItem.name}</td>
                         <td className="p-4">{classItem.grade}</td>
                         <td className="p-4">{classItem.stream || '-'}</td>
                         <td className="p-4 text-sm">{teacher ? `${teacher.firstName} ${teacher.lastName}` : '-'}</td>
-                        <td className="p-4">{classItem.capacity}</td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-gray-800 w-14 shrink-0">{enrolled}/{capacity}</span>
+                            <div className="flex-1 bg-gray-100 rounded-full h-1.5 overflow-hidden min-w-[60px]">
+                              <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
+                            </div>
+                            <span className="text-xs text-gray-400 w-8 text-right">{pct}%</span>
+                          </div>
+                        </td>
                         <td className="p-4">
                           <span className={`px-2 py-1 rounded text-xs font-semibold ${classItem.active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
                             {classItem.active ? 'Active' : 'Inactive'}

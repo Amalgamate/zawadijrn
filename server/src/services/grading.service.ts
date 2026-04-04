@@ -1,4 +1,4 @@
-import { SummativeGrade, DetailedRubricRating, AggregationStrategy, FormativeAssessmentType } from '@prisma/client';
+import { DetailedRubricRating, AggregationStrategy, FormativeAssessmentType } from '@prisma/client';
 import prisma from '../config/database';
 
 interface ScoreItem {
@@ -156,7 +156,7 @@ export const gradingService = {
   /**
    * Calculate grade for a percentage (async — fetches system from DB)
    */
-  async calculateGrade(percentage: number): Promise<SummativeGrade> {
+  async calculateGrade(percentage: number): Promise<string> {
     const system = await this.getGradingSystem('SUMMATIVE');
     const range = system.ranges.find(r => percentage >= r.minPercentage && percentage <= r.maxPercentage);
     return range?.summativeGrade || 'E';
@@ -165,7 +165,7 @@ export const gradingService = {
   /**
    * Calculate grade with details (sync — caller must supply ranges)
    */
-  calculateGradeSync(percentage: number, ranges: any[]): SummativeGrade {
+  calculateGradeSync(percentage: number, ranges: any[]): string {
     const range = ranges.find(r => percentage >= r.minPercentage && percentage <= r.maxPercentage);
     return range?.summativeGrade || 'E';
   },

@@ -139,8 +139,7 @@ router.post(
   '/formative/bulk',
   authenticate,
   rateLimit({ windowMs: 60_000, maxRequests: 10 }),
-  // NOTE: checkNotLocked intentionally omitted here — bulk formative always
-  // uses upsert and there is no single entityId to lock-check against.
+  // Bulk formative uses upsert; lock checks are enforced inside the controller.
   auditLog('RECORD_FORMATIVE_BULK'),
   assessmentController.recordFormativeResultsBulk
 );

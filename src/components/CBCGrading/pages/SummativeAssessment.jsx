@@ -4,7 +4,7 @@ import {
   FileSpreadsheet, Download, PlayCircle, Sparkles, Loader2, CheckCircle2, ChevronDown
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import VirtualizedTable from '../shared/VirtualizedTable';
 import { assessmentAPI, gradingAPI, classAPI, configAPI, learnerAPI, aiAPI } from '../../../services/api';
 import { useNotifications } from '../hooks/useNotifications';
@@ -914,7 +914,7 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
     }
   };
 
-  const handleExport = (type = 'xlsx') => {
+  const handleExport = async (type = 'xlsx') => {
     if (filteredLearners.length === 0) {
       toast.error('No data to export');
       return;
@@ -927,16 +927,44 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
       'Teacher Comment': marks[l.id]?.comment || ''
     }));
 
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Marks");
+    const headers = Object.keys(exportData[0] || {});
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Marks');
+    worksheet.columns = headers.map(header => ({ header, key: header, width: 20 }));
+    exportData.forEach(row => worksheet.addRow(row));
 
     const fileName = `${(selectedTest?.title || 'Marks').replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}`;
 
     if (type === 'xlsx') {
-      XLSX.writeFile(wb, `${fileName}.xlsx`);
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${fileName}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
     } else {
-      XLSX.writeFile(wb, `${fileName}.csv`, { bookType: 'csv' });
+      const escapeCsvValue = (value) => {
+        if (value == null) return '';
+        const stringValue = String(value).replace(/"/g, '""');
+        return /[",\n]/.test(stringValue) ? `"${stringValue}"` : stringValue;
+      };
+
+      const csvRows = [headers.join(',')].concat(
+        exportData.map(row => headers.map(header => escapeCsvValue(row[header])).join(','))
+      );
+      const blob = new Blob([csvRows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${fileName}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
     }
     toast.success(`Successfully exported to ${type.toUpperCase()}`);
   };

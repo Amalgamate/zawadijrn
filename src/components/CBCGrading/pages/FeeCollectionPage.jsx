@@ -478,14 +478,16 @@ const FeeCollectionPage = ({ learnerId }) => {
             Create Invoice
           </button>
 
-          <button
-            onClick={handleResetInvoices}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold flex items-center gap-2 whitespace-nowrap"
-            title="Delete ALL invoices and payments"
-          >
-            <Trash2 size={18} />
-            Reset Invoices
-          </button>
+          {user?.role === 'SUPER_ADMIN' && (
+            <button
+              onClick={handleResetInvoices}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold flex items-center gap-2 whitespace-nowrap"
+              title="Delete ALL invoices and payments"
+            >
+              <Trash2 size={18} />
+              Reset Invoices
+            </button>
+          )}
 
         </div>
       </div>

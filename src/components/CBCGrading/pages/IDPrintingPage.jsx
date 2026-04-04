@@ -9,16 +9,91 @@ import {
   Printer, CheckSquare, Square, Download, Loader2, Eye, X,
   AlertCircle, CheckCircle2, Settings2
 } from 'lucide-react';
-import { learnerAPI } from '../../../services/api';
+import { learnerAPI, idTemplateAPI } from '../../../services/api';
 import { useSchoolData } from '../../../contexts/SchoolDataContext';
 
 // ─── Single ID card visual ───────────────────────────────────────────────────
-const IDCard = ({ learner, school, cardStyle }) => {
+const IDCard = ({ learner, school, cardStyle, template }) => {
   const { bgColor, textColor, accentColor } = cardStyle;
   const fullName = `${learner.firstName} ${learner.middleName ? learner.middleName + ' ' : ''}${learner.lastName}`;
   const admNo = learner.admNo || learner.admissionNumber || '—';
   const grade = learner.grade?.replace('_', ' ') || '—';
   const stream = learner.stream || '';
+
+  if (template && template.layoutConfig) {
+    const config = typeof template.layoutConfig === 'string' ? JSON.parse(template.layoutConfig) : template.layoutConfig;
+    
+    return (
+      <div 
+        className="relative shadow-xl shrink-0 select-none overflow-hidden"
+        style={{ 
+          width: `${template.width || 320}px`, 
+          height: `${template.height || 204}px`,
+          backgroundColor: template.backgroundColor || '#fff',
+          backgroundImage: template.templateDesign ? `url(${template.templateDesign})` : 'none',
+          backgroundSize: '100% 100%',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          borderRadius: '10px',
+          fontFamily: 'sans-serif'
+        }}
+      >
+        {config.photo?.show && (
+           <img 
+             src={learner.photoUrl || (learner.gender === 'FEMALE' ? 'https://ui-avatars.com/api/?name=F&background=random' : 'https://ui-avatars.com/api/?name=M&background=random')} 
+             alt=""
+             className="absolute object-cover bg-gray-200"
+             style={{
+               left: config.photo.x,
+               top: config.photo.y,
+               width: config.photo.width,
+               height: config.photo.height,
+               borderRadius: config.photo.borderRadius || 0
+             }}
+           />
+        )}
+        {config.fullName?.show && (
+           <div 
+             className="absolute whitespace-nowrap overflow-hidden text-ellipsis"
+             style={{
+               left: config.fullName.x,
+               top: config.fullName.y,
+               fontSize: config.fullName.fontSize,
+               color: config.fullName.color,
+               fontWeight: config.fullName.fontWeight,
+               maxWidth: `${(template.width || 320) - config.fullName.x - 10}px`
+             }}
+           >
+             {fullName}
+           </div>
+        )}
+        {config.admNo?.show && (
+           <div 
+             className="absolute whitespace-nowrap"
+             style={{ left: config.admNo.x, top: config.admNo.y, fontSize: config.admNo.fontSize, color: config.admNo.color, fontWeight: config.admNo.fontWeight }}
+           >
+             {config.admNo.prefix || 'Adm: '} {admNo}
+           </div>
+        )}
+        {config.grade?.show && (
+           <div 
+             className="absolute whitespace-nowrap"
+             style={{ left: config.grade.x, top: config.grade.y, fontSize: config.grade.fontSize, color: config.grade.color, fontWeight: config.grade.fontWeight }}
+           >
+             {config.grade.prefix || ''}{grade} {stream}
+           </div>
+        )}
+        {config.barcode?.show && (
+           <div 
+             className="absolute bg-white/70 backdrop-blur-sm border border-gray-300 flex items-center justify-center text-[10px] font-mono tracking-widest text-black"
+             style={{ left: config.barcode.x, top: config.barcode.y, width: config.barcode.width, height: config.barcode.height }}
+           >
+             || |||||| | ||| || ||| ({admNo})
+           </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div
@@ -88,7 +163,7 @@ const IDCard = ({ learner, school, cardStyle }) => {
 };
 
 // ─── Print sheet: 4-up layout ────────────────────────────────────────────────
-const PrintSheet = React.forwardRef(({ learners, school, cardStyle }, ref) => (
+const PrintSheet = React.forwardRef(({ learners, school, cardStyle, template }, ref) => (
   <div ref={ref} className="hidden print:block">
     <style>{`
       @page { size: A4; margin: 10mm; }
@@ -101,8 +176,8 @@ const PrintSheet = React.forwardRef(({ learners, school, cardStyle }, ref) => (
     `}</style>
     <div id="print-area" className="grid grid-cols-2 gap-4 p-4">
       {learners.map(l => (
-        <div key={l.id} className="id-card-print">
-          <IDCard learner={l} school={school} cardStyle={cardStyle} />
+        <div key={l.id} className="id-card-print shrink-0" style={{ marginBottom: '16px' }}>
+          <IDCard learner={l} school={school} cardStyle={cardStyle} template={template} />
         </div>
       ))}
     </div>
@@ -110,7 +185,7 @@ const PrintSheet = React.forwardRef(({ learners, school, cardStyle }, ref) => (
 ));
 
 // ─── Preview modal ───────────────────────────────────────────────────────────
-const PreviewModal = ({ learner, school, cardStyle, onClose, onPrint }) => (
+const PreviewModal = ({ learner, school, cardStyle, template, onClose, onPrint }) => (
   <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
     <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden">
       <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
@@ -119,8 +194,8 @@ const PreviewModal = ({ learner, school, cardStyle, onClose, onPrint }) => (
           <X size={18} className="text-gray-500" />
         </button>
       </div>
-      <div className="p-6 flex justify-center">
-        <IDCard learner={learner} school={school} cardStyle={cardStyle} />
+      <div className="p-6 flex justify-center bg-gray-50/50">
+        <IDCard learner={learner} school={school} cardStyle={cardStyle} template={template} />
       </div>
       <div className="px-5 py-4 border-t border-gray-100 flex justify-end gap-2">
         <button onClick={onClose} className="px-4 py-2 text-sm font-bold text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100">
@@ -191,9 +266,24 @@ const IDPrintingPage = () => {
   const [previewLearner, setPreviewLearner] = useState(null);
   const [showStylePanel, setShowStylePanel] = useState(false);
   const [cardStyle, setCardStyle]       = useState(DEFAULT_STYLE);
+  const [activeTemplate, setActiveTemplate] = useState(null);
   const [printQueue, setPrintQueue]     = useState([]);           // learners to print
   const [toast, setToast]               = useState(null);
   const printRef = useRef(null);
+
+  useEffect(() => {
+    const fetchActiveTemplate = async () => {
+      try {
+        const resp = await idTemplateAPI.getActive();
+        if (resp.success && resp.data) {
+          setActiveTemplate(resp.data);
+        }
+      } catch (err) {
+        console.warn('No active template found, using default legacy layout');
+      }
+    };
+    fetchActiveTemplate();
+  }, []);
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
@@ -263,7 +353,7 @@ const IDPrintingPage = () => {
       )}
 
       {/* Hidden print sheet */}
-      <PrintSheet ref={printRef} learners={printQueue} school={school} cardStyle={cardStyle} />
+      <PrintSheet ref={printRef} learners={printQueue} school={school} cardStyle={cardStyle} template={activeTemplate} />
 
       {/* Toolbar */}
       <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
@@ -449,6 +539,7 @@ const IDPrintingPage = () => {
           learner={previewLearner}
           school={school}
           cardStyle={cardStyle}
+          template={activeTemplate}
           onClose={() => setPreviewLearner(null)}
           onPrint={handlePrint}
         />

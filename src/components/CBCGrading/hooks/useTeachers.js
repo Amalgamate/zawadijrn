@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../../services/api';
+import { refreshBus } from '../../../utils/refreshBus';
 
 export const useTeachers = () => {
   const [teachers, setTeachers] = useState([]);
@@ -71,7 +72,8 @@ export const useTeachers = () => {
       console.log('Teacher creation response:', response);
 
       if (response.success) {
-        await fetchTeachers(); // Refresh the list
+        await fetchTeachers();
+        refreshBus.emit('teachers');
         return { success: true, data: response.data };
       }
     } catch (err) {
@@ -95,7 +97,8 @@ export const useTeachers = () => {
       const response = await api.teachers.update(id, teacherData);
 
       if (response.success) {
-        await fetchTeachers(); // Refresh the list
+        await fetchTeachers();
+        refreshBus.emit('teachers');
         return { success: true, data: response.data };
       }
     } catch (err) {
@@ -118,7 +121,8 @@ export const useTeachers = () => {
       const response = await api.teachers.delete(id);
 
       if (response.success) {
-        await fetchTeachers(); // Refresh the list
+        await fetchTeachers();
+        refreshBus.emit('teachers');
         return { success: true };
       }
     } catch (err) {
@@ -141,7 +145,8 @@ export const useTeachers = () => {
       const response = await api.users.archive(id);
 
       if (response.success) {
-        await fetchTeachers(); // Refresh the list
+        await fetchTeachers();
+        refreshBus.emit('teachers');
         return { success: true };
       }
     } catch (err) {

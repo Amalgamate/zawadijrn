@@ -5,7 +5,7 @@
 
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/permissions.middleware';
-import { Grade, Term } from '@prisma/client';
+import { Term } from '@prisma/client';
 import prisma from '../config/database';
 import { redisCacheService } from '../services/redis-cache.service';
 import { ApiError } from '../utils/error.util';
@@ -54,7 +54,7 @@ export const bulkCreateGradingScales = async (req: AuthRequest, res: Response) =
         await prisma.gradingSystem.create({
           data: {
             name: scaleName,
-            grade: grade as Grade,
+            grade: grade as any,
             learningArea,
             type: 'SUMMATIVE',
             active: true,
@@ -63,7 +63,7 @@ export const bulkCreateGradingScales = async (req: AuthRequest, res: Response) =
                 minPercentage: r.minPercentage,
                 maxPercentage: r.maxPercentage,
                 points: r.points,
-                summativeGrade: r.grade as any,
+                summativeGrade: r.grade,
                 label: r.label,
                 color: r.color,
               })),
@@ -132,6 +132,7 @@ export const bulkCreateSummativeTests = async (req: AuthRequest, res: Response) 
           status: 'PUBLISHED',
           weight: parseFloat(String(weight)),
           published: true,
+          testType: 'ASSESSMENT',
           active: true,
         },
       });
@@ -182,7 +183,7 @@ export const completeSchoolSetup = async (req: AuthRequest, res: Response) => {
         await prisma.gradingSystem.create({
           data: {
             name: scaleName,
-            grade: grade as Grade,
+            grade: grade as any,
             learningArea,
             type: 'SUMMATIVE',
             active: true,
@@ -192,7 +193,7 @@ export const completeSchoolSetup = async (req: AuthRequest, res: Response) => {
                 minPercentage: r.minPercentage,
                 maxPercentage: r.maxPercentage,
                 points: r.points,
-                summativeGrade: r.grade as any,
+                summativeGrade: r.grade,
                 label: r.label,
                 color: r.color,
               })),

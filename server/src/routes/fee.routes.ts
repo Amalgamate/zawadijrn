@@ -19,18 +19,39 @@ const router = Router();
 const feeController = new FeeController();
 
 // Validation schemas
-const createFeeStructureSchema = z.object({
-  name: z.string().min(2).max(100),
-  grade: z.enum(['Grade1', 'Grade2', 'Grade3', 'Grade4', 'Grade5', 'Grade6']),
-  amount: z.number().min(0),
-  dueDate: z.string().datetime().optional()
+const feeStructureItemSchema = z.object({
+  feeTypeId: z.string().min(1),
+  amount: z.union([z.string(), z.number()]).transform((value) => String(value)),
+  mandatory: z.boolean().optional()
 });
 
+const createFeeStructureSchema = z.object({
+  name: z.string().min(2).max(100),
+  description: z.string().optional(),
+  grade: z.string().min(1).optional(),
+  term: z.string().min(1).optional(),
+  academicYear: z.number().int().min(2000),
+  mandatory: z.boolean().optional(),
+  active: z.boolean().optional(),
+  feeItems: z.array(feeStructureItemSchema).min(1)
+});
+
+const updateFeeStructureSchema = createFeeStructureSchema.partial();
+
 const processPaymentSchema = z.object({
-  learnerId: z.string().min(1),
+  invoiceId: z.string().min(1).optional(),
+  learnerId: z.string().min(1).optional(),
   amount: z.number().min(0),
   paymentMethod: z.enum(['CASH', 'BANK_TRANSFER', 'CHEQUE', 'MPESA']),
-  transactionId: z.string().min(1).optional()
+  transactionId: z.string().min(1).optional(),
+  notes: z.string().optional()
+}).superRefine((data, ctx) => {
+  if (!data.invoiceId && !data.learnerId) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Either invoiceId or learnerId must be provided'
+    });
+  }
 });
 
 router.use(authenticate, requireSchoolContext);
@@ -79,7 +100,7 @@ router.put(
   '/structures/:id',
   requireRole(['ACCOUNTANT', 'ADMIN', 'SUPER_ADMIN']),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
-  validate(createFeeStructureSchema),
+  validate(updateFeeStructureSchema),
   auditLog('UPDATE_FEE_STRUCTURE'),
   asyncHandler(feeController.updateFeeStructure)
 );

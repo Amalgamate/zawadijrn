@@ -8,14 +8,20 @@ export const cbcAPI = {
     const queryString = new URLSearchParams(params).toString();
     return fetchWithAuth(`/cbc/competencies/${learnerId}${queryString ? `?${queryString}` : ''}`);
   },
+  saveCompetenciesBulk: async (data) =>
+    fetchWithAuth('/cbc/competencies/bulk', { method: 'POST', body: JSON.stringify(data) }),
   saveValues: async (data) =>
     fetchWithAuth('/cbc/values', { method: 'POST', body: JSON.stringify(data) }),
+  saveValuesBulk: async (data) =>
+    fetchWithAuth('/cbc/values/bulk', { method: 'POST', body: JSON.stringify(data) }),
   getValues: async (learnerId, params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     return fetchWithAuth(`/cbc/values/${learnerId}${queryString ? `?${queryString}` : ''}`);
   },
   createCoCurricular: async (data) =>
     fetchWithAuth('/cbc/cocurricular', { method: 'POST', body: JSON.stringify(data) }),
+  createCoCurricularBulk: async (data) =>
+    fetchWithAuth('/cbc/cocurricular/bulk', { method: 'POST', body: JSON.stringify(data) }),
   getCoCurricular: async (learnerId, params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     return fetchWithAuth(`/cbc/cocurricular/${learnerId}${queryString ? `?${queryString}` : ''}`);

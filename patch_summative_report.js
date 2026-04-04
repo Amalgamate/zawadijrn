@@ -1,5 +1,6 @@
 /**
- * patch_summative_report.js
+ * patch_summative_report.js  —  OBSOLETE — DO NOT RUN
+ * All fixes permanently applied. Kept for historical reference only.
  * Run once from the project root:  node patch_summative_report.js
  * Applies two PDF fixes to SummativeReport.jsx:
  *   Fix 1 — Recharts ResponsiveContainer replaced with static SVG

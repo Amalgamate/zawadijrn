@@ -156,6 +156,28 @@ export class EmailService {
       throw error; // We throw here because password reset is critical
     }
   }
+
+  static async sendNotificationEmail(data: { to: string; subject: string; html: string; text?: string }): Promise<void> {
+    const { to, subject, html, text } = data;
+    if (!to) {
+      console.warn('EmailService.sendNotificationEmail skipped: missing recipient');
+      return;
+    }
+
+    try {
+      await this.transporter.sendMail({
+        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        to,
+        subject,
+        text,
+        html,
+      });
+      console.log(`📧 Notification email sent to ${to}`);
+    } catch (error) {
+      console.error('❌ Failed to send notification email:', error);
+    }
+  }
+
   static async sendFeeInvoiceEmail(data: {
     to: string;
     schoolName: string;

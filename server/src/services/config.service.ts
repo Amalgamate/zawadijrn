@@ -4,7 +4,7 @@
  * Handles defaults, validation, and configuration retrieval
  */
 
-import { Term, Grade, FormativeAssessmentType, AggregationStrategy } from '@prisma/client';
+import { Term, FormativeAssessmentType, AggregationStrategy, Grade } from '@prisma/client';
 import prisma from '../config/database';
 import { redisCacheService } from './redis-cache.service';
 
@@ -33,7 +33,7 @@ interface UpdateTermConfigInput {
 }
 
 interface CreateAggregationConfigInput {
-  grade?: Grade;
+  grade?: Grade | null;
   learningArea?: string;
   type: FormativeAssessmentType;
   strategy: AggregationStrategy;
@@ -57,7 +57,7 @@ interface StreamConfigInput {
 interface UpsertClassInput {
   id?: string;
   name: string;
-  grade: Grade;
+  grade: string;
   stream?: string | null;
   teacherId?: string | null;
   capacity?: number;
@@ -340,7 +340,7 @@ export class ConfigService {
 
   async getAggregationConfig(params: {
     assessmentType: FormativeAssessmentType;
-    grade?: Grade;
+    grade?: Grade | null;
     learningArea?: string;
   }): Promise<any> {
     const { assessmentType, grade, learningArea } = params;
@@ -479,7 +479,7 @@ export class ConfigService {
     return configs;
   }
 
-  async getSpecificAggregationConfig(params: { type: FormativeAssessmentType; grade?: Grade }): Promise<any> {
+  async getSpecificAggregationConfig(params: { type: FormativeAssessmentType; grade?: Grade | null }): Promise<any> {
     const { type, grade } = params;
     return await prisma.aggregationConfig.findFirst({
       where: {

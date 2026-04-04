@@ -2,7 +2,7 @@ import { Router, Response } from 'express';
 import { AuthRequest } from '../../middleware/permissions.middleware';
 import { rateLimit } from '../../middleware/enhanced-rateLimit.middleware';
 import { auditLog } from '../../middleware/permissions.middleware';
-import { Grade, Term, SummativeGrade, TestStatus } from '@prisma/client';
+import { Term, TestStatus } from '@prisma/client';
 import prisma from '../../config/database';
 import multer from 'multer';
 import ExcelJS from 'exceljs';
@@ -18,7 +18,7 @@ const upload = multer({
 /**
  * Helper to calculate grade based on percentage
  */
-function calculateGrade(percentage: number): SummativeGrade {
+function calculateGrade(percentage: number): string {
     if (percentage >= 80) return 'A';
     if (percentage >= 70) return 'B';
     if (percentage >= 60) return 'C';
@@ -110,7 +110,7 @@ router.post(
             let test = await prisma.summativeTest.findFirst({
                 where: {
                     learningArea: la,
-                    grade: grade as Grade,
+                    grade: grade as any,
                     term: term as Term,
                     academicYear: yearInt,
                     archived: false
@@ -122,7 +122,7 @@ router.post(
                     data: {
                         title: `${la} - ${term} ${yearInt}`,
                         learningArea: la,
-                        grade: grade as Grade,
+                        grade: grade as any,
                         term: term as Term,
                         academicYear: yearInt,
                         testDate: new Date(),

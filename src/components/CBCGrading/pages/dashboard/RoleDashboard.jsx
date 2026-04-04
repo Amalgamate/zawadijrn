@@ -12,6 +12,7 @@ import ParentDashboard from './ParentDashboard';
 import AccountantDashboard from './AccountantDashboard';
 import ReceptionistDashboard from './ReceptionistDashboard';
 import MobileDashboard from './MobileDashboard';
+import StudentDashboard from '../student/StudentDashboard';
 import useMediaQuery from '../../hooks/useMediaQuery';
 
 const RoleDashboard = ({ learners, pagination, teachers, user, onNavigate, brandingSettings }) => {
@@ -36,6 +37,9 @@ const RoleDashboard = ({ learners, pagination, teachers, user, onNavigate, brand
 
     case 'PARENT':
       return <ParentDashboard user={user} onNavigate={onNavigate} />;
+
+    case 'STUDENT':
+      return <StudentDashboard user={user} onNavigate={onNavigate} />;
 
     case 'ACCOUNTANT':
       return <AccountantDashboard learners={learners} pagination={pagination} user={user} onNavigate={onNavigate} />;

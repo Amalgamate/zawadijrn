@@ -1,5 +1,6 @@
 /**
- * patch_header_spacing.js
+ * patch_header_spacing.js  —  OBSOLETE — DO NOT RUN
+ * All fixes permanently applied. Kept for historical reference only.
  * ─────────────────────────────────────────────────────────────────────────────
  * Run once from the project root:
  *   node patch_header_spacing.js

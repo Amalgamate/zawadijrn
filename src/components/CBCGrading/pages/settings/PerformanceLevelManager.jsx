@@ -100,8 +100,8 @@ const PerformanceLevelManager = () => {
         gradingAPI.getScaleGroups(),
         gradingAPI.getSystems()
       ]);
-      setScaleGroups(groups.data || []);
-      setGradingSystems(systems || []);
+      setScaleGroups(groups?.success ? groups.data : (groups.data || groups || []));
+      setGradingSystems(systems?.success ? systems.data : (systems.data || systems || []));
     } catch (err) {
       showError('Failed to load performance scales: ' + (err.message || 'Unknown error'));
     } finally {

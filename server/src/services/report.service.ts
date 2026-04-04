@@ -1,9 +1,19 @@
-import { Term, DetailedRubricRating, SummativeGrade } from '@prisma/client';
+import { Term, DetailedRubricRating } from '@prisma/client';
 import prisma from '../config/database';
 import * as rubricUtil from '../utils/rubric.util';
 import { gradingService } from './grading.service';
 import { calculationService } from './calculation.service';
 import { aiAssistantService } from './ai-assistant.service';
+
+const LEGACY_SUMMATIVE_CBC_GRADES: string[] = ['A', 'B', 'C', 'D', 'E'];
+
+function isValidCbcGrade(value: string | null | undefined, cbcRanges?: any[]): boolean {
+  if (!value) return false;
+  if (cbcRanges) {
+    return cbcRanges.some((range: any) => range.rubricRating === value);
+  }
+  return !LEGACY_SUMMATIVE_CBC_GRADES.includes(value);
+}
 
 // ============================================
 // TYPE DEFINITIONS
@@ -49,7 +59,7 @@ export interface SummativeResultData {
   id: string;
   marksObtained: number;
   percentage: number;
-  grade: SummativeGrade;
+  grade: string;
   status: string;
   position: number | null;
   outOf: number | null;
@@ -379,14 +389,14 @@ async function fetchAttendanceRecords(learnerId: string, term: Term, academicYea
 
 async function fetchCoreCompetencies(learnerId: string, term: Term, academicYear: number) {
   return await prisma.coreCompetency.findFirst({
-    where: { learnerId, term, academicYear },
+    where: { learnerId, term, academicYear, archived: false },
     include: { assessor: { select: { firstName: true, lastName: true } } }
   });
 }
 
 async function fetchValuesAssessment(learnerId: string, term: Term, academicYear: number) {
   return await prisma.valuesAssessment.findFirst({
-    where: { learnerId, term, academicYear }
+    where: { learnerId, term, academicYear, archived: false }
   });
 }
 
@@ -457,15 +467,17 @@ function calculateSummativeSummary(results: any[], summativeRanges?: any[], cbcR
 
   const bySubject = Array.from(subjectMap.entries()).map(([subject, data]) => {
     const avg = Math.round(data.percentages.reduce((sum, p) => sum + p, 0) / data.percentages.length);
-    
-    // Use stored cbcGrade if all results for this subject have it, otherwise calculate from avg
-    let cbcGrade = data.cbcGrades.length === data.percentages.length && data.cbcGrades.length > 0
-      ? data.cbcGrades[0] // Simplify: just pick the first one if they match, or just calculate from average
-      : (cbcRanges ? gradingService.calculateRatingSync(avg, cbcRanges) : 'ME');
+    const validCbcGrades = data.cbcGrades.filter((grade) => isValidCbcGrade(grade, cbcRanges));
 
-    // If multiple tests for one subject, calculate CBC grade from the average percentage
-    if (data.percentages.length > 1 && cbcRanges) {
+    let cbcGrade: string;
+    if (validCbcGrades.length === data.percentages.length && validCbcGrades.length > 0) {
+      const firstGrade = validCbcGrades[0];
+      const allSame = validCbcGrades.every((grade) => grade === firstGrade);
+      cbcGrade = allSame ? firstGrade : (cbcRanges ? gradingService.calculateRatingSync(avg, cbcRanges) : firstGrade);
+    } else if (cbcRanges) {
       cbcGrade = gradingService.calculateRatingSync(avg, cbcRanges);
+    } else {
+      cbcGrade = 'ME';
     }
 
     return {

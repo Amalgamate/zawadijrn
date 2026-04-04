@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Save, X, ArrowRight, ArrowLeft, CheckCircle, User, Users as UsersIcon, Heart, Trash2 } from 'lucide-react';
+import { Save, X, ArrowRight, ArrowLeft, CheckCircle, User, Users as UsersIcon, Heart, Trash2, Loader } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
 import { useAuth } from '../../../hooks/useAuth';
 import { configAPI, learnerAPI } from '../../../services/api';
@@ -21,6 +21,7 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
   const [availableStreams, setAvailableStreams] = useState([]);
   const [availableGrades, setAvailableGrades] = useState([]);
   const [isDraft, setIsDraft] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [stepErrors, setStepErrors] = useState({}); // Track validation errors per step
@@ -376,6 +377,7 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
 
     // Success logic managed by onSave handler
     if (onSave) {
+      setIsSaving(true);
       const result = await onSave(finalFormData);
       console.log('📥 Save result:', result);
 
@@ -399,6 +401,7 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
         console.log('❌ Save failed:', result?.error);
         showError('Failed to create student: ' + (result?.error || 'Unknown error'));
       }
+      setIsSaving(false);
     }
   };
 
@@ -824,8 +827,22 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
                     <span className="hidden sm:inline">Next Step</span><span className="inline sm:hidden">Next</span> <ArrowRight size={16} />
                   </button>
                 ) : (
-                  <button type="submit" className="flex items-center gap-2 px-4 md:px-5 py-2.5 bg-brand-purple text-white rounded-md hover:bg-brand-purple/90 transition-all shadow-md text-sm font-bold">
-                    <Save size={16} /> {isEdit ? 'Save Changes' : 'Complete Admission'}
+                  <button 
+                    type="submit" 
+                    disabled={isSaving}
+                    className="flex items-center gap-2 px-4 md:px-5 py-2.5 bg-brand-purple text-white rounded-md hover:bg-brand-purple/90 transition-all shadow-md text-sm font-bold disabled:opacity-70 disabled:cursor-wait"
+                  >
+                    {isSaving ? (
+                      <>
+                        <Loader size={16} className="animate-spin" />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save size={16} /> 
+                        {isEdit ? 'Save Changes' : 'Complete Admission'}
+                      </>
+                    )}
                   </button>
                 )}
               </div>

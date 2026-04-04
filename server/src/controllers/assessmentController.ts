@@ -3,7 +3,7 @@ import prisma from '../config/database';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { gradingService } from '../services/grading.service';
 import { auditService } from '../services/audit.service';
-import { AssessmentStatus, CurriculumType, Grade } from '@prisma/client';
+import { AssessmentStatus, CurriculumType, FormativeAssessmentType, Term, SummativeTestType } from '@prisma/client';
 import { aiAssistantService } from '../services/ai-assistant.service';
 import { detailedToGeneralRating } from '../utils/rubric.util';
 import { redisCacheService } from '../services/redis-cache.service';
@@ -73,7 +73,7 @@ export const getBulkFormativeResults = async (req: AuthRequest, res: Response) =
     const whereClause: any = {
       archived: false,
       learner: {
-        grade: grade as Grade,
+        grade: grade as string,
         ...(stream ? { stream: stream as string } : {})
       },
       term: String(term).toUpperCase().replace(/\s+/g, '_'),
@@ -253,23 +253,75 @@ export const recordFormativeResultsBulk = async (req: AuthRequest, res: Response
       valid.push(a);
     }
 
-    // Pre-fetch existing owner IDs to enforce "Edit Own"
-    const existingAssessments = await prisma.formativeAssessment.findMany({
-      where: {
-        learnerId: { in: valid.map(v => v.learnerId) },
-        term: valid[0]?.term,
-        academicYear: parseInt(valid[0]?.academicYear),
-        learningArea: valid[0]?.learningArea,
-        type: valid[0]?.type ?? 'OTHER',
-        title: valid[0]?.title ?? ''
-      },
-      select: { learnerId: true, teacherId: true }
-    });
-    const ownerMap = new Map(existingAssessments.map(a => [a.learnerId, a.teacherId]));
+    // Pre-fetch existing assessments by composite key so we can enforce lock state
+    // and preserve the "Edit Own" rule for bulk upserts.
+    const bulkKeys = new Map<string, {
+      learnerId: string;
+      term: Term;
+      academicYear: number;
+      learningArea: string;
+      type: FormativeAssessmentType;
+      title: string;
+    }>();
+
+    for (const assessment of valid) {
+      const key = `${assessment.learnerId}::${assessment.term}::${assessment.academicYear}::${assessment.learningArea}::${assessment.type ?? 'OTHER'}::${assessment.title ?? ''}`;
+      bulkKeys.set(key, {
+        learnerId: assessment.learnerId,
+        term: assessment.term as Term,
+        academicYear: parseInt(assessment.academicYear),
+        learningArea: assessment.learningArea,
+        type: assessment.type ? assessment.type as FormativeAssessmentType : 'OTHER',
+        title: assessment.title ?? ''
+      });
+    }
+
+    const existingAssessments = bulkKeys.size > 0
+      ? await prisma.formativeAssessment.findMany({
+          where: {
+            OR: Array.from(bulkKeys.values()).map(key => ({
+              learnerId: key.learnerId,
+              term: key.term,
+              academicYear: key.academicYear,
+              learningArea: key.learningArea,
+              type: key.type,
+              title: key.title
+            }))
+          },
+          select: {
+            id: true,
+            learnerId: true,
+            term: true,
+            academicYear: true,
+            learningArea: true,
+            type: true,
+            title: true,
+            teacherId: true,
+            locked: true,
+            status: true
+          }
+        })
+      : [];
+
+    const ownerMap = new Map(existingAssessments.map(a => [
+      `${a.learnerId}::${a.term}::${a.academicYear}::${a.learningArea}::${a.type}::${a.title}`,
+      a.teacherId
+    ]));
+
+    const lockedExisting = existingAssessments.filter(a => a.locked || a.status === 'LOCKED');
+    const lockBypassRoles = ['ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER'];
+
+    if (lockedExisting.length > 0 && !lockBypassRoles.includes(req.user?.role || '')) {
+      return res.status(403).json({
+        success: false,
+        message: 'One or more existing formative assessments are locked and cannot be modified.'
+      });
+    }
 
     const saved = await prisma.$transaction(
       valid.map((a: any) => {
-        const ownerId = ownerMap.get(a.learnerId);
+        const ownerKey = `${a.learnerId}::${a.term}::${parseInt(a.academicYear)}::${a.learningArea}::${a.type ?? 'OTHER'}::${a.title ?? ''}`;
+        const ownerId = ownerMap.get(ownerKey);
         const canUpdate = !ownerId || ownerId === teacherId;
 
         return prisma.formativeAssessment.upsert({
@@ -436,8 +488,8 @@ export const deleteFormativeAssessment = async (req: AuthRequest, res: Response)
  *   intermediate transform dropped it, `testType` would be undefined and the
  *   "Missing required fields" guard would fire.
  *
- * FIX 2: Use cacheService.deleteByPrefix('tests:') instead of
- *   cacheService.delete('tests:all').
+ * FIX 2: Use redisCacheService.deleteByPrefix('tests:') instead of
+ *   redisCacheService.delete('tests:all').
  *   getSummativeTests stores keys as `tests:TERM_1:2026:::` etc., so the old
  *   literal-key delete never hit anything — cached results lived forever and
  *   newly-created tests never appeared until the 5-min TTL expired.
@@ -615,7 +667,7 @@ export const generateTestsBulk = async (req: AuthRequest, res: Response) => {
 
     const gradingSystems = await prisma.gradingSystem.findMany({
       where: {
-        grade: grade as any,
+        grade: grade as string,
         type: 'SUMMATIVE',
         active: true,
         archived: false,
@@ -1242,7 +1294,7 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
 
     const whereClause: any = {
       learner: {
-        grade: grade as Grade,
+        grade: grade as string,
         ...(stream ? { stream: stream as string } : {})
       },
       test: {
@@ -1363,7 +1415,7 @@ export const recordSummativeResultsBulk = async (req: AuthRequest, res: Response
     // ── 1. Fetch test + grading scale ─────────────────────────────────────────
     const test = await prisma.summativeTest.findUnique({
       where: { id: testId },
-      select: { id: true, totalMarks: true, passMarks: true, scaleId: true }
+      select: { id: true, totalMarks: true, passMarks: true, scaleId: true, grade: true }
     });
     if (!test) return res.status(404).json({ success: false, message: 'Test not found' });
 
@@ -1385,7 +1437,15 @@ export const recordSummativeResultsBulk = async (req: AuthRequest, res: Response
       where: { testId },
       select: { id: true, learnerId: true, marksObtained: true, recordedBy: true }
     });
-    const existingMap = new Map(existingResults.map(r => [r.learnerId, r]));
+    const existingMap = new Map<string, any>(existingResults.map((r: any) => [r.learnerId, r]));
+
+    // ── 2.5 Pre-fetch ALL learner grades for validation ──────────────────────
+    const learnerIds = results.map(r => r.learnerId);
+    const learners = await prisma.learner.findMany({
+      where: { id: { in: learnerIds } },
+      select: { id: true, grade: true, admissionNumber: true }
+    });
+    const learnerGradeMap = new Map(learners.map(l => [l.id, l]));
 
     // ── 3. Validate and build upsert payloads ─────────────────────────────────
     const skipped: Array<{ learnerId: string; reason: string }> = [];
@@ -1393,6 +1453,17 @@ export const recordSummativeResultsBulk = async (req: AuthRequest, res: Response
     const historyRows: any[] = [];
 
     for (const item of results) {
+      const learnerData = learnerGradeMap.get(item.learnerId);
+      
+      // Grade Match Guard: Ensure learner grade matches test grade
+      if (learnerData && learnerData.grade !== test.grade) {
+        skipped.push({ 
+          learnerId: item.learnerId, 
+          reason: `Grade mismatch: Learner is ${learnerData.grade}, Test is ${test.grade}` 
+        });
+        continue;
+      }
+
       if (item.marksObtained === undefined || item.marksObtained === null || item.marksObtained === '') {
         skipped.push({ learnerId: item.learnerId ?? 'unknown', reason: 'Marks not provided' });
         continue;

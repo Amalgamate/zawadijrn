@@ -14,7 +14,7 @@ const InventoryCategories = () => {
         try {
             setLoading(true);
             const data = await api.inventory.getCategories();
-            setCategories(data || []);
+            setCategories(data?.success ? data.data : (data || []));
         } catch (error) {
             console.error('Error fetching categories:', error);
         } finally {

@@ -18,8 +18,15 @@ const leaveRequestSchema = z.object({
 
 const performanceSchema = z.object({
   userId: z.string().min(1),
-  rating: z.number().min(1).max(5),
-  comments: z.string().max(1000).optional()
+  periodStart: z.string().min(1),
+  periodEnd: z.string().min(1),
+  technicalRating: z.number().min(1).max(5),
+  behavioralRating: z.number().min(1).max(5),
+  collaborationRating: z.number().min(1).max(5),
+  overallRating: z.number().min(1).max(5),
+  comments: z.string().max(1000).optional(),
+  goals: z.array(z.any()).optional(),
+  status: z.string().optional()
 });
 
 // ============================================

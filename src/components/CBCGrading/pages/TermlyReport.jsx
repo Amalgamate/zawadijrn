@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { FileText, Printer, Edit3, User, ArrowRight, Filter } from 'lucide-react';
+import { FileText, Printer, Edit3, User, ArrowRight, Filter, MessageSquarePlus } from 'lucide-react';
 import { generatePDFWithLetterhead } from '../../../utils/simplePdfGenerator';
 import { useNotifications } from '../hooks/useNotifications';
 import api from '../../../services/api';
@@ -13,6 +13,7 @@ import SmartLearnerSearch from '../shared/SmartLearnerSearch';
 import { useAssessmentSetup } from '../hooks/useAssessmentSetup';
 import { useLearnerSelection } from '../hooks/useLearnerSelection';
 import TermlyReportTemplate from '../templates/TermlyReportTemplate';
+import TermlyReportCommentsForm from '../../../pages/assessments/TermlyReportCommentsForm';
 
 const TermlyReport = ({ learners, brandingSettings, user }) => {
   const { showSuccess, showError } = useNotifications();
@@ -37,6 +38,7 @@ const TermlyReport = ({ learners, brandingSettings, user }) => {
   const [viewMode, setViewMode] = useState('setup'); // 'setup' | 'report'
   const [reportData, setReportData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [showCommentsForm, setShowCommentsForm] = useState(false);
 
   const fetchReportData = useCallback(async () => {
     if (!selection.selectedLearnerId) return;
@@ -229,6 +231,15 @@ const TermlyReport = ({ learners, brandingSettings, user }) => {
                 Change
               </button>
 
+              <button
+                onClick={() => setShowCommentsForm(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-sm font-semibold text-sm"
+                title="Add/Edit teacher comments for this report"
+              >
+                <MessageSquarePlus size={16} />
+                Comments
+              </button>
+
               <DownloadReportButton
                 onDownload={handleDownloadPDF}
                 label="PDF"
@@ -266,6 +277,29 @@ const TermlyReport = ({ learners, brandingSettings, user }) => {
             }} />
           </div>
         </>
+      )}
+
+      {/* Comments Slide-Over Panel */}
+      {showCommentsForm && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setShowCommentsForm(false)} />
+          <div className="relative bg-white w-full max-w-2xl h-full overflow-y-auto shadow-2xl">
+            <TermlyReportCommentsForm
+              prefill={{
+                learnerId: selectedLearnerId,
+                term: selectedTerm,
+                academicYear: setup.academicYear
+              }}
+              onBack={() => setShowCommentsForm(false)}
+              onSuccess={() => {
+                setShowCommentsForm(false);
+                showSuccess('Teacher comments saved successfully!');
+                // Re-fetch to display updated comments on the report
+                fetchReportData();
+              }}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

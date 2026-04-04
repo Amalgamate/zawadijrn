@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     User, Mail, Phone, BookOpen, GraduationCap,
     MapPin, FileText, Printer, Download,
@@ -27,11 +27,15 @@ const TeacherProfile = ({ teacher, onBack, onEdit }) => {
     const [workload, setWorkload] = useState(null);
     const [schedules, setSchedules] = useState([]);
     const [loadingWorkload, setLoadingWorkload] = useState(false);
+    const [documents, setDocuments] = useState([]);
+    const [loadingDocs, setLoadingDocs] = useState(false);
+    const fileInputRef = useRef(null);
 
     useEffect(() => {
         if (teacher?.id) {
             fetchBooks();
             fetchWorkload();
+            fetchDocuments();
         }
     }, [teacher?.id]);
 
@@ -48,6 +52,43 @@ const TeacherProfile = ({ teacher, onBack, onEdit }) => {
             console.error('Failed to fetch teacher workload/schedules:', err);
         } finally {
             setLoadingWorkload(false);
+        }
+    };
+
+    const fetchDocuments = async () => {
+        setLoadingDocs(true);
+        try {
+            const res = await api.documents.getAll({ uploadedById: teacher.id });
+            if (res.success) setDocuments(res.data || []);
+        } catch (error) {
+            console.error('Failed to fetch docs:', error);
+        } finally {
+            setLoadingDocs(false);
+        }
+    };
+
+    const handleUploadDoc = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('category', 'staff');
+            formData.append('name', file.name);
+            formData.append('userId', teacher.id); 
+
+            const res = await api.documents.upload(formData);
+            if (res.success) {
+                showSuccess('Document uploaded successfully');
+                fetchDocuments();
+            } else {
+                showError('Failed to upload document');
+            }
+        } catch (error) {
+            console.error('Upload error:', error);
+            showError('Failed to upload document');
+        } finally {
+            if (fileInputRef.current) fileInputRef.current.value = '';
         }
     };
 
@@ -123,11 +164,12 @@ const TeacherProfile = ({ teacher, onBack, onEdit }) => {
         }
     };
 
-    const documents = [
-        { id: 1, name: 'Employment Contract.pdf', date: '2018-05-12', size: '1.2 MB', url: '#' },
-        { id: 2, name: 'TSC Certificate.pdf', date: '2015-08-20', size: '2.5 MB', url: '#' },
-        { id: 3, name: 'JD_Senior_Teacher.docx', date: '2023-01-10', size: '450 KB', url: '#' },
-    ];
+    const formatSize = (bytes) => {
+        if (!bytes) return 'N/A';
+        const k = 1024, sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    };
 
     if (!teacher) return null;
 
@@ -461,7 +503,8 @@ const TeacherProfile = ({ teacher, onBack, onEdit }) => {
                                 </div>
                                 <h3 className="text-xl font-bold text-gray-900 tracking-tight">Professional Documents</h3>
                             </div>
-                            <button className="px-4 py-2 bg-white border border-gray-200 text-brand-teal rounded-lg font-bold text-sm hover:bg-gray-50 transition shadow-sm">
+                            <input type="file" ref={fileInputRef} onChange={handleUploadDoc} className="hidden" />
+                            <button onClick={() => fileInputRef.current?.click()} className="px-4 py-2 bg-white border border-gray-200 text-brand-teal rounded-lg font-bold text-sm hover:bg-gray-50 transition shadow-sm">
                                 Upload New
                             </button>
                         </div>
@@ -476,9 +519,9 @@ const TeacherProfile = ({ teacher, onBack, onEdit }) => {
                                             <div>
                                                 <p className="font-black text-gray-900 tracking-tight">{doc.name}</p>
                                                 <div className="flex items-center gap-2 mt-1">
-                                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-gray-100 px-1.5 py-0.5 rounded">{doc.size}</span>
+                                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-gray-100 px-1.5 py-0.5 rounded">{formatSize(doc.size)}</span>
                                                     <span className="text-gray-300">•</span>
-                                                    <span className="text-xs text-gray-500 font-medium">Uploaded on {new Date(doc.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                                                    <span className="text-xs text-gray-500 font-medium">Uploaded on {new Date(doc.createdAt || doc.date || Date.now()).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -490,9 +533,9 @@ const TeacherProfile = ({ teacher, onBack, onEdit }) => {
                                             >
                                                 <Share2 size={18} />
                                             </button>
-                                            <button className="p-2.5 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition shadow-sm" title="Download">
+                                            <a href={doc.url} download target="_blank" rel="noopener noreferrer" className="p-2.5 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition shadow-sm inline-flex items-center" title="Download">
                                                 <Download size={18} />
-                                            </button>
+                                            </a>
                                         </div>
                                     </div>
                                 ))

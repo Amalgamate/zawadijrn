@@ -7,10 +7,14 @@ import prisma from '../config/database';
 import bcrypt from 'bcrypt';
 import { ApiError } from '../utils/error.util';
 import { AuthRequest } from '../middleware/permissions.middleware';
-import { Grade, LearnerStatus, Gender } from '@prisma/client';
+import { LearnerStatus, Gender } from '@prisma/client';
 import { generateAdmissionNumber } from '../services/admissionNumber.service';
 import { feeService } from '../services/fee.service';
+import { SmsService } from '../services/sms.service';
+import { EmailService } from '../services/email.service';
 import { v2 as cloudinary } from 'cloudinary';
+
+const SKIP_PARENT_PORTAL_NOTIFICATIONS = process.env.SKIP_PARENT_PORTAL_NOTIFICATIONS === 'true' || process.env.NODE_ENV === 'test';
 
 export class LearnerController {
   async getAllLearners(req: AuthRequest, res: Response) {
@@ -21,7 +25,7 @@ export class LearnerController {
 
     let whereClause: any = { archived: false };
     if (currentUserRole === 'PARENT') whereClause.parentId = currentUserId;
-    if (grade) whereClause.grade = grade as Grade;
+    if (grade) whereClause.grade = String(grade);
     if (stream) whereClause.stream = String(stream);
     if (status) whereClause.status = status as LearnerStatus;
     if (search) {
@@ -129,32 +133,90 @@ export class LearnerController {
     if (existing) throw new ApiError(400, `Admission number ${admissionNumber} already exists`);
 
     try {
-      if (!parentId && guardianPhone) {
-        let parent = await prisma.user.findFirst({ where: { phone: guardianPhone, role: 'PARENT' } });
-        if (!parent) {
-          const nameParts = guardianName ? guardianName.split(' ') : ['Parent'];
-          const pFirstName = nameParts[0];
-          const pLastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Guardian';
-          const pEmail = guardianEmail?.includes('@') ? guardianEmail : `${guardianPhone.replace(/\D/g, '')}@zawadisms.com`;
-          const existingEmail = await prisma.user.findUnique({ where: { email: pEmail } });
-          const finalEmail = existingEmail ? `${guardianPhone.replace(/\D/g, '')}-${Date.now()}@zawadisms.com` : pEmail;
-          parent = await prisma.user.create({
-            data: { firstName: pFirstName, lastName: pLastName, email: finalEmail, phone: guardianPhone, password: await bcrypt.hash('ChangeMe123!', 12), role: 'PARENT', status: 'ACTIVE' },
+      // Automatic Parent Account Registration
+      if (!parentId) {
+        // Support fallback chain: guardian details -> primary contact details
+        const pPhone = guardianPhone || primaryContactPhone;
+        const pName  = guardianName  || primaryContactName || 'Parent';
+        const pEmail = (guardianEmail || primaryContactEmail)?.includes('@') 
+          ? (guardianEmail || primaryContactEmail) 
+          : `${pPhone?.replace(/\D/g, '')}@zawadisms.com`;
+
+        if (pPhone) {
+          let parent = await prisma.user.findFirst({ 
+            where: { phone: pPhone, role: 'PARENT' } 
           });
+
+          if (!parent) {
+            const nameParts = pName.split(' ');
+            const pFirstName = nameParts[0] || 'Parent';
+            const pLastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Guardian';
+            const existingEmail = await prisma.user.findUnique({ where: { email: pEmail } });
+            const finalEmail = existingEmail ? `${pPhone.replace(/\D/g, '')}-${Date.now()}@zawadisms.com` : pEmail;
+            const parentPassword = 'Parent123!';
+            
+            parent = await prisma.user.create({
+              data: {
+                username: finalEmail,
+                firstName: pFirstName,
+                lastName: pLastName,
+                email: finalEmail,
+                phone: pPhone,
+                password: await bcrypt.hash(parentPassword, 12),
+                role: 'PARENT',
+                status: 'ACTIVE'
+              }
+            });
+
+            if (!SKIP_PARENT_PORTAL_NOTIFICATIONS) {
+              const portalUrl = process.env.PARENT_PORTAL_URL || process.env.APP_URL || 'https://parents.zawadisms.com';
+              const credentialsMessage =
+                `Hello ${pFirstName}, your Parent Portal account is ready. Login at ${portalUrl} with email ${finalEmail} and password ${parentPassword}. Please change your password after first login.`;
+
+              try {
+                await SmsService.sendSms(pPhone, credentialsMessage);
+              } catch (smsError: any) {
+                console.warn('[createLearner] Parent portal SMS failed:', smsError?.message || smsError);
+              }
+
+              if (pEmail?.includes('@')) {
+                try {
+                  await EmailService.sendNotificationEmail({
+                    to: pEmail,
+                    subject: 'Parent Portal Login Credentials',
+                    text: credentialsMessage,
+                    html: `<p>${credentialsMessage}</p>`
+                  });
+                } catch (emailError: any) {
+                  console.warn('[createLearner] Parent portal email failed:', emailError?.message || emailError);
+                }
+              }
+            }
+          }
+          parentId = parent.id;
         }
-        parentId = parent.id;
       }
 
-      let finalPhotoUrl = photo;
+      let finalPhotoUrl: string | undefined = undefined;
       if (photo && photo.startsWith('data:image')) {
-        const result = await cloudinary.uploader.upload(photo, { folder: 'zawadi/photos' });
-        finalPhotoUrl = result.secure_url;
+        const cloudName = process.env.CLOUDINARY_URL || process.env.CLOUDINARY_CLOUD_NAME;
+        if (cloudName) {
+          try {
+            const result = await cloudinary.uploader.upload(photo, { folder: 'zawadi/photos' });
+            finalPhotoUrl = result.secure_url;
+          } catch (uploadErr: any) {
+            console.warn('Cloudinary upload failed, skipping photo:', uploadErr.message);
+          }
+        } else {
+          // Cloudinary not configured — skip storing the base64 to avoid DB bloat
+          console.warn('[createLearner] Cloudinary not configured, photo skipped.');
+        }
       }
 
       const learner = await prisma.learner.create({
         data: {
           admissionNumber, firstName, lastName, middleName,
-          dateOfBirth: new Date(dateOfBirth), gender: gender as Gender, grade: grade as Grade,
+          dateOfBirth: new Date(dateOfBirth), gender: gender as Gender, grade: String(grade) as any,
           stream: stream || 'A', parentId, guardianName, guardianPhone, guardianEmail,
           medicalConditions, allergies, emergencyContact, emergencyPhone, bloodGroup,
           address, county, subCounty, previousSchool, religion, specialNeeds,
@@ -188,7 +250,8 @@ export class LearnerController {
 
       res.status(201).json({ success: true, data: learner, message: 'Learner created successfully' });
     } catch (createError: any) {
-      throw new ApiError(500, `Creation failed: ${createError.message}`);
+      console.error('[createLearner] Full error:', createError);
+      throw new ApiError(500, `Creation failed: ${createError.message || JSON.stringify(createError)}`);
     }
   }
 
@@ -227,7 +290,7 @@ export class LearnerController {
           continue;
         }
         if (field === 'grade') {
-          if (val && val !== '') updateData.grade = val as Grade;
+          if (val && val !== '') updateData.grade = String(val);
           continue;
         }
         if (field === 'status') {
@@ -245,6 +308,48 @@ export class LearnerController {
         updateData[field] = val === '' ? null : val;
       }
 
+      // Automatic Parent Account Registration on update if still missing
+      let parentId = updateData.parentId || learner.parentId;
+      if (!parentId) {
+        const pPhone = req.body.guardianPhone || req.body.primaryContactPhone;
+        const pName  = req.body.guardianName  || req.body.primaryContactName || (req.body.firstName ? "Parent" : null);
+        const pEmail = (req.body.guardianEmail || req.body.primaryContactEmail)?.includes('@') 
+          ? (req.body.guardianEmail || req.body.primaryContactEmail) 
+          : (pPhone ? `${pPhone.replace(/\D/g, '')}@zawadisms.com` : null);
+
+        if (pPhone) {
+          let parent = await prisma.user.findFirst({ where: { phone: pPhone, role: 'PARENT' } });
+          if (!parent) {
+            const nameParts = (pName || 'Parent').split(' ');
+            const pFirstName = nameParts[0] || 'Parent';
+            const pLastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Guardian';
+            const existingEmail = await prisma.user.findUnique({ where: { email: pEmail } });
+            const finalEmail = existingEmail ? `${pPhone.replace(/\D/g, '')}-${Date.now()}@zawadisms.com` : pEmail;
+            const parentPassword = 'Parent123!';
+            
+            parent = await prisma.user.create({
+              data: {
+                username: finalEmail,
+                firstName: pFirstName, lastName: pLastName,
+                email: finalEmail, phone: pPhone,
+                password: await bcrypt.hash(parentPassword, 12),
+                role: 'PARENT', status: 'ACTIVE'
+              }
+            });
+
+            if (!SKIP_PARENT_PORTAL_NOTIFICATIONS) {
+              const portalUrl = process.env.PARENT_PORTAL_URL || process.env.APP_URL || 'https://parents.zawadisms.com';
+              const credentialsMessage = `Hello ${pFirstName}, your Parent Portal account is ready. Login at ${portalUrl} with email ${finalEmail} and password ${parentPassword}.`;
+              try { await SmsService.sendSms(pPhone, credentialsMessage); } catch {}
+              if (pEmail?.includes('@')) {
+                try { await EmailService.sendNotificationEmail({ to: pEmail, subject: 'Parent Portal Login Credentials', text: credentialsMessage, html: `<p>${credentialsMessage}</p>` }); } catch {}
+              }
+            }
+          }
+          updateData.parentId = parent.id;
+        }
+      }
+
       // Date fields — parse only when provided and non-empty
       if (req.body.dateOfBirth && req.body.dateOfBirth !== '') {
         updateData.dateOfBirth = new Date(req.body.dateOfBirth);
@@ -260,8 +365,16 @@ export class LearnerController {
       if (req.body.photo && req.body.photo !== '') {
         let finalPhotoUrl = req.body.photo;
         if (req.body.photo.startsWith('data:image')) {
-          const result = await cloudinary.uploader.upload(req.body.photo, { folder: 'zawadi/photos' });
-          finalPhotoUrl = result.secure_url;
+          const cloudName = process.env.CLOUDINARY_URL || process.env.CLOUDINARY_CLOUD_NAME;
+          if (cloudName) {
+            try {
+              const result = await cloudinary.uploader.upload(req.body.photo, { folder: 'zawadi/photos' });
+              finalPhotoUrl = result.secure_url;
+            } catch (uploadErr: any) {
+              console.warn('Cloudinary upload failed, keeping base64:', uploadErr.message);
+            }
+          }
+          // If Cloudinary not configured, finalPhotoUrl stays as base64
         }
         updateData.photoUrl = finalPhotoUrl;
       }
@@ -303,7 +416,7 @@ export class LearnerController {
     const { grade } = req.params;
     const { stream, status = 'ACTIVE' } = req.query;
     const learners = await prisma.learner.findMany({
-      where: { grade: grade as Grade, status: status as LearnerStatus, stream: stream ? (stream as string) : undefined, archived: false },
+      where: { grade: String(grade), status: status as LearnerStatus, stream: stream ? (stream as string) : undefined, archived: false },
       include: { parent: { select: { id: true, firstName: true, lastName: true, phone: true } } },
       orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
     });
@@ -336,7 +449,7 @@ export class LearnerController {
 
   async promoteLearners(req: AuthRequest, res: Response) {
     const { learnerIds, nextGrade } = req.body;
-    const result = await prisma.$transaction(learnerIds.map((id: string) => prisma.learner.update({ where: { id }, data: { grade: nextGrade as Grade, updatedBy: req.user!.userId } })));
+    const result = await prisma.$transaction(learnerIds.map((id: string) => prisma.learner.update({ where: { id }, data: { grade: String(nextGrade), updatedBy: req.user!.userId } })));
     res.json({ success: true, message: `Promoted ${result.length} learners` });
   }
 }

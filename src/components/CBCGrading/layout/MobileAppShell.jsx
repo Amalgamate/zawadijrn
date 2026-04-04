@@ -1,9 +1,12 @@
 import React from 'react';
 import { usePermissions } from '../../../hooks/usePermissions';
 import { PAGE_TITLES } from '../utils/constants';
+import { usePWAInstall } from '../../../hooks/usePWAInstall';
+import { Download } from 'lucide-react';
 
 const MobileAppShell = ({ children, user, onLogout, onNavigate, currentPage, brandingSettings, setBrandingSettings }) => {
   const { role } = usePermissions();
+  const { isInstallable, installApp } = usePWAInstall();
 
   return (
     <div className="flex flex-col h-screen bg-gray-50 overflow-hidden relative">
@@ -17,7 +20,15 @@ const MobileAppShell = ({ children, user, onLogout, onNavigate, currentPage, bra
             {brandingSettings?.schoolName || 'Zawadi Junior'}
           </span>
         </div>
-        <div className="flex items-center">
+        <div className="flex items-center gap-2">
+          {isInstallable && (
+            <button
+              onClick={installApp}
+              className="flex items-center gap-1 bg-white/20 hover:bg-white/30 px-2 py-1 rounded-md text-[10px] font-bold transition-colors"
+            >
+              <Download size={14} /> Install
+            </button>
+          )}
           <button
             onClick={onLogout}
             title="Logout"

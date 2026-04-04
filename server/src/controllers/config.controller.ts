@@ -13,6 +13,13 @@ const safeParseDate = (dateVal: any, defaultDate: Date): Date => {
   return isNaN(d.getTime()) ? defaultDate : d;
 };
 
+const GRADE_OPTIONS = [
+  'PLAYGROUP', 'PP1', 'PP2',
+  'GRADE_1', 'GRADE_2', 'GRADE_3',
+  'GRADE_4', 'GRADE_5', 'GRADE_6',
+  'GRADE_7', 'GRADE_8', 'GRADE_9',
+];
+
 export const getTermConfigs = async (req: Request, res: Response) => {
   const configs = await configService.getTermConfigs();
   res.json({ success: true, data: configs });
@@ -68,7 +75,7 @@ export const getSpecificAggregationConfig = async (req: Request, res: Response) 
   const { grade, learningArea } = req.query;
   const config = await configService.getAggregationConfig({
     assessmentType: assessmentType as FormativeAssessmentType,
-    grade: grade as Grade | undefined,
+    grade: grade as unknown as Grade | undefined,
     learningArea: learningArea as string | undefined,
   });
   res.json({ success: true, data: config });
@@ -123,7 +130,7 @@ export const deleteClass = async (req: Request, res: Response) => {
 };
 
 export const getGrades = async (req: Request, res: Response) => {
-  res.json({ success: true, data: Object.values(Grade) });
+  res.json({ success: true, data: GRADE_OPTIONS });
 };
 
 export const getConfigurationSummary = async (req: Request, res: Response) => {
@@ -159,7 +166,7 @@ export const seedStreams = async (req: Request, res: Response) => {
 export const seedClasses = async (req: AuthRequest, res: Response) => {
   const year = new Date().getFullYear();
   const term: Term = 'TERM_1';
-  const grades: Grade[] = [
+  const grades = [
     'PLAYGROUP', 'PP1', 'PP2',
     'GRADE_1', 'GRADE_2', 'GRADE_3',
     'GRADE_4', 'GRADE_5', 'GRADE_6',

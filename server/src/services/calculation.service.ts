@@ -4,7 +4,7 @@
  * Implements various aggregation strategies for formative assessments in a single-tenant environment
  */
 
-import { FormativeAssessment, AggregationStrategy, FormativeAssessmentType, Term, Grade } from '@prisma/client';
+import { FormativeAssessment, AggregationStrategy, FormativeAssessmentType, Term } from '@prisma/client';
 import prisma from '../config/database';
 
 // ============================================
@@ -19,6 +19,7 @@ interface AggregationConfig {
 
 interface FormativeScoreBreakdown {
   assessmentType: FormativeAssessmentType;
+  learningArea?: string;
   count: number;
   averageScore: number;
   averagePercentage: number;
@@ -160,17 +161,18 @@ export class CalculationService {
 
     if (!learner) throw new Error('Learner not found');
 
-    const assessmentsByType = this.groupByType(assessments);
+    const groupedAssessments = this.groupByTypeAndLearningArea(assessments);
     const breakdown: FormativeScoreBreakdown[] = [];
 
-    for (const [type, typeAssessments] of Object.entries(assessmentsByType)) {
-      const assessmentType = type as FormativeAssessmentType;
-      const config = await this.getAggregationConfig(assessmentType, learner.grade);
-      const typeAverage = await this.calculateFormativeAverage(typeAssessments, config);
+    for (const group of groupedAssessments) {
+      const assessmentType = group.type;
+      const config = await this.getAggregationConfig(assessmentType, learner.grade, group.learningArea);
+      const typeAverage = await this.calculateFormativeAverage(group.assessments, config);
 
       breakdown.push({
         assessmentType,
-        count: typeAssessments.length,
+        learningArea: group.learningArea,
+        count: group.assessments.length,
         averageScore: typeAverage,
         averagePercentage: typeAverage,
         weight: config.weight || 1.0
@@ -185,13 +187,42 @@ export class CalculationService {
     };
   }
 
+  private groupByTypeAndLearningArea(assessments: FormativeAssessment[]): Array<{
+    type: FormativeAssessmentType;
+    learningArea?: string;
+    assessments: FormativeAssessment[];
+  }> {
+    const groups = new Map<string, {
+      type: FormativeAssessmentType;
+      learningArea?: string;
+      assessments: FormativeAssessment[];
+    }>();
+
+    for (const assessment of assessments) {
+      const key = `${assessment.type}::${assessment.learningArea ?? ''}`;
+      if (!groups.has(key)) {
+        groups.set(key, {
+          type: assessment.type,
+          learningArea: assessment.learningArea || undefined,
+          assessments: []
+        });
+      }
+      groups.get(key)!.assessments.push(assessment);
+    }
+
+    return Array.from(groups.values());
+  }
+
   private groupByType(assessments: FormativeAssessment[]): Record<string, FormativeAssessment[]> {
-    return assessments.reduce((acc, assessment) => {
-      const type = assessment.type;
-      if (!acc[type]) acc[type] = [];
-      acc[type].push(assessment);
-      return acc;
-    }, {} as Record<string, FormativeAssessment[]>);
+    const groups: Record<string, FormativeAssessment[]> = {};
+    for (const assessment of assessments) {
+      const typeStr = assessment.type as string;
+      if (!groups[typeStr]) {
+        groups[typeStr] = [];
+      }
+      groups[typeStr].push(assessment);
+    }
+    return groups;
   }
 
   private calculateWeightedTypeAverage(breakdown: FormativeScoreBreakdown[]): number {
@@ -209,18 +240,21 @@ export class CalculationService {
    */
   private async getAggregationConfig(
     assessmentType: FormativeAssessmentType,
-    grade?: Grade
+    grade?: string,
+    learningArea?: string
   ): Promise<AggregationConfig> {
-    const config = await prisma.aggregationConfig.findFirst({
-      where: {
-        type: assessmentType,
-        OR: [{ grade: grade }, { grade: null }]
-      },
-      orderBy: { grade: 'desc' }
+    const configs = await prisma.aggregationConfig.findMany({
+      where: { type: assessmentType }
     });
 
-    if (config) {
-      return { strategy: config.strategy, nValue: config.nValue, weight: config.weight };
+    const match =
+      configs.find(c => c.grade === grade && c.learningArea === learningArea) ||
+      configs.find(c => c.grade === grade && !c.learningArea) ||
+      configs.find(c => !c.grade && c.learningArea === learningArea) ||
+      configs.find(c => !c.grade && !c.learningArea);
+
+    if (match) {
+      return { strategy: match.strategy, nValue: match.nValue, weight: match.weight };
     }
 
     return { strategy: 'SIMPLE_AVERAGE', nValue: null, weight: 1.0 };

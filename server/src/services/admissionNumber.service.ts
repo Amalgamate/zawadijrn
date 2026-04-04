@@ -15,46 +15,44 @@ export async function generateAdmissionNumber(
 ): Promise<string> {
   try {
     const school = await prisma.school.findFirst();
-    // No school config yet — use a safe default format
     const separator = school?.branchSeparator || '-';
     const formatType = school?.admissionFormatType || 'NO_BRANCH';
 
-    const result = await prisma.$transaction(async (tx) => {
-      let sequence = await tx.admissionSequence.findUnique({
-        where: { academicYear }
-      });
+    const buildAdmissionNumber = (sequenceValue: number) => {
+      const paddedNumber = String(sequenceValue).padStart(3, '0');
+      switch (formatType) {
+        case 'NO_BRANCH':
+          return `ADM${separator}${academicYear}${separator}${paddedNumber}`;
+        case 'BRANCH_PREFIX_START':
+          return `${branchCode}${separator}ADM${separator}${academicYear}${separator}${paddedNumber}`;
+        case 'BRANCH_PREFIX_MIDDLE':
+          return `ADM${separator}${branchCode}${separator}${academicYear}${separator}${paddedNumber}`;
+        case 'BRANCH_PREFIX_END':
+          return `ADM${separator}${academicYear}${separator}${paddedNumber}${separator}${branchCode}`;
+        default:
+          return `ADM${separator}${academicYear}${separator}${paddedNumber}`;
+      }
+    };
 
+    const admissionNumber = await prisma.$transaction(async (tx) => {
+      let sequence = await tx.admissionSequence.findUnique({ where: { academicYear } });
       if (!sequence) {
-        sequence = await tx.admissionSequence.create({
-          data: { academicYear, currentValue: 0 }
-        });
+        sequence = await tx.admissionSequence.create({ data: { academicYear, currentValue: 0 } });
       }
 
-      return await tx.admissionSequence.update({
-        where: { academicYear },
-        data: { currentValue: { increment: 1 } }
-      });
+      while (true) {
+        const updatedSequence = await tx.admissionSequence.update({
+          where: { academicYear },
+          data: { currentValue: { increment: 1 } }
+        });
+
+        const candidate = buildAdmissionNumber(updatedSequence.currentValue);
+        const existingLearner = await tx.learner.findUnique({ where: { admissionNumber: candidate } });
+        if (!existingLearner) {
+          return candidate;
+        }
+      }
     });
-
-    const paddedNumber = String(result.currentValue).padStart(3, '0');
-    let admissionNumber: string;
-
-    switch (formatType) {
-      case 'NO_BRANCH':
-        admissionNumber = `ADM${separator}${academicYear}${separator}${paddedNumber}`;
-        break;
-      case 'BRANCH_PREFIX_START':
-        admissionNumber = `${branchCode}${separator}ADM${separator}${academicYear}${separator}${paddedNumber}`;
-        break;
-      case 'BRANCH_PREFIX_MIDDLE':
-        admissionNumber = `ADM${separator}${branchCode}${separator}${academicYear}${separator}${paddedNumber}`;
-        break;
-      case 'BRANCH_PREFIX_END':
-        admissionNumber = `ADM${separator}${academicYear}${separator}${paddedNumber}${separator}${branchCode}`;
-        break;
-      default:
-        admissionNumber = `ADM${separator}${academicYear}${separator}${paddedNumber}`;
-    }
 
     return admissionNumber;
   } catch (error) {

@@ -3,15 +3,19 @@ import { persist } from 'zustand/middleware';
 
 /**
  * useUIStore
- * Manages global UI state: navigation, sidebar, and layout preferences
+ * Manages global UI state: navigation, sidebar, layout preferences, and in-app history.
  */
 export const useUIStore = create(
   persist(
-    (set) => ({
+    (set, get) => ({
       // Navigation
       currentPage: 'dashboard',
       pageParams: {},
-      
+
+      // In-app history stack (not persisted — rebuilt each session)
+      historyStack: ['dashboard'],
+      historyIndex: 0,
+
       // Sidebar
       sidebarOpen: false,
       expandedSections: {
@@ -22,22 +26,52 @@ export const useUIStore = create(
         communications: false,
         assessment: false,
         'learning-hub': false,
+        lms: false,
         finance: false,
         settings: false
       },
 
       // Actions
-      setCurrentPage: (page, params = {}) => set({ 
-        currentPage: page, 
-        pageParams: params 
+      setCurrentPage: (page, params = {}) => set((state) => {
+        // Trim forward entries if we navigated after going back
+        const baseStack = state.historyStack.slice(0, state.historyIndex + 1);
+        // Avoid duplicate consecutive entries
+        const lastPage = baseStack[baseStack.length - 1];
+        const newStack = lastPage === page ? baseStack : [...baseStack, page];
+        const newIndex = newStack.length - 1;
+        return {
+          currentPage: page,
+          pageParams: params,
+          historyStack: newStack,
+          historyIndex: newIndex,
+        };
       }),
-      
+
+      goBack: () => set((state) => {
+        if (state.historyIndex <= 0) return state; // Already at root — do nothing
+        const newIndex = state.historyIndex - 1;
+        return {
+          currentPage: state.historyStack[newIndex],
+          pageParams: {},
+          historyIndex: newIndex,
+        };
+      }),
+
+      goForward: () => set((state) => {
+        if (state.historyIndex >= state.historyStack.length - 1) return state;
+        const newIndex = state.historyIndex + 1;
+        return {
+          currentPage: state.historyStack[newIndex],
+          pageParams: {},
+          historyIndex: newIndex,
+        };
+      }),
+
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
-      
+
       toggleSection: (section) => set((state) => {
         const isOpening = !state.expandedSections[section];
         if (isOpening) {
-          // Accordion logic: Close all other sections
           const newState = Object.keys(state.expandedSections).reduce((acc, key) => {
             acc[key] = false;
             return acc;
@@ -45,7 +79,6 @@ export const useUIStore = create(
           newState[section] = true;
           return { expandedSections: newState };
         } else {
-          // Just toggling off
           return {
             expandedSections: {
               ...state.expandedSections,
@@ -54,21 +87,25 @@ export const useUIStore = create(
           };
         }
       }),
-      
+
       resetUI: () => set({
         currentPage: 'dashboard',
         pageParams: {},
+        historyStack: ['dashboard'],
+        historyIndex: 0,
         sidebarOpen: false
       })
     }),
     {
-      name: 'cbc_ui_state', // Key in localStorage
-      partialize: (state) => ({ 
-        currentPage: state.currentPage, 
+      name: 'cbc_ui_state',
+      partialize: (state) => ({
+        // Persist visual prefs only — never persist the history stack
+        currentPage: state.currentPage,
         pageParams: state.pageParams,
         sidebarOpen: state.sidebarOpen,
-        expandedSections: state.expandedSections
+        expandedSections: state.expandedSections,
       }),
     }
   )
 );
+

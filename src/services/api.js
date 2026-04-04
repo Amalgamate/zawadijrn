@@ -33,8 +33,11 @@ import { inventoryAPI } from './api/inventory.api';
 import { noticesAPI } from './api/notices.api';
 import { aiAPI } from './api/ai.api';
 import { schemeOfWorkAPI } from './api/schemeofwork.api';
+import { lmsAPI } from './api/lms.api';
 
 import { plannerAPI } from './api/planner.api';
+import { idTemplateAPI } from './api/idTemplate.api';
+import { transportAPI } from './api/transport.api';
 
 export { API_BASE_URL, clearApiCache };
 
@@ -71,7 +74,9 @@ export { inventoryAPI };
 export { noticesAPI };
 export { aiAPI };
 export { schemeOfWorkAPI };
+export { lmsAPI };
 export { plannerAPI as planner };
+export { idTemplateAPI };
 
 const api = {
   auth: authAPI,
@@ -95,7 +100,6 @@ const api = {
   notifications: {
     ...notificationAPI,
     getAuditLogs: async (params = {}) => {
-      // Strip undefined / null / empty string values so they don't appear in the query
       Object.keys(params).forEach(key => {
         if (params[key] === undefined || params[key] === null || params[key] === '') {
           delete params[key];
@@ -120,7 +124,10 @@ const api = {
   notices: noticesAPI,
   ai: aiAPI,
   schemesOfWork: schemeOfWorkAPI,
-  planner: plannerAPI
+  lms: lmsAPI,
+  planner: plannerAPI,
+  idTemplates: idTemplateAPI,
+  transport: transportAPI
 };
 
 export default api;

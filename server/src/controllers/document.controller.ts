@@ -15,8 +15,8 @@ export class DocumentController {
      */
     async uploadDocument(req: AuthRequest, res: Response) {
         try {
-            const { category, name } = req.body;
-            const userId = req.user?.userId;
+            const { category, name, userId: bodyUserId } = req.body;
+            const userId = bodyUserId || req.user?.userId;
 
             if (!req.file) {
                 throw new ApiError(400, 'No file uploaded');
@@ -71,8 +71,8 @@ export class DocumentController {
      */
     async uploadMultipleDocuments(req: AuthRequest, res: Response) {
         try {
-            const { category } = req.body;
-            const userId = req.user?.userId;
+            const { category, userId: bodyUserId } = req.body;
+            const userId = bodyUserId || req.user?.userId;
 
             if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
                 throw new ApiError(400, 'No files uploaded');
@@ -130,7 +130,7 @@ export class DocumentController {
      */
     async getDocuments(req: AuthRequest, res: Response) {
         try {
-            const { category, search, page = 1, limit = 20 } = req.query;
+            const { category, search, page = 1, limit = 20, uploadedById } = req.query;
 
             const skip = (Number(page) - 1) * Number(limit);
 
@@ -138,6 +138,10 @@ export class DocumentController {
 
             if (category) {
                 where.category = category;
+            }
+
+            if (uploadedById) {
+                where.uploadedById = uploadedById as string;
             }
 
             if (search) {

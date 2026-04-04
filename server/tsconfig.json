@@ -9,29 +9,17 @@
     "outDir": "./dist",
     "rootDir": "./src",
 
-    // ── Strictness ──────────────────────────────────────────────────────────
-    // strict: true enables the full suite:
-    //   strictNullChecks, strictFunctionTypes, strictBindCallApply,
-    //   strictPropertyInitialization, noImplicitAny, noImplicitThis, alwaysStrict
     "strict": true,
-
-    // Catch dead variables — safe to enable; the codebase already compiles clean.
-    // Convention: prefix intentionally unused params with _ (already followed here).
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-
-    // NOT enabled yet — needs a full compile audit first.
-    // Enabling noImplicitReturns across 35+ controllers without checking output
-    // risks breaking the build silently on the next deploy.
-    // TODO: Run `tsc --noEmit` locally, fix all flagged return paths, then set to true.
     "noImplicitReturns": false,
-    // ────────────────────────────────────────────────────────────────────────
 
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "moduleResolution": "node",
+    "ignoreDeprecations": "5.0",
     "declaration": true,
     "sourceMap": true,
     "removeComments": true,

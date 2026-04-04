@@ -8,16 +8,26 @@ export { API_BASE_URL, fetchWithAuth, fetchCached, cachedFetch, cacheDel, cacheD
  */
 const fetchWithAuth = async (url, options = {}) => {
   try {
+    let requestData = options.data;
+    if (options.body) {
+      if (options.body instanceof FormData) {
+        requestData = options.body;
+      } else if (typeof options.body === 'string') {
+        try { requestData = JSON.parse(options.body); } catch (e) { requestData = options.body; }
+      } else {
+        requestData = options.body;
+      }
+    }
+
     const config = {
       url,
       method: options.method || 'GET',
-      data: options.body ? JSON.parse(options.body) : options.data,
-      headers: options.headers || {},
+      data: requestData,
+      headers: { ...options.headers },
       params: options.params,
     };
 
     if (options.body instanceof FormData) {
-      config.data = options.body;
       delete config.headers['Content-Type'];
     }
 

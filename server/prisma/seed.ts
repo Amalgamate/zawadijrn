@@ -1,6 +1,7 @@
 import { PrismaClient, UserRole, UserStatus, AdmissionFormatType } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { seedFeeTypes } from './seed-fee-types';
+import { seedLMSCourses } from './seeders/seed-lms-courses';
 
 const prisma = new PrismaClient();
 
@@ -44,30 +45,6 @@ async function main() {
   } else {
     // Optional: Update details if needed, or just log existence
     console.log(`   ℹ️  Template school already exists: ${templateSchool.name} (ID: ${templateSchool.id})`);
-  }
-
-  let templateBranch: any | null = null;
-
-  if (templateSchool) {
-    templateBranch = await prisma.branch.findFirst({
-      where: { schoolId: templateSchool.id, code: 'TPL' }
-    });
-
-    if (!templateBranch) {
-      templateBranch = await prisma.branch.create({
-        data: {
-          schoolId: templateSchool.id,
-          name: 'Template Campus',
-          code: 'TPL',
-          address: templateSchool.address,
-          phone: templateSchool.phone
-        }
-      });
-
-      console.log(`   ✅ Created template branch: ${templateBranch.name} (Code: ${templateBranch.code})`);
-    } else {
-      console.log(`   ℹ️  Template branch already exists: ${templateBranch.name} (Code: ${templateBranch.code})`);
-    }
   }
 
   const users: Array<{
@@ -145,22 +122,7 @@ async function main() {
       });
 
       if (existingUser) {
-        if (templateSchool && !existingUser.schoolId && existingUser.role !== 'SUPER_ADMIN') {
-          await prisma.user.update({
-            where: { id: existingUser.id },
-            data: {
-              schoolId: templateSchool.id,
-              branchId: templateBranch ? templateBranch.id : null
-            }
-          });
-
-          console.log(
-            `   🔄 Updated ${existingUser.role}: ${existingUser.email} with template school and branch assignment`
-          );
-        } else {
-          console.log(`   ⏭️  User ${userData.email} already exists, skipping...`);
-        }
-
+        console.log(`   ⏭️  User ${userData.email} already exists, skipping...`);
         continue;
       }
 
@@ -176,10 +138,6 @@ async function main() {
           phone: userData.phone,
           status: 'ACTIVE' as UserStatus,
           emailVerified: true,
-          schoolId:
-            userData.role === 'SUPER_ADMIN' || !templateSchool ? null : templateSchool.id,
-          branchId:
-            userData.role === 'SUPER_ADMIN' || !templateBranch ? null : templateBranch.id
         },
         select: {
           id: true,
@@ -245,6 +203,9 @@ async function main() {
 
   // Seed fee types
   await seedFeeTypes(prisma);
+
+  // Seed LMS courses
+  await seedLMSCourses();
 
   console.log('\n✨ Database seed completed!');
   console.log('\n📋 Development User Credentials:');

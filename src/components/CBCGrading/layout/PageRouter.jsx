@@ -1,5 +1,6 @@
 import React, { lazy, Suspense } from 'react';
 import ErrorBoundary from '../shared/ErrorBoundary';
+import EmptyState from '../shared/EmptyState';
 
 // Lazy load page components
 const RoleDashboard = lazy(() => import('../pages/dashboard/RoleDashboard'));
@@ -46,12 +47,12 @@ const BrandingSettings = lazy(() => import('../pages/settings/BrandingSettings')
 const BackupSettings = lazy(() => import('../pages/settings/BackupSettings'));
 const CommunicationSettings = lazy(() => import('../pages/settings/CommunicationSettings'));
 const PaymentSettings = lazy(() => import('../pages/settings/PaymentSettings'));
+const IDCardTemplatesDesigner = lazy(() => import('../pages/settings/IDCardTemplatesDesigner'));
 const FeeCollectionPage = lazy(() => import('../pages/FeeCollectionPage'));
 const FeeStructurePage = lazy(() => import('../pages/FeeStructurePage'));
 const FeeReportsPage = lazy(() => import('../pages/FeeReportsPage'));
 const StudentStatementsPage = lazy(() => import('../pages/StudentStatementsPage'));
 const DocumentCenter = lazy(() => import('../pages/DocumentCenter'));
-const KnowledgeBase = lazy(() => import('../pages/KnowledgeBase'));
 const LearnerProfile = lazy(() => import('../pages/profiles/LearnerProfile'));
 const TeacherProfile = lazy(() => import('../pages/profiles/TeacherProfile'));
 const ParentProfile = lazy(() => import('../pages/profiles/ParentProfile'));
@@ -85,11 +86,27 @@ const StockRequisitions = lazy(() => import('../pages/inventory/StockRequisition
 const StockTransfers = lazy(() => import('../pages/inventory/StockTransfers'));
 const StockAdjustments = lazy(() => import('../pages/inventory/StockAdjustments'));
 const AssetRegister = lazy(() => import('../pages/inventory/AssetRegister'));
-const AssetAssignments = lazy(() => import('../pages/inventory/AssetAssignments'));
+// Transport and Biometrics Modules
+const TransportManager = lazy(() => import('../pages/transport/TransportManager'));
+const LibraryManager = lazy(() => import('../pages/library/LibraryManager'));
+const BiometricManager = lazy(() => import('../pages/biometric/BiometricManager'));
+
+// LMS Module
+const LMSManager = lazy(() => import('../pages/LMSManager'));
+const LMSCourses = lazy(() => import('../pages/lms/LMSCourses'));
+const LMSPlaceholder = lazy(() => import('../pages/lms/LMSPlaceholder'));
+const LMSAssignments = lazy(() => import('../pages/lms/LMSAssignments'));
+
+// Student Portal
+const StudentDashboard = lazy(() => import('../pages/student/StudentDashboard'));
+const MyCourses = lazy(() => import('../pages/student/MyCourses'));
+const CourseViewer = lazy(() => import('../pages/student/CourseViewer'));
+const MyAssignments = lazy(() => import('../pages/student/MyAssignments'));
+const MyProgress = lazy(() => import('../pages/student/MyProgress'));
 
 const LoadingOverlay = () => (
   <div className="flex-1 flex flex-col items-center justify-center bg-gray-50/50 backdrop-blur-sm">
-    <div className="w-16 h-16 border-4 border-[#0D9488]/20 border-t-[#0D9488] rounded-full animate-spin"></div>
+    <div className="w-16 h-16 border-4 border-[var(--brand-purple)]/20 border-t-[var(--brand-purple)] rounded-full animate-spin"></div>
     <p className="mt-4 text-sm font-medium text-gray-500 animate-pulse tracking-wide uppercase">Optimizing Experience...</p>
   </div>
 );
@@ -146,7 +163,9 @@ const PageRouter = ({
       {(() => {
         switch (currentPage) {
           case 'dashboard':
-            return <RoleDashboard learners={learners} pagination={pagination} teachers={teachers} user={user} onNavigate={handleNavigate} />;
+            return user?.role === 'STUDENT'
+              ? <StudentDashboard user={user} onNavigate={handleNavigate} />
+              : <RoleDashboard learners={learners} pagination={pagination} teachers={teachers} user={user} onNavigate={handleNavigate} />;
 
           // Planner Module
           case 'planner-calendar':
@@ -281,26 +300,45 @@ const PageRouter = ({
 
           case 'facilities-classes': return <FacilityManager />;
           case 'learning-hub-materials':
-          case 'learning-hub-assignments':
           case 'learning-hub-lesson-plans':
           case 'learning-hub-library':
+            return <LearningHubPage />;
+          case 'learning-hub-assignments':
+            return <LMSAssignments />;
+          
+          // LMS Module
+          case 'lms-courses': return <LMSManager currentPage={currentPage} />;
+          case 'lms-content': return <LMSManager currentPage={currentPage} />;
+          case 'lms-enrollments': return <LMSManager currentPage={currentPage} />;
+          case 'lms-progress': return <LMSManager currentPage={currentPage} />;
+          case 'lms-reports': return <LMSManager currentPage={currentPage} />;
+
+          // Student Portal
+          case 'student-courses': return <ErrorBoundary><MyCourses onNavigate={handleNavigate} /></ErrorBoundary>;
+          case 'student-assignments': return <ErrorBoundary><MyAssignments onNavigate={handleNavigate} /></ErrorBoundary>;
+          case 'student-progress': return <ErrorBoundary><MyProgress onNavigate={handleNavigate} /></ErrorBoundary>;
+          case 'student-course-view': return <ErrorBoundary><CourseViewer courseId={pageParams.courseId} onNavigate={handleNavigate} /></ErrorBoundary>;
+
           case 'library-catalog':
           case 'library-circulation':
           case 'library-fees':
           case 'library-inventory':
           case 'library-members':
+            return <LibraryManager currentPage={currentPage} />;
           case 'transport-routes':
           case 'transport-tracking':
           case 'transport-drivers':
           case 'hostel-allocation':
           case 'hostel-fees':
           case 'transport-reports':
+            return <TransportManager />;
           case 'biometric-devices':
           case 'biometric-enrollment':
           case 'biometric-logs':
           case 'biometric-reports':
           case 'biometric-api':
-            return <LearningHubPage />;
+          case 'biometric-dashboard':
+            return <BiometricManager />;
 
           case 'comm-notices': return <NoticesPage initialTab={pageParams.activeTab} />;
           case 'comm-messages': return <MessagesPage />;
@@ -317,7 +355,6 @@ const PageRouter = ({
           case 'inventory-class-assignments': return <AssetAssignments />;
 
           case 'docs-center': return <DocumentCenter />;
-          case 'knowledge-base': return <KnowledgeBase />;
 
           case 'fees-structure': return <FeeStructurePage />;
           case 'fees-collection': return <FeeCollectionPage learnerId={pageParams.learnerId} />;
@@ -340,6 +377,7 @@ const PageRouter = ({
           case 'settings-backup': return <BackupSettings />;
           case 'settings-communication': return <ErrorBoundary><CommunicationSettings /></ErrorBoundary>;
           case 'settings-payment': return <PaymentSettings />;
+          case 'settings-id-templates': return <ErrorBoundary><IDCardTemplatesDesigner /></ErrorBoundary>;
 
           default:
             return (

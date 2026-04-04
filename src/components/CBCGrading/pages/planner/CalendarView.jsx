@@ -1,36 +1,56 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Calendar, momentLocalizer } from 'react-big-calendar';
-import moment from 'moment';
+import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
+import { format, parse, startOfWeek, getDay } from 'date-fns';
+import { enUS } from 'date-fns/locale';
+import { enGB } from 'date-fns/locale'; // Fallback to enGB if needed, or stick to enUS
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import api from '../../../../services/api';
 import { Plus, Video, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-// Setup the localizer by providing the moment (or globalize, or Date) Object
-const localizer = momentLocalizer(moment);
+// Setup the localizer by providing the date-fns (or moment, or globalize) Object
+const locales = {
+    'en-US': enUS,
+};
+
+const localizer = dateFnsLocalizer({
+    format,
+    parse,
+    startOfWeek,
+    getDay,
+    locales,
+});
 
 const CalendarView = () => {
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [view, setView] = useState('month');
     const [date, setDate] = useState(new Date());
+    const [currentTerm, setCurrentTerm] = useState(null);
+    const [termLabel, setTermLabel] = useState('');
+
+    const getMonthRange = (referenceDate) => {
+        const start = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1);
+        const end = new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 1, 0);
+        return {
+            start: start.toISOString(),
+            end: end.toISOString()
+        };
+    };
 
     // Fetch events
-    const fetchEvents = useCallback(async () => {
+    const fetchEvents = useCallback(async (params = {}) => {
         try {
             setLoading(true);
-            // Construct date range based on current view/date if needed, 
-            // but simpler to fetch all or use a broad range for now.
-            const response = await api.planner.getEvents();
+            const response = await api.planner.getEvents(params);
             if (response.success) {
-                // Transform for BigCalendar
                 const formattedEvents = response.data.map(evt => ({
                     id: evt.id,
                     title: evt.title,
                     start: new Date(evt.startDate),
                     end: new Date(evt.endDate),
                     allDay: evt.allDay,
-                    resource: evt, // Store full object
+                    resource: evt
                 }));
                 setEvents(formattedEvents);
             }
@@ -42,9 +62,34 @@ const CalendarView = () => {
         }
     }, []);
 
+    const fetchTermConfig = useCallback(async () => {
+        try {
+            const response = await api.config.getTermConfigs();
+            const terms = response.data || response || [];
+            const active = terms.find(term => term.isActive);
+
+            if (active) {
+                setCurrentTerm(active);
+                setTermLabel(`${active.term} ${active.academicYear}`);
+                await fetchEvents({
+                    start: new Date(active.startDate).toISOString(),
+                    end: new Date(active.endDate).toISOString()
+                });
+            } else {
+                const range = getMonthRange(date);
+                setTermLabel('Current month');
+                await fetchEvents(range);
+            }
+        } catch (error) {
+            console.error('Error loading term configuration:', error);
+            toast.error('Failed to load academic term configuration');
+            await fetchEvents();
+        }
+    }, [date, fetchEvents]);
+
     useEffect(() => {
-        fetchEvents();
-    }, [fetchEvents]);
+        fetchTermConfig();
+    }, [fetchTermConfig]);
 
     // Handle slot selection (create event)
     const handleSelectSlot = ({ start, end }) => {
@@ -95,9 +140,12 @@ const CalendarView = () => {
     return (
         <div className="h-[calc(100vh-140px)] bg-white rounded-lg shadow p-4 flex flex-col">
             <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-gray-800">
-                    {moment(date).format('MMMM YYYY')}
-                </h2>
+                <div>
+                    <h2 className="text-xl font-semibold text-gray-800">
+                        {format(date, 'MMMM yyyy')}
+                    </h2>
+                    <p className="text-sm text-gray-500">Showing events for: <span className="font-medium text-gray-700">{termLabel || 'Active term'}</span></p>
+                </div>
                 <div className="flex gap-2">
                     <button
                         onClick={fetchEvents}

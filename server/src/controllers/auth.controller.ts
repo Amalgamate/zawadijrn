@@ -1,13 +1,13 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
-import { User } from '@prisma/client';
+import type {} from '@prisma/client';
 import prisma from '../config/database';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../utils/jwt.util';
 import { ApiError } from '../utils/error.util';
 import { Role, canManageRole } from '../config/permissions';
 import { AuthRequest } from '../middleware/permissions.middleware';
-import { validatePassword, DEFAULT_PASSWORD_POLICY, PARENT_PASSWORD_POLICY, passwordsMatch } from '../utils/password.util';
+import { validatePassword, DEFAULT_PASSWORD_POLICY, PARENT_PASSWORD_POLICY } from '../utils/password.util';
 import { EmailService } from '../services/email-resend.service';
 import { whatsappService } from '../services/whatsapp.service';
 import { redisCacheService } from '../services/redis-cache.service';

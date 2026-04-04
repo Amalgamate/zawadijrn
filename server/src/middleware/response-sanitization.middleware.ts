@@ -1,10 +1,13 @@
 /**
  * Response Sanitization Middleware
- * Prevents sensitive information leakage in API responses
+ * Prevents sensitive information leakage in API responses and
+ * standardizes all error responses to a consistent JSON shape.
  */
 
 import { Request, Response, NextFunction } from 'express';
 import { escapeHtml } from '../utils/sanitization.util';
+
+const STATUS_ERROR_THRESHOLD = 400;
 
 /**
  * Middleware to sanitize API responses
@@ -15,31 +18,74 @@ export const sanitizeResponse = (
   res: Response,
   next: NextFunction
 ) => {
-  // Store original json method
   const originalJson = res.json;
 
-  // Override json method to sanitize response
   res.json = function (data: any) {
     const isDevelopment = process.env.NODE_ENV === 'development';
+    const statusCode = res.statusCode || 200;
 
-    // Sanitize error responses
-    if (data && !data.success && data.error) {
-      // Remove sensitive information from error messages
-      data.error = sanitizeErrorResponse(data.error, isDevelopment);
+    let payload = data;
+
+    if (statusCode >= STATUS_ERROR_THRESHOLD || (data && data.success === false)) {
+      payload = normalizeErrorPayload(data);
     }
 
-    // Set security headers to prevent XSS
+    if (payload && payload.success === false && payload.error) {
+      payload.error = sanitizeErrorResponse(payload.error, isDevelopment);
+    }
+
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('X-XSS-Protection', '1; mode=block');
     res.setHeader('Content-Security-Policy', "default-src 'self'");
 
-    // Call original json method
-    return originalJson.call(this, data);
+    return originalJson.call(this, payload);
   };
 
   next();
 };
+
+function normalizeErrorPayload(data: any): any {
+  if (data == null) {
+    return {
+      success: false,
+      error: { message: 'An unexpected error occurred' }
+    };
+  }
+
+  if (typeof data === 'string') {
+    return {
+      success: false,
+      error: { message: data }
+    };
+  }
+
+  if (typeof data !== 'object') {
+    return {
+      success: false,
+      error: { message: String(data) }
+    };
+  }
+
+  const isAlreadyStandard = data.success === false && data.error && typeof data.error === 'object';
+  if (isAlreadyStandard) {
+    return data;
+  }
+
+  const message = data.error?.message || data.message || data.error || 'An error occurred';
+  const errorObject = typeof message === 'object' ? message : { message };
+
+  const normalized: any = {
+    success: false,
+    error: errorObject
+  };
+
+  if (data.error && typeof data.error === 'object') {
+    normalized.error = { ...errorObject, ...data.error };
+  }
+
+  return normalized;
+}
 
 /**
  * Sanitize error response to prevent information leakage
@@ -50,24 +96,20 @@ function sanitizeErrorResponse(
 ): Record<string, any> {
   const sanitized: Record<string, any> = {};
 
-  // Always include message
   if (error.message) {
-    sanitized.message = escapeHtml(typeof error.message === 'string' 
-      ? error.message 
-      : String(error.message));
+    sanitized.message = escapeHtml(
+      typeof error.message === 'string' ? error.message : String(error.message)
+    );
   }
 
-  // Include error code if present
   if (error.code) {
     sanitized.code = escapeHtml(String(error.code));
   }
 
-  // Only include stack trace in development
   if (isDevelopment && error.stack) {
     sanitized.stack = escapeHtml(String(error.stack));
   }
 
-  // Include validation details if present (safe to expose)
   if (error.details && Array.isArray(error.details)) {
     sanitized.details = error.details.map((detail: any) => {
       if (typeof detail === 'string') {
@@ -77,14 +119,15 @@ function sanitizeErrorResponse(
     });
   }
 
-  // Filter out sensitive internal details
   const sensitivePatterns = ['password', 'token', 'secret', 'key', 'database', 'sql'];
   for (const [key, value] of Object.entries(error)) {
-    if (!key.toLowerCase().includes('msg') &&
-        !key.toLowerCase().includes('message') &&
-        !key.toLowerCase().includes('code') &&
-        !key.toLowerCase().includes('details') &&
-        !sensitivePatterns.some((pattern) => key.toLowerCase().includes(pattern))) {
+    if (
+      !key.toLowerCase().includes('msg') &&
+      !key.toLowerCase().includes('message') &&
+      !key.toLowerCase().includes('code') &&
+      !key.toLowerCase().includes('details') &&
+      !sensitivePatterns.some((pattern) => key.toLowerCase().includes(pattern))
+    ) {
       sanitized[key] = value;
     }
   }
@@ -100,14 +143,10 @@ export const hideSensitiveHeaders = (
   res: Response,
   next: NextFunction
 ) => {
-  // Remove server identification headers
   res.removeHeader('server');
   res.removeHeader('x-powered-by');
   res.removeHeader('x-aspnet-version');
-
-  // Add security headers
   res.setHeader('Server', 'SecureServer/1.0');
-
   next();
 };
 
@@ -126,17 +165,14 @@ export const secureCookies = (
     (res.getHeader('Set-Cookie') as string[])?.map((cookie) => {
       let secureCookie = cookie;
 
-      // Add Secure flag (only in production)
       if (!isDevelopment && !secureCookie.includes('Secure')) {
         secureCookie += '; Secure';
       }
 
-      // Add HttpOnly flag if not present
       if (!secureCookie.includes('HttpOnly')) {
         secureCookie += '; HttpOnly';
       }
 
-      // Add SameSite if not present
       if (!secureCookie.includes('SameSite')) {
         secureCookie += '; SameSite=Strict';
       }
@@ -169,37 +205,20 @@ export const securityHeaders = (
   res: Response,
   next: NextFunction
 ) => {
-  // Content Security Policy
   res.setHeader(
     'Content-Security-Policy',
     "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
   );
-
-  // Prevent clickjacking
   res.setHeader('X-Frame-Options', 'DENY');
-
-  // Enable XSS protection
   res.setHeader('X-XSS-Protection', '1; mode=block');
-
-  // Prevent MIME type sniffing
   res.setHeader('X-Content-Type-Options', 'nosniff');
 
-  // Strict Transport Security (in production)
   if (process.env.NODE_ENV === 'production') {
-    res.setHeader(
-      'Strict-Transport-Security',
-      'max-age=31536000; includeSubDomains'
-    );
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   }
 
-  // Referrer Policy
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-
-  // Feature Policy / Permissions Policy
-  res.setHeader(
-    'Permissions-Policy',
-    'camera=(), microphone=(), geolocation=(), payment=()'
-  );
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
 
   next();
 };

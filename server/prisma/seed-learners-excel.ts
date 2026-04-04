@@ -2,9 +2,27 @@
 import { PrismaClient, Grade, Gender } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 const prisma = new PrismaClient();
+
+async function loadWorksheetRows(filePath: string): Promise<any[][]> {
+    const workbook = new ExcelJS.Workbook();
+
+    if (filePath.toLowerCase().endsWith('.csv')) {
+        await workbook.csv.readFile(filePath);
+    } else {
+        await workbook.xlsx.readFile(filePath);
+    }
+
+    const worksheet = workbook.worksheets[0];
+    if (!worksheet) return [];
+
+    return worksheet.getSheetValues().slice(1).map((row: any) => {
+        if (!Array.isArray(row)) return [];
+        return row.slice(1);
+    });
+}
 
 // Configuration
 const ACADEMIC_YEAR = 2025;
@@ -72,11 +90,7 @@ async function main() {
 
         console.log(`\n📂 Processing ${fileInfo.filename} for Grade: ${fileInfo.grade}`);
 
-        // Read Excel
-        const workbook = XLSX.readFile(filePath);
-        const sheetName = workbook.SheetNames[0];
-        const sheet = workbook.Sheets[sheetName];
-        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
+        const rows = await loadWorksheetRows(filePath);
 
         // Identify data rows (starting from where "No." is usually 1)
         // Based on inspection:

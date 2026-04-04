@@ -5,6 +5,46 @@ import { getCurrentDate, toInputDate } from '../utils/dateHelpers';
 import SmartLearnerSearch from '../shared/SmartLearnerSearch';
 import LoadingSpinner from '../shared/LoadingSpinner';
 import { useAuth } from '../../../hooks/useAuth';
+import { printWindow } from '../../../utils/simplePdfGenerator';
+
+// ─── helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Build and trigger a CSV download from the filtered attendance records.
+ * One row per record; columns: Date, Admission No, Name, Grade, Status, Remarks.
+ */
+function exportAttendanceCSV(records, learners, activeReport) {
+  const headers = ['Date', 'Admission No', 'Name', 'Grade', 'Status', 'Remarks'];
+
+  const rows = records.map(record => {
+    const learner = learners.find(l => l.id === record.learnerId);
+    const date = record.date
+      ? new Date(record.date).toLocaleDateString('en-GB')
+      : '';
+    return [
+      date,
+      learner?.admissionNumber || '',
+      learner ? `${learner.firstName} ${learner.lastName}` : record.learnerId,
+      learner?.grade || '',
+      record.status || '',
+      (record.remarks || '').replace(/,/g, ';'),  // escape commas
+    ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(',');
+  });
+
+  const label = activeReport
+    ? `${activeReport.startDate}_to_${activeReport.endDate}`
+    : new Date().toISOString().split('T')[0];
+
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Attendance_${label}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+}
 
 const AttendanceReports = ({ learners }) => {
   // Staged Filter State
@@ -141,11 +181,17 @@ const AttendanceReports = ({ learners }) => {
           </div>
 
           <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 transition font-bold text-xs shadow-sm">
+            <button
+              onClick={() => printWindow('attendance-report-content')}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 transition font-bold text-xs shadow-sm"
+            >
               <Printer size={16} />
               Print
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-bold text-xs shadow-lg shadow-indigo-600/20">
+            <button
+              onClick={() => exportAttendanceCSV(filteredRecords, teacherScopedLearners, activeReport)}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-bold text-xs shadow-lg shadow-indigo-600/20"
+            >
               <Download size={16} />
               Export
             </button>
@@ -251,7 +297,7 @@ const AttendanceReports = ({ learners }) => {
         </div>
 
         {/* Data Presentation */}
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
+        <div id="attendance-report-content" className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
           <div className="p-6 border-b border-slate-100 flex items-center justify-between">
             <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight">Observation Matrix</h3>
             {activeReport && (

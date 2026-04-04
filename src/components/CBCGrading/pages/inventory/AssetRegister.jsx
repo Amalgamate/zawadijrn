@@ -18,7 +18,7 @@ const AssetRegister = () => {
         try {
             setLoading(true);
             const data = await api.inventory.getAssetRegister();
-            setAssets(data || []);
+            setAssets(data?.success ? data.data : (data || []));
         } catch (error) {
             console.error('Error fetching assets:', error);
         } finally {

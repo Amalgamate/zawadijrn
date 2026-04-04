@@ -38,18 +38,20 @@ const ProfileLayout = ({
                     {secondaryAction && (
                         <button
                             onClick={secondaryAction.onClick}
-                            className={`px-4 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition shadow-sm font-bold text-sm flex items-center gap-2 no-print ${secondaryAction.className || ''}`}
+                            disabled={secondaryAction.isLoading || secondaryAction.disabled}
+                            className={`px-4 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition shadow-sm font-bold text-sm flex items-center gap-2 no-print ${secondaryAction.className || ''} ${(secondaryAction.isLoading || secondaryAction.disabled) ? 'opacity-70 cursor-not-allowed' : ''}`}
                         >
-                            {secondaryAction.icon && <secondaryAction.icon size={18} />}
+                            {secondaryAction.icon && <secondaryAction.icon size={18} className={secondaryAction.isLoading ? 'animate-spin' : ''} />}
                             {secondaryAction.label}
                         </button>
                     )}
                     {primaryAction && (
                         <button
                             onClick={primaryAction.onClick}
-                            className={`px-5 py-2.5 bg-brand-teal text-white rounded-xl hover:bg-brand-teal/90 transition shadow-md font-bold text-sm tracking-wide no-print ${primaryAction.className || ''}`}
+                            disabled={primaryAction.isLoading || primaryAction.disabled}
+                            className={`px-5 py-2.5 bg-brand-teal text-white rounded-xl hover:bg-brand-teal/90 transition shadow-md font-bold text-sm tracking-wide flex items-center gap-2 no-print border border-transparent hover:border-brand-teal/20 ${primaryAction.className || ''} ${(primaryAction.isLoading || primaryAction.disabled) ? 'opacity-70 cursor-not-allowed' : ''}`}
                         >
-                            {primaryAction.icon && <primaryAction.icon size={18} />}
+                            {primaryAction.icon && <primaryAction.icon size={18} className={primaryAction.isLoading ? 'animate-spin' : ''} />}
                             {primaryAction.label}
                         </button>
                     )}

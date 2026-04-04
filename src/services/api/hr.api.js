@@ -33,4 +33,10 @@ export const hrAPI = {
     fetchWithAuth('/hr/performance', { method: 'POST', body: JSON.stringify(data) }),
   updatePerformanceReview: async (id, data) =>
     fetchWithAuth(`/hr/performance/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  confirmPayroll: async (id) =>
+    fetchWithAuth(`/hr/payroll/confirm/${id}`, { method: 'PUT' }),
+  getDashboardStats: async (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    return fetchWithAuth(`/hr/dashboard?${queryString}`);
+  },
 };

@@ -29,15 +29,6 @@ export class BookController {
 
         const books = await prisma.book.findMany({
             where: whereClause,
-            include: {
-                assignedTo: {
-                    select: {
-                        id: true,
-                        firstName: true,
-                        lastName: true
-                    }
-                }
-            },
             orderBy: { title: 'asc' }
         });
 
@@ -100,63 +91,14 @@ export class BookController {
      * Assign a book to a user
      */
     async assignBook(req: AuthRequest, res: Response) {
-        const { id } = req.params;
-        const { userId } = req.body;
-
-        const book = await prisma.book.findUnique({ where: { id } });
-
-        if (!book) {
-            throw new ApiError(404, 'Book not found');
-        }
-
-        const targetUser = await prisma.user.findUnique({ where: { id: userId } });
-        if (!targetUser) {
-            throw new ApiError(404, 'User not found');
-        }
-
-        const updatedBook = await prisma.book.update({
-            where: { id },
-            data: {
-                assignedToId: userId,
-                assignedAt: new Date(),
-                status: 'ISSUED'
-            }
-        });
-
-        res.json({
-            success: true,
-            message: `Book assigned to ${targetUser.firstName} ${targetUser.lastName}`,
-            data: updatedBook
-        });
+        throw new ApiError(501, 'Book assignment is no longer supported on this endpoint. Use the library loan endpoints instead.');
     }
 
     /**
      * Return a book (unassign)
      */
     async returnBook(req: AuthRequest, res: Response) {
-        const { id } = req.params;
-
-        const book = await prisma.book.findUnique({ where: { id } });
-
-        if (!book) {
-            throw new ApiError(404, 'Book not found');
-        }
-
-        const updatedBook = await prisma.book.update({
-            where: { id },
-            data: {
-                assignedToId: null,
-                assignedAt: null,
-                status: 'AVAILABLE',
-                returnDate: new Date()
-            }
-        });
-
-        res.json({
-            success: true,
-            message: 'Book returned successfully',
-            data: updatedBook
-        });
+        throw new ApiError(501, 'Book return is no longer supported on this endpoint. Use the library loan endpoints instead.');
     }
 
     /**

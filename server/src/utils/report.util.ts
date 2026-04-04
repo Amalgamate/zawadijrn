@@ -3,7 +3,7 @@
  * Helper functions for report generation, formatting, and calculations
  */
 
-import { DetailedRubricRating, SummativeGrade } from '@prisma/client';
+import { DetailedRubricRating } from '@prisma/client';
 import * as rubricUtil from './rubric.util';
 
 // ============================================
@@ -13,7 +13,7 @@ import * as rubricUtil from './rubric.util';
 /**
  * Convert summative grade to percentage (midpoint)
  */
-export function gradeToPercentage(grade: SummativeGrade): number {
+export function gradeToPercentage(grade: string): number {
   switch (grade) {
     case 'A': return 90;
     case 'B': return 70;
@@ -27,7 +27,7 @@ export function gradeToPercentage(grade: SummativeGrade): number {
 /**
  * Get grade color for UI
  */
-export function getGradeColor(grade: SummativeGrade): string {
+export function getGradeColor(grade: string): string {
   switch (grade) {
     case 'A': return '#10b981'; // Green
     case 'B': return '#3b82f6'; // Blue

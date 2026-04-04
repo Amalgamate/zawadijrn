@@ -9,6 +9,7 @@ import VirtualizedTable from '../shared/VirtualizedTable';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useNotifications } from '../hooks/useNotifications';
 import api, { configAPI, communicationAPI } from '../../../services/api';
+import { gradingAPI } from '../../../services/api/grading.api';
 import { useAssessmentSetup } from '../hooks/useAssessmentSetup';
 import { getLearningAreasByGrade, getAllLearningAreas } from '../../../constants/learningAreas';
 import { useSchoolData } from '../../../contexts/SchoolDataContext';
@@ -23,11 +24,15 @@ import {
 } from '../../../utils/simplePdfGenerator';
 
 // ── Local aliases kept so call-sites below don't need to change ─────────────
-const generateVectorPDF = (elementId, filename, onProgress) =>
-  captureSingleReport(elementId, filename, { onProgress });
+const generateVectorPDF = (elementId, filename, opts) =>
+  typeof opts === 'function'
+    ? captureSingleReport(elementId, filename, { onProgress: opts })
+    : captureSingleReport(elementId, filename, opts);
 
-const generateBulkPDF = (elementId, filename, onProgress) =>
-  captureBulkReports(elementId, filename, { onProgress });
+const generateBulkPDF = (elementId, filename, opts) =>
+  typeof opts === 'function'
+    ? captureBulkReports(elementId, filename, { onProgress: opts })
+    : captureBulkReports(elementId, filename, opts);
 
 // Capture as JPEG/PNG remains frontend-only (routed via captureElement)
 const generateJPEG = async (elementId, filename, onProgress) => {
@@ -159,16 +164,78 @@ const CHART_COLORS = [
 // ============================================================================
 // GRADING UTILITIES
 // ============================================================================
-const getCBCGrade = (percentage) => {
-  if (percentage >= 90) return { grade: 'EE1', remark: 'Exceeding Expectations 1 - Outstanding', color: '#006400', points: 8 }; // Deep Green
-  if (percentage >= 75) return { grade: 'EE2', remark: 'Exceeding Expectations 2 - Very High', color: '#008000', points: 7 }; // Green
-  if (percentage >= 58) return { grade: 'ME1', remark: 'Meeting Expectations 1 - High Average', color: '#000080', points: 6 }; // Navy Blue
-  if (percentage >= 41) return { grade: 'ME2', remark: 'Meeting Expectations 2 - Average', color: '#0000CD', points: 5 }; // Medium Blue
-  if (percentage >= 31) return { grade: 'AE1', remark: 'Approaching Expectations 1 - Low Average', color: '#8B4513', points: 4 }; // SaddleBrown
-  if (percentage >= 21) return { grade: 'AE2', remark: 'Approaching Expectations 2 - Below Average', color: '#A0522D', points: 3 }; // Sienna
-  if (percentage >= 11) return { grade: 'BE1', remark: 'Below Expectations 1 - Low', color: '#D2691E', points: 2 }; // Chocolate
-  return { grade: 'BE2', remark: 'Below Expectations 2 - Very Low', color: '#8B0000', points: 1 }; // Dark Red
+
+/**
+ * Default CBC grade thresholds — used when the school has not configured
+ * custom grading ranges in Settings → Grading System.
+ */
+const DEFAULT_CBC_RANGES = [
+  { grade: 'EE1', minScore: 90, maxScore: 100, remark: 'Exceeding Expectations 1 - Outstanding', color: '#006400', points: 8 },
+  { grade: 'EE2', minScore: 75, maxScore: 89,  remark: 'Exceeding Expectations 2 - Very High',   color: '#008000', points: 7 },
+  { grade: 'ME1', minScore: 58, maxScore: 74,  remark: 'Meeting Expectations 1 - High Average',  color: '#000080', points: 6 },
+  { grade: 'ME2', minScore: 41, maxScore: 57,  remark: 'Meeting Expectations 2 - Average',       color: '#0000CD', points: 5 },
+  { grade: 'AE1', minScore: 31, maxScore: 40,  remark: 'Approaching Expectations 1 - Low Average', color: '#8B4513', points: 4 },
+  { grade: 'AE2', minScore: 21, maxScore: 30,  remark: 'Approaching Expectations 2 - Below Average', color: '#A0522D', points: 3 },
+  { grade: 'BE1', minScore: 11, maxScore: 20,  remark: 'Below Expectations 1 - Low',             color: '#D2691E', points: 2 },
+  { grade: 'BE2', minScore: 0,  maxScore: 10,  remark: 'Below Expectations 2 - Very Low',        color: '#8B0000', points: 1 },
+];
+
+/**
+ * Grade color map — keeps visual consistency even when using DB ranges
+ * that may not carry a color field.
+ */
+const GRADE_COLORS = {
+  EE1: '#006400', EE2: '#008000',
+  ME1: '#000080', ME2: '#0000CD',
+  AE1: '#8B4513', AE2: '#A0522D',
+  BE1: '#D2691E', BE2: '#8B0000',
 };
+
+/**
+ * Build a getCBCGrade function from a DB ranges array.
+ * Falls back to DEFAULT_CBC_RANGES when ranges is empty/null.
+ *
+ * Each range is expected to have: { grade, minScore, maxScore, remark? }
+ * Ranges are sorted descending by minScore so the first match wins.
+ *
+ * @param {Array|null} ranges  — from gradingAPI.getSystems() → CBC system ranges
+ * @returns {(percentage: number) => { grade, remark, color, points }}
+ */
+const makeCBCGrader = (ranges) => {
+  const active = (ranges && ranges.length > 0) ? ranges : DEFAULT_CBC_RANGES;
+
+  // Sort descending so we match the highest band first
+  const sorted = [...active].sort((a, b) => (b.minScore ?? b.min ?? 0) - (a.minScore ?? a.min ?? 0));
+
+  return (percentage) => {
+    const pct = typeof percentage === 'number' ? percentage : parseFloat(percentage) || 0;
+    for (const r of sorted) {
+      const min = r.minScore ?? r.min ?? 0;
+      if (pct >= min) {
+        const grade = r.grade || r.gradeName || 'BE2';
+        return {
+          grade,
+          remark: r.remark || r.description || grade,
+          color:  r.color || GRADE_COLORS[grade] || '#8B0000',
+          points: r.points ?? r.point ?? 1,
+        };
+      }
+    }
+    // Below all ranges — return the last (lowest) band
+    const last = sorted[sorted.length - 1];
+    const grade = last?.grade || 'BE2';
+    return {
+      grade,
+      remark: last?.remark || grade,
+      color:  last?.color || GRADE_COLORS[grade] || '#8B0000',
+      points: last?.points ?? 1,
+    };
+  };
+};
+
+// Module-level fallback — used by any call-site that runs before the
+// parent component has fetched the DB ranges (e.g. the Grading Key table).
+const getCBCGrade = makeCBCGrader(null);
 
 // ============================================================================
 // PATHWAY & MESSAGING UTILITIES
@@ -241,7 +308,11 @@ const resolveTestGroup = (item) => {
 // ============================================================================
 // LEARNER REPORT TEMPLATE COMPONENT (Reusable for Bulk Print)
 // ============================================================================
-const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, academicYear, brandingSettings, user, streamConfigs, remarks, commentData }) => {
+const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, academicYear, brandingSettings, user, streamConfigs, remarks, commentData, gradingRanges }) => {
+  // Build a grade function from DB ranges (or defaults if not yet loaded).
+  // useMemo keeps it stable across re-renders when gradingRanges hasn't changed.
+  const getGrade = React.useMemo(() => makeCBCGrader(gradingRanges), [gradingRanges]);
+
   // --- DATA PREPARATION LOGIC ---
   const standardAreas = getLearningAreasByGrade(learner.grade);
   const resultAreas = new Set(results?.map(r => r.learningArea || 'General') || []);
@@ -338,7 +409,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
     let points = null;
 
     if (testCount > 0 && totalMarks > 0) {
-      const res = getCBCGrade(percentage);
+      const res = getGrade(percentage);
       grade = res.grade;
       remark = res.remark;
       color = res.color;
@@ -373,9 +444,10 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
       style={{
         fontFamily: "'Raleway', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
         lineHeight: '1.2',
-        width: '794px', // 210mm at 96 DPI
+        width: '794px',    // 210mm at 96 DPI
         minHeight: '1123px', // ensure card is never shorter than A4
-        height: '1123px',    // 297mm at 96 DPI — kept for canvas crop boundary
+        // height is intentionally omitted — html2canvas reads scrollHeight,
+        // so reports with many subjects expand instead of clipping.
         padding: '30px 40px 30px 40px',
         boxSizing: 'border-box',
         display: 'flex',
@@ -471,14 +543,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
         const totalPoints = tableRows.reduce((acc, r) => acc + (r.points || 0), 0);
         const totalMax = tableRows.reduce((acc, r) => acc + r.totalMarks, 0);
         const avgPct = totalMax > 0 ? (tableRows.reduce((acc, r) => acc + r.totalScore, 0) / totalMax * 100).toFixed(0) : 0;
-        let overallGrade = 'BE2';
-        if (avgPct >= 90) overallGrade = 'EE1';
-        else if (avgPct >= 75) overallGrade = 'EE2';
-        else if (avgPct >= 58) overallGrade = 'ME1';
-        else if (avgPct >= 41) overallGrade = 'ME2';
-        else if (avgPct >= 31) overallGrade = 'AE1';
-        else if (avgPct >= 21) overallGrade = 'AE2';
-        else if (avgPct >= 11) overallGrade = 'BE1';
+        const overallGrade = getGrade(parseFloat(avgPct)).grade;
         return (
           <div className="mb-3" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 0.8fr)', border: '1.2px solid #e2e8f0', borderRadius: '4px', overflow: 'hidden', fontSize: '12.5px', lineHeight: '1.2' }}>
             {/* LEFT: Learner Info */}
@@ -547,7 +612,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
                 {testColumns.map(col => {
                   const score = row.scoresByCol[col];
                   const colGrade = score !== null && row.totalMarks > 0
-                    ? getCBCGrade((score / (row.totalMarks / (row.testCount || 1))) * 100).grade
+                    ? getGrade((score / (row.totalMarks / (row.testCount || 1))) * 100).grade
                     : null;
                   return (
                     <td key={col} style={{ padding: '8px 6px', textAlign: 'center', border: '1.5px solid #e2e8f0' }}>
@@ -846,6 +911,28 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
   const [reportData, setReportData] = useState(null);
   const [availableTests, setAvailableTests] = useState([]);
 
+  // ── DB-backed grading ranges ──────────────────────────────────────────────
+  // Fetched once on mount. Passed to LearnerReportTemplate so grade calculations
+  // use the school's configured ranges instead of the hardcoded thresholds.
+  const [gradingRanges, setGradingRanges] = useState(null);
+
+  useEffect(() => {
+    gradingAPI.getSystems()
+      .then(response => {
+        // response is { data: [ { type, ranges: [...] } ] } or similar
+        const systems = Array.isArray(response?.data) ? response.data
+          : Array.isArray(response) ? response : [];
+        const cbcSystem = systems.find(
+          s => (s.type || s.name || '').toUpperCase().includes('CBC')
+        );
+        const ranges = cbcSystem?.ranges || cbcSystem?.gradingRanges || [];
+        if (ranges.length > 0) setGradingRanges(ranges);
+      })
+      .catch(() => {
+        // Non-fatal: component falls back to DEFAULT_CBC_RANGES silently
+      });
+  }, []);
+
   // Custom Tick component for wrapping long learning area names in charts
   const CustomXAxisTick = ({ x, y, payload }) => {
     const text = payload.value;
@@ -895,6 +982,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
   const [pdfProgress, setPdfProgress] = useState('');
   // Bulk Actions State
   const [isBulkPrinting, setIsBulkPrinting] = useState(false);
+  const bulkPrintAbortController = useRef(null);
   const [selectedReportRows, setSelectedReportRows] = useState([]); // Track selected rows for bulk action
   const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0, active: false, success: 0, failed: 0 });
   const [singleDownloadData, setSingleDownloadData] = useState(null);
@@ -924,6 +1012,14 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (bulkPrintAbortController.current) {
+        bulkPrintAbortController.current.abort();
+      }
     };
   }, []);
 
@@ -1773,59 +1869,47 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
     }
 
     setCommentMap(fetchedComments);
+    const abortController = new AbortController();
+    bulkPrintAbortController.current = abortController;
     setBulkDownloadData(rowsToPrint);
     setIsBulkPrinting(true);
     setPdfProgress('🚀 Initializing bulk report engine...');
 
     try {
-      // 1. Give the DOM time to render the hidden content (Increased wait for bulk rendering)
-      await new Promise(resolve => setTimeout(resolve, 2500));
+      // 1. Give React one tick to mount the hidden bulk container before capture
+      await new Promise(resolve => requestAnimationFrame(resolve));
 
       const timestamp = new Date().toISOString().split('T')[0];
       const filename = `${(reportData?.title || 'Report').replace(/[^a-zA-Z0-9]/g, '_')}_Detailed_Reports_${timestamp}.pdf`;
 
-      setPdfProgress('📄 Preparing report layouts...');
+      setPdfProgress('📄 Capturing report layouts...');
 
-      // Collect all compiled CSS already loaded in the page (Tailwind, app styles)
-      // Skip @import rules — Puppeteer runs headless with no CDN access
-      const allStyles = Array.from(document.styleSheets).map(sheet => {
-        try {
-          return Array.from(sheet.cssRules)
-            .filter(rule => !(rule instanceof CSSImportRule)) // skip @import
-            .map(rule => rule.cssText)
-            .join('\n');
-        } catch (e) {
-          return ''; // cross-origin sheet — skip silently
-        }
-      }).join('\n');
-
-      const element = document.getElementById('bulk-print-content');
-      const fullHtml = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <style>${allStyles}</style>
-</head>
-<body style="margin:0;padding:0;background:#fff;">
-  ${element?.innerHTML || ''}
-</body>
-</html>`;
-
+      // generateBulkPDF captures the DOM directly via html2canvas — no HTML serialisation needed.
       const result = await generateBulkPDF(
         'bulk-print-content',
         filename,
-        (msg) => { setPdfProgress(msg); console.log(`PDF: ${msg}`); }
+        {
+          onProgress: (msg) => { setPdfProgress(msg); console.log(`PDF: ${msg}`); },
+          signal: abortController.signal,
+        }
       );
 
       if (result.success) {
         showSuccess('✅ Bulk reports generated and downloaded successfully');
+      } else if (result.error === 'Bulk PDF generation cancelled') {
+        showInfo('Bulk PDF generation cancelled');
       } else {
         throw new Error(result.error || 'Failed to generate PDF');
       }
     } catch (err) {
-      console.error('❌ Bulk print error:', err);
-      showError(`PDF Generation Failed: ${err.message || 'An unexpected error occurred'}`);
+      if (err?.message === 'Bulk PDF generation cancelled') {
+        showInfo('Bulk PDF generation cancelled');
+      } else {
+        console.error('❌ Bulk print error:', err);
+        showError(`PDF Generation Failed: ${err.message || 'An unexpected error occurred'}`);
+      }
     } finally {
+      bulkPrintAbortController.current = null;
       setIsBulkPrinting(false);
       setPdfProgress('');
       setBulkDownloadData(null);
@@ -1841,7 +1925,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
 
     // Pre-fetch comment for single download
     try {
-      const res = await api.cbc.getComments(row.learner.id, { term: selectedTerm, academicYear: selectedYear });
+      const res = await api.cbc.getComments(row.learner.id, { term: selectedTerm, academicYear: academicYear });
       setSingleCommentData(res.success ? res.data : null);
     } catch (_) {
       setSingleCommentData(null);
@@ -1851,8 +1935,8 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
     setIsSingleDownloading(true);
 
     try {
-      // Wait for hidden container to render
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // One animation frame so React mounts the hidden container
+      await new Promise(resolve => requestAnimationFrame(resolve));
 
       const filename = `${row.learner.firstName}_${row.learner.lastName}_Summative_Report.pdf`;
       const result = await generateVectorPDF('single-print-content', filename, (msg) => console.log(`PDF Progress: ${msg}`));
@@ -1957,8 +2041,8 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
     setBulkDownloadData(rowsToSend);
     setCommentMap(commentMap); // Ensure the template gets the comments
 
-    // Give DOM time to render
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // One animation frame so React mounts the hidden bulk container
+    await new Promise(resolve => requestAnimationFrame(resolve));
 
     let successCount = 0;
     let failCount = 0;
@@ -2977,6 +3061,20 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                           {isBulkPrinting ? <Loader className="animate-spin" size={14} /> : <Printer size={14} />}
                           {isBulkPrinting ? 'Processing...' : 'Download Combined PDF'}
                         </button>
+                        {isBulkPrinting && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (bulkPrintAbortController.current) {
+                                bulkPrintAbortController.current.abort();
+                                setPdfProgress('Cancelling bulk PDF generation…');
+                              }
+                            }}
+                            className="mt-2 w-full justify-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition shadow-md flex items-center gap-2 font-bold uppercase text-[10px]"
+                          >
+                            Cancel
+                          </button>
+                        )}
                         {isBulkPrinting && pdfProgress && (
                           <div className="absolute top-full left-0 md:left-auto md:right-0 mt-1.5 text-[10px] font-bold text-indigo-600 animate-pulse whitespace-nowrap">
                             {pdfProgress}
@@ -3627,7 +3725,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
            html2canvas fails silently on opacity:0 and renders a blank/misaligned
            canvas. visibility:hidden keeps the element in the layout tree so
            html2canvas can read it, while remaining invisible to the user. */}
-      <div style={{ position: 'fixed', top: 0, left: 0, width: '794px', height: '1123px', visibility: 'hidden', pointerEvents: 'none', zIndex: -100, overflow: 'visible' }}>
+      <div style={{ position: 'fixed', top: 0, left: 0, width: '794px', minHeight: '1123px', visibility: 'hidden', pointerEvents: 'none', zIndex: -100, overflow: 'visible' }}>
         {/* Single Page Capture */}
         {(singleDownloadData || (reportData?.rows?.length === 1 && (reportData.type === 'LEARNER_REPORT' || reportData.type === 'LEARNER_TERMLY_REPORT'))) && (
           <div id="single-print-content">
@@ -3640,6 +3738,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
               brandingSettings={brandingSettings}
               user={user}
               streamConfigs={streamConfigs}
+              gradingRanges={gradingRanges}
               commentData={singleCommentData || (reportData?.results?.[0]?.remarks && reportData.results[0].remarks !== '-' ? { principalComment: reportData.results[0].remarks } : null)}
             />
           </div>
@@ -3649,7 +3748,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
         {bulkDownloadData && bulkDownloadData.length > 0 && (
           <div id="bulk-print-content" style={{ display: 'flex', flexDirection: 'column' }}>
             {bulkDownloadData.map((row, idx) => (
-              <div key={idx} className="pdf-report-page" style={{ width: '794px', height: '1123px', overflow: 'visible', backgroundColor: '#fff' }}>
+              <div key={idx} className="pdf-report-page" style={{ width: '794px', minHeight: '1123px', overflow: 'visible', backgroundColor: '#fff' }}>
                 <LearnerReportTemplate
                   learner={row.learner}
                   results={row.results || []}
@@ -3659,6 +3758,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                   brandingSettings={brandingSettings}
                   user={user}
                   streamConfigs={streamConfigs}
+                  gradingRanges={gradingRanges}
                   commentData={commentMap?.[row?.learner?.id]}
                 />
               </div>

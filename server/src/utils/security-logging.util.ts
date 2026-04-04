@@ -4,6 +4,7 @@
  */
 
 import { Request } from 'express';
+import logger from './logger';
 
 export enum SecurityEventType {
   AUTHENTICATION_FAILED = 'AUTHENTICATION_FAILED',
@@ -60,24 +61,22 @@ export const getUserAgent = (req: Request): string => {
  * Log security event
  */
 export const logSecurityEvent = (entry: SecurityLogEntry): void => {
-  const logLevel = entry.riskLevel === 'critical' ? 'error' : 'warn';
-
-  const logMessage = {
-    timestamp: entry.timestamp,
+  const logData = {
     eventType: entry.eventType,
     userId: entry.userId,
     userEmail: entry.userEmail,
     ipAddress: entry.ipAddress,
     status: entry.status,
-    message: entry.message,
     riskLevel: entry.riskLevel,
     ...(entry.details && { details: entry.details })
   };
 
-  if (logLevel === 'error') {
-    console.error('🔒 SECURITY EVENT:', logMessage);
+  if (entry.riskLevel === 'critical') {
+    logger.error(logData, entry.message);
+  } else if (['medium', 'high'].includes(entry.riskLevel)) {
+    logger.warn(logData, entry.message);
   } else {
-    console.warn('🔒 SECURITY EVENT:', logMessage);
+    logger.info(logData, entry.message);
   }
 
   // In production, send to centralized logging service (e.g., Sentry, DataDog)
