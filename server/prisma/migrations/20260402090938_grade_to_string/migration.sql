@@ -39,7 +39,7 @@ CREATE INDEX IF NOT EXISTS "summative_tests_grade_term_academicYear_idx" ON "sum
 
 -- Step 3: Deduplicate before creating unique indexes
 
--- Deduplicate classes
+-- Deduplicate classes (no known child tables with strict FK that would block, but consider adding others if they fail)
 DELETE FROM "classes"
 WHERE id IN (
     SELECT id FROM (
@@ -57,14 +57,31 @@ WHERE id IN (
     ) t WHERE rn > 1
 );
 
--- Deduplicate summative_tests
-DELETE FROM "summative_tests"
-WHERE id IN (
-    SELECT id FROM (
+-- Deduplicate summative_tests (with cascading deletes for child tables)
+DO $$
+DECLARE
+    dup_test_ids TEXT[];
+BEGIN
+    SELECT ARRAY_AGG(id) INTO dup_test_ids
+    FROM (
         SELECT id, ROW_NUMBER() OVER (PARTITION BY "grade", "learningArea", "term", "academicYear", "testType" ORDER BY "createdAt" DESC) as rn
         FROM "summative_tests"
-    ) t WHERE rn > 1
-);
+    ) t WHERE rn > 1;
+
+    IF dup_test_ids IS NOT NULL THEN
+        -- Delete history for results associated with duplicate tests
+        DELETE FROM "summative_result_history"
+        WHERE "resultId" IN (SELECT id FROM "summative_results" WHERE "testId" = ANY(dup_test_ids));
+
+        -- Delete results associated with duplicate tests
+        DELETE FROM "summative_results"
+        WHERE "testId" = ANY(dup_test_ids);
+
+        -- Delete the duplicate tests themselves
+        DELETE FROM "summative_tests"
+        WHERE id = ANY(dup_test_ids);
+    END IF;
+END $$;
 
 -- Step 4: Create unique indexes
 CREATE UNIQUE INDEX IF NOT EXISTS "classes_grade_stream_academicYear_term_key" ON "classes"("grade", "stream", "academicYear", "term");
