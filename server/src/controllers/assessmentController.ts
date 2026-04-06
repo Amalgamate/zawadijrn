@@ -3,7 +3,7 @@ import prisma from '../config/database';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { gradingService } from '../services/grading.service';
 import { auditService } from '../services/audit.service';
-import { AssessmentStatus, CurriculumType, FormativeAssessmentType, Term, SummativeTestType } from '@prisma/client';
+import { AssessmentStatus, CurriculumType, FormativeAssessmentType, Prisma, Term, SummativeTestType } from '@prisma/client';
 import { aiAssistantService } from '../services/ai-assistant.service';
 import { detailedToGeneralRating } from '../utils/rubric.util';
 import { redisCacheService } from '../services/redis-cache.service';
@@ -1341,24 +1341,108 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
       }
     };
 
-    const results = await prisma.summativeResult.findMany({
-      where: whereClause,
-      include: {
+    let results: any[] = [];
+    try {
+      results = await prisma.summativeResult.findMany({
+        where: whereClause,
+        include: {
+          learner: {
+            select: { id: true, firstName: true, lastName: true, admissionNumber: true, stream: true }
+          },
+          test: {
+            // Avoid selecting enum fields here so legacy enum drift in production data
+            // does not crash matrix generation while migrations roll forward.
+            select: { id: true, title: true, learningArea: true, totalMarks: true }
+          }
+        },
+        orderBy: [
+          { learner: { firstName: 'asc' } },
+          { test: { learningArea: 'asc' } },
+          { test: { testDate: 'asc' } }
+        ]
+      });
+    } catch (error: any) {
+      const enumDrift =
+        String(error?.message || '').includes('not found in enum') ||
+        String(error?.message || '').includes('SummativeTestType');
+
+      if (!enumDrift) {
+        throw error;
+      }
+
+      console.warn('[Assessments] Falling back to raw bulk results query due to enum drift:', error?.message);
+
+      const conditions: Prisma.Sql[] = [
+        Prisma.sql`sr.archived = false`,
+        Prisma.sql`st.archived = false`,
+        Prisma.sql`l.grade = ${String(grade)}`,
+        Prisma.sql`st."academicYear" = ${parseInt(academicYear as string)}`,
+        Prisma.sql`st.term = ${normalizedTerm}`,
+      ];
+
+      if (stream) conditions.push(Prisma.sql`l.stream = ${String(stream)}`);
+      if (testType) conditions.push(Prisma.sql`st."testType"::text = ${String(testType)}`);
+
+      const rawRows = await prisma.$queryRaw<Array<any>>(Prisma.sql`
+        SELECT
+          sr.id,
+          sr."testId",
+          sr."learnerId",
+          sr."marksObtained",
+          sr.percentage,
+          sr.grade,
+          sr."cbcGrade",
+          sr.status,
+          sr.remarks,
+          sr."teacherComment",
+          sr."recordedBy",
+          sr."createdAt",
+          sr."updatedAt",
+          l.id AS learner_id,
+          l."firstName" AS learner_first_name,
+          l."lastName" AS learner_last_name,
+          l."admissionNumber" AS learner_admission_number,
+          l.stream AS learner_stream,
+          st.id AS test_id,
+          st.title AS test_title,
+          st."learningArea" AS test_learning_area,
+          st."totalMarks" AS test_total_marks
+        FROM summative_results sr
+        INNER JOIN learners l ON l.id = sr."learnerId"
+        INNER JOIN summative_tests st ON st.id = sr."testId"
+        WHERE ${Prisma.join(conditions, ' AND ')}
+        ORDER BY l."firstName" ASC, st."learningArea" ASC, st."testDate" ASC
+      `);
+
+      results = rawRows.map((row) => ({
+        id: row.id,
+        testId: row.testId,
+        learnerId: row.learnerId,
+        marksObtained: row.marksObtained,
+        percentage: row.percentage,
+        grade: row.grade,
+        cbcGrade: row.cbcGrade,
+        status: row.status,
+        remarks: row.remarks,
+        teacherComment: row.teacherComment,
+        recordedBy: row.recordedBy,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
         learner: {
-          select: { id: true, firstName: true, lastName: true, admissionNumber: true, stream: true }
+          id: row.learner_id,
+          firstName: row.learner_first_name,
+          lastName: row.learner_last_name,
+          admissionNumber: row.learner_admission_number,
+          stream: row.learner_stream
         },
         test: {
-          // Avoid selecting enum fields here so legacy enum drift in production data
-          // does not crash matrix generation while migrations roll forward.
-          select: { id: true, title: true, learningArea: true, totalMarks: true }
+          id: row.test_id,
+          title: row.test_title,
+          learningArea: row.test_learning_area,
+          totalMarks: row.test_total_marks
         }
-      },
-      orderBy: [
-        { learner: { firstName: 'asc' } },
-        { test: { learningArea: 'asc' } },
-        { test: { testDate: 'asc' } }
-      ]
-    });
+      }));
+    }
 
     const learnerIds = Array.from(new Set(results.map(r => r.learnerId)));
 
