@@ -34,6 +34,10 @@ resolveMigration('20260402090938_grade_to_string', '--rolled-back');
 // so it's safe to re-run.
 resolveMigration('20260404104631_add_library_accounting_sync_v2', '--rolled-back');
 
+// 4. CBC eight-level grading enforcement
+// If this previously failed mid-deploy, clear failed state so deploy can retry.
+resolveMigration('20260406121000_enforce_cbc_eight_level_grading', '--rolled-back');
+
 // Note: We removed the global "db push" from here because it's too aggressive 
 // during the type transition. migrate deploy is safer as it handles data 
 // migration SQL.

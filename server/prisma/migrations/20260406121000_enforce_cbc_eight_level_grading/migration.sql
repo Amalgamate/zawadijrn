@@ -2,6 +2,25 @@
 -- 1) Normalize legacy A-E values in existing summative_results.
 -- 2) Align default SUMMATIVE grading ranges to the 8-level CBC rubric.
 
+-- Ensure grade column is text on environments where it is still SummativeGrade enum.
+DO $$
+DECLARE
+  grade_udt text;
+BEGIN
+  SELECT udt_name
+  INTO grade_udt
+  FROM information_schema.columns
+  WHERE table_name = 'summative_results'
+    AND column_name = 'grade'
+    AND table_schema = 'public';
+
+  IF grade_udt = 'SummativeGrade' THEN
+    ALTER TABLE "summative_results"
+      ALTER COLUMN "grade" TYPE text
+      USING "grade"::text;
+  END IF;
+END $$;
+
 -- 1) Normalize stored result grades
 UPDATE "summative_results"
 SET "grade" = COALESCE(
