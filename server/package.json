@@ -7,7 +7,7 @@
     "dev": "nodemon",
     "dev:ts": "ts-node --transpile-only src/index.ts",
     "kill": "powershell -Command \"Get-NetTCPConnection -LocalPort 5000 -ErrorAction SilentlyContinue | Select-Object -Expand OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }\"",
-    "build": "tsc",
+    "build": "npx prisma db push --accept-data-loss && tsc",
     "postinstall": "prisma generate",
     "deploy": "npm install && npm run build",
     "start": "node scripts/pre-deploy.js && prisma migrate deploy && node dist/index.js",
