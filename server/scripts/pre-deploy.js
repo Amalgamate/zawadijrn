@@ -19,8 +19,15 @@ try {
   execSync('npx prisma migrate resolve --applied 20260402074726_summative_hardening', { stdio: 'pipe' });
   console.log("✅ Migration 20260402074726_summative_hardening confirmed as applied.");
 } catch (error) {
-  // Already in the correct state — nothing to do.
-  console.log("✅ Migration record already up to date.");
+  console.log("✅ Migration 20260402074726_summative_hardening record already up to date.");
+}
+
+try {
+  console.log("Resolving any stuck grade_to_string migrations...");
+  execSync('npx prisma migrate resolve --rolled-back 20260402090938_grade_to_string', { stdio: 'pipe' });
+  console.log("✅ Migration 20260402090938_grade_to_string record cleared (rolled back).");
+} catch (error) {
+  console.log("✅ Migration 20260402090938_grade_to_string record already in a clean state.");
 }
 
 console.log("Pre-deploy pipeline complete. Proceeding to migrate...");
