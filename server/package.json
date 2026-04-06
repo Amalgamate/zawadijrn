@@ -10,7 +10,7 @@
     "build": "tsc",
     "postinstall": "prisma generate",
     "deploy": "npm install && npm run build",
-    "start": "prisma migrate deploy && node dist/index.js",
+    "start": "node scripts/pre-deploy.js && prisma migrate deploy && node dist/index.js",
     "start:push": "prisma db push --skip-generate && node dist/index.js",
     "db:reset": "prisma migrate reset --force --schema ./prisma/schema.prisma",
     "seed": "ts-node prisma/seed.ts",
@@ -35,7 +35,9 @@
     "test:load:light": "ts-node tests/load-testing.test.ts -- --light",
     "test:phase1": "npm run test:security && npm run test:load",
     "lint": "eslint src --ext .ts",
-    "lint:fix": "eslint src --ext .ts --fix"
+    "lint:fix": "eslint src --ext .ts --fix",
+    "fix:prod-duplicates": "ts-node scripts/fix-summative-duplicates.ts",
+    "fix:prod-migration": "ts-node scripts/fix-summative-duplicates.ts && npx prisma migrate resolve --applied 20260402074726_summative_hardening && npx prisma migrate deploy"
   },
   "keywords": [
     "education",
