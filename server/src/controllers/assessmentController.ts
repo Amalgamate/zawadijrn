@@ -1284,15 +1284,77 @@ export const getTestResults = async (req: Request, res: Response) => {
       return res.json({ success: true, data: cached, count: cached.length, _cached: true });
     }
 
-    const results = await prisma.summativeResult.findMany({
-      where: { testId },
-      include: {
+    let results: any[] = [];
+    try {
+      results = await prisma.summativeResult.findMany({
+        where: { testId },
+        include: {
+          learner: {
+            select: { firstName: true, lastName: true, admissionNumber: true, grade: true }
+          }
+        },
+        orderBy: { marksObtained: 'desc' }
+      });
+    } catch (error: any) {
+      const message = String(error?.message || '');
+      const enumDrift =
+        message.includes('not found in enum') ||
+        message.includes('expected_type: String') ||
+        message.includes('modelName: \'SummativeResult\'') ||
+        message.includes('field: \'grade\'');
+
+      if (!enumDrift) {
+        throw error;
+      }
+
+      console.warn('[Assessments] Falling back to raw test-results query due to legacy grade decode drift:', error?.message);
+      const rawRows = await prisma.$queryRaw<Array<any>>(Prisma.sql`
+        SELECT
+          sr.id,
+          sr."testId",
+          sr."learnerId",
+          sr."marksObtained",
+          sr.percentage,
+          sr.grade::text AS grade,
+          sr."cbcGrade"::text AS "cbcGrade",
+          sr.status,
+          sr.remarks,
+          sr."teacherComment",
+          sr."recordedBy",
+          sr."createdAt",
+          sr."updatedAt",
+          l."firstName" AS learner_first_name,
+          l."lastName" AS learner_last_name,
+          l."admissionNumber" AS learner_admission_number,
+          l.grade AS learner_grade
+        FROM summative_results sr
+        INNER JOIN learners l ON l.id = sr."learnerId"
+        WHERE sr."testId" = ${testId}
+        ORDER BY sr."marksObtained" DESC
+      `);
+
+      results = rawRows.map((row) => ({
+        id: row.id,
+        testId: row.testId,
+        learnerId: row.learnerId,
+        marksObtained: row.marksObtained,
+        percentage: row.percentage,
+        grade: row.grade,
+        cbcGrade: row.cbcGrade,
+        status: row.status,
+        remarks: row.remarks,
+        teacherComment: row.teacherComment,
+        recordedBy: row.recordedBy,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
         learner: {
-          select: { firstName: true, lastName: true, admissionNumber: true, grade: true }
+          firstName: row.learner_first_name,
+          lastName: row.learner_last_name,
+          admissionNumber: row.learner_admission_number,
+          grade: row.learner_grade
         }
-      },
-      orderBy: { marksObtained: 'desc' }
-    });
+      }));
+    }
 
     await redisCacheService.set(cacheKey, results, RESULTS_CACHE_TTL);
 
