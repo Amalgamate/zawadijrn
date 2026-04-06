@@ -10,6 +10,31 @@ let feeRoutes: any;
 let authRoutes: any;
 let prisma: any;
 
+// Prevent Jest from loading real WhatsApp/SMS/Email providers (Baileys ESM parsing issue)
+jest.mock('../src/services/whatsapp.service', () => ({
+  whatsappService: {
+    sendMessage: jest.fn(async () => ({ success: true })),
+  },
+}));
+
+jest.mock('../src/services/sms.service', () => ({
+  SmsService: {
+    sendSms: jest.fn(async () => ({ success: true })),
+    sendFeeInvoiceNotification: jest.fn(async () => ({ success: true })),
+    sendAssessmentReport: jest.fn(async () => ({ success: true })),
+  }
+}));
+
+jest.mock('../src/services/email-resend.service', () => ({
+  EmailService: {
+    sendWelcomeEmail: jest.fn(async () => undefined),
+    sendPasswordReset: jest.fn(async () => undefined),
+    sendNotificationEmail: jest.fn(async () => undefined),
+    sendFeeInvoiceEmail: jest.fn(async () => undefined),
+    sendOnboardingEmail: jest.fn(async () => undefined),
+  },
+}));
+
 // In-memory redis mock for tests (covers auth cache + refresh token revocation checks)
 jest.mock('../src/services/redis-cache.service', () => {
   const store = new Map<string, { value: any; expiresAt: number | null }>();
@@ -53,6 +78,9 @@ describe('Tier A smoke (real DB)', () => {
   const USER_ID = 'tier-a-super-admin-id';
   const PASSWORD = 'Test123!';
 
+  // Real DB seed + bcrypt can exceed Jest's default 5s timeout.
+  jest.setTimeout(30000);
+
   beforeAll(async () => {
     process.env.NODE_ENV = 'test';
     process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret';
@@ -66,7 +94,8 @@ describe('Tier A smoke (real DB)', () => {
     classRoutes = (await import('../src/routes/class.routes')).default;
     feeRoutes = (await import('../src/routes/fee.routes')).default;
 
-    const hashed = await bcrypt.hash(PASSWORD, 11);
+    // Use lower bcrypt cost for test speed (still validates login/refresh logic)
+    const hashed = await bcrypt.hash(PASSWORD, 4);
 
     // Seed a single ACTIVE SUPER_ADMIN user (required for /auth/login + role checks)
     await prisma.user.upsert({
