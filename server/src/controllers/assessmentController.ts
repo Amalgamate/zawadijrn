@@ -789,18 +789,54 @@ export const getSummativeTests = async (req: AuthRequest, res: Response) => {
     if (stream) whereClause.stream = stream;
     if (learningArea) whereClause.learningArea = learningArea;
 
-    const tests = await prisma.summativeTest.findMany({
-      where: whereClause,
-      include: {
-        creator: {
-          select: { firstName: true, lastName: true }
+    let tests: any[] = [];
+    try {
+      tests = await prisma.summativeTest.findMany({
+        where: whereClause,
+        include: {
+          creator: {
+            select: { firstName: true, lastName: true }
+          },
+          _count: {
+            select: { results: true }
+          }
         },
-        _count: {
-          select: { results: true }
-        }
-      },
-      orderBy: { testDate: 'desc' }
-    });
+        orderBy: { testDate: 'desc' }
+      });
+    } catch (error: any) {
+      // Temporary compatibility fallback for partially-migrated production schemas.
+      if (error?.code !== 'P2022') {
+        throw error;
+      }
+
+      console.warn('[Assessments] Falling back to legacy summative_tests query due to schema drift:', error?.message);
+      const rawTests = await prisma.$queryRaw<Array<any>>`
+        SELECT
+          st.id,
+          st.title,
+          st."learningArea",
+          st.term,
+          st."academicYear",
+          st."testDate",
+          st."totalMarks",
+          st."passMarks",
+          st.grade,
+          st."createdBy"
+        FROM summative_tests st
+        ORDER BY st."testDate" DESC
+      `;
+
+      tests = rawTests
+        .filter((t) => !term || t.term === term)
+        .filter((t) => !academicYear || Number(t.academicYear) === parseInt(academicYear as string))
+        .filter((t) => !grade || t.grade === grade)
+        .filter((t) => !learningArea || t.learningArea === learningArea)
+        .map((t) => ({
+          ...t,
+          creator: null,
+          _count: { results: 0 }
+        }));
+    }
 
     await redisCacheService.set(cacheKey, tests, TESTS_CACHE_TTL);
 

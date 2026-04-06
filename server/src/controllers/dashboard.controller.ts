@@ -68,10 +68,21 @@ export class DashboardController {
                    orderBy: { createdAt: 'desc' }, take: 5,
                    select: { marksObtained: true, test: { select: { title: true, learningArea: true } }, learner: { select: { firstName: true, lastName: true } }, createdAt: true }
                 }),
-                prisma.event.findMany({
-                    where: { startDate: { gte: new Date() } }, orderBy: { startDate: 'asc' }, take: 5,
-                    include: { creator: { select: { role: true } } }
-                }),
+                (async () => {
+                    try {
+                        return await prisma.event.findMany({
+                            where: { startDate: { gte: new Date() } }, orderBy: { startDate: 'asc' }, take: 5,
+                            include: { creator: { select: { role: true } } }
+                        });
+                    } catch (error: any) {
+                        // Temporary safety for live DBs still on legacy events column naming.
+                        if (error?.code === 'P2022' && String(error?.message || '').includes('events.allDay')) {
+                            console.warn('[Dashboard] events.allDay missing in DB, returning empty upcoming events until migration applies.');
+                            return [];
+                        }
+                        throw error;
+                    }
+                })(),
                 prisma.formativeAssessment.count({ where: { status: 'DRAFT', archived: false } }),
             ]);
 
