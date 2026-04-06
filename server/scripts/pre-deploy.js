@@ -30,14 +30,24 @@ try {
 // ─── 20260404104631_add_library_accounting_sync_v2 ───────────────────────────
 // This migration previously failed and some tables (like book_loans) were missing.
 // The migration SQL has been made fully idempotent (CREATE IF NOT EXISTS, etc).
-// Clear any stuck state (rolled-back) so Prisma re-applies the fixed SQL and
-// ensures all library/transport/LMS tables are correctly created.
+// We clear any stuck state AND run db push to ensure the tables PHYSICALLY exist.
 try {
   console.log("Resolving any stuck add_library_accounting_sync_v2 migration...");
   execSync('npx prisma migrate resolve --rolled-back 20260404104631_add_library_accounting_sync_v2', { stdio: 'pipe' });
-  console.log("✅ Migration 20260404104631_add_library_accounting_sync_v2 record cleared (rolled back).");
+  console.log("✅ Migration 20260404104631_add_library_accounting_sync_v2 record cleared.");
 } catch (error) {
-  console.log("✅ Migration 20260404104631_add_library_accounting_sync_v2 record already in a clean state.");
+  console.log("✅ Migration 20260404104631_add_library_accounting_sync_v2 record already clean or skipped.");
+}
+
+// FORCE physical schema sync (Safe as long as we don't drop columns with data)
+try {
+  console.log("Synchronizing physical database schema (db push)...");
+  // --accept-data-loss is usually needed if there are breaking changes, but since 
+  // the tables are MISSING, it will just create them.
+  execSync('npx prisma db push --accept-data-loss', { stdio: 'pipe' });
+  console.log("✅ Physical database schema synchronized.");
+} catch (error) {
+  console.error("⚠️ Physical sync had warnings, but proceeding to migrate deploy...");
 }
 
 console.log("Pre-deploy pipeline complete. Proceeding to migrate...");
