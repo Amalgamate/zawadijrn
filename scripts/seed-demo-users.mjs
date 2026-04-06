@@ -1,21 +1,15 @@
 /**
  * seed-demo-users.mjs
- * Seeds demo accounts for all three institution types.
+ * Seeds demo accounts for the current Prisma `User` model.
  *
  * Run with:  node scripts/seed-demo-users.mjs
  *
  * Demo accounts created:
- *   CBC Primary:
- *     admin@cbc-demo.zawadi    / Demo@2025!
- *     teacher@cbc-demo.zawadi  / Demo@2025!
- *
- *   Secondary:
- *     admin@secondary-demo.zawadi    / Demo@2025!
- *     teacher@secondary-demo.zawadi  / Demo@2025!
- *
- *   Tertiary:
- *     admin@tertiary-demo.zawadi    / Demo@2025!
- *     lecturer@tertiary-demo.zawadi / Demo@2025!
+ *   ADMIN / TEACHER / PARENT / ACCOUNTANT roles:
+ *     admin@demo.zawadi        / Demo@2025!
+ *     teacher@demo.zawadi      / Demo@2025!
+ *     parent@demo.zawadi       / Demo@2025!
+ *     accountant@demo.zawadi   / Demo@2025!
  */
 
 import { PrismaClient } from '@prisma/client';
@@ -25,105 +19,41 @@ const prisma = new PrismaClient();
 const DEMO_PASSWORD = 'Demo@2025!';
 
 const demoUsers = [
-  // ── CBC Primary ─────────────────────────────────────────────────────────
   {
-    email: 'admin@cbc-demo.zawadi',
-    firstName: 'CBC',
+    email: 'admin@demo.zawadi',
+    firstName: 'Demo',
     lastName: 'Admin',
     role: 'ADMIN',
-    institutionType: 'PRIMARY_CBC',
     phone: '+254700000001',
   },
   {
-    email: 'teacher@cbc-demo.zawadi',
-    firstName: 'CBC',
+    email: 'teacher@demo.zawadi',
+    firstName: 'Demo',
     lastName: 'Teacher',
     role: 'TEACHER',
-    institutionType: 'PRIMARY_CBC',
     phone: '+254700000002',
   },
   {
-    email: 'parent@cbc-demo.zawadi',
-    firstName: 'CBC',
+    email: 'parent@demo.zawadi',
+    firstName: 'Demo',
     lastName: 'Parent',
     role: 'PARENT',
-    institutionType: 'PRIMARY_CBC',
     phone: '+254700000003',
   },
-
-  // ── Secondary ────────────────────────────────────────────────────────────
   {
-    email: 'admin@secondary-demo.zawadi',
-    firstName: 'Secondary',
-    lastName: 'Admin',
-    role: 'ADMIN',
-    institutionType: 'SECONDARY',
-    phone: '+254700000011',
-  },
-  {
-    email: 'teacher@secondary-demo.zawadi',
-    firstName: 'Secondary',
-    lastName: 'Teacher',
-    role: 'TEACHER',
-    institutionType: 'SECONDARY',
-    phone: '+254700000012',
-  },
-  {
-    email: 'hod@secondary-demo.zawadi',
-    firstName: 'Secondary',
-    lastName: 'HeadTeacher',
-    role: 'HEAD_TEACHER',
-    institutionType: 'SECONDARY',
-    phone: '+254700000013',
-  },
-  {
-    email: 'accountant@secondary-demo.zawadi',
-    firstName: 'Secondary',
+    email: 'accountant@demo.zawadi',
+    firstName: 'Demo',
     lastName: 'Accountant',
     role: 'ACCOUNTANT',
-    institutionType: 'SECONDARY',
     phone: '+254700000014',
-  },
-
-  // ── Tertiary ─────────────────────────────────────────────────────────────
-  {
-    email: 'admin@tertiary-demo.zawadi',
-    firstName: 'Tertiary',
-    lastName: 'Admin',
-    role: 'ADMIN',
-    institutionType: 'TERTIARY',
-    phone: '+254700000021',
-  },
-  {
-    email: 'lecturer@tertiary-demo.zawadi',
-    firstName: 'Tertiary',
-    lastName: 'Lecturer',
-    role: 'TEACHER',
-    institutionType: 'TERTIARY',
-    phone: '+254700000022',
-  },
-  {
-    email: 'registrar@tertiary-demo.zawadi',
-    firstName: 'Tertiary',
-    lastName: 'Registrar',
-    role: 'HEAD_TEACHER',
-    institutionType: 'TERTIARY',
-    phone: '+254700000023',
-  },
-  {
-    email: 'finance@tertiary-demo.zawadi',
-    firstName: 'Tertiary',
-    lastName: 'Finance',
-    role: 'ACCOUNTANT',
-    institutionType: 'TERTIARY',
-    phone: '+254700000024',
   },
 ];
 
 async function main() {
   console.log('🌱 Seeding demo users...\n');
 
-  const hashedPassword = await bcrypt.hash(DEMO_PASSWORD, 11);
+  const bcryptCost = Number(process.env.BCRYPT_COST || 11);
+  const hashedPassword = await bcrypt.hash(DEMO_PASSWORD, bcryptCost);
 
   let created = 0;
   let skipped = 0;
@@ -139,23 +69,29 @@ async function main() {
 
     await prisma.user.create({
       data: {
-        ...userData,
+        email: userData.email,
+        password: hashedPassword,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        role: userData.role,
+        phone: userData.phone,
         password: hashedPassword,
         status: 'ACTIVE',
         emailVerified: true,
       },
     });
 
-    console.log(`  ✅ Created [${userData.institutionType}] ${userData.role}: ${userData.email}`);
+    console.log(`  ✅ Created ${userData.role}: ${userData.email}`);
     created++;
   }
 
   console.log(`\n✅ Done. Created: ${created}, Skipped: ${skipped}`);
   console.log(`\n🔑 Password for all demo accounts: ${DEMO_PASSWORD}`);
   console.log('\nDemo login accounts:');
-  console.log('  CBC Primary    → admin@cbc-demo.zawadi');
-  console.log('  Secondary      → admin@secondary-demo.zawadi');
-  console.log('  Tertiary       → admin@tertiary-demo.zawadi');
+  console.log('  Admin          → admin@demo.zawadi');
+  console.log('  Teacher        → teacher@demo.zawadi');
+  console.log('  Parent         → parent@demo.zawadi');
+  console.log('  Accountant     → accountant@demo.zawadi');
 }
 
 main()

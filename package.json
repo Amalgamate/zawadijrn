@@ -51,7 +51,7 @@
     "lint:fix": "eslint \"src\" --ext .js,.jsx --fix",
     "format": "prettier --write \"src/**/*.{js,jsx,css,md,json}\"",
     "icons": "node scripts/generate-icons.mjs",
-    "seed:demo": "node --loader ts-node/esm scripts/seed-demo-users.mjs",
+    "seed:demo": "npm --prefix server run prisma:generate && node --no-warnings \"../scripts/seed-demo-users.mjs\"",
     "audit:api-contract": "node scripts/audit-api-contract-drift.js",
     "audit:api-contract:strict": "node scripts/audit-api-contract-drift.js --fail"
   },

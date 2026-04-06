@@ -198,7 +198,14 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
   // Layout selection
   if (isMobile) {
     return (
-      <MobileAppShell user={user} brandingSettings={brandingSettings} onLogout={handleLogout}>
+      <MobileAppShell
+        user={user}
+        brandingSettings={brandingSettings}
+        onLogout={handleLogout}
+        onNavigate={handleNavigate}
+        currentPage={currentPage}
+        setBrandingSettings={setBrandingSettings}
+      >
         <ErrorBoundary>
           <PageRouter
             currentPage={currentPage} 
