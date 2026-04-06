@@ -7,8 +7,9 @@
 
 import React, { useMemo, useState } from 'react';
 import {
-  Menu, X, ChevronDown, School, Boxes
+  Menu, X, ChevronDown, School, Boxes, ExternalLink, Pin
 } from 'lucide-react';
+import { createPortal } from 'react-dom';
 import { usePermissions } from '../../../hooks/usePermissions';
 import { useNavigation, allNavSections } from '../hooks/useNavigation';
 
@@ -44,11 +45,31 @@ const Sidebar = React.memo(({
   brandingSettings
 }) => {
   const { can, role } = usePermissions();
+  const [hoveredSection, setHoveredSection] = useState(null);
+  const [hoverPosition, setHoverPosition] = useState({ left: 0 });
+  const [isPinned, setIsPinned] = useState(false);
   const [expandedSubSections, setExpandedSubSections] = useState({
     'group-summative': true,
     'group-formative': false,
     'group-general':   true
   });
+  const hoverTimeoutRef = React.useRef(null);
+
+  const handleMouseEnter = (e, section) => {
+    if (sidebarOpen || section.items.length === 0) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    // Only store left — flyout will be pinned top-to-bottom via CSS
+    setHoverPosition({ left: rect.right + 8 });
+    setHoveredSection(section);
+  };
+
+  const handleMouseLeave = () => {
+    if (isPinned) return;
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredSection(null);
+    }, 200);
+  };
 
   const toggleSubSection = (id) => {
     setExpandedSubSections(prev => {
@@ -186,6 +207,8 @@ const Sidebar = React.memo(({
               toggleSubSection={toggleSubSection}
               currentPage={currentPage}
               onNavigate={onNavigate}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
             />
           )}
 
@@ -219,6 +242,8 @@ const Sidebar = React.memo(({
                       toggleSubSection={toggleSubSection}
                       currentPage={currentPage}
                       onNavigate={onNavigate}
+                      onMouseEnter={handleMouseEnter}
+                      onMouseLeave={handleMouseLeave}
                     />
                   ))}
                 </div>
@@ -237,6 +262,8 @@ const Sidebar = React.memo(({
               toggleSubSection={toggleSubSection}
               currentPage={currentPage}
               onNavigate={onNavigate}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
             />
           )}
 
@@ -251,6 +278,8 @@ const Sidebar = React.memo(({
               toggleSubSection={toggleSubSection}
               currentPage={currentPage}
               onNavigate={onNavigate}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
             />
           )}
 
@@ -284,6 +313,8 @@ const Sidebar = React.memo(({
                       toggleSubSection={toggleSubSection}
                       currentPage={currentPage}
                       onNavigate={onNavigate}
+                      onMouseEnter={handleMouseEnter}
+                      onMouseLeave={handleMouseLeave}
                     />
                   ))}
                 </div>
@@ -302,6 +333,8 @@ const Sidebar = React.memo(({
               toggleSubSection={toggleSubSection}
               currentPage={currentPage}
               onNavigate={onNavigate}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
             />
           )}
         </div>
@@ -327,6 +360,8 @@ const Sidebar = React.memo(({
                 toggleSubSection={toggleSubSection}
                 currentPage={currentPage}
                 onNavigate={onNavigate}
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
                 isBottom={true}
               />
             ))}
@@ -348,6 +383,87 @@ const Sidebar = React.memo(({
           )}
         </button>
       </div>
+
+      {/* Flyout Menu (Portal) — full viewport height, pinned to sidebar right edge */}
+      {!sidebarOpen && hoveredSection && createPortal(
+        <div 
+          className="fixed z-[9999] bg-[#0c0516]/95 backdrop-blur-xl border border-white/20 shadow-[0_0_50px_rgba(0,0,0,0.5),0_0_20px_rgba(13,148,136,0.1)] overflow-hidden animate-in fade-in zoom-in-95 slide-in-from-left-2 duration-150"
+          style={{ 
+            top: 0,
+            bottom: 0,
+            left: hoverPosition.left,
+            minWidth: '240px',
+            overflowY: 'auto'
+          }}
+          onMouseEnter={() => {
+            if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+          }}
+          onMouseLeave={handleMouseLeave}
+        >
+          {/* Flyout Header */}
+          <div className="px-5 py-4 bg-[var(--brand-purple-dark)] border-b border-white/10 flex items-center justify-between sticky top-0 z-10">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-0.5">Explore Section</span>
+              <span className="text-sm font-bold text-white">
+                {hoveredSection.label}
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => setIsPinned(!isPinned)}
+                className={`p-2 rounded-lg transition-all active:scale-90 ${isPinned ? 'bg-brand-teal text-white shadow-lg shadow-brand-teal/20' : 'text-gray-400 hover:bg-white/10 hover:text-white'}`}
+                title={isPinned ? "Unpin menu" : "Pin menu to keep it open"}
+              >
+                <Pin size={18} className={isPinned ? 'fill-current' : ''} />
+              </button>
+              <div className="w-10 h-10 rounded-full bg-brand-teal/10 flex items-center justify-center border border-brand-teal/20 text-brand-teal">
+                <hoveredSection.icon size={20} />
+              </div>
+            </div>
+          </div>
+
+          {/* Flyout Items */}
+          <div className="p-3 space-y-1.5 bg-[#0c0516]">
+            {hoveredSection.items.map(section => {
+              if (section.type === 'group') {
+                return (
+                  <div key={section.id} className="mb-4 first:mt-1">
+                    <div className="px-3 py-2 text-[10px] font-black uppercase tracking-widest text-[#0D9488] mb-1 flex items-center gap-2 bg-white/5 rounded-md border border-white/5">
+                      {section.icon && <section.icon size={12} />}
+                      {section.label}
+                    </div>
+                    <div className="space-y-1 ml-2 border-l-2 border-[#0D9488]/30">
+                      {section.items.map(subItem => (
+                        <FlyoutItem 
+                          key={subItem.id} 
+                          item={subItem} 
+                          currentPage={currentPage} 
+                          onNavigate={(path) => {
+                            onNavigate(path);
+                            setHoveredSection(null);
+                          }} 
+                        />
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+              return (
+                <FlyoutItem 
+                  key={section.id} 
+                  item={section} 
+                  currentPage={currentPage} 
+                  onNavigate={(path) => {
+                    onNavigate(path);
+                    setHoveredSection(null);
+                  }} 
+                />
+              );
+            })}
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 });
@@ -362,10 +478,16 @@ const NavSection = React.memo(({
   toggleSubSection,
   currentPage,
   onNavigate,
+  onMouseEnter,
+  onMouseLeave,
   isBottom = false
 }) => {
   return (
-    <div key={section.id}>
+    <div 
+      key={section.id}
+      onMouseEnter={(e) => onMouseEnter?.(e, section)}
+      onMouseLeave={onMouseLeave}
+    >
       {section.items.length > 0 ? (
         <>
           <button
@@ -518,5 +640,30 @@ const NavSection = React.memo(({
 
 NavSection.displayName = 'NavSection';
 Sidebar.displayName = 'Sidebar';
+
+const FlyoutItem = ({ item, currentPage, onNavigate }) => (
+  <button
+    onClick={() => item.greyedOut ? null : onNavigate(item.path)}
+    disabled={item.greyedOut}
+    className={`w-full text-left px-3 py-1.5 rounded-md text-xs transition-all flex items-center justify-between ${
+      item.greyedOut
+        ? 'text-gray-600 opacity-50 cursor-not-allowed'
+        : (currentPage === item.path
+            ? 'bg-brand-teal/20 text-white font-bold border border-brand-teal/30 shadow-lg shadow-brand-teal/10'
+            : 'text-gray-300 hover:text-white hover:bg-white/5')
+    }`}
+  >
+    <div className="flex items-center gap-2 min-w-0">
+      {item.icon && <item.icon size={12} className={currentPage === item.path ? 'text-brand-teal' : 'opacity-50'} />}
+      <span className="truncate">{item.label}</span>
+      {item.path && item.path.includes('http') && <ExternalLink size={10} className="opacity-40" />}
+    </div>
+    {item.comingSoon && (
+      <span className="text-[7px] bg-[#F59E0B]/10 text-[#F59E0B] px-1.5 py-0.5 rounded font-black uppercase border border-[#F59E0B]/20">
+        Soon
+      </span>
+    )}
+  </button>
+);
 
 export default Sidebar;

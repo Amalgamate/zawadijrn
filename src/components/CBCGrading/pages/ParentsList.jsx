@@ -165,7 +165,7 @@ const ParentsList = ({ parents = [], pagination, onFetchParents, onAddParent, on
                 <tr key={parent.id} onClick={() => onViewParent(parent)} className="hover:bg-gray-50 cursor-pointer transition">
                   <td className="px-3 py-2">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-gradient-to-br from-brand-purple to-brand-purple/80 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-sm">
+                      <div className="w-8 h-8 bg-brand-purple rounded-full flex items-center justify-center text-white font-bold text-xs shadow-sm">
                         {parent.name?.substring(0, 2).toUpperCase()}
                       </div>
                       <div>

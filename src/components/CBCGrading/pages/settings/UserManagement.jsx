@@ -646,7 +646,7 @@ const UserManagement = () => {
                           </td>
                           <td className="px-4 py-4">
                             <div className="flex items-center gap-3">
-                              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br transition-transform group-hover:scale-110 flex items-center justify-center text-white font-bold text-sm shadow-sm ${user.archived ? 'from-gray-400 to-gray-500' : 'from-blue-500 to-indigo-600'
+                              <div className={`w-10 h-10 rounded-xl transition-transform group-hover:scale-110 flex items-center justify-center text-white font-bold text-sm shadow-sm ${user.archived ? 'bg-gray-500' : 'bg-blue-600'
                                 }`}>
                                 {user.firstName[0]}{user.lastName[0]}
                               </div>

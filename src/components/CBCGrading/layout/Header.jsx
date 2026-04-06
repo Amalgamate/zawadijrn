@@ -358,7 +358,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
                         >
                           <div className={cn(
                             "w-10 h-10 rounded-full flex items-center justify-center font-black text-xs shrink-0 shadow-sm border-2 transition-transform group-hover:scale-105",
-                            b.isToday ? "bg-gradient-to-tr from-pink-500 to-rose-500 text-white border-pink-200" : "bg-gray-100 text-gray-600 border-gray-200"
+                            b.isToday ? "bg-pink-600 text-white border-pink-200" : "bg-gray-100 text-gray-600 border-gray-200"
                           )}>
                             {b.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
                           </div>

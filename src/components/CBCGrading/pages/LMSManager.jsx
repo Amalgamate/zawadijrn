@@ -35,6 +35,7 @@ const LMSManager = ({ currentPage = 'lms-courses' }) => {
     const [activeTab, setActiveTab] = useState(pageToTabMap[currentPage] || 'dashboard');
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [createCourseOpen, setCreateCourseOpen] = useState(false);
 
     useEffect(() => {
         // Update active tab when currentPage changes
@@ -83,7 +84,7 @@ const LMSManager = ({ currentPage = 'lms-courses' }) => {
                 </div>
                 {canCreateCourses && (
                     <Button
-                        onClick={() => setActiveTab('courses')}
+                        onClick={() => { setActiveTab('courses'); setCreateCourseOpen(true); }}
                         className="flex items-center gap-2"
                     >
                         <Plus className="h-4 w-4" />
@@ -164,7 +165,7 @@ const LMSManager = ({ currentPage = 'lms-courses' }) => {
                 </TabsContent>
 
                 <TabsContent value="courses" className="mt-6">
-                    <CourseManager />
+                    <CourseManager createDialogOpen={createCourseOpen} setCreateDialogOpen={setCreateCourseOpen} />
                 </TabsContent>
 
                 <TabsContent value="content" className="mt-6">

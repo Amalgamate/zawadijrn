@@ -1,22 +1,21 @@
-import prisma from './src/config/database.js';
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: "postgresql://postgres.jpngcprtuqfrjjqgoyvq:gtICRvWBoOQb95a5@aws-1-eu-west-1.pooler.supabase.com:5432/postgres?sslmode=require&connection_limit=1"
+    }
+  }
+});
 
-async function check() {
+async function main() {
   try {
-    console.log('Checking database...');
-    const areas = await prisma.learningArea.findMany({ take: 5 });
-    console.log('Learning Areas (first 5):', areas.length);
-    areas.forEach(a => console.log('-', a.name, a.gradeLevel));
-
-    const courses = await prisma.lMSCourse.findMany({ take: 5 });
-    console.log('LMS Courses (first 5):', courses.length);
-    courses.forEach(c => console.log('-', c.title, c.subject, c.grade));
-
-    console.log('Grades array:', ['PLAYGROUP', 'PP1', 'PP2', 'GRADE_1', 'GRADE_2', 'GRADE_3', 'GRADE_4', 'GRADE_5', 'GRADE_6', 'GRADE_7', 'GRADE_8', 'GRADE_9']);
-  } catch (error) {
-    console.error('Error:', error);
+    const result = await prisma.$queryRaw`SELECT DISTINCT "testType" FROM summative_tests`;
+    console.log("Distinct test types:", result);
+  } catch (e) {
+    console.error(e);
   } finally {
     await prisma.$disconnect();
   }
 }
 
-check();
+main();
