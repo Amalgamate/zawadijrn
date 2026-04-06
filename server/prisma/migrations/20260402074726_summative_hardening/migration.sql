@@ -6,24 +6,31 @@
 
 */
 -- CreateEnum
-CREATE TYPE "SummativeTestType" AS ENUM ('OPENER', 'MID_TERM', 'END_TERM', 'CAT', 'ASSESSMENT', 'OTHER');
+DO $$ BEGIN
+    CREATE TYPE "SummativeTestType" AS ENUM ('OPENER', 'MID_TERM', 'END_TERM', 'CAT', 'ASSESSMENT', 'OTHER');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- AlterTable
-ALTER TABLE "summative_results" DROP COLUMN "grade",
-ADD COLUMN     "grade" TEXT NOT NULL;
+ALTER TABLE "summative_results" ALTER COLUMN "grade" TYPE TEXT USING "grade"::TEXT;
 
 -- AlterTable
-ALTER TABLE "summative_tests" DROP COLUMN "testType",
-ADD COLUMN     "testType" "SummativeTestType";
+ALTER TABLE "summative_tests" ALTER COLUMN "testType" TYPE "SummativeTestType" USING CASE
+  WHEN "testType" = 'MIDTERM' THEN 'MID_TERM'::"SummativeTestType"
+  WHEN "testType" = 'WEEKLY' THEN 'CAT'::"SummativeTestType" 
+  WHEN "testType" IS NULL THEN NULL
+  ELSE "testType"::text::"SummativeTestType"
+END;
 
 -- CreateIndex
-CREATE INDEX "summative_results_grade_idx" ON "summative_results"("grade");
+CREATE INDEX IF NOT EXISTS "summative_results_grade_idx" ON "summative_results"("grade");
 
 -- CreateIndex
-CREATE INDEX "summative_results_testId_grade_marksObtained_idx" ON "summative_results"("testId", "grade", "marksObtained");
+CREATE INDEX IF NOT EXISTS "summative_results_testId_grade_marksObtained_idx" ON "summative_results"("testId", "grade", "marksObtained");
 
 -- CreateIndex
-CREATE INDEX "summative_tests_testType_idx" ON "summative_tests"("testType");
+CREATE INDEX IF NOT EXISTS "summative_tests_testType_idx" ON "summative_tests"("testType");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "summative_tests_grade_learningArea_term_academicYear_testTy_key" ON "summative_tests"("grade", "learningArea", "term", "academicYear", "testType");
+CREATE UNIQUE INDEX IF NOT EXISTS "summative_tests_grade_learningArea_term_academicYear_testTy_key" ON "summative_tests"("grade", "learningArea", "term", "academicYear", "testType");

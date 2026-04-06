@@ -19,7 +19,7 @@ import { Textarea } from '../../ui/textarea';
 import { Loader2, Plus, Edit, Trash2, Search, BookOpen, Users, Eye } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
-const CourseManager = () => {
+const CourseManager = ({ createDialogOpen: externalOpen, setCreateDialogOpen: setExternalOpen } = {}) => {
     const { can } = usePermissions();
     const { apiCall } = useApi();
 
@@ -38,7 +38,9 @@ const CourseManager = () => {
     const [dataLoading, setDataLoading] = useState(true);
 
     // Dialog states
-    const [createDialogOpen, setCreateDialogOpen] = useState(false);
+    const [internalOpen, setInternalOpen] = useState(false);
+    const createDialogOpen = externalOpen !== undefined ? externalOpen : internalOpen;
+    const setCreateDialogOpen = setExternalOpen || setInternalOpen;
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [selectedCourse, setSelectedCourse] = useState(null);
 
@@ -242,13 +244,13 @@ const CourseManager = () => {
                     <h2 className="text-xl font-semibold text-gray-900">Course Management</h2>
                     <p className="text-gray-600">Create and manage learning courses</p>
                 </div>
-                {canCreateCourses && (
+            </div>
+
+            {/* Create Course Dialog */}
+            {canCreateCourses && (
                     <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
                         <DialogTrigger asChild>
-                            <Button className="flex items-center gap-2">
-                                <Plus className="h-4 w-4" />
-                                Create Course
-                            </Button>
+                            <span className="hidden" />  
                         </DialogTrigger>
                         <DialogContent className="max-w-md">
                             <DialogHeader>
@@ -367,7 +369,6 @@ const CourseManager = () => {
                         </DialogContent>
                     </Dialog>
                 )}
-            </div>
 
             {/* Filters */}
             <Card>
