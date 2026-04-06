@@ -1362,9 +1362,13 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
         ]
       });
     } catch (error: any) {
+      const message = String(error?.message || '');
       const enumDrift =
-        String(error?.message || '').includes('not found in enum') ||
-        String(error?.message || '').includes('SummativeTestType');
+        message.includes('not found in enum') ||
+        message.includes('SummativeTestType') ||
+        message.includes('expected_type: String') ||
+        message.includes('modelName: \'SummativeResult\'') ||
+        message.includes('field: \'grade\'');
 
       if (!enumDrift) {
         throw error;
@@ -1390,8 +1394,8 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
           sr."learnerId",
           sr."marksObtained",
           sr.percentage,
-          sr.grade,
-          sr."cbcGrade",
+          sr.grade::text AS grade,
+          sr."cbcGrade"::text AS "cbcGrade",
           sr.status,
           sr.remarks,
           sr."teacherComment",
