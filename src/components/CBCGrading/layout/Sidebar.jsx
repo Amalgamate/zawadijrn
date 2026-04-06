@@ -1,40 +1,44 @@
 /**
- * Sidebar Component
- * Navigation sidebar with collapsible sections
- * Role-based permission filtering - Tutors hidden from teachers
- * Focus mode: Only showing Students, Tutors, Parents, Assessment, and Settings
+ * Sidebar Component — Industry-Grade Rewrite
+ *
+ * Key improvements over previous version:
+ * - Flyout hover is rock-solid: invisible "bridge" strip + shared ref cancel prevents flicker
+ * - Perfect icon centering in collapsed mode (w-16 / 64px column)
+ * - Category groups use smooth CSS height transition, not conditional rendering flash
+ * - Consistent 44px touch-target row heights throughout
+ * - Portal flyout aligned flush to sidebar right edge with no gap
+ * - Single source of truth for hover state (ref + setState)
  */
 
-import React, { useMemo, useState } from 'react';
-import {
-  Menu, X, ChevronDown, School, Boxes, ExternalLink, Pin
-} from 'lucide-react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import {
+  Menu, X, ChevronRight, ChevronDown,
+  School, Boxes, ExternalLink, Pin
+} from 'lucide-react';
 import { usePermissions } from '../../../hooks/usePermissions';
 import { useNavigation, allNavSections } from '../hooks/useNavigation';
 
-const prefetchModule = (path) => {
-  // Disabled under Vite: 
-  // Vite handles module preloading natively via <link rel="modulepreload">. 
-  // Manual dynamic imports with variable deep paths (like "reports/Summary") crash Rollup's static analyzer.
-  return;
-};
+// ─── constants ────────────────────────────────────────────────────────────────
+const SIDEBAR_COLLAPSED_W = 64;   // px  (w-16)
+const SIDEBAR_EXPANDED_W  = 224;  // px  (w-56)
+const HEADER_H            = 72;   // px  — must match the logo bar below
+const FLYOUT_DELAY_MS     = 120;  // ms  — delay before closing flyout
 
-// Helper to find the first navigable path in a section
-const findDefaultPath = (items) => {
+// ─── helpers ──────────────────────────────────────────────────────────────────
+const findDefaultPath = (items = []) => {
   for (const item of items) {
     if (item.type === 'group') {
-      const path = findDefaultPath(item.items);
-      if (path) return path;
-    } else {
-      if (!item.greyedOut && item.path) {
-        return item.path;
-      }
+      const p = findDefaultPath(item.items);
+      if (p) return p;
+    } else if (!item.greyedOut && item.path) {
+      return item.path;
     }
   }
   return null;
 };
 
+// ─── Sidebar (root) ───────────────────────────────────────────────────────────
 const Sidebar = React.memo(({
   sidebarOpen,
   setSidebarOpen,
@@ -42,63 +46,70 @@ const Sidebar = React.memo(({
   onNavigate,
   expandedSections,
   toggleSection,
-  brandingSettings
+  brandingSettings,
 }) => {
-  const { can, role } = usePermissions();
-  const [hoveredSection, setHoveredSection] = useState(null);
-  const [hoverPosition, setHoverPosition] = useState({ left: 0 });
-  const [isPinned, setIsPinned] = useState(false);
+  const { role } = usePermissions();
+
+  // ── flyout state ────────────────────────────────────────────────────────────
+  const [flyoutSection, setFlyoutSection]   = useState(null);
+  const [isPinned,      setIsPinned]        = useState(false);
+  const closeTimerRef = useRef(null);
+
+  const scheduleFlyoutClose = useCallback(() => {
+    if (isPinned) return;
+    clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = setTimeout(() => setFlyoutSection(null), FLYOUT_DELAY_MS);
+  }, [isPinned]);
+
+  const cancelFlyoutClose = useCallback(() => {
+    clearTimeout(closeTimerRef.current);
+  }, []);
+
+  const openFlyout = useCallback((section) => {
+    if (sidebarOpen || !section?.items?.length) return;
+    cancelFlyoutClose();
+    setFlyoutSection(section);
+  }, [sidebarOpen, cancelFlyoutClose]);
+
+  // close flyout when sidebar expands
+  useEffect(() => {
+    if (sidebarOpen) setFlyoutSection(null);
+  }, [sidebarOpen]);
+
+  // cleanup timer on unmount
+  useEffect(() => () => clearTimeout(closeTimerRef.current), []);
+
+  // ── sub-section accordion (assessment groups) ───────────────────────────────
   const [expandedSubSections, setExpandedSubSections] = useState({
     'group-summative': true,
     'group-formative': false,
-    'group-general':   true
+    'group-general':   true,
   });
-  const hoverTimeoutRef = React.useRef(null);
 
-  const handleMouseEnter = (e, section) => {
-    if (sidebarOpen || section.items.length === 0) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-    // Only store left — flyout will be pinned top-to-bottom via CSS
-    setHoverPosition({ left: rect.right + 8 });
-    setHoveredSection(section);
-  };
-
-  const handleMouseLeave = () => {
-    if (isPinned) return;
-    hoverTimeoutRef.current = setTimeout(() => {
-      setHoveredSection(null);
-    }, 200);
-  };
-
-  const toggleSubSection = (id) => {
+  const toggleSubSection = useCallback((id) => {
     setExpandedSubSections(prev => {
-      const isOpening = !prev[id];
-      if (isOpening) {
-        const newState = Object.keys(prev).reduce((acc, key) => { acc[key] = false; return acc; }, {});
-        newState[id] = true;
-        return newState;
+      const opening = !prev[id];
+      if (opening) {
+        return Object.keys(prev).reduce((acc, k) => { acc[k] = false; return acc; }, { [id]: true });
       }
       return { ...prev, [id]: false };
     });
-  };
+  }, []);
 
-  // Auto-expand group when one of its children is the active page
-  React.useEffect(() => {
+  // auto-expand group when child is active
+  useEffect(() => {
     allNavSections.forEach(section => {
-      if (section.items && section.items.length > 0) {
-        section.items.forEach(item => {
-          if (item.type === 'group') {
-            const isChildActive = item.items.some(subItem => subItem.path === currentPage);
-            if (isChildActive) {
-              setExpandedSubSections(prev => ({ ...prev, [item.id]: true }));
-            }
+      (section.items || []).forEach(item => {
+        if (item.type === 'group') {
+          if ((item.items || []).some(sub => sub.path === currentPage)) {
+            setExpandedSubSections(prev => ({ ...prev, [item.id]: true }));
           }
-        });
-      }
+        }
+      });
     });
   }, [currentPage]);
 
+  // ── category accordion ───────────────────────────────────────────────────────
   const {
     navSections,
     dashboardSection,
@@ -108,367 +119,261 @@ const Sidebar = React.memo(({
     studentLmsSection,
     backOfficeSections,
     docsCenterSection,
-    systemAdminSections
+    systemAdminSections,
   } = useNavigation();
 
-  const handleSectionClick = (section) => {
-    if (sidebarOpen) {
-      toggleSection(section.id);
-    } else {
-      const defaultPath = findDefaultPath(section.items);
-      if (defaultPath) {
-        onNavigate(defaultPath);
-      } else {
-        setSidebarOpen(true);
-        toggleSection(section.id);
-      }
-    }
-  };
-
   const [activeCategory, setActiveCategory] = useState(() => {
-    const adminRoles = ['ADMIN', 'SUPER_ADMIN'];
-    const schoolRoles = ['ACCOUNTANT', 'RECEPTIONIST', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM'];
-    if (adminRoles.includes(role)) return 'school';
-    if (schoolRoles.includes(role)) return 'backOffice';
+    if (['ADMIN', 'SUPER_ADMIN'].includes(role)) return 'school';
+    if (['ACCOUNTANT', 'RECEPTIONIST', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM'].includes(role)) return 'backOffice';
     return 'school';
   });
 
-  const toggleCategory = (category) => {
-    setActiveCategory(prev => prev === category ? null : category);
-  };
-
-  React.useEffect(() => {
-    const isSchool = schoolSections.some(s => s.id === currentPage || s.items.some(i => i.path === currentPage));
-    const isBackOffice = backOfficeSections.some(s => s.id === currentPage || s.items.some(i => i.path === currentPage));
-    const isAdmin = systemAdminSections.some(s => s.id === currentPage || s.items.some(i => i.path === currentPage));
-
-    if (isSchool) setActiveCategory('school');
-    else if (isBackOffice) setActiveCategory('backOffice');
-    else if (isAdmin) setActiveCategory('admin');
+  useEffect(() => {
+    const inSchool     = schoolSections.some(s => s.id === currentPage || (s.items || []).some(i => i.path === currentPage));
+    const inBackOffice = backOfficeSections.some(s => s.id === currentPage || (s.items || []).some(i => i.path === currentPage));
+    const inAdmin      = systemAdminSections.some(s => s.id === currentPage || (s.items || []).some(i => i.path === currentPage));
+    if (inSchool)          setActiveCategory('school');
+    else if (inBackOffice) setActiveCategory('backOffice');
+    else if (inAdmin)      setActiveCategory('admin');
   }, [currentPage, schoolSections, backOfficeSections, systemAdminSections]);
 
+  // ── section click ────────────────────────────────────────────────────────────
+  const handleSectionClick = useCallback((section) => {
+    if (sidebarOpen) {
+      toggleSection(section.id);
+    } else {
+      const path = findDefaultPath(section.items);
+      if (path) onNavigate(path);
+      else { setSidebarOpen(true); toggleSection(section.id); }
+    }
+  }, [sidebarOpen, toggleSection, onNavigate, setSidebarOpen]);
+
+  // ── shared nav-item props ────────────────────────────────────────────────────
+  const sharedNavProps = {
+    expandedSections,
+    handleSectionClick,
+    sidebarOpen,
+    expandedSubSections,
+    toggleSubSection,
+    currentPage,
+    onNavigate,
+    openFlyout,
+    scheduleFlyoutClose,
+    cancelFlyoutClose,
+    flyoutSection,
+  };
+
+  const sidebarW = sidebarOpen ? SIDEBAR_EXPANDED_W : SIDEBAR_COLLAPSED_W;
+
   return (
-    <div className={`${sidebarOpen ? 'w-52' : 'w-20'} bg-[var(--brand-purple)] text-white transition-all duration-300 flex flex-col border-r border-white/10 shadow-lg`}>
-      {/* Logo/Brand */}
-      <div className="h-20 p-5 border-b border-white/10 bg-[var(--brand-purple-dark)] relative overflow-hidden">
-        <div className="flex items-center gap-3 justify-center overflow-hidden relative z-10">
+    <>
+      {/* ── Sidebar panel ─────────────────────────────────────────────────── */}
+      <aside
+        style={{ width: sidebarW }}
+        className="relative flex flex-col h-full bg-[var(--brand-purple)] text-white transition-[width] duration-300 ease-in-out border-r border-white/10 shadow-xl flex-shrink-0 z-30"
+      >
+        {/* Logo bar */}
+        <div
+          style={{ height: HEADER_H }}
+          className="flex items-center justify-center px-3 border-b border-white/10 bg-[var(--brand-purple-dark)] overflow-hidden flex-shrink-0"
+        >
           {brandingSettings?.logoUrl ? (
-            <div className={`transition-all duration-300 flex items-center justify-center ${sidebarOpen ? 'w-full px-2' : 'w-10 h-10'}`}>
-              <img 
-                src={brandingSettings.logoUrl} 
-                alt="School Logo" 
-                className={`${sidebarOpen ? 'h-12 object-contain' : 'w-full h-full object-cover rounded-lg shadow-sm'}`} 
-              />
-            </div>
+            <img
+              src={brandingSettings.logoUrl}
+              alt="School Logo"
+              className={`object-contain transition-all duration-300 ${sidebarOpen ? 'h-11 max-w-full' : 'h-9 w-9'}`}
+            />
           ) : sidebarOpen ? (
-            <h1 className="text-xl font-bold text-white tracking-widest truncate w-full text-center hover:drop-shadow-lg transition-shadow duration-300">
-              {brandingSettings?.schoolName || 'ZAWADI JUNIOR ACADEMY'}
-            </h1>
+            <span className="text-base font-black text-white tracking-wider truncate text-center leading-tight px-1">
+              {brandingSettings?.schoolName || 'ZAWADI'}
+            </span>
           ) : (
-            <div className="w-10 h-10 rounded-lg bg-brand-purple/20 flex items-center justify-center flex-shrink-0 border border-white/10 hover:border-brand-purple/50 transition-all duration-300 shadow-lg">
-              <span className="text-lg font-bold text-white">
-                {(brandingSettings?.schoolName || 'EL').substring(0, 2).toUpperCase()}
+            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center border border-white/20 shadow-inner">
+              <span className="text-sm font-black text-white">
+                {(brandingSettings?.schoolName || 'ZA').substring(0, 2).toUpperCase()}
               </span>
             </div>
           )}
         </div>
-      </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto p-3 bg-[var(--brand-purple)] custom-scrollbar space-y-2">
-        <div className="space-y-3">
+        {/* Nav scroll area */}
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden py-3 px-2 space-y-0.5 custom-scrollbar">
 
           {/* Dashboard */}
           {dashboardSection && (
-            <button
-              onClick={() => onNavigate(dashboardSection.id)}
-              onMouseEnter={() => prefetchModule(dashboardSection.id)}
-              className={`w-full text-left flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-300 group relative overflow-hidden ${
-                currentPage === dashboardSection.id
-                  ? 'bg-brand-teal/40 text-white border border-brand-teal/50 shadow-lg shadow-brand-teal/20'
-                  : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10'
-              }`}
-            >
-              <div className="min-w-[20px] flex justify-center relative z-10 group-hover:scale-110 transition-transform duration-300">
-                <dashboardSection.icon size={20} />
-              </div>
-              {sidebarOpen && <span className="text-left text-sm font-bold tracking-tight relative z-10">{dashboardSection.label}</span>}
-            </button>
+            <SingleItem
+              section={dashboardSection}
+              currentPage={currentPage}
+              onNavigate={onNavigate}
+              sidebarOpen={sidebarOpen}
+            />
           )}
 
-          {/* Communications / Inbox */}
+          {/* Communications */}
           {communicationSection && (
-            <NavSection
-              section={communicationSection}
-              expandedSections={expandedSections}
-              handleSectionClick={handleSectionClick}
-              sidebarOpen={sidebarOpen}
-              expandedSubSections={expandedSubSections}
-              toggleSubSection={toggleSubSection}
-              currentPage={currentPage}
-              onNavigate={onNavigate}
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-            />
+            <NavSection key={communicationSection.id} section={communicationSection} {...sharedNavProps} />
           )}
 
-          {/* School Operations */}
+          {/* ── School group ─────────────────────────────────────── */}
           {schoolSections.length > 0 && (
-            <div className="space-y-1">
-              {sidebarOpen && (
-                <button
-                  onClick={() => toggleCategory('school')}
-                  className="w-full flex items-center justify-between px-3 py-2.5 text-xs font-bold text-gray-400 hover:text-gray-200 transition-all duration-300 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/10"
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="min-w-[20px] flex justify-center">
-                      <School size={18} className="opacity-70" />
-                    </div>
-                    <span className="uppercase tracking-wider font-bold text-brand-teal">School</span>
-                  </div>
-                  <ChevronDown size={14} className={`transition-transform duration-300 ${activeCategory === 'school' ? 'rotate-180' : ''}`} />
-                </button>
-              )}
-              {(!sidebarOpen || activeCategory === 'school') && (
-                <div className={sidebarOpen ? 'animate-in fade-in slide-in-from-top-1 duration-200' : ''}>
-                  {schoolSections.map(section => (
-                    <NavSection
-                      key={section.id}
-                      section={section}
-                      expandedSections={expandedSections}
-                      handleSectionClick={handleSectionClick}
-                      sidebarOpen={sidebarOpen}
-                      expandedSubSections={expandedSubSections}
-                      toggleSubSection={toggleSubSection}
-                      currentPage={currentPage}
-                      onNavigate={onNavigate}
-                      onMouseEnter={handleMouseEnter}
-                      onMouseLeave={handleMouseLeave}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* LMS — Standalone module, above Back Office */}
-          {lmsSection && (
-            <NavSection
-              section={lmsSection}
-              expandedSections={expandedSections}
-              handleSectionClick={handleSectionClick}
+            <CategoryGroup
+              label="School"
+              icon={School}
+              categoryKey="school"
+              activeCategory={activeCategory}
+              setActiveCategory={setActiveCategory}
               sidebarOpen={sidebarOpen}
-              expandedSubSections={expandedSubSections}
-              toggleSubSection={toggleSubSection}
-              currentPage={currentPage}
-              onNavigate={onNavigate}
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-            />
+            >
+              {schoolSections.map(s => <NavSection key={s.id} section={s} {...sharedNavProps} />)}
+            </CategoryGroup>
           )}
 
-          {/* Student Portal — shown only when studentLmsSection is available (STUDENT role) */}
-          {studentLmsSection && (
-            <NavSection
-              section={studentLmsSection}
-              expandedSections={expandedSections}
-              handleSectionClick={handleSectionClick}
-              sidebarOpen={sidebarOpen}
-              expandedSubSections={expandedSubSections}
-              toggleSubSection={toggleSubSection}
-              currentPage={currentPage}
-              onNavigate={onNavigate}
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-            />
-          )}
+          {/* LMS */}
+          {lmsSection && <NavSection key={lmsSection.id} section={lmsSection} {...sharedNavProps} />}
 
-          {/* Back Office */}
+          {/* Student Portal */}
+          {studentLmsSection && <NavSection key={studentLmsSection.id} section={studentLmsSection} {...sharedNavProps} />}
+
+          {/* ── Back Office group ─────────────────────────────────── */}
           {backOfficeSections.length > 0 && (
-            <div className="space-y-1">
-              {sidebarOpen && (
-                <button
-                  onClick={() => toggleCategory('backOffice')}
-                  className="w-full flex items-center justify-between px-3 py-2.5 text-xs font-bold text-gray-400 hover:text-gray-200 transition-all duration-300 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/10"
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="min-w-[20px] flex justify-center">
-                      <Boxes size={18} className="opacity-70" />
-                    </div>
-                    <span className="uppercase tracking-wider font-bold text-brand-teal">Back Office</span>
-                  </div>
-                  <ChevronDown size={14} className={`transition-transform duration-300 ${activeCategory === 'backOffice' ? 'rotate-180' : ''}`} />
-                </button>
-              )}
-              {(!sidebarOpen || activeCategory === 'backOffice') && (
-                <div className={sidebarOpen ? 'animate-in fade-in slide-in-from-top-1 duration-200' : ''}>
-                  {backOfficeSections.map(section => (
-                    <NavSection
-                      key={section.id}
-                      section={section}
-                      expandedSections={expandedSections}
-                      handleSectionClick={handleSectionClick}
-                      sidebarOpen={sidebarOpen}
-                      expandedSubSections={expandedSubSections}
-                      toggleSubSection={toggleSubSection}
-                      currentPage={currentPage}
-                      onNavigate={onNavigate}
-                      onMouseEnter={handleMouseEnter}
-                      onMouseLeave={handleMouseLeave}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Documents Standalone */}
-          {docsCenterSection && (
-            <NavSection
-              section={docsCenterSection}
-              expandedSections={expandedSections}
-              handleSectionClick={handleSectionClick}
+            <CategoryGroup
+              label="Back Office"
+              icon={Boxes}
+              categoryKey="backOffice"
+              activeCategory={activeCategory}
+              setActiveCategory={setActiveCategory}
               sidebarOpen={sidebarOpen}
-              expandedSubSections={expandedSubSections}
-              toggleSubSection={toggleSubSection}
-              currentPage={currentPage}
-              onNavigate={onNavigate}
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-            />
+            >
+              {backOfficeSections.map(s => <NavSection key={s.id} section={s} {...sharedNavProps} />)}
+            </CategoryGroup>
           )}
-        </div>
-      </nav>
 
-      {/* System Admin */}
-      <div className="p-3 border-t border-white/10 bg-[var(--brand-purple-dark)]">
-        {systemAdminSections.length > 0 && (
-          <div className="space-y-1 mb-2">
-            {sidebarOpen && (
-              <div className="px-3 pb-1 text-[10px] font-black uppercase tracking-widest text-gray-500">
-                System Admin
-              </div>
-            )}
-            {systemAdminSections.map(section => (
-              <NavSection
-                key={section.id}
-                section={section}
-                expandedSections={expandedSections}
-                handleSectionClick={handleSectionClick}
-                sidebarOpen={sidebarOpen}
-                expandedSubSections={expandedSubSections}
-                toggleSubSection={toggleSubSection}
-                currentPage={currentPage}
-                onNavigate={onNavigate}
-                onMouseEnter={handleMouseEnter}
-                onMouseLeave={handleMouseLeave}
-                isBottom={true}
-              />
-            ))}
-          </div>
-        )}
+          {/* Documents */}
+          {docsCenterSection && <NavSection key={docsCenterSection.id} section={docsCenterSection} {...sharedNavProps} />}
+        </nav>
 
-        {/* Collapse toggle */}
-        <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md transition text-gray-400 hover:bg-[#0D9488] hover:text-white"
-        >
-          {sidebarOpen ? (
+        {/* Footer — System Admin + collapse toggle */}
+        <footer className="flex-shrink-0 border-t border-white/10 bg-[var(--brand-purple-dark)] px-2 py-2 space-y-0.5">
+          {systemAdminSections.length > 0 && (
             <>
-              <X size={20} />
-              <span className="text-sm font-medium">Collapse Menu</span>
+              {sidebarOpen && (
+                <p className="px-3 pt-1 pb-0.5 text-[9px] font-black uppercase tracking-[0.18em] text-white/30">
+                  System
+                </p>
+              )}
+              {systemAdminSections.map(s => (
+                <NavSection key={s.id} section={s} {...sharedNavProps} isBottom />
+              ))}
             </>
-          ) : (
-            <Menu size={20} />
           )}
-        </button>
-      </div>
 
-      {/* Flyout Menu (Portal) — full viewport height, pinned to sidebar right edge */}
-      {!sidebarOpen && hoveredSection && createPortal(
-        <div 
-          className="fixed z-[9999] bg-[#0c0516]/95 backdrop-blur-xl border border-white/20 shadow-[0_0_50px_rgba(0,0,0,0.5),0_0_20px_rgba(13,148,136,0.1)] overflow-hidden animate-in fade-in zoom-in-95 slide-in-from-left-2 duration-150"
-          style={{ 
-            top: 0,
-            bottom: 0,
-            left: hoverPosition.left,
-            minWidth: '240px',
-            overflowY: 'auto'
-          }}
-          onMouseEnter={() => {
-            if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-          }}
-          onMouseLeave={handleMouseLeave}
-        >
-          {/* Flyout Header */}
-          <div className="px-5 py-4 bg-[var(--brand-purple-dark)] border-b border-white/10 flex items-center justify-between sticky top-0 z-10">
-            <div className="flex flex-col">
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-0.5">Explore Section</span>
-              <span className="text-sm font-bold text-white">
-                {hoveredSection.label}
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
-              <button 
-                onClick={() => setIsPinned(!isPinned)}
-                className={`p-2 rounded-lg transition-all active:scale-90 ${isPinned ? 'bg-brand-teal text-white shadow-lg shadow-brand-teal/20' : 'text-gray-400 hover:bg-white/10 hover:text-white'}`}
-                title={isPinned ? "Unpin menu" : "Pin menu to keep it open"}
-              >
-                <Pin size={18} className={isPinned ? 'fill-current' : ''} />
-              </button>
-              <div className="w-10 h-10 rounded-full bg-brand-teal/10 flex items-center justify-center border border-brand-teal/20 text-brand-teal">
-                <hoveredSection.icon size={20} />
-              </div>
-            </div>
-          </div>
+          {/* Collapse toggle */}
+          <button
+            onClick={() => setSidebarOpen(v => !v)}
+            className="w-full flex items-center gap-3 px-3 rounded-lg transition-all duration-200 text-white/50 hover:text-white hover:bg-white/10"
+            style={{ height: 40 }}
+            title={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+          >
+            <span className="flex-shrink-0 flex items-center justify-center" style={{ width: 20 }}>
+              {sidebarOpen ? <X size={17} /> : <Menu size={17} />}
+            </span>
+            {sidebarOpen && <span className="text-xs font-semibold">Collapse</span>}
+          </button>
+        </footer>
+      </aside>
 
-          {/* Flyout Items */}
-          <div className="p-3 space-y-1.5 bg-[#0c0516]">
-            {hoveredSection.items.map(section => {
-              if (section.type === 'group') {
-                return (
-                  <div key={section.id} className="mb-4 first:mt-1">
-                    <div className="px-3 py-2 text-[10px] font-black uppercase tracking-widest text-[#0D9488] mb-1 flex items-center gap-2 bg-white/5 rounded-md border border-white/5">
-                      {section.icon && <section.icon size={12} />}
-                      {section.label}
-                    </div>
-                    <div className="space-y-1 ml-2 border-l-2 border-[#0D9488]/30">
-                      {section.items.map(subItem => (
-                        <FlyoutItem 
-                          key={subItem.id} 
-                          item={subItem} 
-                          currentPage={currentPage} 
-                          onNavigate={(path) => {
-                            onNavigate(path);
-                            setHoveredSection(null);
-                          }} 
-                        />
-                      ))}
-                    </div>
-                  </div>
-                );
-              }
-              return (
-                <FlyoutItem 
-                  key={section.id} 
-                  item={section} 
-                  currentPage={currentPage} 
-                  onNavigate={(path) => {
-                    onNavigate(path);
-                    setHoveredSection(null);
-                  }} 
-                />
-              );
-            })}
-          </div>
-        </div>,
+      {/* ── Flyout panel (portal) ──────────────────────────────────────────── */}
+      {!sidebarOpen && flyoutSection && createPortal(
+        <FlyoutPanel
+          section={flyoutSection}
+          left={SIDEBAR_COLLAPSED_W}
+          top={HEADER_H}
+          currentPage={currentPage}
+          onNavigate={(path) => {
+            onNavigate(path);
+            if (!isPinned) setFlyoutSection(null);
+          }}
+          isPinned={isPinned}
+          setIsPinned={setIsPinned}
+          onMouseEnter={cancelFlyoutClose}
+          onMouseLeave={scheduleFlyoutClose}
+        />,
         document.body
       )}
-    </div>
+    </>
   );
 });
 
-// ─── NavSection ──────────────────────────────────────────────────────────────
+// ─── CategoryGroup ─────────────────────────────────────────────────────────────
+const CategoryGroup = ({ label, icon: Icon, categoryKey, activeCategory, setActiveCategory, sidebarOpen, children }) => {
+  const isOpen = activeCategory === categoryKey;
+
+  return (
+    <div className="mt-1">
+      {sidebarOpen && (
+        <button
+          onClick={() => setActiveCategory(prev => prev === categoryKey ? null : categoryKey)}
+          className="w-full flex items-center justify-between px-3 rounded-lg text-white/40 hover:text-white/70 hover:bg-white/5 transition-all duration-200"
+          style={{ height: 34 }}
+        >
+          <div className="flex items-center gap-2">
+            <Icon size={13} className="flex-shrink-0" />
+            <span className="text-[9px] font-black uppercase tracking-[0.18em] text-brand-teal">{label}</span>
+          </div>
+          <ChevronDown
+            size={12}
+            className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
+          />
+        </button>
+      )}
+
+      {/* Always show items when collapsed; respect toggle when expanded */}
+      <div
+        className={`overflow-hidden transition-all duration-300 ease-in-out ${
+          sidebarOpen
+            ? (isOpen ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0')
+            : 'max-h-[800px] opacity-100'
+        }`}
+      >
+        <div className="space-y-0.5 pt-0.5">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── SingleItem (leaf, no children — e.g. Dashboard / Help) ───────────────────
+const SingleItem = ({ section, currentPage, onNavigate, sidebarOpen }) => {
+  const isActive = currentPage === section.id;
+  return (
+    <button
+      onClick={() => !section.greyedOut && onNavigate(section.id)}
+      disabled={!!section.greyedOut}
+      title={!sidebarOpen ? section.label : undefined}
+      className={`
+        relative w-full flex items-center gap-3 px-3 rounded-lg transition-all duration-200
+        ${isActive
+          ? 'bg-white/15 text-white font-semibold shadow-sm ring-1 ring-white/20'
+          : 'text-white/60 hover:text-white hover:bg-white/8'}
+        ${section.greyedOut ? 'opacity-40 cursor-not-allowed' : ''}
+      `}
+      style={{ height: 44 }}
+    >
+      {isActive && (
+        <span className="absolute left-0 top-3 bottom-3 w-0.5 bg-brand-teal rounded-r-full" />
+      )}
+      <span className="flex-shrink-0 flex items-center justify-center" style={{ width: 20 }}>
+        <section.icon size={18} />
+      </span>
+      {sidebarOpen && (
+        <span className="text-sm font-semibold truncate">{section.label}</span>
+      )}
+    </button>
+  );
+};
+
+// ─── NavSection ────────────────────────────────────────────────────────────────
 const NavSection = React.memo(({
   section,
   expandedSections,
@@ -478,192 +383,317 @@ const NavSection = React.memo(({
   toggleSubSection,
   currentPage,
   onNavigate,
-  onMouseEnter,
-  onMouseLeave,
-  isBottom = false
+  openFlyout,
+  scheduleFlyoutClose,
+  cancelFlyoutClose,
+  flyoutSection,
+  isBottom = false,
 }) => {
+  const isExpanded     = !!expandedSections[section.id];
+  const isFlyoutActive = !sidebarOpen && flyoutSection?.id === section.id;
+  const hasChildren    = (section.items?.length || 0) > 0;
+
+  const isChildActive = useMemo(() => {
+    if (!hasChildren) return false;
+    const check = (items) => (items || []).some(i =>
+      i.type === 'group' ? check(i.items) : i.path === currentPage
+    );
+    return check(section.items);
+  }, [section.items, currentPage, hasChildren]);
+
+  const isActive = currentPage === section.id || isChildActive;
+  const isAssessment = section.id === 'assessment';
+
+  if (!hasChildren) {
+    return (
+      <SingleItem
+        section={section}
+        currentPage={currentPage}
+        onNavigate={onNavigate}
+        sidebarOpen={sidebarOpen}
+      />
+    );
+  }
+
   return (
-    <div 
-      key={section.id}
-      onMouseEnter={(e) => onMouseEnter?.(e, section)}
-      onMouseLeave={onMouseLeave}
+    <div
+      onMouseEnter={() => { cancelFlyoutClose(); openFlyout(section); }}
+      onMouseLeave={scheduleFlyoutClose}
     >
-      {section.items.length > 0 ? (
-        <>
-          <button
-            onClick={() => handleSectionClick(section)}
-            onMouseEnter={() => {
-              if (!sidebarOpen) {
-                const defaultPath = findDefaultPath(section.items);
-                if (defaultPath) prefetchModule(defaultPath);
-              }
-            }}
-            className={`w-full text-left flex items-center justify-between px-3 py-3 rounded-lg transition-all duration-300 group relative overflow-hidden ${
-              section.id === 'assessment'
-                ? (expandedSections[section.id]
-                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-lg shadow-amber-500/10'
-                    : 'text-amber-400 hover:bg-white/5 hover:text-amber-300 border border-transparent hover:border-amber-500/30')
-                : (expandedSections[section.id]
-                    ? 'bg-white/10 text-white border border-white/20 shadow-lg shadow-white/5'
-                    : 'text-gray-400 hover:bg-white/5 hover:text-white border border-transparent hover:border-white/10')
-            }`}
+      {/* Section header button */}
+      <button
+        onClick={() => handleSectionClick(section)}
+        title={!sidebarOpen ? section.label : undefined}
+        className={`
+          relative w-full flex items-center justify-between px-3 rounded-lg
+          transition-all duration-200 group
+          ${isAssessment
+            ? (isExpanded || isFlyoutActive
+                ? 'bg-amber-500/20 text-amber-300 ring-1 ring-amber-400/30'
+                : isActive
+                  ? 'text-amber-300 bg-amber-500/10'
+                  : 'text-amber-400/70 hover:text-amber-300 hover:bg-amber-500/10')
+            : (isExpanded || isFlyoutActive
+                ? 'bg-white/12 text-white ring-1 ring-white/15'
+                : isActive
+                  ? 'text-white bg-white/8'
+                  : 'text-white/60 hover:text-white hover:bg-white/8')
+          }
+          ${section.greyedOut ? 'opacity-40 cursor-not-allowed' : ''}
+        `}
+        style={{ height: 44 }}
+      >
+        {/* Active indicator strip */}
+        {(isActive || isExpanded) && (
+          <span className="absolute left-0 top-3 bottom-3 w-0.5 bg-brand-teal rounded-r-full" />
+        )}
+
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <span
+            className={`flex-shrink-0 flex items-center justify-center transition-transform duration-200 ${(isExpanded || isFlyoutActive) ? 'scale-110' : ''}`}
+            style={{ width: 20 }}
           >
-            <div className="flex items-center gap-3 flex-1 relative z-10 justify-start">
-              <div className="min-w-[20px] flex justify-center group-hover:scale-110 transition-transform duration-300">
-                <section.icon size={20} className={section.id === 'assessment' ? 'text-amber-400' : ''} />
-              </div>
-              {sidebarOpen && <span className="text-left text-sm font-bold tracking-tight">{section.label}</span>}
-            </div>
-            {sidebarOpen && (
-              <ChevronDown
-                size={16}
-                className={`transition duration-300 ${expandedSections[section.id] ? 'rotate-180' : ''} opacity-70 group-hover:opacity-100`}
-              />
-            )}
-          </button>
-
-          {expandedSections[section.id] && sidebarOpen && (
-            <div className={`ml-6 space-y-0.5 mt-1 border-l border-white/10 ${isBottom ? 'mb-2' : ''}`}>
-              {section.items.map((item) => {
-                if (item.type === 'group') {
-                  const isGroupActive = item.items.some(subItem => subItem.path === currentPage);
-                  return (
-                    <div key={item.id} className="mt-2 mb-1">
-                      <button
-                        onClick={() => item.greyedOut ? null : toggleSubSection(item.id)}
-                        disabled={item.greyedOut}
-                        className={`w-full text-left flex items-center justify-between px-3 py-2 text-sm font-semibold transition-colors ${
-                          item.greyedOut
-                            ? 'text-gray-600 opacity-50 cursor-not-allowed'
-                            : (isGroupActive
-                                ? 'text-white bg-white/10 rounded-md'
-                                : 'text-teal-200 hover:text-white')
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          {item.icon && (
-                            <item.icon size={12} className={item.greyedOut ? 'opacity-40' : (isGroupActive ? 'text-[#0D9488]' : 'opacity-70')} />
-                          )}
-                          <span>{item.label}</span>
-                        </div>
-                        <ChevronDown size={10} className={`transition-transform duration-200 opacity-50 ${expandedSubSections[item.id] ? 'rotate-180' : ''}`} />
-                      </button>
-
-                      {expandedSubSections[item.id] && (
-                        <div className="space-y-0.5 ml-3 animate-in fade-in slide-in-from-top-1 duration-200">
-                          {item.items.map(subItem => (
-                            <button
-                              key={subItem.id}
-                              onClick={() => subItem.greyedOut ? null : onNavigate(subItem.path)}
-                              onMouseEnter={() => prefetchModule(subItem.path)}
-                              disabled={subItem.greyedOut}
-                              className={`w-full text-left px-3 py-1.5 rounded-r-md text-xs transition flex items-center justify-between ${
-                                subItem.comingSoon || subItem.greyedOut
-                                  ? 'text-gray-600 cursor-not-allowed'
-                                  : (currentPage === subItem.path
-                                      ? 'bg-white/5 text-white font-medium border-l-2 border-white'
-                                      : 'text-gray-300 hover:text-white hover:bg-white/5 border-l-2 border-transparent')
-                              }`}
-                            >
-                              <div className="flex items-center gap-2 flex-1 min-w-0">
-                                <span className="text-gray-500 flex-shrink-0">—</span>
-                                <span className="truncate">{subItem.label}</span>
-                              </div>
-                              {subItem.comingSoon && (
-                                <span className="text-[8px] bg-[#F59E0B]/20 text-[#F59E0B] px-1.5 py-0.5 rounded font-medium uppercase border border-[#F59E0B]/30 flex-shrink-0">
-                                  Soon
-                                </span>
-                              )}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                }
-
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => item.greyedOut ? null : onNavigate(item.path)}
-                    onMouseEnter={() => prefetchModule(item.path)}
-                    disabled={item.greyedOut}
-                    className={`w-full text-left px-3 py-1.5 rounded-r-md text-sm transition flex items-center justify-between ${
-                      item.comingSoon || item.greyedOut
-                        ? 'text-gray-600 cursor-not-allowed'
-                        : (currentPage === item.path
-                            ? 'bg-white/5 text-white font-medium border-l-2 border-white'
-                            : 'text-teal-200 hover:text-white hover:bg-white/5 border-l-2 border-transparent')
-                    }`}
-                  >
-                    <span className="truncate">{item.label}</span>
-                    {item.comingSoon && (
-                      <span className="text-[8px] bg-[#F59E0B]/20 text-[#F59E0B] px-1.5 py-0.5 rounded font-medium uppercase border border-[#F59E0B]/30">
-                        Soon
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+            <section.icon size={18} />
+          </span>
+          {sidebarOpen && (
+            <span className="text-sm font-semibold truncate text-left">{section.label}</span>
           )}
-        </>
-      ) : (
-        <button
-          onClick={() => section.greyedOut ? null : onNavigate(section.id)}
-          onMouseEnter={() => prefetchModule(section.id)}
-          disabled={section.greyedOut}
-          className={`w-full text-left flex items-center gap-3 px-3 py-2 rounded-md transition-all duration-200 group ${
-            section.comingSoon || section.greyedOut
-              ? 'text-gray-500 opacity-50 cursor-not-allowed border border-dashed border-white/5'
-              : (currentPage === section.id
-                  ? 'bg-white/5 text-[#0D9488] border-l-4 border-[#0D9488]'
-                  : 'text-gray-400 hover:bg-white/5 hover:text-white border-l-4 border-transparent')
-          }`}
+        </div>
+
+        {sidebarOpen && (
+          <ChevronDown
+            size={14}
+            className={`flex-shrink-0 opacity-40 group-hover:opacity-80 transition-all duration-300 ${isExpanded ? 'rotate-180' : ''}`}
+          />
+        )}
+      </button>
+
+      {/* Expanded children (only when sidebar is open) */}
+      {sidebarOpen && (
+        <div
+          className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'}`}
         >
-          <div className="flex items-center gap-3 flex-1">
-            <div className="min-w-[20px] flex justify-center">
-              <section.icon size={18} />
-            </div>
-            {sidebarOpen && <span className="text-sm font-medium">{section.label}</span>}
+          <div className={`ml-[11px] mt-1 border-l border-white/10 pl-3 space-y-0.5 ${isBottom ? 'mb-2' : 'mb-1'}`}>
+            {section.items.map(item => {
+              if (item.type === 'group') {
+                return (
+                  <SubGroup
+                    key={item.id}
+                    group={item}
+                    currentPage={currentPage}
+                    onNavigate={onNavigate}
+                    expandedSubSections={expandedSubSections}
+                    toggleSubSection={toggleSubSection}
+                  />
+                );
+              }
+              return (
+                <LeafItem
+                  key={item.id}
+                  item={item}
+                  currentPage={currentPage}
+                  onNavigate={onNavigate}
+                />
+              );
+            })}
           </div>
-          {sidebarOpen && section.comingSoon && (
-            <span className="text-[8px] bg-[#F59E0B]/20 text-[#F59E0B] px-1.5 py-0.5 rounded font-medium uppercase border border-[#F59E0B]/30">
-              Soon
-            </span>
-          )}
-        </button>
+        </div>
       )}
     </div>
   );
 });
 
-NavSection.displayName = 'NavSection';
-Sidebar.displayName = 'Sidebar';
+// ─── SubGroup (e.g. Summative / Formative inside Assessment) ──────────────────
+const SubGroup = ({ group, currentPage, onNavigate, expandedSubSections, toggleSubSection }) => {
+  const isOpen        = !!expandedSubSections[group.id];
+  const isChildActive = (group.items || []).some(i => i.path === currentPage);
 
-const FlyoutItem = ({ item, currentPage, onNavigate }) => (
-  <button
-    onClick={() => item.greyedOut ? null : onNavigate(item.path)}
-    disabled={item.greyedOut}
-    className={`w-full text-left px-3 py-1.5 rounded-md text-xs transition-all flex items-center justify-between ${
-      item.greyedOut
-        ? 'text-gray-600 opacity-50 cursor-not-allowed'
-        : (currentPage === item.path
-            ? 'bg-brand-teal/20 text-white font-bold border border-brand-teal/30 shadow-lg shadow-brand-teal/10'
-            : 'text-gray-300 hover:text-white hover:bg-white/5')
-    }`}
-  >
-    <div className="flex items-center gap-2 min-w-0">
-      {item.icon && <item.icon size={12} className={currentPage === item.path ? 'text-brand-teal' : 'opacity-50'} />}
-      <span className="truncate">{item.label}</span>
-      {item.path && item.path.includes('http') && <ExternalLink size={10} className="opacity-40" />}
+  return (
+    <div>
+      <button
+        onClick={() => !group.greyedOut && toggleSubSection(group.id)}
+        disabled={!!group.greyedOut}
+        className={`w-full flex items-center justify-between pr-1 py-1.5 text-xs font-bold transition-colors duration-150 rounded-md ${
+          group.greyedOut
+            ? 'text-white/25 cursor-not-allowed'
+            : isChildActive
+              ? 'text-brand-teal'
+              : 'text-white/50 hover:text-white/80'
+        }`}
+      >
+        <div className="flex items-center gap-1.5">
+          {group.icon && <group.icon size={11} className="opacity-70" />}
+          <span className="uppercase tracking-wide text-[10px]">{group.label}</span>
+        </div>
+        <ChevronRight
+          size={10}
+          className={`opacity-50 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`}
+        />
+      </button>
+
+      <div className={`overflow-hidden transition-all duration-200 ${isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+        <div className="pl-2 border-l border-white/10 space-y-0.5 pt-0.5 pb-1">
+          {(group.items || []).map(item => (
+            <LeafItem key={item.id} item={item} currentPage={currentPage} onNavigate={onNavigate} />
+          ))}
+        </div>
+      </div>
     </div>
-    {item.comingSoon && (
-      <span className="text-[7px] bg-[#F59E0B]/10 text-[#F59E0B] px-1.5 py-0.5 rounded font-black uppercase border border-[#F59E0B]/20">
-        Soon
-      </span>
-    )}
-  </button>
-);
+  );
+};
+
+// ─── LeafItem ──────────────────────────────────────────────────────────────────
+const LeafItem = ({ item, currentPage, onNavigate }) => {
+  const isActive = currentPage === item.path;
+
+  return (
+    <button
+      onClick={() => !item.greyedOut && !item.comingSoon && onNavigate(item.path)}
+      disabled={!!(item.greyedOut || item.comingSoon)}
+      className={`
+        w-full text-left flex items-center justify-between px-2 py-1.5 rounded-md text-xs transition-all duration-150
+        ${item.greyedOut || item.comingSoon
+          ? 'text-white/25 cursor-not-allowed'
+          : isActive
+            ? 'text-white font-semibold bg-white/10'
+            : 'text-white/55 hover:text-white hover:bg-white/5'}
+      `}
+    >
+      <span className="truncate flex-1">{item.label}</span>
+      {item.comingSoon && (
+        <span className="ml-2 flex-shrink-0 text-[8px] bg-amber-400/15 text-amber-400 px-1.5 py-0.5 rounded font-black uppercase border border-amber-400/25 tracking-wide">
+          Soon
+        </span>
+      )}
+    </button>
+  );
+};
+
+// ─── FlyoutPanel ───────────────────────────────────────────────────────────────
+const FlyoutPanel = ({
+  section,
+  left,
+  top,
+  currentPage,
+  onNavigate,
+  isPinned,
+  setIsPinned,
+  onMouseEnter,
+  onMouseLeave,
+}) => {
+  return (
+    <div
+      style={{ left, top, bottom: 0, position: 'fixed', zIndex: 9999, display: 'flex' }}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
+      {/* Invisible 4px bridge strip — prevents gap-triggered close */}
+      <div style={{ width: 4, flexShrink: 0 }} />
+
+      {/* Flyout body */}
+      <div
+        className="w-64 flex flex-col bg-white border-r border-slate-200/80 shadow-[4px_0_32px_rgba(0,0,0,0.1)] overflow-hidden"
+        style={{ animation: 'flyoutIn 0.14s ease-out both' }}
+      >
+        {/* Header */}
+        <div className="px-4 py-4 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
+          <div>
+            <p className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-400 mb-0.5">Navigate</p>
+            <p className="text-sm font-black text-slate-800 leading-tight">{section.label}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsPinned(v => !v)}
+              title={isPinned ? 'Unpin' : 'Pin open'}
+              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
+                isPinned
+                  ? 'bg-[var(--brand-purple)] text-white shadow-md'
+                  : 'text-slate-400 hover:bg-slate-200 hover:text-slate-600'
+              }`}
+            >
+              <Pin size={14} className={isPinned ? 'fill-current' : ''} />
+            </button>
+            <div className="w-9 h-9 rounded-xl bg-[var(--brand-purple)]/8 border border-[var(--brand-purple)]/15 flex items-center justify-center text-[var(--brand-purple)]">
+              <section.icon size={18} />
+            </div>
+          </div>
+        </div>
+
+        {/* Items */}
+        <div className="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar">
+          {(section.items || []).map(item => {
+            if (item.type === 'group') {
+              return (
+                <div key={item.id} className="mb-3">
+                  <div className="flex items-center gap-1.5 px-2 py-1.5 mb-1 text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 bg-slate-50 rounded-md border border-slate-100">
+                    {item.icon && <item.icon size={10} className="opacity-70" />}
+                    {item.label}
+                  </div>
+                  <div className="ml-1.5 border-l-2 border-slate-100 pl-2 space-y-0.5">
+                    {(item.items || []).map(sub => (
+                      <FlyoutLeaf key={sub.id} item={sub} currentPage={currentPage} onNavigate={onNavigate} />
+                    ))}
+                  </div>
+                </div>
+              );
+            }
+            return <FlyoutLeaf key={item.id} item={item} currentPage={currentPage} onNavigate={onNavigate} />;
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── FlyoutLeaf ────────────────────────────────────────────────────────────────
+const FlyoutLeaf = ({ item, currentPage, onNavigate }) => {
+  const isActive = currentPage === item.path;
+
+  return (
+    <button
+      onClick={() => !item.greyedOut && !item.comingSoon && onNavigate(item.path)}
+      disabled={!!(item.greyedOut || item.comingSoon)}
+      className={`
+        w-full text-left flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-all duration-150
+        ${item.greyedOut
+          ? 'text-slate-300 cursor-not-allowed'
+          : isActive
+            ? 'bg-[var(--brand-purple)]/6 text-[var(--brand-purple)] font-bold border border-[var(--brand-purple)]/12 shadow-sm'
+            : 'text-slate-600 hover:text-[var(--brand-purple)] hover:bg-[var(--brand-purple)]/5 active:scale-[0.98]'}
+      `}
+    >
+      <div className="flex items-center gap-2 min-w-0">
+        {item.icon && (
+          <item.icon size={12} className={isActive ? 'text-brand-teal' : 'opacity-40'} />
+        )}
+        <span className="truncate">{item.label}</span>
+        {item.path?.includes('http') && <ExternalLink size={9} className="opacity-30 flex-shrink-0" />}
+      </div>
+      {item.comingSoon && (
+        <span className="ml-2 flex-shrink-0 text-[7px] bg-amber-400/12 text-amber-500 px-1.5 py-0.5 rounded font-black uppercase border border-amber-400/20">
+          Soon
+        </span>
+      )}
+    </button>
+  );
+};
+
+// ─── Keyframe for flyout entrance ─────────────────────────────────────────────
+// Injected once into document head
+if (typeof document !== 'undefined' && !document.getElementById('zawadi-flyout-anim')) {
+  const style = document.createElement('style');
+  style.id = 'zawadi-flyout-anim';
+  style.textContent = `
+    @keyframes flyoutIn {
+      from { opacity: 0; transform: translateX(-6px); }
+      to   { opacity: 1; transform: translateX(0);    }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+// ─── display names ─────────────────────────────────────────────────────────────
+Sidebar.displayName    = 'Sidebar';
+NavSection.displayName = 'NavSection';
 
 export default Sidebar;
