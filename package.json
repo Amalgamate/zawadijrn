@@ -40,7 +40,7 @@
   },
   "scripts": {
     "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
-    "build": "vite build",
+    "build": "vite build --base=/",
     "preview": "vite preview",
     "backend": "npm --prefix server run dev",
     "frontend": "vite",

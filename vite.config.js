@@ -4,27 +4,11 @@ import svgr from 'vite-plugin-svgr';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  // FIX: Use '/' (absolute) instead of './' (relative) for base.
-  //
-  // base: './' generates asset URLs like:
-  //   <script src="./assets/index-abc.js">
-  //   <link href="./assets/index-abc.css">
-  //
-  // When a user navigates to any sub-path (e.g. /#/app) and the browser
-  // tries to resolve those relative paths, it resolves them relative to
-  // the CURRENT URL — not the root. So:
-  //   https://zawadijrn.vercel.app/#/app  +  ./assets/index.js
-  //   → https://zawadijrn.vercel.app/assets/index.js   ✓  (works on root)
-  //
-  // BUT for static hosting (Vercel/Netlify), when Vite's modulepreload
-  // injects <link rel="modulepreload"> tags at runtime, the relative
-  // path gets resolved against document.baseURI, which can be the CDN
-  // edge URL — not the origin. The browser then fetches the .js file,
-  // gets the Vercel SPA fallback HTML (404 → index.html), and rejects
-  // it as "text/html" instead of a JavaScript module.
-  //
   // base: '/' generates absolute asset paths (/assets/index-abc.js)
-  // which always resolve correctly regardless of navigation depth.
+  // which always resolve correctly on Vercel regardless of navigation depth.
+  // NOTE: Do NOT change to './' — relative paths break modulepreload on Vercel
+  // because the SPA catch-all rewrite returns index.html for all paths,
+  // causing the browser to receive text/html instead of JavaScript.
   base: '/',
 
   plugins: [
@@ -43,5 +27,15 @@ export default defineConfig({
   build: {
     outDir: 'build',
     sourcemap: true,
+    // Explicitly set assetsDir to ensure absolute paths in HTML output
+    assetsDir: 'assets',
+    rollupOptions: {
+      output: {
+        // Ensure asset file names use absolute base path
+        assetFileNames: 'assets/[name]-[hash][extname]',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js',
+      }
+    }
   },
 });
