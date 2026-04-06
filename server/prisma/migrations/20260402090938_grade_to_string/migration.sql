@@ -39,7 +39,7 @@ CREATE INDEX IF NOT EXISTS "summative_tests_grade_term_academicYear_idx" ON "sum
 
 -- Step 3: Deduplicate before creating unique indexes
 
--- Deduplicate classes (no known child tables with strict FK that would block, but consider adding others if they fail)
+-- Deduplicate classes
 DELETE FROM "classes"
 WHERE id IN (
     SELECT id FROM (
@@ -57,11 +57,13 @@ WHERE id IN (
     ) t WHERE rn > 1
 );
 
--- Deduplicate summative_tests (with cascading deletes for child tables)
+-- Deduplicate summative_tests (Robust cascade + orphan cleanup)
 DO $$
 DECLARE
     dup_test_ids TEXT[];
+    associated_result_ids TEXT[];
 BEGIN
+    -- 1. Identify duplicate tests
     SELECT ARRAY_AGG(id) INTO dup_test_ids
     FROM (
         SELECT id, ROW_NUMBER() OVER (PARTITION BY "grade", "learningArea", "term", "academicYear", "testType" ORDER BY "createdAt" DESC) as rn
@@ -69,19 +71,30 @@ BEGIN
     ) t WHERE rn > 1;
 
     IF dup_test_ids IS NOT NULL THEN
-        -- Delete history for results associated with duplicate tests
-        DELETE FROM "summative_result_history"
-        WHERE "resultId" IN (SELECT id FROM "summative_results" WHERE "testId" = ANY(dup_test_ids));
-
-        -- Delete results associated with duplicate tests
-        DELETE FROM "summative_results"
+        -- 2. Identify results associated with those tests
+        SELECT ARRAY_AGG(id) INTO associated_result_ids
+        FROM "summative_results"
         WHERE "testId" = ANY(dup_test_ids);
 
-        -- Delete the duplicate tests themselves
+        IF associated_result_ids IS NOT NULL THEN
+            -- 3. Delete history based on collected result IDs (avoids subquery issues on retries)
+            DELETE FROM "summative_result_history"
+            WHERE "resultId" = ANY(associated_result_ids);
+            
+            -- 4. Delete results
+            DELETE FROM "summative_results"
+            WHERE id = ANY(associated_result_ids);
+        END IF;
+
+        -- 5. Delete the duplicate tests
         DELETE FROM "summative_tests"
         WHERE id = ANY(dup_test_ids);
     END IF;
 END $$;
+
+-- 6. Safety Net: Cleanup any orphaned history rows from prior partial runs
+DELETE FROM "summative_result_history"
+WHERE "resultId" NOT IN (SELECT id FROM "summative_results");
 
 -- Step 4: Create unique indexes
 CREATE UNIQUE INDEX IF NOT EXISTS "classes_grade_stream_academicYear_term_key" ON "classes"("grade", "stream", "academicYear", "term");
