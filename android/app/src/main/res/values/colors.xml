@@ -7,7 +7,6 @@
 
     <!-- Splash screen background — matches theme_color in manifest.json -->
     <color name="splash_background">#520050</color>
-
     <!-- Adaptive icon background (white so logo shows cleanly) -->
     <color name="ic_launcher_background">#FFFFFF</color>
 </resources>
