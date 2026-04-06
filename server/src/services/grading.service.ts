@@ -114,16 +114,19 @@ export const gradingService = {
     if (type === 'SUMMATIVE') {
       return await prisma.gradingSystem.create({
         data: {
-          name: 'Standard Summative Grading',
+          name: 'Standard Summative CBC Grading',
           type: 'SUMMATIVE',
           isDefault: true,
           ranges: {
             create: [
-              { label: 'A', minPercentage: 80, maxPercentage: 100, summativeGrade: 'A', points: 4, color: '#10b981', description: 'Excellent' },
-              { label: 'B', minPercentage: 60, maxPercentage: 79, summativeGrade: 'B', points: 3, color: '#3b82f6', description: 'Good' },
-              { label: 'C', minPercentage: 50, maxPercentage: 59, summativeGrade: 'C', points: 2, color: '#f59e0b', description: 'Average' },
-              { label: 'D', minPercentage: 40, maxPercentage: 49, summativeGrade: 'D', points: 1, color: '#ef4444', description: 'Below Average' },
-              { label: 'E', minPercentage: 0,  maxPercentage: 39, summativeGrade: 'E', points: 0, color: '#991b1b', description: 'Fail' },
+              { label: 'EE1', minPercentage: 90, maxPercentage: 100, summativeGrade: 'EE1', rubricRating: 'EE1', points: 8, color: '#10b981', description: 'Outstanding' },
+              { label: 'EE2', minPercentage: 75, maxPercentage: 89,  summativeGrade: 'EE2', rubricRating: 'EE2', points: 7, color: '#34d399', description: 'Very High' },
+              { label: 'ME1', minPercentage: 58, maxPercentage: 74,  summativeGrade: 'ME1', rubricRating: 'ME1', points: 6, color: '#3b82f6', description: 'High Average' },
+              { label: 'ME2', minPercentage: 41, maxPercentage: 57,  summativeGrade: 'ME2', rubricRating: 'ME2', points: 5, color: '#60a5fa', description: 'Average' },
+              { label: 'AE1', minPercentage: 31, maxPercentage: 40,  summativeGrade: 'AE1', rubricRating: 'AE1', points: 4, color: '#f59e0b', description: 'Low Average' },
+              { label: 'AE2', minPercentage: 21, maxPercentage: 30,  summativeGrade: 'AE2', rubricRating: 'AE2', points: 3, color: '#fbbf24', description: 'Below Average' },
+              { label: 'BE1', minPercentage: 11, maxPercentage: 20,  summativeGrade: 'BE1', rubricRating: 'BE1', points: 2, color: '#ef4444', description: 'Low' },
+              { label: 'BE2', minPercentage: 0,  maxPercentage: 10,  summativeGrade: 'BE2', rubricRating: 'BE2', points: 1, color: '#b91c1c', description: 'Very Low' },
             ]
           }
         },
@@ -159,7 +162,7 @@ export const gradingService = {
   async calculateGrade(percentage: number): Promise<string> {
     const system = await this.getGradingSystem('SUMMATIVE');
     const range = system.ranges.find(r => percentage >= r.minPercentage && percentage <= r.maxPercentage);
-    return range?.summativeGrade || 'E';
+    return range?.summativeGrade || 'BE2';
   },
 
   /**
@@ -167,7 +170,7 @@ export const gradingService = {
    */
   calculateGradeSync(percentage: number, ranges: any[]): string {
     const range = ranges.find(r => percentage >= r.minPercentage && percentage <= r.maxPercentage);
-    return range?.summativeGrade || 'E';
+    return range?.summativeGrade || 'BE2';
   },
 
   /**
