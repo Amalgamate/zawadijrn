@@ -2,6 +2,15 @@ const { execSync } = require('child_process');
 
 console.log("Running pre-deploy verification...");
 
+// 0. Fix any corrupted migration records using Prisma raw query
+try {
+  console.log("Running fix-migrations.js...");
+  execSync('node fix-migrations.js', { stdio: 'pipe' });
+  console.log("✅ fix-migrations.js complete.");
+} catch (error) {
+  console.log("ℹ️ fix-migrations.js had warnings or was already fixed.");
+}
+
 // Helper function to resolve migrations
 const resolveMigration = (name, action = '--rolled-back') => {
   try {
