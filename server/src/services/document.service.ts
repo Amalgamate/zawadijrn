@@ -1,15 +1,18 @@
 /**
- * Document Service - Handles cloud storage operations via Cloudinary
+ * Document Service - Handles file storage via Supabase Storage
  * @module services/document.service
  */
 
-import { v2 as cloudinary } from 'cloudinary';
-import { Readable } from 'stream';
+import { createClient } from '@supabase/supabase-js';
+import { v4 as uuidv4 } from 'uuid';
+import path from 'path';
 
-// Configure Cloudinary using environment variable
-cloudinary.config({
-    cloudinary_url: process.env.CLOUDINARY_URL
-});
+const supabase = createClient(
+    process.env.SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!
+);
+
+const BUCKET = 'documents';
 
 export interface UploadResult {
     url: string;
@@ -28,66 +31,52 @@ export interface UploadOptions {
 
 class DocumentService {
     /**
-     * Upload a file to Cloudinary
+     * Upload a file to Supabase Storage
      */
     async uploadFile(
         file: Express.Multer.File,
         options: UploadOptions = {}
     ): Promise<UploadResult> {
-        const {
-            folder = 'documents',
-            resourceType = 'auto',
-            allowedFormats,
-            maxSize
-        } = options;
+        const { folder = 'general', maxSize, allowedFormats } = options;
 
-        // Validate file size
         if (maxSize && file.size > maxSize) {
             throw new Error(`File size exceeds maximum allowed size of ${maxSize} bytes`);
         }
 
-        // Validate file format
         if (allowedFormats && allowedFormats.length > 0) {
             const fileExt = file.originalname.split('.').pop()?.toLowerCase();
             if (!fileExt || !allowedFormats.includes(fileExt)) {
-                throw new Error(`File format not allowed. Allowed formats: ${allowedFormats.join(', ')}`);
+                throw new Error(`File format not allowed. Allowed: ${allowedFormats.join(', ')}`);
             }
         }
 
-        try {
-            // Upload to Cloudinary
-            const result = await new Promise<any>((resolve, reject) => {
-                const uploadStream = cloudinary.uploader.upload_stream(
-                    {
-                        folder,
-                        resource_type: resourceType,
-                        use_filename: true,
-                        unique_filename: true
-                    },
-                    (error, result) => {
-                        if (error) reject(error);
-                        else resolve(result);
-                    }
-                );
+        const ext = path.extname(file.originalname);
+        const uniqueName = `${uuidv4()}${ext}`;
+        const storagePath = `${folder}/${uniqueName}`;
 
-                // Convert buffer to stream and pipe to Cloudinary
-                const bufferStream = new Readable();
-                bufferStream.push(file.buffer);
-                bufferStream.push(null);
-                bufferStream.pipe(uploadStream);
+        const { error } = await supabase.storage
+            .from(BUCKET)
+            .upload(storagePath, file.buffer, {
+                contentType: file.mimetype,
+                upsert: false
             });
 
-            return {
-                url: result.secure_url,
-                publicId: result.public_id,
-                format: result.format,
-                size: result.bytes,
-                resourceType: result.resource_type
-            };
-        } catch (error: any) {
-            console.error('[Document Service] Upload error:', error);
+        if (error) {
+            console.error('[Document Service] Supabase upload error:', error);
             throw new Error(`Failed to upload file: ${error.message}`);
         }
+
+        const { data: urlData } = supabase.storage
+            .from(BUCKET)
+            .getPublicUrl(storagePath);
+
+        return {
+            url: urlData.publicUrl,
+            publicId: storagePath,
+            format: ext.replace('.', ''),
+            size: file.size,
+            resourceType: file.mimetype.startsWith('image/') ? 'image' : 'raw'
+        };
     }
 
     /**
@@ -97,17 +86,15 @@ class DocumentService {
         files: Express.Multer.File[],
         options: UploadOptions = {}
     ): Promise<UploadResult[]> {
-        const uploadPromises = files.map(file => this.uploadFile(file, options));
-        return Promise.all(uploadPromises);
+        return Promise.all(files.map(file => this.uploadFile(file, options)));
     }
 
     /**
-     * Delete a file from Cloudinary
+     * Delete a file from Supabase Storage
      */
-    async deleteFile(publicId: string, resourceType: string = 'image'): Promise<void> {
-        try {
-            await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
-        } catch (error: any) {
+    async deleteFile(publicId: string, _resourceType: string = 'image'): Promise<void> {
+        const { error } = await supabase.storage.from(BUCKET).remove([publicId]);
+        if (error) {
             console.error('[Document Service] Delete error:', error);
             throw new Error(`Failed to delete file: ${error.message}`);
         }
@@ -116,37 +103,26 @@ class DocumentService {
     /**
      * Delete multiple files
      */
-    async deleteMultipleFiles(publicIds: string[], resourceType: string = 'image'): Promise<void> {
-        try {
-            await cloudinary.api.delete_resources(publicIds, { resource_type: resourceType });
-        } catch (error: any) {
+    async deleteMultipleFiles(publicIds: string[], _resourceType: string = 'image'): Promise<void> {
+        const { error } = await supabase.storage.from(BUCKET).remove(publicIds);
+        if (error) {
             console.error('[Document Service] Bulk delete error:', error);
             throw new Error(`Failed to delete files: ${error.message}`);
         }
     }
 
     /**
-     * Get file details from Cloudinary
+     * Get a signed URL for temporary private access
      */
-    async getFileDetails(publicId: string, resourceType: string = 'image'): Promise<any> {
-        try {
-            return await cloudinary.api.resource(publicId, { resource_type: resourceType });
-        } catch (error: any) {
-            console.error('[Document Service] Get details error:', error);
-            throw new Error(`Failed to get file details: ${error.message}`);
-        }
-    }
+    async generateSignedUrl(publicId: string, expiresIn: number = 3600): Promise<string> {
+        const { data, error } = await supabase.storage
+            .from(BUCKET)
+            .createSignedUrl(publicId, expiresIn);
 
-    /**
-     * Generate a signed URL for temporary access
-     */
-    generateSignedUrl(publicId: string, expiresIn: number = 3600): string {
-        const timestamp = Math.floor(Date.now() / 1000) + expiresIn;
-        return cloudinary.url(publicId, {
-            sign_url: true,
-            type: 'authenticated',
-            expires_at: timestamp
-        });
+        if (error || !data) {
+            throw new Error(`Failed to generate signed URL: ${error?.message}`);
+        }
+        return data.signedUrl;
     }
 }
 

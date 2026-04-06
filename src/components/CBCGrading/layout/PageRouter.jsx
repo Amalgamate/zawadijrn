@@ -1,6 +1,7 @@
 import React, { lazy, Suspense } from 'react';
 import ErrorBoundary from '../shared/ErrorBoundary';
 import EmptyState from '../shared/EmptyState';
+import ComingSoon from '../shared/ComingSoon';
 
 // Lazy load page components
 const RoleDashboard = lazy(() => import('../pages/dashboard/RoleDashboard'));
@@ -378,6 +379,38 @@ const PageRouter = ({
           case 'settings-communication': return <ErrorBoundary><CommunicationSettings /></ErrorBoundary>;
           case 'settings-payment': return <PaymentSettings />;
           case 'settings-id-templates': return <ErrorBoundary><IDCardTemplatesDesigner /></ErrorBoundary>;
+
+          // ── Secondary School modules (placeholders) ───────────────────────────
+          case 'sec-subjects':        return <ComingSoon badge="Secondary" title="Subject Management"   description="Set up and manage KCSE subjects, assign teachers and allocate lessons per form." />;
+          case 'sec-form-groups':     return <ComingSoon badge="Secondary" title="Form Groups"           description="Configure Forms 1–4, streams, class teachers and capacities." />;
+          case 'sec-schemes':         return <ComingSoon badge="Secondary" title="Schemes of Work"       description="Upload and manage termly schemes of work for each subject and form." />;
+          case 'sec-mark-entry':      return <ComingSoon badge="Secondary" title="Mark Entry"            description="Enter and review continuous assessment and exam marks per subject." />;
+          case 'sec-cats':            return <ComingSoon badge="Secondary" title="CATs"                  description="Create, administer and record Continuous Assessment Tests for each form." />;
+          case 'sec-mid-term':        return <ComingSoon badge="Secondary" title="Mid-term Exams"        description="Record and manage mid-term examination marks." />;
+          case 'sec-end-term':        return <ComingSoon badge="Secondary" title="End-term Exams"        description="Record end-term examination marks and compute mean grades." />;
+          case 'sec-kcse-mock':       return <ComingSoon badge="Secondary" title="KCSE Mock"             description="Administer mock examinations and generate KNEC-style grade reports." />;
+          case 'sec-mean-grades':     return <ComingSoon badge="Secondary" title="Mean Grades"           description="View mean grades per student, stream and form across all subjects." />;
+          case 'sec-rankings':        return <ComingSoon badge="Secondary" title="Class Rankings"        description="Generate ranked performance lists by stream, form and subject." />;
+          case 'sec-subject-analysis':return <ComingSoon badge="Secondary" title="Subject Analysis"      description="Analyse performance trends by subject, teacher and examination type." />;
+          case 'sec-report-cards':    return <ComingSoon badge="Secondary" title="Report Cards"          description="Generate and download end-of-term report cards for all students." />;
+          case 'sec-kcse-prediction': return <ComingSoon badge="Secondary" title="KCSE Prediction"       description="Predict KCSE mean grades based on accumulated internal assessment data." />;
+
+          // ── Tertiary Institution modules (placeholders) ───────────────────────
+          case 'tert-departments':    return <ComingSoon badge="Tertiary" title="Departments"            description="Create and manage academic departments and their heads." />;
+          case 'tert-programs':       return <ComingSoon badge="Tertiary" title="Programs"               description="Define degree, diploma and certificate programmes offered." />;
+          case 'tert-units':          return <ComingSoon badge="Tertiary" title="Unit Management"         description="Manage academic units (courses), credit hours and prerequisites." />;
+          case 'tert-enrollment':     return <ComingSoon badge="Tertiary" title="Unit Enrollment"         description="Enroll students into units for the current semester." />;
+          case 'tert-cats':           return <ComingSoon badge="Tertiary" title="CATs (30%)"              description="Record Continuous Assessment Test scores — 30% of the final grade." />;
+          case 'tert-exams':          return <ComingSoon badge="Tertiary" title="Exams (70%)"             description="Record end-of-semester examination scores — 70% of the final grade." />;
+          case 'tert-mark-entry':     return <ComingSoon badge="Tertiary" title="Mark Entry"             description="Enter and review unit marks for both CATs and final examinations." />;
+          case 'tert-grade-sheet':    return <ComingSoon badge="Tertiary" title="Grade Sheets"            description="Generate official grade sheets per unit and per semester." />;
+          case 'tert-unit-results':   return <ComingSoon badge="Tertiary" title="Unit Results"            description="View and publish results per unit for the current semester." />;
+          case 'tert-gpa':            return <ComingSoon badge="Tertiary" title="GPA Calculator"          description="Compute semester GPA and cumulative GPA for all enrolled students." />;
+          case 'tert-semester-report':return <ComingSoon badge="Tertiary" title="Semester Reports"        description="Generate and distribute end-of-semester academic progress reports." />;
+          case 'tert-transcripts':    return <ComingSoon badge="Tertiary" title="Transcripts"             description="Generate official academic transcripts for students." />;
+          case 'tert-classifications':return <ComingSoon badge="Tertiary" title="Degree Classification"   description="Compute degree classifications — First Class, Second Upper, Second Lower, Pass." />;
+          case 'tert-clubs':          return <ComingSoon badge="Tertiary" title="Clubs & Societies"       description="Manage student clubs, societies and extra-curricular activities." />;
+          case 'tert-clearance':      return <ComingSoon badge="Tertiary" title="Student Clearance"       description="Process student clearance before graduation or withdrawal." />;
 
           default:
             return (

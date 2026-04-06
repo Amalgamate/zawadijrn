@@ -11,7 +11,7 @@ const MobileAppShell = ({ children, user, onLogout, onNavigate, currentPage, bra
   return (
     <div className="flex flex-col h-screen bg-gray-50 overflow-hidden relative">
       {/* Mobile Top App Bar */}
-      <div className="h-16 bg-[var(--brand-purple)] text-white flex items-center justify-between px-4 z-50 shadow-md">
+      <div className="h-safe-top bg-[var(--brand-purple)] text-white flex items-center justify-between px-4 z-50 shadow-md">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0">
             <img src="/logo.svg" alt="Logo" className="w-full h-full object-cover" onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; }} />
@@ -40,7 +40,7 @@ const MobileAppShell = ({ children, user, onLogout, onNavigate, currentPage, bra
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-auto custom-scrollbar relative z-10 w-full mb-16 pb-6">
+      <div className="flex-1 overflow-auto custom-scrollbar relative z-10 w-full mb-safe-bottom pb-6">
         {/* We don't render the desktop Header here because mobile space is limited, but we pass navigation down to children */}
         <div className="p-4 rounded-xl">
           <div className="mb-4">
@@ -53,7 +53,7 @@ const MobileAppShell = ({ children, user, onLogout, onNavigate, currentPage, bra
       {/* Drawer Removed: Replaced by Mobile Dashboard Grid */}
 
       {/* Mobile Bottom Navigation Bar for quick access */}
-      <div className="fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgb(0,0,0,0.05)] z-50 flex items-center justify-around px-2 pb-safe">
+      <div className="fixed bottom-0 left-0 right-0 h-safe-bottom bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgb(0,0,0,0.05)] z-50 flex items-center justify-around px-2">
         <button
           onClick={() => onNavigate('dashboard')}
           className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${currentPage === 'dashboard' ? 'text-brand-purple' : 'text-gray-500 hover:text-gray-900'}`}

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Network Security Config
+  Allows cleartext HTTP to local development IPs only.
+  Production traffic (zawadijrn.onrender.com) still uses HTTPS.
+
+  Android 9+ blocks all cleartext HTTP by default. This config
+  whitelists the 192.168.x.x subnet so the APK can reach the
+  backend running on your laptop during development.
+
+  Reference: https://developer.android.com/training/articles/security-config
+-->
+<network-security-config>
+    <!-- Production: HTTPS only (default, most secure) -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <!-- Local dev: allow HTTP to your LAN (192.168.x.x) -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">192.168.100.0</domain>
+        <!-- Add your exact IP if the subnet above doesn't match, e.g.: -->
+        <!-- <domain includeSubdomains="false">192.168.1.105</domain>    -->
+        <domain includeSubdomains="true">10.0.2.2</domain>
+        <!-- 10.0.2.2 = Android Emulator alias for host machine localhost -->
+    </domain-config>
+</network-security-config>

@@ -1,5 +1,20 @@
 import { useMemo } from 'react';
 import { usePermissions } from '../../../hooks/usePermissions';
+import { useAuth } from '../../../hooks/useAuth';
+import {
+  secondaryNavSections,
+  SECONDARY_SCHOOL_SECTIONS,
+  SECONDARY_RESULTS_SECTIONS,
+  SECONDARY_BACKOFFICE_SECTIONS,
+  SECONDARY_SYSTEM_SECTIONS,
+} from '../../../config/secondaryNav';
+import {
+  tertiaryNavSections,
+  TERTIARY_SCHOOL_SECTIONS,
+  TERTIARY_RESULTS_SECTIONS,
+  TERTIARY_BACKOFFICE_SECTIONS,
+  TERTIARY_SYSTEM_SECTIONS,
+} from '../../../config/tertiaryNav';
 import {
     Home, Mail, Calendar, Users, GraduationCap, UserCheck,
     TrendingUp, Zap, CheckSquare, Settings, BookOpen,
@@ -309,6 +324,78 @@ export const allNavSections = [
 
 export const useNavigation = () => {
     const { can, role } = usePermissions();
+    const { user } = useAuth();
+    const institutionType = user?.institutionType || 'PRIMARY_CBC';
+
+    // ── Institution type branching ───────────────────────────────────────────
+    // Each type gets its own filtered nav — CBC users NEVER see secondary/tertiary
+    // items and vice versa. The filtering logic is identical; only the source
+    // nav array and category groupings differ.
+
+    const buildNav = (sourceSections) => {
+        const isItemVisible = (item) => !item.permission || can(item.permission);
+        const processItems = (items) => items.reduce((acc, item) => {
+            if (item.type === 'group') {
+                const visible = item.items.filter(isItemVisible);
+                if (visible.length > 0) acc.push({ ...item, items: visible });
+            } else if (isItemVisible(item)) {
+                acc.push(item);
+            }
+            return acc;
+        }, []);
+
+        return sourceSections.filter(section => {
+            if (section.permission && !can(section.permission)) return false;
+            if (section.items.length > 0) {
+                return processItems(section.items).length > 0;
+            }
+            return true;
+        }).map(section => ({ ...section, items: processItems(section.items) }));
+    };
+
+    // ── Secondary ────────────────────────────────────────────────────────────
+    const secondaryNav = useMemo(() => {
+        if (institutionType !== 'SECONDARY') return null;
+        const nav = buildNav(secondaryNavSections);
+        const find = (id) => nav.find(s => s.id === id);
+        return {
+            navSections: nav,
+            dashboardSection:    find('dashboard'),
+            communicationSection: find('communications'),
+            schoolSections:      nav.filter(s => SECONDARY_SCHOOL_SECTIONS.includes(s.id)),
+            lmsSection:          find('lms'),
+            studentLmsSection:   null,
+            backOfficeSections:  nav.filter(s => SECONDARY_BACKOFFICE_SECTIONS.includes(s.id)),
+            docsCenterSection:   find('docs-center'),
+            systemAdminSections: nav.filter(s => SECONDARY_SYSTEM_SECTIONS.includes(s.id)),
+        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [institutionType, can, role]);
+
+    // ── Tertiary ─────────────────────────────────────────────────────────────
+    const tertiaryNav = useMemo(() => {
+        if (institutionType !== 'TERTIARY') return null;
+        const nav = buildNav(tertiaryNavSections);
+        const find = (id) => nav.find(s => s.id === id);
+        return {
+            navSections: nav,
+            dashboardSection:    find('dashboard'),
+            communicationSection: find('communications'),
+            schoolSections:      nav.filter(s => TERTIARY_SCHOOL_SECTIONS.includes(s.id)),
+            lmsSection:          find('lms'),
+            studentLmsSection:   null,
+            backOfficeSections:  nav.filter(s => TERTIARY_BACKOFFICE_SECTIONS.includes(s.id)),
+            docsCenterSection:   find('docs-center'),
+            systemAdminSections: nav.filter(s => TERTIARY_SYSTEM_SECTIONS.includes(s.id)),
+        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [institutionType, can, role]);
+
+    // Return early for non-CBC institutions
+    if (institutionType === 'SECONDARY' && secondaryNav) return secondaryNav;
+    if (institutionType === 'TERTIARY'  && tertiaryNav)  return tertiaryNav;
+
+    // ── CBC (default) ─────────────────────────────────────────────────────────
 
     const navSections = useMemo(() => {
         const isItemVisible = (item) => !item.permission || can(item.permission);

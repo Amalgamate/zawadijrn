@@ -14,8 +14,12 @@ const getApiBaseUrl = () => {
         return `${window.location.origin}/api`;
     }
 
-    // Default fallback for both local development and native builds
-    return 'https://zawadi-api-417511263765.europe-west1.run.app/api';
+    if (isNative) {
+        return 'https://zawadijrn.onrender.com/api';
+    }
+
+    // Default fallback for production Render
+    return 'https://zawadijrn.onrender.com/api';
 };
 
 export const API_BASE_URL = getApiBaseUrl();
@@ -24,7 +28,7 @@ const axiosInstance = axios.create({
     baseURL: API_BASE_URL,
     headers: {},
     // Fail fast instead of hanging indefinitely
-    timeout: 30_000,
+    timeout: 60_000,
     // Keep-Alive so the TCP connection is reused across requests (major win)
     // Note: in browsers this is handled by the browser itself; this is for Node.js SSR use
 });
