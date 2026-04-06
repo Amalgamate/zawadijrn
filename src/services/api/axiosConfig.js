@@ -2,10 +2,20 @@ import axios from 'axios';
 
 // Use environment variable for API URL or fall back to automatic discovery for production stability
 const getApiBaseUrl = () => {
+    // 1. Check for explicit environment variables (Vite standard)
     const viteApiUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
     if (viteApiUrl) return viteApiUrl;
-    if (window.location.hostname !== 'localhost') return `${window.location.origin}/api`;
-    return 'https://zawadijrn.vercel.app/api';
+
+    // 2. Check for Capacitor / Native environment
+    const isNative = window.location.protocol === 'capacitor:' || window.location.hostname === 'localhost' && window.location.port === '';
+    
+    // 3. Handle Production vs Development
+    if (window.location.hostname !== 'localhost' && !isNative) {
+        return `${window.location.origin}/api`;
+    }
+
+    // Default fallback for both local development and native builds
+    return 'https://zawadi-api-417511263765.europe-west1.run.app/api';
 };
 
 export const API_BASE_URL = getApiBaseUrl();
