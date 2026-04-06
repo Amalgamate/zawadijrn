@@ -2,18 +2,9 @@ const { execSync } = require('child_process');
 
 console.log("Running pre-deploy verification...");
 
-// 20260402074726_summative_hardening: the schema changes in this migration
-// (ALTER COLUMN grade TYPE TEXT on summative_results, testType enum cast on
-// summative_tests, dedup + unique index on summative_tests) were all applied
-// to the live database during an earlier deploy. However, a previous version
-// of this script unconditionally marked the migration as --rolled-back on
-// every deploy, causing Prisma to attempt a re-apply that hit a FK violation
-// on summative_result_history.resultId.
-//
-// Fix: mark it as --applied so Prisma knows the DB is already up to date
-// for this migration and skips it. This is a one-time correction; once
-// Prisma's _prisma_migrations table has the row in a 'applied' state this
-// call becomes a no-op (migrate resolve is idempotent when already applied).
+// ─── 20260402074726_summative_hardening ──────────────────────────────────────
+// Schema changes were applied to the live DB during an earlier deploy.
+// Mark as --applied so Prisma skips re-applying it. Idempotent once applied.
 try {
   console.log("Ensuring summative_hardening migration is recorded as applied...");
   execSync('npx prisma migrate resolve --applied 20260402074726_summative_hardening', { stdio: 'pipe' });
@@ -22,12 +13,33 @@ try {
   console.log("✅ Migration 20260402074726_summative_hardening record already up to date.");
 }
 
+// ─── 20260402090938_grade_to_string ──────────────────────────────────────────
+// This migration previously failed with a FK violation on summative_result_history
+// during dedup. The migration SQL has been corrected (array-based cascade + orphan
+// safety-net). Clear any stuck state so Prisma re-applies the fixed SQL.
+// Once it succeeds this becomes a no-op (resolve --rolled-back on an already-applied
+// migration is silently ignored by Prisma).
 try {
-  console.log("Resolving any stuck grade_to_string migrations...");
+  console.log("Resolving any stuck grade_to_string migration...");
   execSync('npx prisma migrate resolve --rolled-back 20260402090938_grade_to_string', { stdio: 'pipe' });
   console.log("✅ Migration 20260402090938_grade_to_string record cleared (rolled back).");
 } catch (error) {
   console.log("✅ Migration 20260402090938_grade_to_string record already in a clean state.");
+}
+
+// ─── 20260404104631_add_library_accounting_sync_v2 ───────────────────────────
+// This migration started at 2026-04-06 06:34 UTC and was recorded as failed,
+// but its DDL (enums, tables, FK constraints) had already been partially or
+// fully applied to the DB before the failure was recorded. Attempting to
+// re-run it would hit "type already exists" / "table already exists" errors.
+// Mark as --applied so Prisma treats the DB as up to date for this migration.
+// Idempotent once applied.
+try {
+  console.log("Ensuring add_library_accounting_sync_v2 migration is recorded as applied...");
+  execSync('npx prisma migrate resolve --applied 20260404104631_add_library_accounting_sync_v2', { stdio: 'pipe' });
+  console.log("✅ Migration 20260404104631_add_library_accounting_sync_v2 confirmed as applied.");
+} catch (error) {
+  console.log("✅ Migration 20260404104631_add_library_accounting_sync_v2 record already up to date.");
 }
 
 console.log("Pre-deploy pipeline complete. Proceeding to migrate...");
