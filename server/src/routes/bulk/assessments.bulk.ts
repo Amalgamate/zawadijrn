@@ -5,7 +5,12 @@ import { auditLog } from '../../middleware/permissions.middleware';
 import { Term, TestStatus } from '@prisma/client';
 import prisma from '../../config/database';
 import multer from 'multer';
-import ExcelJS from 'exceljs';
+
+// FIX: `exceljs` has no bundled .d.ts in some Render environments.
+// Use a require() fallback with an explicit type cast so TypeScript is
+// satisfied even when @types/exceljs is absent from node_modules.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const ExcelJS: typeof import('exceljs') = require('exceljs');
 
 const router = Router();
 
@@ -33,6 +38,9 @@ function calculateStatus(percentage: number): TestStatus {
 /**
  * Parse an uploaded xlsx/xls/csv buffer with ExcelJS.
  * Returns an array of plain objects keyed by the header row.
+ *
+ * FIX: Added explicit types for the eachRow callback parameters so that
+ * TypeScript does not emit TS7006 ("parameter implicitly has 'any' type").
  */
 async function parseWorkbook(buffer: Buffer): Promise<Record<string, any>[]> {
     const wb = new ExcelJS.Workbook();
@@ -44,14 +52,14 @@ async function parseWorkbook(buffer: Buffer): Promise<Record<string, any>[]> {
     const rows: Record<string, any>[] = [];
     let headers: string[] = [];
 
-    ws.eachRow((row, rowNumber) => {
+    ws.eachRow((row: import('exceljs').Row, rowNumber: number) => {
         const values = (row.values as any[]).slice(1); // ExcelJS uses 1-based index; index 0 is empty
         if (rowNumber === 1) {
             // Header row
-            headers = values.map(v => (v == null ? '' : String(v).trim()));
+            headers = values.map((v: any) => (v == null ? '' : String(v).trim()));
         } else {
             const obj: Record<string, any> = {};
-            headers.forEach((h, i) => {
+            headers.forEach((h: string, i: number) => {
                 const cell = values[i];
                 // Unwrap rich-text objects ExcelJS sometimes returns
                 obj[h] = cell && typeof cell === 'object' && 'richText' in cell
