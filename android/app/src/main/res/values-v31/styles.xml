@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 12+ (API 31) splash screen overrides.
+  The SplashScreen API on API 31+ enforces its own window — these attributes
+  are ONLY read on API 31+ and ignored on older versions.
+-->
+<resources>
+    <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
+        <!-- Splash background color -->
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <!-- Animated icon shown in center of splash (use ic_launcher for simplicity) -->
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <!-- Duration the icon animation plays (max 1000ms on API 31) -->
+        <item name="windowSplashScreenAnimationDuration">500</item>
+        <!-- Theme to apply once splash exits -->
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
+    </style>
+</resources>
