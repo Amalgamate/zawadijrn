@@ -1348,7 +1348,9 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
           select: { id: true, firstName: true, lastName: true, admissionNumber: true, stream: true }
         },
         test: {
-          select: { id: true, title: true, learningArea: true, totalMarks: true, testType: true }
+          // Avoid selecting enum fields here so legacy enum drift in production data
+          // does not crash matrix generation while migrations roll forward.
+          select: { id: true, title: true, learningArea: true, totalMarks: true }
         }
       },
       orderBy: [
