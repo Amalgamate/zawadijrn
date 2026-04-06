@@ -1,0 +1,196 @@
+/// <reference types="jest" />
+
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import express from 'express';
+import request from 'supertest';
+import bcrypt from 'bcrypt';
+
+let classRoutes: any;
+let feeRoutes: any;
+let authRoutes: any;
+let prisma: any;
+
+// In-memory redis mock for tests (covers auth cache + refresh token revocation checks)
+jest.mock('../src/services/redis-cache.service', () => {
+  const store = new Map<string, { value: any; expiresAt: number | null }>();
+  const now = () => Date.now();
+
+  const get = async (key: string) => {
+    const entry = store.get(key);
+    if (!entry) return null;
+    if (entry.expiresAt && entry.expiresAt <= now()) {
+      store.delete(key);
+      return null;
+    }
+    return entry.value;
+  };
+
+  const set = async (key: string, value: any, ttlSeconds?: number) => {
+    const expiresAt = ttlSeconds ? now() + ttlSeconds * 1000 : null;
+    store.set(key, { value, expiresAt });
+  };
+
+  const deleteFn = async (key: string) => {
+    store.delete(key);
+    return true;
+  };
+
+  return {
+    redisCacheService: {
+      get,
+      set,
+      delete: deleteFn,
+      deleteByPrefix: async () => 0,
+      clear: async () => undefined,
+      getInfo: async () => ({ backend: 'Memory', memorySize: 0 }),
+      destroy: async () => undefined
+    }
+  };
+});
+
+describe('Tier A smoke (real DB)', () => {
+  const EMAIL = 'tier-a-super-admin@example.com';
+  const USER_ID = 'tier-a-super-admin-id';
+  const PASSWORD = 'Test123!';
+
+  beforeAll(async () => {
+    process.env.NODE_ENV = 'test';
+    process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret';
+    process.env.JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1h';
+    process.env.JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'test-refresh-secret';
+    process.env.JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
+
+    // Load routes/config after jest mocks are registered.
+    prisma = (await import('../src/config/database')).default;
+    authRoutes = (await import('../src/routes/auth.routes')).default;
+    classRoutes = (await import('../src/routes/class.routes')).default;
+    feeRoutes = (await import('../src/routes/fee.routes')).default;
+
+    const hashed = await bcrypt.hash(PASSWORD, 11);
+
+    // Seed a single ACTIVE SUPER_ADMIN user (required for /auth/login + role checks)
+    await prisma.user.upsert({
+      where: { id: USER_ID },
+      update: {
+        email: EMAIL,
+        password: hashed,
+        firstName: 'Tier',
+        lastName: 'A',
+        role: 'SUPER_ADMIN',
+        status: 'ACTIVE',
+        phone: '0712345678'
+      },
+      create: {
+        id: USER_ID,
+        email: EMAIL,
+        password: hashed,
+        username: 'tier-a-super-admin',
+        firstName: 'Tier',
+        lastName: 'A',
+        role: 'SUPER_ADMIN',
+        status: 'ACTIVE',
+        phone: '0712345678',
+        createdAt: new Date()
+      } as any
+    });
+  });
+
+  afterAll(async () => {
+    // Keep it lightweight: do not delete DB records (smoke tests benefit from persistence).
+  });
+
+  it('auth: login -> refresh; then class + fee smoke endpoints succeed', async () => {
+    const loginResp = await request(createApp())
+      .post('/api/auth/login')
+      .send({ email: EMAIL, password: PASSWORD })
+      .expect(200);
+
+    expect(loginResp.body?.success).toBe(true);
+    const refreshToken = loginResp.body?.refreshToken;
+    expect(typeof refreshToken).toBe('string');
+
+    const refreshResp = await request(createApp())
+      .post('/api/auth/refresh')
+      .send({ refreshToken })
+      .expect(200);
+
+    expect(refreshResp.body?.success).toBe(true);
+    const accessToken = refreshResp.body?.token;
+    expect(typeof accessToken).toBe('string');
+
+    const authHeader = { Authorization: `Bearer ${accessToken}` };
+
+    // Create a class; if it already exists for the active context, fall back to the existing one.
+    const grade = 'Grade1';
+    const postResp = await request(createApp())
+      .post('/api/classes')
+      .set(authHeader)
+      .send({
+        name: `Tier A Smoke ${Date.now()}`,
+        grade,
+        capacity: 40
+      })
+      .expect((res) => {
+        // Either created or conflict (duplicate class code for active context)
+        expect([200, 201, 409]).toContain(res.status);
+      });
+
+    let classId: string | undefined = postResp.body?.data?.id;
+    if (!classId) {
+      // Fetch a class for the active term/context and grade/stream=A (controller uses same active context).
+      const fallbackResp = await request(createApp())
+        .get('/api/classes')
+        .set(authHeader)
+        .query({ grade, stream: 'A' })
+        .expect(200);
+
+      const first = fallbackResp.body?.data?.[0];
+      classId = first?.id;
+    }
+
+    expect(typeof classId).toBe('string');
+
+    // Class by id
+    const classResp = await request(createApp())
+      .get(`/api/classes/${classId}`)
+      .set(authHeader)
+      .expect(200);
+
+    expect(classResp.body?.success).toBe(true);
+    expect(classResp.body?.data?.id).toBe(classId);
+
+    // Schedules list for class (may be empty but should succeed)
+    const schedulesResp = await request(createApp())
+      .get(`/api/classes/${classId}/schedules`)
+      .set(authHeader)
+      .expect(200);
+
+    expect(schedulesResp.body?.success).toBe(true);
+    expect(Array.isArray(schedulesResp.body?.data)).toBe(true);
+
+    // Fee invoices list (may be empty but should succeed)
+    const invoicesResp = await request(createApp())
+      .get('/api/fees/invoices')
+      .set(authHeader)
+      .expect(200);
+
+    expect(invoicesResp.body?.success).toBe(true);
+    expect(Array.isArray(invoicesResp.body?.data)).toBe(true);
+  });
+});
+
+function createApp() {
+  const app = express();
+  app.use(express.json());
+
+  if (!authRoutes || !classRoutes || !feeRoutes) {
+    throw new Error('Test setup missing route modules');
+  }
+
+  app.use('/api/auth', authRoutes);
+  app.use('/api/classes', classRoutes);
+  app.use('/api/fees', feeRoutes);
+
+  return app;
+}
+

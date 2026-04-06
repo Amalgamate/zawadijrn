@@ -1,5 +1,4 @@
-import { fetchWithAuth, fetchCached, cachedFetch, cacheDel, cacheDelPrefix, TTL } from './core';
-import axiosInstance from './axiosConfig';
+import { fetchWithAuth, cachedFetch, TTL } from './core';
 
 export const classAPI = {
   getAll: async (params = {}) => {
@@ -37,4 +36,16 @@ export const classAPI = {
     fetchWithAuth(`/classes/${classId}/schedules/${scheduleId}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteSchedule: async (classId, scheduleId) =>
     fetchWithAuth(`/classes/${classId}/schedules/${scheduleId}`, { method: 'DELETE' }),
+  getAllClassData: async (classId) => {
+    const [details, schedules] = await Promise.all([
+      fetchWithAuth(`/classes/${classId}`),
+      fetchWithAuth(`/classes/${classId}/schedules`),
+    ]);
+
+    return {
+      ...details,
+      schedules: Array.isArray(schedules) ? schedules : schedules?.data || [],
+      scheduleCount: Array.isArray(schedules) ? schedules.length : schedules?.data?.length || 0,
+    };
+  },
 };

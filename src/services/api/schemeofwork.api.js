@@ -4,17 +4,17 @@ import axiosInstance from './axiosConfig';
 export const schemeOfWorkAPI = {
   getAll: async (params = {}) => {
     const queryString = new URLSearchParams(params).toString();
-    return fetchWithAuth(`/schemes-of-work${queryString ? `?${queryString}` : ''}`);
+    return fetchWithAuth(`/schemes${queryString ? `?${queryString}` : ''}`);
   },
-  getById: async (id) => fetchWithAuth(`/schemes-of-work/${id}`),
+  getById: async (id) => fetchWithAuth(`/schemes/${id}`),
   create: async (data) =>
-    fetchWithAuth('/schemes-of-work', { method: 'POST', body: JSON.stringify(data) }),
+    fetchWithAuth('/schemes', { method: 'POST', body: JSON.stringify(data) }),
   update: async (id, data) =>
-    fetchWithAuth(`/schemes-of-work/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    fetchWithAuth(`/schemes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   updateStatus: async (id, status) =>
-    fetchWithAuth(`/schemes-of-work/${id}/status`, { method: 'POST', body: JSON.stringify({ status }) }),
+    fetchWithAuth(`/schemes/${id}/status`, { method: 'POST', body: JSON.stringify({ status }) }),
   review: async (id, data) =>
-    fetchWithAuth(`/schemes-of-work/${id}/review`, { method: 'POST', body: JSON.stringify(data) }),
+    fetchWithAuth(`/schemes/${id}/review`, { method: 'POST', body: JSON.stringify(data) }),
   delete: async (id) =>
-    fetchWithAuth(`/schemes-of-work/${id}`, { method: 'DELETE' }),
+    fetchWithAuth(`/schemes/${id}`, { method: 'DELETE' }),
 };

@@ -411,7 +411,7 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess, brand
 
   return (
     <div
-      className="w-full min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
+      className="w-full min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden"
       style={{
         background: `linear-gradient(135deg, ${brandColor}, ${brandColor}dd, ${brandColor}bb)`
       }}

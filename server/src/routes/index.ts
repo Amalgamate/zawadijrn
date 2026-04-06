@@ -38,6 +38,10 @@ import idTemplateRoutes from './idTemplate.routes';
 import libraryRoutes from './library.routes';
 import transportRoutes from './transport.routes';
 import lmsRoutes from './lms.routes';
+import aiRoutes from './ai.routes';
+import onboardingRoutes from './onboarding.routes';
+import backupRoutes from './backup.routes';
+import schemeOfWorkRoutes from './schemeOfWork.routes';
 import { issueCsrfToken } from '../middleware/csrf.middleware';
 import { authenticate } from '../middleware/auth.middleware';
 
@@ -50,10 +54,12 @@ router.use('/health', healthRoutes);
 router.use('/diagnostics', diagnosticsRoutes);
 router.use('/migrations', migrationRoutes);
 router.use('/auth', authRoutes);
+router.use('/onboarding', onboardingRoutes);
 router.use('/books', bookRoutes);
 router.use('/library', libraryRoutes);
 router.use('/schools', schoolRoutes);
 router.use('/biometric', biometricRoutes);
+router.use('/ai', aiRoutes);
 router.get('/auth/csrf', issueCsrfToken);
 
 // ============================================
@@ -82,6 +88,8 @@ router.use('/broadcasts', broadcastRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/documents', documentRoutes);
 router.use('/planner', plannerRoutes);
+router.use('/schemes', schemeOfWorkRoutes);
+router.use('/backup', backupRoutes);
 router.use('/hr', hrRoutes);
 router.use('/accounting', accountingRoutes);
 router.use('/inventory', inventoryRoutes);

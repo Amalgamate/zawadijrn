@@ -14,7 +14,7 @@ import ClassInventoryTab from './ClassInventoryTab';
 import ClassScheduleTab from './ClassScheduleTab';
 import ClassFacilityTab from './ClassFacilityTab';
 import usePageNavigation from '../../../hooks/usePageNavigation';
-import * as classAPI from '../../../services/classAPI';
+import api from '../../../services/api';
 import TeacherClassAssignmentModal from '../shared/TeacherClassAssignmentModal';
 import { useNotifications } from '../hooks/useNotifications';
 import { useAuth } from '../../../hooks/useAuth';
@@ -56,7 +56,7 @@ const ClassDetailPage = ({ pageParams }) => {
   const fetchClassDetails = async () => {
     setLoading(true);
     try {
-      const response = await classAPI.getAllClassData(classId);
+      const response = await api.classes.getAllClassData(classId);
       setClassData(response);
     } catch (error) {
       console.error('Failed to fetch class details:', error);

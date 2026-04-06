@@ -32,7 +32,6 @@ const PerformanceScale = lazy(() => import('../pages/PerformanceScale'));
 const LearningAreasManagement = lazy(() => import('../pages/LearningAreasManagement'));
 const FacilityManager = lazy(() => import('../pages/FacilityManager'));
 const NoticesPage = lazy(() => import('../pages/NoticesPage'));
-const InventoryList = lazy(() => import('../pages/InventoryList'));
 const MessagesPage = lazy(() => import('../pages/MessagesPage'));
 const MessageHistoryPage = lazy(() => import('../pages/MessageHistoryPage'));
 const SupportHub = lazy(() => import('../pages/SupportHub'));
@@ -87,6 +86,7 @@ const StockRequisitions = lazy(() => import('../pages/inventory/StockRequisition
 const StockTransfers = lazy(() => import('../pages/inventory/StockTransfers'));
 const StockAdjustments = lazy(() => import('../pages/inventory/StockAdjustments'));
 const AssetRegister = lazy(() => import('../pages/inventory/AssetRegister'));
+const AssetAssignments = lazy(() => import('../pages/inventory/AssetAssignments'));
 // Transport and Biometrics Modules
 const TransportManager = lazy(() => import('../pages/transport/TransportManager'));
 const LibraryManager = lazy(() => import('../pages/library/LibraryManager'));
@@ -94,8 +94,6 @@ const BiometricManager = lazy(() => import('../pages/biometric/BiometricManager'
 
 // LMS Module
 const LMSManager = lazy(() => import('../pages/LMSManager'));
-const LMSCourses = lazy(() => import('../pages/lms/LMSCourses'));
-const LMSPlaceholder = lazy(() => import('../pages/lms/LMSPlaceholder'));
 const LMSAssignments = lazy(() => import('../pages/lms/LMSAssignments'));
 
 // Student Portal

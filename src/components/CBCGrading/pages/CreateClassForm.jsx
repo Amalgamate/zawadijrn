@@ -12,7 +12,6 @@ import { Button, Card, CardContent, CardHeader, CardTitle, Input } from '../../.
 import { useSchoolData } from '../../../contexts/SchoolDataContext';
 import { useAuth } from '../../../hooks/useAuth';
 import { getCurrentSchoolId, getStoredUser } from '../../../services/schoolContext';
-import * as classAPI from '../../../services/classAPI';
 import usePageNavigation from '../../../hooks/usePageNavigation';
 import api from '../../../services/api';
 import toast from 'react-hot-toast';
@@ -96,7 +95,7 @@ const CreateClassForm = () => {
       const finalName = formData.name || `${formData.grade.replace('_', ' ')} ${formData.stream}`;
 
       // Call API to create class
-      const response = await classAPI.createClass({
+      await api.classes.create({
         ...formData,
         name: finalName
       });
