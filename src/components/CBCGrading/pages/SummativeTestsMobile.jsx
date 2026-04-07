@@ -13,6 +13,29 @@ import ResetUtility from '../../../pages/assessments/ResetUtility';
 import EmptyState from '../shared/EmptyState';
 import ConfirmDialog from '../shared/ConfirmDialog';
 
+const SECONDARY_GRADES = ['GRADE10', 'GRADE11', 'GRADE12'];
+const JUNIOR_GRADE_ORDER = ['PLAYGROUP', 'PP1', 'PP2', 'GRADE_1', 'GRADE_2', 'GRADE_3', 'GRADE_4', 'GRADE_5', 'GRADE_6', 'GRADE_7', 'GRADE_8', 'GRADE_9'];
+const normalizeGradeCode = (grade) => String(grade || '').trim().replace(/\s+/g, '_').toUpperCase();
+const toCanonicalGrade = (grade) => {
+  const g = normalizeGradeCode(grade);
+  if (g === 'FORM_1' || g === 'GRADE_10') return 'GRADE10';
+  if (g === 'FORM_2' || g === 'GRADE_11') return 'GRADE11';
+  if (g === 'FORM_3' || g === 'GRADE_12') return 'GRADE12';
+  return g;
+};
+const isSecondaryGrade = (grade) => /^GRADE(10|11|12)$/.test(toCanonicalGrade(grade));
+const isJuniorGrade = (grade) => {
+  const g = toCanonicalGrade(grade);
+  return g === 'PLAYGROUP' || g === 'PP1' || g === 'PP2' || /^GRADE_[1-9]$/.test(g);
+};
+const formatGradeLabel = (grade) => {
+  const g = toCanonicalGrade(grade);
+  if (isSecondaryGrade(g)) return `Grade ${g.replace('GRADE', '')}`;
+  if (g.startsWith('GRADE_')) return `Grade ${g.replace('GRADE_', '')}`;
+  if (g === 'PLAYGROUP') return 'Playgroup';
+  return g.replace(/_/g, ' ');
+};
+
 const SummativeTestsMobile = ({ onNavigate, onBack }) => {
   const { showSuccess, showError } = useNotifications();
   const { user } = useAuth();
@@ -40,6 +63,11 @@ const SummativeTestsMobile = ({ onNavigate, onBack }) => {
     try {
       const response = await assessmentAPI.getTests({});
       let testsData = Array.isArray(response?.data) ? response.data : Array.isArray(response) ? response : [];
+      const isSecondaryPortal = String(user?.institutionType || '').toUpperCase() === 'SECONDARY';
+      testsData = testsData.filter((t) => {
+        const g = toCanonicalGrade(t?.grade);
+        return isSecondaryPortal ? isSecondaryGrade(g) : isJuniorGrade(g);
+      });
       setTests(testsData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
     } catch (error) {
       console.error('Error loading tests:', error);
@@ -221,8 +249,9 @@ const SummativeTestsMobile = ({ onNavigate, onBack }) => {
         ) : (
           Object.entries(groupedData)
             .sort((a, b) => {
-              const grades = ['PLAYGROUP', 'PP1', 'PP2', 'GRADE_1', 'GRADE_2', 'GRADE_3', 'GRADE_4', 'GRADE_5', 'GRADE_6', 'GRADE_7', 'GRADE_8', 'GRADE_9'];
-              return grades.indexOf(a[0]) - grades.indexOf(b[0]);
+              const isSecondaryPortal = String(user?.institutionType || '').toUpperCase() === 'SECONDARY';
+              const order = isSecondaryPortal ? SECONDARY_GRADES : JUNIOR_GRADE_ORDER;
+              return order.indexOf(toCanonicalGrade(a[0])) - order.indexOf(toCanonicalGrade(b[0]));
             })
             .map(([gradeKey, seriesGroups]) => (
               <div key={gradeKey} className="space-y-4">
@@ -232,7 +261,7 @@ const SummativeTestsMobile = ({ onNavigate, onBack }) => {
                     {gradeKey.substring(0, 2).toUpperCase()}
                   </div>
                   <span className="text-xs font-black text-gray-400 uppercase tracking-widest">
-                    {gradeKey.replace(/_/g, ' ')}
+                    {formatGradeLabel(gradeKey)}
                   </span>
                 </div>
 

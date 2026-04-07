@@ -2,10 +2,22 @@ import { fetchWithAuth, fetchCached, cachedFetch, cacheDel, cacheDelPrefix, TTL 
 import axiosInstance from './axiosConfig';
 import { communicationAPI } from './communication.api';
 
+const institutionCacheKeySuffix = () => {
+  try {
+    const raw = localStorage.getItem('user');
+    if (!raw) return 'PRIMARY_CBC';
+    const u = JSON.parse(raw);
+    return u?.institutionType || 'PRIMARY_CBC';
+  } catch {
+    return 'PRIMARY_CBC';
+  }
+};
+
 export const learnerAPI = {
   getAll: async (params = {}) => {
     const queryString = new URLSearchParams(params).toString();
-    const cacheKey = `learners:${queryString}`;
+    const suffix = institutionCacheKeySuffix();
+    const cacheKey = `learners:${suffix}:${queryString}`;
     return cachedFetch(
       cacheKey,
       () => fetchWithAuth(`/learners${queryString ? `?${queryString}` : ''}`),

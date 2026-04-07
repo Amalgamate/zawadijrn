@@ -50,11 +50,14 @@ export const reportController = {
           academicYear: parseInt(academicYear as string)
         },
         include: {
+          learningAreaRef: {
+            select: { id: true, name: true, pathway: true, category: true, isCore: true }
+          },
           teacher: {
             select: { firstName: true, lastName: true }
           }
         },
-        orderBy: { learningArea: 'asc' }
+        orderBy: [{ learningAreaId: 'asc' }, { learningArea: 'asc' }]
       });
 
       const summary = calculateFormativeSummary(assessments);
@@ -137,6 +140,8 @@ export const reportController = {
             select: {
               title: true,
               learningArea: true,
+              learningAreaId: true,
+              learningAreaRef: { select: { id: true, name: true, pathway: true, category: true, isCore: true } },
               testDate: true,
               totalMarks: true,
               passMarks: true
@@ -147,6 +152,7 @@ export const reportController = {
           }
         },
         orderBy: [
+          { test: { learningAreaId: 'asc' } },
           { test: { learningArea: 'asc' } },
           { test: { testDate: 'asc' } }
         ]
@@ -236,11 +242,12 @@ export const reportController = {
 
       const [formative, summative] = await Promise.all([
         prisma.formativeAssessment.findMany({
-          where: { learnerId: { in: learnerIds }, term: term as Term, academicYear: yearValue }
+          where: { learnerId: { in: learnerIds }, term: term as Term, academicYear: yearValue },
+          include: { learningAreaRef: { select: { id: true, pathway: true, category: true, isCore: true } } }
         }),
         prisma.summativeResult.findMany({
           where: { learnerId: { in: learnerIds }, test: { term: term as Term, academicYear: yearValue } },
-          include: { test: { select: { learningArea: true, totalMarks: true } } }
+          include: { test: { select: { learningArea: true, learningAreaId: true, totalMarks: true, learningAreaRef: { select: { id: true, pathway: true, category: true, isCore: true } } } } }
         })
       ]);
 
@@ -295,7 +302,14 @@ export const reportController = {
         },
         include: {
           test: {
-            select: { learningArea: true, term: true, totalMarks: true, testType: true }
+            select: {
+              learningArea: true,
+              learningAreaId: true,
+              learningAreaRef: { select: { id: true, name: true, pathway: true, category: true, isCore: true } },
+              term: true,
+              totalMarks: true,
+              testType: true
+            }
           }
         },
         orderBy: { test: { term: 'asc' } }
@@ -310,11 +324,23 @@ export const reportController = {
       // Cross-term trend per learning area
       const subjectTrends: Record<string, any> = {};
       for (const r of summativeResults) {
-        const area = r.test.learningArea;
-        if (!subjectTrends[area]) {
-          subjectTrends[area] = { learningArea: area, termResults: [] };
+        const key = r.test.learningAreaId ? `id:${r.test.learningAreaId}` : `name:${r.test.learningArea}`;
+        const display = r.test.learningAreaRef?.name || r.test.learningArea;
+        if (!subjectTrends[key]) {
+          subjectTrends[key] = {
+            learningArea: display,
+            learningAreaId: r.test.learningAreaId ?? null,
+            learningAreaMeta: r.test.learningAreaRef
+              ? {
+                  pathway: r.test.learningAreaRef.pathway ?? null,
+                  category: r.test.learningAreaRef.category ?? null,
+                  isCore: Boolean(r.test.learningAreaRef.isCore)
+                }
+              : null,
+            termResults: []
+          };
         }
-        subjectTrends[area].termResults.push({
+        subjectTrends[key].termResults.push({
           term: r.test.term,
           testType: r.test.testType,
           marksObtained: r.marksObtained,
@@ -381,7 +407,7 @@ export const reportController = {
 function calculateFormativeSummary(assessments: any[]) {
   const distribution: Record<string, number> = { EE: 0, ME: 0, AE: 0, BE: 0 };
   let totalPoints = 0;
-  const byLearningArea: Record<string, { EE: number; ME: number; AE: number; BE: number; count: number }> = {};
+  const byLearningArea: Record<string, { learningArea: string; learningAreaId: string | null; learningAreaMeta: any; EE: number; ME: number; AE: number; BE: number; count: number }> = {};
 
   for (const a of assessments) {
     if (a.overallRating) {
@@ -389,14 +415,26 @@ function calculateFormativeSummary(assessments: any[]) {
     }
     if (a.points) totalPoints += a.points;
 
-    const area = a.learningArea;
-    if (!byLearningArea[area]) {
-      byLearningArea[area] = { EE: 0, ME: 0, AE: 0, BE: 0, count: 0 };
+    const key = a.learningAreaId ? `id:${a.learningAreaId}` : `name:${a.learningArea}`;
+    const display = a.learningAreaRef?.name || a.learningArea;
+    if (!byLearningArea[key]) {
+      byLearningArea[key] = {
+        learningArea: display,
+        learningAreaId: a.learningAreaId ?? null,
+        learningAreaMeta: a.learningAreaRef
+          ? {
+              pathway: a.learningAreaRef.pathway ?? null,
+              category: a.learningAreaRef.category ?? null,
+              isCore: Boolean(a.learningAreaRef.isCore)
+            }
+          : null,
+        EE: 0, ME: 0, AE: 0, BE: 0, count: 0
+      };
     }
     if (a.overallRating) {
-      byLearningArea[area][a.overallRating as keyof typeof byLearningArea[string]]++;
+      byLearningArea[key][a.overallRating as keyof typeof byLearningArea[string]]++;
     }
-    byLearningArea[area].count++;
+    byLearningArea[key].count++;
   }
 
   // Determine predominant rating per area
@@ -418,21 +456,37 @@ function calculateSubjectSummary(results: any[], ranges: any[]) {
   const summary: Record<string, any> = {};
 
   for (const r of results) {
-    const area = r.test.learningArea;
-    if (!summary[area]) {
-      summary[area] = { learningArea: area, tests: [], averagePercentage: 0, grade: 'E', passCount: 0, failCount: 0 };
+    const key = r.test.learningAreaId ? `id:${r.test.learningAreaId}` : `name:${r.test.learningArea}`;
+    const display = r.test.learningAreaRef?.name || r.test.learningArea;
+    if (!summary[key]) {
+      summary[key] = {
+        learningArea: display,
+        learningAreaId: r.test.learningAreaId ?? null,
+        learningAreaMeta: r.test.learningAreaRef
+          ? {
+              pathway: r.test.learningAreaRef.pathway ?? null,
+              category: r.test.learningAreaRef.category ?? null,
+              isCore: Boolean(r.test.learningAreaRef.isCore)
+            }
+          : null,
+        tests: [],
+        averagePercentage: 0,
+        grade: 'BE2',
+        passCount: 0,
+        failCount: 0
+      };
     }
-    summary[area].tests.push(r);
-    if (r.status === 'PASS') summary[area].passCount++;
-    else summary[area].failCount++;
+    summary[key].tests.push(r);
+    if (r.status === 'PASS') summary[key].passCount++;
+    else summary[key].failCount++;
   }
 
-  for (const area of Object.keys(summary)) {
-    const tests = summary[area].tests as any[];
+  for (const key of Object.keys(summary)) {
+    const tests = summary[key].tests as any[];
     const avg = tests.reduce((sum: number, t: any) => sum + t.percentage, 0) / tests.length;
-    summary[area].averagePercentage = Math.round(avg * 100) / 100;
-    summary[area].grade = gradingService.calculateGradeSync(avg, ranges);
-    summary[area].passRate = tests.length > 0 ? Math.round((summary[area].passCount / tests.length) * 100) : 0;
+    summary[key].averagePercentage = Math.round(avg * 100) / 100;
+    summary[key].grade = gradingService.calculateGradeSync(avg, ranges);
+    summary[key].passRate = tests.length > 0 ? Math.round((summary[key].passCount / tests.length) * 100) : 0;
   }
 
   return summary;
@@ -447,14 +501,22 @@ function analyzeFormativePerformance(assessments: any[]) {
       distribution[a.overallRating] = (distribution[a.overallRating] || 0) + 1;
     }
 
-    const area = a.learningArea;
-    if (!byLearningArea[area]) {
-      byLearningArea[area] = { EE: 0, ME: 0, AE: 0, BE: 0, total: 0 };
+    const key = a.learningAreaId ? `id:${a.learningAreaId}` : `name:${a.learningArea}`;
+    const display = a.learningAreaRef?.name || a.learningArea;
+    if (!byLearningArea[key]) {
+      byLearningArea[key] = {
+        learningArea: display,
+        learningAreaId: a.learningAreaId ?? null,
+        pathway: a.learningAreaRef?.pathway ?? null,
+        category: a.learningAreaRef?.category ?? null,
+        isCore: a.learningAreaRef ? Number(Boolean(a.learningAreaRef.isCore)) : 0,
+        EE: 0, ME: 0, AE: 0, BE: 0, total: 0
+      } as any;
     }
     if (a.overallRating) {
-      byLearningArea[area][a.overallRating] = (byLearningArea[area][a.overallRating] || 0) + 1;
+      byLearningArea[key][a.overallRating] = (byLearningArea[key][a.overallRating] || 0) + 1;
     }
-    byLearningArea[area].total = (byLearningArea[area].total || 0) + 1;
+    byLearningArea[key].total = (byLearningArea[key].total || 0) + 1;
   }
 
   const eeRate = assessments.length > 0
@@ -488,9 +550,11 @@ function analyzeSummativePerformance(results: any[]) {
       gradeDistribution[r.grade] = (gradeDistribution[r.grade] || 0) + 1;
     }
 
-    const area = r.test?.learningArea ?? 'Unknown';
+    const area = (r.test?.learningAreaId ? `id:${r.test.learningAreaId}` : (r.test?.learningArea ?? 'Unknown'));
+    const displayName = r.test?.learningArea ?? 'Unknown';
+    const meta = r.test?.learningAreaRef ? { pathway: r.test.learningAreaRef.pathway ?? null, category: r.test.learningAreaRef.category ?? null, isCore: Boolean(r.test.learningAreaRef.isCore) } : null;
     if (!byLearningArea[area]) {
-      byLearningArea[area] = { totalPercentage: 0, count: 0, passCount: 0, average: 0, passRate: 0 };
+      byLearningArea[area] = { learningArea: displayName, learningAreaId: r.test?.learningAreaId ?? null, meta, totalPercentage: 0, count: 0, passCount: 0, average: 0, passRate: 0 };
     }
     byLearningArea[area].totalPercentage += r.percentage ?? 0;
     byLearningArea[area].count++;

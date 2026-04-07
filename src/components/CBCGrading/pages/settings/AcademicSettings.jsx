@@ -161,7 +161,12 @@ const AcademicSettings = () => {
       setSeedingClasses(true);
       setSubmitting(true);
       const result = await configAPI.seedClasses();
-      notifySuccess(`✏️ Classes seeded! Created: ${result.created || 0}, Skipped: ${result.skipped || 0}`);
+      const isSS = user?.institutionType === 'SECONDARY';
+      notifySuccess(
+        isSS
+          ? `✏️ SS Classes (Grade 10–12) seeded! Created: ${result.created || 0}, Skipped: ${result.skipped || 0}`
+          : `✏️ Classes seeded! Created: ${result.created || 0}, Skipped: ${result.skipped || 0}`
+      );
       await loadConfigs();
       refreshBus.emit('classes');
     } catch (error) {

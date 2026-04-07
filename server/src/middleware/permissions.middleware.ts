@@ -10,6 +10,7 @@ declare global {
         userId: string;
         email: string;
         role: Role;
+        institutionType?: 'PRIMARY_CBC' | 'SECONDARY';
       };
     }
   }
@@ -24,6 +25,7 @@ export interface AuthRequest extends Request {
     userId: string;
     email: string;
     role: Role;
+    institutionType?: 'PRIMARY_CBC' | 'SECONDARY';
   };
   file?: any;
   files?: any;

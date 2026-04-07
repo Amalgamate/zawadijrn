@@ -17,7 +17,8 @@ export const useUIStore = create(
       historyIndex: 0,
 
       // Sidebar
-      sidebarOpen: false,
+      // Desktop: expanded by default; user can collapse.
+      sidebarOpen: true,
 
       // Actions
       setCurrentPage: (page, params = {}) => set((state) => {
@@ -62,7 +63,7 @@ export const useUIStore = create(
         pageParams: {},
         historyStack: ['dashboard'],
         historyIndex: 0,
-        sidebarOpen: false
+        sidebarOpen: true
       })
     }),
     {

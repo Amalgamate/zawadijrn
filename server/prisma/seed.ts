@@ -54,6 +54,7 @@ async function main() {
     lastName: string;
     role: UserRole;
     phone: string;
+    institutionType?: 'PRIMARY_CBC' | 'SECONDARY';
   }> = [
       {
         email: 'superadmin@template.test', // Updated to match user preference
@@ -61,7 +62,8 @@ async function main() {
         firstName: 'Super',
         lastName: 'Admin',
         role: 'SUPER_ADMIN',
-        phone: '+254713612141'
+        phone: '+254713612141',
+        institutionType: 'PRIMARY_CBC',
       },
       {
         email: 'admin@local.test',
@@ -69,7 +71,8 @@ async function main() {
         firstName: 'School',
         lastName: 'Admin',
         role: 'ADMIN',
-        phone: '+254712345002'
+        phone: '+254712345002',
+        institutionType: 'PRIMARY_CBC',
       },
       {
         email: 'headteacher@local.test',
@@ -77,7 +80,8 @@ async function main() {
         firstName: 'Head',
         lastName: 'Teacher',
         role: 'HEAD_TEACHER',
-        phone: '+254712345003'
+        phone: '+254712345003',
+        institutionType: 'PRIMARY_CBC',
       },
       {
         email: 'teacher@local.test',
@@ -85,7 +89,8 @@ async function main() {
         firstName: 'John',
         lastName: 'Teacher',
         role: 'TEACHER',
-        phone: '+254712345004'
+        phone: '+254712345004',
+        institutionType: 'PRIMARY_CBC',
       },
       {
         email: 'parent@local.test',
@@ -93,7 +98,8 @@ async function main() {
         firstName: 'Jane',
         lastName: 'Parent',
         role: 'PARENT',
-        phone: '+254712345005'
+        phone: '+254712345005',
+        institutionType: 'PRIMARY_CBC',
       },
       {
         email: 'accountant@local.test',
@@ -101,7 +107,8 @@ async function main() {
         firstName: 'Finance',
         lastName: 'Officer',
         role: 'ACCOUNTANT',
-        phone: '+254712345006'
+        phone: '+254712345006',
+        institutionType: 'PRIMARY_CBC',
       },
       {
         email: 'receptionist@local.test',
@@ -109,7 +116,26 @@ async function main() {
         firstName: 'Front',
         lastName: 'Desk',
         role: 'RECEPTIONIST',
-        phone: '+254712345007'
+        phone: '+254712345007',
+        institutionType: 'PRIMARY_CBC',
+      },
+      {
+        email: 'admin.ss@local.test',
+        password: 'Admin123!',
+        firstName: 'Senior',
+        lastName: 'Admin',
+        role: 'ADMIN',
+        phone: '+254712345008',
+        institutionType: 'SECONDARY',
+      },
+      {
+        email: 'teacher.ss@local.test',
+        password: 'Teacher123!',
+        firstName: 'Senior',
+        lastName: 'Teacher',
+        role: 'TEACHER',
+        phone: '+254712345009',
+        institutionType: 'SECONDARY',
       }
     ];
 
@@ -122,7 +148,22 @@ async function main() {
       });
 
       if (existingUser) {
-        console.log(`   ⏭️  User ${userData.email} already exists, skipping...`);
+        // Keep seeded users aligned with expected portal scoping (institutionType).
+        const expectedInstitutionType = userData.institutionType || 'PRIMARY_CBC';
+        if ((existingUser as any).institutionType !== expectedInstitutionType) {
+          try {
+            await prisma.user.update({
+              where: { email: userData.email },
+              data: { institutionType: expectedInstitutionType as any },
+            });
+            console.log(`   🔁 Updated ${userData.email} institutionType -> ${expectedInstitutionType}`);
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : 'Unknown error';
+            console.error(`   ❌ Error updating institutionType for ${userData.email}:`, msg);
+          }
+        } else {
+          console.log(`   ⏭️  User ${userData.email} already exists, skipping...`);
+        }
         continue;
       }
 
@@ -136,6 +177,7 @@ async function main() {
           lastName: userData.lastName,
           role: userData.role,
           phone: userData.phone,
+          institutionType: userData.institutionType || 'PRIMARY_CBC',
           status: 'ACTIVE' as UserStatus,
           emailVerified: true,
         },
@@ -203,6 +245,10 @@ async function main() {
 
   // Seed fee types
   await seedFeeTypes(prisma);
+
+  // Seed Senior High Grading System (EE2-BE1)
+  const { seedSeniorGrading } = await import('./seeders/seed-senior-grading');
+  await seedSeniorGrading(prisma);
 
   // Seed LMS courses
   await seedLMSCourses();

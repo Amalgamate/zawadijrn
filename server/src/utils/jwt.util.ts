@@ -6,12 +6,14 @@ interface JWTPayload {
   userId: string;
   email: string;
   role: Role;
+  institutionType: 'PRIMARY_CBC' | 'SECONDARY';
 }
 
 interface User {
   id: string;
   email: string;
   role: UserRole;
+  institutionType?: 'PRIMARY_CBC' | 'SECONDARY' | null;
 }
 
 export const generateAccessToken = (user: User): string => {
@@ -19,6 +21,7 @@ export const generateAccessToken = (user: User): string => {
     userId: user.id,
     email: user.email,
     role: user.role as Role,
+    institutionType: (user.institutionType || 'PRIMARY_CBC') as any,
   };
 
   return jwt.sign(

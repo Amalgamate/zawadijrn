@@ -18,6 +18,7 @@ model User {
   lastName                  String
   phone                     String?
   role                      UserRole                 @default(TEACHER)
+  institutionType           InstitutionType          @default(PRIMARY_CBC)
   status                    UserStatus               @default(ACTIVE)
   archived                  Boolean                  @default(false)
   archivedAt                DateTime?
@@ -213,6 +214,7 @@ model Class {
   classCode    String            @unique
   name         String
   grade        String
+  institutionType InstitutionType @default(PRIMARY_CBC)
   stream       String?
   teacherId    String?
   academicYear Int               @default(2025)
@@ -233,6 +235,7 @@ model Class {
   teacher      User?             @relation("ClassTeacher", fields: [teacherId], references: [id])
 
   @@unique([grade, stream, academicYear, term])
+  @@index([institutionType, grade, stream])
   @@index([teacherId])
   @@index([grade, stream])
   @@map("classes")
@@ -322,6 +325,8 @@ model Learner {
   photoUrl               String?
   photoPublicId          String?
   grade                  String
+  institutionType        InstitutionType        @default(PRIMARY_CBC)
+  pathwayId              String?
   stream                 String?
   parentId               String?
   guardianName           String?
@@ -378,15 +383,69 @@ model Learner {
   valuesAssessments      ValuesAssessment[]     @relation("LearnerValues")
   biometricCredentials   BiometricCredential[]
   lmsEnrollments         LMSEnrollment[]         @relation("LMSEnrolledLearners")
+  pathway                Pathway?              @relation(fields: [pathwayId], references: [id])
+  subjectSelections      LearnerSubjectSelection[]
 
   @@index([admissionNumber])
   @@index([parentId])
   @@index([primaryContactType])
+  @@index([institutionType, grade, stream])
+  @@index([institutionType, pathwayId])
   @@index([grade, stream])
   @@index([status])
   @@index([lastName, firstName])
   @@index([grade, status, archived])
   @@map("learners")
+}
+
+model Pathway {
+  id            String            @id @default(uuid())
+  code          String            @unique
+  name          String
+  description   String?
+  active        Boolean           @default(true)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  categories    SubjectCategory[]
+  learningAreas LearningArea[]
+  learners      Learner[]
+
+  @@map("pathways")
+}
+
+model SubjectCategory {
+  id            String        @id @default(uuid())
+  pathwayId     String
+  code          String
+  name          String
+  description   String?
+  minSelect     Int           @default(0)
+  maxSelect     Int?
+  active        Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  pathway       Pathway       @relation(fields: [pathwayId], references: [id], onDelete: Cascade)
+  learningAreas LearningArea[]
+
+  @@unique([pathwayId, code])
+  @@index([pathwayId])
+  @@map("subject_categories")
+}
+
+model LearnerSubjectSelection {
+  id             String       @id @default(uuid())
+  learnerId      String
+  learningAreaId String
+  active         Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  learner        Learner      @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  learningArea   LearningArea @relation(fields: [learningAreaId], references: [id], onDelete: Cascade)
+
+  @@unique([learnerId, learningAreaId])
+  @@index([learnerId])
+  @@index([learningAreaId])
+  @@map("learner_subject_selections")
 }
 
 model Attendance {
@@ -419,6 +478,7 @@ model FormativeAssessment {
   term             Term                    @default(TERM_1)
   academicYear     Int                     @default(2026)
   learningArea     String
+  learningAreaId   String?
   strand           String?
   subStrand        String?
   overallRating    RubricRating
@@ -436,6 +496,7 @@ model FormativeAssessment {
   teacherId        String
   type             FormativeAssessmentType @default(OPENER)
   status           AssessmentStatus        @default(DRAFT)
+  levelId          String?                 @map("level_id") // New: link to specific Level
   title            String?
   date             DateTime?               @default(now())
   maxScore         Float?
@@ -450,12 +511,15 @@ model FormativeAssessment {
   updatedAt        DateTime                @updatedAt
   learner          Learner                 @relation(fields: [learnerId], references: [id], onDelete: Cascade)
   teacher          User                    @relation("TeacherFormativeAssessments", fields: [teacherId], references: [id])
+  level            GradingRange?           @relation(fields: [levelId], references: [id]) // New: level lookup
+  learningAreaRef  LearningArea?           @relation(fields: [learningAreaId], references: [id])
 
   @@unique([learnerId, term, academicYear, learningArea, type, title])
   @@index([learnerId])
   @@index([teacherId])
   @@index([term, academicYear])
   @@index([learningArea])
+  @@index([learningAreaId])
   @@index([learnerId, learningArea, term, academicYear])
   @@map("formative_assessments")
 }
@@ -464,6 +528,7 @@ model SummativeTest {
   id              String            @id @default(uuid())
   title           String
   learningArea    String
+  learningAreaId  String?
   term            Term              @default(TERM_1)
   academicYear    Int               @default(2026)
   grade           String
@@ -499,10 +564,12 @@ model SummativeTest {
   creator         User              @relation("CreatedTests", fields: [createdBy], references: [id])
   scale           GradingSystem?    @relation(fields: [scaleId], references: [id])
   submittedByUser User?             @relation("SubmittedTests", fields: [submittedBy], references: [id])
+  learningAreaRef LearningArea?     @relation(fields: [learningAreaId], references: [id])
 
   @@unique([grade, learningArea, term, academicYear, testType])
   @@index([testType])
   @@index([grade, learningArea, term])
+  @@index([learningAreaId])
   @@index([grade, term, academicYear])
   @@map("summative_tests")
 }
@@ -569,6 +636,7 @@ model SummativeResult {
   id               String                   @id @default(uuid())
   testId           String
   learnerId        String
+  levelId          String?                  @map("level_id") // New: link to specific Level
   marksObtained    Int
   percentage       Float
   grade            String
@@ -589,6 +657,7 @@ model SummativeResult {
   learner          Learner                  @relation(fields: [learnerId], references: [id], onDelete: Cascade)
   recorder         User                     @relation("RecordedResults", fields: [recordedBy], references: [id])
   test             SummativeTest            @relation(fields: [testId], references: [id], onDelete: Cascade)
+  level            GradingRange?            @relation(fields: [levelId], references: [id]) // New: level lookup
 
   @@unique([testId, learnerId])
   @@index([moderationStatus])
@@ -1023,7 +1092,9 @@ model GradingRange {
   maxPercentage  Float
   summativeGrade String?
   rubricRating   DetailedRubricRating?
-  points         Int?
+  parentBand     String?               // New: e.g., "Exceeding Expectations"
+  displayOrder   Int                   @default(0) // New: for sorting
+  points         Int?                  // Restored: to prevent data loss
   color          String?
   description    String?
   createdAt      DateTime              @default(now())
@@ -1032,6 +1103,8 @@ model GradingRange {
   archivedAt     DateTime?
   archivedBy     String?
   system         GradingSystem         @relation(fields: [systemId], references: [id], onDelete: Cascade)
+  results        SummativeResult[]
+  assessments    FormativeAssessment[]
 
   @@index([systemId])
   @@map("grading_ranges")
@@ -1131,6 +1204,12 @@ model LearningArea {
   name               String
   shortName          String?
   gradeLevel         String
+  institutionType    InstitutionType     @default(PRIMARY_CBC)
+  isCore             Boolean             @default(false)
+  pathway            String?
+  category           String?
+  pathwayId          String?
+  categoryId         String?
   icon               String              @default("📚")
   color              String              @default("#3b82f6")
   description        String?
@@ -1138,8 +1217,16 @@ model LearningArea {
   updatedAt          DateTime            @updatedAt
   schedules          ClassSchedule[]
   subjectAssignments SubjectAssignment[]
+  pathwayRef         Pathway?            @relation(fields: [pathwayId], references: [id])
+  categoryRef        SubjectCategory?    @relation(fields: [categoryId], references: [id])
+  learnerSelections  LearnerSubjectSelection[]
+  formativeAssessments FormativeAssessment[]
+  summativeTests       SummativeTest[]
 
   @@unique([name, gradeLevel])
+  @@index([institutionType, gradeLevel])
+  @@index([pathwayId])
+  @@index([categoryId])
   @@index([gradeLevel])
   @@map("learning_areas")
 }
@@ -1901,6 +1988,10 @@ enum Grade {
   GRADE_7
   GRADE_8
   GRADE_9
+  FORM_1
+  FORM_2
+  FORM_3
+  FORM_4
 }
 
 enum Gender {
@@ -1962,6 +2053,11 @@ enum CurriculumType {
   IGCSE
   CAMBRIDGE
   CUSTOM
+}
+
+enum InstitutionType {
+  PRIMARY_CBC
+  SECONDARY
 }
 
 enum AssessmentMode {

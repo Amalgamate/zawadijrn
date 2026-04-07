@@ -20,6 +20,14 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const normalizeUser = useCallback((u) => {
+    if (!u) return u;
+    const email = String(u.email || '').toLowerCase();
+    const isSsDemo = email === 'admin.ss@local.test' || email === 'teacher.ss@local.test';
+    const institutionType = u.institutionType || (isSsDemo ? 'SECONDARY' : 'PRIMARY_CBC');
+    return { ...u, institutionType };
+  }, []);
+
   // Check for existing auth on mount
   useEffect(() => {
     const checkAuth = () => {
@@ -28,7 +36,8 @@ export const AuthProvider = ({ children }) => {
         const storedUser = localStorage.getItem('user');
 
         if (token && storedUser) {
-          const parsedUser = JSON.parse(storedUser);
+          const parsedUser = normalizeUser(JSON.parse(storedUser));
+          localStorage.setItem('user', JSON.stringify(parsedUser));
           setUser(parsedUser);
           setIsAuthenticated(true);
 
@@ -51,6 +60,8 @@ export const AuthProvider = ({ children }) => {
 
   const login = useCallback((userData, token, refreshToken) => {
     try {
+      const normalizedUser = normalizeUser(userData);
+
       // Store tokens
       localStorage.setItem('token', token);
       if (refreshToken) {
@@ -58,15 +69,15 @@ export const AuthProvider = ({ children }) => {
       }
 
       // Store user data
-      localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem('user', JSON.stringify(normalizedUser));
 
-      setUser(userData);
+      setUser(normalizedUser);
       setIsAuthenticated(true);
     } catch (error) {
       console.error('Error during login:', error);
       throw error;
     }
-  }, []);
+  }, [normalizeUser]);
 
   const logout = useCallback(() => {
     // Clear localStorage

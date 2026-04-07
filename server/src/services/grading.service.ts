@@ -133,21 +133,24 @@ export const gradingService = {
         include: { ranges: true }
       });
     } else {
+      // CBC rubric uses the unified 8-level scale (EE1/EE2/ME1/ME2/AE1/AE2/BE1/BE2).
+      // This is used across Junior + Senior; senior-specific point weightings can be
+      // configured by creating per-grade systems (grade field) if needed.
       return await prisma.gradingSystem.create({
         data: {
-          name: 'Standard CBC Rubric',
+          name: 'Standard CBC 8-Level Rubric',
           type: 'CBC',
           isDefault: true,
           ranges: {
             create: [
-              { label: 'EE1', minPercentage: 90, maxPercentage: 100, rubricRating: 'EE1', points: 8, color: '#10b981', description: 'Outstanding' },
-              { label: 'EE2', minPercentage: 75, maxPercentage: 89,  rubricRating: 'EE2', points: 7, color: '#34d399', description: 'Very High' },
-              { label: 'ME1', minPercentage: 58, maxPercentage: 74,  rubricRating: 'ME1', points: 6, color: '#3b82f6', description: 'High Average' },
-              { label: 'ME2', minPercentage: 41, maxPercentage: 57,  rubricRating: 'ME2', points: 5, color: '#60a5fa', description: 'Average' },
-              { label: 'AE1', minPercentage: 31, maxPercentage: 40,  rubricRating: 'AE1', points: 4, color: '#f59e0b', description: 'Low Average' },
-              { label: 'AE2', minPercentage: 21, maxPercentage: 30,  rubricRating: 'AE2', points: 3, color: '#fbbf24', description: 'Below Average' },
-              { label: 'BE1', minPercentage: 11, maxPercentage: 20,  rubricRating: 'BE1', points: 2, color: '#ef4444', description: 'Low' },
-              { label: 'BE2', minPercentage: 0,  maxPercentage: 10,  rubricRating: 'BE2', points: 1, color: '#b91c1c', description: 'Very Low' },
+              { label: 'EE1', minPercentage: 90, maxPercentage: 100, rubricRating: 'EE1', parentBand: 'Exceeding Expectations', displayOrder: 1, points: 8, color: '#10b981', description: 'Outstanding' },
+              { label: 'EE2', minPercentage: 75, maxPercentage: 89,  rubricRating: 'EE2', parentBand: 'Exceeding Expectations', displayOrder: 2, points: 7, color: '#34d399', description: 'Very High' },
+              { label: 'ME1', minPercentage: 58, maxPercentage: 74,  rubricRating: 'ME1', parentBand: 'Meeting Expectations', displayOrder: 3, points: 6, color: '#3b82f6', description: 'High Average' },
+              { label: 'ME2', minPercentage: 41, maxPercentage: 57,  rubricRating: 'ME2', parentBand: 'Meeting Expectations', displayOrder: 4, points: 5, color: '#60a5fa', description: 'Average' },
+              { label: 'AE1', minPercentage: 31, maxPercentage: 40,  rubricRating: 'AE1', parentBand: 'Approaching Expectations', displayOrder: 5, points: 4, color: '#f59e0b', description: 'Low Average' },
+              { label: 'AE2', minPercentage: 21, maxPercentage: 30,  rubricRating: 'AE2', parentBand: 'Approaching Expectations', displayOrder: 6, points: 3, color: '#fbbf24', description: 'Below Average' },
+              { label: 'BE1', minPercentage: 11, maxPercentage: 20,  rubricRating: 'BE1', parentBand: 'Below Expectations', displayOrder: 7, points: 2, color: '#ef4444', description: 'Low' },
+              { label: 'BE2', minPercentage: 0,  maxPercentage: 10,  rubricRating: 'BE2', parentBand: 'Below Expectations', displayOrder: 8, points: 1, color: '#b91c1c', description: 'Very Low' },
             ]
           }
         },
@@ -196,5 +199,7 @@ export const gradingService = {
     const range = ranges.find(r => r.rubricRating === rating);
     if (!range) return 0;
     return Math.round((range.minPercentage + range.maxPercentage) / 2);
-  }
+  },
+
+  // NOTE: KCSE letter-grade logic deliberately removed per product policy.
 };

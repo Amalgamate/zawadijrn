@@ -54,7 +54,8 @@ export class ClassController {
 
   async getAllClasses(req: AuthRequest, res: Response) {
     const { grade, stream, academicYear, term, active = 'true' } = req.query;
-    const whereClause: any = {};
+    const institutionType = (req.user?.institutionType || 'PRIMARY_CBC') as any;
+    const whereClause: any = { institutionType };
 
     if (grade) whereClause.grade = grade as string;
     if (stream) whereClause.stream = stream as any;
@@ -90,6 +91,7 @@ export class ClassController {
         occupancy = await prisma.learner.count({
           where: {
             grade: cls.grade,
+            institutionType,
             ...(cls.stream ? { stream: cls.stream } : {}),
             status: 'ACTIVE',
             archived: false,
@@ -108,9 +110,10 @@ export class ClassController {
 
   async getClassById(req: AuthRequest, res: Response) {
     const { id } = req.params;
+    const institutionType = (req.user?.institutionType || 'PRIMARY_CBC') as any;
 
     const classData = await prisma.class.findFirst({
-      where: { id },
+      where: { id, institutionType },
       include: {
         teacher: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
         enrollments: {
@@ -139,6 +142,7 @@ export class ClassController {
 
   async createClass(req: AuthRequest, res: Response) {
     const { name, grade, stream, teacherId, academicYear, term, capacity = 40, room } = req.body;
+    const institutionType = (req.user?.institutionType || 'PRIMARY_CBC') as any;
 
     if (!grade) throw new ApiError(400, 'Grade is required');
 
@@ -159,13 +163,13 @@ export class ClassController {
     const finalName = name || `${grade} ${finalStream}`;
 
     const existingClass = await prisma.class.findFirst({
-      where: { grade: grade as string, stream: finalStream as any, academicYear: finalYear, term: finalTerm as Term }
+      where: { institutionType, grade: grade as string, stream: finalStream as any, academicYear: finalYear, term: finalTerm as Term }
     });
     if (existingClass) throw new ApiError(409, 'Class already exists for this term');
 
     const classCode = await this.generateClassCode();
     const newClass = await prisma.class.create({
-      data: { classCode, name: finalName, grade: grade as string, stream: finalStream as any, teacherId, academicYear: finalYear, term: finalTerm as Term, capacity, room },
+      data: { classCode, name: finalName, grade: grade as string, institutionType, stream: finalStream as any, teacherId, academicYear: finalYear, term: finalTerm as Term, capacity, room },
       include: { teacher: { select: { id: true, firstName: true, lastName: true } } }
     });
 

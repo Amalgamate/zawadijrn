@@ -5,6 +5,7 @@ import { auditLog } from '../../middleware/permissions.middleware';
 import { Term, TestStatus } from '@prisma/client';
 import prisma from '../../config/database';
 import multer from 'multer';
+import { gradingService } from '../../services/grading.service';
 
 // FIX: `exceljs` has no bundled .d.ts in some Render environments.
 // Use a require() fallback with an explicit type cast so TypeScript is
@@ -20,19 +21,12 @@ const upload = multer({
     limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
 });
 
-/**
- * Helper to calculate grade based on percentage
- */
-function calculateGrade(percentage: number): string {
-    if (percentage >= 80) return 'A';
-    if (percentage >= 70) return 'B';
-    if (percentage >= 60) return 'C';
-    if (percentage >= 50) return 'D';
-    return 'E';
+function calculateStatus(percentage: number, passMark = 50): TestStatus {
+    return percentage >= passMark ? 'PASS' : 'FAIL';
 }
 
-function calculateStatus(percentage: number): TestStatus {
-    return percentage >= 50 ? 'PASS' : 'FAIL';
+function normalizeText(v: string): string {
+    return String(v || '').trim().toLowerCase();
 }
 
 /**
@@ -113,11 +107,38 @@ router.post(
 
         const learningAreas = Object.values(parsedMapping) as string[];
         const testMap: Record<string, string> = {};
+        const testPassMarkMap: Record<string, number> = {};
+        const learningAreaIdMap: Record<string, string | null> = {};
+        const institutionType = (req.user?.institutionType || 'PRIMARY_CBC') as any;
+        const summativeSystem = await gradingService.getGradingSystem('SUMMATIVE');
+        const summativeRanges = summativeSystem.ranges || [];
+
+        const areaRows = await prisma.learningArea.findMany({
+            where: {
+                institutionType,
+                gradeLevel: String(grade),
+                name: { in: learningAreas.map((x) => String(x)) },
+            },
+            select: { id: true, name: true },
+        });
+        const areaByName = new Map(areaRows.map((r) => [normalizeText(r.name), r]));
 
         for (const la of learningAreas) {
+            const resolvedArea = areaByName.get(normalizeText(String(la)));
+            learningAreaIdMap[la] = resolvedArea?.id || null;
+            if (!resolvedArea) {
+                results.errors.push({
+                    row: 1,
+                    subject: la,
+                    error: `Learning area "${la}" not found for ${institutionType} ${grade}. Linking by text only.`,
+                });
+            }
+
             let test = await prisma.summativeTest.findFirst({
                 where: {
-                    learningArea: la,
+                    ...(resolvedArea?.id
+                        ? { learningAreaId: resolvedArea.id }
+                        : { learningArea: la }),
                     grade: grade as any,
                     term: term as Term,
                     academicYear: yearInt,
@@ -130,6 +151,7 @@ router.post(
                     data: {
                         title: `${la} - ${term} ${yearInt}`,
                         learningArea: la,
+                        learningAreaId: resolvedArea?.id || null,
                         grade: grade as any,
                         term: term as Term,
                         academicYear: yearInt,
@@ -144,6 +166,7 @@ router.post(
                 });
             }
             testMap[la] = test.id;
+            testPassMarkMap[la] = Number(test.passMarks ?? 50);
         }
 
         for (const [index, row] of data.entries()) {
@@ -174,14 +197,17 @@ router.post(
                     }
 
                     const testId = testMap[laName as string];
+                    const grade = gradingService.calculateGradeSync(score, summativeRanges);
+                    const status = calculateStatus(score, testPassMarkMap[laName as string] ?? 50);
+                    const learningAreaId = learningAreaIdMap[laName as string];
 
                     await prisma.summativeResult.upsert({
                         where: { testId_learnerId: { testId, learnerId: learner.id } },
                         update: {
                             marksObtained: Math.round(score),
                             percentage: score,
-                            grade: calculateGrade(score),
-                            status: calculateStatus(score),
+                            grade,
+                            status,
                             recordedBy: req.user!.userId,
                         },
                         create: {
@@ -189,11 +215,18 @@ router.post(
                             learnerId: learner.id,
                             marksObtained: Math.round(score),
                             percentage: score,
-                            grade: calculateGrade(score),
-                            status: calculateStatus(score),
+                            grade,
+                            status,
                             recordedBy: req.user!.userId,
                         }
                     });
+
+                    if (learningAreaId) {
+                        await prisma.summativeTest.updateMany({
+                            where: { id: testId, learningAreaId: null },
+                            data: { learningAreaId },
+                        });
+                    }
 
                     results.created++;
                 }

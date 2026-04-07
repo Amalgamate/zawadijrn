@@ -59,6 +59,13 @@ const ParentProfile = lazy(() => import('../pages/profiles/ParentProfile'));
 const PlannerLayout = lazy(() => import('../pages/planner/PlannerLayout'));
 const UniformAllocationPage = lazy(() => import('../pages/UniformAllocationPage'));
 const IDPrintingPage = lazy(() => import('../pages/IDPrintingPage'));
+const PathwaysHub = lazy(() => import('../pages/secondary/PathwaysHub'));
+const SubjectManagement = lazy(() => import('../pages/secondary/SubjectManagement'));
+const FormGroups = lazy(() => import('../pages/secondary/FormGroups'));
+const MarkEntryHub = lazy(() => import('../pages/secondary/MarkEntryHub'));
+const ReportsHub = lazy(() => import('../pages/secondary/ReportsHub'));
+const ResultsWorkbench = lazy(() => import('../pages/secondary/ResultsWorkbench'));
+const SecondaryExamWorkbench = lazy(() => import('../pages/secondary/SecondaryExamWorkbench'));
 
 // HR Module
 const HRManager = lazy(() => import('../pages/hr/HRManager'));
@@ -379,19 +386,20 @@ const PageRouter = ({
           case 'settings-id-templates': return <ErrorBoundary><IDCardTemplatesDesigner /></ErrorBoundary>;
 
           // ── Secondary School modules (placeholders) ───────────────────────────
-          case 'sec-subjects':        return <ComingSoon badge="Secondary" title="Subject Management"   description="Set up and manage KCSE subjects, assign teachers and allocate lessons per form." />;
-          case 'sec-form-groups':     return <ComingSoon badge="Secondary" title="Form Groups"           description="Configure Forms 1–4, streams, class teachers and capacities." />;
-          case 'sec-schemes':         return <ComingSoon badge="Secondary" title="Schemes of Work"       description="Upload and manage termly schemes of work for each subject and form." />;
-          case 'sec-mark-entry':      return <ComingSoon badge="Secondary" title="Mark Entry"            description="Enter and review continuous assessment and exam marks per subject." />;
-          case 'sec-cats':            return <ComingSoon badge="Secondary" title="CATs"                  description="Create, administer and record Continuous Assessment Tests for each form." />;
-          case 'sec-mid-term':        return <ComingSoon badge="Secondary" title="Mid-term Exams"        description="Record and manage mid-term examination marks." />;
-          case 'sec-end-term':        return <ComingSoon badge="Secondary" title="End-term Exams"        description="Record end-term examination marks and compute mean grades." />;
-          case 'sec-kcse-mock':       return <ComingSoon badge="Secondary" title="KCSE Mock"             description="Administer mock examinations and generate KNEC-style grade reports." />;
-          case 'sec-mean-grades':     return <ComingSoon badge="Secondary" title="Mean Grades"           description="View mean grades per student, stream and form across all subjects." />;
-          case 'sec-rankings':        return <ComingSoon badge="Secondary" title="Class Rankings"        description="Generate ranked performance lists by stream, form and subject." />;
-          case 'sec-subject-analysis':return <ComingSoon badge="Secondary" title="Subject Analysis"      description="Analyse performance trends by subject, teacher and examination type." />;
-          case 'sec-report-cards':    return <ComingSoon badge="Secondary" title="Report Cards"          description="Generate and download end-of-term report cards for all students." />;
-          case 'sec-kcse-prediction': return <ComingSoon badge="Secondary" title="KCSE Prediction"       description="Predict KCSE mean grades based on accumulated internal assessment data." />;
+          case 'sec-pathways':        return <PathwaysHub />;
+          case 'sec-subjects':        return <SubjectManagement />;
+          case 'sec-form-groups':     return <FormGroups />;
+          case 'sec-schemes':         return <PlannerLayout currentPage="planner-schemes" onNavigate={handleNavigate} />;
+          case 'sec-mark-entry':      return <MarkEntryHub onNavigate={handleNavigate} />;
+          case 'sec-cats':            return <SecondaryExamWorkbench type="cats" onNavigate={handleNavigate} />;
+          case 'sec-mid-term':        return <SecondaryExamWorkbench type="mid" onNavigate={handleNavigate} />;
+          case 'sec-end-term':        return <SecondaryExamWorkbench type="end" onNavigate={handleNavigate} />;
+          case 'sec-kcse-mock':       return <SecondaryExamWorkbench type="mock" onNavigate={handleNavigate} />;
+          case 'sec-mean-grades':     return <ResultsWorkbench variant="mean" onNavigate={handleNavigate} />;
+          case 'sec-rankings':        return <ResultsWorkbench variant="rankings" onNavigate={handleNavigate} />;
+          case 'sec-subject-analysis':return <ResultsWorkbench variant="subject" onNavigate={handleNavigate} />;
+          case 'sec-report-cards':    return <ReportsHub onNavigate={handleNavigate} />;
+          case 'sec-kcse-prediction': return <ResultsWorkbench variant="forecast" onNavigate={handleNavigate} />;
 
           // ── Tertiary Institution modules (placeholders) ───────────────────────
           case 'tert-departments':    return <ComingSoon badge="Tertiary" title="Departments"            description="Create and manage academic departments and their heads." />;

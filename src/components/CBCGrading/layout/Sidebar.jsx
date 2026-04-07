@@ -2,7 +2,7 @@
  * Sidebar Component — Industry-Grade Rewrite
  *
  * Key improvements over previous version:
- * - Flyout hover is rock-solid: invisible "bridge" strip + shared ref cancel prevents flicker
+ * - Removed flyout dependency for collapsed mode (global top horizontal submenu handles children)
  * - Perfect icon centering in collapsed mode (w-16 / 64px column)
  * - Category labels are static; section children list in full when expanded (no in-sidebar accordions)
  * - Consistent 44px touch-target row heights throughout
@@ -10,11 +10,10 @@
  * - Single source of truth for hover state (ref + setState)
  */
 
-import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useCallback, useMemo } from 'react';
 import {
   Menu, X,
-  School, Boxes, ExternalLink, Pin,
+  School, Boxes,
   GraduationCap,
   BookOpen
 } from 'lucide-react';
@@ -26,7 +25,6 @@ import { usePermissions } from '../../../hooks/usePermissions';
 const SIDEBAR_COLLAPSED_W = 64;   // px  (w-16)
 const SIDEBAR_EXPANDED_W  = 224;  // px  (w-56)
 const HEADER_H            = 72;   // px  — must match the logo bar below
-const FLYOUT_DELAY_MS     = 120;  // ms  — delay before closing flyout
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 const findDefaultPath = (items = []) => {
@@ -50,36 +48,8 @@ const Sidebar = React.memo(({
   brandingSettings,
   user,
 }) => {
-  // ── flyout state ────────────────────────────────────────────────────────────
   const labels = useInstitutionLabels();
   const { role } = usePermissions();
-  const [flyoutSection, setFlyoutSection]   = useState(null);
-  const [isPinned,      setIsPinned]        = useState(false);
-  const closeTimerRef = useRef(null);
-
-  const scheduleFlyoutClose = useCallback(() => {
-    if (isPinned) return;
-    clearTimeout(closeTimerRef.current);
-    closeTimerRef.current = setTimeout(() => setFlyoutSection(null), FLYOUT_DELAY_MS);
-  }, [isPinned]);
-
-  const cancelFlyoutClose = useCallback(() => {
-    clearTimeout(closeTimerRef.current);
-  }, []);
-
-  const openFlyout = useCallback((section) => {
-    if (sidebarOpen || !section?.items?.length) return;
-    cancelFlyoutClose();
-    setFlyoutSection(section);
-  }, [sidebarOpen, cancelFlyoutClose]);
-
-  // close flyout when sidebar expands
-  useEffect(() => {
-    if (sidebarOpen) setFlyoutSection(null);
-  }, [sidebarOpen]);
-
-  // cleanup timer on unmount
-  useEffect(() => () => clearTimeout(closeTimerRef.current), []);
 
   // ── category labels (static; flyout + expanded sidebar use flat item lists) ──
   const {
@@ -106,10 +76,6 @@ const Sidebar = React.memo(({
     sidebarOpen,
     currentPage,
     onNavigate,
-    openFlyout,
-    scheduleFlyoutClose,
-    cancelFlyoutClose,
-    flyoutSection,
   };
 
   const sidebarW = sidebarOpen ? SIDEBAR_EXPANDED_W : SIDEBAR_COLLAPSED_W;
@@ -221,24 +187,6 @@ const Sidebar = React.memo(({
         </footer>
       </aside>
 
-      {/* ── Flyout panel (portal) ──────────────────────────────────────────── */}
-      {!sidebarOpen && flyoutSection && createPortal(
-        <FlyoutPanel
-          section={flyoutSection}
-          left={SIDEBAR_COLLAPSED_W}
-          top={HEADER_H}
-          currentPage={currentPage}
-          onNavigate={(path) => {
-            onNavigate(path);
-            if (!isPinned) setFlyoutSection(null);
-          }}
-          isPinned={isPinned}
-          setIsPinned={setIsPinned}
-          onMouseEnter={cancelFlyoutClose}
-          onMouseLeave={scheduleFlyoutClose}
-        />,
-        document.body
-      )}
     </>
   );
 });
@@ -299,13 +247,8 @@ const NavSection = React.memo(({
   sidebarOpen,
   currentPage,
   onNavigate,
-  openFlyout,
-  scheduleFlyoutClose,
-  cancelFlyoutClose,
-  flyoutSection,
   isBottom = false,
 }) => {
-  const isFlyoutActive = !sidebarOpen && flyoutSection?.id === section.id;
   const hasChildren    = (section.items?.length || 0) > 0;
 
   const isChildActive = useMemo(() => {
@@ -334,16 +277,12 @@ const NavSection = React.memo(({
           relative w-full flex items-center px-3 rounded-lg
           transition-all duration-200
           ${isAssessment
-            ? (isFlyoutActive
-                ? 'bg-amber-500/20 text-amber-300 ring-1 ring-amber-400/30'
-                : isActive
-                  ? 'text-amber-300 bg-amber-500/10'
-                  : 'text-amber-400/70')
-            : (isFlyoutActive
-                ? 'bg-white/12 text-white ring-1 ring-white/15'
-                : isActive
-                  ? 'text-white bg-white/8'
-                  : 'text-white/60')
+            ? (isActive
+                ? 'text-amber-300 bg-amber-500/10'
+                : 'text-amber-400/70')
+            : (isActive
+                ? 'text-white bg-white/8'
+                : 'text-white/60')
           }
           ${section.greyedOut ? 'opacity-40' : ''}
         `;
@@ -384,10 +323,7 @@ const NavSection = React.memo(({
   );
 
   return (
-    <div
-      onMouseEnter={() => { cancelFlyoutClose(); openFlyout(section); }}
-      onMouseLeave={scheduleFlyoutClose}
-    >
+    <div>
       {sidebarOpen ? (
         <>
           <div
@@ -419,14 +355,11 @@ const NavSection = React.memo(({
             } ${section.greyedOut ? 'cursor-not-allowed' : ''}`}
             style={{ height: 44 }}
           >
-            {(isActive || isFlyoutActive) && (
+            {isActive && (
               <span className="absolute left-0 top-3 bottom-3 w-0.5 bg-brand-teal rounded-r-full" />
             )}
             <div className="flex items-center gap-3 flex-1 min-w-0 justify-center">
-              <span
-                className={`flex-shrink-0 flex items-center justify-center transition-transform duration-200 ${isFlyoutActive ? 'scale-110' : ''}`}
-                style={{ width: 20 }}
-              >
+              <span className="flex-shrink-0 flex items-center justify-center" style={{ width: 20 }}>
                 <section.icon size={18} />
               </span>
             </div>
@@ -463,129 +396,6 @@ const LeafItem = ({ item, currentPage, onNavigate }) => {
     </button>
   );
 };
-
-// ─── FlyoutPanel ───────────────────────────────────────────────────────────────
-const FlyoutPanel = ({
-  section,
-  left,
-  top,
-  currentPage,
-  onNavigate,
-  isPinned,
-  setIsPinned,
-  onMouseEnter,
-  onMouseLeave,
-}) => {
-  return (
-    <div
-      style={{ left, top, bottom: 0, position: 'fixed', zIndex: 9999, display: 'flex' }}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-    >
-      {/* Invisible 4px bridge strip — prevents gap-triggered close */}
-      <div style={{ width: 4, flexShrink: 0 }} />
-
-      {/* Flyout body */}
-      <div
-        className="w-64 flex flex-col bg-[var(--brand-purple)] border-r border-white/10 shadow-[4px_0_32px_rgba(0,0,0,0.2)] overflow-hidden"
-        style={{ animation: 'flyoutIn 0.14s ease-out both' }}
-      >
-        {/* Header */}
-        <div className="px-4 py-4 bg-[var(--brand-purple-dark)] border-b border-white/10 flex items-center justify-between flex-shrink-0">
-          <div>
-            <p className="text-[9px] font-black uppercase tracking-[0.18em] text-white/50 mb-0.5">Navigate</p>
-            <p className="text-sm font-black text-white leading-tight">{section.label}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setIsPinned(v => !v)}
-              title={isPinned ? 'Unpin' : 'Pin open'}
-              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
-                isPinned
-                  ? 'bg-white/20 text-white shadow-md'
-                  : 'text-white/50 hover:bg-white/10 hover:text-white'
-              }`}
-            >
-              <Pin size={14} className={isPinned ? 'fill-current' : ''} />
-            </button>
-            <div className="w-9 h-9 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center text-white">
-              <section.icon size={18} />
-            </div>
-          </div>
-        </div>
-
-        {/* Items */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar">
-          {(section.items || []).map(item => {
-            if (item.type === 'group') {
-              return (
-                <div key={item.id} className="mb-3">
-                  <div className="flex items-center gap-1.5 px-2 py-1.5 mb-1 text-[9px] font-black uppercase tracking-[0.15em] text-white/50 bg-white/5 rounded-md border border-white/10">
-                    {item.icon && <item.icon size={10} className="opacity-70" />}
-                    {item.label}
-                  </div>
-                  <div className="ml-1.5 border-l-2 border-white/10 pl-2 space-y-0.5">
-                    {(item.items || []).map(sub => (
-                      <FlyoutLeaf key={sub.id} item={sub} currentPage={currentPage} onNavigate={onNavigate} />
-                    ))}
-                  </div>
-                </div>
-              );
-            }
-            return <FlyoutLeaf key={item.id} item={item} currentPage={currentPage} onNavigate={onNavigate} />;
-          })}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ─── FlyoutLeaf ────────────────────────────────────────────────────────────────
-const FlyoutLeaf = ({ item, currentPage, onNavigate }) => {
-  const isActive = currentPage === item.path;
-
-  return (
-    <button
-      onClick={() => !item.greyedOut && !item.comingSoon && onNavigate(item.path)}
-      disabled={!!(item.greyedOut || item.comingSoon)}
-      className={`
-        w-full text-left flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-all duration-150
-        ${item.greyedOut
-          ? 'text-white/30 cursor-not-allowed'
-          : isActive
-            ? 'bg-white/15 text-white font-bold border border-white/20 shadow-sm'
-            : 'text-white/70 hover:text-white hover:bg-white/10 active:scale-[0.98]'}
-      `}
-    >
-      <div className="flex items-center gap-2 min-w-0">
-        {item.icon && (
-          <item.icon size={12} className={isActive ? 'text-brand-teal' : 'opacity-40'} />
-        )}
-        <span className="truncate">{item.label}</span>
-        {item.path?.includes('http') && <ExternalLink size={9} className="opacity-30 flex-shrink-0" />}
-      </div>
-      {item.comingSoon && (
-        <span className="ml-2 flex-shrink-0 text-[7px] bg-amber-400/12 text-amber-500 px-1.5 py-0.5 rounded font-black uppercase border border-amber-400/20">
-          Soon
-        </span>
-      )}
-    </button>
-  );
-};
-
-// ─── Keyframe for flyout entrance ─────────────────────────────────────────────
-// Injected once into document head
-if (typeof document !== 'undefined' && !document.getElementById('zawadi-flyout-anim')) {
-  const style = document.createElement('style');
-  style.id = 'zawadi-flyout-anim';
-  style.textContent = `
-    @keyframes flyoutIn {
-      from { opacity: 0; transform: translateX(-6px); }
-      to   { opacity: 1; transform: translateX(0);    }
-    }
-  `;
-  document.head.appendChild(style);
-}
 
 // ─── display names ─────────────────────────────────────────────────────────────
 Sidebar.displayName    = 'Sidebar';

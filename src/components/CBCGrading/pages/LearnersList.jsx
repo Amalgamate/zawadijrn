@@ -2,7 +2,7 @@
  * Learners List Page
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Plus, Upload, Eye, Edit, Trash2, LogOut, Lock, ChevronLeft, ChevronRight, Search, RefreshCw, Users, MoreVertical, MessageCircle, MessageSquare, X, Loader2, Send } from 'lucide-react';
 import StatusBadge from '../shared/StatusBadge';
 import EmptyState from '../shared/EmptyState';
@@ -33,6 +33,7 @@ const LearnersList = ({
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterStream, setFilterStream] = useState('all');
   const [availableStreams, setAvailableStreams] = useState([]);
+  const [fallbackGrades, setFallbackGrades] = useState([]);
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [selectedLearners, setSelectedLearners] = useState([]);
   const [selectAllDatabase, setSelectAllDatabase] = useState(false);
@@ -47,6 +48,21 @@ const LearnersList = ({
   const { user } = useAuth();
   const { grades } = useSchoolData();
   const isMobile = useMediaQuery('(max-width: 767px)');
+
+  const formatGradeLabel = (g) => {
+    const s = String(g || '');
+    if (!s) return '';
+    if (s === 'PLAYGROUP') return 'Playgroup';
+    if (s === 'PP1' || s === 'PP2') return s;
+    if (s.startsWith('GRADE_')) return `Grade ${s.replace('GRADE_', '')}`;
+    if (s.startsWith('GRADE') && /^\d+$/.test(s.replace('GRADE', ''))) return `Grade ${s.replace('GRADE', '')}`;
+    return s.replace(/_/g, ' ');
+  };
+
+  const gradeOptions = useMemo(() => {
+    const base = (Array.isArray(grades) && grades.length > 0) ? grades : fallbackGrades;
+    return Array.from(new Set((base || []).filter(Boolean).map((x) => String(x).trim()).filter(Boolean)));
+  }, [grades, fallbackGrades]);
 
   // Check permissions
   const canCreateLearner = can('CREATE_LEARNER');
@@ -68,6 +84,21 @@ const LearnersList = ({
     fetchStreams();
   }, []);
 
+  // Ensure grade filter options are always available (fallback to /config/grades)
+  useEffect(() => {
+    const loadFallbackGrades = async () => {
+      try {
+        if (Array.isArray(grades) && grades.length > 0) return;
+        const resp = await configAPI.getGrades();
+        const arr = resp?.data || [];
+        if (Array.isArray(arr)) setFallbackGrades(arr);
+      } catch (e) {
+        // Leave fallbackGrades empty; UI will still function with "All Grades".
+      }
+    };
+    loadFallbackGrades();
+  }, [grades, user?.institutionType]);
+
   // Server-side filtering effect
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -78,7 +109,7 @@ const LearnersList = ({
           limit: pagination?.limit || 50
         };
 
-        if (filterGrade !== 'all') params.grade = filterGrade;
+        if (filterGrade !== 'all') params.grade = String(filterGrade).trim();
         if (filterStatus !== 'all') params.status = filterStatus;
         if (filterStream !== 'all') params.stream = filterStream;
 
@@ -96,7 +127,7 @@ const LearnersList = ({
         limit: pagination?.limit || 50
       };
 
-      if (filterGrade !== 'all') params.grade = filterGrade;
+      if (filterGrade !== 'all') params.grade = String(filterGrade).trim();
       if (filterStatus !== 'all') params.status = filterStatus;
       if (filterStream !== 'all') params.stream = filterStream;
 
@@ -192,7 +223,7 @@ const LearnersList = ({
         limit: pagination?.limit || 50
       };
 
-      if (filterGrade !== 'all') params.grade = filterGrade;
+      if (filterGrade !== 'all') params.grade = String(filterGrade).trim();
       if (filterStatus !== 'all') params.status = filterStatus;
 
       onFetchLearners(params);
@@ -288,8 +319,8 @@ const LearnersList = ({
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-purple bg-white"
               >
                 <option value="all">All Grades</option>
-                {grades.map(g => (
-                  <option key={g} value={g}>{g.replace(/_/g, ' ')}</option>
+                {gradeOptions.map(g => (
+                  <option key={g} value={g}>{formatGradeLabel(g)}</option>
                 ))}
               </select>
 

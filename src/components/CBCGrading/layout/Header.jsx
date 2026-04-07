@@ -29,6 +29,43 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
   const reminderStorageKey = `header_last_notification_reminder_${user?.id || user?.email || 'unknown'}`;
   const snoozeStorageKey = `header_notification_reminder_snooze_until_${user?.id || user?.email || 'unknown'}`;
 
+  const portalLabel = (roleValue) => {
+    const roleStr = String(roleValue || '').toUpperCase();
+    if (!roleStr) return 'Portal';
+    if (roleStr === 'SUPER_ADMIN') return 'Super Admin';
+    if (roleStr === 'HEAD_TEACHER') return 'Head Teacher';
+    if (roleStr === 'HEAD_OF_CURRICULUM') return 'HoC';
+    // Default: Title Case words (ADMIN -> Admin, IT_SUPPORT -> IT Support)
+    return roleStr
+      .split('_')
+      .map((w) => (w.length <= 2 ? w : w[0] + w.slice(1).toLowerCase()))
+      .join(' ');
+  };
+
+  const portalPillClass = (roleValue) => {
+    const roleStr = String(roleValue || '').toUpperCase();
+    switch (roleStr) {
+      case 'PARENT':
+        return 'bg-amber-50 text-amber-800 border-amber-200';
+      case 'STUDENT':
+        return 'bg-sky-50 text-sky-800 border-sky-200';
+      case 'TEACHER':
+        return 'bg-blue-50 text-blue-800 border-blue-200';
+      case 'HEAD_TEACHER':
+      case 'HEAD_OF_CURRICULUM':
+        return 'bg-fuchsia-50 text-fuchsia-800 border-fuchsia-200';
+      case 'ACCOUNTANT':
+        return 'bg-rose-50 text-rose-800 border-rose-200';
+      case 'RECEPTIONIST':
+        return 'bg-teal-50 text-teal-800 border-teal-200';
+      case 'ADMIN':
+      case 'SUPER_ADMIN':
+        return 'bg-purple-50 text-purple-800 border-purple-200';
+      default:
+        return 'bg-slate-50 text-slate-800 border-slate-200';
+    }
+  };
+
   const birthdayNotificationItems = birthdays.map((b) => ({
     ...b,
     type: 'birthday',
@@ -294,9 +331,31 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
           <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
         </div>
         <div className="hidden sm:block">
-          <h1 className="text-base lg:text-lg font-black text-gray-900 leading-none tracking-tight uppercase">
-            {title || brandingSettings?.schoolName || 'ZAWADI SMS'}
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-base lg:text-lg font-black text-gray-900 leading-none tracking-tight uppercase">
+              {title || brandingSettings?.schoolName || 'ZAWADI SMS'}
+            </h1>
+            <span
+              className={cn(
+                "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-black uppercase tracking-widest leading-none shadow-sm",
+                (user?.institutionType === 'SECONDARY')
+                  ? "bg-indigo-50 text-indigo-800 border-indigo-200"
+                  : "bg-emerald-50 text-emerald-800 border-emerald-200"
+              )}
+              title={user?.institutionType === 'SECONDARY' ? 'Senior School portal' : 'Junior School portal'}
+            >
+              {user?.institutionType === 'SECONDARY' ? 'Senior' : 'Junior'}
+            </span>
+            <span
+              className={cn(
+                "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-black uppercase tracking-widest leading-none shadow-sm",
+                portalPillClass(user?.role)
+              )}
+              title="Portal type"
+            >
+              {portalLabel(user?.role)}
+            </span>
+          </div>
           <p className="text-[9px] text-gray-400 font-bold uppercase tracking-[0.2em] mt-1">
             {title ? (brandingSettings?.schoolName || 'Zawadi SMS') : 'School Management System'}
           </p>

@@ -20,10 +20,11 @@ export class LearnerController {
   async getAllLearners(req: AuthRequest, res: Response) {
     const currentUserRole = req.user!.role;
     const currentUserId = req.user!.userId;
+    const institutionType = (req.user?.institutionType || 'PRIMARY_CBC') as any;
     const { grade, stream, status, search, page = 1, limit = 50 } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
 
-    let whereClause: any = { archived: false };
+    let whereClause: any = { archived: false, institutionType };
     if (currentUserRole === 'PARENT') whereClause.parentId = currentUserId;
     if (grade) whereClause.grade = String(grade);
     if (stream) whereClause.stream = String(stream);
@@ -67,7 +68,8 @@ export class LearnerController {
   }
 
   async getLearnerStats(_req: AuthRequest, res: Response) {
-    const whereClause: any = { archived: false };
+    const institutionType = (_req.user?.institutionType || 'PRIMARY_CBC') as any;
+    const whereClause: any = { archived: false, institutionType };
     const [statusCounts, gradeCounts, genderCounts, total, active] = await Promise.all([
       prisma.learner.groupBy({ by: ['status'], _count: true, where: whereClause }),
       prisma.learner.groupBy({ by: ['grade'],  _count: true, where: { ...whereClause, status: 'ACTIVE' } }),
@@ -88,11 +90,13 @@ export class LearnerController {
 
   async getLearnerById(req: AuthRequest, res: Response) {
     const { id } = req.params;
+    const institutionType = (req.user?.institutionType || 'PRIMARY_CBC') as any;
     const learner = await prisma.learner.findUnique({
       where: { id },
       include: { parent: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } } },
     });
     if (!learner) throw new ApiError(404, 'Learner not found');
+    if (learner.institutionType !== institutionType) throw new ApiError(404, 'Learner not found');
     if (req.user!.role === 'PARENT' && learner.parentId !== req.user!.userId) {
       throw new ApiError(403, 'You can only access your own children');
     }
@@ -100,16 +104,19 @@ export class LearnerController {
   }
 
   async getLearnerByAdmissionNumber(req: AuthRequest, res: Response) {
+    const institutionType = (req.user?.institutionType || 'PRIMARY_CBC') as any;
     const learner = await prisma.learner.findUnique({
       where: { admissionNumber: req.params.admissionNumber },
       include: { parent: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } } },
     });
     if (!learner) throw new ApiError(404, 'Learner not found');
+    if (learner.institutionType !== institutionType) throw new ApiError(404, 'Learner not found');
     res.json({ success: true, data: learner });
   }
 
   async createLearner(req: AuthRequest, res: Response) {
     const currentUserId = req.user!.userId;
+    const institutionType = (req.user?.institutionType || 'PRIMARY_CBC') as any;
     let {
       admissionNumber, firstName, lastName, middleName, dateOfBirth, gender, grade, stream,
       parentId, guardianName, guardianPhone, guardianEmail, medicalConditions, allergies,
@@ -217,6 +224,7 @@ export class LearnerController {
         data: {
           admissionNumber, firstName, lastName, middleName,
           dateOfBirth: new Date(dateOfBirth), gender: gender as Gender, grade: String(grade) as any,
+          institutionType,
           stream: stream || 'A', parentId, guardianName, guardianPhone, guardianEmail,
           medicalConditions, allergies, emergencyContact, emergencyPhone, bloodGroup,
           address, county, subCounty, previousSchool, religion, specialNeeds,

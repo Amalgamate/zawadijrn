@@ -68,8 +68,9 @@ export const secondaryNavSections = [
     icon: BookMarked,
     permission: null,
     items: [
-      { id: 'sec-subjects',    label: 'Subject Management', path: 'sec-subjects',    permission: 'ACADEMIC_SETTINGS' },
-      { id: 'sec-form-groups', label: 'Form Groups',        path: 'sec-form-groups', permission: 'MANAGE_FACILITIES' },
+      { id: 'sec-pathways',    label: 'CBC Pathways (SS)',  path: 'sec-pathways',    permission: 'ACADEMIC_SETTINGS' },
+      { id: 'sec-subjects',    label: 'Subject Catalog',    path: 'sec-subjects',    permission: 'ACADEMIC_SETTINGS' },
+      { id: 'sec-form-groups', label: 'Grade Streams',      path: 'sec-form-groups', permission: 'MANAGE_FACILITIES' },
       { id: 'sec-timetable',   label: 'Timetable',          path: 'planner-timetable', permission: 'ACCESS_TIMETABLE' },
       { id: 'sec-schemes',     label: 'Schemes of Work',    path: 'planner-schemes', permission: null, icon: ClipboardList },
     ],
@@ -86,7 +87,7 @@ export const secondaryNavSections = [
       { id: 'sec-cats',        label: 'CATs',           path: 'sec-cats',        permission: 'ACCESS_ASSESSMENT_MODULE' },
       { id: 'sec-mid-term',    label: 'Mid-term Exams', path: 'sec-mid-term',    permission: 'ACCESS_ASSESSMENT_MODULE' },
       { id: 'sec-end-term',    label: 'End-term Exams', path: 'sec-end-term',    permission: 'ACCESS_ASSESSMENT_MODULE' },
-      { id: 'sec-kcse-mock',   label: 'KCSE Mock',      path: 'sec-kcse-mock',   permission: 'ACCESS_ASSESSMENT_MODULE' },
+      { id: 'sec-kcse-mock',   label: 'Mock Exams',     path: 'sec-kcse-mock',   permission: 'ACCESS_ASSESSMENT_MODULE' },
     ],
   },
 
@@ -101,7 +102,7 @@ export const secondaryNavSections = [
       { id: 'sec-rankings',         label: 'Class Rankings',    path: 'sec-rankings',          permission: 'VIEW_ALL_REPORTS' },
       { id: 'sec-subject-analysis', label: 'Subject Analysis',  path: 'sec-subject-analysis', permission: 'VIEW_ALL_REPORTS' },
       { id: 'sec-report-cards',     label: 'Report Cards',      path: 'sec-report-cards',     permission: 'DOWNLOAD_REPORTS' },
-      { id: 'sec-kcse-prediction',  label: 'KCSE Prediction',   path: 'sec-kcse-prediction',  permission: 'VIEW_ALL_REPORTS' },
+      { id: 'sec-kcse-prediction',  label: 'Performance Forecast', path: 'sec-kcse-prediction',  permission: 'VIEW_ALL_REPORTS' },
     ],
   },
 

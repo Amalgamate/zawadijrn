@@ -37,6 +37,9 @@ const GRADES = [
   'GRADE_9'
 ];
 
+// Senior School grades (Grade 10–12)
+const SS_GRADES = ['GRADE10', 'GRADE11', 'GRADE12'];
+
 // Grade name mappings for display
 const GRADE_DISPLAY_NAMES: Record<string, string> = {
   'PLAYGROUP': 'Playgroup',
@@ -103,6 +106,7 @@ async function seedClasses() {
             const existingClass = await prisma.class.findFirst({
               where: {
                 grade: grade as any,
+                institutionType: 'PRIMARY_CBC' as any,
                 stream: stream,
                 academicYear: ACADEMIC_YEAR,
                 term: CURRENT_TERM as any
@@ -122,6 +126,7 @@ async function seedClasses() {
                 classCode: `CLS-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                 name: className,
                 grade: grade as any,
+                institutionType: 'PRIMARY_CBC' as any,
                 stream: stream,
                 academicYear: ACADEMIC_YEAR,
                 term: CURRENT_TERM as any,
@@ -135,6 +140,55 @@ async function seedClasses() {
             schoolClassesCreated++;
             totalCreated++;
 
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            console.error(`   ❌ Error creating class: ${errorMessage}`);
+            schoolErrors++;
+            totalErrors++;
+          }
+        }
+      }
+
+      // Create Senior School classes (Grade 10–12) under SECONDARY institution type
+      for (const grade of SS_GRADES) {
+        for (const stream of STREAMS) {
+          try {
+            const className = `Grade ${String(grade).replace('GRADE', '')} ${stream}`;
+            const existingClass = await prisma.class.findFirst({
+              where: {
+                grade: grade as any,
+                institutionType: 'SECONDARY' as any,
+                stream: stream,
+                academicYear: ACADEMIC_YEAR,
+                term: CURRENT_TERM as any
+              }
+            });
+
+            if (existingClass) {
+              console.log(`   ⏭️  ${className} already exists (ID: ${existingClass.id})`);
+              schoolClassesSkipped++;
+              totalSkipped++;
+              continue;
+            }
+
+            const newClass = await prisma.class.create({
+              data: {
+                classCode: `CLS-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                name: className,
+                grade: grade as any,
+                institutionType: 'SECONDARY' as any,
+                stream: stream,
+                academicYear: ACADEMIC_YEAR,
+                term: CURRENT_TERM as any,
+                capacity: CLASS_CAPACITY,
+                active: true,
+                archived: false
+              }
+            });
+
+            console.log(`   ✅ Created: ${className} (ID: ${newClass.id})`);
+            schoolClassesCreated++;
+            totalCreated++;
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             console.error(`   ❌ Error creating class: ${errorMessage}`);

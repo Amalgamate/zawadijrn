@@ -371,9 +371,12 @@ export class ConfigService {
     });
   }
 
-  async getClasses(): Promise<any[]> {
+  async getClasses(institutionType?: 'PRIMARY_CBC' | 'SECONDARY'): Promise<any[]> {
     return await prisma.class.findMany({
-      where: { archived: false },
+      where: {
+        archived: false,
+        ...(institutionType ? { institutionType } : {}),
+      },
       include: {
         teacher: { select: { id: true, firstName: true, lastName: true } }
       },

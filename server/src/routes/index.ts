@@ -42,6 +42,8 @@ import aiRoutes from './ai.routes';
 import onboardingRoutes from './onboarding.routes';
 import backupRoutes from './backup.routes';
 import schemeOfWorkRoutes from './schemeOfWork.routes';
+import pathwayRoutes from './pathway.routes';
+import pathwayRecommendationRoutes from './pathwayRecommendation.routes';
 import { issueCsrfToken } from '../middleware/csrf.middleware';
 import { authenticate } from '../middleware/auth.middleware';
 
@@ -82,6 +84,8 @@ router.use('/cbc', cbcRoutes);
 router.use('/grading', gradingRoutes);
 router.use('/config', configRoutes);
 router.use('/learning-areas', learningAreaRoutes);
+router.use('/pathways', pathwayRoutes);
+router.use('/pathways', pathwayRecommendationRoutes);
 router.use('/workflow', workflowRoutes);
 router.use('/facility/streams', streamRoutes);
 router.use('/broadcasts', broadcastRoutes);

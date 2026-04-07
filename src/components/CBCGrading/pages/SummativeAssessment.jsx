@@ -21,6 +21,30 @@ import { useSchoolData } from '../../../contexts/SchoolDataContext';
 import { getLearningAreasByGrade } from '../../../constants/learningAreas';
 import { getAcademicYearOptions, getCurrentAcademicYear } from '../utils/academicYear';
 
+const SECONDARY_GRADES = ['GRADE10', 'GRADE11', 'GRADE12'];
+const JUNIOR_GRADE_ORDER = ['PLAYGROUP', 'PP1', 'PP2', 'GRADE_1', 'GRADE_2', 'GRADE_3', 'GRADE_4', 'GRADE_5', 'GRADE_6', 'GRADE_7', 'GRADE_8', 'GRADE_9'];
+
+const normalizeGradeCode = (grade) => String(grade || '').trim().replace(/\s+/g, '_').toUpperCase();
+const toCanonicalGrade = (grade) => {
+  const g = normalizeGradeCode(grade);
+  if (g === 'FORM_1' || g === 'GRADE_10') return 'GRADE10';
+  if (g === 'FORM_2' || g === 'GRADE_11') return 'GRADE11';
+  if (g === 'FORM_3' || g === 'GRADE_12') return 'GRADE12';
+  return g;
+};
+const isSecondaryGrade = (grade) => /^GRADE(10|11|12)$/.test(toCanonicalGrade(grade));
+const isJuniorGrade = (grade) => {
+  const g = toCanonicalGrade(grade);
+  return g === 'PLAYGROUP' || g === 'PP1' || g === 'PP2' || /^GRADE_[1-9]$/.test(g);
+};
+const formatGradeLabel = (grade) => {
+  const g = toCanonicalGrade(grade);
+  if (isSecondaryGrade(g)) return `Grade ${g.replace('GRADE', '')}`;
+  if (g.startsWith('GRADE_')) return `Grade ${g.replace('GRADE_', '')}`;
+  if (g === 'PLAYGROUP') return 'Playgroup';
+  return g.replace(/_/g, ' ');
+};
+
 // ─── Custom Test Picker ────────────────────────────────────────────────────────
 // Replaces the native <select> so we can render a green tick next to tests that
 // already have saved results. Keeps identical height/style to the other selects.
@@ -154,6 +178,9 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
   const [isDraft, setIsDraft] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const { grades: availableGrades } = useSchoolData();
+  const [fallbackGrades, setFallbackGrades] = useState([]);
+  const [selectedGradeAreas, setSelectedGradeAreas] = useState([]);
+  const [stagedGradeAreas, setStagedGradeAreas] = useState([]);
   const [availableTerms, setAvailableTerms] = useState([]);
   const [availableStreams, setAvailableStreams] = useState([]);
 
@@ -227,6 +254,7 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
 
   // User Context removed schoolId for single-tenant mode
   const { user } = useAuth();
+  const isSecondaryPortal = String(user?.institutionType || '').toUpperCase() === 'SECONDARY';
   const schoolId = null;
 
   // Load Tests
@@ -243,9 +271,14 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
       }
 
       // Only show published, active tests (backend enforces this too)
-      const activeTests = testsData.filter(t =>
+      let activeTests = testsData.filter(t =>
         (t.status || '').toUpperCase() === 'PUBLISHED' && t.active !== false
       );
+      // Defensive portal scoping: never show JS grades inside Senior portal.
+      activeTests = activeTests.filter((t) => {
+        const g = toCanonicalGrade(t?.grade);
+        return isSecondaryPortal ? isSecondaryGrade(g) : isJuniorGrade(g);
+      });
 
       setTests(activeTests);
     } catch (error) {
@@ -259,6 +292,55 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
   useEffect(() => {
     fetchTests();
   }, [fetchTests]);
+
+  useEffect(() => {
+    const loadFallbackGrades = async () => {
+      try {
+        const resp = await configAPI.getGrades();
+        const rows = Array.isArray(resp?.data) ? resp.data : (Array.isArray(resp) ? resp : []);
+        setFallbackGrades(rows.map(toCanonicalGrade));
+      } catch {
+        setFallbackGrades([]);
+      }
+    };
+    loadFallbackGrades();
+  }, []);
+
+  useEffect(() => {
+    const loadAreasForSelectedGrade = async () => {
+      if (!setup.selectedGrade) {
+        setSelectedGradeAreas([]);
+        return;
+      }
+      try {
+        const resp = await configAPI.getLearningAreas({ gradeLevel: toCanonicalGrade(setup.selectedGrade) });
+        const rows = Array.isArray(resp?.data) ? resp.data : (Array.isArray(resp) ? resp : []);
+        const names = rows.map((r) => String(r?.name || '').trim()).filter(Boolean);
+        setSelectedGradeAreas([...new Set(names)]);
+      } catch {
+        setSelectedGradeAreas([]);
+      }
+    };
+    loadAreasForSelectedGrade();
+  }, [setup.selectedGrade]);
+
+  useEffect(() => {
+    const loadAreasForStagedGrade = async () => {
+      if (!stagedGrade) {
+        setStagedGradeAreas([]);
+        return;
+      }
+      try {
+        const resp = await configAPI.getLearningAreas({ gradeLevel: toCanonicalGrade(stagedGrade) });
+        const rows = Array.isArray(resp?.data) ? resp.data : (Array.isArray(resp) ? resp : []);
+        const names = rows.map((r) => String(r?.name || '').trim()).filter(Boolean);
+        setStagedGradeAreas([...new Set(names)]);
+      } catch {
+        setStagedGradeAreas([]);
+      }
+    };
+    loadAreasForStagedGrade();
+  }, [stagedGrade]);
 
 
   // Load Terms, and Streams for selectors
@@ -302,8 +384,8 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
     tests.filter(t => {
       if (setup.selectedGrade) {
         // Handle variations like GRADE_1 vs Grade 1 or GRADE 1
-        const normalizedGrade = setup.selectedGrade.replace(/\s+/g, '_').toUpperCase();
-        const testGrade = (t.grade || '').replace(/\s+/g, '_').toUpperCase();
+        const normalizedGrade = toCanonicalGrade(setup.selectedGrade);
+        const testGrade = toCanonicalGrade(t.grade || '');
         if (testGrade !== normalizedGrade) return false;
       }
       if (setup.selectedTerm) {
@@ -320,8 +402,8 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
   const stagedFilteredTestsBySelection = useMemo(() =>
     tests.filter(t => {
       if (stagedGrade) {
-        const normalizedGrade = stagedGrade.replace(/\s+/g, '_').toUpperCase();
-        const testGrade = (t.grade || '').replace(/\s+/g, '_').toUpperCase();
+        const normalizedGrade = toCanonicalGrade(stagedGrade);
+        const testGrade = toCanonicalGrade(t.grade || '');
         if (testGrade !== normalizedGrade) return false;
       }
       if (stagedTerm) {
@@ -341,11 +423,12 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
       if (t.learningArea) areas.add(t.learningArea);
     });
 
-    // Unified source: merge persisted tests + official grade map
+    // Unified source: merge persisted tests + grade hook + backend grade areas
     (learningAreasMgr.flatLearningAreas || []).forEach((area) => areas.add(area));
+    (selectedGradeAreas || []).forEach((area) => areas.add(area));
 
     return Array.from(areas).sort();
-  }, [filteredTestsBySelection, learningAreasMgr.flatLearningAreas]);
+  }, [filteredTestsBySelection, learningAreasMgr.flatLearningAreas, selectedGradeAreas]);
 
   // Staged available learning areas - for dropdown options while editing
   const stagedAvailableLearningAreas = useMemo(() => {
@@ -354,12 +437,13 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
       if (t.learningArea) areas.add(t.learningArea);
     });
 
-    // Use grade-driven canonical learning areas for staged grade, even before "Load" is clicked
+    // Use grade-driven canonical learning areas (constant map + backend), even before "Load" is clicked
     const stagedOfficialAreas = stagedGrade ? getLearningAreasByGrade(stagedGrade) : [];
     stagedOfficialAreas.forEach((area) => areas.add(area));
+    (stagedGradeAreas || []).forEach((area) => areas.add(area));
 
     return Array.from(areas).sort();
-  }, [stagedFilteredTestsBySelection, stagedGrade]);
+  }, [stagedFilteredTestsBySelection, stagedGrade, stagedGradeAreas]);
 
   const filteredLearningAreasByWorkload = useMemo(() => {
     const areas = availableLearningAreas;
@@ -415,9 +499,6 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
     });
   }, [stagedFilteredTestsBySelection, stagedLearningArea]);
 
-  // Sort grades from lowest to highest
-  const gradeOrder = ['PLAYGROUP', 'PP1', 'PP2', 'GRADE_1', 'GRADE_2', 'GRADE_3', 'GRADE_4', 'GRADE_5', 'GRADE_6', 'GRADE_7', 'GRADE_8', 'GRADE_9'];
-
   const filteredGrades = useMemo(() => {
     const gradesFromTests = [...new Set(
       tests
@@ -426,21 +507,28 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
         .map((grade) => grade.replace(/\s+/g, '_').toUpperCase())
     )];
 
-    const mergedGrades = [...new Set([...(availableGrades || []), ...gradesFromTests])];
+    let mergedGrades = [...new Set([...(availableGrades || []), ...(fallbackGrades || []), ...gradesFromTests])]
+      .map(toCanonicalGrade);
+    mergedGrades = mergedGrades.filter((g) => (isSecondaryPortal ? isSecondaryGrade(g) : isJuniorGrade(g)));
 
     let grades = !teacherWorkload.isTeacher
       ? mergedGrades
-      : mergedGrades.filter(g => teacherWorkload.assignedGrades.includes(g));
+      : mergedGrades.filter(g => teacherWorkload.assignedGrades.map(toCanonicalGrade).includes(g));
 
-    // Sort by grade order
+    // Sort by portal-specific grade order
     return grades.sort((a, b) => {
-      const aIndex = gradeOrder.indexOf(a);
-      const bIndex = gradeOrder.indexOf(b);
-      if (aIndex === -1) return 1;
-      if (bIndex === -1) return -1;
-      return aIndex - bIndex;
+      if (isSecondaryPortal) return SECONDARY_GRADES.indexOf(a) - SECONDARY_GRADES.indexOf(b);
+      return JUNIOR_GRADE_ORDER.indexOf(a) - JUNIOR_GRADE_ORDER.indexOf(b);
     });
-  }, [availableGrades, tests, teacherWorkload.isTeacher, teacherWorkload.assignedGrades]);
+  }, [availableGrades, fallbackGrades, tests, teacherWorkload.isTeacher, teacherWorkload.assignedGrades, isSecondaryPortal]);
+
+  useEffect(() => {
+    if (stagedGrade && !filteredGrades.includes(toCanonicalGrade(stagedGrade))) {
+      setStagedGrade(filteredGrades[0] || '');
+      setStagedLearningArea('');
+      setStagedTestId('');
+    }
+  }, [stagedGrade, filteredGrades]);
 
 
   // Effects for Auto-selection & Prefill
@@ -1260,7 +1348,7 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
               <option value="">Grade</option>
               {filteredGrades.map(g => (
                 <option key={g} value={g}>
-                  {g.replace('_', ' ')}
+                  {formatGradeLabel(g)}
                 </option>
               ))}
             </select>

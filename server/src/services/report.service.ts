@@ -40,6 +40,12 @@ export interface LearnerInfo {
 export interface FormativeAssessmentData {
   id: string;
   learningArea: string;
+  learningAreaId?: string | null;
+  learningAreaMeta?: {
+    pathway?: string | null;
+    category?: string | null;
+    isCore?: boolean;
+  } | null;
   strand: string | null;
   subStrand: string | null;
   detailedRating: DetailedRubricRating | null;
@@ -60,6 +66,7 @@ export interface SummativeResultData {
   marksObtained: number;
   percentage: number;
   grade: string;
+  cbcGrade?: string | null;
   status: string;
   position: number | null;
   outOf: number | null;
@@ -67,6 +74,12 @@ export interface SummativeResultData {
   test: {
     title: string;
     learningArea: string;
+    learningAreaId?: string | null;
+    learningAreaMeta?: {
+      pathway?: string | null;
+      category?: string | null;
+      isCore?: boolean;
+    } | null;
     totalMarks: number;
     passMarks: number;
     testDate: Date;
@@ -140,6 +153,9 @@ export interface TermlyReportData {
   coCurricular: CoCurricularData[];
   comments: any;
   overallPerformance: any;
+  learnerPathway?: any;
+  subjectSelection?: any;
+  strengthsWeaknesses?: any;
   pathwayPrediction?: any;
   generatedDate: Date;
 }
@@ -222,6 +238,28 @@ export async function generateTermlyReport(
   const summativeSummary = calculateSummativeSummary(summativeResults, summativeSystem.ranges, cbcSystem.ranges);
   const attendanceSummary = calculateAttendanceSummary(attendanceRecords);
 
+  const strengthsWeaknesses = (() => {
+    const subjects = (summativeSummary?.bySubject || []) as Array<{ subject: string; averagePercentage: number; cbcGrade?: string }>;
+    const sorted = [...subjects].sort((a, b) => (b.averagePercentage || 0) - (a.averagePercentage || 0));
+    const strengths = sorted.slice(0, 3);
+    const weaknesses = [...sorted].reverse().slice(0, 3);
+    return { strengths, weaknesses };
+  })();
+
+  // If learner is Senior Secondary, include selected pathway and subject selections.
+  const learnerRecord = await prisma.learner.findUnique({
+    where: { id: learnerId },
+    select: {
+      institutionType: true,
+      pathway: { select: { id: true, code: true, name: true } },
+      subjectSelections: {
+        where: { active: true },
+        select: { learningArea: { select: { id: true, name: true, shortName: true, isCore: true, pathway: true, category: true } } },
+        orderBy: { createdAt: 'asc' },
+      },
+    }
+  });
+
   const overallPerformance = await calculateOverallPerformanceWithWeights(
     learnerId,
     classId,
@@ -288,6 +326,9 @@ export async function generateTermlyReport(
         }
       : null,
     overallPerformance,
+    learnerPathway: learnerRecord?.institutionType === 'SECONDARY' ? (learnerRecord?.pathway || null) : null,
+    subjectSelection: learnerRecord?.institutionType === 'SECONDARY' ? (learnerRecord?.subjectSelections || []) : [],
+    strengthsWeaknesses,
     pathwayPrediction,
     generatedDate: new Date(),
   };
@@ -328,8 +369,11 @@ async function fetchLearnerInfo(learnerId: string): Promise<LearnerInfo> {
 async function fetchFormativeAssessments(learnerId: string, term: Term, academicYear: number) {
   return await prisma.formativeAssessment.findMany({
     where: { learnerId, term, academicYear },
-    include: { teacher: { select: { firstName: true, lastName: true } } },
-    orderBy: { learningArea: 'asc' }
+    include: {
+      teacher: { select: { firstName: true, lastName: true } },
+      learningAreaRef: { select: { id: true, pathway: true, category: true, isCore: true } },
+    },
+    orderBy: [{ learningAreaId: 'asc' }, { learningArea: 'asc' }]
   });
 }
 
@@ -341,14 +385,17 @@ async function fetchSummativeResults(learnerId: string, term: Term, academicYear
         select: {
           title: true,
           learningArea: true,
+          learningAreaId: true,
           totalMarks: true,
           passMarks: true,
           testDate: true,
+          learningAreaRef: { select: { id: true, pathway: true, category: true, isCore: true } },
         }
       },
       recorder: { select: { firstName: true, lastName: true } }
     },
     orderBy: [
+      { test: { learningAreaId: 'asc' } },
       { test: { learningArea: 'asc' } },
       { test: { testDate: 'asc' } }
     ]
@@ -430,18 +477,32 @@ async function calculateFormativeSummaryWithService(
   const result = await calculationService.calculateOverallFormativeScore({ learnerId, classId, term, academicYear });
   const averagePercentage = Math.round(result.averagePercentage);
 
-  const areaMap = new Map<string, number[]>();
+  const areaMap = new Map<string, { learningArea: string; learningAreaId: string | null; meta: any; percentages: number[] }>();
   assessments.forEach(a => {
     if (a.percentage !== null) {
-      if (!areaMap.has(a.learningArea)) areaMap.set(a.learningArea, []);
-      areaMap.get(a.learningArea)!.push(a.percentage);
+      const key = a.learningAreaId ? `id:${a.learningAreaId}` : `name:${a.learningArea}`;
+      if (!areaMap.has(key)) {
+        areaMap.set(key, {
+          learningArea: a.learningAreaRef?.name || a.learningArea,
+          learningAreaId: a.learningAreaId ?? null,
+          meta: a.learningAreaRef ? {
+            pathway: a.learningAreaRef.pathway ?? null,
+            category: a.learningAreaRef.category ?? null,
+            isCore: Boolean(a.learningAreaRef.isCore),
+          } : null,
+          percentages: []
+        });
+      }
+      areaMap.get(key)!.percentages.push(a.percentage);
     }
   });
 
-  const byLearningArea = Array.from(areaMap.entries()).map(([area, percentages]) => {
-    const avg = Math.round(percentages.reduce((sum, p) => sum + p, 0) / percentages.length);
+  const byLearningArea = Array.from(areaMap.values()).map((row) => {
+    const avg = Math.round(row.percentages.reduce((sum, p) => sum + p, 0) / row.percentages.length);
     return {
-      learningArea: area,
+      learningArea: row.learningArea,
+      learningAreaId: row.learningAreaId,
+      learningAreaMeta: row.meta,
       percentage: avg,
       rating: ranges ? gradingService.calculateRatingSync(avg, ranges) : rubricUtil.percentageToDetailedRating(avg)
     };
@@ -454,18 +515,30 @@ function calculateSummativeSummary(results: any[], summativeRanges?: any[], cbcR
   if (results.length === 0) return { overallPercentage: 0, bySubject: [] };
   const overallPercentage = Math.round(results.reduce((sum, r) => sum + r.percentage, 0) / results.length);
 
-  const subjectMap = new Map<string, { percentages: number[], cbcGrades: string[] }>();
+  const subjectMap = new Map<string, { subject: string; learningAreaId: string | null; meta: any; percentages: number[]; cbcGrades: string[] }>();
   results.forEach(r => {
-    const area = r.test.learningArea;
-    if (!subjectMap.has(area)) {
-      subjectMap.set(area, { percentages: [], cbcGrades: [] });
+    const canonicalId = r.test.learningAreaId || null;
+    const subject = r.test.learningArea;
+    const key = canonicalId ? `id:${canonicalId}` : `name:${subject}`;
+    if (!subjectMap.has(key)) {
+      subjectMap.set(key, {
+        subject,
+        learningAreaId: canonicalId,
+        meta: r.test.learningAreaRef ? {
+          pathway: r.test.learningAreaRef.pathway ?? null,
+          category: r.test.learningAreaRef.category ?? null,
+          isCore: Boolean(r.test.learningAreaRef.isCore),
+        } : null,
+        percentages: [],
+        cbcGrades: [],
+      });
     }
-    const data = subjectMap.get(area)!;
+    const data = subjectMap.get(key)!;
     data.percentages.push(r.percentage);
     if (r.cbcGrade) data.cbcGrades.push(r.cbcGrade);
   });
 
-  const bySubject = Array.from(subjectMap.entries()).map(([subject, data]) => {
+  const bySubject = Array.from(subjectMap.values()).map((data) => {
     const avg = Math.round(data.percentages.reduce((sum, p) => sum + p, 0) / data.percentages.length);
     const validCbcGrades = data.cbcGrades.filter((grade) => isValidCbcGrade(grade, cbcRanges));
 
@@ -481,7 +554,9 @@ function calculateSummativeSummary(results: any[], summativeRanges?: any[], cbcR
     }
 
     return {
-      subject,
+      subject: data.subject,
+      learningAreaId: data.learningAreaId,
+      learningAreaMeta: data.meta,
       averagePercentage: avg,
       grade: summativeRanges ? gradingService.calculateGradeSync(avg, summativeRanges) : 'E',
       cbcGrade

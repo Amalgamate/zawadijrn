@@ -14,6 +14,68 @@ const TESTS_CACHE_TTL   = 300;  // 5 min — published tests change rarely
 const RESULTS_CACHE_TTL = 30;   // 30 s  — results are written frequently
 const GRADING_CACHE_TTL = 600;  // 10 min — grading scales are essentially static
 
+type LearningAreaContext = {
+  learningAreaId?: string;
+  learningArea?: string;
+  grade?: string;
+  institutionType?: 'PRIMARY_CBC' | 'SECONDARY' | 'TERTIARY';
+};
+
+const areaNameCache = new Map<string, { id: string; name: string } | null>();
+const SS_GRADES = new Set(['GRADE10', 'GRADE11', 'GRADE12', 'GRADE_10', 'GRADE_11', 'GRADE_12', 'FORM_1', 'FORM_2', 'FORM_3']);
+const JS_GRADES = new Set(['PLAYGROUP', 'PP1', 'PP2', 'GRADE_1', 'GRADE_2', 'GRADE_3', 'GRADE_4', 'GRADE_5', 'GRADE_6', 'GRADE_7', 'GRADE_8', 'GRADE_9']);
+
+function normalizeGradeCode(grade: string): string {
+  return String(grade || '').trim().toUpperCase().replace(/\s+/g, '_');
+}
+
+function assertGradeAllowedForInstitution(institutionType: string | undefined, grade: string, contextLabel: string) {
+  const inst = String(institutionType || 'PRIMARY_CBC').toUpperCase();
+  const g = normalizeGradeCode(grade);
+  if (inst === 'SECONDARY') {
+    if (!SS_GRADES.has(g)) throw new ApiError(400, `${contextLabel}: grade ${grade} is not allowed for Senior School`);
+    return;
+  }
+  if (inst === 'PRIMARY_CBC') {
+    if (!JS_GRADES.has(g)) throw new ApiError(400, `${contextLabel}: grade ${grade} is not allowed for Junior School`);
+  }
+}
+
+async function resolveLearningAreaWithContext(input: LearningAreaContext): Promise<{ id: string | null; name: string | null }> {
+  const rawName = String(input.learningArea || '').trim();
+  const grade = String(input.grade || '').trim();
+  const institutionType = (input.institutionType || 'PRIMARY_CBC') as 'PRIMARY_CBC' | 'SECONDARY' | 'TERTIARY';
+
+  if (input.learningAreaId) {
+    const byId = await prisma.learningArea.findUnique({
+      where: { id: String(input.learningAreaId) },
+      select: { id: true, name: true },
+    });
+    if (byId) return { id: byId.id, name: byId.name };
+  }
+
+  if (!rawName) return { id: null, name: null };
+
+  const cacheKey = `${institutionType}::${grade}::${rawName.toLowerCase()}`;
+  if (areaNameCache.has(cacheKey)) {
+    const cached = areaNameCache.get(cacheKey);
+    return { id: cached?.id || null, name: cached?.name || rawName };
+  }
+
+  const byName = await prisma.learningArea.findFirst({
+    where: {
+      name: rawName,
+      institutionType: institutionType as any,
+      ...(grade ? { gradeLevel: grade } : {}),
+    },
+    select: { id: true, name: true },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  areaNameCache.set(cacheKey, byName || null);
+  return { id: byName?.id || null, name: byName?.name || rawName };
+}
+
 // ============================================
 // FORMATIVE ASSESSMENT CONTROLLERS
 // ============================================
@@ -31,7 +93,16 @@ export const getFormativeAssessments = async (req: AuthRequest, res: Response) =
     if (grade) whereClause.learner = { grade };
     if (term) whereClause.term = term;
     if (academicYear) whereClause.academicYear = parseInt(academicYear as string);
-    if (learningArea) whereClause.learningArea = learningArea;
+    if (learningArea) {
+      const resolvedArea = await resolveLearningAreaWithContext({
+        learningArea: String(learningArea),
+        grade: grade ? String(grade) : undefined,
+        institutionType: (req.user?.institutionType as any) || 'PRIMARY_CBC',
+      });
+      whereClause.OR = resolvedArea.id
+        ? [{ learningAreaId: resolvedArea.id }, { learningArea: String(learningArea) }]
+        : [{ learningArea: String(learningArea) }];
+    }
     if (strand) whereClause.strand = strand;
 
     const assessments = await prisma.formativeAssessment.findMany({
@@ -80,7 +151,16 @@ export const getBulkFormativeResults = async (req: AuthRequest, res: Response) =
       academicYear: parseInt(academicYear as string)
     };
 
-    if (learningArea) whereClause.learningArea = learningArea;
+    if (learningArea) {
+      const resolvedArea = await resolveLearningAreaWithContext({
+        learningArea: String(learningArea),
+        grade: String(grade),
+        institutionType: (req.user?.institutionType as any) || 'PRIMARY_CBC',
+      });
+      whereClause.OR = resolvedArea.id
+        ? [{ learningAreaId: resolvedArea.id }, { learningArea: String(learningArea) }]
+        : [{ learningArea: String(learningArea) }];
+    }
 
     const assessments = await prisma.formativeAssessment.findMany({
       where: whereClause,
@@ -124,6 +204,7 @@ export const createFormativeAssessment = async (req: AuthRequest, res: Response)
   try {
     const {
       learnerId,
+      learningAreaId,
       learningArea,
       strand,
       subStrand,
@@ -140,15 +221,29 @@ export const createFormativeAssessment = async (req: AuthRequest, res: Response)
 
     const teacherId = req.user?.userId;
 
-    if (!teacherId || !learnerId || !learningArea || !overallRating) {
-      throw new ApiError(400, 'Missing required fields: learnerId, learningArea, overallRating');
+    const learner = await prisma.learner.findUnique({
+      where: { id: learnerId },
+      select: { grade: true, institutionType: true },
+    });
+    const resolvedArea = await resolveLearningAreaWithContext({
+      learningAreaId,
+      learningArea,
+      grade: learner?.grade || undefined,
+      institutionType: (learner?.institutionType as any) || (req.user?.institutionType as any) || 'PRIMARY_CBC',
+    });
+    const resolvedLearningArea = resolvedArea.name;
+    const resolvedLearningAreaId = resolvedArea.id;
+
+    if (!teacherId || !learnerId || !resolvedLearningArea || !overallRating) {
+      throw new ApiError(400, 'Missing required fields: learnerId, learningArea (or learningAreaId), overallRating');
     }
 
     const assessment = await prisma.formativeAssessment.create({
       data: {
         learnerId,
         teacherId,
-        learningArea,
+        learningArea: resolvedLearningArea,
+        learningAreaId: resolvedLearningAreaId || null,
         strand,
         subStrand,
         term,
@@ -200,6 +295,7 @@ export const recordFormativeResultsBulk = async (req: AuthRequest, res: Response
         results,
         term,
         academicYear,
+        learningAreaId,
         learningArea,
         strand,
         subStrand,
@@ -213,6 +309,7 @@ export const recordFormativeResultsBulk = async (req: AuthRequest, res: Response
         learnerId: r.learnerId,
         term,
         academicYear,
+        learningAreaId,
         learningArea,
         strand,
         subStrand,
@@ -264,7 +361,23 @@ export const recordFormativeResultsBulk = async (req: AuthRequest, res: Response
       title: string;
     }>();
 
+    const learnerIds = Array.from(new Set(valid.map((a) => String(a.learnerId))));
+    const learnerRows = await prisma.learner.findMany({
+      where: { id: { in: learnerIds } },
+      select: { id: true, grade: true, institutionType: true },
+    });
+    const learnerMap = new Map(learnerRows.map((l) => [l.id, l]));
+
     for (const assessment of valid) {
+      const learnerCtx = learnerMap.get(String(assessment.learnerId));
+      const resolvedArea = await resolveLearningAreaWithContext({
+        learningAreaId: assessment.learningAreaId,
+        learningArea: assessment.learningArea,
+        grade: learnerCtx?.grade || undefined,
+        institutionType: (learnerCtx?.institutionType as any) || (req.user?.institutionType as any) || 'PRIMARY_CBC',
+      });
+      assessment.learningArea = resolvedArea.name || assessment.learningArea;
+      assessment.learningAreaId = resolvedArea.id || assessment.learningAreaId || null;
       const key = `${assessment.learnerId}::${assessment.term}::${assessment.academicYear}::${assessment.learningArea}::${assessment.type ?? 'OTHER'}::${assessment.title ?? ''}`;
       bulkKeys.set(key, {
         learnerId: assessment.learnerId,
@@ -343,7 +456,8 @@ export const recordFormativeResultsBulk = async (req: AuthRequest, res: Response
             strengths: a.strengths,
             areasImprovement: a.areasImprovement,
             remarks: a.remarks ?? a.recommendations,
-            weight: a.weight != null ? Number(a.weight) : undefined
+            weight: a.weight != null ? Number(a.weight) : undefined,
+            ...(a.learningAreaId ? { learningAreaId: String(a.learningAreaId) } : {}),
           } : {}, // If not owner, do nothing in update
           create: {
             learnerId: a.learnerId,
@@ -351,6 +465,7 @@ export const recordFormativeResultsBulk = async (req: AuthRequest, res: Response
             term: a.term,
             academicYear: parseInt(a.academicYear),
             learningArea: a.learningArea,
+            learningAreaId: a.learningAreaId ? String(a.learningAreaId) : null,
             strand: a.strand,
             subStrand: a.subStrand,
             title: a.title ?? '',
@@ -525,19 +640,21 @@ export const createSummativeTest = async (req: AuthRequest, res: Response) => {
     const testType = rawTestType || rawType;
 
     const teacherId = req.user?.userId;
+    const institutionType = (req.user?.institutionType || 'PRIMARY_CBC') as string;
+    assertGradeAllowedForInstitution(institutionType, String(grade || ''), 'Create test');
 
     const normalizedTerm = String(term || '')
       .toUpperCase()
       .replace(/\s+/g, '_') as 'TERM_1' | 'TERM_2' | 'TERM_3';
 
-    let resolvedLearningArea = learningArea;
-    if (!resolvedLearningArea && learningAreaId) {
-      const areaRecord = await prisma.learningArea.findUnique({
-        where: { id: learningAreaId },
-        select: { name: true },
-      });
-      resolvedLearningArea = areaRecord?.name;
-    }
+    const resolvedArea = await resolveLearningAreaWithContext({
+      learningAreaId,
+      learningArea,
+      grade: grade ? String(grade) : undefined,
+      institutionType: (req.user?.institutionType as any) || 'PRIMARY_CBC',
+    });
+    const resolvedLearningArea = resolvedArea.name;
+    const resolvedLearningAreaId = resolvedArea.id;
 
     const resolvedTestType = testType || 'ASSESSMENT';
 
@@ -562,6 +679,7 @@ export const createSummativeTest = async (req: AuthRequest, res: Response) => {
         data: {
           title: resolvedTitle,
           learningArea: resolvedLearningArea,
+          learningAreaId: resolvedLearningAreaId || null,
           testType: resolvedTestType,
           term: normalizedTerm,
           academicYear: parseInt(academicYear),
@@ -651,6 +769,8 @@ export const generateTestsBulk = async (req: AuthRequest, res: Response) => {
     } = req.body;
 
     const teacherId = req.user?.userId;
+    const institutionType = (req.user?.institutionType || 'PRIMARY_CBC') as string;
+    assertGradeAllowedForInstitution(institutionType, String(grade || ''), 'Bulk test generation');
 
     if (!learningAreas || !Array.isArray(learningAreas) || !grade || !term || !academicYear || !teacherId) {
       return res.status(400).json({
@@ -687,8 +807,14 @@ export const generateTestsBulk = async (req: AuthRequest, res: Response) => {
     const scaleWarnings: string[] = [];
     let duplicateCount = 0;
 
+    const institutionScope = (req.user?.institutionType || 'PRIMARY_CBC') as 'PRIMARY_CBC' | 'SECONDARY' | 'TERTIARY';
     for (const area of learningAreas) {
       const areaKey = String(area).trim().toLowerCase();
+      const resolvedArea = await resolveLearningAreaWithContext({
+        learningArea: String(area),
+        grade: String(grade),
+        institutionType: institutionScope,
+      });
 
       const resolvedScaleId: string | undefined =
         scaleByArea.get(areaKey) ??
@@ -708,7 +834,8 @@ export const generateTestsBulk = async (req: AuthRequest, res: Response) => {
         const test = await prisma.summativeTest.create({
           data: {
             title: `${seriesName || (resolvedTestType + ' - ' + normalizedTerm + ' ' + academicYear)} - ${area} - ${resolvedTestType} - ${normalizedTerm} ${academicYear}`,
-            learningArea: area,
+            learningArea: resolvedArea.name || String(area),
+            learningAreaId: resolvedArea.id || null,
             testType: resolvedTestType,
             term: normalizedTerm,
             academicYear: parseInt(academicYear),
@@ -785,9 +912,28 @@ export const getSummativeTests = async (req: AuthRequest, res: Response) => {
 
     if (term) whereClause.term = term;
     if (academicYear) whereClause.academicYear = parseInt(academicYear as string);
-    if (grade) whereClause.grade = grade;
+    const institutionType = String(req.user?.institutionType || 'PRIMARY_CBC').toUpperCase();
+    if (grade) {
+      assertGradeAllowedForInstitution(institutionType, String(grade), 'List tests');
+      whereClause.grade = grade;
+    } else if (institutionType === 'SECONDARY') {
+      whereClause.grade = { in: ['GRADE10', 'GRADE11', 'GRADE12', 'GRADE_10', 'GRADE_11', 'GRADE_12', 'FORM_1', 'FORM_2', 'FORM_3'] };
+    } else if (institutionType === 'PRIMARY_CBC') {
+      whereClause.grade = { in: ['PLAYGROUP', 'PP1', 'PP2', 'GRADE_1', 'GRADE_2', 'GRADE_3', 'GRADE_4', 'GRADE_5', 'GRADE_6', 'GRADE_7', 'GRADE_8', 'GRADE_9'] };
+    }
     if (stream) whereClause.stream = stream;
-    if (learningArea) whereClause.learningArea = learningArea;
+    let resolvedAreaIdForFilter: string | null = null;
+    if (learningArea) {
+      const resolvedArea = await resolveLearningAreaWithContext({
+        learningArea: String(learningArea),
+        grade: grade ? String(grade) : undefined,
+        institutionType: (req.user?.institutionType as any) || 'PRIMARY_CBC',
+      });
+      resolvedAreaIdForFilter = resolvedArea.id;
+      whereClause.OR = resolvedArea.id
+        ? [{ learningAreaId: resolvedArea.id }, { learningArea: String(learningArea) }]
+        : [{ learningArea: String(learningArea) }];
+    }
 
     let tests: any[] = [];
     try {
@@ -830,12 +976,22 @@ export const getSummativeTests = async (req: AuthRequest, res: Response) => {
         .filter((t) => !term || t.term === term)
         .filter((t) => !academicYear || Number(t.academicYear) === parseInt(academicYear as string))
         .filter((t) => !grade || t.grade === grade)
+        .filter((t) => {
+          if (grade) return true;
+          if (institutionType === 'SECONDARY') return SS_GRADES.has(normalizeGradeCode(t.grade));
+          if (institutionType === 'PRIMARY_CBC') return JS_GRADES.has(normalizeGradeCode(t.grade));
+          return true;
+        })
         .filter((t) => !learningArea || t.learningArea === learningArea)
         .map((t) => ({
           ...t,
           creator: null,
           _count: { results: 0 }
         }));
+
+      if (learningArea && resolvedAreaIdForFilter) {
+        tests = tests.filter((t: any) => (t.learningAreaId ? String(t.learningAreaId) === resolvedAreaIdForFilter : true));
+      }
     }
 
     await redisCacheService.set(cacheKey, tests, TESTS_CACHE_TTL);
@@ -1414,11 +1570,12 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
           test: {
             // Avoid selecting enum fields here so legacy enum drift in production data
             // does not crash matrix generation while migrations roll forward.
-            select: { id: true, title: true, learningArea: true, totalMarks: true }
+            select: { id: true, title: true, learningArea: true, learningAreaId: true, totalMarks: true }
           }
         },
         orderBy: [
           { learner: { firstName: 'asc' } },
+          { test: { learningAreaId: 'asc' } },
           { test: { learningArea: 'asc' } },
           { test: { testDate: 'asc' } }
         ]

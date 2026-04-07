@@ -136,6 +136,7 @@ export class AuthController {
           loginAttempts: true,
           lockedUntil: true,
           role: true,
+          institutionType: true,
           // Only load these fields if needed for auth flow
           email: true,
           firstName: true,
@@ -335,7 +336,7 @@ export class AuthController {
     const user = await prisma.user.findUnique({
       where: { id: req.user!.userId },
       select: {
-        id: true, email: true, firstName: true, lastName: true, phone: true, role: true, status: true, createdAt: true
+        id: true, email: true, firstName: true, lastName: true, phone: true, role: true, status: true, institutionType: true, createdAt: true
       }
     });
 

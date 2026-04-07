@@ -20,6 +20,8 @@ const GRADE_OPTIONS = [
   'GRADE_7', 'GRADE_8', 'GRADE_9',
 ];
 
+const SS_GRADE_OPTIONS = ['GRADE10', 'GRADE11', 'GRADE12'];
+
 export const getTermConfigs = async (req: Request, res: Response) => {
   const configs = await configService.getTermConfigs();
   res.json({ success: true, data: configs });
@@ -114,8 +116,9 @@ export const deleteStreamConfig = async (req: Request, res: Response) => {
   res.json({ success: true, message: 'Deleted' });
 };
 
-export const getClasses = async (req: Request, res: Response) => {
-  const classes = await configService.getClasses();
+export const getClasses = async (req: AuthRequest, res: Response) => {
+  const institutionType = (req.user?.institutionType || 'PRIMARY_CBC') as 'PRIMARY_CBC' | 'SECONDARY';
+  const classes = await configService.getClasses(institutionType);
   res.json({ success: true, data: classes });
 };
 
@@ -130,7 +133,9 @@ export const deleteClass = async (req: Request, res: Response) => {
 };
 
 export const getGrades = async (req: Request, res: Response) => {
-  res.json({ success: true, data: GRADE_OPTIONS });
+  const r = req as AuthRequest;
+  const institutionType = (r.user?.institutionType || 'PRIMARY_CBC') as 'PRIMARY_CBC' | 'SECONDARY';
+  res.json({ success: true, data: institutionType === 'SECONDARY' ? SS_GRADE_OPTIONS : GRADE_OPTIONS });
 };
 
 export const getConfigurationSummary = async (req: Request, res: Response) => {
@@ -164,23 +169,38 @@ export const seedStreams = async (req: Request, res: Response) => {
 };
 
 export const seedClasses = async (req: AuthRequest, res: Response) => {
+  const institutionType = (req.user?.institutionType || 'PRIMARY_CBC') as 'PRIMARY_CBC' | 'SECONDARY';
   const year = new Date().getFullYear();
   const term: Term = 'TERM_1';
-  const grades = [
-    'PLAYGROUP', 'PP1', 'PP2',
-    'GRADE_1', 'GRADE_2', 'GRADE_3',
-    'GRADE_4', 'GRADE_5', 'GRADE_6',
-    'GRADE_7', 'GRADE_8', 'GRADE_9',
-  ];
+  const grades =
+    institutionType === 'SECONDARY'
+      ? (['GRADE10', 'GRADE11', 'GRADE12'] as const)
+      : ([
+          'PLAYGROUP',
+          'PP1',
+          'PP2',
+          'GRADE_1',
+          'GRADE_2',
+          'GRADE_3',
+          'GRADE_4',
+          'GRADE_5',
+          'GRADE_6',
+          'GRADE_7',
+          'GRADE_8',
+          'GRADE_9',
+        ] as const);
 
   const results = [];
   let skipped = 0;
   for (const grade of grades) {
     const stream = 'A';
-    const name = `${grade.replace('_', ' ')} ${stream}`;
+    const name =
+      institutionType === 'SECONDARY'
+        ? `Grade ${String(grade).replace('GRADE', '')} ${stream}`
+        : `${String(grade).replace('_', ' ')} ${stream}`;
 
     const existing = await prisma.class.findFirst({
-      where: { grade, stream, academicYear: year, term },
+      where: { institutionType, grade, stream, academicYear: year, term },
     });
 
     if (!existing) {
@@ -188,7 +208,7 @@ export const seedClasses = async (req: AuthRequest, res: Response) => {
       const classCode = `CLS-${String(totalClasses + 1).padStart(5, '0')}`;
 
       const newClass = await prisma.class.create({
-        data: { classCode, name, grade, stream, academicYear: year, term, active: true },
+        data: { classCode, name, grade, institutionType, stream, academicYear: year, term, active: true },
       });
       results.push(newClass);
     } else {
@@ -198,7 +218,7 @@ export const seedClasses = async (req: AuthRequest, res: Response) => {
 
   res.json({
     success: true,
-    message: `Seeded ${results.length} classes for ${year} ${term}`,
+    message: `Seeded ${results.length} classes for ${institutionType} — ${year} ${term}`,
     created: results.length,
     skipped,
     data: results,

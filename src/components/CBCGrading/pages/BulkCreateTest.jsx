@@ -4,20 +4,22 @@ import {
     GraduationCap, Zap
 } from 'lucide-react';
 import { DatePicker } from '../../ui/date-picker';
-import { assessmentAPI, gradingAPI } from '../../../services/api';
+import { assessmentAPI, gradingAPI, configAPI } from '../../../services/api';
 import { useNotifications } from '../hooks/useNotifications';
 import { useAuth } from '../../../hooks/useAuth';
 import { getLearningAreasByGrade } from '../../../constants/learningAreas';
 import { Button } from '../../ui/button';
 
-const GRADE_GROUPS = [
+const PRIMARY_GRADE_GROUPS = [
     { id: 'early_years', name: 'Early Years', grades: ['PLAYGROUP', 'PP1', 'PP2'] },
     { id: 'lower_primary', name: 'Lower Primary', grades: ['GRADE_1', 'GRADE_2', 'GRADE_3'] },
     { id: 'upper_primary', name: 'Upper Primary', grades: ['GRADE_4', 'GRADE_5', 'GRADE_6'] },
     { id: 'junior_school', name: 'Junior School', grades: ['GRADE_7', 'GRADE_8', 'GRADE_9'] },
 ];
 
-const GRADES = GRADE_GROUPS.flatMap(g => g.grades);
+const SECONDARY_GRADE_GROUPS = [
+    { id: 'senior_secondary', name: 'Senior School', grades: ['GRADE10', 'GRADE11', 'GRADE12'] },
+];
 
 const TEST_TYPES = [
     { value: 'OPENER', label: 'Opener Exam' },
@@ -37,6 +39,9 @@ const TERMS = [
 const BulkCreateTest = ({ onBack, onSuccess }) => {
     const { user } = useAuth();
     const { showSuccess, showError } = useNotifications();
+    const isSecondaryPortal = String(user?.institutionType || '').toUpperCase() === 'SECONDARY';
+    const gradeGroups = isSecondaryPortal ? SECONDARY_GRADE_GROUPS : PRIMARY_GRADE_GROUPS;
+    const allGrades = gradeGroups.flatMap(g => g.grades);
     const [saving, setSaving] = useState(false);
     const [loadingScales, setLoadingScales] = useState(false);
     const [scales, setScales] = useState([]);
@@ -87,7 +92,7 @@ const BulkCreateTest = ({ onBack, onSuccess }) => {
     };
 
     const handleSelectAll = () => {
-        setSelectedGrades(selectedGrades.length === GRADES.length ? [] : [...GRADES]);
+        setSelectedGrades(selectedGrades.length === allGrades.length ? [] : [...allGrades]);
     };
 
     const handleSubmit = async (e) => {
@@ -101,8 +106,21 @@ const BulkCreateTest = ({ onBack, onSuccess }) => {
         let hasError = false;
 
         try {
+            const areasByGrade = new Map();
             for (const grade of selectedGrades) {
-                const learningAreas = getLearningAreasByGrade(grade);
+                try {
+                    const resp = await configAPI.getLearningAreas({ gradeLevel: grade });
+                    const rows = Array.isArray(resp?.data) ? resp.data : (Array.isArray(resp) ? resp : []);
+                    const names = [...new Set(rows.map((r) => String(r?.name || '').trim()).filter(Boolean))];
+                    areasByGrade.set(grade, names);
+                } catch {
+                    areasByGrade.set(grade, []);
+                }
+            }
+
+            for (const grade of selectedGrades) {
+                const dbAreas = areasByGrade.get(grade) || [];
+                const learningAreas = dbAreas.length > 0 ? dbAreas : getLearningAreasByGrade(grade);
                 if (!learningAreas || learningAreas.length === 0) continue;
 
                 const payload = {
@@ -149,7 +167,9 @@ const BulkCreateTest = ({ onBack, onSuccess }) => {
     };
 
     const formatGrade = (g) =>
-        g.replace('GRADE_', 'Grade ').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        /^GRADE(10|11|12)$/.test(String(g))
+            ? `Grade ${String(g).replace('GRADE', '')}`
+            : g.replace('GRADE_', 'Grade ').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
     const totalTests = selectedGrades.reduce((sum, grade) => sum + getLearningAreasByGrade(grade).length, 0);
 
@@ -329,11 +349,11 @@ const BulkCreateTest = ({ onBack, onSuccess }) => {
                                 onClick={handleSelectAll}
                                 className="text-[10px] font-bold text-brand-purple hover:underline uppercase tracking-wider"
                             >
-                                {selectedGrades.length === GRADES.length ? 'Deselect All' : 'Select All'}
+                                {selectedGrades.length === allGrades.length ? 'Deselect All' : 'Select All'}
                             </button>
                         </div>
 
-                        {GRADE_GROUPS.map(group => (
+                        {gradeGroups.map(group => (
                             <div key={group.id} className="space-y-2">
                                 <div className="flex items-center justify-between">
                                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{group.name}</span>

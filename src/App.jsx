@@ -155,6 +155,10 @@ function AppContent() {
     localStorage.removeItem('cbc_current_page');
     localStorage.removeItem('cbc_page_params');
     localStorage.removeItem('cbc_expanded_sections');
+    // For SS demo logins, always land in SS dashboard (don’t reuse Junior last-page state).
+    if (userData?.institutionType === 'SECONDARY') {
+      localStorage.removeItem('cbc_ui_state');
+    }
     // Unified single-tenant mode cleanup
     login(userData, token, refreshToken);
     navigate('/app', { replace: true });

@@ -33,6 +33,7 @@ const DEFAULT_FORM_DATA = {
 
 export const useSummativeTestForm = () => {
   const { grades, classes, loading: schoolDataLoading } = useSchoolData();
+  const [fallbackGrades, setFallbackGrades] = useState([]);
   const [scales, setScales] = useState([]);
   const [terms, setTerms] = useState([]);
   const [allLearningAreas, setAllLearningAreas] = useState([]);
@@ -98,6 +99,19 @@ export const useSummativeTestForm = () => {
     loadLearningAreas();
   }, [loadScales, loadLearningAreas]);
 
+  useEffect(() => {
+    const loadFallbackGrades = async () => {
+      try {
+        const resp = await configAPI.getGrades();
+        const rows = Array.isArray(resp?.data) ? resp.data : (Array.isArray(resp) ? resp : []);
+        setFallbackGrades(rows);
+      } catch {
+        setFallbackGrades([]);
+      }
+    };
+    loadFallbackGrades();
+  }, []);
+
   // Update available learning areas when grade changes
   useEffect(() => {
     if (!formData.grade) {
@@ -105,29 +119,31 @@ export const useSummativeTestForm = () => {
       return;
     }
 
-    // Filter learning areas that match the grade-based CBC mapping
-    const officialAreas = getLearningAreasByGrade(formData.grade);
+    const loadGradeAreas = async () => {
+      try {
+        const resp = await configAPI.getLearningAreas({ gradeLevel: formData.grade });
+        const rows = Array.isArray(resp?.data) ? resp.data : (Array.isArray(resp) ? resp : []);
+        // Deduplicate by name (keep first occurrence)
+        const seen = new Set();
+        const dedupe = rows.filter((a) => {
+          const n = String(a?.name || '');
+          if (!n || seen.has(n)) return false;
+          seen.add(n);
+          return true;
+        });
+        if (dedupe.length > 0) {
+          setAvailableLearningAreas(dedupe);
+          return;
+        }
+      } catch {
+        // fall through to local fallback
+      }
 
-    // Attempt to match DB areas against the official list
-    const filtered = allLearningAreas.filter(area =>
-      officialAreas.includes(area.name)
-    );
-
-    // Deduplicate by name (keep first occurrence)
-    const dedupe = (arr) => {
-      const seen = new Set();
-      return arr.filter(a => {
-        if (seen.has(a.name)) return false;
-        seen.add(a.name);
-        return true;
-      });
-    };
-
-    if (filtered.length > 0) {
-      setAvailableLearningAreas(dedupe(filtered));
-    } else {
+      // Final fallback for resilience only
+      const officialAreas = getLearningAreasByGrade(formData.grade);
       setAvailableLearningAreas(officialAreas.map(name => ({ id: name, name })));
-    }
+    };
+    loadGradeAreas();
 
     // Reset learning area and scale when grade changes
     setFormData(prev => ({ ...prev, learningArea: '', scaleId: '' }));
@@ -258,7 +274,7 @@ export const useSummativeTestForm = () => {
     formData,
     setFormData,
     scales,
-    grades,
+    grades: (grades && grades.length > 0) ? grades : fallbackGrades,
     terms,
     errors,
     saveStatus,
