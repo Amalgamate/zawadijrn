@@ -24,9 +24,11 @@ const GlobalModals = ({
     <>
       {/* Confirmation Dialog */}
       <ConfirmDialog
-        isOpen={showConfirmDialog}
-        onClose={() => setShowConfirmDialog(false)}
-        onConfirm={confirmAction}
+        show={showConfirmDialog}
+        onCancel={() => setShowConfirmDialog(false)}
+        onConfirm={() => {
+          if (typeof confirmAction === 'function') confirmAction();
+        }}
         title="Confirm Action"
         message="Are you sure you want to proceed? This action may be permanent."
       />

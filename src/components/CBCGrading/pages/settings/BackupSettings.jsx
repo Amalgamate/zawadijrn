@@ -7,6 +7,18 @@ import { Download, Upload, RefreshCw, Trash2, AlertCircle, Loader2 } from 'lucid
 import { useNotifications } from '../../hooks/useNotifications';
 import axiosInstance from '../../../../services/api/axiosConfig';
 
+function apiErrorMessage(err, fallback) {
+  const status = err?.response?.status;
+  const raw = err?.response?.data?.error;
+  if (status === 429) {
+    const msg = typeof raw === 'object' && raw?.message ? raw.message : 'Too many attempts. Wait a minute and try again.';
+    return msg;
+  }
+  if (typeof raw === 'string' && raw.trim()) return raw;
+  if (typeof raw === 'object' && raw?.message) return raw.message;
+  return fallback;
+}
+
 const BackupSettings = () => {
   const { showSuccess, showError } = useNotifications();
 
@@ -51,7 +63,7 @@ const BackupSettings = () => {
         await fetchBackups();
       }
     } catch (err) {
-      showError(err?.response?.data?.error || 'Backup failed. Check server logs.');
+      showError(apiErrorMessage(err, 'Backup failed. Check server logs and ensure PostgreSQL client tools (pg_dump) are installed.'));
     } finally {
       setCreating(false);
     }
@@ -144,19 +156,19 @@ const BackupSettings = () => {
       {/* Info panel */}
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
         <h3 className="font-bold text-blue-900 mb-2">About Backups</h3>
-        <p className="text-blue-800 mb-3">
+        <p className="text-blue-800 mb-4 max-w-3xl">
           Regular backups ensure your data is safe. Backups include all learner records, assessments, and system settings.
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white rounded-lg p-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-3xl mx-auto">
+          <div className="bg-white rounded-lg p-4 border border-blue-100/80 flex flex-col justify-center min-h-[5.5rem]">
             <p className="text-sm font-semibold text-gray-600">Last Backup</p>
-            <p className="text-lg font-bold text-gray-900">
+            <p className="text-lg font-bold text-gray-900 mt-1">
               {loading ? '—' : summary.lastBackupFormatted}
             </p>
           </div>
-          <div className="bg-white rounded-lg p-4">
+          <div className="bg-white rounded-lg p-4 border border-blue-100/80 flex flex-col justify-center min-h-[5.5rem]">
             <p className="text-sm font-semibold text-gray-600">Total Backups</p>
-            <p className="text-lg font-bold text-gray-900">
+            <p className="text-lg font-bold text-gray-900 mt-1">
               {loading ? '—' : `${summary.total} Backup${summary.total !== 1 ? 's' : ''}`}
             </p>
           </div>
@@ -173,18 +185,21 @@ const BackupSettings = () => {
             Please ensure you have a recent backup before proceeding.
           </p>
         </div>
-        <div className="flex gap-3">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".sql,.gz"
-            onChange={(e) => setRestoreFile(e.target.files?.[0] || null)}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm"
-          />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
+          <div className="flex min-h-10 flex-1 min-w-0 items-center rounded-lg border border-gray-300 bg-white px-3 py-1 shadow-sm sm:h-10 sm:py-0">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".sql,.gz"
+              onChange={(e) => setRestoreFile(e.target.files?.[0] || null)}
+              className="w-full min-w-0 cursor-pointer text-sm text-gray-600 file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-gray-800 hover:file:bg-gray-200"
+            />
+          </div>
           <button
+            type="button"
             onClick={handleRestore}
             disabled={restoring || !restoreFile}
-            className="flex items-center gap-2 px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 font-semibold text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+            className="inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-orange-600 px-6 text-sm font-semibold text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
           >
             {restoring
               ? <><Loader2 size={16} className="animate-spin" /> Restoring…</>
@@ -211,12 +226,12 @@ const BackupSettings = () => {
           </div>
         ) : (
           <table className="w-full">
-            <thead className="bg-gray-50 border-b">
+            <thead className="border-b border-[color:var(--table-border)]">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Date & Time</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Size</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Type</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Actions</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Date & Time</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Size</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Type</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">

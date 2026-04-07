@@ -1,13 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
-    Folder, FileText, Upload, Search,
+    Folder, FileText, Search,
     File, Image, FileSpreadsheet, Trash2,
-    Download, RefreshCw, Grid, List, Plus
+    Download, RefreshCw, Grid, List, Plus, ChevronDown
 } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
 import { useDocuments } from '../hooks/useDocuments';
 import ConfirmDialog from '../shared/ConfirmDialog';
 import ProfileLayout from '../shared/ProfileLayout';
+import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover';
+import { Button } from '../../ui/button';
 
 // Simple icon placeholders
 const UsersIcon = ({ size, className }) => (
@@ -34,21 +36,23 @@ const DocumentCenter = () => {
     const [viewMode, setViewMode] = useState('grid');
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [documentToDelete, setDocumentToDelete] = useState(null);
+    const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
     const fileInputRef = useRef(null);
 
-    // Initial fetch
-    useEffect(() => {
-        fetchDocuments();
-        fetchCategories();
-    }, [fetchDocuments, fetchCategories]);
-
-    // Fetch on category change
-    useEffect(() => {
-        const params = {};
-        if (activeCategory !== 'all') params.category = activeCategory;
-        if (searchQuery) params.search = searchQuery;
-        fetchDocuments(params);
+    const listQueryParams = useMemo(() => {
+        const p = {};
+        if (activeCategory !== 'all') p.category = activeCategory;
+        if (searchQuery) p.search = searchQuery;
+        return p;
     }, [activeCategory, searchQuery]);
+
+    useEffect(() => {
+        fetchCategories();
+    }, [fetchCategories]);
+
+    useEffect(() => {
+        fetchDocuments(listQueryParams);
+    }, [fetchDocuments, listQueryParams]);
 
     const uiCategories = [
         { id: 'all', label: 'All Records', icon: Folder },
@@ -61,6 +65,10 @@ const DocumentCenter = () => {
             .map(c => ({ id: c, label: c.charAt(0).toUpperCase() + c.slice(1), icon: Folder }))
     ];
 
+    const activeCategoryMeta =
+        uiCategories.find((c) => c.id === activeCategory) || uiCategories[0];
+    const ActiveCategoryIcon = activeCategoryMeta?.icon || Folder;
+
     const [isDragging, setIsDragging] = useState(false);
 
     const handleFileUpload = async (file) => {
@@ -71,10 +79,8 @@ const DocumentCenter = () => {
         formData.append('category', category);
         formData.append('name', file.name);
 
-        const result = await uploadDocument(formData);
-        if (result.success) {
-            showSuccess('Document uploaded successfully');
-        } else {
+        const result = await uploadDocument(formData, listQueryParams);
+        if (!result.success) {
             showError('Failed to upload document');
         }
     };
@@ -133,7 +139,7 @@ const DocumentCenter = () => {
 
     return (
         <ProfileLayout
-            title="Administrative Docs"
+            title="Document Center"
             subtitle="Manage institutional records, student files, and reports"
             primaryAction={{
                 label: "Upload Document",
@@ -143,37 +149,16 @@ const DocumentCenter = () => {
             secondaryAction={{
                 label: "Refresh",
                 icon: RefreshCw,
-                onClick: () => fetchDocuments({ category: activeCategory !== 'all' ? activeCategory : undefined }),
+                onClick: () => fetchDocuments(listQueryParams),
                 isLoading: loading
             }}
         >
             <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
 
-            <div className="flex h-[calc(100vh-220px)] gap-6">
-                {/* Categories Sidebar */}
-                <div className="w-64 flex-shrink-0 bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-col">
-                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest px-3 mb-4">Categories</h3>
-                    <div className="space-y-1 overflow-y-auto flex-1 hide-scrollbar">
-                        {uiCategories.map(cat => (
-                            <button
-                                key={cat.id}
-                                onClick={() => setActiveCategory(cat.id)}
-                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition ${activeCategory === cat.id
-                                    ? 'bg-brand-teal/10 text-brand-teal'
-                                    : 'text-gray-600 hover:bg-gray-50'
-                                    }`}
-                            >
-                                <cat.icon size={18} />
-                                {cat.label}
-                                {activeCategory === cat.id && <div className="ml-auto w-1.5 h-1.5 bg-brand-teal rounded-full"></div>}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
+            <div className="flex h-[calc(100vh-220px)] min-h-0">
                 {/* Main View Area */}
                 <div
-                    className={`flex-1 flex flex-col bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden transition-all duration-300 ${isDragging ? 'ring-2 ring-brand-teal ring-inset bg-brand-teal/5' : ''}`}
+                    className={`flex-1 flex flex-col w-full min-w-0 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden transition-all duration-300 ${isDragging ? 'ring-2 ring-brand-teal ring-inset bg-brand-teal/5' : ''}`}
                     onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
                     onDragLeave={() => setIsDragging(false)}
                     onDrop={async (e) => {
@@ -184,8 +169,57 @@ const DocumentCenter = () => {
                     }}
                 >
                     {/* Inner Toolbar */}
-                    <div className="p-4 border-b border-gray-50 flex items-center justify-between gap-4">
-                        <div className="relative flex-1 max-w-md">
+                    <div className="p-4 border-b border-gray-50 flex flex-wrap items-center justify-between gap-3">
+                        <Popover open={categoryMenuOpen} onOpenChange={setCategoryMenuOpen}>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="min-w-[11rem] justify-between gap-2 border-slate-200 font-bold text-gray-800"
+                                    aria-expanded={categoryMenuOpen}
+                                    aria-haspopup="dialog"
+                                >
+                                    <span className="flex items-center gap-2 truncate">
+                                        <ActiveCategoryIcon size={18} className="shrink-0 text-brand-teal" />
+                                        <span className="truncate">{activeCategoryMeta?.label}</span>
+                                    </span>
+                                    <ChevronDown className="h-4 w-4 shrink-0 opacity-60" />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                                align="start"
+                                className="w-64 p-2 border border-slate-200 shadow-none"
+                                sideOffset={6}
+                            >
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2 py-1.5">
+                                    Categories
+                                </p>
+                                <div className="max-h-[min(60vh,320px)] overflow-y-auto space-y-0.5">
+                                    {uiCategories.map((cat) => (
+                                        <button
+                                            key={cat.id}
+                                            type="button"
+                                            onClick={() => {
+                                                setActiveCategory(cat.id);
+                                                setCategoryMenuOpen(false);
+                                            }}
+                                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-bold text-left transition ${activeCategory === cat.id
+                                                ? 'bg-brand-teal/10 text-brand-teal'
+                                                : 'text-gray-600 hover:bg-gray-50'
+                                                }`}
+                                        >
+                                            <cat.icon size={18} className="shrink-0" />
+                                            <span className="flex-1 truncate">{cat.label}</span>
+                                            {activeCategory === cat.id && (
+                                                <span className="w-1.5 h-1.5 shrink-0 rounded-full bg-brand-teal" />
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            </PopoverContent>
+                        </Popover>
+
+                        <div className="relative flex-1 min-w-[200px] max-w-md">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                             <input
                                 type="text"
@@ -196,7 +230,7 @@ const DocumentCenter = () => {
                             />
                         </div>
 
-                        <div className="flex bg-gray-100 p-1 rounded-lg">
+                        <div className="flex bg-gray-100 p-1 rounded-lg shrink-0">
                             <button
                                 onClick={() => setViewMode('grid')}
                                 className={`p-1.5 rounded-md transition ${viewMode === 'grid' ? 'bg-white shadow-sm text-brand-teal' : 'text-gray-400 hover:text-gray-600'}`}

@@ -147,17 +147,17 @@ const ParentsList = ({ parents = [], pagination, onFetchParents, onAddParent, on
       ) : (
         <div className="bg-white rounded-xl shadow-md overflow-hidden">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="border-b border-[color:var(--table-border)]">
               <tr>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Parent/Guardian</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Relationship</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Email</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Phone</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Occupation</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Learners</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">WhatsApp</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Parent/Guardian</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Relationship</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Email</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Phone</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Occupation</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Learners</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Status</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">WhatsApp</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">

@@ -325,10 +325,10 @@ const AttendanceReports = ({ learners }) => {
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="bg-slate-50/50">
-                      <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Temporal Node</th>
-                      <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Learner Matrix</th>
-                      <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Status Byte</th>
-                      <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Remarks & Metadata</th>
+                      <th className="px-6 py-4 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Temporal Node</th>
+                      <th className="px-6 py-4 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Learner Matrix</th>
+                      <th className="px-6 py-4 text-center text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Status Byte</th>
+                      <th className="px-6 py-4 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Remarks & Metadata</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">

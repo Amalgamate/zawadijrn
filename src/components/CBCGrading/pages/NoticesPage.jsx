@@ -448,9 +448,9 @@ const NoticesPage = ({ initialTab }) => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-white rounded-xl shadow-lg overflow-hidden">
+    <div className="h-full flex flex-col bg-white border border-slate-200 overflow-hidden">
       {/* Header Section */}
-      <div className="bg-gradient-to-r from-brand-purple to-brand-purple/80 px-6 py-4 flex items-center justify-between">
+      <div className="bg-brand-purple px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-white/20 rounded-lg">
             <Bell size={24} className="text-white" />
@@ -681,7 +681,7 @@ const NoticesPage = ({ initialTab }) => {
 
               {/* Birthdays Today Alert */}
               {birthdaysToday.length > 0 && (
-                <Card className="border-l-4 border-l-brand-purple bg-gradient-to-r from-brand-purple/5 to-brand-teal/5 mb-6">
+                <Card className="border-l-4 border-l-brand-purple bg-brand-purple/5 mb-6">
                   <CardContent className="p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-brand-purple text-white rounded-full">
@@ -720,7 +720,7 @@ const NoticesPage = ({ initialTab }) => {
                 <Card className="overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="w-full">
-                      <thead className="bg-gray-50 border-b border-gray-200">
+                      <thead className="border-b border-[color:var(--table-border)]">
                         <tr>
                           <th className="px-4 py-3 text-left">
                             <input
@@ -730,11 +730,11 @@ const NoticesPage = ({ initialTab }) => {
                               className="rounded border-gray-300 text-brand-purple"
                             />
                           </th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Student</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Grade</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Parent/Guardian Phone</th>
-                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Student</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Grade</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Status</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Parent/Guardian Phone</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200">

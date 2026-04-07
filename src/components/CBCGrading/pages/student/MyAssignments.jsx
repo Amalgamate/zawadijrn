@@ -92,14 +92,14 @@ const MyAssignments = () => {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left">
-              <thead className="bg-gray-50 border-b border-gray-100">
+              <thead className="border-b border-[color:var(--table-border)]">
                 <tr>
-                  <th className="px-5 py-3.5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Assignment</th>
-                  <th className="px-5 py-3.5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Course</th>
-                  <th className="px-5 py-3.5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Due</th>
-                  <th className="px-5 py-3.5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Points</th>
-                  <th className="px-5 py-3.5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
-                  <th className="px-5 py-3.5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Action</th>
+                  <th className="px-5 py-3.5 text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Assignment</th>
+                  <th className="px-5 py-3.5 text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Course</th>
+                  <th className="px-5 py-3.5 text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Due</th>
+                  <th className="px-5 py-3.5 text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Points</th>
+                  <th className="px-5 py-3.5 text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Status</th>
+                  <th className="px-5 py-3.5 text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">

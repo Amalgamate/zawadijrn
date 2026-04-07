@@ -317,15 +317,15 @@ const PayrollManager = () => {
             <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
-                        <thead className="bg-gray-50 border-b border-gray-100">
+                        <thead className="border-b border-[color:var(--table-border)]">
                             <tr>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Employee</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Basic Salary</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Gross Pay</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Deductions</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Net Pay</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Status</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">Actions</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-[color:var(--table-header-fg)] uppercase tracking-wider">Employee</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-[color:var(--table-header-fg)] uppercase tracking-wider">Basic Salary</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-[color:var(--table-header-fg)] uppercase tracking-wider">Gross Pay</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-[color:var(--table-header-fg)] uppercase tracking-wider">Deductions</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-[color:var(--table-header-fg)] uppercase tracking-wider">Net Pay</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-[color:var(--table-header-fg)] uppercase tracking-wider">Status</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-[color:var(--table-header-fg)] uppercase tracking-wider text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">

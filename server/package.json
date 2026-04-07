@@ -36,6 +36,8 @@
     "test:phase1": "npm run test:security && npm run test:load",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
+    "demo:create-student": "ts-node scripts/create-demo-student.ts",
+    "demo:link-parent": "ts-node scripts/link-demo-learner-to-demo-parent.ts",
     "fix:prod-duplicates": "ts-node scripts/fix-summative-duplicates.ts",
     "fix:prod-migration": "ts-node scripts/fix-summative-duplicates.ts && npx prisma migrate resolve --applied 20260402074726_summative_hardening && npx prisma migrate deploy"
   },

@@ -552,14 +552,14 @@ const FacilityManager = () => {
               <div className="overflow-x-auto rounded-xl border border-gray-100 bg-white shadow-sm">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-gray-50/50 border-b border-gray-100">
-                      <th className="p-4 font-bold text-gray-700 text-sm">Class Name</th>
-                      <th className="p-4 font-bold text-gray-700 text-sm">Grade</th>
-                      <th className="p-4 font-bold text-gray-700 text-sm">Stream</th>
-                      <th className="p-4 font-bold text-gray-700 text-sm">Teacher</th>
-                      <th className="p-4 font-bold text-gray-700 text-sm text-center">Capacity</th>
-                      <th className="p-4 font-bold text-gray-700 text-sm">Status</th>
-                      <th className="p-4 font-bold text-gray-700 text-sm text-right">Actions</th>
+                    <tr className="border-b border-[color:var(--table-border)]">
+                      <th className="p-4 font-semibold text-[color:var(--table-header-fg)] text-sm">Class Name</th>
+                      <th className="p-4 font-semibold text-[color:var(--table-header-fg)] text-sm">Grade</th>
+                      <th className="p-4 font-semibold text-[color:var(--table-header-fg)] text-sm">Stream</th>
+                      <th className="p-4 font-semibold text-[color:var(--table-header-fg)] text-sm">Teacher</th>
+                      <th className="p-4 font-semibold text-[color:var(--table-header-fg)] text-sm text-center">Capacity</th>
+                      <th className="p-4 font-semibold text-[color:var(--table-header-fg)] text-sm">Status</th>
+                      <th className="p-4 font-semibold text-[color:var(--table-header-fg)] text-sm text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
@@ -645,11 +645,11 @@ const FacilityManager = () => {
             ) : (
               <div className="overflow-x-auto rounded-lg border border-gray-200">
                 <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
+                  <thead className="border-b border-[color:var(--table-border)]">
                     <tr>
-                      <th className="px-6 py-3 text-left text-sm font-bold text-gray-700">Stream Name</th>
-                      <th className="px-6 py-3 text-left text-sm font-bold text-gray-700">Status</th>
-                      <th className="px-6 py-3 text-right text-sm font-bold text-gray-700">Actions</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-[color:var(--table-header-fg)]">Stream Name</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-[color:var(--table-header-fg)]">Status</th>
+                      <th className="px-6 py-3 text-right text-sm font-semibold text-[color:var(--table-header-fg)]">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">

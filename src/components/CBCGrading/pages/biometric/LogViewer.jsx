@@ -97,11 +97,11 @@ const LogViewer = () => {
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-slate-50/50">
-                <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Temporal Node</th>
-                <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Entity Source</th>
-                <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Terminal</th>
-                <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Process State</th>
-                <th className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Actions</th>
+                <th className="px-6 py-4 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Temporal Node</th>
+                <th className="px-6 py-4 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Entity Source</th>
+                <th className="px-6 py-4 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Terminal</th>
+                <th className="px-6 py-4 text-center text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Process State</th>
+                <th className="px-6 py-4 text-right text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -186,7 +186,7 @@ const LogViewer = () => {
 
         {/* Pagination Placeholder */}
         <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">
+          <p className="text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest italic">
             Telemetry Feed: {total} total events captured
           </p>
           <div className="flex gap-2">

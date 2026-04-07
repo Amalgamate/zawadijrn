@@ -82,9 +82,9 @@ const TermlyReportTemplate = ({ reportData, id = "termly-report-content" }) => {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="text-white" style={{ backgroundColor: brandColor }}>
-                                <th className="px-4 py-3 text-xs font-bold uppercase tracking-widest border-r border-white/20">Learning Area</th>
-                                <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-widest border-r border-white/20 w-32">Points / Marks</th>
-                                <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-widest w-32">Grade</th>
+                                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-widest border-r border-white/20">Learning Area</th>
+                                <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-widest border-r border-white/20 w-32">Points / Marks</th>
+                                <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-widest w-32">Grade</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">

@@ -18,18 +18,6 @@ export const useUIStore = create(
 
       // Sidebar
       sidebarOpen: false,
-      expandedSections: {
-        dashboard: true,
-        learners: false,
-        teachers: false,
-        attendance: false,
-        communications: false,
-        assessment: false,
-        'learning-hub': false,
-        lms: false,
-        finance: false,
-        settings: false
-      },
 
       // Actions
       setCurrentPage: (page, params = {}) => set((state) => {
@@ -69,25 +57,6 @@ export const useUIStore = create(
 
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
 
-      toggleSection: (section) => set((state) => {
-        const isOpening = !state.expandedSections[section];
-        if (isOpening) {
-          const newState = Object.keys(state.expandedSections).reduce((acc, key) => {
-            acc[key] = false;
-            return acc;
-          }, {});
-          newState[section] = true;
-          return { expandedSections: newState };
-        } else {
-          return {
-            expandedSections: {
-              ...state.expandedSections,
-              [section]: false
-            }
-          };
-        }
-      }),
-
       resetUI: () => set({
         currentPage: 'dashboard',
         pageParams: {},
@@ -103,7 +72,6 @@ export const useUIStore = create(
         currentPage: state.currentPage,
         pageParams: state.pageParams,
         sidebarOpen: state.sidebarOpen,
-        expandedSections: state.expandedSections,
       }),
     }
   )

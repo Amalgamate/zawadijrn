@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import { EventType } from '@prisma/client';
 import { PlannerController } from '../controllers/planner.controller';
 import { authenticate } from '../middleware/auth.middleware';
 import { requireRole, auditLog } from '../middleware/permissions.middleware';
@@ -9,14 +10,19 @@ import { rateLimit } from '../middleware/enhanced-rateLimit.middleware';
 const router = Router();
 const controller = new PlannerController();
 
-// Validation schemas
+// Align with PlannerController + Prisma Event model
 const createEventSchema = z.object({
   title: z.string().min(2).max(200),
   description: z.string().max(1000).optional(),
-  startDate: z.string().datetime(),
-  endDate: z.string().datetime(),
-  eventType: z.string().max(50).optional()
+  startDate: z.string().datetime({ offset: true }),
+  endDate: z.string().datetime({ offset: true }),
+  type: z.nativeEnum(EventType).optional(),
+  allDay: z.boolean().optional(),
+  location: z.string().max(500).optional(),
+  meetingLink: z.string().max(2000).optional(),
 });
+
+const updateEventSchema = createEventSchema.partial();
 
 // Apply auth middleware to all routes
 router.use(authenticate);
@@ -55,7 +61,7 @@ router.put(
   '/events/:id',
   requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'TEACHER']),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
-  validate(createEventSchema),
+  validate(updateEventSchema),
   auditLog('UPDATE_PLANNER_EVENT'),
   controller.updateEvent
 );

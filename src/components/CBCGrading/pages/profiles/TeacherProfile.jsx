@@ -375,14 +375,14 @@ const TeacherProfile = ({ teacher, onBack, onEdit }) => {
                             ) : workload?.classes?.length > 0 ? (
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-sm">
-                                        <thead className="bg-gray-50/70 border-b text-[10px] uppercase tracking-wider text-gray-500">
+                                        <thead className="border-b border-[color:var(--table-border)] text-[10px] uppercase tracking-wider">
                                             <tr>
-                                                <th className="px-6 py-3 text-left font-bold">Class</th>
-                                                <th className="px-6 py-3 text-left font-bold">Grade</th>
-                                                <th className="px-6 py-3 text-left font-bold">Stream</th>
-                                                <th className="px-6 py-3 text-center font-bold">Students</th>
-                                                <th className="px-6 py-3 text-center font-bold">Capacity</th>
-                                                <th className="px-6 py-3 text-center font-bold">Utilization</th>
+                                                <th className="px-6 py-3 text-left font-semibold text-[color:var(--table-header-fg)]">Class</th>
+                                                <th className="px-6 py-3 text-left font-semibold text-[color:var(--table-header-fg)]">Grade</th>
+                                                <th className="px-6 py-3 text-left font-semibold text-[color:var(--table-header-fg)]">Stream</th>
+                                                <th className="px-6 py-3 text-center font-semibold text-[color:var(--table-header-fg)]">Students</th>
+                                                <th className="px-6 py-3 text-center font-semibold text-[color:var(--table-header-fg)]">Capacity</th>
+                                                <th className="px-6 py-3 text-center font-semibold text-[color:var(--table-header-fg)]">Utilization</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-50">
@@ -455,13 +455,13 @@ const TeacherProfile = ({ teacher, onBack, onEdit }) => {
                             ) : schedules.length > 0 ? (
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-sm">
-                                        <thead className="bg-gray-50/70 border-b text-[10px] uppercase tracking-wider text-gray-500">
+                                        <thead className="border-b border-[color:var(--table-border)] text-[10px] uppercase tracking-wider">
                                             <tr>
-                                                <th className="px-6 py-3 text-left font-bold">Subject</th>
-                                                <th className="px-6 py-3 text-left font-bold">Class</th>
-                                                <th className="px-6 py-3 text-left font-bold">Grade</th>
-                                                <th className="px-6 py-3 text-left font-bold">Day</th>
-                                                <th className="px-6 py-3 text-left font-bold">Time</th>
+                                                <th className="px-6 py-3 text-left font-semibold text-[color:var(--table-header-fg)]">Subject</th>
+                                                <th className="px-6 py-3 text-left font-semibold text-[color:var(--table-header-fg)]">Class</th>
+                                                <th className="px-6 py-3 text-left font-semibold text-[color:var(--table-header-fg)]">Grade</th>
+                                                <th className="px-6 py-3 text-left font-semibold text-[color:var(--table-header-fg)]">Day</th>
+                                                <th className="px-6 py-3 text-left font-semibold text-[color:var(--table-header-fg)]">Time</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-50">

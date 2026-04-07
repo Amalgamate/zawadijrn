@@ -205,12 +205,12 @@ const StudentStatementsPage = () => {
           ) : (
             <div className="bg-white rounded-lg shadow overflow-hidden">
               <table className="w-full">
-                <thead className="bg-gray-50 border-b">
+                <thead className="border-b border-[color:var(--table-border)]">
                   <tr>
-                    <th className="px-4 py-2 text-left text-[10px] font-semibold text-gray-700 uppercase">Student</th>
-                    <th className="px-4 py-2 text-left text-[10px] font-semibold text-gray-700 uppercase">Grade</th>
-                    <th className="px-4 py-2 text-left text-[10px] font-semibold text-gray-700 uppercase">Admission No.</th>
-                    <th className="px-4 py-2 text-left text-[10px] font-semibold text-gray-700 uppercase">Actions</th>
+                    <th className="px-4 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Student</th>
+                    <th className="px-4 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Grade</th>
+                    <th className="px-4 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Admission No.</th>
+                    <th className="px-4 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -380,15 +380,15 @@ const StudentStatementsPage = () => {
               <h3 className="text-sm font-bold text-gray-800 mb-2">Fee Invoices</h3>
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-50">
+                  <thead className="border-b border-[color:var(--table-border)]">
                     <tr>
-                      <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-700 uppercase">Invoice #</th>
-                      <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-700 uppercase">Fee Type</th>
-                      <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-700 uppercase">Term</th>
-                      <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-700 uppercase">Amount</th>
-                      <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-700 uppercase">Paid</th>
-                      <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-700 uppercase">Balance</th>
-                      <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-700 uppercase">Status</th>
+                      <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Invoice #</th>
+                      <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Fee Type</th>
+                      <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Term</th>
+                      <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Amount</th>
+                      <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Paid</th>
+                      <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Balance</th>
+                      <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
@@ -422,14 +422,14 @@ const StudentStatementsPage = () => {
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead className="bg-gray-50">
+                    <thead className="border-b border-[color:var(--table-border)]">
                       <tr>
-                        <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-700 uppercase">Date</th>
-                        <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-700 uppercase">Invoice #</th>
-                        <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-700 uppercase">Fee Type</th>
-                        <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-700 uppercase">Amount</th>
-                        <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-700 uppercase">Method</th>
-                        <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-700 uppercase">Reference</th>
+                        <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Date</th>
+                        <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Invoice #</th>
+                        <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Fee Type</th>
+                        <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Amount</th>
+                        <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Method</th>
+                        <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Reference</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y">

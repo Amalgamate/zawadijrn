@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo, useCall
 import api, { configAPI } from '../services/api';
 import { GRADES } from '../constants/grades';
 import { useRefreshListener } from '../utils/refreshBus';
+import { useAuth } from '../hooks/useAuth';
 
 const SchoolDataContext = createContext();
 
@@ -24,6 +25,7 @@ const sortGrades = (gradeArray) => {
 };
 
 export const SchoolDataProvider = ({ children }) => {
+    const { user } = useAuth();
     const [classes, setClasses] = useState([]);
     const [grades, setGrades] = useState([]);
     const [streams, setStreams] = useState([]);
@@ -64,12 +66,24 @@ export const SchoolDataProvider = ({ children }) => {
     }, []);
 
     useEffect(() => {
+        if (user?.role === 'PARENT') {
+            setClasses([]);
+            setGrades([]);
+            setStreams([]);
+            setError(null);
+            setLoading(false);
+            return;
+        }
         fetchSchoolData();
-    }, [fetchSchoolData]);
+    }, [fetchSchoolData, user?.role]);
 
-    // Auto-refresh when classes or streams are created/updated anywhere in the app
-    useRefreshListener('classes', fetchSchoolData);
-    useRefreshListener('streams', fetchSchoolData);
+    const refreshForRole = useCallback(() => {
+        if (user?.role === 'PARENT') return;
+        fetchSchoolData();
+    }, [fetchSchoolData, user?.role]);
+
+    useRefreshListener('classes', refreshForRole);
+    useRefreshListener('streams', refreshForRole);
 
     const value = useMemo(() => ({
         classes,
@@ -77,8 +91,8 @@ export const SchoolDataProvider = ({ children }) => {
         streams,
         loading,
         error,
-        refreshSchoolData: fetchSchoolData
-    }), [classes, grades, streams, loading, error, fetchSchoolData]);
+        refreshSchoolData: refreshForRole
+    }), [classes, grades, streams, loading, error, refreshForRole]);
 
     return (
         <SchoolDataContext.Provider value={value}>

@@ -6,7 +6,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../../services/api';
 
-export const useLearners = () => {
+export const useLearners = (options = {}) => {
+  const { enabled = true } = options;
   const [learners, setLearners] = useState([]);
   const [pagination, setPagination] = useState({
     page: 1,
@@ -15,7 +16,7 @@ export const useLearners = () => {
     pages: 1
   });
   const [selectedLearner, setSelectedLearner] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   const [error, setError] = useState(null);
 
   const fetchLearners = useCallback(async (params = {}) => {
@@ -294,8 +295,14 @@ export const useLearners = () => {
   }, [fetchLearners, pagination]);
 
   useEffect(() => {
+    if (!enabled) {
+      setLearners([]);
+      setError(null);
+      setLoading(false);
+      return;
+    }
     fetchLearners();
-  }, [fetchLearners]);
+  }, [fetchLearners, enabled]);
 
   return {
     learners,

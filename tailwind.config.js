@@ -54,9 +54,24 @@ export default {
         }
       },
       borderRadius: {
+        /* Tie to :root --radius (0 = square corners app-wide); rounded-full unchanged */
+        DEFAULT: "var(--radius)",
+        sm: "max(0px, calc(var(--radius) - 4px))",
+        md: "max(0px, calc(var(--radius) - 2px))",
         lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        xl: "var(--radius)",
+        "2xl": "var(--radius)",
+        "3xl": "var(--radius)",
+      },
+      /* Flat surfaces: no elevation from default shadow scale (arbitrary shadow-[…] still handled in index.css) */
+      boxShadow: {
+        sm: "none",
+        DEFAULT: "none",
+        md: "none",
+        lg: "none",
+        xl: "none",
+        "2xl": "none",
+        inner: "none",
       },
       animation: {
         marquee: 'marquee 25s linear infinite',

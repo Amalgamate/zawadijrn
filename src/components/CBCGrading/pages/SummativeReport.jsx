@@ -588,7 +588,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
 
 
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px', marginBottom: '6px', border: '1px solid #cbd5e1' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px', marginBottom: '6px' }}>
           <thead>
             <tr style={{ backgroundColor: '#1e3a8a', color: 'white' }}>
               <th style={{ padding: '8px 10px', textAlign: 'left', fontWeight: '900', border: '1.5px solid rgba(255,255,255,0.3)' }}>SUBJECT</th>

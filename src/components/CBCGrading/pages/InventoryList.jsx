@@ -252,11 +252,11 @@ const InventoryList = () => {
                                 <table className="w-full text-left border-collapse">
                                     <thead>
                                         <tr className="bg-gray-50/50 border-b border-gray-100">
-                                            <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Resource</th>
-                                            <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Category</th>
-                                            <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Identifier</th>
-                                            <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
-                                            <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Actions</th>
+                                            <th className="px-6 py-4 text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Resource</th>
+                                            <th className="px-6 py-4 text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Category</th>
+                                            <th className="px-6 py-4 text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Identifier</th>
+                                            <th className="px-6 py-4 text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Status</th>
+                                            <th className="px-6 py-4 text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest text-right">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-50">
@@ -476,7 +476,7 @@ const InventoryList = () => {
 
                                 <div className="px-8 py-8 space-y-6">
                                     <div className="group">
-                                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 group-focus-within:text-brand-teal transition-colors">Resource Title / Name *</label>
+                                        <label className="block text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest mb-2 group-focus-within:text-brand-teal transition-colors">Resource Title / Name *</label>
                                         <input
                                             type="text"
                                             required
@@ -489,7 +489,7 @@ const InventoryList = () => {
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="group">
-                                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 group-focus-within:text-brand-teal transition-colors">Classification</label>
+                                            <label className="block text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest mb-2 group-focus-within:text-brand-teal transition-colors">Classification</label>
                                             <div className="relative">
                                                 <select
                                                     value={formData.category}
@@ -502,7 +502,7 @@ const InventoryList = () => {
                                             </div>
                                         </div>
                                         <div className="group">
-                                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 group-focus-within:text-brand-teal transition-colors">Condition Status</label>
+                                            <label className="block text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest mb-2 group-focus-within:text-brand-teal transition-colors">Condition Status</label>
                                             <div className="relative">
                                                 <select
                                                     value={formData.status}
@@ -522,7 +522,7 @@ const InventoryList = () => {
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="group">
-                                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 group-focus-within:text-brand-teal transition-colors">Author / Provider</label>
+                                            <label className="block text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest mb-2 group-focus-within:text-brand-teal transition-colors">Author / Provider</label>
                                             <input
                                                 type="text"
                                                 value={formData.author}
@@ -532,7 +532,7 @@ const InventoryList = () => {
                                             />
                                         </div>
                                         <div className="group">
-                                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 group-focus-within:text-brand-teal transition-colors">Serial / ISBN</label>
+                                            <label className="block text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest mb-2 group-focus-within:text-brand-teal transition-colors">Serial / ISBN</label>
                                             <input
                                                 type="text"
                                                 value={formData.isbn}

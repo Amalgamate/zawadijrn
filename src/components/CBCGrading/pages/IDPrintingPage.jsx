@@ -437,7 +437,7 @@ const IDPrintingPage = () => {
           <>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className="bg-[color:var(--table-header-bg)] border-b border-[color:var(--table-border)]">
                   <tr>
                     <th className="px-4 py-3 w-10">
                       <button onClick={selected.length === learners.length ? clearSelection : selectAll} className="text-gray-400 hover:text-brand-purple transition">
@@ -446,12 +446,12 @@ const IDPrintingPage = () => {
                           : <Square size={18} />}
                       </button>
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Student</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Admission No</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Grade & Stream</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Gender</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Parent Contact</th>
-                    <th className="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase">Actions</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Student</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Admission No</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Grade & Stream</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Gender</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Parent Contact</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">

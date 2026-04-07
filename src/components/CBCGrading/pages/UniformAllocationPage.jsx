@@ -526,14 +526,14 @@ const UniformAllocationPage = () => {
           <>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className="border-b border-[color:var(--table-border)]">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Student</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Grade</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Status</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Items Issued</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Date</th>
-                    <th className="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase">Actions</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Student</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Grade</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Status</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Items Issued</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Date</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">

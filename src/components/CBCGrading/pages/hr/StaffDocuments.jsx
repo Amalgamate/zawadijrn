@@ -169,14 +169,14 @@ const StaffDocuments = () => {
 
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
-                        <thead className="bg-gray-50/50">
+                        <thead className="border-b border-[color:var(--table-border)]">
                             <tr>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">File Name</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Type</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Uploaded By</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Upload Date</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Size</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">Actions</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-[color:var(--table-header-fg)] uppercase tracking-wider">File Name</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-[color:var(--table-header-fg)] uppercase tracking-wider">Type</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-[color:var(--table-header-fg)] uppercase tracking-wider">Uploaded By</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-[color:var(--table-header-fg)] uppercase tracking-wider">Upload Date</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-[color:var(--table-header-fg)] uppercase tracking-wider">Size</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-[color:var(--table-header-fg)] uppercase tracking-wider text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">

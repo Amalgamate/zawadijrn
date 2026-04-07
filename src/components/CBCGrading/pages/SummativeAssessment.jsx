@@ -1440,14 +1440,14 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
                   display: 'flex',
                   flexDirection: 'column'
                 }}>
-                  <table className="w-full text-left border-collapse border border-gray-300" style={{ pageBreakInside: 'avoid' }}>
+                  <table className="w-full text-left border-collapse border border-gray-300 table--header-invert" style={{ pageBreakInside: 'avoid' }}>
                     <thead className="bg-[#1e3a8a] text-white" style={{ pageBreakInside: 'avoid', pageBreakAfter: 'avoid' }}>
                       <tr style={{ pageBreakInside: 'avoid' }}>
-                        <th className="px-2 py-2 text-[9px] font-bold uppercase tracking-wide text-center w-10 border-r border-blue-700">No</th>
-                        <th className="px-2 py-2 text-[9px] font-bold uppercase tracking-wide text-center w-20 border-r border-blue-700">Adm No</th>
-                        <th className="px-2 py-2 text-[9px] font-bold uppercase tracking-wide border-r border-blue-700">Student Name</th>
-                        <th className="px-2 py-2 text-[9px] font-bold uppercase tracking-wide text-center w-20 border-r border-blue-700">Score</th>
-                        <th className="px-2 py-2 text-[9px] font-bold uppercase tracking-wide w-72">Performance Descriptor</th>
+                        <th className="px-2 py-2 text-[9px] font-semibold uppercase tracking-wide text-center w-10 border-r border-blue-700">No</th>
+                        <th className="px-2 py-2 text-[9px] font-semibold uppercase tracking-wide text-center w-20 border-r border-blue-700">Adm No</th>
+                        <th className="px-2 py-2 text-[9px] font-semibold uppercase tracking-wide border-r border-blue-700">Student Name</th>
+                        <th className="px-2 py-2 text-[9px] font-semibold uppercase tracking-wide text-center w-20 border-r border-blue-700">Score</th>
+                        <th className="px-2 py-2 text-[9px] font-semibold uppercase tracking-wide w-72">Competence</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -1527,6 +1527,7 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
 
             <div className="overflow-x-auto">
               <VirtualizedTable
+                tableClassName="table--header-invert"
                 data={filteredLearners}
                 rowHeight={40}
                 visibleHeight={500}
@@ -1537,11 +1538,11 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
                 }
                 header={
                   <tr className="bg-brand-purple text-white">
-                    <th className="px-3 py-2 text-[9px] font-bold uppercase tracking-wide text-center w-10 border-r border-brand-purple/20">No</th>
-                    <th className="px-3 py-2 text-[9px] font-bold uppercase tracking-wide text-center w-32 border-r border-brand-purple/20">Adm No</th>
-                    <th className="px-3 py-2 text-[9px] font-bold uppercase tracking-wide border-r border-brand-purple/20 w-1/3">Student Name</th>
-                    <th className="px-3 py-2 text-[9px] font-bold uppercase tracking-wide text-center w-20 border-r border-brand-purple/20">Score</th>
-                    <th className="px-3 py-2 text-[9px] font-bold uppercase tracking-wide">Descriptor</th>
+                    <th className="px-3 py-2 text-[9px] font-semibold uppercase tracking-wide text-center w-10 border-r border-brand-purple/20">No</th>
+                    <th className="px-3 py-2 text-[9px] font-semibold uppercase tracking-wide text-center w-32 border-r border-brand-purple/20">Adm No</th>
+                    <th className="px-3 py-2 text-[9px] font-semibold uppercase tracking-wide border-r border-brand-purple/20 w-1/3">Student Name</th>
+                    <th className="px-3 py-2 text-[9px] font-semibold uppercase tracking-wide text-center w-20 border-r border-brand-purple/20">Score</th>
+                    <th className="px-3 py-2 text-[9px] font-semibold uppercase tracking-wide">Competence</th>
                   </tr>
                 }
                 renderRow={(learner, index) => {

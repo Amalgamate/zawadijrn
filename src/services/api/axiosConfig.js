@@ -6,11 +6,13 @@ const getApiBaseUrl = () => {
     const viteApiUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
     if (viteApiUrl) return viteApiUrl;
 
-    // 2. Check for Capacitor / Native environment
-    const isNative = window.location.protocol === 'capacitor:' || window.location.hostname === 'localhost' && window.location.port === '';
-    
-    // 3. Handle Production vs Development
-    if (window.location.hostname !== 'localhost' && !isNative) {
+    // 2. Capacitor / native shell (no dev server port)
+    const isNative =
+        window.location.protocol === 'capacitor:' ||
+        (window.location.hostname === 'localhost' && window.location.port === '');
+
+    // 3. Deployed web app: same-origin /api (reverse proxy)
+    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' && !isNative) {
         return `${window.location.origin}/api`;
     }
 
@@ -18,7 +20,11 @@ const getApiBaseUrl = () => {
         return 'https://zawadijrn.onrender.com/api';
     }
 
-    // Default fallback for production Render
+    // 4. Local Vite dev (port 3000): talk to API on 5000 unless .env overrides (see .env.example)
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        return 'http://localhost:5000/api';
+    }
+
     return 'https://zawadijrn.onrender.com/api';
 };
 

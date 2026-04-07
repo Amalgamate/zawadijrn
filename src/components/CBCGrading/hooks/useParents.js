@@ -6,10 +6,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../../services/api';
 
-export const useParents = () => {
+export const useParents = (options = {}) => {
+  const { enabled = true } = options;
   const [parents, setParents] = useState([]);
   const [selectedParent, setSelectedParent] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   const [error, setError] = useState(null);
   const [pagination, setPagination] = useState({
     page: 1,
@@ -177,10 +178,15 @@ export const useParents = () => {
     }
   }, [fetchParents]);
 
-  // Fetch parents on mount
   useEffect(() => {
+    if (!enabled) {
+      setParents([]);
+      setError(null);
+      setLoading(false);
+      return;
+    }
     fetchParents();
-  }, [fetchParents]);
+  }, [fetchParents, enabled]);
 
   return {
     parents,

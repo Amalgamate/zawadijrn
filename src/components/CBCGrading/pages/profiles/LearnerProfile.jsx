@@ -281,13 +281,13 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                                     {invoices.length > 0 ? (
                                         <div className="overflow-x-auto">
                                             <table className="w-full text-left text-sm text-gray-600">
-                                                <thead className="bg-gray-50 uppercase text-xs font-semibold text-gray-500">
+                                                <thead className="uppercase text-xs border-b border-[color:var(--table-border)]">
                                                     <tr>
-                                                        <th className="px-6 py-4">Invoice #</th>
-                                                        <th className="px-6 py-4">Date</th>
-                                                        <th className="px-6 py-4">Description</th>
-                                                        <th className="px-6 py-4 text-right">Amount</th>
-                                                        <th className="px-6 py-4 text-center">Status</th>
+                                                        <th className="px-6 py-4 font-semibold text-[color:var(--table-header-fg)]">Invoice #</th>
+                                                        <th className="px-6 py-4 font-semibold text-[color:var(--table-header-fg)]">Date</th>
+                                                        <th className="px-6 py-4 font-semibold text-[color:var(--table-header-fg)]">Description</th>
+                                                        <th className="px-6 py-4 text-right font-semibold text-[color:var(--table-header-fg)]">Amount</th>
+                                                        <th className="px-6 py-4 text-center font-semibold text-[color:var(--table-header-fg)]">Status</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-gray-100">

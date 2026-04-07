@@ -26,12 +26,13 @@ import { refreshBus } from '../../utils/refreshBus';
 export default function CBCGradingSystem({ user, onLogout, brandingSettings, setBrandingSettings }) {
   const isMobile = useMediaQuery('(max-width: 767px)');
   const mainContentRef = useRef(null);
+  const parentPortal = user?.role === 'PARENT';
 
   // UI State from Zustand
   const { 
     sidebarOpen, setSidebarOpen, 
     currentPage, setCurrentPage, 
-    pageParams, toggleSection, expandedSections,
+    pageParams,
     goBack, goForward
   } = useUIStore();
 
@@ -44,9 +45,9 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
   const [editingLearner, setEditingLearner] = useState(null);
 
   // Domain Hooks
-  const learnerData = useLearners();
-  const teacherData = useTeachers();
-  const parentData = useParents();
+  const learnerData = useLearners({ enabled: !parentPortal });
+  const teacherData = useTeachers({ enabled: !parentPortal });
+  const parentData = useParents({ enabled: !parentPortal });
   const notify = useNotifications();
 
   // Navigation with History & Params
@@ -242,11 +243,9 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
         setSidebarOpen={setSidebarOpen}
         currentPage={currentPage}
         onNavigate={handleNavigate}
-        expandedSections={expandedSections}
-        toggleSection={toggleSection}
       />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-        <Header user={user} onLogout={onLogout} />
+        <Header user={user} onLogout={handleLogout} onNavigate={handleNavigate} />
         <main ref={mainContentRef} className="flex-1 overflow-y-auto overflow-x-hidden bg-[#F8FAFC] p-6">
           <div className="max-w-screen-2xl mx-auto">
           <ErrorBoundary>

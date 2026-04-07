@@ -191,7 +191,7 @@ export const secondaryNavSections = [
   },
   {
     id: 'docs-center',
-    label: 'Docs',
+    label: 'Document Center',
     icon: FileText,
     permission: null,
     items: [],

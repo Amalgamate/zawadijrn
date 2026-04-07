@@ -617,7 +617,7 @@ const UserManagement = () => {
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead className="bg-gray-50/50 border-b text-[10px] uppercase tracking-wider text-gray-500">
+                    <thead className="border-b border-[color:var(--table-border)] text-[10px] uppercase tracking-wider">
                       <tr>
                         <th className="px-4 py-4 text-left w-10">
                           <input
@@ -627,10 +627,10 @@ const UserManagement = () => {
                             className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                           />
                         </th>
-                        <th className="px-4 py-4 text-left font-bold">User Identity</th>
-                        <th className="px-4 py-4 text-left font-bold">Role & Access</th>
-                        <th className="px-4 py-4 text-left font-bold">Status</th>
-                        <th className="px-4 py-4 text-right font-bold">Actions</th>
+                        <th className="px-4 py-4 text-left font-semibold text-[color:var(--table-header-fg)]">User Identity</th>
+                        <th className="px-4 py-4 text-left font-semibold text-[color:var(--table-header-fg)]">Role & Access</th>
+                        <th className="px-4 py-4 text-left font-semibold text-[color:var(--table-header-fg)]">Status</th>
+                        <th className="px-4 py-4 text-right font-semibold text-[color:var(--table-header-fg)]">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -763,12 +763,12 @@ const UserManagement = () => {
 
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b">
+                  <thead className="border-b border-[color:var(--table-border)]">
                     <tr>
-                      <th className="px-3 py-2 text-left font-semibold text-gray-700 sticky left-0 bg-gray-50">Role</th>
+                      <th className="px-3 py-2 text-left font-semibold text-[color:var(--table-header-fg)] sticky left-0 bg-[color:var(--table-header-bg)]">Role</th>
                       {PERMISSION_MODULES.map(module => (
                         <th key={module.key} className="px-2 py-2 text-center" colSpan={4}>
-                          <div className="font-semibold text-gray-700">{module.label}</div>
+                          <div className="font-semibold text-[color:var(--table-header-fg)]">{module.label}</div>
                           <div className="flex gap-1 justify-center mt-1 text-xs text-gray-500">
                             <span>V</span>
                             <span>C</span>

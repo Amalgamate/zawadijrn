@@ -474,24 +474,24 @@ const SummaryReportPage = () => {
 
   const tableHeader = (
     <tr>
-      <th className="sticky left-0 z-30 bg-slate-100 border-b border-r border-slate-200 px-4 py-3 text-[10px] font-bold text-slate-600 uppercase w-12">
+      <th className="sticky left-0 z-30 bg-slate-100 border-b border-r border-slate-200 px-4 py-3 text-[10px] font-semibold text-slate-600 uppercase w-12">
         #
       </th>
-      <th className="sticky left-12 z-30 bg-slate-100 border-b border-r border-slate-200 px-4 py-3 text-[10px] font-bold text-slate-600 uppercase text-left min-w-[200px]">
+      <th className="sticky left-12 z-30 bg-slate-100 border-b border-r border-slate-200 px-4 py-3 text-[10px] font-semibold text-slate-600 uppercase text-left min-w-[200px]">
         Student Details
       </th>
       {matrixData?.subjects.map(sub => (
-        <th key={sub} className="bg-slate-50 border-b border-r border-slate-200 px-2 py-3 text-[10px] font-bold text-slate-600 uppercase text-center min-w-[80px]">
+        <th key={sub} className="bg-slate-50 border-b border-r border-slate-200 px-2 py-3 text-[10px] font-semibold text-slate-600 uppercase text-center min-w-[80px]">
           <div className="truncate px-1" title={sub}>{getAbbreviatedName(sub)}</div>
         </th>
       ))}
-      <th className="bg-indigo-100/50 border-b border-r border-slate-200 px-4 py-3 text-[10px] font-bold text-indigo-600 uppercase text-center w-20">
+      <th className="bg-indigo-100/50 border-b border-r border-slate-200 px-4 py-3 text-[10px] font-semibold text-indigo-600 uppercase text-center w-20">
         Total
       </th>
-      <th className="bg-slate-100 border-b border-r border-slate-200 px-4 py-3 text-[10px] font-bold text-slate-600 uppercase text-center w-20">
+      <th className="bg-slate-100 border-b border-r border-slate-200 px-4 py-3 text-[10px] font-semibold text-slate-600 uppercase text-center w-20">
         Avg %
       </th>
-      <th className="bg-slate-200 border-b border-slate-200 px-4 py-3 text-[10px] font-bold text-slate-600 uppercase text-center w-20">
+      <th className="bg-slate-200 border-b border-slate-200 px-4 py-3 text-[10px] font-semibold text-slate-600 uppercase text-center w-20">
         Grade
       </th>
     </tr>
@@ -720,8 +720,8 @@ const SummaryReportPage = () => {
       )}
 
       {/* ── MATRIX GRID ────────────────────────────────────────────────── */}
-      <div className="flex-1 overflow-hidden p-6">
-        <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden h-full flex flex-col">
+      <div className="flex-1 overflow-hidden min-h-0">
+        <div className="summary-report-matrix bg-white overflow-hidden h-full min-h-0 flex flex-col border-t border-slate-200">
           {loading ? (
              <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
                 <Loader className="animate-spin mb-4" size={40} />
@@ -849,7 +849,7 @@ const SummaryReportPage = () => {
           .min-h-screen { background: white !important; }
           button, .bg-white.border-b, .bg-slate-50.px-6.py-2, .Filter-Bar, .self-end { display: none !important; }
           .flex-1 { overflow: visible !important; height: auto !important; }
-          .bg-white.rounded-2xl { box-shadow: none !important; border: none !important; }
+          .summary-report-matrix { box-shadow: none !important; border: none !important; }
           table { width: 100% !important; border: 1px solid #e2e8f0 !important; }
           th, td { border: 1px solid #e2e8f0 !important; }
           .sticky { position: static !important; }

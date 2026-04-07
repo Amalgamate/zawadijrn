@@ -1,40 +1,68 @@
 /**
- * Enhanced Parent Dashboard
- * Special dashboard for parents with children's assessments, metrics, and PDF downloads
+ * Parent portal dashboard — focused metrics, calendar/notices entry points, no staff tooling.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-  BookOpen, Calendar, DollarSign, Bell,
-  Download, Award, TrendingUp, CheckCircle, Target,
-  BarChart3, FileText, Users, Activity, ShieldCheck,
-  ChevronRight, Clock, Wallet
+  BookOpen, DollarSign, Bell,
+  Download, TrendingUp, FileText, Users, Activity, ShieldCheck,
+  Wallet, Sparkles, LayoutGrid, Megaphone
 } from 'lucide-react';
 import { generateDocument } from '../../../../utils/simplePdfGenerator';
 import { dashboardAPI } from '../../../../services/api';
 import { useNotifications } from '../../hooks/useNotifications';
+import { cn } from '../../../../utils/cn';
 
-// Professional Components
-const MetricCard = ({ title, value, subtitle, icon: Icon, colorClass = "text-gray-400", onClick }) => (
-  <div onClick={onClick} className={`bg-white p-4 rounded-lg border border-gray-200 shadow-sm hover:border-brand-purple/30 transition-all ${onClick ? 'cursor-pointer hover:shadow-md hover:scale-105' : ''}`}>
-    <div className="flex justify-between items-start mb-2">
-      <div className={`p-2 bg-gray-50 rounded-md ${colorClass}`}>
-        <Icon size={18} />
+const MATRIX_ACCENT = [
+  'from-cyan-500/90 to-blue-600/95',
+  'from-fuchsia-500/90 to-violet-600/95',
+  'from-amber-500/90 to-orange-600/95',
+  'from-emerald-500/90 to-teal-600/95',
+];
+
+const MatrixTile = ({ title, value, subtitle, icon: Icon, accentIndex = 0, onClick, className }) => {
+  const grad = MATRIX_ACCENT[accentIndex % MATRIX_ACCENT.length];
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={!onClick}
+      className={cn(
+        'relative overflow-hidden rounded-2xl border border-white/20 p-5 text-left shadow-lg transition-all duration-300',
+        'bg-gradient-to-br ring-1 ring-black/5',
+        grad,
+        onClick && 'hover:scale-[1.02] hover:shadow-xl hover:brightness-105 cursor-pointer',
+        !onClick && 'cursor-default',
+        className
+      )}
+    >
+      <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.15)_0%,transparent_45%,rgba(0,0,0,0.08)_100%)] pointer-events-none" />
+      <div className="relative flex flex-col gap-3 text-white">
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/85">{title}</p>
+          <div className="rounded-xl bg-white/15 p-2 backdrop-blur-sm">
+            <Icon size={20} strokeWidth={2.2} />
+          </div>
+        </div>
+        <div>
+          <p className="text-3xl font-black tracking-tight drop-shadow-sm">{value}</p>
+          {subtitle && <p className="mt-1 text-xs font-semibold text-white/80">{subtitle}</p>}
+        </div>
       </div>
-    </div>
-    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{title}</p>
-    <h3 className="text-xl font-black text-gray-900 mt-1">{value}</h3>
-    {subtitle && <p className="text-[10px] text-gray-500 mt-1 font-medium">{subtitle}</p>}
-  </div>
-);
+    </button>
+  );
+};
 
 const TabButton = ({ active, label, icon: Icon, onClick }) => (
   <button
+    type="button"
     onClick={onClick}
-    className={`flex items-center gap-2 px-6 py-3 text-xs font-black uppercase tracking-widest transition-all border-b-2 ${active
-      ? 'border-brand-purple text-brand-purple bg-brand-purple/5'
-      : 'border-transparent text-gray-400 hover:text-gray-600 hover:bg-gray-50'
-      }`}
+    className={cn(
+      'flex items-center gap-2 px-4 py-3 text-xs font-black uppercase tracking-widest transition-all border-b-2 sm:px-6',
+      active
+        ? 'border-brand-purple text-brand-purple bg-brand-purple/5'
+        : 'border-transparent text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+    )}
   >
     <Icon size={14} />
     {label}
@@ -43,30 +71,31 @@ const TabButton = ({ active, label, icon: Icon, onClick }) => (
 
 const ParentDashboard = ({ user, onNavigate }) => {
   const { showSuccess, showError } = useNotifications();
-  const [activeTab, setActiveTab] = useState('overview'); // overview, children, reports, finance
-  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState({
     children: [],
-    stats: { totalBalance: 0, avgAttendance: 0, bulletins: 0 }
+    stats: { totalBalance: 0, avgAttendance: 0, bulletins: 0 },
   });
 
-  React.useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        const response = await dashboardAPI.getParentMetrics();
-        if (response.success) {
-          setDashboardData(response.data);
-        }
-      } catch (error) {
-        showError('Failed to load parental dashboard data');
-        console.error(error);
-      } finally {
-        setLoading(false);
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await dashboardAPI.getParentMetrics();
+      if (response.success) {
+        setDashboardData(response.data);
       }
-    };
+    } catch (error) {
+      showError('Failed to load parental dashboard data');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  }, [showError]);
+
+  useEffect(() => {
     loadData();
-  }, [user]);
+  }, [user, loadData]);
 
   const { children, stats } = dashboardData;
 
@@ -106,7 +135,7 @@ const ParentDashboard = ({ user, onNavigate }) => {
           </tr>
         </thead>
         <tbody>
-          ${child.subjects.map(sub => `
+          ${(child.subjects || []).map((sub) => `
             <tr>
               <td style="font-weight: 600;">${sub.name}</td>
               <td style="text-align: center; font-weight: 700;">${sub.score}%</td>
@@ -124,60 +153,142 @@ const ParentDashboard = ({ user, onNavigate }) => {
       includeStamp: true,
       stampOptions: {
         status: 'CERTIFIED',
-        dept: 'ACADEMIC REGISTRY'
-      }
+        dept: 'ACADEMIC REGISTRY',
+      },
     });
 
-    showSuccess('✅ Official Transcript Downloaded');
+    showSuccess('Official transcript downloaded');
   };
 
   const renderOverview = () => (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard title="Dependents" value={children.length} subtitle="Enrolled Learners" icon={Users} colorClass="text-blue-500" onClick={() => setActiveTab('children')} />
-        <MetricCard title="Avg Attendance" value={`${stats.avgAttendance}%`} subtitle="Across all children" icon={Activity} colorClass="text-emerald-500" onClick={() => setActiveTab('children')} />
-        <MetricCard title="Fee Liability" value={`KES ${stats.totalBalance.toLocaleString()}`} subtitle={stats.totalBalance > 0 ? "Pending Payment" : "Account Cleared"} icon={Wallet} colorClass={stats.totalBalance > 0 ? "text-amber-500" : "text-brand-purple"} onClick={() => setActiveTab('finance')} />
-        <MetricCard title="Bulletins" value={stats.bulletins} subtitle="Unread Notifications" icon={Bell} colorClass="text-indigo-500" onClick={() => onNavigate && onNavigate('comm-notices')} />
+    <div className="space-y-8">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <MatrixTile
+          title="Dependents"
+          value={loading ? '…' : String(children.length)}
+          subtitle="Enrolled learners"
+          icon={Users}
+          accentIndex={0}
+          onClick={() => setActiveTab('children')}
+        />
+        <MatrixTile
+          title="Attendance"
+          value={loading ? '…' : `${stats.avgAttendance}%`}
+          subtitle="Household average"
+          icon={Activity}
+          accentIndex={1}
+          onClick={() => setActiveTab('children')}
+        />
+        <MatrixTile
+          title="Fee balance"
+          value={loading ? '…' : `KES ${Number(stats.totalBalance || 0).toLocaleString()}`}
+          subtitle={stats.totalBalance > 0 ? 'Outstanding' : 'All clear'}
+          icon={Wallet}
+          accentIndex={2}
+          onClick={() => setActiveTab('finance')}
+        />
+        <MatrixTile
+          title="Bulletins"
+          value={loading ? '…' : String(stats.bulletins ?? 0)}
+          subtitle="School notices"
+          icon={Bell}
+          accentIndex={3}
+          onClick={() => onNavigate?.('comm-notices')}
+        />
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-          <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest">Immediate Academic Standing</h3>
+      <div className="overflow-hidden rounded-2xl border border-gray-200/80 bg-white shadow-md">
+        <div className="flex flex-col gap-1 border-b border-gray-100 bg-gradient-to-r from-slate-50 to-white px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2">
+            <LayoutGrid className="h-4 w-4 text-brand-purple" />
+            <h3 className="text-xs font-black uppercase tracking-widest text-gray-900">Learner matrix</h3>
+          </div>
+          <p className="text-[11px] font-semibold text-gray-500">Snapshot across your children</p>
         </div>
-        <div className="p-0">
-          <table className="w-full text-left">
-            <thead className="bg-gray-50 border-b border-gray-200">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px] text-left">
+            <thead className="border-b border-gray-200 bg-slate-50/90">
               <tr>
-                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Learner Name</th>
-                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Current Grade</th>
-                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Perf. Index</th>
-                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Attendance</th>
-                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Actions</th>
+                <th scope="col" className="px-6 py-3 text-[10px] font-semibold uppercase tracking-widest text-[color:var(--table-header-fg)]">
+                  Learner
+                </th>
+                <th scope="col" className="px-6 py-3 text-[10px] font-semibold uppercase tracking-widest text-[color:var(--table-header-fg)]">
+                  Grade
+                </th>
+                <th scope="col" className="px-6 py-3 text-[10px] font-semibold uppercase tracking-widest text-[color:var(--table-header-fg)]">
+                  Performance
+                </th>
+                <th scope="col" className="px-6 py-3 text-[10px] font-semibold uppercase tracking-widest text-[color:var(--table-header-fg)]">
+                  Attendance
+                </th>
+                <th scope="col" className="px-6 py-3 text-[10px] font-semibold uppercase tracking-widest text-[color:var(--table-header-fg)]">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {children.map((child, idx) => (
-                <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-brand-purple/10 flex items-center justify-center text-brand-purple text-[10px] font-black">
-                        {child.name.split(' ').map(n => n[0]).join('')}
-                      </div>
-                      <p className="text-xs font-black text-gray-900">{child.name}</p>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-xs font-bold text-gray-500">{child.grade}</td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${child.performanceLevel === 'EE' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-blue-50 text-blue-700 border border-blue-100'}`}>
-                      {child.overallPerformance} ({child.performanceLevel})
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-xs font-black text-gray-900">{child.attendanceRate}%</td>
-                  <td className="px-6 py-4">
-                    <button onClick={() => setActiveTab('children')} className="text-brand-purple text-[10px] font-black uppercase tracking-widest hover:underline">View Portfolio</button>
+              {loading && (
+                <tr>
+                  <td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-500">
+                    Loading…
                   </td>
                 </tr>
-              ))}
+              )}
+              {!loading && children.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-500">
+                    No linked learners yet. Contact the school if this looks wrong.
+                  </td>
+                </tr>
+              )}
+              {!loading &&
+                children.map((child, idx) => (
+                  <tr key={child.id || idx} className="transition-colors hover:bg-violet-50/40">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={cn(
+                            'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[10px] font-black text-white shadow-sm',
+                            idx % 4 === 0 && 'bg-gradient-to-br from-cyan-500 to-blue-600',
+                            idx % 4 === 1 && 'bg-gradient-to-br from-fuchsia-500 to-violet-600',
+                            idx % 4 === 2 && 'bg-gradient-to-br from-amber-500 to-orange-600',
+                            idx % 4 === 3 && 'bg-gradient-to-br from-emerald-500 to-teal-600'
+                          )}
+                        >
+                          {child.name
+                            .split(' ')
+                            .map((n) => n[0])
+                            .join('')
+                            .slice(0, 3)}
+                        </div>
+                        <p className="text-sm font-bold text-gray-900">{child.name}</p>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm font-semibold text-gray-600">{child.grade}</td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={cn(
+                          'inline-flex rounded-lg border px-2.5 py-1 text-[10px] font-black uppercase tracking-wider',
+                          child.performanceLevel === 'EE'
+                            ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                            : 'border-violet-200 bg-violet-50 text-violet-800'
+                        )}
+                      >
+                        {child.overallPerformance}% ({child.performanceLevel})
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm font-bold text-gray-900">{child.attendanceRate}%</td>
+                    <td className="px-6 py-4">
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('children')}
+                        className="text-[10px] font-black uppercase tracking-widest text-brand-purple hover:underline"
+                      >
+                        Portfolio
+                      </button>
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
@@ -186,82 +297,188 @@ const ParentDashboard = ({ user, onNavigate }) => {
   );
 
   const renderChildren = () => (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {children.map((child) => (
-        <div key={child.id} className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 space-y-4">
-          <div className="flex justify-between items-start border-b border-gray-100 pb-4">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      {children.map((child, idx) => (
+        <div
+          key={child.id || idx}
+          className="space-y-4 rounded-2xl border border-gray-200/80 bg-white p-6 shadow-md ring-1 ring-black/[0.03]"
+        >
+          <div className="flex items-start justify-between border-b border-gray-100 pb-4">
             <div>
-              <h3 className="text-base font-black text-gray-900 tracking-tight">{child.name}</h3>
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">{child.grade} • ADM No: {child.admissionNumber}</p>
+              <h3 className="text-base font-black tracking-tight text-gray-900">{child.name}</h3>
+              <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-gray-400">
+                {child.grade} • ADM {child.admissionNumber}
+              </p>
             </div>
-            <div className="p-2 bg-emerald-50 text-emerald-600 rounded-md">
+            <div className="rounded-xl bg-emerald-50 p-2 text-emerald-600">
               <ShieldCheck size={20} />
             </div>
           </div>
 
           <div className="grid grid-cols-3 gap-2">
-            <div className="bg-gray-50 p-3 rounded text-center">
-              <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Attendance</p>
+            <div className="rounded-xl bg-gradient-to-br from-slate-50 to-slate-100/80 p-3 text-center">
+              <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Attendance</p>
               <p className="text-lg font-black text-gray-900">{child.attendanceRate}%</p>
             </div>
-            <div className="bg-gray-50 p-3 rounded text-center">
-              <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Assessments</p>
-              <p className="text-lg font-black text-gray-900">{child.recentAssessments.length}</p>
+            <div className="rounded-xl bg-gradient-to-br from-violet-50 to-fuchsia-50/80 p-3 text-center">
+              <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Assessments</p>
+              <p className="text-lg font-black text-gray-900">{(child.recentAssessments || []).length}</p>
             </div>
-            <div className="bg-gray-50 p-3 rounded text-center">
-              <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Level</p>
+            <div className="rounded-xl bg-gradient-to-br from-amber-50 to-orange-50/80 p-3 text-center">
+              <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Level</p>
               <p className="text-lg font-black text-gray-900">{child.performanceLevel}</p>
             </div>
           </div>
 
           <div className="space-y-2 pt-2">
-            <h4 className="text-[10px] font-black text-gray-900 uppercase tracking-widest flex items-center gap-2">
-              <TrendingUp size={12} className="text-brand-purple" /> Subject Performance
+            <h4 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-900">
+              <TrendingUp size={12} className="text-brand-purple" /> Subject highlights
             </h4>
-            <div className="divide-y divide-gray-50">
-              {child.subjects.slice(0, 3).map((sub, i) => (
-                <div key={i} className="py-2 flex justify-between items-center">
+            <div className="divide-y divide-gray-100">
+              {(child.subjects || []).slice(0, 5).map((sub, i) => (
+                <div key={i} className="flex items-center justify-between py-2">
                   <span className="text-xs font-medium text-gray-600">{sub.name}</span>
-                  <span className="text-[10px] font-black text-brand-purple uppercase">{sub.grade} ({sub.score}%)</span>
+                  <span className="text-[10px] font-black uppercase text-brand-purple">
+                    {sub.grade} ({sub.score}%)
+                  </span>
                 </div>
               ))}
             </div>
           </div>
+
+          <button
+            type="button"
+            onClick={() => handleDownloadReportCard(child)}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-brand-purple/20 bg-brand-purple/5 py-2.5 text-[10px] font-black uppercase tracking-widest text-brand-purple transition hover:bg-brand-purple/10"
+          >
+            <Download size={14} />
+            Download transcript
+          </button>
         </div>
       ))}
     </div>
   );
 
+  const renderReports = () => (
+    <div className="space-y-4">
+      <p className="text-sm text-gray-600">
+        Generate a PDF transcript for each learner. For official signed copies, contact the school office.
+      </p>
+      <div className="grid gap-3">
+        {children.map((child, idx) => (
+          <div
+            key={child.id || idx}
+            className="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div className="flex items-center gap-3">
+              <div className="rounded-xl bg-indigo-50 p-2 text-indigo-600">
+                <FileText size={20} />
+              </div>
+              <div>
+                <p className="font-bold text-gray-900">{child.name}</p>
+                <p className="text-xs text-gray-500">
+                  {child.grade} • {child.overallPerformance}% overall
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleDownloadReportCard(child)}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-gray-900 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-white hover:bg-gray-800"
+            >
+              <Download size={14} />
+              PDF
+            </button>
+          </div>
+        ))}
+        {!loading && children.length === 0 && (
+          <p className="text-center text-sm text-gray-500">No learners linked to this account.</p>
+        )}
+      </div>
+    </div>
+  );
+
+  const renderFinance = () => (
+    <div className="grid gap-6 lg:grid-cols-2">
+      <div className="rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50 to-orange-50/50 p-6 shadow-sm">
+        <div className="mb-4 flex items-center gap-2 text-amber-900">
+          <DollarSign size={22} />
+          <h3 className="text-sm font-black uppercase tracking-widest">Household balance</h3>
+        </div>
+        <p className="text-4xl font-black text-gray-900">KES {Number(stats.totalBalance || 0).toLocaleString()}</p>
+        <p className="mt-2 text-sm text-gray-600">
+          {stats.totalBalance > 0
+            ? 'This is the combined outstanding amount on record. Pay at the office or via channels the school announces.'
+            : 'No outstanding balance on record.'}
+        </p>
+      </div>
+      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="mb-3 flex items-center gap-2 text-brand-purple">
+          <Megaphone size={20} />
+          <h3 className="text-sm font-black uppercase tracking-widest">Notices & bulletins</h3>
+        </div>
+        <p className="text-sm text-gray-600">
+          Fee reminders and school announcements appear in Notices. Open the inbox to read the latest updates.
+        </p>
+        <button
+          type="button"
+          onClick={() => onNavigate?.('comm-notices')}
+          className="mt-4 w-full rounded-xl bg-brand-purple px-4 py-3 text-xs font-black uppercase tracking-widest text-white shadow hover:bg-brand-purple/90"
+        >
+          Open notices
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
-      <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-brand-purple text-white rounded-lg">
-            <Users size={20} />
+      <div className="relative overflow-hidden rounded-2xl border border-violet-200/60 bg-gradient-to-br from-[var(--brand-purple)] via-violet-700 to-indigo-900 p-6 text-white shadow-xl">
+        <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-cyan-400/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-16 -left-16 h-56 w-56 rounded-full bg-fuchsia-400/15 blur-3xl" />
+        <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="rounded-2xl bg-white/15 p-3 backdrop-blur-md">
+              <Sparkles size={24} />
+            </div>
+            <div>
+              <h1 className="text-xl font-black tracking-tight md:text-2xl">Family portal</h1>
+              <p className="mt-1 text-xs font-semibold uppercase tracking-widest text-white/75">
+                {user?.firstName || user?.name?.split(' ')[0] || 'Guardian'} • Linked learners & school pulse
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-base font-black text-gray-900 tracking-tight">Parental Oversight Console</h1>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Guardian Portal • Account Status: <span className="text-emerald-500">ACTIVE</span></p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => onNavigate?.('planner-calendar')}
+              className="rounded-xl bg-white/15 px-4 py-2 text-xs font-black uppercase tracking-widest backdrop-blur transition hover:bg-white/25"
+            >
+              School calendar
+            </button>
+            <button
+              type="button"
+              onClick={() => onNavigate?.('comm-messages')}
+              className="rounded-xl bg-white px-4 py-2 text-xs font-black uppercase tracking-widest text-violet-900 shadow hover:bg-white/90"
+            >
+              Messages
+            </button>
           </div>
-        </div>
-        <div className="flex gap-2">
-          <button className="px-3 py-1.5 bg-brand-purple text-white rounded text-[10px] font-black uppercase tracking-widest shadow-sm hover:bg-brand-purple/90 transition-all flex items-center gap-2">
-            <DollarSign size={14} /> Settle Balances
-          </button>
         </div>
       </div>
 
-      <div className="bg-white border-b border-gray-200 rounded-t-lg overflow-hidden flex shadow-sm">
-        <TabButton active={activeTab === 'overview'} label="Family Overview" icon={Activity} onClick={() => setActiveTab('overview')} />
-        <TabButton active={activeTab === 'children'} label="Learner Portfolios" icon={BookOpen} onClick={() => setActiveTab('children')} />
-        <TabButton active={activeTab === 'reports'} label="Academic Transcripts" icon={FileText} onClick={() => setActiveTab('reports')} />
-        <TabButton active={activeTab === 'finance'} label="Accounts & Bulletins" icon={Wallet} onClick={() => setActiveTab('finance')} />
+      <div className="flex flex-wrap overflow-hidden rounded-t-2xl border border-gray-200 bg-white shadow-sm">
+        <TabButton active={activeTab === 'overview'} label="Overview" icon={LayoutGrid} onClick={() => setActiveTab('overview')} />
+        <TabButton active={activeTab === 'children'} label="Portfolios" icon={BookOpen} onClick={() => setActiveTab('children')} />
+        <TabButton active={activeTab === 'reports'} label="Transcripts" icon={FileText} onClick={() => setActiveTab('reports')} />
+        <TabButton active={activeTab === 'finance'} label="Fees & notices" icon={Wallet} onClick={() => setActiveTab('finance')} />
       </div>
 
       <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
         {activeTab === 'overview' && renderOverview()}
         {activeTab === 'children' && renderChildren()}
-        {/* Reports and Finance would follow similar patterns */}
+        {activeTab === 'reports' && renderReports()}
+        {activeTab === 'finance' && renderFinance()}
       </div>
     </div>
   );

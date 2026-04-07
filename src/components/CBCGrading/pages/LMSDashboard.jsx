@@ -12,7 +12,11 @@ import { Badge } from '../../ui/badge';
 import { Button } from '../../ui/button';
 import { Loader2, TrendingUp, Users, BookOpen, Clock, Eye } from 'lucide-react';
 
-const LMSDashboard = () => {
+const LMSDashboard = ({
+    onNavigateTab,
+    canManageEnrollments = false,
+    canViewReports = false,
+}) => {
     const { apiCall } = useApi();
     const [stats, setStats] = useState(null);
     const [recentEnrollments, setRecentEnrollments] = useState([]);
@@ -94,19 +98,43 @@ const LMSDashboard = () => {
                         <CardTitle>Quick Actions</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                        <Button variant="outline" className="w-full justify-start">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full justify-start"
+                            onClick={() => onNavigateTab?.('courses')}
+                        >
                             <BookOpen className="h-4 w-4 mr-2" />
                             Browse Courses
                         </Button>
-                        <Button variant="outline" className="w-full justify-start">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full justify-start"
+                            disabled={!canManageEnrollments}
+                            title={!canManageEnrollments ? 'You do not have permission to manage enrollments' : undefined}
+                            onClick={() => canManageEnrollments && onNavigateTab?.('enrollments')}
+                        >
                             <Users className="h-4 w-4 mr-2" />
                             Manage Enrollments
                         </Button>
-                        <Button variant="outline" className="w-full justify-start">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full justify-start"
+                            disabled={!canViewReports}
+                            title={!canViewReports ? 'You do not have permission to view learning reports' : undefined}
+                            onClick={() => canViewReports && onNavigateTab?.('reports')}
+                        >
                             <TrendingUp className="h-4 w-4 mr-2" />
                             View Reports
                         </Button>
-                        <Button variant="outline" className="w-full justify-start">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full justify-start"
+                            onClick={() => onNavigateTab?.('content')}
+                        >
                             <Eye className="h-4 w-4 mr-2" />
                             Content Library
                         </Button>

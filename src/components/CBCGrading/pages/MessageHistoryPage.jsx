@@ -275,15 +275,15 @@ const MessageHistoryPage = () => {
                     <>
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm text-left">
-                                <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
+                                <thead className="bg-[color:var(--table-header-bg)] border-b border-[color:var(--table-border)] sticky top-0">
                                     <tr>
-                                        <th className="px-4 py-3 font-bold text-gray-600 uppercase text-xs">Date/Time</th>
-                                        <th className="px-4 py-3 font-bold text-gray-600 uppercase text-xs">Learner</th>
-                                        <th className="px-4 py-3 font-bold text-gray-600 uppercase text-xs">Phone</th>
-                                        <th className="px-4 py-3 font-bold text-gray-600 uppercase text-xs">Channel</th>
-                                        <th className="px-4 py-3 font-bold text-gray-600 uppercase text-xs">Status</th>
-                                        <th className="px-4 py-3 font-bold text-gray-600 uppercase text-xs">Sent By</th>
-                                        <th className="px-4 py-3 font-bold text-gray-600 uppercase text-xs">Term</th>
+                                        <th className="px-4 py-3 font-semibold text-[color:var(--table-header-fg)] uppercase text-xs">Date/Time</th>
+                                        <th className="px-4 py-3 font-semibold text-[color:var(--table-header-fg)] uppercase text-xs">Learner</th>
+                                        <th className="px-4 py-3 font-semibold text-[color:var(--table-header-fg)] uppercase text-xs">Phone</th>
+                                        <th className="px-4 py-3 font-semibold text-[color:var(--table-header-fg)] uppercase text-xs">Channel</th>
+                                        <th className="px-4 py-3 font-semibold text-[color:var(--table-header-fg)] uppercase text-xs">Status</th>
+                                        <th className="px-4 py-3 font-semibold text-[color:var(--table-header-fg)] uppercase text-xs">Sent By</th>
+                                        <th className="px-4 py-3 font-semibold text-[color:var(--table-header-fg)] uppercase text-xs">Term</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">

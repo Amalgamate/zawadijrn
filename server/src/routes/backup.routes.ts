@@ -34,10 +34,10 @@ router.get(
   asyncHandler(backup.listBackups.bind(backup))
 );
 
-// Create a new manual backup
+// Create a new manual backup (generous limit — failures used to burn the old cap quickly)
 router.post(
   '/',
-  rateLimit({ windowMs: 60_000, maxRequests: 5 }), // limit to 5 triggers per minute
+  rateLimit({ windowMs: 60_000, maxRequests: 20 }),
   asyncHandler(backup.createBackup.bind(backup))
 );
 

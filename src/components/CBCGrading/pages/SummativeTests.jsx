@@ -392,10 +392,10 @@ const SummativeTests = ({ onNavigate }) => {
                     }}
                   />
                 </th>
-                <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Level / Series</th>
-                <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Coverage</th>
-                <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Tests</th>
-                <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                <th className="px-6 py-5 text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Level / Series</th>
+                <th className="px-6 py-5 text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest text-center">Coverage</th>
+                <th className="px-6 py-5 text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest text-center">Tests</th>
+                <th className="px-6 py-5 text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">

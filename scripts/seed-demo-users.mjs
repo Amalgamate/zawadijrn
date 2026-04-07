@@ -4,6 +4,9 @@
  *
  * Run with:  node scripts/seed-demo-users.mjs
  *
+ * Demo learners from `server/scripts/create-demo-student.ts` use parent@demo.zawadi as guardian.
+ * To attach an existing "Demo Learner" row:  cd server && npm run demo:link-parent
+ *
  * Demo accounts created:
  *   ADMIN / TEACHER / PARENT / ACCOUNTANT roles:
  *     admin@demo.zawadi        / Demo@2025!

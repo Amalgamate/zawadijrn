@@ -229,7 +229,7 @@ const TransportManager = () => {
           <div className="p-12 text-center text-gray-400 animate-pulse">Loading...</div>
         ) : activeTab === 'vehicles' ? (
           <table className="w-full text-left">
-            <thead className="bg-gray-50 border-b text-[10px] uppercase font-black tracking-widest text-gray-500">
+            <thead className="bg-[color:var(--table-header-bg)] border-b border-[color:var(--table-border)] text-[10px] uppercase font-semibold tracking-widest text-[color:var(--table-header-fg)]">
               <tr>
                 <th className="p-4">Registration</th>
                 <th className="p-4">Driver Details</th>
@@ -269,7 +269,7 @@ const TransportManager = () => {
           </table>
         ) : (
           <table className="w-full text-left">
-            <thead className="bg-gray-50 border-b text-[10px] uppercase font-black tracking-widest text-gray-500">
+            <thead className="bg-[color:var(--table-header-bg)] border-b border-[color:var(--table-border)] text-[10px] uppercase font-semibold tracking-widest text-[color:var(--table-header-fg)]">
               <tr>
                 <th className="p-4">Route Name</th>
                 <th className="p-4">Description</th>

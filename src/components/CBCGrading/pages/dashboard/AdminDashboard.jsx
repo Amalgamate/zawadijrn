@@ -181,12 +181,12 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
           {/* Recent Activity Table */}
           <div className="xl:col-span-2 bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-              <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Recent Activity Log</h3>
+              <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-widest">Recent Activity Log</h3>
               <button className="text-xs font-bold text-brand-purple hover:underline">Download Audit</button>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left">
-                <thead className="bg-gray-50 text-[10px] uppercase font-bold text-gray-400 tracking-wider">
+                <thead className="text-[10px] uppercase tracking-wider">
                   <tr>
                     <th className="px-6 py-3">Timestamp</th>
                     <th className="px-6 py-3">Category</th>
@@ -292,7 +292,7 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
         </div>
         <div className="p-0">
           <table className="w-full text-left">
-            <thead className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+            <thead className="bg-[color:var(--table-header-bg)] text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">
               <tr>
                 <th className="px-6 py-3">Grade Category</th>
                 <th className="px-6 py-3 text-right">Target Rev</th>
@@ -334,7 +334,7 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
             <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Ranking by Academic Average</h3>
           </div>
           <table className="w-full text-left">
-            <thead className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+            <thead className="bg-[color:var(--table-header-bg)] text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">
               <tr>
                 <th className="px-6 py-3">Rank</th>
                 <th className="px-6 py-3">Grade Unit</th>
@@ -521,12 +521,12 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="bg-slate-50 border-b border-slate-200">
-                        <th className="px-5 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Grade</th>
-                        <th className="px-5 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Students</th>
-                        <th className="px-5 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center text-brand-teal">Done</th>
-                        <th className="px-5 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center text-rose-500">Left</th>
-                        <th className="px-5 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Status</th>
+                      <tr className="bg-[color:var(--table-header-bg)] border-b border-[color:var(--table-border)]">
+                        <th className="px-5 py-4 text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Grade</th>
+                        <th className="px-5 py-4 text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest text-center">Students</th>
+                        <th className="px-5 py-4 text-[10px] font-semibold uppercase tracking-widest text-center text-brand-teal">Done</th>
+                        <th className="px-5 py-4 text-[10px] font-semibold uppercase tracking-widest text-center text-rose-500">Left</th>
+                        <th className="px-5 py-4 text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest text-right">Status</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 font-medium">

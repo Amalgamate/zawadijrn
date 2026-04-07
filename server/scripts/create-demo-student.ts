@@ -3,7 +3,7 @@ import bcrypt from 'bcrypt';
 import prisma from '../src/config/database';
 import { generateAdmissionNumber } from '../src/services/admissionNumber.service';
 import { FeeService } from '../src/services/fee.service';
-import { UserRole, Gender, Term, FeeCategory } from '@prisma/client';
+import { Term, FeeCategory } from '@prisma/client';
 
 process.env.SKIP_FEE_NOTIFICATIONS = 'true';
 
@@ -25,20 +25,31 @@ async function ensureAdminUser() {
   });
 }
 
-async function ensureParentUser(guardianPhone: string, guardianEmail: string) {
-  const existing = await prisma.user.findUnique({ where: { email: guardianEmail } });
-  if (existing) return existing;
+/** Matches `scripts/seed-demo-users.mjs` (parent@demo.zawadi / Demo@2025!). Override with env if needed. */
+const DEMO_PARENT_EMAIL = process.env.DEMO_PARENT_EMAIL ?? 'parent@demo.zawadi';
+const DEMO_PARENT_PHONE = process.env.DEMO_PARENT_PHONE ?? '+254700000003';
+const DEMO_PARENT_PASSWORD = process.env.DEMO_PARENT_PASSWORD ?? 'Demo@2025!';
 
-  const password = await bcrypt.hash('Parent123!', 12);
+async function ensureDemoParentUser() {
+  const existing = await prisma.user.findUnique({ where: { email: DEMO_PARENT_EMAIL } });
+  if (existing) {
+    if (existing.role !== 'PARENT') {
+      throw new Error(`User ${DEMO_PARENT_EMAIL} exists but role is ${existing.role}, expected PARENT`);
+    }
+    return existing;
+  }
+
+  const password = await bcrypt.hash(DEMO_PARENT_PASSWORD, 12);
   return prisma.user.create({
     data: {
-      email: guardianEmail,
+      email: DEMO_PARENT_EMAIL,
       password,
       firstName: 'Demo',
-      lastName: 'Guardian',
-      phone: guardianPhone,
+      lastName: 'Parent',
+      phone: DEMO_PARENT_PHONE,
       role: 'PARENT',
-      status: 'ACTIVE'
+      status: 'ACTIVE',
+      emailVerified: true
     }
   });
 }
@@ -192,9 +203,10 @@ async function main() {
     await ensureActiveTermConfig(admin.id);
     await ensureFeeStructure();
 
-    const parentPhone = `0712${Math.floor(Math.random() * 900000 + 100000)}`;
-    const parentEmail = `demo-parent-${Date.now()}@zawadisms.local`;
-    const parent = await ensureParentUser(parentPhone, parentEmail);
+    const parent = await ensureDemoParentUser();
+    const guardianName = `${parent.firstName} ${parent.lastName}`.trim();
+    const guardianPhone = parent.phone ?? DEMO_PARENT_PHONE;
+    const guardianEmail = parent.email;
 
     const admissionNumber = await generateAdmissionNumber('A', new Date().getFullYear());
     const learner = await prisma.learner.create({
@@ -208,9 +220,9 @@ async function main() {
         grade: GRADE,
         stream: 'A',
         parentId: parent.id,
-        guardianName: 'Demo Guardian',
-        guardianPhone: parentPhone,
-        guardianEmail: parentEmail,
+        guardianName,
+        guardianPhone,
+        guardianEmail,
         status: 'ACTIVE',
         createdBy: admin.id
       }
@@ -223,6 +235,7 @@ async function main() {
     console.log('Invoice generation result:', invoiceResult);
 
     console.log('Done. Student created with invoice flow executed.');
+    console.log(`Linked to parent: ${guardianEmail} (${guardianName})`);
   } catch (error) {
     console.error('Failed to create demo student:', error);
     process.exit(1);

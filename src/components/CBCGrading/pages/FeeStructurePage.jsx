@@ -758,11 +758,11 @@ const FeeStructurePage = () => {
                             <p className="text-xs font-semibold text-gray-600 uppercase mb-2">Fee Breakdown</p>
                             <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
                               <table className="w-full text-sm">
-                                <thead className="bg-gray-50 border-b border-gray-200">
+                                <thead className="border-b border-[color:var(--table-border)]">
                                   <tr>
-                                    <th className="px-3 py-2 text-left font-semibold text-gray-600">Fee Type</th>
-                                    <th className="px-3 py-2 text-right font-semibold text-gray-600">Amount</th>
-                                    <th className="px-3 py-2 text-center font-semibold text-gray-600">Mandatory</th>
+                                    <th className="px-3 py-2 text-left font-semibold text-[color:var(--table-header-fg)]">Fee Type</th>
+                                    <th className="px-3 py-2 text-right font-semibold text-[color:var(--table-header-fg)]">Amount</th>
+                                    <th className="px-3 py-2 text-center font-semibold text-[color:var(--table-header-fg)]">Mandatory</th>
                                   </tr>
                                 </thead>
                                 <tbody>

@@ -947,13 +947,13 @@ const BroadcastMessagesPage = () => {
                       </CardHeader>
                       <CardContent className="overflow-x-auto">
                         <table className="w-full text-xs">
-                          <thead className="bg-gray-50 sticky top-0">
+                          <thead className="sticky top-0 bg-[color:var(--table-header-bg)]">
                             <tr>
-                              <th className="px-3 py-2 text-left font-bold">Recipient</th>
-                              <th className="px-3 py-2 text-left font-bold">Phone</th>
-                              <th className="px-3 py-2 text-left font-bold">Status</th>
-                              <th className="px-3 py-2 text-left font-bold text-gray-600">Message ID</th>
-                              <th className="px-3 py-2 text-left font-bold text-gray-600">Sent At</th>
+                              <th className="px-3 py-2 text-left font-semibold text-[color:var(--table-header-fg)]">Recipient</th>
+                              <th className="px-3 py-2 text-left font-semibold text-[color:var(--table-header-fg)]">Phone</th>
+                              <th className="px-3 py-2 text-left font-semibold text-[color:var(--table-header-fg)]">Status</th>
+                              <th className="px-3 py-2 text-left font-semibold text-[color:var(--table-header-fg)]">Message ID</th>
+                              <th className="px-3 py-2 text-left font-semibold text-[color:var(--table-header-fg)]">Sent At</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y max-h-96 overflow-y-auto">

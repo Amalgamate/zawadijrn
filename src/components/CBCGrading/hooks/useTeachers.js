@@ -7,10 +7,11 @@ import { useState, useEffect, useCallback } from 'react';
 import api from '../../../services/api';
 import { refreshBus } from '../../../utils/refreshBus';
 
-export const useTeachers = () => {
+export const useTeachers = (options = {}) => {
+  const { enabled = true } = options;
   const [teachers, setTeachers] = useState([]);
   const [selectedTeacher, setSelectedTeacher] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 20 });
   const [error, setError] = useState(null);
 
@@ -158,10 +159,15 @@ export const useTeachers = () => {
     }
   }, [fetchTeachers]);
 
-  // Fetch teachers on mount
   useEffect(() => {
+    if (!enabled) {
+      setTeachers([]);
+      setError(null);
+      setLoading(false);
+      return;
+    }
     fetchTeachers();
-  }, [fetchTeachers]);
+  }, [fetchTeachers, enabled]);
 
   return {
     teachers,

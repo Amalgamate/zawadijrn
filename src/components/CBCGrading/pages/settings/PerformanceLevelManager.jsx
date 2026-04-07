@@ -353,11 +353,11 @@ const PerformanceLevelManager = () => {
               <Label className="font-bold text-gray-700">3. Level Calibration</Label>
               <div className="border rounded-2xl overflow-hidden shadow-sm bg-white">
                 <table className="w-full text-left">
-                  <thead className="bg-gray-50 text-[10px] uppercase text-gray-400">
+                  <thead className="border-b border-[color:var(--table-border)] text-[10px] uppercase">
                     <tr>
-                      <th className="px-4 py-3">Min %</th>
-                      <th className="px-4 py-3">Pts</th>
-                      <th className="px-4 py-3">Rating</th>
+                      <th className="px-4 py-3 font-semibold text-[color:var(--table-header-fg)]">Min %</th>
+                      <th className="px-4 py-3 font-semibold text-[color:var(--table-header-fg)]">Pts</th>
+                      <th className="px-4 py-3 font-semibold text-[color:var(--table-header-fg)]">Rating</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">

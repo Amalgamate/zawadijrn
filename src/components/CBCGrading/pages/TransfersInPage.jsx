@@ -126,14 +126,14 @@ const TransfersInPage = () => {
             />
           ) : (
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="border-b border-[color:var(--table-border)]">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Student Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Previous School</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Grade/Stream</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Transfer Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Actions</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Student Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Previous School</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Grade/Stream</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Transfer Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">

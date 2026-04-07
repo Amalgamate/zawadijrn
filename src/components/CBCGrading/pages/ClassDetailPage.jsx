@@ -324,11 +324,11 @@ const EnrollmentsTab = ({ classData }) => (
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-b-2 border-gray-200">
-              <th className="text-left p-3 font-bold text-gray-700">Admission No.</th>
-              <th className="text-left p-3 font-bold text-gray-700">Name</th>
-              <th className="text-left p-3 font-bold text-gray-700">Gender</th>
-              <th className="text-left p-3 font-bold text-gray-700">Enrolled</th>
+            <tr className="border-b-2 border-[color:var(--table-border)]">
+              <th className="text-left p-3 font-semibold text-[color:var(--table-header-fg)]">Admission No.</th>
+              <th className="text-left p-3 font-semibold text-[color:var(--table-header-fg)]">Name</th>
+              <th className="text-left p-3 font-semibold text-[color:var(--table-header-fg)]">Gender</th>
+              <th className="text-left p-3 font-semibold text-[color:var(--table-header-fg)]">Enrolled</th>
             </tr>
           </thead>
           <tbody>

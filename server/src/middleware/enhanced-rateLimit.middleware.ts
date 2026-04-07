@@ -58,7 +58,9 @@ export const rateLimit = (config: RateLimitConfig) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const clientId = getClientId(req);
-      const key = `rl:${clientId}:${req.path}`;
+      // Include method + mounted path so GET list and POST create do not share one counter (both used req.path "/")
+      const routeKey = `${req.baseUrl || ''}${req.path || '/'}`.replace(/\/{2,}/g, '/') || '/';
+      const key = `rl:${clientId}:${req.method}:${routeKey}`;
       
       const entry = await getRateLimitEntry(key, config.windowMs);
       entry.count++;

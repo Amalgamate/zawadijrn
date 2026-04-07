@@ -98,8 +98,11 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
     }
   }, [role]);
 
-  // Fetch birthdays
   useEffect(() => {
+    if (role === 'PARENT') {
+      setBirthdays([]);
+      return undefined;
+    }
     const fetchBirthdays = async () => {
       setLoadingBirthdays(true);
       try {
@@ -115,10 +118,9 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
     };
 
     fetchBirthdays();
-    // Refresh every hour
     const interval = setInterval(fetchBirthdays, 3600000);
     return () => clearInterval(interval);
-  }, []);
+  }, [role]);
 
   // Fetch latest notices for bell dropdown
   useEffect(() => {

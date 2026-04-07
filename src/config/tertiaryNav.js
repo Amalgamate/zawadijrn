@@ -185,7 +185,7 @@ export const tertiaryNavSections = [
   },
   {
     id: 'docs-center',
-    label: 'Docs',
+    label: 'Document Center',
     icon: FileText,
     permission: null,
     items: [],

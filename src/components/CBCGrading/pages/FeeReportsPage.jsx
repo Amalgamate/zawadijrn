@@ -326,14 +326,14 @@ const FeeReportsPage = () => {
         <h3 className="text-sm font-bold text-gray-800 mb-2">Collection by Grade</h3>
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50">
+            <thead className="border-b border-[color:var(--table-border)]">
               <tr>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-700 uppercase">Grade</th>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-700 uppercase">Students</th>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-700 uppercase">Expected</th>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-700 uppercase">Collected</th>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-700 uppercase">Outstanding</th>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-700 uppercase">Rate</th>
+                <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Grade</th>
+                <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Students</th>
+                <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Expected</th>
+                <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Collected</th>
+                <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Outstanding</th>
+                <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Rate</th>
               </tr>
             </thead>
             <tbody className="divide-y">

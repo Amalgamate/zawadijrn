@@ -55,7 +55,7 @@ const MetricCard = ({ title, value, subtitle, icon: Icon, trend, trendValue }) =
           </span>
         )}
       </div>
-      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{title}</p>
+      <p className="text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">{title}</p>
       <h3 className="text-2xl font-black text-gray-900 mt-1">{value}</h3>
       {subtitle && <p className="text-[10px] text-gray-500 mt-1">{subtitle}</p>}
     </div>
@@ -272,13 +272,13 @@ const TeacherDashboard = ({ learners, user, onNavigate }) => {
         </div>
         <div className="p-0">
           <table className="w-full text-left">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="border-b border-[color:var(--table-border)]">
               <tr>
-                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Time Slot</th>
-                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Unit / Learning Area</th>
-                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Target Grade</th>
-                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Location</th>
-                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
+                <th className="px-6 py-4 text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Time Slot</th>
+                <th className="px-6 py-4 text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Unit / Learning Area</th>
+                <th className="px-6 py-4 text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Target Grade</th>
+                <th className="px-6 py-4 text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Location</th>
+                <th className="px-6 py-4 text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -287,7 +287,7 @@ const TeacherDashboard = ({ learners, user, onNavigate }) => {
                   <td className="px-6 py-4 text-xs font-black text-gray-500">{item.time}</td>
                   <td className="px-6 py-4 text-xs font-black text-gray-900 tracking-tight">{item.subject}</td>
                   <td className="px-6 py-4 text-xs font-bold text-gray-600">{item.grade}</td>
-                  <td className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Building {item.room.charAt(0)} / RM {item.room}</td>
+                  <td className="px-6 py-4 text-xs text-gray-600">Building {item.room.charAt(0)} / RM {item.room}</td>
                   <td className="px-6 py-4">
                     <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${idx === 0 ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' : 'bg-gray-50 text-gray-400'}`}>
                       {idx === 0 ? 'Next Up' : 'Scheduled'}

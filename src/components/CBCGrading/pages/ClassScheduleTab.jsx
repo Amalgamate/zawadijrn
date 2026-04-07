@@ -208,13 +208,13 @@ const ClassScheduleTab = ({ classData, onRefresh }) => {
     <div className="overflow-x-auto">
       <table className="w-full">
         <thead>
-          <tr className="border-b-2 border-gray-200 bg-gray-50">
-            <th className="text-left p-3 font-bold text-gray-700">Subject</th>
-            <th className="text-left p-3 font-bold text-gray-700">Day</th>
-            <th className="text-left p-3 font-bold text-gray-700">Time</th>
-            <th className="text-left p-3 font-bold text-gray-700">Room</th>
-            <th className="text-left p-3 font-bold text-gray-700">Teacher</th>
-            <th className="text-right p-3 font-bold text-gray-700">Actions</th>
+          <tr className="border-b-2 border-[color:var(--table-border)]">
+            <th className="text-left p-3 font-semibold text-[color:var(--table-header-fg)]">Subject</th>
+            <th className="text-left p-3 font-semibold text-[color:var(--table-header-fg)]">Day</th>
+            <th className="text-left p-3 font-semibold text-[color:var(--table-header-fg)]">Time</th>
+            <th className="text-left p-3 font-semibold text-[color:var(--table-header-fg)]">Room</th>
+            <th className="text-left p-3 font-semibold text-[color:var(--table-header-fg)]">Teacher</th>
+            <th className="text-right p-3 font-semibold text-[color:var(--table-header-fg)]">Actions</th>
           </tr>
         </thead>
         <tbody>

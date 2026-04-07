@@ -21,12 +21,18 @@
   --border: 214.3 31.8% 91.4%;
   --input: 214.3 31.8% 91.4%;
   --ring: 301 100% 16%;
-  --radius: 0.75rem;
+  /* 0 = flat panels; bump if you want subtle rounding app-wide */
+  --radius: 0;
 
   --brand-purple: #520050;
   --brand-purple-dark: #3d003b;
   --brand-purple-light: #6d0066;
   --brand-teal: #0D9488;
+  /* Tables: blend main brand with slate so grids stay readable on any school color (App.jsx updates --brand-purple) */
+  --table-border: color-mix(in srgb, var(--brand-purple) 46%, rgb(203 213 225));
+  --table-header-bg: color-mix(in srgb, var(--brand-purple) 14%, rgb(241 245 249));
+  /* Header label color tracks school brand (darker variant for contrast on light header bg) */
+  --table-header-fg: var(--brand-purple-dark);
   --bg-primary: #ffffff;
   --bg-secondary: #f8fafc;
   --text-primary: #1a1a1a;
@@ -64,6 +70,98 @@
   body {
     @apply text-slate-900 antialiased;
     font-family: 'Raleway', sans-serif;
+  }
+}
+
+/*
+ * Global flat UI (clean rendering surfaces)
+ * - :root --radius + tailwind.config borderRadius/boxShadow
+ * - Fallbacks below for arbitrary shadow-[…] / rounded-[…] and legacy specificity
+ * - rounded-full kept for avatars/pills
+ */
+@layer utilities {
+  .shadow,
+  .shadow-sm,
+  .shadow-md,
+  .shadow-lg,
+  .shadow-xl,
+  .shadow-2xl,
+  .shadow-inner {
+    --tw-shadow: 0 0 #0000;
+    --tw-shadow-colored: 0 0 #0000;
+    box-shadow: none !important;
+  }
+
+  /* Tailwind arbitrary shadows: class names contain `shadow-[` */
+  [class*="shadow-["] {
+    box-shadow: none !important;
+  }
+
+  .rounded,
+  .rounded-sm,
+  .rounded-md,
+  .rounded-lg,
+  .rounded-xl,
+  .rounded-2xl,
+  .rounded-3xl {
+    border-radius: 0 !important;
+  }
+
+  /* Tailwind arbitrary radii: e.g. rounded-[2rem] */
+  [class*="rounded-["] {
+    border-radius: 0 !important;
+  }
+}
+
+/* App-wide data tables: full grid; borders track --brand-purple (school theme) */
+@layer components {
+  body table {
+    border: 1px solid var(--table-border) !important;
+    border-collapse: collapse;
+  }
+
+  body table th,
+  body table td {
+    border: 1px solid var(--table-border) !important;
+  }
+
+  /* VirtualizedTable spacer rows: no grid lines on height-padding cells */
+  body table td.v-table-spacer,
+  body table th.v-table-spacer {
+    border: none !important;
+  }
+
+  /* Real header row: thead is a proper column-header group; th reads as header vs tbody td */
+  body table thead {
+    display: table-header-group;
+  }
+
+  body table thead th {
+    background-color: var(--table-header-bg);
+    font-weight: 600;
+    color: var(--table-header-fg);
+    vertical-align: middle;
+    border-color: var(--table-border) !important;
+  }
+
+  /* Solid bar headers (white text on brand) — e.g. summative marks grid */
+  body table.table--header-invert thead {
+    background-color: transparent;
+    box-shadow: none;
+  }
+
+  body table.table--header-invert thead th {
+    background-color: transparent;
+    color: inherit;
+    font-weight: 600;
+  }
+
+  body table tfoot th,
+  body table tfoot td {
+    background-color: color-mix(in srgb, var(--brand-purple) 6%, rgb(248 250 252));
+    font-weight: 600;
+    color: var(--table-header-fg);
+    border-color: var(--table-border) !important;
   }
 }
 
@@ -383,4 +481,4 @@ code {
 .mb-safe-bottom {
   margin-bottom: calc(4rem + env(safe-area-inset-bottom));
 }
-
+

@@ -20,8 +20,11 @@ export const useDocuments = () => {
         try {
             const response = await api.documents.getAll(params);
             if (response.success) {
-                setDocuments(response.data);
-                setPagination(response.pagination);
+                const list = Array.isArray(response.data) ? response.data : [];
+                setDocuments(list);
+                if (response.pagination) {
+                    setPagination(response.pagination);
+                }
             }
             return response;
         } catch (error) {
@@ -44,14 +47,13 @@ export const useDocuments = () => {
         }
     }, []);
 
-    const uploadDocument = useCallback(async (formData) => {
+    const uploadDocument = useCallback(async (formData, refreshParams = {}) => {
         setLoading(true);
         try {
             const response = await api.documents.upload(formData);
             if (response.success) {
                 showSuccess('Document uploaded successfully');
-                // Refresh list
-                await fetchDocuments();
+                await fetchDocuments(refreshParams);
             }
             return response;
         } catch (error) {
@@ -63,13 +65,14 @@ export const useDocuments = () => {
         }
     }, [fetchDocuments, showError, showSuccess]);
 
-    const uploadMultipleDocuments = useCallback(async (formData) => {
+    const uploadMultipleDocuments = useCallback(async (formData, refreshParams = {}) => {
         setLoading(true);
         try {
             const response = await api.documents.uploadMultiple(formData);
             if (response.success) {
-                showSuccess(`${response.data.length} documents uploaded successfully`);
-                await fetchDocuments();
+                const n = Array.isArray(response.data) ? response.data.length : 0;
+                showSuccess(n ? `${n} documents uploaded successfully` : 'Documents uploaded successfully');
+                await fetchDocuments(refreshParams);
             }
             return response;
         } catch (error) {

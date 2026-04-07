@@ -781,12 +781,12 @@ const MessagesPage = () => {
               </div>
 
               <table className="w-full text-xs border">
-                <thead className="bg-gray-100">
+                <thead>
                   <tr>
-                    <th className="px-3 py-2 text-left font-bold">Phone</th>
-                    <th className="px-3 py-2 text-left font-bold">Status</th>
-                    <th className="px-3 py-2 text-left font-bold">Message ID</th>
-                    <th className="px-3 py-2 text-left font-bold">Time</th>
+                    <th className="px-3 py-2 text-left font-semibold text-[color:var(--table-header-fg)]">Phone</th>
+                    <th className="px-3 py-2 text-left font-semibold text-[color:var(--table-header-fg)]">Status</th>
+                    <th className="px-3 py-2 text-left font-semibold text-[color:var(--table-header-fg)]">Message ID</th>
+                    <th className="px-3 py-2 text-left font-semibold text-[color:var(--table-header-fg)]">Time</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y max-h-48 overflow-y-auto">

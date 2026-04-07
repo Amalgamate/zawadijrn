@@ -145,9 +145,9 @@ const MyProgress = ({ onNavigate }) => {
                       <table className="w-full text-left">
                         <thead>
                           <tr className="border-b border-gray-100">
-                            <th className="px-5 py-2 text-[9px] font-black text-gray-400 uppercase tracking-widest">Content Item</th>
-                            <th className="px-5 py-2 text-[9px] font-black text-gray-400 uppercase tracking-widest">Type</th>
-                            <th className="px-5 py-2 text-[9px] font-black text-gray-400 uppercase tracking-widest">Status</th>
+                            <th className="px-5 py-2 text-[9px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Content Item</th>
+                            <th className="px-5 py-2 text-[9px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Type</th>
+                            <th className="px-5 py-2 text-[9px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Status</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">

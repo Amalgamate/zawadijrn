@@ -221,15 +221,15 @@ const ExitedLearnersPage = () => {
             />
           ) : (
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="border-b border-[color:var(--table-border)]">
                 <tr>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Student</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Admission No</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Grade/Stream</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Exit Date</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Exit Reason</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Student</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Admission No</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Grade/Stream</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Exit Date</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Exit Reason</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Status</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">

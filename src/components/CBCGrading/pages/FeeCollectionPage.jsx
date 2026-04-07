@@ -511,7 +511,7 @@ const FeeCollectionPage = ({ learnerId }) => {
       ) : (
         <div className="bg-white rounded-xl shadow overflow-hidden">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b">
+            <thead className="border-b border-[color:var(--table-border)]">
               <tr>
                 <th className="px-6 py-3 text-left">
                   <input
@@ -521,14 +521,14 @@ const FeeCollectionPage = ({ learnerId }) => {
                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Invoice #</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Student</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Fee Type</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Total</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Paid</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Balance</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Actions</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Invoice #</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Student</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Fee Type</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Total</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Paid</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Balance</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y">

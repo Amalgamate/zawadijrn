@@ -161,7 +161,11 @@ const LMSManager = ({ currentPage = 'lms-courses' }) => {
                 </TabsList>
 
                 <TabsContent value="dashboard" className="mt-6">
-                    <LMSDashboard />
+                    <LMSDashboard
+                        onNavigateTab={setActiveTab}
+                        canManageEnrollments={canManageEnrollments}
+                        canViewReports={canViewReports}
+                    />
                 </TabsContent>
 
                 <TabsContent value="courses" className="mt-6">

@@ -23,6 +23,13 @@ export default defineConfig({
   server: {
     port: 3000,
     open: true,
+    strictPort: true,
+    // Explicit HMR WebSocket endpoint — avoids failed ws:// connections on some Windows / IPv6 setups
+    hmr: {
+      protocol: 'ws',
+      port: 3000,
+      clientPort: 3000,
+    },
   },
   build: {
     outDir: 'build',

@@ -13,6 +13,7 @@ const VirtualizedTable = ({
     header,
     footer,
     className = "",
+    tableClassName = "",
     emptyComponent
 }) => {
     const containerRef = useRef(null);
@@ -50,9 +51,9 @@ const VirtualizedTable = ({
             className={`overflow-auto relative custom-scrollbar ${className}`}
             style={{ maxHeight: visibleHeight }}
         >
-            <table className="w-full border-collapse">
+            <table className={`w-full border-collapse ${tableClassName}`.trim()}>
                 {header && (
-                    <thead className="sticky top-0 z-20 bg-gray-50 shadow-sm">
+                    <thead className="sticky top-0 z-20 bg-[color:var(--table-header-bg)] shadow-sm">
                         {header}
                     </thead>
                 )}
@@ -72,7 +73,7 @@ const VirtualizedTable = ({
                             {/* Top Spacer */}
                             {translateY > 0 && (
                                 <tr style={{ height: translateY }}>
-                                    <td colSpan="100%" style={{ padding: 0, border: 'none' }}></td>
+                                    <td colSpan="100%" className="v-table-spacer" style={{ padding: 0, border: 'none' }}></td>
                                 </tr>
                             )}
 
@@ -81,7 +82,7 @@ const VirtualizedTable = ({
                             {/* Bottom Spacer */}
                             {totalHeight - (translateY + (visibleData.length * rowHeight)) > 0 && (
                                 <tr style={{ height: totalHeight - (translateY + (visibleData.length * rowHeight)) }}>
-                                    <td colSpan="100%" style={{ padding: 0, border: 'none' }}></td>
+                                    <td colSpan="100%" className="v-table-spacer" style={{ padding: 0, border: 'none' }}></td>
                                 </tr>
                             )}
                         </>

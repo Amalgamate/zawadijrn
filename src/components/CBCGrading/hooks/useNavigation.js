@@ -176,7 +176,7 @@ export const allNavSections = [
     },
     {
         id: 'docs-center',
-        label: 'Docs',
+        label: 'Document Center',
         icon: FileText,
         permission: null,
         items: []
@@ -322,6 +322,40 @@ export const allNavSections = [
     }
 ];
 
+const PARENT_PORTAL_KEEP_EMPTY_SECTION_IDS = new Set(['dashboard', 'communications', 'docs-center', 'help']);
+
+/** Remove Schemes of Work and full Timetable from nav; drop sections with no visible items. */
+function transformNavForParentRole(sections) {
+  const stripItems = (items) => {
+    if (!items?.length) return [];
+    return items.reduce((acc, item) => {
+      if (item.type === 'group') {
+        const children = stripItems(item.items);
+        if (children.length) acc.push({ ...item, items: children });
+      } else if (item.path !== 'planner-schemes' && item.path !== 'planner-timetable') {
+        acc.push(item);
+      }
+      return acc;
+    }, []);
+  };
+
+  return sections
+    .map((s) => ({ ...s, items: stripItems(s.items || []) }))
+    .filter(
+      (s) =>
+        PARENT_PORTAL_KEEP_EMPTY_SECTION_IDS.has(s.id) ||
+        (s.items && s.items.length > 0)
+    );
+}
+
+function parentSchoolSectionsFromNav(nav) {
+  return nav.filter(
+    (s) =>
+      s.id === 'docs-center' ||
+      (s.items?.length > 0 && !['dashboard', 'communications', 'help'].includes(s.id))
+  );
+}
+
 export const useNavigation = () => {
     const { can, role } = usePermissions();
     const { user } = useAuth();
@@ -356,13 +390,16 @@ export const useNavigation = () => {
     // ── Secondary ────────────────────────────────────────────────────────────
     const secondaryNav = useMemo(() => {
         if (institutionType !== 'SECONDARY') return null;
-        const nav = buildNav(secondaryNavSections);
+        let nav = buildNav(secondaryNavSections);
+        if (role === 'PARENT') nav = transformNavForParentRole(nav);
         const find = (id) => nav.find(s => s.id === id);
         return {
             navSections: nav,
             dashboardSection:    find('dashboard'),
             communicationSection: find('communications'),
-            schoolSections:      nav.filter(s => SECONDARY_SCHOOL_SECTIONS.includes(s.id)),
+            schoolSections: role === 'PARENT'
+                ? parentSchoolSectionsFromNav(nav)
+                : nav.filter(s => SECONDARY_SCHOOL_SECTIONS.includes(s.id)),
             lmsSection:          find('lms'),
             studentLmsSection:   null,
             backOfficeSections:  nav.filter(s => SECONDARY_BACKOFFICE_SECTIONS.includes(s.id)),
@@ -375,13 +412,16 @@ export const useNavigation = () => {
     // ── Tertiary ─────────────────────────────────────────────────────────────
     const tertiaryNav = useMemo(() => {
         if (institutionType !== 'TERTIARY') return null;
-        const nav = buildNav(tertiaryNavSections);
+        let nav = buildNav(tertiaryNavSections);
+        if (role === 'PARENT') nav = transformNavForParentRole(nav);
         const find = (id) => nav.find(s => s.id === id);
         return {
             navSections: nav,
             dashboardSection:    find('dashboard'),
             communicationSection: find('communications'),
-            schoolSections:      nav.filter(s => TERTIARY_SCHOOL_SECTIONS.includes(s.id)),
+            schoolSections: role === 'PARENT'
+                ? parentSchoolSectionsFromNav(nav)
+                : nav.filter(s => TERTIARY_SCHOOL_SECTIONS.includes(s.id)),
             lmsSection:          find('lms'),
             studentLmsSection:   null,
             backOfficeSections:  nav.filter(s => TERTIARY_BACKOFFICE_SECTIONS.includes(s.id)),
@@ -416,7 +456,7 @@ export const useNavigation = () => {
             }, []);
         };
 
-        return allNavSections.filter(section => {
+        let built = allNavSections.filter(section => {
             if (!focusModules.includes(section.id)) return false;
             if (section.id === 'settings') return false;
             if (role === 'STUDENT' && section.id === 'lms') return false;
@@ -430,6 +470,11 @@ export const useNavigation = () => {
             ...section,
             items: processItems(section.items)
         }));
+
+        if (role === 'PARENT') {
+            built = transformNavForParentRole(built);
+        }
+        return built;
     }, [can, role]);
 
     const dashboardSection = navSections.find(s => s.id === 'dashboard');
@@ -449,6 +494,9 @@ export const useNavigation = () => {
     }, [role]);
 
     const schoolSections = useMemo(() => {
+        if (role === 'PARENT') {
+            return parentSchoolSectionsFromNav(navSections);
+        }
         if (role === 'ACCOUNTANT') {
             return navSections.filter(s => ['learners', 'assessment', 'attendance'].includes(s.id));
         }
@@ -458,7 +506,7 @@ export const useNavigation = () => {
     }, [navSections, role]);
 
     const backOfficeSections = useMemo(() => {
-        if (role === 'TEACHER') return [];
+        if (role === 'TEACHER' || role === 'PARENT') return [];
         return navSections.filter(s => 
             ['hr', 'finance', 'inventory', 'library', 'transport', 'biometric'].includes(s.id)
         );
@@ -480,14 +528,19 @@ export const useNavigation = () => {
     const systemAdminSections = useMemo(() => {
         if (role === 'TEACHER') return [];
         const isItemVisible = (item) => !item.permission || can(item.permission);
-        
-        return allNavSections
+
+        const built = allNavSections
             .filter(s => ['settings', 'help'].includes(s.id))
             .filter(section => !section.permission || can(section.permission))
             .map(section => ({
                 ...section,
                 items: section.items ? section.items.filter(isItemVisible) : []
             }));
+
+        if (role === 'PARENT') {
+            return built.filter((s) => s.id === 'help');
+        }
+        return built;
     }, [can, role]);
 
     return {

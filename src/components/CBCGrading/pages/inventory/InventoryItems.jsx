@@ -141,15 +141,15 @@ const InventoryItems = () => {
             {/* Items Table */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 <table className="w-full text-left">
-                    <thead className="bg-gray-50 border-b border-gray-100">
+                    <thead className="border-b border-[color:var(--table-border)]">
                         <tr>
-                            <th className="px-6 py-4 text-sm font-semibold text-gray-600">Item Name</th>
-                            <th className="px-6 py-4 text-sm font-semibold text-gray-600">SKU</th>
-                            <th className="px-6 py-4 text-sm font-semibold text-gray-600">Category</th>
-                            <th className="px-6 py-4 text-sm font-semibold text-gray-600">Type</th>
-                            <th className="px-6 py-4 text-sm font-semibold text-gray-600 text-right">Stock Level</th>
-                            <th className="px-6 py-4 text-sm font-semibold text-gray-600">Status</th>
-                            <th className="px-6 py-4 text-sm font-semibold text-gray-600"></th>
+                            <th className="px-6 py-4 text-sm font-semibold text-[color:var(--table-header-fg)]">Item Name</th>
+                            <th className="px-6 py-4 text-sm font-semibold text-[color:var(--table-header-fg)]">SKU</th>
+                            <th className="px-6 py-4 text-sm font-semibold text-[color:var(--table-header-fg)]">Category</th>
+                            <th className="px-6 py-4 text-sm font-semibold text-[color:var(--table-header-fg)]">Type</th>
+                            <th className="px-6 py-4 text-sm font-semibold text-[color:var(--table-header-fg)] text-right">Stock Level</th>
+                            <th className="px-6 py-4 text-sm font-semibold text-[color:var(--table-header-fg)]">Status</th>
+                            <th className="px-6 py-4 text-sm font-semibold text-[color:var(--table-header-fg)]"></th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
