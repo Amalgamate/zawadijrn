@@ -14,9 +14,13 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom';
 import {
   Menu, X,
-  School, Boxes, ExternalLink, Pin
+  School, Boxes, ExternalLink, Pin,
+  GraduationCap,
+  BookOpen
 } from 'lucide-react';
 import { useNavigation } from '../hooks/useNavigation';
+import { useInstitutionLabels } from '../../../hooks/useInstitutionLabels';
+import { usePermissions } from '../../../hooks/usePermissions';
 
 // ─── constants ────────────────────────────────────────────────────────────────
 const SIDEBAR_COLLAPSED_W = 64;   // px  (w-16)
@@ -44,8 +48,11 @@ const Sidebar = React.memo(({
   currentPage,
   onNavigate,
   brandingSettings,
+  user,
 }) => {
   // ── flyout state ────────────────────────────────────────────────────────────
+  const labels = useInstitutionLabels();
+  const { role } = usePermissions();
   const [flyoutSection, setFlyoutSection]   = useState(null);
   const [isPinned,      setIsPinned]        = useState(false);
   const closeTimerRef = useRef(null);
@@ -158,7 +165,7 @@ const Sidebar = React.memo(({
 
           {/* ── School group ─────────────────────────────────────── */}
           {schoolSections.length > 0 && (
-            <CategoryGroup label="School" icon={School} sidebarOpen={sidebarOpen}>
+            <CategoryGroup label={labels.schoolGroup || "School"} icon={School} sidebarOpen={sidebarOpen}>
               {schoolSections.map(s => <NavSection key={s.id} section={s} {...sharedNavProps} />)}
             </CategoryGroup>
           )}
@@ -171,7 +178,7 @@ const Sidebar = React.memo(({
 
           {/* ── Back Office group ─────────────────────────────────── */}
           {backOfficeSections.length > 0 && (
-            <CategoryGroup label="Back Office" icon={Boxes} sidebarOpen={sidebarOpen}>
+            <CategoryGroup label={labels.backOfficeGroup || "Back Office"} icon={Boxes} sidebarOpen={sidebarOpen}>
               {backOfficeSections.map(s => <NavSection key={s.id} section={s} {...sharedNavProps} />)}
             </CategoryGroup>
           )}
@@ -185,8 +192,12 @@ const Sidebar = React.memo(({
           {systemAdminSections.length > 0 && (
             <>
               {sidebarOpen && (
-                <p className="px-3 pt-1 pb-0.5 text-[9px] font-black uppercase tracking-[0.18em] text-white/30">
-                  System
+                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mt-1 px-3">
+                  {role === 'TEACHER' ? labels.teacher : 
+                   role === 'PARENT' ? 'Parent' : 
+                   role === 'ADMIN' ? 'Administrator' : 
+                   role === 'HEAD_TEACHER' ? (labels.headLabel || 'Principal') : 
+                   (user?.role || 'Guest')}
                 </p>
               )}
               {systemAdminSections.map(s => (

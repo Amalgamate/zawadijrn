@@ -435,9 +435,11 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess, brand
               {brandingSettings?.schoolName || 'ZAWADI SMS ACADEMY'}
             </CardTitle>
           </div>
-          <CardTitle className="text-2xl font-bold text-gray-900 mt-2">Create Account</CardTitle>
+          <CardTitle className="text-2xl font-bold text-gray-900 mt-2">
+            {brandingSettings?.onboardingTitle || 'Create Account'}
+          </CardTitle>
           <CardDescription className="text-gray-500 font-bold uppercase tracking-tight text-xs mt-1">
-            Join our modern school management community
+            {brandingSettings?.onboardingMessage || 'Join our modern school management community'}
           </CardDescription>
         </CardHeader>
 

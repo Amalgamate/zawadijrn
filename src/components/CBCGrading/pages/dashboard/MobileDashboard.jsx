@@ -26,7 +26,7 @@ const MobileDashboard = ({ onNavigate, brandingSettings, user }) => {
             <div className="px-1">
                 <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest mb-4">Quick Access</h3>
 
-                {/* Circular Grid Menu map */}
+                {/* Circular Grid Menu */}
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-x-4 gap-y-6">
                     {menuSections.map(section => {
                         // Find the default path for this section
@@ -44,6 +44,30 @@ const MobileDashboard = ({ onNavigate, brandingSettings, user }) => {
                         };
 
                         const defaultPath = getFirstValidPath(section.items);
+                        
+                        // Professional color mapping for mobile icons
+                        const colorMap = {
+                            'communications': 'bg-blue-600 shadow-blue-200',
+                            'planner':        'bg-indigo-600 shadow-indigo-200',
+                            'learners':       'bg-emerald-600 shadow-emerald-200',
+                            'teachers':      'bg-violet-600 shadow-violet-200',
+                            'parents':       'bg-amber-600 shadow-amber-200',
+                            'assessment':    'bg-rose-600 shadow-rose-200',
+                            'learning-hub':  'bg-cyan-600 shadow-cyan-200',
+                            'lms':           'bg-purple-600 shadow-purple-200',
+                            'attendance':    'bg-teal-600 shadow-teal-200',
+                            'docs-center':   'bg-slate-700 shadow-slate-200',
+                            'hr':            'bg-fuchsia-600 shadow-fuchsia-200',
+                            'library':       'bg-orange-600 shadow-orange-200',
+                            'transport':     'bg-sky-600 shadow-sky-200',
+                            'finance':       'bg-green-600 shadow-green-200',
+                            'inventory':     'bg-red-600 shadow-red-200',
+                            'biometric':     'bg-stone-700 shadow-stone-200',
+                            'facilities':    'bg-lime-600 shadow-lime-200',
+                            'help':          'bg-pink-600 shadow-pink-200'
+                        };
+
+                        const iconBg = colorMap[section.id] || 'bg-[var(--brand-purple)] shadow-purple-200';
 
                         return (
                             <button
@@ -51,10 +75,10 @@ const MobileDashboard = ({ onNavigate, brandingSettings, user }) => {
                                 onClick={() => onNavigate(defaultPath)}
                                 className="flex flex-col items-center gap-2 group outline-none"
                             >
-                                <div className="w-16 h-16 rounded-full bg-white shadow-sm border border-gray-100 flex items-center justify-center text-[var(--brand-purple)] group-hover:bg-[var(--brand-purple)] group-hover:text-white transform group-hover:-translate-y-1 transition-all group-active:scale-95 duration-200">
+                                <div className={`w-16 h-16 rounded-full ${iconBg} shadow-lg flex items-center justify-center text-white transform group-hover:-translate-y-1 transition-all group-active:scale-95 duration-200`}>
                                     <section.icon size={26} strokeWidth={2.5} />
                                 </div>
-                                <span className="text-[11px] font-bold text-gray-600 group-hover:text-gray-900 text-center line-clamp-2 leading-tight tracking-tight">
+                                <span className="text-[11px] font-bold text-gray-700 group-hover:text-black text-center line-clamp-2 leading-tight tracking-tight">
                                     {section.label}
                                 </span>
                             </button>

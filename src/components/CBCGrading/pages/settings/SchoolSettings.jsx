@@ -105,7 +105,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
   useEffect(() => {
     const fetchSchoolData = async () => {
       try {
-        const response = await axiosInstance.get('/schools/public/branding');
+        const response = await axiosInstance.get('/schools');
         const school = response.data?.data || response.data;
 
         if (school) {
@@ -156,23 +156,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
     fetchSchoolData();
   }, []);
 
-  // Sync with global branding state (for sidebar/favicon/title reflection)
-  useEffect(() => {
-    if (setBrandingSettings && !loading) {
-      setBrandingSettings(prev => ({
-        ...prev,
-        logoUrl: previews.logo,
-        faviconUrl: previews.favicon,
-        stampUrl: previews.stamp,
-        schoolName: settings.schoolName,
-        brandColor: settings.brandColor,
-        primaryColor: settings.primaryColor,
-        secondaryColor: settings.secondaryColor,
-        accentColor1: settings.accentColor1,
-        accentColor2: settings.accentColor2
-      }));
-    }
-  }, [previews, settings.schoolName, settings.brandColor, settings.primaryColor, settings.secondaryColor, settings.accentColor1, settings.accentColor2, setBrandingSettings, loading]);
+
 
   const handleChange = (field, value) => {
     setSettings(prev => ({ ...prev, [field]: value }));
@@ -280,9 +264,8 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
       toast.success('✅ School settings updated successfully!');
 
       // Push updated branding to app state immediately
-      if (setBrandingSettings) {
-        setBrandingSettings(prev => ({
-          ...prev,
+      if (typeof setBrandingSettings === 'function') {
+        setBrandingSettings({
           logoUrl: settings.logoUrl,
           faviconUrl: settings.faviconUrl,
           stampUrl: settings.stampUrl,
@@ -296,7 +279,13 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
           address: settings.address,
           phone: settings.phone,
           email: settings.email,
-        }));
+          vision: settings.vision,
+          mission: settings.mission,
+          welcomeTitle: settings.welcomeTitle,
+          welcomeMessage: settings.welcomeMessage,
+          onboardingTitle: settings.onboardingTitle,
+          onboardingMessage: settings.onboardingMessage
+        });
       }
 
       // Sync local storage user object for header/sidebar immediate reflection

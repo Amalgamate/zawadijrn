@@ -26,10 +26,13 @@ export const getPublicBranding = async (req: Request, res: Response) => {
       welcomeMessage: true,
       onboardingTitle: true,
       onboardingMessage: true,
-      motto: true,
-      address: true,
       phone: true,
       email: true,
+      vision: true,
+      mission: true,
+      latitude: true,
+      longitude: true,
+      stampUrl: true,
     },
   });
 
@@ -44,14 +47,19 @@ export const getPublicBranding = async (req: Request, res: Response) => {
     secondaryColor: '#0D9488',
     accentColor1: '#3b82f6',
     accentColor2: '#e11d48',
-    welcomeTitle: 'Welcome',
-    welcomeMessage: null,
-    onboardingTitle: null,
-    onboardingMessage: null,
-    motto: null,
-    address: null,
-    phone: null,
-    email: null,
+    welcomeTitle: 'Welcome back!',
+    welcomeMessage: 'Sign in to access your dashboard.',
+    onboardingTitle: 'Join Our Community',
+    onboardingMessage: 'Create an account to start managing your school today.',
+    motto: 'Empowering Excellence',
+    address: 'Nairobi, Kenya',
+    phone: '+254700000000',
+    email: 'info@zawadijunioracademy.co.ke',
+    vision: 'To be a leading center of excellence in education.',
+    mission: 'To provide quality education through modern technology.',
+    latitude: -1.2921,
+    longitude: 36.8219,
+    stampUrl: '/stamp.svg'
   };
 
   res.status(200).json({ success: true, data: branding });

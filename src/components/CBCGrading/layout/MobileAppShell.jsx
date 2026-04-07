@@ -2,95 +2,119 @@ import React from 'react';
 import { usePermissions } from '../../../hooks/usePermissions';
 import { PAGE_TITLES } from '../utils/constants';
 import { usePWAInstall } from '../../../hooks/usePWAInstall';
-import { Download } from 'lucide-react';
+import { 
+  Home, 
+  TrendingUp, 
+  FileText, 
+  Settings, 
+  LogOut, 
+  Download,
+  Search,
+  Bell,
+  Menu
+} from 'lucide-react';
+import { cn } from '../../../utils/cn';
 
-const MobileAppShell = ({ children, user, onLogout, onNavigate, currentPage, brandingSettings, setBrandingSettings }) => {
+const MobileAppShell = ({ children, user, onLogout, onNavigate, currentPage, brandingSettings }) => {
   const { role } = usePermissions();
   const { isInstallable, installApp } = usePWAInstall();
 
+  const navItems = [
+    { id: 'dashboard', label: 'Home', icon: Home, show: true },
+    { id: 'assess-mobile-dashboard', label: 'Assess', icon: TrendingUp, show: role !== 'ACCOUNTANT' },
+    { id: 'assess-summative-report', label: 'Reports', icon: FileText, show: role !== 'ACCOUNTANT' },
+    { id: 'settings-school', label: 'Settings', icon: Settings, show: role !== 'TEACHER' && role !== 'ACCOUNTANT' && role !== 'PARENT' },
+  ];
+
   return (
-    <div className="flex flex-col h-screen bg-gray-50 overflow-hidden relative">
-      {/* Mobile Top App Bar */}
-      <div className="h-safe-top bg-[var(--brand-purple)] text-white flex items-center justify-between px-4 z-50 shadow-md">
+    <div className="flex flex-col h-screen bg-gray-50 overflow-hidden relative font-sans">
+      {/* Premium Mobile Top App Bar */}
+      <div className="h-[60px] bg-white border-b border-gray-100 flex items-center justify-between px-4 z-50">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0">
-            <img src="/logo.svg" alt="Logo" className="w-full h-full object-cover" onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; }} />
+          <div className="w-9 h-9 rounded-xl bg-[var(--brand-purple)] flex items-center justify-center p-1.5 shadow-lg shadow-purple-200">
+            {brandingSettings?.logoUrl ? (
+              <img src={brandingSettings.logoUrl} alt="Logo" className="w-full h-full object-contain brightness-0 invert" />
+            ) : (
+              <img src="/logo.svg" alt="Logo" className="w-full h-full object-contain brightness-0 invert" />
+            )}
           </div>
-          <span className="font-bold text-lg truncate">
-            {brandingSettings?.schoolName || 'Zawadi Junior'}
-          </span>
+          <div className="flex flex-col">
+            <span className="font-black text-sm text-gray-900 leading-none tracking-tight">
+              {brandingSettings?.schoolName || 'Zawadi SMS'}
+            </span>
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">
+              {role?.replace('_', ' ')} Portal
+            </span>
+          </div>
         </div>
+        
         <div className="flex items-center gap-2">
           {isInstallable && (
             <button
               onClick={installApp}
-              className="flex items-center gap-1 bg-white/20 hover:bg-white/30 px-2 py-1 rounded-md text-[10px] font-bold transition-colors"
+              className="p-2 text-gray-400 hover:text-[var(--brand-purple)] transition-colors"
             >
-              <Download size={14} /> Install
+              <Download size={20} />
             </button>
           )}
           <button
             onClick={onLogout}
-            title="Logout"
-            className="w-8 h-8 bg-brand-teal/20 hover:bg-red-500/20 rounded-full flex items-center justify-center font-bold text-sm text-white hover:text-red-600 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[var(--brand-purple)] overflow-hidden"
+            className="w-9 h-9 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center transition-all hover:bg-rose-100 active:scale-90 border border-rose-100"
           >
-            {(user?.name || 'A').substring(0, 2).toUpperCase()}
+            <LogOut size={18} strokeWidth={2.5} />
           </button>
         </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-auto custom-scrollbar relative z-10 w-full mb-safe-bottom pb-6">
-        {/* We don't render the desktop Header here because mobile space is limited, but we pass navigation down to children */}
-        <div className="p-4 rounded-xl">
-          <div className="mb-4">
-            <h2 className="text-xl font-bold text-gray-800">{PAGE_TITLES[currentPage] || 'Dashboard'}</h2>
+      <div className="flex-1 overflow-auto custom-scrollbar relative z-10 w-full mb-20">
+        <div className="p-4 pt-6">
+          <div className="mb-6 flex items-center justify-between">
+            <h2 className="text-2xl font-black text-gray-900 tracking-tight">
+              {PAGE_TITLES[currentPage] || (currentPage?.includes('settings') ? 'Settings' : 'Dashboard')}
+            </h2>
+            <div className="p-2 bg-gray-100 rounded-full text-gray-400">
+              <Search size={18} />
+            </div>
           </div>
           {children}
         </div>
       </div>
 
-      {/* Drawer Removed: Replaced by Mobile Dashboard Grid */}
-
-      {/* Mobile Bottom Navigation Bar for quick access */}
-      <div className="fixed bottom-0 left-0 right-0 h-safe-bottom bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgb(0,0,0,0.05)] z-50 flex items-center justify-around px-2">
-        <button
-          onClick={() => onNavigate('dashboard')}
-          className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${currentPage === 'dashboard' ? 'text-brand-purple' : 'text-gray-500 hover:text-gray-900'}`}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
-          <span className="text-[10px] font-bold">Home</span>
-        </button>
-
-        {role !== 'ACCOUNTANT' && (
-          <button
-            onClick={() => onNavigate('assess-mobile-dashboard')}
-            className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${currentPage?.includes('assess') && !currentPage?.includes('report') ? 'text-brand-purple' : 'text-gray-500 hover:text-gray-900'}`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg>
-            <span className="text-[10px] font-bold">Assessment</span>
-          </button>
-        )}
-
-        {role !== 'ACCOUNTANT' && (
-          <button
-            onClick={() => onNavigate('assess-summative-report')}
-            className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${currentPage?.includes('report') ? 'text-brand-purple' : 'text-gray-500 hover:text-gray-900'}`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>
-            <span className="text-[10px] font-bold">Reports</span>
-          </button>
-        )}
-
-        {role !== 'TEACHER' && role !== 'ACCOUNTANT' && (
-          <button
-            onClick={() => onNavigate('settings-school')}
-            className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${currentPage?.includes('settings') ? 'text-brand-purple' : 'text-gray-500 hover:text-gray-900'}`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" /></svg>
-            <span className="text-[10px] font-bold">Settings</span>
-          </button>
-        )}
+      {/* Premium Bottom Navigation - Floating Glassmorphism Style */}
+      <div className="fixed bottom-6 left-4 right-4 h-16 bg-white/90 backdrop-blur-xl border border-white/20 shadow-[0_10px_30px_-5px_rgba(0,0,0,0.1)] rounded-2xl z-[100] flex items-center justify-around px-2 lg:hidden">
+        {navItems.filter(item => item.show).map((item) => {
+          const isActive = currentPage === item.id || (item.id === 'assess-mobile-dashboard' && currentPage?.includes('assess') && !currentPage?.includes('report'));
+          
+          return (
+            <button
+              key={item.id}
+              onClick={() => onNavigate(item.id)}
+              className="relative flex flex-col items-center justify-center w-full h-full transition-all duration-300"
+            >
+              {isActive && (
+                <div className="absolute top-[-4px] w-8 h-1 bg-[var(--brand-purple)] rounded-full shadow-[0_0_10px_rgba(var(--brand-purple-rgb),0.5)]" />
+              )}
+              
+              <div className={cn(
+                "p-2 rounded-xl transition-all duration-300 transform active:scale-90",
+                isActive ? "text-[var(--brand-purple)]" : "text-gray-400"
+              )}>
+                <item.icon 
+                  size={24} 
+                  strokeWidth={isActive ? 2.5 : 2}
+                  className={cn(isActive && "drop-shadow-[0_0_8px_rgba(var(--brand-purple-rgb),0.3)]")}
+                />
+              </div>
+              <span className={cn(
+                "text-[9px] font-black uppercase tracking-widest mt-[-2px] transition-all duration-300",
+                isActive ? "text-[var(--brand-purple)]" : "text-gray-400"
+              )}>
+                {item.label}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

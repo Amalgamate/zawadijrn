@@ -24,20 +24,15 @@ android {
     }
 }
 
+// Repositories managed by Capacitor
 repositories {
-    flatDir {
-        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
-    }
-}
-
-// Suppress the flatDir meta-data warning — this is Capacitor-generated boilerplate
-// and cannot be removed without breaking local .aar resolution.
-configurations.all {
-    resolutionStrategy.eachDependency {}
+    google()
+    mavenCentral()
 }
 
 dependencies {
-    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
+    implementation fileTree(include: ['*.jar', '*.aar'], dir: '../capacitor-cordova-android-plugins/src/main/libs')
     implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"

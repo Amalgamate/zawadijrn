@@ -126,6 +126,8 @@ model School {
   accentColor2        String?
   welcomeTitle        String?
   welcomeMessage      String?
+  onboardingTitle     String?
+  onboardingMessage   String?
   admissionFormatType AdmissionFormatType @default(BRANCH_PREFIX_START)
   branchSeparator     String              @default("-")
   active              Boolean             @default(true)
@@ -138,8 +140,6 @@ model School {
   archivedBy          String?
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
-  onboardingMessage   String?
-  onboardingTitle     String?
 
   @@index([county])
   @@map("schools")

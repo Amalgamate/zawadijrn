@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { usePermissions } from '../../../hooks/usePermissions';
 import { useAuth } from '../../../hooks/useAuth';
+import { useInstitutionLabels } from '../../../hooks/useInstitutionLabels';
 import {
   secondaryNavSections,
   SECONDARY_SCHOOL_SECTIONS,
@@ -359,6 +360,7 @@ function parentSchoolSectionsFromNav(nav) {
 export const useNavigation = () => {
     const { can, role } = usePermissions();
     const { user } = useAuth();
+    const labels = useInstitutionLabels();
     const institutionType = user?.institutionType || 'PRIMARY_CBC';
 
     // ── Institution type branching ───────────────────────────────────────────
@@ -466,10 +468,20 @@ export const useNavigation = () => {
                 return visibleItems.length > 0;
             }
             return true;
-        }).map(section => ({
-            ...section,
-            items: processItems(section.items)
-        }));
+        }).map(section => {
+            // Apply dynamic labels
+            let label = section.label;
+            if (section.id === 'learners') label = labels.students;
+            if (section.id === 'teachers') label = labels.teachers;
+            if (section.id === 'parents')  label = labels.parents || 'Guardians';
+            if (section.id === 'assessment') label = labels.subjects || 'Assessment';
+
+            return {
+                ...section,
+                label,
+                items: processItems(section.items)
+            };
+        });
 
         if (role === 'PARENT') {
             built = transformNavForParentRole(built);
