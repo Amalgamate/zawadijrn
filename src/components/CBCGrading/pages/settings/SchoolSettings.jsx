@@ -29,6 +29,10 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
     latitude: null,
     longitude: null,
     brandColor: brandingSettings?.brandColor || 'var(--brand-purple)',
+    primaryColor: brandingSettings?.primaryColor || '#520050',
+    secondaryColor: brandingSettings?.secondaryColor || '#0D9488',
+    accentColor1: brandingSettings?.accentColor1 || '#3b82f6',
+    accentColor2: brandingSettings?.accentColor2 || '#e11d48',
     logoUrl: brandingSettings?.logoUrl || '/logo-new.png',
     faviconUrl: brandingSettings?.faviconUrl || '/favicon.png',
     stampUrl: brandingSettings?.stampUrl || '/stamp.svg',
@@ -60,6 +64,10 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
       latitude: null,
       longitude: null,
       brandColor: brandingSettings?.brandColor || 'var(--brand-purple)',
+      primaryColor: brandingSettings?.primaryColor || '#520050',
+      secondaryColor: brandingSettings?.secondaryColor || '#0D9488',
+      accentColor1: brandingSettings?.accentColor1 || '#3b82f6',
+      accentColor2: brandingSettings?.accentColor2 || '#e11d48',
       logoUrl: brandingSettings?.logoUrl || '/logo-new.png',
       faviconUrl: brandingSettings?.faviconUrl || '/favicon.png',
       stampUrl: brandingSettings?.stampUrl || '/stamp.svg',
@@ -112,6 +120,10 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
             latitude: school.latitude || null,
             longitude: school.longitude || null,
             brandColor: school.brandColor || 'var(--brand-purple)',
+            primaryColor: school.primaryColor || '#520050',
+            secondaryColor: school.secondaryColor || '#0D9488',
+            accentColor1: school.accentColor1 || '#3b82f6',
+            accentColor2: school.accentColor2 || '#e11d48',
             logoUrl: school.logoUrl || '/logo-new.png',
             faviconUrl: school.faviconUrl || '/favicon.png',
             stampUrl: school.stampUrl || '/stamp.svg',
@@ -153,10 +165,14 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
         faviconUrl: previews.favicon,
         stampUrl: previews.stamp,
         schoolName: settings.schoolName,
-        brandColor: settings.brandColor
+        brandColor: settings.brandColor,
+        primaryColor: settings.primaryColor,
+        secondaryColor: settings.secondaryColor,
+        accentColor1: settings.accentColor1,
+        accentColor2: settings.accentColor2
       }));
     }
-  }, [previews, settings.schoolName, settings.brandColor, setBrandingSettings, loading]);
+  }, [previews, settings.schoolName, settings.brandColor, settings.primaryColor, settings.secondaryColor, settings.accentColor1, settings.accentColor2, setBrandingSettings, loading]);
 
   const handleChange = (field, value) => {
     setSettings(prev => ({ ...prev, [field]: value }));
@@ -248,6 +264,10 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
         faviconUrl: settings.faviconUrl,
         stampUrl: settings.stampUrl,
         brandColor: settings.brandColor,
+        primaryColor: settings.primaryColor,
+        secondaryColor: settings.secondaryColor,
+        accentColor1: settings.accentColor1,
+        accentColor2: settings.accentColor2,
         latitude: settings.latitude,
         longitude: settings.longitude,
         welcomeTitle: settings.welcomeTitle,
@@ -268,6 +288,10 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
           stampUrl: settings.stampUrl,
           schoolName: settings.schoolName,
           brandColor: settings.brandColor,
+          primaryColor: settings.primaryColor,
+          secondaryColor: settings.secondaryColor,
+          accentColor1: settings.accentColor1,
+          accentColor2: settings.accentColor2,
           motto: settings.motto,
           address: settings.address,
           phone: settings.phone,
@@ -288,6 +312,10 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
             user.school.motto = settings.motto;
             user.school.logoUrl = settings.logoUrl;
             user.school.brandColor = settings.brandColor;
+            user.school.primaryColor = settings.primaryColor;
+            user.school.secondaryColor = settings.secondaryColor;
+            user.school.accentColor1 = settings.accentColor1;
+            user.school.accentColor2 = settings.accentColor2;
             user.school.stampUrl = settings.stampUrl;
           }
           localStorage.setItem('user', JSON.stringify(user));
@@ -394,24 +422,92 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
                   />
                 </div>
 
-                <div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                  {/* Primary Color */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Primary Color</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={settings.primaryColor}
+                        onChange={(e) => handleChange('primaryColor', e.target.value)}
+                        className="w-8 h-8 rounded cursor-pointer border-0 p-0 shadow-sm"
+                      />
+                      <input
+                        type="text"
+                        value={settings.primaryColor}
+                        onChange={(e) => handleChange('primaryColor', e.target.value)}
+                        className="w-full px-2 py-1 border border-gray-200 rounded font-mono text-[10px] uppercase"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Secondary Color */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Secondary Color</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={settings.secondaryColor}
+                        onChange={(e) => handleChange('secondaryColor', e.target.value)}
+                        className="w-8 h-8 rounded cursor-pointer border-0 p-0 shadow-sm"
+                      />
+                      <input
+                        type="text"
+                        value={settings.secondaryColor}
+                        onChange={(e) => handleChange('secondaryColor', e.target.value)}
+                        className="w-full px-2 py-1 border border-gray-200 rounded font-mono text-[10px] uppercase"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Accent Color 1 */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Accent 1</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={settings.accentColor1}
+                        onChange={(e) => handleChange('accentColor1', e.target.value)}
+                        className="w-8 h-8 rounded cursor-pointer border-0 p-0 shadow-sm"
+                      />
+                      <input
+                        type="text"
+                        value={settings.accentColor1}
+                        onChange={(e) => handleChange('accentColor1', e.target.value)}
+                        className="w-full px-2 py-1 border border-gray-200 rounded font-mono text-[10px] uppercase"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Accent Color 2 */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Accent 2</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={settings.accentColor2}
+                        onChange={(e) => handleChange('accentColor2', e.target.value)}
+                        className="w-8 h-8 rounded cursor-pointer border-0 p-0 shadow-sm"
+                      />
+                      <input
+                        type="text"
+                        value={settings.accentColor2}
+                        onChange={(e) => handleChange('accentColor2', e.target.value)}
+                        className="w-full px-2 py-1 border border-gray-200 rounded font-mono text-[10px] uppercase"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 mb-4">
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">
                     <Palette size={16} className="text-gray-400" />
-                    Primary Brand Color
+                    Legacy Brand Color (Deprecating)
                   </label>
-                  <div className="flex items-center gap-4">
-                    <input
-                      type="color"
-                      value={settings.brandColor}
-                      onChange={(e) => handleChange('brandColor', e.target.value)}
-                      className="w-12 h-12 rounded cursor-pointer border-0 p-0 overflow-hidden shadow-sm"
-                    />
-                    <input
-                      type="text"
-                      value={settings.brandColor}
-                      onChange={(e) => handleChange('brandColor', e.target.value)}
-                      className="flex-1 px-4 py-2 border border-gray-200 rounded-lg font-mono text-sm uppercase"
-                    />
+                  <div className="flex items-center gap-4 opacity-50 pointer-events-none">
+                    <input type="color" value={settings.brandColor} readOnly className="w-12 h-12 rounded border-0 p-0 overflow-hidden shadow-sm" />
+                    <input type="text" value={settings.brandColor} readOnly className="flex-1 px-4 py-2 border border-gray-200 rounded-lg font-mono text-sm uppercase" />
                   </div>
                 </div>
               </div>

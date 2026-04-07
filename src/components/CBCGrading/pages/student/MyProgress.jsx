@@ -77,7 +77,7 @@ const MyProgress = ({ onNavigate }) => {
 
       {/* Overall summary card */}
       {!loading && courses.length > 0 && (
-        <div className="bg-gradient-to-r from-[#520050] to-purple-700 rounded-xl p-6 text-white flex items-center gap-6">
+        <div className="bg-[#520050] rounded-xl p-6 text-white flex items-center gap-6">
           <ProgressRing percent={overallProgress} size={90} stroke={9} />
           <div>
             <p className="text-purple-200 text-xs font-bold uppercase tracking-widest">Overall Progress</p>

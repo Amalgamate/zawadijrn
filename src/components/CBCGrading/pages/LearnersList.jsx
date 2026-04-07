@@ -797,7 +797,7 @@ const LearnersList = ({
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in duration-200">
             {/* Header */}
-            <div className="bg-gradient-to-r from-brand-purple/10 to-brand-teal/10 px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div className="bg-brand-purple/10 px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-black text-gray-900">Quick Message</h3>
                 <p className="text-sm text-gray-500 font-medium mt-1">{selectedGuardian.name}</p>
@@ -867,7 +867,7 @@ const LearnersList = ({
               <button
                 onClick={handleSendQuickMessage}
                 disabled={isSendingSMS || !quickMessage.trim()}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-bold rounded-lg hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition"
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white font-bold rounded-lg hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition"
               >
                 {isSendingSMS ? (
                   <>

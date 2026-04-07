@@ -120,6 +120,10 @@ model School {
   vision              String?
   mission             String?
   brandColor          String?
+  primaryColor        String?
+  secondaryColor      String?
+  accentColor1        String?
+  accentColor2        String?
   welcomeTitle        String?
   welcomeMessage      String?
   admissionFormatType AdmissionFormatType @default(BRANCH_PREFIX_START)

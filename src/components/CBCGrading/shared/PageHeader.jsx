@@ -17,7 +17,7 @@ const PageHeader = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           {Icon && (
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+            <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
               <Icon size={24} className="text-white" />
             </div>
           )}

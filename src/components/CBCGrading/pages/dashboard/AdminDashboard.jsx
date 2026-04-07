@@ -5,7 +5,10 @@
 
 import React, { useEffect, useState } from 'react';
 import { schoolAPI, dashboardAPI } from '../../../../services/api';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, BarChart, Bar, Legend } from 'recharts';
 import CompactMetricBanner from './CompactMetricBanner';
+
+// --- Dashboard Data Visualizations are computed dynamically from Real API Metrics ---
 import {
   Users,
   GraduationCap,
@@ -36,36 +39,26 @@ import {
 } from 'lucide-react';
 
 // Professional Metric Card with Premium Styling
-const MetricCard = ({ title, value, subtitle, icon: Icon, trend, trendValue }) => {
-  const gradients = {
-    blue: 'from-blue-500 to-blue-600',
-    purple: 'from-brand-purple to-pink-500',
-    teal: 'from-brand-teal to-cyan-500',
-    amber: 'from-amber-500 to-orange-500'
-  };
-  const colors = ['blue', 'purple', 'teal', 'amber'];
-  const gradient = gradients[colors[Math.floor(Math.random() * colors.length)]];
-
+const MetricCard = ({ title, value, subtitle, icon: Icon, trend, trendValue, color = 'brand-purple' }) => {
   return (
-    <div className="group relative bg-white p-4 rounded-lg border border-gray-200 shadow-md hover:shadow-xl hover:border-brand-purple/50 transition-all duration-300">
-      <div className={`absolute inset-0 opacity-0 group-hover:opacity-5 bg-gradient-to-br ${gradient} rounded-lg transition-opacity duration-300`}></div>
+    <div className="group relative bg-white p-4 rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300">
       <div className="relative flex justify-between items-start mb-2">
-        <div className="p-3 rounded-lg bg-gradient-to-br from-gray-50 to-gray-100 group-hover:scale-110 transition-transform duration-300">
-          <Icon size={20} className="text-gray-600" />
+        <div className={`p-3 rounded-lg bg-${color}/5 group-hover:bg-${color}/10 transition-colors duration-300`}>
+          <Icon size={20} className={`text-${color}`} />
         </div>
         {trendValue && (
           <span className={`flex items-center text-[10px] font-black px-2 py-1 rounded-full ${trend === 'up'
             ? 'bg-emerald-50 text-emerald-600'
             : 'bg-rose-50 text-rose-600'
             }`}>
-            {trend === 'up' ? <ArrowUp size={10} /> : <ArrowDown size={10} />}
+            {trend === 'up' ? <ArrowUp size={10} strokeWidth={3} /> : <ArrowDown size={10} strokeWidth={3} />}
             {trendValue}
           </span>
         )}
       </div>
-      <p className="text-xs font-bold text-gray-500 uppercase tracking-tight">{title}</p>
+      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{title}</p>
       <h3 className="text-2xl font-black text-gray-900 mt-1">{value}</h3>
-      {subtitle && <p className="text-[10px] text-gray-500 mt-1">{subtitle}</p>}
+      {subtitle && <p className="text-[10px] font-medium text-gray-500 mt-1 truncate opacity-70">{subtitle}</p>}
     </div>
   );
 };
@@ -75,13 +68,13 @@ const TabButton = ({ active, label, icon: Icon, onClick }) => (
   <button
     onClick={onClick}
     className={`flex items-center gap-2 px-6 py-3 text-sm font-bold transition-all duration-300 border-b-2 relative ${active
-      ? 'border-brand-purple text-brand-purple bg-gradient-to-r from-brand-purple/10 to-transparent'
+      ? 'border-brand-purple text-brand-purple bg-brand-purple/10'
       : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-white/50'
       }`}
   >
     <Icon size={16} />
     {label}
-    {active && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-brand-purple to-pink-500"></div>}
+    {active && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-purple"></div>}
   </button>
 );
 
@@ -115,6 +108,8 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
     activeStudents: metrics?.stats?.activeStudents || learners.filter(l => l.status === 'ACTIVE').length || 0,
     totalTeachers: metrics?.stats?.totalTeachers || teachers.length || 0,
     activeTeachers: metrics?.stats?.activeTeachers || teachers.filter(t => t.status === 'ACTIVE').length || 0,
+    males: metrics?.stats?.males || learners.filter(l => (l.gender || '').toLowerCase().startsWith('m')).length || 0,
+    females: metrics?.stats?.females || learners.filter(l => (l.gender || '').toLowerCase().startsWith('f')).length || 0,
     presentToday: metrics?.stats?.presentToday || 0,
     absentToday: metrics?.stats?.absentToday || 0,
     totalClasses: metrics?.stats?.totalClasses || 0,
@@ -128,15 +123,50 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
     teacherTrend: metrics?.stats?.teacherTrend
   };
 
+  const dynamicDemographicsData = [
+    { name: 'Present Today', value: stats.presentToday || 0, color: '#14b8a6' },
+    { name: 'Absent (Alert)', value: stats.absentToday || 0, color: '#f43f5e' }
+  ];
+  if (dynamicDemographicsData[0].value === 0 && dynamicDemographicsData[1].value === 0) {
+     dynamicDemographicsData[0].value = stats.activeStudents > 0 ? stats.activeStudents : 1;
+     dynamicDemographicsData[0].name = 'Enrolled';
+  }
+
+  const dynamicAssessmentData = [
+    { name: 'Assessed', value: stats.totalStudents - stats.totalMissedExams || 0, color: '#8b5cf6' },
+    { name: 'Missed (Warning)', value: stats.totalMissedExams || 0, color: '#f43f5e' }
+  ];
+
+  const dynamicFinanceData = (metrics?.financials?.streamBreakdown || []).map(row => ({
+    name: row.name,
+    collected: row.collected || 0,
+    pending: row.bal || 0
+  }));
+
+  const dynamicProficiencyData = (metrics?.distributions?.subjectProficiency || []).map(row => ({
+    name: row.area,
+    ee: row.ee || 0,
+    me: row.me || 0,
+    be: row.be || 0
+  }));
+
   const renderOverview = () => {
     const bannerMetrics = [
       {
         title: 'Total Students',
         value: stats.totalStudents,
-        subtitle: `${stats.activeStudents} active learners`,
+        subtitle: (
+          <span className="flex items-center gap-1.5 whitespace-nowrap">
+            <span>{stats.activeStudents} active</span>
+            <span className="text-pink-300 font-black text-[10px] border-l border-indigo-400/50 pl-1.5 opacity-90 drop-shadow-sm">
+              {stats.males} Male / {stats.females} Female
+            </span>
+          </span>
+        ),
         icon: Users,
         trend: stats.studentTrend?.startsWith('+') ? 'up' : 'down',
         trendValue: stats.studentTrend,
+        colorTheme: 'primary',
         onClick: () => onNavigate('learners-list')
       },
       {
@@ -146,6 +176,7 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
         icon: GraduationCap,
         trend: null,
         trendValue: null,
+        colorTheme: 'info',
         onClick: () => onNavigate('assess-summary-report')
       },
       {
@@ -155,6 +186,7 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
         icon: AlertCircle,
         trend: null,
         trendValue: null,
+        colorTheme: 'warning',
         onClick: () => setShowUnAssessedSheet(true)
       },
       {
@@ -164,18 +196,102 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
         icon: UserCheck,
         trend: null,
         trendValue: null,
+        colorTheme: 'success',
         onClick: () => onNavigate('assess-summative-assessment')
       }
     ];
 
     return (
       <div className="space-y-6">
-        <CompactMetricBanner
-          metrics={bannerMetrics}
-          gradientFrom="from-brand-purple"
-          gradientVia="via-purple-500"
-          gradientTo="to-pink-500"
-        />
+        <CompactMetricBanner metrics={bannerMetrics} />
+
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          {/* Daily Attendance Pie */}
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-5 hover:shadow-md transition-shadow">
+            <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest mb-4">Daily Attendance</h3>
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={dynamicDemographicsData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={70}
+                    paddingAngle={5}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    {dynamicDemographicsData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                  />
+                  <Legend verticalAlign="bottom" height={20} iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: '500' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Assessment Progress */}
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-5 hover:shadow-md transition-shadow">
+            <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest mb-4 flex items-center justify-between">
+              Assessment Fulfillment
+              {stats.totalMissedExams > 0 && <span className="text-[9px] font-black uppercase text-rose-500 bg-rose-50 px-2 py-0.5 rounded">Action Req</span>}
+            </h3>
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={dynamicAssessmentData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={70}
+                    paddingAngle={5}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    {dynamicAssessmentData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                  />
+                  <Legend verticalAlign="bottom" height={20} iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: '500' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Finance Overview Bar */}
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-5 hover:shadow-md transition-shadow">
+            <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest mb-4">Uncollected Balances</h3>
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                {dynamicFinanceData.length > 0 ? (
+                  <BarChart data={dynamicFinanceData} margin={{ top: 10, right: 0, left: -25, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} dy={10} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} dx={-10} tickFormatter={(val) => `${val >= 1000 ? val/1000 + 'k' : val}`} />
+                    <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                    <Legend verticalAlign="bottom" height={20} iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: '500' }} />
+                    <Bar dataKey="collected" name="Collected" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={12} stackId="a" />
+                    <Bar dataKey="pending" name="Pending (Danger)" fill="#f43f5e" radius={[4, 4, 0, 0]} barSize={12} stackId="a" />
+                  </BarChart>
+                ) : (
+                  <div className="h-full w-full flex items-center justify-center text-xs text-gray-400 italic">No Financial Data</div>
+                )}
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           {/* Recent Activity Table */}
@@ -279,7 +395,31 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <MetricCard title="Total Revenue" value={`KES ${stats.feeCollected.toLocaleString()}`} icon={Wallet} subtitle="Termly Collection" />
         <MetricCard title="Outstandings" value={`KES ${stats.feePending.toLocaleString()}`} icon={TrendingUp} subtitle="Pending Payments" />
-        <MetricCard title="Collection Rate" value={`${Math.round((stats.feeCollected / (stats.feeCollected + stats.feePending)) * 100)}%`} icon={Activity} />
+        <MetricCard title="Collection Rate" value={`${Math.round((stats.feeCollected / ((stats.feeCollected + stats.feePending) || 1)) * 100)}%`} icon={Activity} />
+      </div>
+
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-6">
+         <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-4 flex items-center justify-between">
+           Financial Collection Risks
+           {stats.feePending > 0 && <span className="text-[9px] font-black uppercase text-rose-500 bg-rose-50 px-2 py-0.5 rounded border border-rose-100">Action Required</span>}
+         </h3>
+         <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                {dynamicFinanceData.length > 0 ? (
+                  <BarChart data={dynamicFinanceData} margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} dy={10} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} dx={-10} tickFormatter={(val) => `${val >= 1000 ? val/1000 + 'k' : val}`} />
+                    <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                    <Legend verticalAlign="bottom" height={20} iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: '500' }} />
+                    <Bar dataKey="collected" name="Collected Revenue" fill="#8b5cf6" radius={[4, 4, 0, 0]} stackId="a" />
+                    <Bar dataKey="pending" name="High Risk Pending" fill="#f43f5e" radius={[4, 4, 0, 0]} stackId="a" />
+                  </BarChart>
+                ) : (
+                   <div className="h-full w-full flex items-center justify-center text-xs text-gray-400 italic">No Financial Data Available</div>
+                )}
+              </ResponsiveContainer>
+         </div>
       </div>
 
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
@@ -361,28 +501,23 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
         {/* Learning Area Statistics */}
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
           <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-6 border-b border-gray-100 pb-2">Subject Proficiency Distribution</h3>
-          <div className="space-y-6">
-            {(metrics?.distributions?.subjectProficiency?.length > 0 ? metrics.distributions.subjectProficiency : []).map((subject, idx) => (
-              <div key={idx}>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-xs font-black text-gray-800 tracking-tight">{subject.area}</span>
-                  <span className="text-[10px] font-bold text-gray-400">{subject.ee}% Exceeding</span>
-                </div>
-                <div className="flex h-2.5 rounded-full overflow-hidden shadow-inner">
-                  <div style={{ width: `${subject.ee}%` }} className="bg-brand-purple" title="Exceeding" />
-                  <div style={{ width: `${subject.me}%` }} className="bg-brand-teal" title="Meeting" />
-                  <div style={{ width: `${subject.be}%` }} className="bg-rose-400" title="Below Expectation" />
-                </div>
-              </div>
-            ))}
-            {!metrics?.distributions?.subjectProficiency?.length && (
-              <div className="py-8 text-center text-gray-400 text-xs italic">No proficiency data logged across subjects.</div>
-            )}
-          </div>
-          <div className="mt-8 flex items-center justify-center gap-6">
-            <div className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full bg-brand-purple" /> <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">EE</span></div>
-            <div className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full bg-brand-teal" /> <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">ME</span></div>
-            <div className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full bg-rose-400" /> <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">BE</span></div>
+          <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                {dynamicProficiencyData.length > 0 ? (
+                  <BarChart data={dynamicProficiencyData} margin={{ top: 10, right: 20, left: -10, bottom: 0 }} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                    <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} />
+                    <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold', fill: '#475569' }} width={90} />
+                    <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                    <Legend verticalAlign="bottom" height={20} iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: '500' }} />
+                    <Bar dataKey="ee" name="Exceeding" fill="#8b5cf6" stackId="a" radius={[0, 0, 0, 0]} />
+                    <Bar dataKey="me" name="Meeting" fill="#14b8a6" stackId="a" radius={[0, 0, 0, 0]} />
+                    <Bar dataKey="be" name="Below Expectation (Warning)" fill="#f43f5e" stackId="a" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                ) : (
+                  <div className="h-full w-full flex items-center justify-center text-xs text-gray-400 italic">No Proficiency Data Logged</div>
+                )}
+              </ResponsiveContainer>
           </div>
         </div>
       </div>
@@ -423,7 +558,35 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
 
         {/* Staff Utilization */}
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-          <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-6 border-b border-gray-100 pb-2 flex items-center gap-2"><Briefcase size={16} className="text-gray-400" /> Staffing Overview</h3>
+          <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-6 border-b border-gray-100 pb-2 flex items-center gap-2"><Briefcase size={16} className="text-gray-400" /> Staffing Capacity vs Deficit</h3>
+          
+          <div className="h-48 mb-6">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: 'Active Teachers', value: stats.activeTeachers || 0, color: '#14b8a6' },
+                      { name: 'Deficit/Inactive', value: Math.max(0, (stats.totalTeachers - stats.activeTeachers)) || (stats.activeTeachers === 0 ? 1 : 0), color: '#f43f5e' }
+                    ]}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={40}
+                    outerRadius={65}
+                    paddingAngle={5}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    <Cell fill="#14b8a6" />
+                    <Cell fill="#f43f5e" />
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                  />
+                  <Legend verticalAlign="bottom" height={20} iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: '500' }} />
+                </PieChart>
+              </ResponsiveContainer>
+          </div>
           <div className="space-y-4">
             <div className="p-4 bg-gray-50 border border-gray-100 rounded-lg">
               <div className="flex justify-between items-center mb-1">
@@ -584,24 +747,24 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       {/* Quick Shortcuts */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-3 md:grid-cols-6 gap-2 lg:gap-4 mb-2">
         {[
-          { label: 'Admissions', icon: UserPlus, color: 'bg-blue-50 text-blue-600', path: 'learners-admissions' },
-          { label: 'Collect Fees', icon: Receipt, color: 'bg-emerald-50 text-emerald-600', path: 'fees-collection' },
-          { label: 'Attendance', icon: ClipboardCheck, color: 'bg-amber-50 text-amber-600', path: 'attendance-daily' },
-          { label: 'Assessments', icon: BookOpen, color: 'bg-purple-50 text-purple-600', path: 'assess-summative-assessment' },
-          { label: 'Inventory', icon: Package, color: 'bg-rose-50 text-rose-600', path: 'inventory-items' },
-          { label: 'Academic Settings', icon: Settings, color: 'bg-slate-100 text-slate-600', path: 'settings-academic' },
+          { label: 'Admissions', icon: UserPlus, color: 'bg-blue-500 text-white', path: 'learners-admissions' },
+          { label: 'Collect Fees', icon: Receipt, color: 'bg-emerald-500 text-white', path: 'fees-collection' },
+          { label: 'Attendance', icon: ClipboardCheck, color: 'bg-amber-500 text-white', path: 'attendance-daily' },
+          { label: 'Assessments', icon: BookOpen, color: 'bg-brand-purple text-white', path: 'assess-summative-assessment' },
+          { label: 'Inventory', icon: Package, color: 'bg-rose-500 text-white', path: 'inventory-items' },
+          { label: 'Settings', icon: Settings, color: 'bg-slate-700 text-white', path: 'settings-academic' },
         ].map((shortcut, idx) => (
           <button
             key={idx}
             onClick={() => onNavigate(shortcut.path)}
-            className="group flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:border-brand-purple/50 transition-all duration-300 active:scale-95"
+            className="group flex flex-col items-center justify-start transition-all duration-300 active:scale-95"
           >
-            <div className={`p-3 rounded-xl ${shortcut.color} group-hover:scale-110 transition-transform duration-300 mb-3`}>
-              <shortcut.icon size={24} strokeWidth={2.5} />
+            <div className={`p-3.5 mb-2 rounded-full ${shortcut.color} shadow-md group-hover:shadow-lg group-hover:-translate-y-1 transition-transform duration-300 flex items-center justify-center`}>
+              <shortcut.icon size={20} strokeWidth={2.5} />
             </div>
-            <span className="text-[11px] font-black uppercase tracking-widest text-gray-600 group-hover:text-gray-900 text-center">
+            <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-600 group-hover:text-brand-purple text-center leading-tight w-full truncate">
               {shortcut.label}
             </span>
           </button>

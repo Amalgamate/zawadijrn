@@ -148,7 +148,7 @@ const MessageHistoryPage = () => {
         <div className="h-full flex flex-col bg-white rounded-xl shadow-lg overflow-hidden">
 
             {/* Header */}
-            <div className="bg-gradient-to-r from-brand-teal to-brand-teal/80 px-6 py-4 flex items-center justify-between">
+            <div className="bg-brand-teal px-6 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <div className="p-2 bg-white/20 rounded-lg">
                         <MessageSquare size={24} className="text-white" />

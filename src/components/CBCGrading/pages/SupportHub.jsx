@@ -292,7 +292,7 @@ const SupportHub = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <a
           href="#getting-started"
-          className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl p-6 hover:from-blue-600 hover:to-blue-700 transition cursor-pointer"
+          className="bg-blue-500 text-white rounded-xl p-6 hover:from-blue-600 hover:to-blue-700 transition cursor-pointer"
         >
           <Book size={32} className="mb-3" />
           <h3 className="font-bold text-lg mb-2">Getting Started</h3>
@@ -301,7 +301,7 @@ const SupportHub = () => {
 
         <a
           href="#communications"
-          className="bg-gradient-to-br from-cyan-500 to-cyan-600 text-white rounded-xl p-6 hover:from-cyan-600 hover:to-cyan-700 transition cursor-pointer"
+          className="bg-cyan-500 text-white rounded-xl p-6 hover:from-cyan-600 hover:to-cyan-700 transition cursor-pointer"
         >
           <MessageSquare size={32} className="mb-3" />
           <h3 className="font-bold text-lg mb-2">Communications</h3>
@@ -310,7 +310,7 @@ const SupportHub = () => {
 
         <a
           href="#video-tutorials"
-          className="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl p-6 hover:from-purple-600 hover:to-purple-700 transition cursor-pointer"
+          className="bg-purple-500 text-white rounded-xl p-6 hover:from-purple-600 hover:to-purple-700 transition cursor-pointer"
         >
           <Video size={32} className="mb-3" />
           <h3 className="font-bold text-lg mb-2">Video Tutorials</h3>
@@ -319,7 +319,7 @@ const SupportHub = () => {
 
         <a
           href="mailto:support@zawadijunioracademy.co.ke"
-          className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl p-6 hover:from-green-600 hover:to-green-700 transition cursor-pointer"
+          className="bg-green-500 text-white rounded-xl p-6 hover:from-green-600 hover:to-green-700 transition cursor-pointer"
         >
           <Mail size={32} className="mb-3" />
           <h3 className="font-bold text-lg mb-2">Contact Support</h3>
@@ -381,7 +381,7 @@ const SupportHub = () => {
       </div>
 
       {/* Additional Resources */}
-      <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200 rounded-xl p-6">
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
         <h3 className="text-lg font-bold text-blue-900 mb-3 flex items-center gap-2">
           <HelpCircle size={20} />
           Need More Help?

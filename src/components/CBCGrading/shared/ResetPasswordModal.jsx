@@ -60,7 +60,7 @@ const ResetPasswordModal = ({ isOpen, onClose, user, onResetSuccess }) => {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4 animate-in fade-in duration-200">
             <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-200">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-brand-teal to-blue-600 px-6 py-4 flex justify-between items-center">
+                <div className="bg-brand-teal px-6 py-4 flex justify-between items-center">
                     <div className="flex items-center gap-2 text-white">
                         <Lock size={20} />
                         <h3 className="text-lg font-bold">Issue New Password</h3>

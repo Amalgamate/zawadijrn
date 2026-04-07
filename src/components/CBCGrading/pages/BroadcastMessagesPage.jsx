@@ -495,7 +495,7 @@ const BroadcastMessagesPage = () => {
   return (
     <div className="h-full flex flex-col bg-white rounded-xl shadow-lg overflow-hidden">
       {/* Header */}
-      <div className="bg-gradient-to-r from-brand-purple to-brand-purple/80 px-6 py-4">
+      <div className="bg-brand-purple px-6 py-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/20 rounded-lg">

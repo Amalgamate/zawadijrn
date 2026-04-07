@@ -18,7 +18,7 @@ const EmptyState = ({
     <div className={`bg-white rounded-xl shadow-md p-12 text-center ${className}`}>
       <div className="max-w-md mx-auto">
         {Icon && (
-          <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
+          <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <Icon size={iconSize} className="text-gray-400" />
           </div>
         )}

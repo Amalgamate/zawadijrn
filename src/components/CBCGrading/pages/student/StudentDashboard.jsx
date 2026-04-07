@@ -45,7 +45,7 @@ const StudentDashboard = ({ user, onNavigate }) => {
   return (
     <div className="space-y-6">
       {/* Welcome banner */}
-      <div className="bg-gradient-to-r from-[#520050] to-purple-700 rounded-xl p-6 text-white relative overflow-hidden shadow-lg">
+      <div className="bg-[#520050] rounded-xl p-6 text-white relative overflow-hidden shadow-lg">
         <div className="absolute right-0 top-0 opacity-10 pointer-events-none"><GraduationCap size={200} /></div>
         <div className="relative z-10">
           <p className="text-purple-200 text-xs font-bold uppercase tracking-widest mb-1">Welcome back</p>

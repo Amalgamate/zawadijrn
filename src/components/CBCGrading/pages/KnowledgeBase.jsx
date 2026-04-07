@@ -67,7 +67,7 @@ const KnowledgeBase = () => {
         >
             <div className="space-y-8">
                 {/* Hero / Search */}
-                <div className="bg-gradient-to-r from-[#2e1d2b] to-[var(--brand-purple)] rounded-3xl p-10 text-white relative overflow-hidden">
+                <div className="bg-[#2e1d2b] rounded-3xl p-10 text-white relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
                     <div className="relative z-10 max-w-2xl">
                         <h2 className="text-3xl font-bold mb-4">How can we help you today?</h2>
@@ -118,8 +118,7 @@ const KnowledgeBase = () => {
                                             <PlayCircle size={32} className="text-brand-teal ml-1" />
                                         </div>
                                     </div>
-                                    <div className="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-black/60 to-transparent">
-                                        <p className="text-white text-sm font-bold">Video Tutorial {i}: System Basics</p>
+                                    <div className="absolute bottom-0 inset-x-0 p-4 bg-black/60                                        <p className="text-white text-sm font-bold">Video Tutorial {i}: System Basics</p>
                                     </div>
                                 </div>
                             ))}

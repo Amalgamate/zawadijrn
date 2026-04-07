@@ -267,7 +267,7 @@ const FeeReportsPage = () => {
           <div className="overflow-hidden h-3 mb-2 text-xs flex rounded-full bg-gray-200">
             <div
               style={{ width: `${stats?.collectionRate || 0}%` }}
-              className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-gradient-to-r from-green-500 to-green-600 transition-all duration-500"
+              className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-green-500 transition-all duration-500"
             />
           </div>
         </div>

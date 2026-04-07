@@ -219,7 +219,7 @@ const BulkOperationsModal = ({
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
         {/* Header */}
-        <div className="bg-gradient-to-r from-[var(--brand-purple)] to-[#7a0078] text-white p-5 flex items-center justify-between">
+        <div className="bg-[var(--brand-purple)] text-white p-5 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold tracking-tight">{title}</h2>
             <p className="text-white/70 text-[10px] uppercase tracking-widest font-medium mt-0.5">Bulk Management System</p>
@@ -318,7 +318,7 @@ const BulkOperationsModal = ({
                         </div>
                         <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-gradient-to-r from-[#00A09D] to-[#00d1cd] transition-all duration-500 ease-out"
+                            className="h-full bg-[#00A09D] transition-all duration-500 ease-out"
                             style={{ width: `${uploadProgress}%` }}
                           />
                         </div>

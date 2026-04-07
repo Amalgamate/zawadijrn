@@ -63,7 +63,7 @@ const GradeCalculatorPreview = ({ ranges, totalMarks = 100 }) => {
   return (
     <div className="space-y-6">
       {/* Calculator Section */}
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6">
+      <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
         <div className="flex items-center gap-2 mb-4">
           <Calculator className="text-blue-600" size={24} />
           <h3 className="text-lg font-bold text-gray-900">Grade Calculator</h3>
@@ -85,7 +85,7 @@ const GradeCalculatorPreview = ({ ranges, totalMarks = 100 }) => {
 
           {currentGrade && (
             <div className="mt-4 space-y-3">
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg">
+              <div className="flex items-center justify-between p-4 bg-green-50 border-2 border-green-200 rounded-lg">
                 <div>
                   <p className="text-sm font-semibold text-gray-600">Result</p>
                   <div className="flex items-center gap-3 mt-1">

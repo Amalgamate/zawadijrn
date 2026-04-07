@@ -146,7 +146,7 @@ const AllocationModal = ({ learner, onClose, onSave }) => {
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[92vh] flex flex-col overflow-hidden">
 
         {/* Header */}
-        <div className="bg-gradient-to-r from-brand-purple/10 to-brand-teal/10 px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">
+        <div className="bg-brand-purple/10 px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">
           <div>
             <h2 className="text-lg font-black text-gray-900">Uniform Allocation</h2>
             <p className="text-sm text-gray-500 mt-0.5">

@@ -639,7 +639,7 @@ const FeeStructurePage = () => {
           {Object.values(groupedStructures).map((group, idx) => (
             <div key={idx} className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
               {/* Group Header */}
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-3 border-b border-gray-200">
+              <div className="bg-blue-50 px-6 py-3 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-blue-100 rounded-lg">
@@ -745,7 +745,7 @@ const FeeStructurePage = () => {
 
                       {/* Expanded Content */}
                       {isExpanded && (
-                        <div className="px-6 py-4 bg-gradient-to-b from-gray-50 to-white border-t border-gray-100 space-y-4">
+                        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 space-y-4">
                           {structure.description && (
                             <div>
                               <p className="text-xs font-semibold text-gray-600 uppercase mb-1">Description</p>

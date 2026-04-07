@@ -1140,7 +1140,7 @@ const AcademicSettings = () => {
       {showStreamModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
-            <div className="bg-gradient-to-r from-blue-600 to-cyan-600 px-6 py-4 rounded-t-2xl">
+            <div className="bg-blue-600 px-6 py-4 rounded-t-2xl">
               <h3 className="text-xl font-bold text-white">
                 {editingStream ? 'Edit Stream' : 'Add Stream'}
               </h3>
@@ -1181,7 +1181,7 @@ const AcademicSettings = () => {
               <button
                 onClick={handleSaveStream}
                 disabled={submitting}
-                className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting ? (
                   <>
@@ -1204,7 +1204,7 @@ const AcademicSettings = () => {
       {showClassModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="bg-gradient-to-r from-blue-600 to-cyan-600 px-6 py-4 rounded-t-2xl sticky top-0">
+            <div className="bg-blue-600 px-6 py-4 rounded-t-2xl sticky top-0">
               <h3 className="text-xl font-bold text-white">
                 {editingClass ? 'Edit Class' : 'Add Class'}
               </h3>
@@ -1362,7 +1362,7 @@ const AcademicSettings = () => {
               <button
                 onClick={handleSaveClass}
                 disabled={submitting}
-                className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting ? (
                   <>
@@ -1514,7 +1514,7 @@ const AcademicSettings = () => {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold hover:from-blue-700 hover:to-indigo-700 transition shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:from-blue-700 hover:to-indigo-700 transition shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {submitting ? (
                     <div className="flex items-center justify-center gap-2">

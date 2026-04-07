@@ -111,9 +111,9 @@ const HeadTeacherDashboard = ({ learners = [], teachers = [], user, onNavigate }
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Teaching & Learning */}
         <Card className="lg:col-span-2 shadow-xl hover:shadow-2xl transition-all duration-300">
-          <CardHeader className="bg-gradient-to-r from-slate-50 to-blue-50 border-b border-gray-200">
+          <CardHeader className="bg-slate-50 border-b border-gray-200">
             <CardTitle className="flex items-center gap-3 text-2xl">
-              <div className="p-2 bg-gradient-to-br from-brand-purple to-pink-500 rounded-lg">
+              <div className="p-2 bg-brand-purple rounded-lg">
                 <BarChart3 size={24} className="text-white" />
               </div>
               Teaching & Learning
@@ -132,7 +132,7 @@ const HeadTeacherDashboard = ({ learners = [], teachers = [], user, onNavigate }
                 <button
                   key={i}
                   onClick={() => onNavigate(item.navigate)}
-                  className={`p-4 rounded-xl border-2 transition-all duration-300 group hover:shadow-lg transform hover:scale-105 active:scale-95 bg-gradient-to-br from-white to-gray-50 hover:to-${item.color}/5 border-${item.color === 'brand-purple' ? 'brand-purple/30' : item.color === 'brand-teal' ? 'brand-teal/30' : item.color}/30`}
+                  className={`p-4 rounded-xl border-2 transition-all duration-300 group hover:shadow-lg transform hover:scale-105 active:scale-95 bg-white hover:to-${item.color}/5 border-${item.color === 'brand-purple' ? 'brand-purple/30' : item.color === 'brand-teal' ? 'brand-teal/30' : item.color}/30`}
                 >
                   <div className="flex items-center justify-between">
                     <div>
@@ -152,9 +152,9 @@ const HeadTeacherDashboard = ({ learners = [], teachers = [], user, onNavigate }
 
         {/* Quick Actions */}
         <Card className="shadow-xl hover:shadow-2xl transition-all duration-300">
-          <CardHeader className="bg-gradient-to-r from-slate-50 to-amber-50 border-b border-gray-200">
+          <CardHeader className="bg-slate-50 border-b border-gray-200">
             <CardTitle className="flex items-center gap-3 text-xl">
-              <div className="p-2 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg">
+              <div className="p-2 bg-amber-500 rounded-lg">
                 <Settings size={20} className="text-white" />
               </div>
               Quick Access
@@ -163,7 +163,7 @@ const HeadTeacherDashboard = ({ learners = [], teachers = [], user, onNavigate }
           <CardContent className="space-y-3 pt-6">
             <button
               onClick={() => onNavigate('comm-notices')}
-              className="w-full p-4 text-left rounded-xl border-2 border-brand-purple/20 bg-gradient-to-br from-brand-purple/5 to-pink-50 hover:border-brand-purple/50 hover:bg-brand-purple/10 transition-all duration-300 group hover:shadow-md"
+              className="w-full p-4 text-left rounded-xl border-2 border-brand-purple/20 bg-brand-purple/5 hover:border-brand-purple/50 hover:bg-brand-purple/10 transition-all duration-300 group hover:shadow-md"
             >
               <p className="text-xs font-bold text-brand-purple uppercase tracking-widest">Communications</p>
               <p className="text-sm font-black text-gray-900 mt-1 group-hover:text-brand-purple">Send Notices</p>
@@ -171,14 +171,14 @@ const HeadTeacherDashboard = ({ learners = [], teachers = [], user, onNavigate }
 
             <button
               onClick={() => onNavigate('assess-performance-scale')}
-              className="w-full p-4 text-left rounded-xl border-2 border-brand-teal/20 bg-gradient-to-br from-brand-teal/5 to-cyan-50 hover:border-brand-teal/50 hover:bg-brand-teal/10 transition-all duration-300 group hover:shadow-md"
+              className="w-full p-4 text-left rounded-xl border-2 border-brand-teal/20 bg-brand-teal/5 hover:border-brand-teal/50 hover:bg-brand-teal/10 transition-all duration-300 group hover:shadow-md"
             >
               <p className="text-xs font-bold text-brand-teal uppercase tracking-widest">Assessment</p>
               <p className="text-sm font-black text-gray-900 mt-1 group-hover:text-brand-teal">Performance Scale</p>
             </button>
 
             <div className="pt-4 border-t-2 border-gray-100">
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4">
+              <div className="bg-gray-50 rounded-xl p-4">
                 <p className="text-xs font-bold text-gray-600 uppercase tracking-widest mb-3">📊 System Info</p>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">

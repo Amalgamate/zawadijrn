@@ -344,7 +344,7 @@ const SubjectAllocationPage = () => {
 
       <Dialog open={showAssignModal} onOpenChange={setShowAssignModal}>
         <DialogContent className="max-w-md overflow-hidden p-0 rounded-2xl border-none shadow-2xl">
-          <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-6 text-white">
+          <div className="bg-purple-600 p-6 text-white">
             <DialogHeader>
               <DialogTitle className="text-xl font-bold flex items-center gap-2">
                 <UserPlus />

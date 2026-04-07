@@ -10,7 +10,27 @@ import {
 import SchoolOnboardingWizard from './onboarding/SchoolOnboardingWizard';
 import CompactMetricBanner from './dashboard/CompactMetricBanner';
 import DashboardResponsiveWrapper from '../DashboardResponsiveWrapper';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, BarChart, Bar, Legend } from 'recharts';
 import { useState, useEffect } from 'react';
+
+// --- Mock Data for Dashboard Charts ---
+const demographicsData = [
+  { name: 'Boys', value: 450, color: '#8b5cf6' }, // brand-purple
+  { name: 'Girls', value: 520, color: '#14b8a6' }, // brand-teal
+];
+
+const performanceData = [
+  { term: 'Term 1', score: 68 },
+  { term: 'Term 2', score: 72 },
+  { term: 'Term 3', score: 78 },
+];
+
+const financeData = [
+  { name: 'Grade 1', collected: 80, pending: 20 },
+  { name: 'Grade 2', collected: 65, pending: 35 },
+  { name: 'Grade 3', collected: 90, pending: 10 },
+  { name: 'Grade 4', collected: 55, pending: 45 },
+];
 
 const Dashboard = ({ learners, teachers }) => {
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -86,6 +106,79 @@ const Dashboard = ({ learners, teachers }) => {
           gradientVia="via-purple-500"
           gradientTo="to-pink-500"
         />
+
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Demographics Pie */}
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-5 hover:shadow-md transition-shadow">
+            <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest mb-4">Demographics</h3>
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={demographicsData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={70}
+                    paddingAngle={5}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    {demographicsData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                  />
+                  <Legend verticalAlign="bottom" height={20} iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: '500' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Performance Trend Area */}
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-5 hover:shadow-md transition-shadow">
+            <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest mb-4">Academic Trend</h3>
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={performanceData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#14b8a6" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#14b8a6" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="term" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} dx={-10} domain={[0, 100]} />
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Area type="monotone" dataKey="score" stroke="#14b8a6" strokeWidth={2} fillOpacity={1} fill="url(#colorScore)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Finance Overview Bar */}
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-5 hover:shadow-md transition-shadow">
+            <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest mb-4">Fee Collection (%)</h3>
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={financeData} margin={{ top: 10, right: 0, left: -25, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} dx={-10} tickFormatter={(val) => `${val}%`} />
+                  <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Legend verticalAlign="bottom" height={20} iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: '500' }} />
+                  <Bar dataKey="collected" name="Collected" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={12} stackId="a" />
+                  <Bar dataKey="pending" name="Pending" fill="#e2e8f0" radius={[4, 4, 0, 0]} barSize={12} stackId="a" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           {/* Main Service Console */}

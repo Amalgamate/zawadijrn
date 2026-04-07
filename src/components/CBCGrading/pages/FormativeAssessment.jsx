@@ -548,7 +548,7 @@ const FormativeAssessment = ({ learners }) => {
           {/* Context Header */}
           <div className="bg-white rounded-xl shadow-sm p-4 border border-brand-purple/10 flex flex-col md:flex-row items-center justify-between gap-4 sticky top-4 z-20">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-brand-purple to-brand-teal rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm">
+              <div className="w-10 h-10 bg-brand-purple rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm">
                 <FileText size={20} />
               </div>
               <div>
@@ -646,7 +646,7 @@ const FormativeAssessment = ({ learners }) => {
                         {/* Learner Header */}
                         <div className="flex flex-col md:flex-row md:items-center gap-6 mb-6">
                           <div className="flex items-center gap-4 min-w-[200px]">
-                            <div className="w-14 h-14 bg-gradient-to-br from-brand-purple to-brand-teal rounded-full flex items-center justify-center text-white font-bold text-xl shadow-sm">
+                            <div className="w-14 h-14 bg-brand-purple rounded-full flex items-center justify-center text-white font-bold text-xl shadow-sm">
                               {learner.firstName[0]}{learner.lastName[0]}
                             </div>
                             <div>

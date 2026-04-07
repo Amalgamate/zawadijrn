@@ -11,22 +11,22 @@ const Toast = ({ show, message, type = 'success', onClose, duration = 3000 }) =>
 
   const styles = {
     success: {
-      bg: 'bg-gradient-to-r from-green-500 to-emerald-600',
+      bg: 'bg-green-500',
       icon: CheckCircle,
       ringColor: 'ring-green-500'
     },
     error: {
-      bg: 'bg-gradient-to-r from-red-500 to-rose-600',
+      bg: 'bg-red-500',
       icon: XCircle,
       ringColor: 'ring-red-500'
     },
     warning: {
-      bg: 'bg-gradient-to-r from-orange-500 to-amber-600',
+      bg: 'bg-orange-500',
       icon: AlertCircle,
       ringColor: 'ring-orange-500'
     },
     info: {
-      bg: 'bg-gradient-to-r from-blue-500 to-cyan-600',
+      bg: 'bg-blue-500',
       icon: Info,
       ringColor: 'ring-blue-500'
     }

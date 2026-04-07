@@ -198,7 +198,7 @@ const ParentDashboard = ({ user, onNavigate }) => {
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-gray-200/80 bg-white shadow-md">
-        <div className="flex flex-col gap-1 border-b border-gray-100 bg-gradient-to-r from-slate-50 to-white px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-1 border-b border-gray-100 bg-slate-50 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
             <LayoutGrid className="h-4 w-4 text-brand-purple" />
             <h3 className="text-xs font-black uppercase tracking-widest text-gray-900">Learner matrix</h3>
@@ -249,10 +249,10 @@ const ParentDashboard = ({ user, onNavigate }) => {
                         <div
                           className={cn(
                             'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[10px] font-black text-white shadow-sm',
-                            idx % 4 === 0 && 'bg-gradient-to-br from-cyan-500 to-blue-600',
-                            idx % 4 === 1 && 'bg-gradient-to-br from-fuchsia-500 to-violet-600',
-                            idx % 4 === 2 && 'bg-gradient-to-br from-amber-500 to-orange-600',
-                            idx % 4 === 3 && 'bg-gradient-to-br from-emerald-500 to-teal-600'
+                            idx % 4 === 0 && 'bg-cyan-500',
+                            idx % 4 === 1 && 'bg-fuchsia-500',
+                            idx % 4 === 2 && 'bg-amber-500',
+                            idx % 4 === 3 && 'bg-emerald-500'
                           )}
                         >
                           {child.name
@@ -316,15 +316,15 @@ const ParentDashboard = ({ user, onNavigate }) => {
           </div>
 
           <div className="grid grid-cols-3 gap-2">
-            <div className="rounded-xl bg-gradient-to-br from-slate-50 to-slate-100/80 p-3 text-center">
+            <div className="rounded-xl bg-slate-50 p-3 text-center">
               <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Attendance</p>
               <p className="text-lg font-black text-gray-900">{child.attendanceRate}%</p>
             </div>
-            <div className="rounded-xl bg-gradient-to-br from-violet-50 to-fuchsia-50/80 p-3 text-center">
+            <div className="rounded-xl bg-violet-50 p-3 text-center">
               <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Assessments</p>
               <p className="text-lg font-black text-gray-900">{(child.recentAssessments || []).length}</p>
             </div>
-            <div className="rounded-xl bg-gradient-to-br from-amber-50 to-orange-50/80 p-3 text-center">
+            <div className="rounded-xl bg-amber-50 p-3 text-center">
               <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Level</p>
               <p className="text-lg font-black text-gray-900">{child.performanceLevel}</p>
             </div>
@@ -400,7 +400,7 @@ const ParentDashboard = ({ user, onNavigate }) => {
 
   const renderFinance = () => (
     <div className="grid gap-6 lg:grid-cols-2">
-      <div className="rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50 to-orange-50/50 p-6 shadow-sm">
+      <div className="rounded-2xl border border-amber-200/80 bg-amber-50 p-6 shadow-sm">
         <div className="mb-4 flex items-center gap-2 text-amber-900">
           <DollarSign size={22} />
           <h3 className="text-sm font-black uppercase tracking-widest">Household balance</h3>
@@ -433,7 +433,7 @@ const ParentDashboard = ({ user, onNavigate }) => {
 
   return (
     <div className="space-y-6">
-      <div className="relative overflow-hidden rounded-2xl border border-violet-200/60 bg-gradient-to-br from-[var(--brand-purple)] via-violet-700 to-indigo-900 p-6 text-white shadow-xl">
+      <div className="relative overflow-hidden rounded-2xl border border-violet-200/60 bg-[var(--brand-purple)] p-6 text-white shadow-xl">
         <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-cyan-400/20 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-16 -left-16 h-56 w-56 rounded-full bg-fuchsia-400/15 blur-3xl" />
         <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">

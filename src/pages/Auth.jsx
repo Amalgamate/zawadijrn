@@ -77,7 +77,7 @@ function Auth({ onAuthSuccess, brandingSettings, basePath = '/auth' }) {
     return null;
   }
 
-  const layoutClass = showBlobBackground(view) ? 'bg-gradient-to-br from-brand-purple/5 via-brand-teal/5 to-brand-purple/10 flex items-center justify-center p-4' : '';
+  const layoutClass = showBlobBackground(view) ? 'bg-brand-purple/5 flex items-center justify-center p-4' : '';
   const contentClass = FULL_VIEWS.includes(view) ? 'w-full h-screen' : 'relative z-10 w-full flex items-center justify-center';
 
   return (

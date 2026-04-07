@@ -5,7 +5,7 @@ const LMSCourses = () => {
   return (
     <div className="flex-1 p-6 overflow-y-auto space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-end bg-gradient-to-r from-brand-purple to-purple-800 p-8 rounded-2xl text-white shadow-xl relative overflow-hidden">
+      <div className="flex justify-between items-end bg-brand-purple p-8 rounded-2xl text-white shadow-xl relative overflow-hidden">
         <div className="absolute top-0 right-0 opacity-10">
           <BookOpen size={200} className="-mr-10 -mt-10" />
         </div>

@@ -22,7 +22,7 @@ const ProfileHeader = ({
             {/* Elegant Banner Area */}
             <div className={`${compact ? 'h-24' : 'h-32'} bg-gray-50 border-b border-gray-100 relative overflow-hidden transition-all`}>
                 <div className={`absolute inset-0 opacity-10 ${bannerPattern} text-${bannerColor}`}></div>
-                <div className="absolute inset-0 bg-gradient-to-t from-white/20 to-transparent"></div>
+                <div className="absolute inset-0 bg-white/20"></div>
             </div>
 
             <div className="px-8 pb-4">

@@ -463,8 +463,7 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
   // STEP 1: SETUP - Mobile App Style
   if (step === 1) {
     return (
-      <div className={`${embedded ? 'flex flex-col min-h-full bg-gradient-to-b from-slate-50 to-white' : 'fixed z-50 inset-0 flex flex-col bg-gradient-to-b from-slate-50 to-white'}`}>
-        {/* Premium Header — hidden in embedded mode (dash already has its own header) */}
+      <div className={`${embedded ? 'flex flex-col min-h-full bg-slate-50' : 'fixed z-50 inset-0 flex flex-col bg-slate-50'}`}>
         {!embedded && (
           <div className="bg-white border-b border-slate-200 px-4 pt-4 pb-3 shadow-sm">
             <div className="flex items-center gap-3">
@@ -595,7 +594,7 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
               setStep(2);
             }}
             disabled={!selectedTestId || !setup.selectedGrade}
-            className="w-full py-3 bg-gradient-to-r from-brand-teal to-teal-500 text-white font-bold rounded-xl hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            className="w-full py-3 bg-brand-teal text-white font-bold rounded-xl hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             Start Grading →
           </button>
@@ -615,7 +614,7 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
     return (
       <div className={`${embedded ? 'flex flex-col min-h-full bg-slate-50' : 'fixed z-50 inset-0 flex flex-col bg-slate-50'}`}>
         {/* Sticky Header - Score Progress */}
-        <div className="sticky top-0 z-20 bg-gradient-to-r from-brand-teal to-teal-500 text-white shadow-lg">
+        <div className="sticky top-0 z-20 bg-brand-teal text-white shadow-lg">
           <div className="px-4 pt-4 pb-3">
             <div className="flex items-center justify-between mb-3">
               <button
@@ -773,7 +772,7 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
                     disabled={saving || unsavedCount === 0}
                     className={`w-full py-4 font-black rounded-xl transition-all flex items-center justify-center gap-2 text-white text-sm ${unsavedCount === 0
                       ? 'bg-gray-400 cursor-not-allowed opacity-50'
-                      : 'bg-gradient-to-r from-brand-teal to-teal-500 hover:shadow-lg active:scale-95'
+                      : 'bg-brand-teal hover:shadow-lg active:scale-95'
                       }`}
                   >
                     {saving ? (

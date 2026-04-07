@@ -753,7 +753,7 @@ const UserManagement = () => {
 
             {/* Permission Matrix */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-              <div className="bg-gradient-to-r from-purple-600 to-purple-700 px-6 py-4">
+              <div className="bg-purple-600 px-6 py-4">
                 <h2 className="text-xl font-bold text-white flex items-center gap-2">
                   <Lock size={24} />
                   Permission Matrix
@@ -833,7 +833,7 @@ const UserManagement = () => {
                           {roleUsers.map(user => (
                             <div key={user.id} className="flex items-center justify-between p-2 bg-gray-50 rounded hover:bg-gray-100">
                               <div className="flex items-center gap-3 flex-1 min-w-0">
-                                <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                                <div className="w-8 h-8 bg-blue-400 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
                                   {user.firstName[0]}{user.lastName[0]}
                                 </div>
                                 <div className="min-w-0 flex-1">
@@ -869,7 +869,7 @@ const UserManagement = () => {
         {/* ACTIVITY LOG VIEW */}
         {viewMode === 'logs' && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <div className="bg-gradient-to-r from-green-600 to-green-700 px-6 py-4">
+            <div className="bg-green-600 px-6 py-4">
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
                 <Activity size={24} />
                 Activity Log
@@ -973,7 +973,7 @@ const UserManagement = () => {
         {showModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 rounded-t-xl flex justify-between items-center sticky top-0">
+              <div className="bg-blue-600 px-6 py-4 rounded-t-xl flex justify-between items-center sticky top-0">
                 <h3 className="text-xl font-bold text-white">
                   {editingUser ? 'Edit User' : 'Add New User'}
                 </h3>

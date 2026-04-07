@@ -143,7 +143,7 @@ const PerformanceManager = () => {
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-gradient-to-br from-brand-purple to-purple-600 p-6 rounded-2xl shadow-sm text-white relative overflow-hidden group">
+                <div className="bg-brand-purple p-6 rounded-2xl shadow-sm text-white relative overflow-hidden group">
                     <Award className="absolute -right-4 -bottom-4 w-32 h-32 opacity-10 group-hover:scale-110 transition-transform duration-500" />
                     <h3 className="text-lg font-medium opacity-80">Average Performance</h3>
                     <p className="text-3xl font-bold mt-2">4.2 / 5.0</p>

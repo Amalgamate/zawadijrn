@@ -16,6 +16,10 @@ const DEFAULT_BRANDING = {
   faviconUrl: '/favicon.png',
   stampUrl: '/ZawadiStamp.svg',
   brandColor: '#520050',
+  primaryColor: '#520050',
+  secondaryColor: '#0D9488',
+  accentColor1: '#3b82f6',
+  accentColor2: '#e11d48',
   welcomeTitle: 'Welcome to Zawadi',
   welcomeMessage: 'Sign in to access your school portal.',
   schoolName: 'ZAWADI JUNIOR ACADEMY',
@@ -89,8 +93,18 @@ function AppContent() {
   // Update CSS variables for branding
   useEffect(() => {
     const root = document.documentElement;
-    const color = brandingSettings?.brandColor || 'var(--brand-purple)';
+    const color = brandingSettings?.primaryColor || brandingSettings?.brandColor || '#520050';
     root.style.setProperty('--brand-purple', color);
+    
+    if (brandingSettings?.secondaryColor) {
+      root.style.setProperty('--brand-teal', brandingSettings.secondaryColor);
+    }
+    if (brandingSettings?.accentColor1) {
+      root.style.setProperty('--brand-accent-1', brandingSettings.accentColor1);
+    }
+    if (brandingSettings?.accentColor2) {
+      root.style.setProperty('--brand-accent-2', brandingSettings.accentColor2);
+    }
     
     // Generate a darker version for logo/sidebar accents (roughly 15-20% darker)
     // Simple hex darken if it's hex
@@ -104,7 +118,13 @@ function AppContent() {
     } else {
       root.style.setProperty('--brand-purple-dark', color);
     }
-  }, [brandingSettings.brandColor]);
+  }, [
+    brandingSettings.brandColor, 
+    brandingSettings.primaryColor, 
+    brandingSettings.secondaryColor, 
+    brandingSettings.accentColor1, 
+    brandingSettings.accentColor2
+  ]);
 
   // Update page title
   useEffect(() => {

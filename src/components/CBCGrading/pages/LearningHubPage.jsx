@@ -41,7 +41,7 @@ const LearningHubPage = () => {
     <div className="space-y-6">
 
       {/* Status Banner */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+      <div className="bg-blue-600 rounded-xl shadow-lg p-6 text-white">
         <div className="flex items-center gap-4 mb-4">
           <div className="bg-white/20 p-3 rounded-lg">
             <Sparkles size={28} />
@@ -106,7 +106,7 @@ const LearningHubPage = () => {
       </div>
 
       {/* Active Learning Section */}
-      <div className="bg-gradient-to-r from-indigo-900 to-purple-900 rounded-xl shadow-lg p-8 text-white relative overflow-hidden">
+      <div className="bg-indigo-900 rounded-xl shadow-lg p-8 text-white relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
           <div>

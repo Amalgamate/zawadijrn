@@ -10,7 +10,7 @@ const MobileDashboard = ({ onNavigate, brandingSettings, user }) => {
     return (
         <div className="pb-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
             {/* Welcome Card */}
-            <div className="mb-6 bg-gradient-to-br from-[var(--brand-purple)] to-[#8c0082] rounded-2xl p-5 text-white shadow-lg relative overflow-hidden">
+            <div className="mb-6 bg-[var(--brand-purple)] rounded-2xl p-5 text-white shadow-lg relative overflow-hidden">
                 <div className="absolute top-0 right-0 opacity-10 transform translate-x-4 -translate-y-4">
                     <svg width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
                 </div>

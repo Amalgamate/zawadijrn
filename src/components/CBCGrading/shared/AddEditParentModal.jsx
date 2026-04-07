@@ -95,7 +95,7 @@ const AddEditParentModal = ({ show, onClose, onSave, parent = null, learners = [
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-4 flex items-center justify-between">
+        <div className="bg-purple-600 px-6 py-4 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-white">
             {isEdit ? 'Edit Parent/Guardian' : 'Add Parent/Guardian'}
           </h2>
@@ -242,7 +242,7 @@ const AddEditParentModal = ({ show, onClose, onSave, parent = null, learners = [
           </button>
           <button
             onClick={handleSubmit}
-            className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition font-semibold shadow-md"
+            className="flex items-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition font-semibold shadow-md"
           >
             <Save size={18} />
             {isEdit ? 'Update Parent' : 'Add Parent'}

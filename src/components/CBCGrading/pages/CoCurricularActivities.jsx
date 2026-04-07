@@ -181,7 +181,7 @@ const CoCurricularActivities = ({ learners }) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-orange-600 to-amber-600 rounded-xl shadow-lg p-6 text-white">
+      <div className="bg-orange-600 rounded-xl shadow-lg p-6 text-white">
         <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
           <Trophy size={28} />
           Co-Curricular Activities

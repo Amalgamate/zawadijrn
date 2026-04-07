@@ -130,7 +130,7 @@ const TermlyReport = ({ learners, brandingSettings, user }) => {
       {viewMode === 'setup' && (
         <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100 max-w-3xl mx-auto mt-8">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-brand-purple/10 to-brand-teal/10 rounded-full flex items-center justify-center mx-auto mb-4 text-brand-purple">
+            <div className="w-16 h-16 bg-brand-purple/10 rounded-full flex items-center justify-center mx-auto mb-4 text-brand-purple">
               <FileText size={32} />
             </div>
             <h2 className="text-2xl font-bold text-gray-800">Termly Report</h2>
@@ -191,7 +191,7 @@ const TermlyReport = ({ learners, brandingSettings, user }) => {
             <button
               onClick={handleGenerateReport}
               disabled={!selectedLearnerId || loading}
-              className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-brand-purple to-brand-teal text-white rounded-xl hover:opacity-90 transition-all font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              className="flex items-center gap-2 px-8 py-3 bg-brand-purple text-white rounded-xl hover:opacity-90 transition-all font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
               {loading ? 'Generating...' : 'Generate Report'}
               <ArrowRight size={20} />

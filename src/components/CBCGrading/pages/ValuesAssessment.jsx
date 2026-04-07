@@ -243,7 +243,7 @@ const ValuesAssessment = ({ learners }) => {
       {viewMode === 'setup' && (
         <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100 max-w-3xl mx-auto mt-8">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-brand-purple/10 to-brand-teal/10 rounded-full flex items-center justify-center mx-auto mb-4 text-brand-purple">
+            <div className="w-16 h-16 bg-brand-purple/10 rounded-full flex items-center justify-center mx-auto mb-4 text-brand-purple">
               <Heart size={32} />
             </div>
             <h2 className="text-2xl font-bold text-gray-800">National Values Assessment</h2>
@@ -304,7 +304,7 @@ const ValuesAssessment = ({ learners }) => {
               <button
                 onClick={handleStartAssessment}
                 disabled={!selection.selectedLearnerId}
-                className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-brand-purple to-brand-teal text-white rounded-xl hover:opacity-90 transition-all font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                className="flex items-center gap-2 px-8 py-3 bg-brand-purple text-white rounded-xl hover:opacity-90 transition-all font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               >
                 Start Assessment
                 <ArrowRight size={20} />
@@ -317,7 +317,7 @@ const ValuesAssessment = ({ learners }) => {
       {viewMode === 'bulk' && (
         <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100 max-w-6xl mx-auto mt-8">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-brand-purple/10 to-brand-teal/10 rounded-full flex items-center justify-center mx-auto mb-4 text-brand-purple">
+            <div className="w-16 h-16 bg-brand-purple/10 rounded-full flex items-center justify-center mx-auto mb-4 text-brand-purple">
               <Heart size={32} />
             </div>
             <h2 className="text-2xl font-bold text-gray-800">Bulk Values Entry</h2>
@@ -398,7 +398,7 @@ const ValuesAssessment = ({ learners }) => {
             <button
               onClick={handleBulkSave}
               disabled={saving || selection.filteredLearners.length === 0}
-              className="px-6 py-3 bg-gradient-to-r from-brand-purple to-brand-teal text-white rounded-xl hover:opacity-90 transition font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-3 bg-brand-purple text-white rounded-xl hover:opacity-90 transition font-bold disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? 'Saving...' : 'Save Bulk Records'}
             </button>
@@ -412,7 +412,7 @@ const ValuesAssessment = ({ learners }) => {
           {/* Compact Context Header */}
           <div className="bg-white rounded-xl shadow-sm p-4 border border-brand-purple/10 flex flex-col md:flex-row items-center justify-between gap-4 sticky top-4 z-20">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-brand-purple to-brand-teal rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm">
+              <div className="w-10 h-10 bg-brand-purple rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm">
                 {selection.selectedLearner.firstName[0]}{selection.selectedLearner.lastName[0]}
               </div>
               <div>

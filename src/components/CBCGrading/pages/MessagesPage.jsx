@@ -481,7 +481,7 @@ const MessagesPage = () => {
   return (
     <div className="h-full flex flex-col bg-white rounded-xl shadow-lg overflow-hidden">
       {/* Header Section */}
-      <div className="bg-gradient-to-r from-brand-purple to-brand-purple/80 px-6 py-4 flex items-center justify-between">
+      <div className="bg-brand-purple px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-white/20 rounded-lg">
             <MessageSquare size={24} className="text-white" />

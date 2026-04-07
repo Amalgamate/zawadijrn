@@ -219,7 +219,7 @@ const PhotoUploadComponent = ({ currentPhoto, onPhotoChange, learnerName }) => {
       {showCamera && isCameraActive && (
         <div className="fixed inset-0 bg-black bg-opacity-95 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 flex items-center justify-between">
+            <div className="bg-blue-600 px-6 py-4 flex items-center justify-between">
               <h3 className="text-xl font-bold text-white">Take Student Photo</h3>
               <button
                 onClick={stopCamera}
@@ -269,7 +269,7 @@ const PhotoUploadComponent = ({ currentPhoto, onPhotoChange, learnerName }) => {
                 <button
                   type="button"
                   onClick={capturePhoto}
-                  className="flex items-center gap-3 px-10 py-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-full transition shadow-lg text-lg font-semibold transform hover:scale-105"
+                  className="flex items-center gap-3 px-10 py-4 bg-blue-500 hover:from-blue-600 hover:to-blue-700 text-white rounded-full transition shadow-lg text-lg font-semibold transform hover:scale-105"
                 >
                   <Camera size={28} />
                   Capture Photo

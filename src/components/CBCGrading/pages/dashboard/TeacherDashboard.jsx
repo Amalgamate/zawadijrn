@@ -43,7 +43,7 @@ const MetricCard = ({ title, value, subtitle, icon: Icon, trend, trendValue }) =
     <div className="group relative bg-white p-4 rounded-lg border border-gray-200 shadow-md hover:shadow-xl hover:border-brand-purple/50 transition-all duration-300">
       <div className={`absolute inset-0 opacity-0 group-hover:opacity-5 bg-gradient-to-br ${gradient} rounded-lg transition-opacity duration-300`}></div>
       <div className="relative flex justify-between items-start mb-2">
-        <div className="p-3 rounded-lg bg-gradient-to-br from-gray-50 to-gray-100 group-hover:scale-110 transition-transform duration-300">
+        <div className="p-3 rounded-lg bg-gray-50 group-hover:scale-110 transition-transform duration-300">
           <Icon size={20} className="text-gray-600" />
         </div>
         {trendValue && (
@@ -66,13 +66,13 @@ const TabButton = ({ active, label, icon: Icon, onClick }) => (
   <button
     onClick={onClick}
     className={`flex items-center gap-2 px-6 py-3 text-xs font-black uppercase tracking-widest transition-all duration-300 border-b-2 relative ${active
-      ? 'border-brand-purple text-brand-purple bg-gradient-to-r from-brand-purple/10 to-transparent'
+      ? 'border-brand-purple text-brand-purple bg-brand-purple/10'
       : 'border-transparent text-gray-400 hover:text-gray-600 hover:bg-white/50'
       }`}
   >
     <Icon size={14} />
     {label}
-    {active && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-brand-purple to-pink-500"></div>}
+    {active && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-purple"></div>}
   </button>
 );
 
@@ -357,7 +357,7 @@ const TeacherDashboard = ({ learners, user, onNavigate }) => {
   return (
     <div className="space-y-6">
       {/* Premium Hero Header */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-brand-teal via-teal-500 to-cyan-500 p-8 text-white shadow-xl">
+      <div className="relative overflow-hidden rounded-xl bg-brand-teal p-8 text-white shadow-xl">
         {/* Decorative circles */}
         <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mr-20 -mt-20"></div>
         <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full -ml-16 -mb-16"></div>
