@@ -28,36 +28,26 @@ import AnimatedDoughnutChart from '../../shared/AnimatedDoughnutChart';
 import { clockInTeacher, clockOutTeacher, getCurrentUserClockInStatus, syncCurrentUserClockInStatus } from '../../../../utils/teacherClockIn';
 
 // Professional Components with Premium Styling
-const MetricCard = ({ title, value, subtitle, icon: Icon, trend, trendValue }) => {
-  const gradients = {
-    blue: 'from-blue-500 to-blue-600',
-    purple: 'from-brand-purple to-pink-500',
-    teal: 'from-brand-teal to-cyan-500',
-    amber: 'from-amber-500 to-orange-500',
-    green: 'from-emerald-500 to-teal-600'
-  };
-  const colors = ['blue', 'purple', 'teal', 'amber', 'green'];
-  const gradient = gradients[colors[Math.floor(Math.random() * colors.length)]];
-
+const MetricCard = ({ title, value, subtitle, icon: Icon, trend, trendValue, color = 'brand-purple' }) => {
   return (
-    <div className="group relative bg-white p-4 rounded-lg border border-gray-200 shadow-md hover:shadow-xl hover:border-brand-purple/50 transition-all duration-300">
-      <div className={`absolute inset-0 opacity-0 group-hover:opacity-5 bg-gradient-to-br ${gradient} rounded-lg transition-opacity duration-300`}></div>
+    <div className="group relative bg-white p-4 rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300">
       <div className="relative flex justify-between items-start mb-2">
-        <div className="p-3 rounded-lg bg-gray-50 group-hover:scale-110 transition-transform duration-300">
-          <Icon size={20} className="text-gray-600" />
+        <div className={`p-3 rounded-lg bg-${color}/5 group-hover:bg-${color}/10 transition-colors duration-300`}>
+          <Icon size={20} className={`text-${color}`} />
         </div>
         {trendValue && (
-          <span className={`text-[10px] font-black px-2 py-1 rounded-full ${trend === 'up'
+          <span className={`flex items-center text-[10px] font-black px-2 py-1 rounded-full ${trend === 'up'
             ? 'bg-emerald-50 text-emerald-600'
             : 'bg-rose-50 text-rose-600'
             }`}>
+            {trend === 'up' ? <ArrowUp size={10} strokeWidth={3} /> : <ArrowDown size={10} strokeWidth={3} />}
             {trendValue}
           </span>
         )}
       </div>
-      <p className="text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">{title}</p>
+      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{title}</p>
       <h3 className="text-2xl font-black text-gray-900 mt-1">{value}</h3>
-      {subtitle && <p className="text-[10px] text-gray-500 mt-1">{subtitle}</p>}
+      {subtitle && <p className="text-[10px] font-medium text-gray-500 mt-1 truncate opacity-70">{subtitle}</p>}
     </div>
   );
 };
@@ -196,12 +186,7 @@ const TeacherDashboard = ({ learners, user, onNavigate }) => {
     return (
       <div className="space-y-6">
         {/* Compact Metric Banner */}
-        <CompactMetricBanner
-          metrics={bannerMetrics}
-          gradientFrom="from-brand-teal"
-          gradientVia="via-teal-500"
-          gradientTo="to-cyan-500"
-        />
+        <CompactMetricBanner metrics={bannerMetrics} />
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           {/* Urgent Tasks */}

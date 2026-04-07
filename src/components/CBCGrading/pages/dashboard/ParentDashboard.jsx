@@ -13,40 +13,37 @@ import { dashboardAPI } from '../../../../services/api';
 import { useNotifications } from '../../hooks/useNotifications';
 import { cn } from '../../../../utils/cn';
 
-const MATRIX_ACCENT = [
-  'from-cyan-500/90 to-blue-600/95',
-  'from-fuchsia-500/90 to-violet-600/95',
-  'from-amber-500/90 to-orange-600/95',
-  'from-emerald-500/90 to-teal-600/95',
+const MATRIX_COLORS = [
+  'bg-cyan-500',
+  'bg-fuchsia-500',
+  'bg-amber-500',
+  'bg-emerald-500',
 ];
 
 const MatrixTile = ({ title, value, subtitle, icon: Icon, accentIndex = 0, onClick, className }) => {
-  const grad = MATRIX_ACCENT[accentIndex % MATRIX_ACCENT.length];
+  const bgColor = MATRIX_COLORS[accentIndex % MATRIX_COLORS.length];
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={!onClick}
       className={cn(
-        'relative overflow-hidden rounded-2xl border border-white/20 p-5 text-left shadow-lg transition-all duration-300',
-        'bg-gradient-to-br ring-1 ring-black/5',
-        grad,
-        onClick && 'hover:scale-[1.02] hover:shadow-xl hover:brightness-105 cursor-pointer',
+        'relative overflow-hidden rounded-2xl border border-gray-100 p-5 text-left shadow-sm transition-all duration-300',
+        onClick && 'hover:shadow-md hover:-translate-y-0.5 cursor-pointer',
         !onClick && 'cursor-default',
         className
       )}
     >
-      <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.15)_0%,transparent_45%,rgba(0,0,0,0.08)_100%)] pointer-events-none" />
-      <div className="relative flex flex-col gap-3 text-white">
+      <div className="relative flex flex-col gap-4">
         <div className="flex items-start justify-between gap-2">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/85">{title}</p>
-          <div className="rounded-xl bg-white/15 p-2 backdrop-blur-sm">
-            <Icon size={20} strokeWidth={2.2} />
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">{title}</p>
+          <div className={cn('rounded-xl p-2.5 text-white shadow-sm', bgColor)}>
+            <Icon size={18} strokeWidth={2.5} />
           </div>
         </div>
         <div>
-          <p className="text-3xl font-black tracking-tight drop-shadow-sm">{value}</p>
-          {subtitle && <p className="mt-1 text-xs font-semibold text-white/80">{subtitle}</p>}
+          <p className="text-3xl font-black tracking-tight text-gray-900">{value}</p>
+          {subtitle && <p className="mt-1 text-[10px] font-bold text-gray-500 uppercase tracking-wide opacity-70">{subtitle}</p>}
         </div>
       </div>
     </button>
@@ -58,14 +55,15 @@ const TabButton = ({ active, label, icon: Icon, onClick }) => (
     type="button"
     onClick={onClick}
     className={cn(
-      'flex items-center gap-2 px-4 py-3 text-xs font-black uppercase tracking-widest transition-all border-b-2 sm:px-6',
+      'flex items-center gap-2 px-6 py-3 text-xs font-black uppercase tracking-widest transition-all duration-300 border-b-2 relative',
       active
-        ? 'border-brand-purple text-brand-purple bg-brand-purple/5'
-        : 'border-transparent text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+        ? 'border-brand-purple text-brand-purple bg-brand-purple/10'
+        : 'border-transparent text-gray-400 hover:text-gray-600 hover:bg-white/50'
     )}
   >
     <Icon size={14} />
     {label}
+    {active && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-purple"></div>}
   </button>
 );
 
