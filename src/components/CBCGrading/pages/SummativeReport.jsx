@@ -6,7 +6,10 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Download, Loader, MessageCircle, Printer, MessageSquare, AlertCircle, CheckCircle, XCircle, Edit2, FileText } from 'lucide-react';
 import VirtualizedTable from '../shared/VirtualizedTable';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
+  PieChart, Pie, Legend
+} from 'recharts';
 import { useNotifications } from '../hooks/useNotifications';
 import api, { configAPI, communicationAPI } from '../../../services/api';
 import { gradingAPI } from '../../../services/api/grading.api';

@@ -28,10 +28,9 @@
   --brand-purple-dark: #3d003b;
   --brand-purple-light: #6d0066;
   --brand-teal: #0D9488;
-  /* Tables: blend main brand with slate so grids stay readable on any school color (App.jsx updates --brand-purple) */
-  --table-border: color-mix(in srgb, var(--brand-purple) 46%, rgb(203 213 225));
-  --table-header-bg: color-mix(in srgb, var(--brand-purple) 14%, rgb(241 245 249));
-  /* Header label color tracks school brand (darker variant for contrast on light header bg) */
+  /* Replaced color-mix with static hex for html2canvas compatibility */
+  --table-border: #b1a0b0; 
+  --table-header-bg: #f8f1f7;
   --table-header-fg: var(--brand-purple-dark);
   --bg-primary: #ffffff;
   --bg-secondary: #f8fafc;

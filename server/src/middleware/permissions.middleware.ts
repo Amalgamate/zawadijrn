@@ -45,7 +45,7 @@ export interface AuthRequest extends Request {
 export const requirePermission = (permission: Permission) => {
   return (req: AuthRequest, res: Response, next: NextFunction): void => {
     try {
-      const userRole = req.user?.role;
+      const userRole = req.user?.role?.toUpperCase();
 
       if (!userRole) {
         res.status(401).json({
@@ -55,7 +55,7 @@ export const requirePermission = (permission: Permission) => {
         return;
       }
 
-      if (!hasPermission(userRole, permission)) {
+      if (!hasPermission(userRole as Role, permission)) {
         console.warn(`[PERMISSIONS] 403 Forbidden: User ${req.user?.email} (${userRole}) lacks permission ${permission} for ${req.method} ${req.originalUrl}`);
         res.status(403).json({
           success: false,
@@ -128,7 +128,7 @@ export const requireAnyPermission = (permissions: Permission[]) => {
 export const requireRole = (roles: Role[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction): void => {
     try {
-      const userRole = req.user?.role;
+      const userRole = req.user?.role?.toUpperCase();
 
       if (!userRole) {
         res.status(401).json({
@@ -138,7 +138,11 @@ export const requireRole = (roles: Role[]) => {
         return;
       }
 
-      if (!roles.includes(userRole)) {
+      // Normalize allowed roles to uppercase for safe matching
+      const normalizedAllowedRoles = roles.map(r => r.toUpperCase());
+
+      if (!normalizedAllowedRoles.includes(userRole)) {
+        console.warn(`[PERMISSIONS] 403 Access Denied: User ${req.user?.email} (${userRole}) is not in allowed roles [${roles.join(', ')}] for ${req.method} ${req.originalUrl}`);
         res.status(403).json({
           success: false,
           message: 'Access denied',

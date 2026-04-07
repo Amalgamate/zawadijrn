@@ -272,19 +272,19 @@ export class UserController {
   }
 
   async getUsersByRole(req: AuthRequest, res: Response) {
-    const { role } = req.params;
+    const roleParam = (req.params.role || '').toUpperCase();
     const { search, page = 1, limit = 20 } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
 
     let whereClause: any = { archived: false };
     
     // If requesting TEACHER role, include other teaching roles like HEAD_TEACHER, ADMIN, etc.
-    if (role === 'TEACHER') {
+    if (roleParam === 'TEACHER') {
         whereClause.role = { 
             in: ['TEACHER', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM', 'ADMIN', 'SUPER_ADMIN'] 
         };
     } else {
-        whereClause.role = role as any;
+        whereClause.role = roleParam as any;
     }
 
     if (search) {
