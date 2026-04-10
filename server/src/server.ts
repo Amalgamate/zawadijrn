@@ -20,12 +20,32 @@ app.set('trust proxy', 1);
 // Security middleware
 app.use(helmet());
 
-// CORS — allow any origin in single-tenant/desktop mode
-// Clients connect from Electron (file://), localhost, or any configured server URL
+// CORS — allow specific origins including Vercel and local development
+const allowedOrigins = [
+  'https://zawadijrn.vercel.app',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  process.env.FRONTEND_URL
+].filter(Boolean) as string[];
+
 app.use(cors({
-  origin: true, // Reflect request origin — safe for single-tenant
+  origin: (origin, callback) => {
+    // allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const isAllowed = allowedOrigins.some(allowed => origin.startsWith(allowed)) || 
+                     origin.startsWith('file://') || 
+                     process.env.NODE_ENV !== 'production';
+                     
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   exposedHeaders: ['X-Total-Count', 'X-Page-Count'],
   maxAge: 86400,
 }));
