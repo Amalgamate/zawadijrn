@@ -282,8 +282,8 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
                     <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} dx={-10} tickFormatter={(val) => `${val >= 1000 ? val/1000 + 'k' : val}`} />
                     <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
                     <Legend verticalAlign="bottom" height={20} iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: '500' }} />
-                    <Bar dataKey="collected" name="Collected" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={12} stackId="a" />
-                    <Bar dataKey="pending" name="Pending (Danger)" fill="#f43f5e" radius={[4, 4, 0, 0]} barSize={12} stackId="a" />
+                    <Bar dataKey="collected" name="Collected" fill="#8b5cf6" radius={0} barSize={12} stackId="a" />
+                    <Bar dataKey="pending" name="Pending (Danger)" fill="#f43f5e" radius={0} barSize={12} stackId="a" />
                   </BarChart>
                 ) : (
                   <div className="h-full w-full flex items-center justify-center text-xs text-gray-400 italic">No Financial Data</div>
@@ -412,8 +412,8 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
                     <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} dx={-10} tickFormatter={(val) => `${val >= 1000 ? val/1000 + 'k' : val}`} />
                     <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
                     <Legend verticalAlign="bottom" height={20} iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: '500' }} />
-                    <Bar dataKey="collected" name="Collected Revenue" fill="#8b5cf6" radius={[4, 4, 0, 0]} stackId="a" />
-                    <Bar dataKey="pending" name="High Risk Pending" fill="#f43f5e" radius={[4, 4, 0, 0]} stackId="a" />
+                    <Bar dataKey="collected" name="Collected Revenue" fill="#8b5cf6" radius={0} stackId="a" />
+                    <Bar dataKey="pending" name="High Risk Pending" fill="#f43f5e" radius={0} stackId="a" />
                   </BarChart>
                 ) : (
                    <div className="h-full w-full flex items-center justify-center text-xs text-gray-400 italic">No Financial Data Available</div>

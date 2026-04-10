@@ -664,21 +664,29 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
             const normalizedGrade = String(test.grade || '').replace(/\s+/g, '_').toUpperCase();
             const normalizedArea = String(test.learningArea || '').toUpperCase().trim();
 
-            scale = systems.find(s => {
-              const systemName = String(s.name).toUpperCase();
-              const hasGrade = systemName.includes(normalizedGrade);
+            // Prioritize by Institution Type first
+            const secondaryScales = systems.filter(s => s.type === 'SECONDARY');
+            const primaryScales = systems.filter(s => s.type === 'PRIMARY' || !s.type);
 
+            const searchPool = isSecondaryPortal ? [...secondaryScales, ...primaryScales] : [...primaryScales, ...secondaryScales];
+
+            scale = searchPool.find(s => {
+              const systemName = String(s.name).toUpperCase();
+              
+              // If we're in secondary portal, favor the hybrid/hierarchical scale
+              if (isSecondaryPortal && systemName.includes('SENIOR')) return true;
+
+              const hasGrade = systemName.includes(normalizedGrade);
               if (!hasGrade) return false;
 
               if (systemName.includes(normalizedArea)) return true;
-              if (normalizedArea.includes('MATHEMATIC') && systemName.includes('MATHEMATIC')) return true;
-              if (normalizedArea.includes('LANGUAGE') && systemName.includes('LANGUAGE')) return true;
-              if (normalizedArea.includes('ENVIRONMENTAL') && systemName.includes('ENVIRONMENTAL')) return true;
-              if (normalizedArea.includes('CREATIVE') && systemName.includes('CREATIVE')) return true;
-              if (normalizedArea.includes('RELIGIOUS') && systemName.includes('RELIGIOUS')) return true;
-
               return false;
             });
+
+            // Final fallback to any secondary scale if in secondary portal
+            if (!scale && isSecondaryPortal) {
+              scale = secondaryScales.find(s => s.isDefault) || secondaryScales[0];
+            }
           }
 
           if (scale && scale.ranges) {
@@ -930,10 +938,19 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
       const range = gradingScale.ranges.find(r =>
         percentage >= r.minPercentage && percentage <= r.maxPercentage
       );
-      if (range && range.description) {
-        return range.description.replace(/\{\{learner\}\}/g, learnerName || 'Learner');
+      if (range) {
+        let label = range.label;
+        let band = range.parentBand || '';
+        
+        // Format: "Exceeding Expectations (EE1)"
+        const fullLabel = band ? `${band} (${label})` : label;
+
+        if (range.description) {
+          return range.description.replace(/\{\{learner\}\}/g, learnerName || 'Learner');
+        }
+        return fullLabel;
       }
-      return range ? range.label : 'Not assessed';
+      return 'Not assessed';
     }
 
     return 'Not assessed';

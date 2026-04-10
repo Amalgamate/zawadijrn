@@ -26,28 +26,41 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
   process.env.FRONTEND_URL
-].filter(Boolean) as string[];
+].filter(Boolean).map(o => o!.replace(/\/$/, '')) as string[];
 
 app.use(cors({
   origin: (origin, callback) => {
-    // allow requests with no origin (like mobile apps or curl requests)
+    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
-    const isAllowed = allowedOrigins.some(allowed => origin.startsWith(allowed)) || 
-                     origin.startsWith('file://') || 
+    // Normalize incoming origin (remove trailing slash for comparison)
+    const normalizedOrigin = origin.replace(/\/$/, '');
+    
+    const isAllowed = allowedOrigins.some(allowed => normalizedOrigin === allowed || normalizedOrigin.startsWith(allowed)) || 
+                     normalizedOrigin.startsWith('file://') || 
                      process.env.NODE_ENV !== 'production';
                      
     if (isAllowed) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      // Log rejected origins to help with production diagnostics 
+      logger.warn({ origin: origin, normalizedOrigin }, 'CORS request rejected');
+      callback(null, false); // Return false instead of Error to allow standard CORS handling
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'X-Requested-With', 
+    'Accept', 
+    'Origin',
+    'x-branch-id',
+    'x-school-id'
+  ],
   exposedHeaders: ['X-Total-Count', 'X-Page-Count'],
-  maxAge: 86400,
+  maxAge: 86400, // 24 hours
 }));
 
 // Global IP-based rate limiting  

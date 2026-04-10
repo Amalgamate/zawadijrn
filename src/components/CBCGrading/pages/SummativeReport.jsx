@@ -207,30 +207,35 @@ const GRADE_COLORS = {
 const makeCBCGrader = (ranges) => {
   const active = (ranges && ranges.length > 0) ? ranges : DEFAULT_CBC_RANGES;
 
-  // Sort descending so we match the highest band first
-  const sorted = [...active].sort((a, b) => (b.minScore ?? b.min ?? 0) - (a.minScore ?? a.min ?? 0));
+  // Sort descending so we match the highest percentage band first
+  // Note: Standardizes on minPercentage (DB) or minScore (Legacy)
+  const sorted = [...active].sort((a, b) => {
+    const minA = b.minPercentage ?? b.minScore ?? b.min ?? 0;
+    const minB = a.minPercentage ?? a.minScore ?? a.min ?? 0;
+    return minA - minB;
+  });
 
   return (percentage) => {
     const pct = typeof percentage === 'number' ? percentage : parseFloat(percentage) || 0;
     for (const r of sorted) {
-      const min = r.minScore ?? r.min ?? 0;
+      const min = r.minPercentage ?? r.minScore ?? r.min ?? 0;
       if (pct >= min) {
-        const grade = r.grade || r.gradeName || 'BE2';
+        const grade = r.label || r.grade || r.gradeName || 'BE1';
         return {
           grade,
-          remark: r.remark || r.description || grade,
-          color:  r.color || GRADE_COLORS[grade] || '#8B0000',
+          remark: r.parentBand ? `${r.parentBand} (${grade})` : (r.description || r.remark || grade),
+          color:  r.color || GRADE_COLORS[grade] || '#111827',
           points: r.points ?? r.point ?? 1,
         };
       }
     }
-    // Below all ranges — return the last (lowest) band
+    // Below all ranges
     const last = sorted[sorted.length - 1];
-    const grade = last?.grade || 'BE2';
+    const grade = last?.label || last?.grade || 'BE1';
     return {
       grade,
-      remark: last?.remark || grade,
-      color:  last?.color || GRADE_COLORS[grade] || '#8B0000',
+      remark: last?.description || last?.remark || grade,
+      color:  last?.color || GRADE_COLORS[grade] || '#111827',
       points: last?.points ?? 1,
     };
   };
