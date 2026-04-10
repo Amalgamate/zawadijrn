@@ -16,6 +16,10 @@ const PORT = process.env.PORT || 5000;
 
 async function startServer() {
   try {
+    // Phase 4: Explicit DB connection check for production stability
+    await prisma.$connect();
+    logger.info('✅ Database connection established');
+
     // Ensure SuperAdmin exists on startup
     await ensureSuperAdmin();
 

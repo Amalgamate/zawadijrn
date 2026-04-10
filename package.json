@@ -41,7 +41,7 @@
   "scripts": {
     "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
     "build": "vite build --base=/",
-    "render-build": "npm install --prefix server && npm run build --prefix server && npx prisma db push --schema=server/prisma/schema.prisma --accept-data-loss",
+    "render-build": "npm install --prefix server && npm run build --prefix server",
     "preview": "vite preview",
     "backend": "npm --prefix server run dev",
     "frontend": "vite",
