@@ -38,6 +38,10 @@ resolveMigration('20260404104631_add_library_accounting_sync_v2', '--rolled-back
 // If this previously failed mid-deploy, clear failed state so deploy can retry.
 resolveMigration('20260406121000_enforce_cbc_eight_level_grading', '--rolled-back');
 
+// 5. Rename Forms to Grade 10-12
+// This migration failed on Render. Marking as rolled-back so migrate deploy can retry it.
+resolveMigration('20260407160000_rename_forms_to_grade10_12', '--rolled-back');
+
 // Note: We removed the global "db push" from here because it's too aggressive 
 // during the type transition. migrate deploy is safer as it handles data 
 // migration SQL.
