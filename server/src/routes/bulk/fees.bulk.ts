@@ -267,8 +267,8 @@ router.post(
           const receiptNumber = `RCP-${Date.now().toString().slice(-4)}${randStr}`;
 
           // Create payment
-          await prisma.$transaction(async (tx) => {
-            const payment = await tx.feePayment.create({
+          const payment = await prisma.$transaction(async (tx) => {
+            const createdPayment = await tx.feePayment.create({
               data: {
                 receiptNumber,
                 invoiceId: invoice.id,
@@ -293,12 +293,12 @@ router.post(
               }
             });
 
-            return payment;
+            return createdPayment;
           });
 
           // Sync Daily Payment with Accounting
           try {
-            await accountingService.postFeePaymentToLedger(resultPayment, 'CASH');
+            await accountingService.postFeePaymentToLedger(payment, 'CASH');
           } catch (accErr) {
             console.error(`[BulkPayment-Accounting] Failed to post payment ledger: ${admNo}`, accErr);
           }

@@ -40,6 +40,8 @@ model User {
   passwordResetToken        String?
   passwordResetExpiry       DateTime?
   profilePicture            String?
+  bankName                  String?
+  bankAccountName           String?
   bankAccountNumber         String?
   kraPin                    String?
   nhifNumber                String?
