@@ -254,9 +254,29 @@ export class LearnerController {
         console.error('Failed to create student system user:', userError);
       }
 
-      try { await feeService.generateInvoiceForLearner(learner.id); } catch (e) { console.error('Invoice generation failed:', e); }
+      // Generate Initial Fee Invoice
+      let invoiceMessage = '';
+      try {
+        const invResult = await feeService.generateInvoiceForLearner(learner.id);
+        if (invResult.success) {
+          if (invResult.created) {
+            invoiceMessage = ` Invoice ${invResult.invoice.invoiceNumber} generated for ${invResult.invoice.term} ${invResult.invoice.academicYear}.`;
+          } else {
+            invoiceMessage = ' (Invoice already exists for this term).';
+          }
+        } else {
+          invoiceMessage = ` (⚠️ Note: Fee invoice not generated: ${invResult.error})`;
+        }
+      } catch (e: any) {
+        console.error('Invoice generation failed:', e);
+        invoiceMessage = ` (⚠️ Error: Automated invoice failed: ${e.message})`;
+      }
 
-      res.status(201).json({ success: true, data: learner, message: 'Learner created successfully' });
+      res.status(201).json({ 
+        success: true, 
+        data: learner, 
+        message: `Learner created successfully.${invoiceMessage}` 
+      });
     } catch (createError: any) {
       console.error('[createLearner] Full error:', createError);
       throw new ApiError(500, `Creation failed: ${createError.message || JSON.stringify(createError)}`);

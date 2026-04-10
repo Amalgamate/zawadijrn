@@ -45,6 +45,7 @@ export class DashboardController {
                 latestSummative,
                 upcomingEventsData,
                 pendingDraftCount,
+                genderDistribution,
             ] = await Promise.all([
                 prisma.learner.count({ where: { archived: false } }),
                 prisma.user.count({ where: { role: 'TEACHER', archived: false } }),
@@ -84,6 +85,7 @@ export class DashboardController {
                     }
                 })(),
                 prisma.formativeAssessment.count({ where: { status: 'DRAFT', archived: false } }),
+                prisma.learner.groupBy({ by: ['gender'], where: { archived: false }, _count: true }),
             ]);
 
             // ── 1.5 Calculate Assessed Classes & Missed Exams ──────────────
@@ -185,7 +187,7 @@ export class DashboardController {
                     where: { archived: false },
                     _sum: { paidAmount: true, balance: true },
                 }),
-                // Per-grade breakdown — only what we need
+                // Per-feeStructure breakdown — only what we need
                 prisma.feeInvoice.groupBy({
                     by: ['feeStructureId'],
                     where: { archived: false },
@@ -205,6 +207,33 @@ export class DashboardController {
                     _count: true,
                 }),
             ]);
+
+            // ── Resolve feeStructureId → name for stream breakdown ─────────────
+            const feeStructureIds = feeByGrade.map(r => r.feeStructureId);
+            const feeStructures = feeStructureIds.length
+                ? await prisma.feeStructure.findMany({
+                    where: { id: { in: feeStructureIds } },
+                    select: { id: true, name: true, grade: true },
+                  })
+                : [];
+            const feeStructureMap = new Map(feeStructures.map(fs => [fs.id, fs]));
+
+            const streamBreakdown = feeByGrade
+                .map(row => {
+                    const fs = feeStructureMap.get(row.feeStructureId);
+                    if (!fs) return null;
+                    const target    = Number(row._sum.totalAmount || 0);
+                    const collected = Number(row._sum.paidAmount  || 0);
+                    const bal       = Number(row._sum.balance     || 0);
+                    return {
+                        name:      fs.name || fs.grade.replace('_', ' '),
+                        target,
+                        collected,
+                        bal,
+                    };
+                })
+                .filter(Boolean)
+                .sort((a: any, b: any) => b.bal - a.bal); // highest risk first
 
             // ── Derive top performing classes (from groupBy, no full scan) ────
             const testIds = summativeByGrade.map(r => r.testId);
@@ -286,12 +315,14 @@ export class DashboardController {
                     feeCollected, feePending,
                     studentTrend: this.calculateTrend(studentCount, prevStudentCount),
                     teacherTrend: this.calculateTrend(teacherCount, prevTeacherCount),
+                    males: genderDistribution.find((g: any) => g.gender === 'MALE')?._count || 0,
+                    females: genderDistribution.find((g: any) => g.gender === 'FEMALE')?._count || 0,
                     totalPendingAssessments: pendingDraftCount,
                     performance: { ee: 0, me: 0, ae: 0, be: 0 },
                 },
                 unAssessedBreakdown,
                 distributions: { studentsByGrade: gradeDistribution, staff: staffDistribution, subjectProficiency },
-                financials: { streamBreakdown: [] },
+                financials: { streamBreakdown },
                 recentActivity: { admissions: latestAdmissions, assessments: latestAssessments },
                 topPerformingClasses,
                 upcomingEvents,

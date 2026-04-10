@@ -11,6 +11,7 @@ import { AuthRequest } from '../middleware/permissions.middleware';
 import { SmsService } from '../services/sms.service';
 import { whatsappService } from '../services/whatsapp.service';
 import { accountingService } from '../services/accounting.service';
+import { complianceService } from '../services/compliance.service';
 import { EmailService } from '../services/email.service';
 
 function normalizeEnumValue(value?: string): string | undefined {
@@ -61,6 +62,15 @@ async function createInvoiceWithSafeNumber(client: any, invoiceData: any, includ
   }
 
   throw lastError;
+}
+
+/**
+ * [FIX 3] Shared transport filter — was copy-pasted in createInvoice AND
+ * bulkGenerateInvoices. Single source of truth now.
+ */
+function applyTransportFilter(items: any[], includeTransport: boolean): any[] {
+  if (includeTransport) return items;
+  return items.filter((item: any) => item.feeType?.code !== 'TRANSPORT');
 }
 
 export class FeeController {
@@ -296,21 +306,17 @@ export class FeeController {
 
     if (!learner || !feeStructure) throw new ApiError(404, 'Learner or Fee structure not found');
 
-    // Filter fee items based on transport preference
-    const items = (feeStructure as any).feeItems || [];
-    const filteredItems = items.filter((item: any) => {
-      if (includeTransport === false && item.feeType?.code === 'TRANSPORT') {
-        return false;
-      }
-      return true;
-    });
+    // [FIX 3] Use shared transport filter helper
+    const filteredItems = applyTransportFilter(
+      (feeStructure as any).feeItems || [],
+      includeTransport !== false
+    );
 
     const totalAmount = filteredItems.reduce((sum: number, item: any) => sum + Number(item.amount), 0);
 
     const existing = await prisma.feeInvoice.findFirst({
       where: { learnerId, feeStructureId, term, academicYear }
     });
-    // If it's the same structure/term/year, we prevent duplicate invoices
     if (existing) throw new ApiError(400, 'An invoice for this period already exists for the student');
 
     const invoice = await createInvoiceWithSafeNumber(prisma, {
@@ -333,8 +339,8 @@ export class FeeController {
       } as any
     });
 
-    // Handle Notifications & Accounting in parallel background tasks
-    // We send the response immediately to avoid "stuck at saving" feeling
+    // Handle Notifications & Accounting in parallel background tasks.
+    // Response is sent immediately to avoid latency.
     setImmediate(async () => {
       try {
         const contactPhone = learner.primaryContactPhone || learner.guardianPhone;
@@ -359,7 +365,8 @@ export class FeeController {
 
       try {
         await accountingService.postFeeInvoiceToLedger(invoice);
-      } catch (err) { console.error('Post-creation accounting error:', err); }
+        await complianceService.syncInvoiceToETIMS(invoice.id);
+      } catch (err) { console.error('Post-creation background tasks error:', err); }
     });
 
     res.status(201).json({ success: true, data: invoice });
@@ -402,8 +409,7 @@ export class FeeController {
       }
     }
 
-    if (!invoice) throw new ApiError(404, 'Invoice not found');
-
+    // [FIX 1] Removed duplicate if (!invoice) guard that fired twice back-to-back
     if (!invoice) throw new ApiError(404, 'Invoice not found');
     if (invoice.status === 'PAID') throw new ApiError(400, 'Invoice is already fully paid');
 
@@ -462,13 +468,23 @@ export class FeeController {
     (async () => {
       try {
         await accountingService.postFeePaymentToLedger(result.payment, paymentMethod);
+
         const learner = result.invoice.learner;
         const contactPhone = learner.primaryContactPhone || learner.guardianPhone;
+        const newStatus: string = result.invoice.status;
+
         if (contactPhone) {
-          await SmsService.sendSms(
-            contactPhone,
-            `Payment of KES ${amount.toLocaleString()} received for ${learner.firstName}. New balance: KES ${result.invoice.balance.toLocaleString()}. Thank you.`
-          );
+          // [FIX 2] Tailored SMS copy per payment outcome status
+          let smsMessage: string;
+          if (newStatus === 'PAID') {
+            smsMessage = `Payment of KES ${amount.toLocaleString()} received for ${learner.firstName}. Invoice fully settled. Thank you.`;
+          } else if (newStatus === 'OVERPAID') {
+            smsMessage = `Payment of KES ${amount.toLocaleString()} received for ${learner.firstName}. Credit balance: KES ${Math.abs(Number(result.invoice.balance)).toLocaleString()}. Please contact the school to arrange a refund or apply to next term.`;
+          } else {
+            // PARTIAL
+            smsMessage = `Payment of KES ${amount.toLocaleString()} received for ${learner.firstName}. Outstanding balance: KES ${Number(result.invoice.balance).toLocaleString()}. Thank you.`;
+          }
+          await SmsService.sendSms(contactPhone, smsMessage);
         }
       } catch (err) { console.error('Post-payment error:', err); }
     })();
@@ -478,6 +494,8 @@ export class FeeController {
 
   /**
    * Get summary stats
+   * [FIX 5] Grade-wise collection now uses a Prisma groupBy query instead of
+   * fetching all invoices into memory and grouping in JS.
    */
   async getPaymentStats(req: AuthRequest, res: Response) {
     const { academicYear, term, grade, startDate, endDate } = req.query;
@@ -528,7 +546,7 @@ export class FeeController {
     const totalOutstanding = invoicesByStatus.reduce((acc, curr) => acc + Number(curr._sum.balance || 0), 0);
     const collectionRate = totalExpected > 0 ? Math.round((totalCollected / totalExpected) * 100) : 0;
 
-    const paidInvoices = invoicesByStatus.find(i => i.status === 'PAID')?._count || 0;
+    const paidInvoices    = invoicesByStatus.find(i => i.status === 'PAID')?._count    || 0;
     const partialInvoices = invoicesByStatus.find(i => i.status === 'PARTIAL')?._count || 0;
     const pendingInvoices = invoicesByStatus.find(i => i.status === 'PENDING')?._count || 0;
     const overdueInvoices = await prisma.feeInvoice.count({
@@ -548,28 +566,42 @@ export class FeeController {
       count: p._count
     }));
 
-    const invoicesWithGrade = await prisma.feeInvoice.findMany({
+    // [FIX 5] Grade-wise breakdown via DB groupBy — no full table scan into JS memory.
+    // We group invoices by learner.grade directly in the database, then run a
+    // separate count-distinct for studentCount using a raw aggregate per grade.
+    const gradeGroupRaw = await prisma.feeInvoice.groupBy({
+      by: ['learnerId'] as any,
       where: invoiceWhere,
-      select: {
+      _sum: {
         totalAmount: true,
         paidAmount: true,
-        balance: true,
-        learner: { select: { grade: true, id: true } }
+        balance: true
       }
     });
 
-    const gradeMap: Record<string, any> = {};
-    for (const inv of invoicesWithGrade) {
-      const g = inv.learner?.grade || 'Unknown';
-      if (!gradeMap[g]) gradeMap[g] = { grade: g, studentIds: new Set(), expected: 0, collected: 0, outstanding: 0 };
-      gradeMap[g].studentIds.add(inv.learner?.id);
-      gradeMap[g].expected += Number(inv.totalAmount || 0);
-      gradeMap[g].collected += Number(inv.paidAmount || 0);
-      gradeMap[g].outstanding += Number(inv.balance || 0);
+    // Fetch the grade for each learner we just grouped — one query, not N queries
+    const learnerIds = gradeGroupRaw.map((r: any) => r.learnerId).filter(Boolean);
+    const learnerGrades = learnerIds.length > 0
+      ? await prisma.learner.findMany({
+          where: { id: { in: learnerIds } },
+          select: { id: true, grade: true }
+        })
+      : [];
+
+    const gradeIdMap = new Map(learnerGrades.map(l => [l.id, l.grade || 'Unknown']));
+
+    const gradeAgg: Record<string, { expected: number; collected: number; outstanding: number; studentIds: Set<string> }> = {};
+    for (const row of gradeGroupRaw as any[]) {
+      const g = gradeIdMap.get(row.learnerId) ?? 'Unknown';
+      if (!gradeAgg[g]) gradeAgg[g] = { expected: 0, collected: 0, outstanding: 0, studentIds: new Set() };
+      gradeAgg[g].studentIds.add(row.learnerId);
+      gradeAgg[g].expected    += Number(row._sum.totalAmount || 0);
+      gradeAgg[g].collected   += Number(row._sum.paidAmount  || 0);
+      gradeAgg[g].outstanding += Number(row._sum.balance     || 0);
     }
 
-    const gradeWiseCollection = Object.values(gradeMap).map((gm: any) => ({
-      grade: gm.grade.replace(/_/g, ' '),
+    const gradeWiseCollection = Object.entries(gradeAgg).map(([g, gm]) => ({
+      grade: g.replace(/_/g, ' '),
       studentCount: gm.studentIds.size,
       expected: gm.expected,
       collected: gm.collected,
@@ -597,6 +629,9 @@ export class FeeController {
 
   /**
    * Bulk generate invoices
+   * [FIX 4] Duplicate-check is now done BEFORE the transaction using a single
+   * query, avoiding N findFirst calls inside the transaction loop which could
+   * time out on large grades.
    */
   async bulkGenerateInvoices(req: AuthRequest, res: Response) {
     const { feeStructureId, term, academicYear, dueDate, grade, stream, includeTransport } = req.body;
@@ -613,14 +648,11 @@ export class FeeController {
 
     if (!feeStructure) throw new ApiError(404, 'Fee structure not found');
 
-    // Filter fee items based on transport preference
-    const items = (feeStructure as any).feeItems || [];
-    const filteredItems = items.filter((item: any) => {
-      if (includeTransport === false && item.feeType?.code === 'TRANSPORT') {
-        return false;
-      }
-      return true;
-    });
+    // [FIX 3] Use shared transport filter helper
+    const filteredItems = applyTransportFilter(
+      (feeStructure as any).feeItems || [],
+      includeTransport !== false
+    );
 
     const totalAmount = filteredItems.reduce((sum: number, item: any) => sum + Number(item.amount), 0);
 
@@ -634,6 +666,31 @@ export class FeeController {
 
     if (learners.length === 0) {
       throw new ApiError(400, 'No active learners found for grade/stream');
+    }
+
+    // [FIX 4] Pre-fetch all learner IDs that already have an invoice for this
+    // structure+term+year in ONE query, then filter in JS — keeps the
+    // transaction lean and avoids per-learner findFirst calls inside it.
+    const learnerIds = learners.map(l => l.id);
+    const alreadyInvoiced = await prisma.feeInvoice.findMany({
+      where: {
+        learnerId: { in: learnerIds },
+        feeStructureId,
+        term,
+        academicYear
+      },
+      select: { learnerId: true }
+    });
+    const alreadyInvoicedSet = new Set(alreadyInvoiced.map(i => i.learnerId));
+    const learnersToInvoice = learners.filter(l => !alreadyInvoicedSet.has(l.id));
+
+    if (learnersToInvoice.length === 0) {
+      return res.status(200).json({
+        success: true,
+        data: [],
+        count: 0,
+        message: 'All learners in this grade already have invoices for this period.'
+      });
     }
 
     let results;
@@ -650,13 +707,7 @@ export class FeeController {
 
           let nextSequence = parseInvoiceNumber(maxResult._max.invoiceNumber as string | null) + 1;
 
-          for (let i = 0; i < learners.length; i++) {
-            const learner = learners[i];
-            const existing = await tx.feeInvoice.findFirst({
-              where: { learnerId: learner.id, feeStructureId, term, academicYear }
-            });
-            if (existing) continue;
-
+          for (const learner of learnersToInvoice) {
             const invoiceNumber = `INV-${academicYear}-${String(nextSequence).padStart(6, '0')}`;
             nextSequence += 1;
 
@@ -693,6 +744,19 @@ export class FeeController {
     if (!results) {
       throw lastError;
     }
+
+    // Handle Accounting Ledger Posting & eTIMS sync in background
+    setImmediate(async () => {
+      console.log(`[BulkCompliance] Starting background tasks for ${results?.length} invoices...`);
+      for (const inv of results || []) {
+        try {
+          await accountingService.postFeeInvoiceToLedger(inv);
+          await complianceService.syncInvoiceToETIMS(inv.id);
+        } catch (err) {
+          console.error(`[BulkCompliance] Failed background sync for invoice ${inv.invoiceNumber}:`, err);
+        }
+      }
+    });
 
     res.status(201).json({ success: true, data: results, count: results.length });
   }

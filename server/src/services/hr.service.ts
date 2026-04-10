@@ -1,5 +1,6 @@
 import prisma from '../config/database';
 import { accountingService } from './accounting.service';
+import { TaxCalculator } from '../utils/tax.calculator';
 
 export class HRService {
     private toDateOnly(dateValue: Date) {
@@ -37,6 +38,7 @@ export class HRService {
                 kraPin: true,
                 nhifNumber: true,
                 nssfNumber: true,
+                shifNumber: true,
                 bankName: true,
                 bankAccountNumber: true,
                 basicSalary: true,
@@ -62,6 +64,7 @@ export class HRService {
                 kraPin: details.kraPin,
                 nhifNumber: details.nhifNumber,
                 nssfNumber: details.nssfNumber,
+                shifNumber: details.shifNumber,
                 bankName: details.bankName,
                 bankAccountName: details.bankAccountName,
                 bankAccountNumber: details.bankAccountNumber,
@@ -184,7 +187,11 @@ export class HRService {
             if (existing) continue;
 
             const basicSalary = Number(member.basicSalary);
-            const netSalary = basicSalary;
+            
+            // Calculate Statutory Deductions
+            const taxBreakdown = TaxCalculator.getBreakdown(basicSalary, {
+                exemptLevy: !!member.housingLevyExempt
+            });
 
             const record = await prisma.payrollRecord.create({
                 data: {
@@ -192,7 +199,8 @@ export class HRService {
                     month,
                     year,
                     basicSalary,
-                    netSalary,
+                    netSalary: taxBreakdown.netSalary,
+                    deductions: taxBreakdown as any,
                     status: 'DRAFT',
                     generatedBy
                 }
@@ -239,7 +247,10 @@ export class HRService {
                         lastName: true,
                         staffId: true,
                         bankName: true,
-                        bankAccountNumber: true
+                        bankAccountNumber: true,
+                        kraPin: true,
+                        nssfNumber: true,
+                        shifNumber: true
                     }
                 }
             }
@@ -286,7 +297,9 @@ export class HRService {
         const user = await prisma.user.findUnique({
             where: { id: userId },
             select: {
-                basicSalary: true
+                id: true,
+                basicSalary: true,
+                housingLevyExempt: true
             }
         });
 
@@ -306,13 +319,20 @@ export class HRService {
         let payrollCreated = false;
         if (!payrollRecord && user?.basicSalary && Number(user.basicSalary) > 0) {
             const basicSalary = Number(user.basicSalary);
+            
+            // Use same tax calculation for auto-created record
+            const taxBreakdown = TaxCalculator.getBreakdown(basicSalary, {
+                exemptLevy: !!user.housingLevyExempt
+            });
+
             payrollRecord = await prisma.payrollRecord.create({
                 data: {
                     userId,
                     month,
                     year,
                     basicSalary,
-                    netSalary: basicSalary,
+                    netSalary: taxBreakdown.netSalary,
+                    deductions: taxBreakdown as any,
                     workedMinutes: 0,
                     workedDays: 0,
                     status: 'DRAFT',

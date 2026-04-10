@@ -1,58 +1,83 @@
 import prisma from '../config/database';
-import { JournalType, AccountType } from '@prisma/client';
+import { JournalType, AccountType, Term } from '@prisma/client';
+import { configService } from './config.service';
 
 export class AccountingService {
-    /**
-     * Initialize default Chart of Accounts and Journals
-     */
+    private defaultAccounts = [
+        { code: '1000', name: 'Fixed Assets', type: AccountType.ASSET_NON_CURRENT },
+        { code: '1100', name: 'Accounts Receivable (Fees)', type: AccountType.ASSET_RECEIVABLE },
+        { code: '1200', name: 'Cash in Hand', type: AccountType.ASSET_CASH },
+        { code: '1210', name: 'Main Bank Account', type: AccountType.ASSET_CASH },
+        { code: '2000', name: 'Accounts Payable', type: AccountType.LIABILITY_PAYABLE },
+        { code: '2100', name: 'Tuition Deposits', type: AccountType.LIABILITY_CURRENT },
+        { code: '2110', name: 'Salaries Payable', type: AccountType.LIABILITY_CURRENT },
+        { code: '2120', name: 'PAYE Payable', type: AccountType.LIABILITY_CURRENT },
+        { code: '2130', name: 'NSSF Payable', type: AccountType.LIABILITY_CURRENT },
+        { code: '2140', name: 'SHIF Payable', type: AccountType.LIABILITY_CURRENT },
+        { code: '2150', name: 'Housing Levy Payable', type: AccountType.LIABILITY_CURRENT },
+        { code: '3000', name: 'Retained Earnings', type: AccountType.EQUITY },
+        { code: '4000', name: 'Tuition Fees Income', type: AccountType.REVENUE },
+        { code: '4100', name: 'Transport Fees Income', type: AccountType.REVENUE },
+        { code: '4200', name: 'Extracurricular Income', type: AccountType.REVENUE },
+        { code: '5000', name: 'Salaries Expense', type: AccountType.EXPENSE },
+        { code: '5100', name: 'Electricity Expense', type: AccountType.EXPENSE },
+        { code: '5200', name: 'Water Expense', type: AccountType.EXPENSE },
+        { code: '5300', name: 'Rent Expense', type: AccountType.EXPENSE }
+    ];
+
+    private defaultJournals = [
+        { code: 'INV', name: 'Customer Invoices (Sales)', type: 'SALES' as JournalType },
+        { code: 'BILL', name: 'Vendor Bills (Purchases)', type: 'PURCHASE' as JournalType },
+        { code: 'CSH1', name: 'Cash', type: 'CASH' as JournalType },
+        { code: 'BNK1', name: 'Bank', type: 'BANK' as JournalType },
+        { code: 'MISC', name: 'Miscellaneous Operations', type: 'GENERAL' as JournalType }
+    ];
+
     async initializeDefaultCoA() {
         // 1. Check if already initialized
         const existing = await prisma.account.findFirst();
         if (existing) return;
 
-        // 2. Define standard accounts
-        const defaultAccounts = [
-            { code: '1000', name: 'Fixed Assets', type: AccountType.ASSET_NON_CURRENT },
-            { code: '1100', name: 'Accounts Receivable (Fees)', type: AccountType.ASSET_RECEIVABLE },
-            { code: '1200', name: 'Cash in Hand', type: AccountType.ASSET_CASH },
-            { code: '1210', name: 'Main Bank Account', type: AccountType.ASSET_CASH },
-            { code: '2000', name: 'Accounts Payable', type: AccountType.LIABILITY_PAYABLE },
-            { code: '2100', name: 'Tuition Deposits', type: AccountType.LIABILITY_CURRENT },
-            { code: '2110', name: 'Salaries Payable', type: AccountType.LIABILITY_CURRENT },
-            { code: '3000', name: 'Retained Earnings', type: AccountType.EQUITY },
-            { code: '4000', name: 'Tuition Fees Income', type: AccountType.REVENUE },
-            { code: '4100', name: 'Transport Fees Income', type: AccountType.REVENUE },
-            { code: '4200', name: 'Extracurricular Income', type: AccountType.REVENUE },
-            { code: '5000', name: 'Salaries Expense', type: AccountType.EXPENSE },
-            { code: '5100', name: 'Electricity Expense', type: AccountType.EXPENSE },
-            { code: '5200', name: 'Water Expense', type: AccountType.EXPENSE },
-            { code: '5300', name: 'Rent Expense', type: AccountType.EXPENSE }
-        ];
-
-        // 3. Define standard journals
-        const defaultJournals = [
-            { code: 'INV', name: 'Customer Invoices (Sales)', type: 'SALES' as JournalType },
-            { code: 'BILL', name: 'Vendor Bills (Purchases)', type: 'PURCHASE' as JournalType },
-            { code: 'CSH1', name: 'Cash', type: 'CASH' as JournalType },
-            { code: 'BNK1', name: 'Bank', type: 'BANK' as JournalType },
-            { code: 'MISC', name: 'Miscellaneous Operations', type: 'GENERAL' as JournalType }
-        ];
-
         return await prisma.$transaction([
             prisma.account.createMany({
-                data: defaultAccounts
+                data: this.defaultAccounts
             }),
             prisma.journal.createMany({
-                data: defaultJournals
+                data: this.defaultJournals
             })
         ]);
     }
 
+    async ensureDefaultAccountingSetup() {
+        const [existingAccounts, existingJournals] = await Promise.all([
+            prisma.account.findMany({ where: { code: { in: this.defaultAccounts.map(acc => acc.code) } } }),
+            prisma.journal.findMany({ where: { code: { in: this.defaultJournals.map(journal => journal.code) } } })
+        ]);
+
+        const missingAccounts = this.defaultAccounts.filter(acc => !existingAccounts.some(existing => existing.code === acc.code));
+        const missingJournals = this.defaultJournals.filter(journal => !existingJournals.some(existing => existing.code === journal.code));
+
+        if (!missingAccounts.length && !missingJournals.length) return;
+
+        await prisma.$transaction([
+            missingAccounts.length ? prisma.account.createMany({ data: missingAccounts }) : Promise.resolve(),
+            missingJournals.length ? prisma.journal.createMany({ data: missingJournals }) : Promise.resolve()
+        ].filter(Boolean) as any);
+    }
+
     async getAccounts(includeBalances = false) {
-        const accounts = await prisma.account.findMany({
+        let accounts = await prisma.account.findMany({
             where: { isActive: true },
             orderBy: { code: 'asc' }
         });
+
+        if (!accounts.length) {
+            await this.ensureDefaultAccountingSetup();
+            accounts = await prisma.account.findMany({
+                where: { isActive: true },
+                orderBy: { code: 'asc' }
+            });
+        }
 
         if (!includeBalances) return accounts;
 
@@ -78,20 +103,46 @@ export class AccountingService {
     }
 
     async getJournals() {
-        return prisma.journal.findMany({
+        let journals = await prisma.journal.findMany({
             where: { isActive: true },
             orderBy: { code: 'asc' }
         });
+
+        if (!journals.length) {
+            await this.ensureDefaultAccountingSetup();
+            journals = await prisma.journal.findMany({
+                where: { isActive: true },
+                orderBy: { code: 'asc' }
+            });
+        }
+
+        return journals;
     }
 
-    async getJournalEntries(filters?: { journalId?: string; status?: string; startDate?: Date; endDate?: Date }) {
+    async getJournalEntries(filters?: { journalId?: string; status?: string; startDate?: Date; endDate?: Date; term?: string; academicYear?: number }) {
+        let startDate = filters?.startDate;
+        let endDate = filters?.endDate;
+
+        if (filters?.term && filters?.academicYear) {
+            try {
+                const termConfig = await configService.getTermConfig({
+                    term: filters.term as Term,
+                    academicYear: filters.academicYear
+                });
+                startDate = termConfig.startDate;
+                endDate = termConfig.endDate;
+            } catch (error) {
+                console.warn(`[Accounting] Could not load term dates for ${filters.term} ${filters.academicYear}:`, error);
+            }
+        }
+
         return prisma.journalEntry.findMany({
             where: {
                 journalId: filters?.journalId,
                 status: filters?.status,
                 date: {
-                    gte: filters?.startDate,
-                    lte: filters?.endDate
+                    gte: startDate,
+                    lte: endDate
                 }
             },
             include: {
@@ -191,19 +242,28 @@ export class AccountingService {
         const invoiceNumber = invoice.invoiceNumber;
 
         // Find required accounts and journal
-        const arAccount = await this.getAccountByCode('1100'); // AR
-        const revenueAccount = await this.getAccountByCode('4000'); // Tuition Revenue
-        const salesJournal = await this.getJournalByCode('INV');
+        let arAccount = await this.getAccountByCode('1100'); // AR
+        let revenueAccount = await this.getAccountByCode('4000'); // Tuition Revenue
+        let salesJournal = await this.getJournalByCode('INV');
 
         if (!arAccount || !revenueAccount || !salesJournal) {
-            console.warn(`[Accounting] Missing accounting setup. Skipping auto-post.`);
+            console.warn(`[Accounting] Missing accounting setup for fee invoice. Initializing defaults and retrying.`);
+            await this.ensureDefaultAccountingSetup();
+            arAccount = await this.getAccountByCode('1100');
+            revenueAccount = await this.getAccountByCode('4000');
+            salesJournal = await this.getJournalByCode('INV');
+        }
+
+        if (!arAccount || !revenueAccount || !salesJournal) {
+            console.warn(`[Accounting] Still missing required accounts/journal after initialization. Skipping auto-post.`);
             return;
         }
 
+        const entryDate = invoice.invoiceDate ? new Date(invoice.invoiceDate) : new Date();
         const entry = await this.createJournalEntry({
             journalId: salesJournal.id,
             reference: invoiceNumber,
-            date: new Date(),
+            date: entryDate,
             items: [
                 { accountId: arAccount.id, debit: Number(totalAmount), label: `Fees Receivable: Invoice ${invoiceNumber}` },
                 { accountId: revenueAccount.id, credit: Number(totalAmount), label: `Tuition Revenue: Invoice ${invoiceNumber}` }
@@ -223,20 +283,29 @@ export class AccountingService {
 
         // Determine destination account (Bank or Cash)
         const assetCode = method === 'BANK_TRANSFER' ? '1210' : '1200';
-        const assetAccount = await this.getAccountByCode(assetCode);
-        const arAccount = await this.getAccountByCode('1100');
+        let assetAccount = await this.getAccountByCode(assetCode);
+        let arAccount = await this.getAccountByCode('1100');
         const journalCode = method === 'BANK_TRANSFER' ? 'BNK1' : 'CSH1';
-        const journal = await this.getJournalByCode(journalCode);
+        let journal = await this.getJournalByCode(journalCode);
 
         if (!assetAccount || !arAccount || !journal) {
-            console.warn(`[Accounting] Missing accounting setup. Skipping payment post.`);
+            console.warn(`[Accounting] Missing accounting setup for fee payment. Initializing defaults and retrying.`);
+            await this.ensureDefaultAccountingSetup();
+            assetAccount = await this.getAccountByCode(assetCode);
+            arAccount = await this.getAccountByCode('1100');
+            journal = await this.getJournalByCode(journalCode);
+        }
+
+        if (!assetAccount || !arAccount || !journal) {
+            console.warn(`[Accounting] Still missing required accounts/journal after initialization. Skipping payment post.`);
             return;
         }
 
+        const entryDate = payment.paymentDate ? new Date(payment.paymentDate) : new Date();
         const entry = await this.createJournalEntry({
             journalId: journal.id,
             reference: receiptNumber,
-            date: new Date(),
+            date: entryDate,
             items: [
                 { accountId: assetAccount.id, debit: Number(amount), label: `Fee Payment Received: ${receiptNumber}` },
                 { accountId: arAccount.id, credit: Number(amount), label: `Settlement: ${receiptNumber}` }
@@ -252,25 +321,57 @@ export class AccountingService {
      * Cr: Salaries Payable
      */
     async postPayrollToLedger(payroll: any) {
-        const { netSalary, payrollNumber, month, year } = payroll;
+        const { netSalary, basicSalary, deductions, payrollNumber, month, year } = payroll;
+        const tax = (deductions as any) || {};
 
-        const expenseAccount = await this.getAccountByCode('5000'); // Salaries Expense
-        const payableAccount = await this.getAccountByCode('2110'); // Salaries Payable
-        const journal = await this.getJournalByCode('MISC');
+        let expenseAccount = await this.getAccountByCode('5000'); // Salaries Expense
+        let netPayableAccount = await this.getAccountByCode('2110'); // Salaries Payable
+        let payeAccount = await this.getAccountByCode('2120'); // PAYE
+        let nssfAccount = await this.getAccountByCode('2130'); // NSSF
+        let shifAccount = await this.getAccountByCode('2140'); // SHIF
+        let levyAccount = await this.getAccountByCode('2150'); // Housing Levy
+        let journal = await this.getJournalByCode('MISC');
 
-        if (!expenseAccount || !payableAccount || !journal) {
-            console.warn(`[Accounting] Missing payroll setup. Skipping auto-post.`);
-            return;
+        if (!expenseAccount || !netPayableAccount || !journal) {
+            await this.ensureDefaultAccountingSetup();
+            expenseAccount = await this.getAccountByCode('5000');
+            netPayableAccount = await this.getAccountByCode('2110');
+            payeAccount = await this.getAccountByCode('2120');
+            nssfAccount = await this.getAccountByCode('2130');
+            shifAccount = await this.getAccountByCode('2140');
+            levyAccount = await this.getAccountByCode('2150');
+            journal = await this.getJournalByCode('MISC');
+        }
+
+        if (!expenseAccount || !netPayableAccount || !journal) return;
+
+        const journalItems = [
+            // DEBIT: Gross Salary as Expense
+            { accountId: expenseAccount.id, debit: Number(basicSalary), label: `Gross Salary: ${month}/${year}` },
+            
+            // CREDIT: Net Salary to employee
+            { accountId: netPayableAccount.id, credit: Number(netSalary), label: `Net Salary: ${month}/${year}` }
+        ];
+
+        // CREDIT: Statutory Deductions
+        if (Number(tax.paye) > 0 && payeAccount) {
+            journalItems.push({ accountId: payeAccount.id, credit: Number(tax.paye), label: `PAYE Deduction: ${month}/${year}` });
+        }
+        if (Number(tax.nssf) > 0 && nssfAccount) {
+            journalItems.push({ accountId: nssfAccount.id, credit: Number(tax.nssf), label: `NSSF Deduction: ${month}/${year}` });
+        }
+        if (Number(tax.shif) > 0 && shifAccount) {
+            journalItems.push({ accountId: shifAccount.id, credit: Number(tax.shif), label: `SHIF Deduction: ${month}/${year}` });
+        }
+        if (Number(tax.housingLevy) > 0 && levyAccount) {
+            journalItems.push({ accountId: levyAccount.id, credit: Number(tax.housingLevy), label: `Housing Levy: ${month}/${year}` });
         }
 
         const entry = await this.createJournalEntry({
             journalId: journal.id,
             reference: payrollNumber || `PAY/${year}/${month}`,
             date: new Date(),
-            items: [
-                { accountId: expenseAccount.id, debit: Number(netSalary), label: `Payroll Expense for ${month}/${year}` },
-                { accountId: payableAccount.id, credit: Number(netSalary), label: `Salaries Payable for ${month}/${year}` }
-            ]
+            items: journalItems
         });
 
         return this.postJournalEntry(entry.id);
@@ -532,6 +633,11 @@ export class AccountingService {
             .filter(acc => acc.type === AccountType.LIABILITY_PAYABLE)
             .reduce((sum, acc) => sum + Number(acc.balance || 0), 0);
 
+        const feesCollectedResult = await prisma.feePayment.aggregate({
+            _sum: { amount: true }
+        });
+        const feesCollected = Number(feesCollectedResult._sum.amount || 0);
+
         const recentEntries = await prisma.journalEntry.findMany({
             where: { status: 'POSTED' },
             take: 5,
@@ -547,17 +653,24 @@ export class AccountingService {
             cashOnHand,
             accountsReceivable,
             accountsPayable,
+            feesCollected,
             netProfit: report.profitLoss.netProfit,
             recentEntries: recentEntries.map(e => {
                 const totalDebit = e.items.reduce((sum, item) => sum + Number(item.debit || 0), 0);
                 const totalCredit = e.items.reduce((sum, item) => sum + Number(item.credit || 0), 0);
                 const amount = Math.max(totalDebit, totalCredit);
 
+                const entryType = e.journal.type === 'SALES'
+                    ? 'INCOME'
+                    : ['CASH', 'BANK'].includes(e.journal.type)
+                        ? 'RECEIPT'
+                        : 'EXPENSE';
+
                 return {
                     id: e.id,
                     date: e.date,
                     description: e.reference || e.items[0]?.label || e.journal.name || 'Journal Entry',
-                    type: e.journal.type === 'SALES' ? 'INCOME' : 'EXPENSE',
+                    type: entryType,
                     amount,
                     status: e.status
                 };

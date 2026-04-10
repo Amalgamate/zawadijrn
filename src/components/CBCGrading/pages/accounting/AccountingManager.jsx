@@ -17,6 +17,7 @@ const AccountingManager = ({ user }) => {
         cashOnHand: 0,
         accountsReceivable: 0,
         accountsPayable: 0,
+        feesCollected: 0,
         netProfit: 0
     });
     const [recentEntries, setRecentEntries] = useState([]);
@@ -39,6 +40,7 @@ const AccountingManager = ({ user }) => {
                     cashOnHand: payload?.cashOnHand ?? payload?.cashActual ?? 0,
                     accountsReceivable: payload?.accountsReceivable ?? 0,
                     accountsPayable: payload?.accountsPayable ?? 0,
+                    feesCollected: payload?.feesCollected ?? 0,
                     netProfit: payload?.netProfit ?? 0
                 });
                 setRecentEntries(payload?.recentEntries ?? []);
@@ -90,7 +92,7 @@ const AccountingManager = ({ user }) => {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                 <StatCard
                     title="Cash on Hand"
                     amount={stats.cashOnHand}
@@ -103,6 +105,12 @@ const AccountingManager = ({ user }) => {
                     amount={stats.accountsReceivable}
                     icon={<ArrowUpRight className="text-blue-500" />}
                     trend="8 pending invoices"
+                />
+                <StatCard
+                    title="Fees Collected"
+                    amount={stats.feesCollected}
+                    icon={<BarChart3 className="text-teal-500" />}
+                    trend="Total fee payments"
                 />
                 <StatCard
                     title="Accounts Payable"

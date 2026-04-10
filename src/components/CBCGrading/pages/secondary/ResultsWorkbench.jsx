@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, BarChart3, FileText, Grid3X3, LineChart, Users } from 'lucide-react';
+import { ArrowRight, BarChart3, FileText, Grid, LineChart, Users } from 'lucide-react';
 
 const contentByVariant = {
   mean: {
@@ -15,7 +15,7 @@ const contentByVariant = {
   subject: {
     title: 'Subject Analysis Workbench',
     description: 'Inspect learning area performance trends and compare outcomes using matrix and detailed reports.',
-    icon: Grid3X3,
+    icon: Grid,
   },
   forecast: {
     title: 'Performance Forecast Workbench',
@@ -59,7 +59,7 @@ const ResultsWorkbench = ({ variant = 'mean', onNavigate }) => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <ActionCard
-          icon={Grid3X3}
+          icon={Grid}
           title="Assessment Matrix"
           description="Open the matrix report to compare performance distribution."
           onClick={() => onNavigate?.('assess-summary-report')}

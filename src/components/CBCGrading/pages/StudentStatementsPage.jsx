@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   FileText, Download, Search, User,
-  CheckCircle, AlertCircle, Clock, Printer, Mail, Eye
+  CheckCircle, AlertCircle, Clock, Printer, Mail, Eye, Loader2
 } from 'lucide-react';
 import EmptyState from '../shared/EmptyState';
 import LoadingSpinner from '../shared/LoadingSpinner';
@@ -24,6 +24,9 @@ const StudentStatementsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterGrade, setFilterGrade] = useState('all');
   const [showStatement, setShowStatement] = useState(false);
+  const [schoolInfo, setSchoolInfo] = useState(null);
+  const [pdfGenerating, setPdfGenerating] = useState(false);
+  const [pdfProgress, setPdfProgress] = useState('');
   const { showSuccess, showError } = useNotifications();
   const { grades: fetchedGrades } = useSchoolData();
 
@@ -31,8 +34,28 @@ const StudentStatementsPage = () => {
     const fetchLearners = async () => {
       try {
         setLoading(true);
-        const response = await api.learners.getAll({ status: 'ACTIVE' });
-        setLearners(response.data || []);
+        // 1. Load learners (Essential)
+        const learnersRes = await api.learners.getAll({ status: 'ACTIVE' });
+        setLearners(learnersRes.data || []);
+
+        // 2. Load school info (Optional/Non-blocking)
+        try {
+          const schoolRes = await api.school.getAll();
+          const schoolData = schoolRes.data?.data || schoolRes.data?.[0] || schoolRes.data || schoolRes;
+          if (schoolData) {
+            setSchoolInfo({
+              name: schoolData.name || schoolData.schoolName || 'Zawadi SMS Academy',
+              motto: schoolData.motto || '',
+              address: schoolData.address || '',
+              phone: schoolData.phone || '',
+              email: schoolData.email || '',
+              logoUrl: schoolData.logoUrl || '/logo-new.png'
+            });
+          }
+        } catch (schoolErr) {
+          console.warn('Failed to load school branding, using defaults:', schoolErr);
+          // Fallback to basic defaults already in state or handled by optional chaining
+        }
       } catch (error) {
         showError('Failed to load students');
         console.error(error);
@@ -88,21 +111,31 @@ const StudentStatementsPage = () => {
   };
 
   const handleDownloadStatement = async () => {
+    if (!selectedLearner) return;
     try {
-      showSuccess('Generating PDF for download...');
+      setPdfGenerating(true);
+      setPdfProgress('Starting PDF generation...');
       const filename = `Statement_${selectedLearner?.firstName}_${selectedLearner?.lastName}_${new Date().getFullYear()}.pdf`;
       const result = await generateStatementPDF(selectedLearner, invoices, payments, {
         elementId: 'statement-content',
         fileName: filename,
+        onProgress: (message) => {
+          setPdfProgress(message);
+        }
       });
       if (result.success) {
         showSuccess('Statement downloaded successfully');
+        setPdfProgress('Download complete');
       } else {
         throw new Error(result.error || 'Failed to generate PDF');
       }
     } catch (error) {
       showError('Failed to download statement');
+      setPdfProgress('Failed to generate PDF');
       console.error(error);
+    } finally {
+      setPdfGenerating(false);
+      window.setTimeout(() => setPdfProgress(''), 3000);
     }
   };
 
@@ -280,10 +313,11 @@ const StudentStatementsPage = () => {
                 </button>
                 <button
                   onClick={handleDownloadStatement}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                  disabled={pdfGenerating}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:cursor-not-allowed disabled:bg-blue-400"
                 >
-                  <Download size={14} />
-                  Download PDF
+                  {pdfGenerating ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+                  {pdfGenerating ? 'Generating…' : 'Download PDF'}
                 </button>
                 <button
                   onClick={handleEmailStatement}
@@ -294,19 +328,47 @@ const StudentStatementsPage = () => {
                 </button>
               </div>
             </div>
+            {pdfProgress && (
+              <div className="mt-2 text-xs text-gray-500">
+                <span className="font-semibold">PDF status:</span> {pdfProgress}
+              </div>
+            )}
           </div>
 
-          {/* Statement Header */}
-          <div id="statement-content" className="bg-white rounded-lg shadow p-4">
-            <div className="border-b pb-3 mb-3">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h2 className="text-xl font-bold text-gray-800 mb-1">Fee Statement</h2>
-                  <p className="text-xs text-gray-600">Academic Year {new Date().getFullYear()}</p>
+          {/* Statement Layout Container */}
+          <div 
+            id="statement-content" 
+            className="bg-white mx-auto shadow-2xl overflow-hidden report-card"
+            style={{ width: '210mm', minHeight: '297mm', padding: '10mm', boxSizing: 'border-box' }}
+          >
+            {/* Header / Letterhead */}
+            <div className="flex justify-between items-start border-b-2 border-blue-900 pb-6 mb-8">
+              <div className="flex gap-6 items-center">
+                <div className="w-36 h-36 bg-gray-50 rounded-xl p-3 flex items-center justify-center border border-gray-100 shadow-sm">
+                  <img src={schoolInfo?.logoUrl || '/logo-new.png'} alt="School Logo" className="max-w-full max-h-full object-contain" />
                 </div>
-                <div className="text-right">
-                  <p className="text-[10px] text-gray-600">Generated on</p>
-                  <p className="font-semibold text-xs">{new Date().toLocaleDateString()}</p>
+                <div>
+                  <h1 className="text-3xl font-black text-blue-900 uppercase tracking-tight">{schoolInfo?.name}</h1>
+                  {schoolInfo?.motto && <p className="text-blue-600 italic text-sm font-medium mt-1">"{schoolInfo.motto}"</p>}
+                  <div className="mt-4 space-y-1 text-xs text-gray-500 font-semibold uppercase tracking-wider">
+                    {schoolInfo?.address && <div className="flex items-center gap-2"><MapPin size={14} className="text-blue-500" /> {schoolInfo.address}</div>}
+                    <div className="flex gap-4">
+                      {schoolInfo?.phone && <div className="flex items-center gap-2"><Phone size={14} className="text-blue-500" /> {schoolInfo.phone}</div>}
+                      {schoolInfo?.email && <div className="flex items-center gap-2"><Mail size={14} className="text-blue-500" /> {schoolInfo.email}</div>}
+                      {schoolInfo?.kraPin && <div className="flex items-center gap-2"><div className="w-3 h-3 bg-blue-500 rounded-sm"></div> KRA PIN: {schoolInfo.kraPin}</div>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="bg-blue-900 text-white px-4 py-2 rounded-lg inline-block mb-3">
+                  <h2 className="text-lg font-black uppercase tracking-widest">Fee Statement</h2>
+                </div>
+                <div className="space-y-0.5">
+                  <p className="text-[10px] text-gray-400 font-bold uppercase">Academic Year</p>
+                  <p className="font-black text-gray-800 text-sm tracking-tighter">{new Date().getFullYear()}</p>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase mt-2">Statement Date</p>
+                  <p className="font-black text-gray-800 text-sm tracking-tighter">{new Date().toLocaleDateString()}</p>
                 </div>
               </div>
             </div>
@@ -353,60 +415,76 @@ const StudentStatementsPage = () => {
               </div>
             </div>
 
-            {/* Summary Cards */}
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              <div className="bg-blue-50 rounded-lg p-3">
-                <p className="text-xs text-blue-600 mb-0.5">Total Fees</p>
-                <p className="text-lg font-bold text-blue-700">
-                  KES {calculateTotals().totalAmount.toLocaleString()}
+            {/* Summary Cards with Premium Styling */}
+            <div className="grid grid-cols-3 gap-6 mb-8">
+              <div className="bg-gray-50 border-t-4 border-blue-600 rounded-xl p-4 shadow-sm">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 text-center">Total Invoiced</p>
+                <p className="text-2xl font-black text-blue-900 text-center">
+                  <span className="text-xs font-bold mr-1 italic text-blue-400">KES</span>
+                  {calculateTotals().totalAmount.toLocaleString()}
                 </p>
               </div>
-              <div className="bg-green-50 rounded-lg p-3">
-                <p className="text-xs text-green-600 mb-0.5">Amount Paid</p>
-                <p className="text-lg font-bold text-green-700">
-                  KES {calculateTotals().totalPaid.toLocaleString()}
+              <div className="bg-gray-50 border-t-4 border-emerald-500 rounded-xl p-4 shadow-sm">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 text-center">Total Payments</p>
+                <p className="text-2xl font-black text-emerald-600 text-center">
+                  <span className="text-xs font-bold mr-1 italic text-emerald-400">KES</span>
+                  {calculateTotals().totalPaid.toLocaleString()}
                 </p>
               </div>
-              <div className="bg-red-50 rounded-lg p-3">
-                <p className="text-xs text-red-600 mb-0.5">Balance Due</p>
-                <p className="text-lg font-bold text-red-700">
-                  KES {calculateTotals().totalBalance.toLocaleString()}
+              <div className="bg-gray-50 border-t-4 border-rose-500 rounded-xl p-4 shadow-sm">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 text-center">Outstanding Balance</p>
+                <p className="text-2xl font-black text-rose-600 text-center">
+                  <span className="text-xs font-bold mr-1 italic text-rose-400">KES</span>
+                  {calculateTotals().totalBalance.toLocaleString()}
                 </p>
+                {calculateTotals().totalBalance > 0 && (
+                  <p className="text-[9px] text-center text-rose-500 font-black uppercase mt-1">Payment Required</p>
+                )}
               </div>
             </div>
 
-            {/* Invoices Table */}
-            <div className="mb-4">
-              <h3 className="text-sm font-bold text-gray-800 mb-2">Fee Invoices</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="border-b border-[color:var(--table-border)]">
-                    <tr>
-                      <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Invoice #</th>
-                      <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Fee Type</th>
-                      <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Term</th>
-                      <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Amount</th>
-                      <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Paid</th>
-                      <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Balance</th>
-                      <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Status</th>
+            {/* Invoices Table with Refined Styling */}
+            <div className="mb-8">
+              <h3 className="text-xs font-black text-blue-900 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                <div className="w-1.5 h-4 bg-blue-600 rounded-full"></div>
+                Fee Invoices Breakdown
+              </h3>
+              <div className="overflow-hidden border border-gray-100 rounded-xl shadow-sm">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-100">
+                      <th className="px-5 py-3 text-[10px] font-black text-gray-500 uppercase tracking-widest">Inv #</th>
+                      <th className="px-5 py-3 text-[10px] font-black text-gray-500 uppercase tracking-widest">Fee Type</th>
+                      <th className="px-5 py-3 text-[10px] font-black text-gray-500 uppercase tracking-widest text-center">Term</th>
+                      <th className="px-5 py-3 text-[10px] font-black text-gray-500 uppercase tracking-widest text-right">Amount</th>
+                      <th className="px-5 py-3 text-[10px] font-black text-gray-500 uppercase tracking-widest text-right">Paid</th>
+                      <th className="px-5 py-3 text-[10px] font-black text-gray-500 uppercase tracking-widest text-right">Balance</th>
+                      <th className="px-5 py-3 text-[10px] font-black text-gray-500 uppercase tracking-widest text-center">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y">
-                    {invoices.map((invoice) => (
-                      <tr key={invoice.id}>
-                        <td className="px-3 py-2 text-xs font-medium">{invoice.invoiceNumber}</td>
-                        <td className="px-3 py-2 text-xs">{invoice.feeStructure?.name}</td>
-                        <td className="px-3 py-2 text-xs">{invoice.feeStructure?.term}</td>
-                        <td className="px-3 py-2 text-xs font-semibold">
-                          KES {Number(invoice.totalAmount).toLocaleString()}
+                  <tbody className="divide-y divide-gray-50">
+                    {invoices.map((invoice, idx) => (
+                      <tr key={invoice.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}>
+                        <td className="px-5 py-3.5">
+                          <div className="text-xs font-black text-gray-900">{invoice.invoiceNumber}</div>
+                          {invoice.etimsControlCode && (
+                            <div className="text-[9px] text-emerald-600 font-bold uppercase tracking-tighter mt-0.5 flex items-center gap-1">
+                              <RefreshCw size={8} className="animate-spin-slow" /> eTIMS: {invoice.etimsControlCode}
+                            </div>
+                          )}
                         </td>
-                        <td className="px-3 py-2 text-xs text-green-600">
-                          KES {Number(invoice.paidAmount).toLocaleString()}
+                        <td className="px-5 py-3.5 text-xs font-medium text-gray-700">{invoice.feeStructure?.name}</td>
+                        <td className="px-5 py-3.5 text-xs font-bold text-gray-500 text-center uppercase tracking-tighter">{invoice.feeStructure?.term}</td>
+                        <td className="px-5 py-3.5 text-xs font-black text-gray-900 text-right">
+                          {Number(invoice.totalAmount).toLocaleString()}
                         </td>
-                        <td className="px-3 py-2 text-xs text-red-600 font-semibold">
-                          KES {Number(invoice.balance).toLocaleString()}
+                        <td className="px-5 py-3.5 text-xs font-black text-emerald-600 text-right">
+                          {Number(invoice.paidAmount).toLocaleString()}
                         </td>
-                        <td className="px-3 py-2">{getStatusBadge(invoice.status)}</td>
+                        <td className="px-5 py-3.5 text-xs font-black text-rose-600 text-right bg-rose-50/20">
+                          {Number(invoice.balance).toLocaleString()}
+                        </td>
+                        <td className="px-5 py-3.5 text-center">{getStatusBadge(invoice.status)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -414,38 +492,45 @@ const StudentStatementsPage = () => {
               </div>
             </div>
 
-            {/* Payment History */}
+            {/* Payment History Section */}
             <div>
-              <h3 className="text-sm font-bold text-gray-800 mb-2">Payment History</h3>
+              <h3 className="text-xs font-black text-blue-900 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                <div className="w-1.5 h-4 bg-emerald-500 rounded-full"></div>
+                Transaction Record
+              </h3>
               {payments.length === 0 ? (
-                <p className="text-gray-500 text-center py-4 text-xs">No payments recorded yet</p>
+                <div className="bg-gray-50 rounded-xl border border-dashed border-gray-200 py-10 text-center">
+                  <p className="text-gray-400 text-xs font-medium italic">No payments recorded for this academic period</p>
+                </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="border-b border-[color:var(--table-border)]">
-                      <tr>
-                        <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Date</th>
-                        <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Invoice #</th>
-                        <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Fee Type</th>
-                        <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Amount</th>
-                        <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Method</th>
-                        <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Reference</th>
+                <div className="overflow-hidden border border-gray-100 rounded-xl shadow-sm">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="bg-gray-50 border-b border-gray-100">
+                        <th className="px-5 py-3 text-[10px] font-black text-gray-500 uppercase tracking-widest">Date</th>
+                        <th className="px-5 py-3 text-[10px] font-black text-gray-500 uppercase tracking-widest">Invoice</th>
+                        <th className="px-5 py-3 text-[10px] font-black text-gray-500 uppercase tracking-widest text-right">Amount</th>
+                        <th className="px-5 py-3 text-[10px] font-black text-gray-500 uppercase tracking-widest text-center">Method</th>
+                        <th className="px-5 py-3 text-[10px] font-black text-gray-500 uppercase tracking-widest">Reference No.</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y">
-                      {payments.map((payment, index) => (
-                        <tr key={index}>
-                          <td className="px-3 py-2 text-xs">
+                    <tbody className="divide-y divide-gray-50">
+                      {payments.map((payment, idx) => (
+                        <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}>
+                          <td className="px-5 py-3.5 text-xs font-bold text-gray-600">
                             {new Date(payment.paymentDate).toLocaleDateString()}
                           </td>
-                          <td className="px-3 py-2 text-xs font-medium">{payment.invoiceNumber}</td>
-                          <td className="px-3 py-2 text-xs">{payment.feeType}</td>
-                          <td className="px-3 py-2 text-xs font-semibold text-green-600">
-                            KES {Number(payment.amount).toLocaleString()}
+                          <td className="px-5 py-3.5 text-xs font-black text-gray-800">{payment.invoiceNumber}</td>
+                          <td className="px-5 py-3.5 text-xs font-black text-emerald-600 text-right bg-emerald-50/10">
+                            {Number(payment.amount).toLocaleString()}
                           </td>
-                          <td className="px-3 py-2 text-xs">{payment.paymentMethod}</td>
-                          <td className="px-3 py-2 text-xs text-gray-600">
-                            {payment.referenceNumber || 'N/A'}
+                          <td className="px-5 py-3.5 text-center">
+                             <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 text-[10px] font-black uppercase tracking-tighter">
+                               {payment.paymentMethod}
+                             </span>
+                          </td>
+                          <td className="px-5 py-3.5 text-xs text-gray-500 font-mono tracking-tighter">
+                            {payment.referenceNumber || 'INTERNAL'}
                           </td>
                         </tr>
                       ))}
@@ -455,6 +540,7 @@ const StudentStatementsPage = () => {
               )}
             </div>
           </div>
+
 
           {/* Footer Note */}
           <div className="bg-blue-50 rounded-lg p-3 text-xs text-blue-800">

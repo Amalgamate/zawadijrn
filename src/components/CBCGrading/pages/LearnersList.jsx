@@ -60,9 +60,37 @@ const LearnersList = ({
   };
 
   const gradeOptions = useMemo(() => {
-    const base = (Array.isArray(grades) && grades.length > 0) ? grades : fallbackGrades;
-    return Array.from(new Set((base || []).filter(Boolean).map((x) => String(x).trim()).filter(Boolean)));
-  }, [grades, fallbackGrades]);
+    // 1. Get unique grades from both context (classes) and the API fallback
+    const combined = [
+      ...(Array.isArray(grades) ? grades : []),
+      ...(Array.isArray(fallbackGrades) ? fallbackGrades : [])
+    ];
+    
+    // 2. Filter by school level (Junior vs Senior)
+    // If badge is JUNIOR, hide Senior grades (GRADE_10-12 / FORM_1-4)
+    // If badge is SENIOR, hide Junior grades (PP-GRADE_9)
+    const isSecondary = user?.institutionType === 'SECONDARY' || user?.institutionType === 'HIGH_SCHOOL';
+    
+    const unique = Array.from(new Set(combined.filter(Boolean).map(g => String(g).trim())));
+    
+    return unique.filter(g => {
+      const isSS = g.startsWith('FORM') || ['GRADE_10', 'GRADE_11', 'GRADE_12', 'GRADE10', 'GRADE11', 'GRADE12'].includes(g);
+      return isSecondary ? isSS : !isSS;
+    }).sort((a, b) => {
+        // Basic smart sort: PP -> Grade -> Form
+        if (a === b) return 0;
+        const rank = (val) => {
+            if (val === 'PLAYGROUP') return 1;
+            if (val === 'PP1') return 2;
+            if (val === 'PP2') return 3;
+            if (val.startsWith('GRADE_')) return 10 + parseInt(val.replace('GRADE_', ''));
+            if (val.startsWith('GRADE')) return 10 + parseInt(val.replace('GRADE', ''));
+            if (val.startsWith('FORM_')) return 30 + parseInt(val.replace('FORM_', ''));
+            return 99;
+        };
+        return rank(a) - rank(b);
+    });
+  }, [grades, fallbackGrades, user?.institutionType]);
 
   // Check permissions
   const canCreateLearner = can('CREATE_LEARNER');
@@ -88,7 +116,6 @@ const LearnersList = ({
   useEffect(() => {
     const loadFallbackGrades = async () => {
       try {
-        if (Array.isArray(grades) && grades.length > 0) return;
         const resp = await configAPI.getGrades();
         const arr = resp?.data || [];
         if (Array.isArray(arr)) setFallbackGrades(arr);

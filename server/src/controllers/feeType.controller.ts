@@ -95,8 +95,6 @@ export class FeeTypeController {
             throw new ApiError(404, 'Fee type not found');
         }
 
-        // Safe access to _count with type guard or assertion if needed, 
-        // but Prisma should infer it. If not, we check existence.
         const structureCount = feeType._count ? feeType._count.feeStructureItems : 0;
 
         if (structureCount > 0) {
@@ -112,15 +110,15 @@ export class FeeTypeController {
 
     // Seed default fee types for a school (idempotent - only creates missing types)
     private static readonly DEFAULT_FEE_TYPES = [
-        { code: 'TUITION', name: 'Tuition', category: 'ACADEMIC' as const, description: 'School tuition fees' },
-        { code: 'ACTIVITY', name: 'Activity Fee', category: 'EXTRA_CURRICULAR' as const, description: 'Co-curricular activities' },
-        { code: 'TRANSPORT', name: 'Transport', category: 'TRANSPORT' as const, description: 'School transport' },
-        { code: 'MEALS', name: 'Meals', category: 'BOARDING' as const, description: 'School meals and catering' },
-        { code: 'EXAM', name: 'Examination Fee', category: 'ACADEMIC' as const, description: 'Examination fees' },
-        { code: 'LIBRARY', name: 'Library', category: 'ACADEMIC' as const, description: 'Library resources and materials' },
-        { code: 'SPORTS', name: 'Sports Fee', category: 'EXTRA_CURRICULAR' as const, description: 'Sports programs and facilities' },
-        { code: 'TECHNOLOGY', name: 'Technology Fee', category: 'ACADEMIC' as const, description: 'Computer lab and tech resources' },
-        { code: 'MISC', name: 'Miscellaneous', category: 'OTHER' as const, description: 'Other school charges' }
+        { code: 'TUITION',    name: 'Tuition',          category: 'ACADEMIC'        as const, description: 'School tuition fees' },
+        { code: 'ACTIVITY',   name: 'Activity Fee',     category: 'EXTRA_CURRICULAR' as const, description: 'Co-curricular activities' },
+        { code: 'TRANSPORT',  name: 'Transport',        category: 'TRANSPORT'       as const, description: 'School transport' },
+        { code: 'MEALS',      name: 'Meals',            category: 'BOARDING'        as const, description: 'School meals and catering' },
+        { code: 'EXAM',       name: 'Examination Fee',  category: 'ACADEMIC'        as const, description: 'Examination fees' },
+        { code: 'LIBRARY',    name: 'Library',          category: 'ACADEMIC'        as const, description: 'Library resources and materials' },
+        { code: 'SPORTS',     name: 'Sports Fee',       category: 'EXTRA_CURRICULAR' as const, description: 'Sports programs and facilities' },
+        { code: 'TECHNOLOGY', name: 'Technology Fee',   category: 'ACADEMIC'        as const, description: 'Computer lab and tech resources' },
+        { code: 'MISC',       name: 'Miscellaneous',    category: 'OTHER'           as const, description: 'Other school charges' }
     ];
 
     private static async ensureDefaultFeeTypes(): Promise<void> {
@@ -154,21 +152,23 @@ export class FeeTypeController {
         }
     }
 
-    // Seed default fee structures for all grades and terms
+    // Seed default fee structures for all grades and terms.
+    // Accepts an optional `academicYear` body field (integer) so you can seed
+    // for the upcoming year in advance without waiting for January 1st.
     static async seedStructures(req: Request, res: Response) {
         const GRADES = [
-            'PLAYGROUP', 'PP1', 'PP2', 
+            'PLAYGROUP', 'PP1', 'PP2',
             'GRADE_1', 'GRADE_2', 'GRADE_3',
-            'GRADE_4', 'GRADE_5', 'GRADE_6', 
+            'GRADE_4', 'GRADE_5', 'GRADE_6',
             'GRADE_7', 'GRADE_8', 'GRADE_9'
         ];
 
         const TERMS = ['TERM_1', 'TERM_2', 'TERM_3'];
 
         const GRADE_DISPLAY_NAMES: Record<string, string> = {
-            'PLAYGROUP': 'Playgroup', 'PP1': 'PP1', 'PP2': 'PP2', 
-            'GRADE_1': 'Grade 1', 'GRADE_2': 'Grade 2', 'GRADE_3': 'Grade 3', 
-            'GRADE_4': 'Grade 4', 'GRADE_5': 'Grade 5', 'GRADE_6': 'Grade 6', 
+            'PLAYGROUP': 'Playgroup', 'PP1': 'PP1', 'PP2': 'PP2',
+            'GRADE_1': 'Grade 1', 'GRADE_2': 'Grade 2', 'GRADE_3': 'Grade 3',
+            'GRADE_4': 'Grade 4', 'GRADE_5': 'Grade 5', 'GRADE_6': 'Grade 6',
             'GRADE_7': 'Grade 7', 'GRADE_8': 'Grade 8', 'GRADE_9': 'Grade 9'
         };
 
@@ -199,6 +199,12 @@ export class FeeTypeController {
         };
 
         try {
+            // Resolve academic year: use body param if provided, otherwise current year
+            const bodyYear = req.body?.academicYear;
+            const targetYear: number = (bodyYear && Number.isInteger(Number(bodyYear)) && Number(bodyYear) >= 2000)
+                ? Number(bodyYear)
+                : new Date().getFullYear();
+
             // Ensure the default fee types exist before seeding structures
             await FeeTypeController.ensureDefaultFeeTypes();
             const feeTypes = await prisma.feeType.findMany({ where: {} });
@@ -207,19 +213,18 @@ export class FeeTypeController {
                 throw new ApiError(400, 'No fee types found. Seed fee types first.');
             }
 
-            const currentYear = new Date().getFullYear();
             let createdCount = 0;
             let skippedCount = 0;
 
             for (const grade of GRADES) {
                 for (const term of TERMS) {
                     try {
-                        // Check if already exists
+                        // Check if already exists for the target year
                         const existing = await prisma.feeStructure.findFirst({
                             where: {
                                 grade: grade as any,
                                 term: term as any,
-                                academicYear: currentYear
+                                academicYear: targetYear
                             }
                         });
 
@@ -231,11 +236,11 @@ export class FeeTypeController {
                         // Create fee structure
                         const feeStructure = await prisma.feeStructure.create({
                             data: {
-                                name: `${GRADE_DISPLAY_NAMES[grade]} ${term.replace('_', ' ')} Fees ${currentYear}`,
+                                name: `${GRADE_DISPLAY_NAMES[grade]} ${term.replace('_', ' ')} Fees ${targetYear}`,
                                 description: `Standard fees for ${GRADE_DISPLAY_NAMES[grade]} in ${term.replace('_', ' ')}`,
                                 grade: grade as any,
                                 term: term as any,
-                                academicYear: currentYear,
+                                academicYear: targetYear,
                                 mandatory: true,
                                 active: true
                             }
@@ -280,6 +285,7 @@ export class FeeTypeController {
 
             res.json({
                 message,
+                academicYear: targetYear,
                 created: createdCount,
                 skipped: skippedCount,
                 total: totalExpected,

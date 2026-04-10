@@ -328,7 +328,7 @@ const CommunicationSettings = () => {
       {/* Tabs */}
       <div className="bg-white rounded-xl shadow-md border border-gray-200 transition-colors duration-300">
         <div className="border-b border-gray-200 flex overflow-x-auto">
-          {['email', 'sms', 'whatsapp'].map((tab) => (
+          {['email', 'sms', 'whatsapp', 'voip'].map((tab) => (
             <button
               key={tab}
               onClick={() => {
@@ -340,6 +340,9 @@ const CommunicationSettings = () => {
                   setTestMessage('welcome');
                   const saved = localStorage.getItem('testContactEmail');
                   if (saved) setTestContact(saved);
+                } else if (tab === 'voip') {
+                  setTestContact('');
+                  setTestMessage('');
                 } else {
                   setTestContact('');
                   setTestMessage('This is a test message from Zawadi Junior Academy. Thank You');
@@ -359,6 +362,7 @@ const CommunicationSettings = () => {
               {tab === 'email' && <Mail size={20} />}
               {tab === 'sms' && <MessageSquare size={20} />}
               {tab === 'whatsapp' && <Phone size={20} />}
+              {tab === 'voip' && <Phone size={20} />}
               <span className="whitespace-nowrap">{tab.charAt(0).toUpperCase() + tab.slice(1)}</span>
             </button>
           ))}
@@ -1101,6 +1105,25 @@ const CommunicationSettings = () => {
                     </div>
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* VOIP TAB */}
+          {activeTab === 'voip' && (
+            <div className="space-y-6">
+              <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100 transition-colors duration-300">
+                <div className="flex items-center gap-3 mb-4">
+                  <Phone size={24} className="text-blue-600" />
+                  <div>
+                    <h3 className="text-lg font-bold">VoIP Settings</h3>
+                    <p className="text-sm text-gray-500">This feature is coming soon. We’ll add VoIP calling and telephony integration here.</p>
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-10 text-center">
+                  <p className="text-xl font-semibold text-gray-700">VoIP Coming Soon</p>
+                  <p className="mt-3 text-sm text-gray-500 max-w-xl mx-auto">We are preparing the VoIP integration. You can return later to configure SIP providers, calling numbers, and voice communication routing.</p>
+                </div>
               </div>
             </div>
           )}

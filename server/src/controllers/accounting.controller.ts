@@ -37,12 +37,15 @@ export class AccountingController {
 
     async getJournalEntries(req: AuthRequest, res: Response) {
         try {
-            const { journalId, status, startDate, endDate } = req.query;
+            const { journalId, status, startDate, endDate, term, academicYear } = req.query;
+            const parsedYear = academicYear ? parseInt(academicYear as string, 10) : undefined;
             const entries = await accountingService.getJournalEntries({
                 journalId: journalId as string,
                 status: status as string,
                 startDate: startDate ? new Date(startDate as string) : undefined,
-                endDate: endDate ? new Date(endDate as string) : undefined
+                endDate: endDate ? new Date(endDate as string) : undefined,
+                term: term as string,
+                academicYear: parsedYear
             });
             res.json({ success: true, data: entries });
         } catch (error: any) {

@@ -61,7 +61,7 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
     const iso = now.toISOString().split('T')[0];
     return {
       firstName: '', middleName: '', lastName: '', gender: '', dateOfBirth: '',
-      nationality: 'Kenya', religion: 'Islam', admissionNumber: '', grade: '', stream: '',
+      nationality: 'Kenya', religion: 'Islam', admissionNumber: '', upiNumber: '', grade: '', stream: '',
       dateOfAdmission: iso, previousSchool: '', previousClass: '',
       address: '', county: '',
       // Parent/Guardian Information (New Hierarchical System)
@@ -615,6 +615,17 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
                       />
                     </div>
                     <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-tight mb-1">UPI Number (NEMIS)</label>
+                      <input
+                        type="text"
+                        name="upiNumber"
+                        value={formData.upiNumber}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-md text-sm shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-mono font-bold text-emerald-700"
+                        placeholder="e.g. ABC1234567"
+                      />
+                    </div>
+                    <div>
                       <label className="block text-xs font-bold text-gray-500 uppercase tracking-tight mb-1">Grade <span className="text-red-500">*</span></label>
                       <select name="grade" value={formData.grade} onChange={handleInputChange} className={`w-full px-3 py-2 bg-white border rounded-md text-sm shadow-sm transition-all focus:ring-1 focus:ring-brand-purple ${stepErrors.grade
                         ? 'border-red-500 bg-red-50 focus:border-red-500'
@@ -779,6 +790,7 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
                     <h4 className="text-xs font-bold text-orange-600 uppercase tracking-widest mb-2 border-b border-orange-50 pb-1">Admin Info</h4>
                     <div className="space-y-2 text-sm">
                       <p className="flex justify-between"><span className="text-gray-500">Adm No:</span> <span className="font-semibold text-gray-800">{formData.admissionNumber || 'Auto-generated'}</span></p>
+                      <p className="flex justify-between"><span className="text-gray-500">UPI (NEMIS):</span> <span className="font-semibold text-emerald-600 font-mono">{formData.upiNumber || 'N/A'}</span></p>
                       <p className="flex justify-between"><span className="text-gray-500">Adm Date:</span> <span className="font-semibold text-gray-800">{formData.dateOfAdmission}</span></p>
                       <p className="flex justify-between"><span className="text-gray-500">Prev School:</span> <span className="font-semibold text-gray-800 truncate max-w-[150px]">{formData.previousSchool || 'N/A'}</span></p>
                     </div>

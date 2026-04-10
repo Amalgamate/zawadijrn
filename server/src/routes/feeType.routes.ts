@@ -8,11 +8,26 @@ import { rateLimit } from '../middleware/enhanced-rateLimit.middleware';
 
 const router = Router();
 
-// Validation schemas
+// [FIX 6] Added `code` (required on create) and `category` (optional, enum-validated)
+// to the schema — previously both fields were accepted silently with zero validation,
+// meaning empty strings or invalid categories could reach the database.
+const FEE_CATEGORIES = ['ACADEMIC', 'EXTRA_CURRICULAR', 'TRANSPORT', 'BOARDING', 'OTHER'] as const;
+
 const createFeeTypeSchema = z.object({
+  code: z.string().min(2).max(20).regex(/^[A-Z0-9_]+$/, 'Code must be uppercase letters, digits, or underscores'),
   name: z.string().min(2).max(100),
   description: z.string().max(500).optional(),
+  category: z.enum(FEE_CATEGORIES).optional().default('ACADEMIC'),
   isActive: z.boolean().optional().default(true)
+});
+
+// Update schema: code is immutable after creation so it is excluded;
+// all other fields remain optional for partial updates.
+const updateFeeTypeSchema = z.object({
+  name: z.string().min(2).max(100).optional(),
+  description: z.string().max(500).optional(),
+  category: z.enum(FEE_CATEGORIES).optional(),
+  isActive: z.boolean().optional()
 });
 
 // ============================================
@@ -54,7 +69,7 @@ router.put(
     '/:id',
     requireRole(['ACCOUNTANT', 'ADMIN', 'SUPER_ADMIN']),
     rateLimit({ windowMs: 60_000, maxRequests: 30 }),
-    validate(createFeeTypeSchema),
+    validate(updateFeeTypeSchema),
     auditLog('UPDATE_FEE_TYPE'),
     asyncHandler(FeeTypeController.update)
 );
@@ -74,7 +89,8 @@ router.post(
 
 /**
  * @route   POST /api/fees/types/seed/structures
- * @desc    Seed default fee structures for all grades and terms
+ * @desc    Seed default fee structures for all grades and terms.
+ *          Optional body: { academicYear: number } — defaults to current year.
  * @access  ADMIN, SUPER_ADMIN
  */
 router.post(
@@ -88,7 +104,7 @@ router.post(
 /**
  * @route   DELETE /api/fees/types/:id
  * @desc    Delete fee type
- * @access  ADMIN, SUPER_ADMIN
+ * @access  ACCOUNTANT, ADMIN, SUPER_ADMIN
  */
 router.delete(
     '/:id',

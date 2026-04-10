@@ -47,9 +47,21 @@ export const SchoolDataProvider = ({ children }) => {
             const fetchedClasses = classesResponse.data || [];
             setClasses(fetchedClasses);
 
-            // Extract unique grades and filter out falsy values
-            const uniqueGrades = [...new Set(fetchedClasses.map(c => c.grade))].filter(Boolean);
-            setGrades(sortGrades(uniqueGrades));
+            // ─── Refined Global Grades Logic ───
+            // 1. Get the current institution level from user context
+            const institutionType = user?.institutionType || 'PRIMARY_CBC';
+            const isSenior = institutionType === 'SECONDARY';
+
+            // 2. Fetch full curriculum grades based on level (PP1-G9 or G10-G12)
+            const fallbackGrades = isSenior 
+                ? ['GRADE_10', 'GRADE_11', 'GRADE_12']
+                : ['PLAYGROUP', 'PP1', 'PP2', 'GRADE_1', 'GRADE_2', 'GRADE_3', 'GRADE_4', 'GRADE_5', 'GRADE_6', 'GRADE_7', 'GRADE_8', 'GRADE_9'];
+
+            // 3. Merge with active classes to ensure all "active" grades are also present
+            const activeGrades = fetchedClasses.map(c => c.grade);
+            const combinedUniqueGrades = [...new Set([...fallbackGrades, ...activeGrades])].filter(Boolean);
+
+            setGrades(sortGrades(combinedUniqueGrades));
 
             // Process streams from configAPI response
             const rawStreams = Array.isArray(streamsResponse)

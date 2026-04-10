@@ -261,8 +261,8 @@ code {
   /* Ensure proper page margins */
   @page {
     margin: 20mm;
-    size: landscape;
-    /* Match the PDF orientation */
+    size: A4 portrait;
+    /* Match the statement and report orientation */
   }
 
   /* Body styling for print */

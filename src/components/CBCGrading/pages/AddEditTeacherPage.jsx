@@ -18,15 +18,15 @@ const AddEditTeacherPage = ({ onSave, onCancel, teacher = null }) => {
     const { showSuccess, showError } = useNotifications();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const [formData, setFormData] = useState({
-        firstName: '',
-        lastName: '',
-        middleName: '',
-        email: '',
-        phone: '',
-        password: '',
         gender: '',
-        subject: ''
+        subject: '',
+        password: '',
+        kraPin: '',
+        nssfNumber: '',
+        shifNumber: '',
+        bankName: '',
+        bankAccountNumber: '',
+        basicSalary: ''
     });
 
     const [errors, setErrors] = useState({});
@@ -41,7 +41,13 @@ const AddEditTeacherPage = ({ onSave, onCancel, teacher = null }) => {
                 phone: teacher.phone || '',
                 gender: teacher.gender || '',
                 subject: teacher.subject || '',
-                password: '' // Don't populate password for edits
+                password: '', // Don't populate password for edits
+                kraPin: teacher.kraPin || '',
+                nssfNumber: teacher.nssfNumber || '',
+                shifNumber: teacher.shifNumber || '',
+                bankName: teacher.bankName || '',
+                bankAccountNumber: teacher.bankAccountNumber || '',
+                basicSalary: teacher.basicSalary || ''
             });
         }
     }, [teacher]);
@@ -94,7 +100,13 @@ const AddEditTeacherPage = ({ onSave, onCancel, teacher = null }) => {
                 email: formData.email,
                 phone: formData.phone,
                 gender: formData.gender,
-                subject: formData.subject
+                subject: formData.subject,
+                kraPin: formData.kraPin,
+                nssfNumber: formData.nssfNumber,
+                shifNumber: formData.shifNumber,
+                bankName: formData.bankName,
+                bankAccountNumber: formData.bankAccountNumber,
+                basicSalary: formData.basicSalary
             };
 
             // Only include password if it's provided
@@ -212,7 +224,7 @@ const AddEditTeacherPage = ({ onSave, onCancel, teacher = null }) => {
                         <div className="p-2 bg-green-100 text-green-600 rounded-lg">
                             <Mail size={20} />
                         </div>
-                        <h3 className="text-lg font-bold text-gray-800">Contact Information</h3>
+                        <h3 className="text-lg font-bold text-gray-800">Contact & Professional</h3>
                     </div>
                     <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div>
@@ -229,7 +241,6 @@ const AddEditTeacherPage = ({ onSave, onCancel, teacher = null }) => {
                                 placeholder="email@example.com"
                             />
                             {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
-                            {!canEditEmail && <p className="text-xs text-gray-500 mt-1 flex items-center gap-1"><AlertCircle size={10} /> Email cannot be changed</p>}
                         </div>
 
                         <div>
@@ -244,7 +255,6 @@ const AddEditTeacherPage = ({ onSave, onCancel, teacher = null }) => {
                                 className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-purple transition ${errors.phone ? 'border-red-500 focus:ring-red-200' : 'border-gray-300'}`}
                                 placeholder="Enter phone number"
                             />
-                            {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
                         </div>
 
                         <div>
@@ -257,8 +267,95 @@ const AddEditTeacherPage = ({ onSave, onCancel, teacher = null }) => {
                                 value={formData.subject}
                                 onChange={handleChange}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-purple transition"
-                                placeholder="e.g. Mathematics, Science"
+                                placeholder="e.g. Mathematics"
                             />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Government Compliance & Banking */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden border-l-4 border-l-emerald-500">
+                    <div className="p-6 border-b border-gray-100 bg-emerald-50/30 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg">
+                                <AlertCircle size={20} />
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-800 uppercase tracking-tight">Government Compliance & Banking</h3>
+                        </div>
+                        <span className="text-[10px] font-black text-emerald-600 bg-emerald-100/50 px-2 py-1 rounded uppercase tracking-widest">KRA / NSSF / SHIF</span>
+                    </div>
+                    <div className="p-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                            <div>
+                                <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">KRA PIN</label>
+                                <input
+                                    type="text"
+                                    name="kraPin"
+                                    value={formData.kraPin}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-mono placeholder:font-sans"
+                                    placeholder="Enter KRA PIN (e.g., A00...)"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">NSSF Number</label>
+                                <input
+                                    type="text"
+                                    name="nssfNumber"
+                                    value={formData.nssfNumber}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-mono"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">SHIF Number</label>
+                                <input
+                                    type="text"
+                                    name="shifNumber"
+                                    value={formData.shifNumber}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-2 bg-gray-50 border border-transparent rounded-lg focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-mono"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div>
+                                <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Bank Name</label>
+                                <input
+                                    type="text"
+                                    name="bankName"
+                                    value={formData.bankName}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-2 bg-gray-100/50 border border-gray-100 rounded-lg focus:ring-2 focus:ring-emerald-500 transition-all"
+                                    placeholder="Enter Bank Name"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Account Number</label>
+                                <input
+                                    type="text"
+                                    name="bankAccountNumber"
+                                    value={formData.bankAccountNumber}
+                                    onChange={handleChange}                                    
+                                    className="w-full px-4 py-2 bg-gray-100/50 border border-gray-100 rounded-lg focus:ring-2 focus:ring-emerald-500 transition-all font-mono"
+                                />
+                            </div>
+                            <div className="bg-emerald-600 rounded-xl p-4 text-white shadow-lg">
+                                <label className="block text-[10px] font-black uppercase tracking-[0.2em] mb-1 opacity-80">Monthly Basic Salary</label>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xl font-black italic opacity-60">KES</span>
+                                    <input
+                                        type="number"
+                                        name="basicSalary"
+                                        value={formData.basicSalary}
+                                        onChange={handleChange}
+                                        className="w-full bg-transparent border-none text-2xl font-black focus:ring-0 placeholder:text-white/30"
+                                        placeholder="0.00"
+                                    />
+                                </div>
+                                <p className="text-[9px] mt-2 font-bold opacity-70 italic">* Used for automated KRA/NSSF/SHIF calculations</p>
+                            </div>
                         </div>
                     </div>
                 </div>

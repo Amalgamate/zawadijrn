@@ -22,6 +22,9 @@ const mockPrisma = {
         findMany: jest.fn(),
         aggregate: jest.fn(),
     },
+    feePayment: {
+        aggregate: jest.fn()
+    },
     bankStatementLine: {
         findMany: jest.fn(),
         findFirst: jest.fn(),
@@ -155,12 +158,14 @@ describe('AccountingService', () => {
                     status: 'POSTED'
                 }
             ]);
+            (prisma.feePayment.aggregate as any).mockResolvedValue({ _sum: { amount: 15000 } });
 
             const result = await service.getDashboardStats();
 
             expect(result.cashOnHand).toBe(1000);
             expect(result.accountsReceivable).toBe(1000);
             expect(result.accountsPayable).toBe(1000);
+            expect(result.feesCollected).toBe(15000);
             expect(result.netProfit).toBe(0);
             expect(result.recentEntries).toHaveLength(1);
             expect(result.recentEntries[0]).toMatchObject({ amount: 1000, type: 'INCOME' });

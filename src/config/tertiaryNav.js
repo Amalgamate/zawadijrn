@@ -6,7 +6,7 @@
 import {
   Home, Mail, Users, GraduationCap, UserCheck,
   TrendingUp, Settings, BookOpen, Users2, Truck,
-  CreditCard, Package, HelpCircle, FileText,
+  CreditCard, PieChart, Package, HelpCircle, FileText, Receipt,
   ClipboardList, BarChart3, Building2, PlayCircle,
   Award, Fingerprint, BookMarked
 } from 'lucide-react';
@@ -143,10 +143,35 @@ export const tertiaryNavSections = [
     icon: CreditCard,
     permission: 'FEE_MANAGEMENT',
     items: [
-      { id: 'fees-structure',  label: 'Fee Structure',        path: 'fees-structure',  permission: 'FEE_MANAGEMENT' },
-      { id: 'fees-collection', label: 'Fee Collection',       path: 'fees-collection', permission: 'FEE_MANAGEMENT' },
-      { id: 'fees-reports',    label: 'Fee Reports',          path: 'fees-reports',    permission: 'FEE_MANAGEMENT' },
-      { id: 'fees-statements', label: 'Student Statements',   path: 'fees-statements', permission: 'FEE_MANAGEMENT' },
+      {
+        id: 'group-fees',
+        label: 'Fee Management',
+        type: 'group',
+        icon: Receipt,
+        permission: 'FEE_MANAGEMENT',
+        items: [
+          { id: 'fees-collection', label: 'Fee Collection',     path: 'fees-collection', permission: 'FEE_MANAGEMENT' },
+          { id: 'fees-reports',    label: 'Fee Reports',        path: 'fees-reports',    permission: 'FEE_MANAGEMENT' },
+          { id: 'fees-statements', label: 'Student Statements', path: 'fees-statements', permission: 'FEE_MANAGEMENT' },
+          { id: 'fees-structure',  label: 'Fee Structure',      path: 'fees-structure',  permission: 'FEE_MANAGEMENT' },
+        ],
+      },
+      {
+        id: 'group-accounting',
+        label: 'Accounting',
+        type: 'group',
+        icon: PieChart,
+        permission: 'ACCOUNTING_MANAGEMENT',
+        items: [
+          { id: 'accounting-dashboard',      label: 'Accounting Dashboard', path: 'accounting-dashboard',      permission: 'ACCOUNTING_MANAGEMENT' },
+          { id: 'accounting-accounts',       label: 'Chart of Accounts',    path: 'accounting-accounts',       permission: 'ACCOUNTING_MANAGEMENT' },
+          { id: 'accounting-entries',        label: 'Journal Entries',      path: 'accounting-entries',        permission: 'ACCOUNTING_MANAGEMENT' },
+          { id: 'accounting-expenses',       label: 'Expenses',             path: 'accounting-expenses',       permission: 'ACCOUNTING_MANAGEMENT' },
+          { id: 'accounting-vendors',        label: 'Vendors',              path: 'accounting-vendors',        permission: 'ACCOUNTING_MANAGEMENT' },
+          { id: 'accounting-reconciliation', label: 'Reconciliation',       path: 'accounting-reconciliation', permission: 'ACCOUNTING_MANAGEMENT' },
+          { id: 'accounting-reports',        label: 'Financial Reports',    path: 'accounting-reports',        permission: 'ACCOUNTING_MANAGEMENT' },
+        ],
+      },
     ],
   },
   {

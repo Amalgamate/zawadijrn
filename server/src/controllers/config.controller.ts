@@ -20,7 +20,7 @@ const GRADE_OPTIONS = [
   'GRADE_7', 'GRADE_8', 'GRADE_9',
 ];
 
-const SS_GRADE_OPTIONS = ['GRADE10', 'GRADE11', 'GRADE12'];
+const SS_GRADE_OPTIONS = ['GRADE_10', 'GRADE_11', 'GRADE_12'];
 
 export const getTermConfigs = async (req: Request, res: Response) => {
   const configs = await configService.getTermConfigs();

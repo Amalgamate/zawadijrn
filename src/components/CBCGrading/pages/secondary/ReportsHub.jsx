@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, BarChart3, FileText, Grid3X3, TrendingUp } from 'lucide-react';
+import { ArrowRight, BarChart3, FileText, Grid, TrendingUp } from "lucide-react";
 
 const Card = ({ title, description, onClick, icon: Icon }) => (
   <button
@@ -38,7 +38,7 @@ const ReportsHub = ({ onNavigate }) => {
           onClick={() => onNavigate?.('assess-termly-report')}
         />
         <Card
-          icon={Grid3X3}
+          icon={Grid}
           title="Assessment Matrix"
           description="Summary matrix across assessments."
           onClick={() => onNavigate?.('assess-summary-report')}

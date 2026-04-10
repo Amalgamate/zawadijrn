@@ -10,12 +10,13 @@
  * - Single source of truth for hover state (ref + setState)
  */
 
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import {
   Menu, X,
   School, Boxes,
   GraduationCap,
-  BookOpen
+  BookOpen,
+  ChevronDown
 } from 'lucide-react';
 import { useNavigation } from '../hooks/useNavigation';
 import { useInstitutionLabels } from '../../../hooks/useInstitutionLabels';
@@ -261,6 +262,16 @@ const NavSection = React.memo(({
 
   const isActive = currentPage === section.id || isChildActive;
   const isAssessment = section.id === 'assessment';
+  const isSettings = section.id === 'settings';
+
+  const [isExpanded, setIsExpanded] = useState(isActive);
+
+  // Auto-expand if a child becomes active (e.g. via direct URL navigation)
+  useEffect(() => {
+    if (isChildActive && isSettings) {
+      setIsExpanded(true);
+    }
+  }, [isChildActive, isSettings]);
 
   if (!hasChildren) {
     return (
@@ -327,9 +338,11 @@ const NavSection = React.memo(({
       {sidebarOpen ? (
         <>
           <div
-            className={`${headerClass} pointer-events-none`}
+            className={`${headerClass} ${isSettings ? 'cursor-pointer' : 'pointer-events-none'}`}
             style={{ height: 40 }}
-            aria-hidden
+            onClick={() => isSettings && setIsExpanded(!isExpanded)}
+            role={isSettings ? "button" : undefined}
+            tabIndex={isSettings ? 0 : -1}
           >
             {isActive && (
               <span className="absolute left-0 top-3 bottom-3 w-0.5 bg-brand-teal rounded-r-full" />
@@ -338,10 +351,17 @@ const NavSection = React.memo(({
               <span className="flex-shrink-0 flex items-center justify-center" style={{ width: 20 }}>
                 <section.icon size={18} />
               </span>
-              <span className="text-sm font-semibold truncate text-left">{section.label}</span>
+              <span className="text-sm font-semibold truncate text-left flex-1">{section.label}</span>
+              
+              {isSettings && (
+                <ChevronDown 
+                  size={14} 
+                  className={`transition-transform duration-200 text-white/40 ${isExpanded ? 'rotate-180' : ''}`}
+                />
+              )}
             </div>
           </div>
-          {sectionItemsBlock}
+          {(!isSettings || isExpanded) && sectionItemsBlock}
         </>
       ) : (
         <>

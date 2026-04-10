@@ -1,4 +1,4 @@
-import { fetchWithAuth, fetchCached } from './core';
+import { fetchWithAuth, fetchCached, API_BASE_URL } from './core';
 import axiosInstance from './axiosConfig';
 
 export const feeAPI = {
@@ -29,8 +29,11 @@ export const feeAPI = {
   },
   seedDefaultFeeTypes: async () =>
     fetchWithAuth('/fees/types/seed/defaults', { method: 'POST' }),
-  seedDefaultFeeStructures: async () =>
-    fetchWithAuth('/fees/types/seed/structures', { method: 'POST' }),
+  seedDefaultFeeStructures: async (academicYear) =>
+    fetchWithAuth('/fees/types/seed/structures', {
+      method: 'POST',
+      body: JSON.stringify(academicYear ? { academicYear } : {}),
+    }),
   getPaymentStats: async (params = {}) => {
     const query = new URLSearchParams(params).toString();
     return fetchWithAuth(`/fees/stats${query ? `?${query}` : ''}`);

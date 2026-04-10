@@ -40,12 +40,12 @@ model User {
   passwordResetToken        String?
   passwordResetExpiry       DateTime?
   profilePicture            String?
+  bankAccountNumber         String?
   kraPin                    String?
   nhifNumber                String?
   nssfNumber                String?
-  bankName                  String?
-  bankAccountName           String?
-  bankAccountNumber         String?
+  shifNumber                String?
+  housingLevyExempt         Boolean                  @default(false)
   basicSalary               Decimal?                 @db.Decimal(10, 2)
   employmentType            String?                  @default("PERMANENT")
   joinedAt                  DateTime?                @default(now())
@@ -136,12 +136,17 @@ model School {
   curriculumType      CurriculumType      @default(CBC_AND_EXAM)
   assessmentMode      AssessmentMode      @default(MIXED)
   customGradingScale  Json?
+  kraPin              String?
+  vatNumber           String?
+  etimsConfig         Json?
+  nemisConfig         Json?
   archived            Boolean             @default(false)
   archivedAt          DateTime?
   archivedBy          String?
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
 
+  @@index([kraPin])
   @@index([county])
   @@map("schools")
 }
@@ -317,6 +322,7 @@ model ClassEnrollment {
 model Learner {
   id                     String                 @id @default(uuid())
   admissionNumber        String                 @unique
+  upiNumber              String?                @unique
   firstName              String
   lastName               String
   middleName             String?
@@ -899,6 +905,9 @@ model FeeInvoice {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   issuedBy       String
+  complianceStatus PaymentStatus @default(PENDING)
+  etimsControlCode String?
+  etimsQRCodeUrl   String?
   archived       Boolean       @default(false)
   archivedAt     DateTime?
   archivedBy     String?

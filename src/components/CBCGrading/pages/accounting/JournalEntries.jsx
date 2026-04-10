@@ -9,9 +9,11 @@ import {
     ArrowRightLeft,
     Loader2,
     Trash2,
-    Check
+    Check,
+    BarChart3
 } from 'lucide-react';
 import { accountingAPI } from '../../../../services/api/accounting.api';
+import { configAPI } from '../../../../services/api';
 import { 
     Dialog, 
     DialogContent, 
@@ -28,6 +30,9 @@ const JournalEntries = () => {
     const [entries, setEntries] = useState([]);
     const [journals, setJournals] = useState([]);
     const [accounts, setAccounts] = useState([]);
+    const [termConfigs, setTermConfigs] = useState([]);
+    const [term, setTerm] = useState('TERM_1');
+    const [academicYear, setAcademicYear] = useState(new Date().getFullYear());
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -47,11 +52,11 @@ const JournalEntries = () => {
         try {
             setLoading(true);
             const [entriesRes, journalsRes, accountsRes] = await Promise.all([
-                accountingAPI.getJournalEntries(),
+                accountingAPI.getJournalEntries({ term, academicYear }),
                 accountingAPI.getJournals(),
                 accountingAPI.getAccounts()
             ]);
-            
+
             if (entriesRes.success) setEntries(entriesRes.data);
             if (journalsRes.success) {
                 setJournals(journalsRes.data);
@@ -65,7 +70,27 @@ const JournalEntries = () => {
         } finally {
             setLoading(false);
         }
-    }, [newEntry.journalId]);
+    }, [newEntry.journalId, term, academicYear]);
+
+    useEffect(() => {
+        const loadTermConfigs = async () => {
+            try {
+                const response = await configAPI.getTermConfigs();
+                if (response?.success) {
+                    setTermConfigs(response.data || []);
+                    const activeTerm = response.data?.find(cfg => cfg.isActive);
+                    if (activeTerm) {
+                        setTerm(activeTerm.term);
+                        setAcademicYear(activeTerm.academicYear);
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load term configs', error);
+            }
+        };
+
+        loadTermConfigs();
+    }, []);
 
     useEffect(() => {
         fetchData();
@@ -170,6 +195,13 @@ const JournalEntries = () => {
                         Export
                     </button>
                     <button 
+                        onClick={() => onNavigate('accounting-reports')}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-100 transition-all font-medium"
+                    >
+                        <BarChart3 size={18} />
+                        Reports
+                    </button>
+                    <button 
                         onClick={() => setIsAddModalOpen(true)}
                         className="flex items-center gap-2 px-4 py-2 bg-brand-purple text-white rounded-lg hover:bg-brand-purple/90 transition-all shadow-md font-medium"
                     >
@@ -190,6 +222,36 @@ const JournalEntries = () => {
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-purple/20 focus:bg-white transition-all text-sm"
                     />
+                </div>
+                <div className="grid grid-cols-2 gap-4 md:w-auto">
+                    <div className="space-y-2">
+                        <Label>Term</Label>
+                        <select
+                            className="w-full h-10 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
+                            value={term}
+                            onChange={(e) => setTerm(e.target.value)}
+                        >
+                            <option value="TERM_1">Term 1</option>
+                            <option value="TERM_2">Term 2</option>
+                            <option value="TERM_3">Term 3</option>
+                        </select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Academic Year</Label>
+                        <select
+                            className="w-full h-10 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
+                            value={academicYear}
+                            onChange={(e) => setAcademicYear(Number(e.target.value))}
+                        >
+                            {Array.from(new Set([
+                                academicYear,
+                                new Date().getFullYear(),
+                                ...(termConfigs?.map(cfg => cfg.academicYear) || [])
+                            ])).sort((a, b) => b - a).map((year) => (
+                                <option key={year} value={year}>{year}</option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
             </div>
 

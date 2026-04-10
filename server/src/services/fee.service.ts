@@ -80,8 +80,9 @@ export class FeeService {
             const activeTermConfig = await configService.getActiveTermConfig();
 
             if (!activeTermConfig) {
-                console.warn(`[FeeService] No active term configuration found. Cannot generate invoice.`);
-                return { success: false, error: 'No active term configuration found' };
+                const errorMsg = 'No active term configuration found. Please set a term as active in Settings.';
+                console.warn(`[FeeService] ${errorMsg}`);
+                return { success: false, error: errorMsg };
             }
 
             const { term, academicYear } = activeTermConfig;
@@ -103,8 +104,9 @@ export class FeeService {
             });
 
             if (!feeStructure) {
-                console.warn(`[FeeService] No matching fee structure found for ${grade}, ${term} ${academicYear}.`);
-                return { success: false, error: 'No matching fee structure found' };
+                const errorMsg = `No matching fee structure found for ${grade.replace('_', ' ')} (${term.replace('_', ' ')} ${academicYear})`;
+                console.warn(`[FeeService] ${errorMsg}`);
+                return { success: false, error: errorMsg };
             }
 
             // 4. Check if Invoice already exists

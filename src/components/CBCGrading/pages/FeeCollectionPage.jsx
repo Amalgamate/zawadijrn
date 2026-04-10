@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Plus, Eye, Trash2, CheckCircle, AlertCircle, Clock, FileText, Download,
-  X, Loader2, MessageSquare, Phone, Send, Info, Calendar, User, ShieldCheck, Mail
+  X, Loader2, MessageSquare, Phone, Send, Info, Calendar, User, ShieldCheck, Mail, Upload
 } from 'lucide-react';
 import { generateDocument } from '../../../utils/simplePdfGenerator';
 import EmptyState from '../shared/EmptyState';
@@ -17,12 +17,14 @@ import { useAuth } from '../../../hooks/useAuth';
 import api from '../../../services/api';
 import { toInputDate } from '../utils/dateHelpers';
 import SmartLearnerSearch from '../shared/SmartLearnerSearch';
+import FeeImportModal from '../shared/FeeImportModal';
 
 const FeeCollectionPage = ({ learnerId }) => {
   const [invoices, setInvoices] = useState([]);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [selectedInvoiceIds, setSelectedInvoiceIds] = useState([]);
   const [loading, setLoading] = useState(false);
   const [whatsappStatus, setWhatsappStatus] = useState({ status: 'fetching', qrCode: null });
@@ -477,6 +479,14 @@ const FeeCollectionPage = ({ learnerId }) => {
             <Plus size={18} />
             Create Invoice
           </button>
+          
+          <button
+            onClick={() => setShowImportModal(true)}
+            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-semibold flex items-center gap-2 whitespace-nowrap"
+          >
+            <Upload size={18} />
+            Import Fees
+          </button>
 
           {user?.role === 'SUPER_ADMIN' && (
             <button
@@ -799,6 +809,17 @@ const FeeCollectionPage = ({ learnerId }) => {
           </div>
         </div>
       )}
+
+      {/* Import Fees Modal */}
+      <FeeImportModal 
+        isOpen={showImportModal} 
+        onClose={() => setShowImportModal(false)}
+        onComplete={() => {
+          setShowImportModal(false);
+          fetchInvoices();
+        }}
+      />
+
 
       {/* Payment Modal */}
       {showPaymentModal && selectedInvoice && (

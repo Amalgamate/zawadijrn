@@ -25,6 +25,9 @@ import jsPDF from 'jspdf';
 /** A4 dimensions in mm */
 const A4_W_MM = 210;
 const A4_H_MM = 297;
+const A4_MARGIN_MM = 10;
+const A4_CONTENT_W_MM = A4_W_MM - A4_MARGIN_MM * 2;
+const A4_CONTENT_H_MM = A4_H_MM - A4_MARGIN_MM * 2;
 
 /** Pixel dimensions at 96 DPI (browser default) */
 const A4_W_PX = 794;
@@ -64,11 +67,19 @@ const nextPaint = () =>
  *  • Strips scripts to prevent MIME errors in the clone
  */
 const buildOnclone = () => (_clonedDoc, clonedEl) => {
-  // 1. Normalise root element to strictly match A4 pixels
+  // 0. Reset the cloned document body to prevent any ancestral shifting
+  _clonedDoc.documentElement.style.cssText = 'margin: 0 !important; padding: 0 !important; width: 100%; height: 100%;';
+  _clonedDoc.body.style.cssText = 'margin: 0 !important; padding: 0 !important; width: 100%; height: 100%; overflow: visible !important;';
+
+  // 1. Normalise root element to strictly match A4 pixels at (0,0)
+  // We strip shadow and centering classes like 'mx-auto' so it doesn't shift
+  clonedEl.classList.remove('mx-auto', 'shadow-2xl', 'shadow-lg');
   clonedEl.style.cssText = `
-    position: relative !important;
+    position: absolute !important;
     left: 0 !important;
     top: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
     width: ${A4_W_PX}px !important;
     min-height: ${A4_H_PX}px !important;
     max-width: ${A4_W_PX}px !important;
@@ -81,6 +92,7 @@ const buildOnclone = () => (_clonedDoc, clonedEl) => {
     transform: none !important;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    box-shadow: none !important;
   `;
 
   // 2. Fix the inner .report-card for fidelity
@@ -100,6 +112,11 @@ const buildOnclone = () => (_clonedDoc, clonedEl) => {
     // Ensure visibility
     node.style.visibility = 'visible';
     node.style.opacity = '1';
+
+    // Fix for the right-aligned elements potentially being cut off
+    if (style.position === 'absolute' || style.float === 'right') {
+      node.style.maxWidth = '100%';
+    }
 
     // Force font-weight preservation (high-fidelity weights 700-1000)
     if (style.fontWeight && parseInt(style.fontWeight) >= 700) {
@@ -144,6 +161,10 @@ const captureOptions = () => ({
   backgroundColor: '#ffffff',
   width: A4_W_PX,
   windowWidth: A4_W_PX, // Force layout engine to A4 width
+  x: 0,
+  y: 0,
+  scrollX: 0,
+  scrollY: 0,
   onclone: buildOnclone(),
 });
 
@@ -172,12 +193,56 @@ export const captureElement = async (el, opts = {}) => {
 
 /**
  * Add a canvas to a jsPDF page as a full-bleed A4 PNG image.
- * PNG preserves sharp text and coloured badges — never use JPEG here.
+ * Uses 'Best Fit' logic: Scales width to fit A4_W_MM exactly.
  */
-const addCanvasToPdf = (pdf, canvas, addPage = false) => {
+const sliceCanvasToPages = (canvas) => {
+  const pageHeightPx = A4_H_PX;
+  const pages = [];
+  let yOffset = 0;
+
+  while (yOffset < canvas.height) {
+    const sliceHeight = Math.min(pageHeightPx, canvas.height - yOffset);
+    const pageCanvas = document.createElement('canvas');
+    pageCanvas.width = canvas.width;
+    pageCanvas.height = sliceHeight;
+
+    const ctx = pageCanvas.getContext('2d');
+    ctx.drawImage(canvas, 0, yOffset, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight);
+
+    pages.push(pageCanvas);
+    yOffset += sliceHeight;
+  }
+
+  return pages;
+};
+
+const fitCanvasToA4 = (canvas) => {
+  const rawWidth = A4_CONTENT_W_MM;
+  const rawHeight = (canvas.height * rawWidth) / canvas.width;
+  const scale = rawHeight > A4_CONTENT_H_MM ? A4_CONTENT_H_MM / rawHeight : 1;
+  return { width: rawWidth * scale, height: rawHeight * scale };
+};
+
+const addCanvasToPdfSinglePage = (pdf, canvas, addPage = false) => {
   if (addPage) pdf.addPage();
   const imgData = canvas.toDataURL('image/png');
-  pdf.addImage(imgData, 'PNG', 0, 0, A4_W_MM, A4_H_MM);
+  const { width, height } = fitCanvasToA4(canvas);
+  pdf.addImage(imgData, 'PNG', A4_MARGIN_MM, A4_MARGIN_MM, width, height);
+};
+
+const addCanvasToPdf = (pdf, canvas, addPage = false) => {
+  const pageCanvases = sliceCanvasToPages(canvas);
+
+  pageCanvases.forEach((pageCanvas, index) => {
+    if (index > 0 || (index === 0 && addPage)) {
+      pdf.addPage();
+    }
+
+    const imgData = pageCanvas.toDataURL('image/png');
+    const imgW = A4_W_MM;
+    const imgH = (pageCanvas.height * A4_W_MM) / pageCanvas.width;
+    pdf.addImage(imgData, 'PNG', 0, 0, imgW, imgH);
+  });
 };
 
 /** Create a jsPDF instance configured for A4 portrait. */
@@ -222,10 +287,11 @@ const runWithConcurrency = async (tasks, concurrency, signal) => {
  * @param {string}   filename    e.g. "Report_Jane_Doe.pdf"
  * @param {Object}   opts
  * @param {Function} [opts.onProgress]  (message: string) => void
+ * @param {boolean}  [opts.fitToPage=false]  Scale a tall capture to fit one A4 page.
  * @returns {Promise<{ success: boolean, error?: string }>}
  */
 export const captureSingleReport = async (elementId, filename, opts = {}) => {
-  const { onProgress, signal } = opts;
+  const { onProgress, signal, fitToPage = false } = opts;
   const el = document.getElementById(elementId);
   if (!el) return { success: false, error: `Element #${elementId} not found` };
 
@@ -242,7 +308,11 @@ export const captureSingleReport = async (elementId, filename, opts = {}) => {
 
     if (onProgress) onProgress('Building PDF…');
     const pdf = newA4Pdf();
-    addCanvasToPdf(pdf, canvas, false);
+    if (fitToPage) {
+      addCanvasToPdfSinglePage(pdf, canvas, false);
+    } else {
+      addCanvasToPdf(pdf, canvas, false);
+    }
 
     if (onProgress) onProgress('Saving…');
     pdf.save(filename);
@@ -351,7 +421,12 @@ export const printWindow = async (elementId, opts = {}) => {
     );
 
     const imgs = canvases
-      .map(c => `<img src="${c.toDataURL('image/png')}" style="width:210mm;height:297mm;display:block;page-break-after:always;" />`)
+      .flatMap((canvas) => {
+        const pages = sliceCanvasToPages(canvas);
+        return pages.map(pageCanvas =>
+          `<img src="${pageCanvas.toDataURL('image/png')}" style="width:210mm;height:auto;display:block;page-break-after:always;" />`
+        );
+      })
       .join('');
 
     const printHtml = `<!DOCTYPE html>
@@ -362,9 +437,8 @@ export const printWindow = async (elementId, opts = {}) => {
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: #fff; }
-    img { display: block; page-break-after: always; }
+    img { display: block; page-break-after: always; width: 210mm; height: auto; }
     @page { size: A4 portrait; margin: 0; }
-    @media print { body { width: 210mm; } img { width: 210mm; height: 297mm; } }
   </style>
 </head>
 <body>${imgs}</body>
@@ -436,13 +510,14 @@ export const generateHighFidelityPDF = (elementId, filename, opts) =>
  * Accepts the old positional args (learner, invoices, payments) plus an opts object.
  * opts.elementId defaults to 'statement-content'.
  * opts.action: 'download' (default) | 'print'
+ * opts.fitToPage: true will scale the statement into a single A4 page.
  */
 export const generateStatementPDF = (_learner, _invoices, _payments, opts = {}) => {
   const filename = opts.fileName || opts.filename ||
     `Statement_${_learner?.firstName || ''}_${_learner?.lastName || ''}_${new Date().getFullYear()}.pdf`;
   const elementId = opts.elementId || 'statement-content';
   const action = opts.action === 'print' ? 'print' : 'download';
-  return generatePDFFromElement(elementId, filename, { ...opts, action });
+  return generatePDFFromElement(elementId, filename, { ...opts, action, fitToPage: true });
 };
 
 /**

@@ -9,7 +9,8 @@ import {
     Tag,
     Calendar,
     Loader2,
-    CheckCircle2
+    CheckCircle2,
+    Upload
 } from 'lucide-react';
 import { accountingAPI } from '../../../../services/api/accounting.api';
 import { 
@@ -23,6 +24,7 @@ import { Button } from "../../../ui/button";
 import { Input } from "../../../ui/input";
 import { Label } from "../../../ui/label";
 import { toast } from "react-hot-toast";
+import ExpenseImportModal from '../../shared/ExpenseImportModal';
 
 const ExpenseManager = () => {
     const [expenses, setExpenses] = useState([]);
@@ -32,6 +34,7 @@ const ExpenseManager = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [showAddModal, setShowAddModal] = useState(false);
+    const [showImportModal, setShowImportModal] = useState(false);
     
     // Form State
     const [newExpense, setNewExpense] = useState({
@@ -131,6 +134,13 @@ const ExpenseManager = () => {
                     <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-medium">
                         <Download size={18} className="text-gray-400" />
                         Export
+                    </button>
+                    <button 
+                        onClick={() => setShowImportModal(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-emerald-600 border border-transparent text-white rounded-lg hover:bg-emerald-700 transition-all shadow-md font-medium"
+                    >
+                        <Search size={18} />
+                        Import
                     </button>
                     <button
                         onClick={() => setShowAddModal(true)}
@@ -374,6 +384,15 @@ const ExpenseManager = () => {
                     </form>
                 </DialogContent>
             </Dialog>
+
+            <ExpenseImportModal 
+                isOpen={showImportModal} 
+                onClose={() => setShowImportModal(false)}
+                onComplete={() => {
+                    setShowImportModal(false);
+                    fetchData();
+                }}
+            />
         </div>
     );
 };
