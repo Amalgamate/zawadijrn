@@ -37,6 +37,13 @@ export const errorHandler = (
   // Even in development, stack traces should only be in logs
   const isDevMode = process.env.NODE_ENV === 'development' && process.env.DEBUG_ERRORS === 'true';
   
+  // Ensure CORS headers are present even on crash
+  const origin = req.headers.origin;
+  if (origin && (origin.includes('vercel.app') || origin.includes('localhost'))) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  }
+
   res.status(statusCode).json({
     success: false,
     error: {
