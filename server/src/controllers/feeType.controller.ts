@@ -204,7 +204,7 @@ export class FeeTypeController {
                 ACTIVITY: ACTIVITY_FEE,
                 SPORTS: SPORTS_FEE,
                 TECHNOLOGY: 0,
-                TRANSPORT: 4500,
+                TRANSPORT: 0,
                 MEALS: 0,
                 MISC: 0
             };

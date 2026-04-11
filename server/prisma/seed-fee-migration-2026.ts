@@ -377,13 +377,12 @@ async function ensureFeeStructures(
     const LIBRARY_FEE = 500;
     const ACTIVITY_FEE = 500;
     const SPORTS_FEE = 500;
-    const TRANSPORT_FEE = 4500;
     const TUITION_FEE = Math.max(0, finalTotal - (EXAM_FEE + LIBRARY_FEE + ACTIVITY_FEE + SPORTS_FEE));
 
     const structure = await prisma.feeStructure.create({
       data: {
         name:         `${grade.replace('_', ' ')} — Term 1 2026`,
-        description:  'Standard Term 1 fees with category distribution and optional transport',
+        description:  'Standard Term 1 fees with category distribution (Transport handled per-student)',
         grade:        grade as any,
         term:         TERM,
         academicYear: ACADEMIC_YEAR,
@@ -397,7 +396,6 @@ async function ensureFeeStructures(
             { feeTypeId: libraryID!,   amount: LIBRARY_FEE,   mandatory: true },
             { feeTypeId: activityID!,  amount: ACTIVITY_FEE,  mandatory: true },
             { feeTypeId: sportsID!,    amount: SPORTS_FEE,    mandatory: true },
-            { feeTypeId: transportID!, amount: TRANSPORT_FEE, mandatory: false },
           ],
         },
       },
