@@ -1,5 +1,6 @@
--- Add primaryColor column to schools table
+-- Add branding columns to schools table
 ALTER TABLE "schools" ADD COLUMN "primaryColor" TEXT;
+ALTER TABLE "schools" ADD COLUMN "secondaryColor" TEXT;
 
 -- Add missing columns to users table (HR/payroll related fields)
 ALTER TABLE "users" ADD COLUMN "shifNumber" TEXT;
