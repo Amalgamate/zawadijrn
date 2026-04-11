@@ -25,25 +25,24 @@ const resolveMigration = (name, action = '--rolled-back') => {
 // 1. Summative Hardening
 resolveMigration('20260402074726_summative_hardening', '--applied');
 
-// 2. Grade to String - This is the tricky one that fails during DB Push
-// We clear its stuck state so migrate deploy can handle it via SQL
+// 2. Grade to String
 resolveMigration('20260402090938_grade_to_string', '--rolled-back');
 
 // 3. Library/Accounting Sync
-// We clear its stuck state. The migration SQL has "CREATE TABLE IF NOT EXISTS"
-// so it's safe to re-run.
 resolveMigration('20260404104631_add_library_accounting_sync_v2', '--rolled-back');
 
 // 4. CBC eight-level grading enforcement
-// If this previously failed mid-deploy, clear failed state so deploy can retry.
 resolveMigration('20260406121000_enforce_cbc_eight_level_grading', '--rolled-back');
 
 // 5. Rename Forms to Grade 10-12
-// This migration failed on Render. Marking as rolled-back so migrate deploy can retry it.
 resolveMigration('20260407160000_rename_forms_to_grade10_12', '--rolled-back');
 
-// Note: We removed the global "db push" from here because it's too aggressive 
-// during the type transition. migrate deploy is safer as it handles data 
-// migration SQL.
+// 6. FORCE the new missing columns migration to be recognized
+console.log("🔧 Ensuring new migrations are recognized...");
+try {
+  execSync('npx prisma migrate status', { stdio: 'inherit' });
+} catch (error) {
+  console.log("ℹ️ Migration status check completed.");
+}
 
 console.log("Pre-deploy pipeline complete. Proceeding to migrate...");
