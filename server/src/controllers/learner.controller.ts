@@ -121,7 +121,7 @@ export class LearnerController {
       admissionNumber, firstName, lastName, middleName, dateOfBirth, gender, grade, stream,
       parentId, guardianName, guardianPhone, guardianEmail, medicalConditions, allergies,
       emergencyContact, emergencyPhone, bloodGroup, address, county, subCounty, previousSchool,
-      religion, specialNeeds, photo, fatherName, fatherPhone, fatherEmail, fatherDeceased,
+      religion, specialNeeds, isTransportStudent, photo, fatherName, fatherPhone, fatherEmail, fatherDeceased,
       motherName, motherPhone, motherEmail, motherDeceased, guardianRelation,
       primaryContactType, primaryContactName, primaryContactPhone, primaryContactEmail,
     } = req.body;
@@ -227,7 +227,7 @@ export class LearnerController {
           institutionType,
           stream: stream || 'A', parentId, guardianName, guardianPhone, guardianEmail,
           medicalConditions, allergies, emergencyContact, emergencyPhone, bloodGroup,
-          address, county, subCounty, previousSchool, religion, specialNeeds,
+          address, county, subCounty, previousSchool, religion, specialNeeds, isTransportStudent: isTransportStudent === true || isTransportStudent === 'true',
           photoUrl: finalPhotoUrl, fatherName, fatherPhone, fatherEmail, fatherDeceased: fatherDeceased || false,
           motherName, motherPhone, motherEmail, motherDeceased: motherDeceased || false,
           guardianRelation, primaryContactType, primaryContactName, primaryContactPhone, primaryContactEmail,
@@ -302,7 +302,7 @@ export class LearnerController {
         'primaryContactType', 'primaryContactName', 'primaryContactPhone', 'primaryContactEmail',
         'medicalConditions', 'allergies', 'emergencyContact', 'emergencyPhone',
         'bloodGroup', 'address', 'county', 'subCounty',
-        'previousSchool', 'religion', 'specialNeeds',
+        'previousSchool', 'religion', 'specialNeeds', 'isTransportStudent',
         'status', 'exitDate', 'exitReason',
       ];
 
@@ -327,7 +327,7 @@ export class LearnerController {
         }
 
         // Coerce boolean fields so "false" string doesn't become truthy
-        if (field === 'fatherDeceased' || field === 'motherDeceased') {
+        if (field === 'fatherDeceased' || field === 'motherDeceased' || field === 'isTransportStudent') {
           updateData[field] = val === true || val === 'true';
           continue;
         }

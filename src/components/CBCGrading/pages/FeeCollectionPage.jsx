@@ -233,39 +233,47 @@ const FeeCollectionPage = ({ learnerId }) => {
     }
   }, [showCreateModal, showError]);
 
-  // Auto-select Fee Structure based on Learner, Term, and Year
+  // Auto-select Fee Structure & Transport Toggle based on Learner, Term, and Year
   useEffect(() => {
     const learnerId = newInvoice.learnerId || searchLearnerId;
 
-    if (showCreateModal && learnerId && feeStructures.length > 0) {
-      // Find the learner to get their grade
+    if (showCreateModal && learnerId && allLearners.length > 0) {
+      // Find the learner to get their grade and transport status
       const learner = allLearners.find(l => l.id === learnerId);
 
       if (learner) {
-        // Find matching fee structure
-        // Match: Grade AND Term AND Year
-        const matchedStructure = feeStructures.find(fs =>
-          fs.grade === learner.grade &&
-          fs.term === newInvoice.term &&
-          Number(fs.academicYear) === Number(newInvoice.academicYear)
-        );
+        // [NEW] Set transport toggle based on profile
+        setNewInvoice(prev => {
+          if (prev.includeTransport !== !!learner.isTransportStudent) {
+            return { ...prev, includeTransport: !!learner.isTransportStudent };
+          }
+          return prev;
+        });
 
-        if (matchedStructure) {
-          setNewInvoice(prev => {
-            if (prev.feeStructureId !== matchedStructure.id) {
-              return { ...prev, feeStructureId: matchedStructure.id };
-            }
-            return prev;
-          });
-        } else {
-          // Optional: Clear selection if no match found for the new combination
-          // This prevents submitting an invalid mismatch
-          setNewInvoice(prev => {
-            if (prev.feeStructureId !== '') {
-              return { ...prev, feeStructureId: '' };
-            }
-            return prev;
-          });
+        if (feeStructures.length > 0) {
+          // Find matching fee structure
+          // Match: Grade AND Term AND Year
+          const matchedStructure = feeStructures.find(fs =>
+            fs.grade === learner.grade &&
+            fs.term === newInvoice.term &&
+            Number(fs.academicYear) === Number(newInvoice.academicYear)
+          );
+
+          if (matchedStructure) {
+            setNewInvoice(prev => {
+              if (prev.feeStructureId !== matchedStructure.id) {
+                return { ...prev, feeStructureId: matchedStructure.id };
+              }
+              return prev;
+            });
+          } else {
+            setNewInvoice(prev => {
+              if (prev.feeStructureId !== '') {
+                return { ...prev, feeStructureId: '' };
+              }
+              return prev;
+            });
+          }
         }
       }
     }

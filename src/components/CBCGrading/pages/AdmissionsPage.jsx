@@ -72,7 +72,8 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
       // Medical & Emergency
       bloodGroup: '', allergies: '', medicalConditions: '',
       doctorName: '', doctorPhone: '', specialNeeds: '', photo: null,
-      emergencyContact: '', emergencyPhone: ''
+      emergencyContact: '', emergencyPhone: '',
+      isTransportStudent: false
     };
   }, []);
 
@@ -652,6 +653,23 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
                           <option disabled>No streams configured</option>
                         )}
                       </select>
+                    </div>
+                    {/* [NEW] Transport Service Toggle */}
+                    <div className="md:col-span-3">
+                      <div className="flex items-center gap-3 p-3 bg-brand-purple/5 border border-brand-purple/10 rounded-md transition-all hover:bg-brand-purple/10">
+                        <input
+                          type="checkbox"
+                          id="isTransportStudent"
+                          name="isTransportStudent"
+                          checked={formData.isTransportStudent}
+                          onChange={(e) => setFormData({ ...formData, isTransportStudent: e.target.checked })}
+                          className="w-4 h-4 text-brand-purple border-gray-300 rounded focus:ring-brand-purple cursor-pointer"
+                        />
+                        <label htmlFor="isTransportStudent" className="flex flex-col cursor-pointer">
+                          <span className="text-sm font-bold text-brand-purple">Transport Service</span>
+                          <span className="text-[10px] text-gray-500 uppercase tracking-widest font-semibold font-mono">Check this if the learner will be using school transport</span>
+                        </label>
+                      </div>
                     </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 border-t pt-6">

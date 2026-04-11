@@ -354,6 +354,7 @@ model Learner {
   previousSchool         String?
   religion               String?
   specialNeeds           String?
+  isTransportStudent     Boolean                   @default(false)
   idCardIssued           DateTime?
   idCardExpiry           DateTime?
   idCardNumber           String?

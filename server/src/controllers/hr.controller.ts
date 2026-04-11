@@ -11,7 +11,7 @@ export class HRController {
     async getDashboardStats(req: AuthRequest, res: Response) {
         try {
             const month = req.query.month ? Number(req.query.month) : new Date().getMonth() + 1;
-            const year = req.query.year ? Number(req.query.year) : new Date().getFullYear();
+            const year  = req.query.year  ? Number(req.query.year)  : new Date().getFullYear();
             const stats = await hrService.getDashboardStats(month, year);
             res.json({ success: true, data: stats });
         } catch (error: any) {
@@ -51,9 +51,9 @@ export class HRController {
             const result = await hrService.clockOutStaff(userId, req.body || {});
             res.status(200).json({ success: true, message: 'Clock-out recorded', data: result });
         } catch (error: any) {
-            const message = error?.message || 'Failed to clock out';
-            const statusCode = error?.statusCode
-                || (message.includes('No clock-in record') || message.includes('earlier than clock-in') ? 400 : 500);
+            const message    = error?.message || 'Failed to clock out';
+            const statusCode = error?.statusCode ||
+                (message.includes('No clock-in record') || message.includes('earlier than clock-in') ? 400 : 500);
             res.status(statusCode).json({ success: false, message });
         }
     }
@@ -163,13 +163,21 @@ export class HRController {
             const request = await hrService.submitLeaveRequest(userId, req.body);
             res.status(201).json({ success: true, message: 'Leave request submitted', data: request });
         } catch (error: any) {
-            res.status(error.statusCode || 500).json({ success: false, message: error.message });
+            res.status(error.statusCode || 400).json({ success: false, message: error.message });
         }
     }
 
     async getLeaveRequests(req: AuthRequest, res: Response) {
         try {
-            const requests = await hrService.getLeaveRequests(req.query);
+            // Admin/HR sees all; regular staff sees only their own
+            const role   = req.user?.role;
+            const userId = req.user?.userId;
+            const isAdmin = ['ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER'].includes(role || '');
+            const filters: any = {
+                status: req.query.status || undefined,
+                userId: isAdmin ? (req.query.userId as string | undefined) : userId
+            };
+            const requests = await hrService.getLeaveRequests(filters);
             res.json({ success: true, data: requests });
         } catch (error: any) {
             res.status(500).json({ success: false, message: error.message });
@@ -184,6 +192,59 @@ export class HRController {
             if (!approvedBy) throw new ApiError(401, 'Unauthorized');
             const updated = await hrService.approveLeaveRequest(requestId, approvedBy, approved, rejectionReason);
             res.json({ success: true, message: `Leave ${approved ? 'approved' : 'rejected'}`, data: updated });
+        } catch (error: any) {
+            res.status(error.statusCode || 500).json({ success: false, message: error.message });
+        }
+    }
+
+    // ─── Leave Type CRUD ──────────────────────────────────────────────────────
+
+    async createLeaveType(req: AuthRequest, res: Response) {
+        try {
+            const type = await hrService.createLeaveType(req.body);
+            res.status(201).json({ success: true, message: 'Leave type created', data: type });
+        } catch (error: any) {
+            res.status(400).json({ success: false, message: error.message });
+        }
+    }
+
+    async updateLeaveType(req: AuthRequest, res: Response) {
+        try {
+            const type = await hrService.updateLeaveType(req.params.id, req.body);
+            res.json({ success: true, message: 'Leave type updated', data: type });
+        } catch (error: any) {
+            res.status(400).json({ success: false, message: error.message });
+        }
+    }
+
+    async deleteLeaveType(req: AuthRequest, res: Response) {
+        try {
+            await hrService.deleteLeaveType(req.params.id);
+            res.json({ success: true, message: 'Leave type deactivated' });
+        } catch (error: any) {
+            res.status(400).json({ success: false, message: error.message });
+        }
+    }
+
+    async getLeaveBalance(req: AuthRequest, res: Response) {
+        try {
+            const userId  = req.params.userId;
+            const year    = req.query.year ? Number(req.query.year) : new Date().getFullYear();
+            const balance = await hrService.getLeaveBalance(userId, year);
+            res.json({ success: true, data: balance });
+        } catch (error: any) {
+            res.status(500).json({ success: false, message: error.message });
+        }
+    }
+
+    // ─── Attendance Report ────────────────────────────────────────────────────
+
+    async getAttendanceReport(req: AuthRequest, res: Response) {
+        try {
+            const { userId, startDate, endDate } = req.query as Record<string, string>;
+            if (!startDate || !endDate) throw new ApiError(400, 'startDate and endDate are required');
+            const data = await hrService.getAttendanceReport({ userId, startDate, endDate });
+            res.json({ success: true, data, count: data.length });
         } catch (error: any) {
             res.status(error.statusCode || 500).json({ success: false, message: error.message });
         }
@@ -210,6 +271,20 @@ export class HRController {
             res.json({ success: true, data: records });
         } catch (error: any) {
             res.status(500).json({ success: false, message: error.message });
+        }
+    }
+
+    /**
+     * GET /api/hr/payroll/:id
+     * Returns a single payroll record with full staff detail for payslip rendering.
+     */
+    async getPayslip(req: AuthRequest, res: Response) {
+        try {
+            const { id } = req.params;
+            const record = await hrService.getPayrollRecordById(id);
+            res.json({ success: true, data: record });
+        } catch (error: any) {
+            res.status(error.statusCode || 404).json({ success: false, message: error.message });
         }
     }
 
@@ -262,6 +337,24 @@ export class HRController {
         }
     }
 
+    /**
+     * PUT /api/hr/payroll/void/:id
+     * Voids a DRAFT or GENERATED payroll record. Requires a reason.
+     */
+    async voidPayroll(req: AuthRequest, res: Response) {
+        try {
+            const { id } = req.params;
+            const { reason } = req.body;
+            const voidedBy = req.user?.userId;
+            if (!voidedBy) throw new ApiError(401, 'Unauthorized');
+            if (!reason?.trim()) throw new ApiError(400, 'A reason is required to void a payroll record');
+            const voided = await hrService.voidPayrollRecord(id, voidedBy, reason);
+            res.json({ success: true, message: 'Payroll record voided', data: voided });
+        } catch (error: any) {
+            res.status(error.statusCode || 400).json({ success: false, message: error.message });
+        }
+    }
+
     // ─── Performance ──────────────────────────────────────────────────────────
 
     async getPerformance(req: AuthRequest, res: Response) {
@@ -283,7 +376,7 @@ export class HRController {
 
             if (review.user?.phone) {
                 const reviewerName = `${review.reviewer?.firstName || 'HR'} ${review.reviewer?.lastName || ''}`.trim();
-                const message = `Hello ${review.user.firstName}, your performance review for the period ${new Date(req.body.periodStart).toLocaleDateString()} - ${new Date(req.body.periodEnd).toLocaleDateString()} has been added by ${reviewerName}. Please check your HR portal.`;
+                const message = `Hello ${review.user.firstName}, your performance review for the period ${new Date(req.body.periodStart).toLocaleDateString()} – ${new Date(req.body.periodEnd).toLocaleDateString()} has been added by ${reviewerName}. Please check your HR portal.`;
                 SmsService.sendSms(review.user.phone, message).catch(console.error);
             }
         } catch (error: any) {

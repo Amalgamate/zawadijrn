@@ -48,6 +48,10 @@ const deductionSchema = z.object({
     isActive: z.boolean().optional()
 });
 
+const voidPayrollSchema = z.object({
+    reason: z.string().min(5, 'Reason must be at least 5 characters').max(500)
+});
+
 // ── Dashboard ────────────────────────────────────────────────────────────────
 
 router.get(
@@ -193,6 +197,60 @@ router.put(
     hrController.approveLeave
 );
 
+// ── Leave Type CRUD ─────────────────────────────────────────────────────────────────
+
+const leaveTypeSchema = z.object({
+    name: z.string().min(1).max(100),
+    maxDays: z.coerce.number().int().min(1).max(365),
+    description: z.string().max(300).optional()
+});
+
+router.post(
+    '/leave/types',
+    authenticate,
+    authorize('ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER'),
+    rateLimit({ windowMs: 60_000, maxRequests: 10 }),
+    validate(leaveTypeSchema),
+    auditLog('CREATE_LEAVE_TYPE'),
+    hrController.createLeaveType
+);
+
+router.put(
+    '/leave/types/:id',
+    authenticate,
+    authorize('ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER'),
+    rateLimit({ windowMs: 60_000, maxRequests: 20 }),
+    auditLog('UPDATE_LEAVE_TYPE'),
+    hrController.updateLeaveType
+);
+
+router.delete(
+    '/leave/types/:id',
+    authenticate,
+    authorize('ADMIN', 'SUPER_ADMIN'),
+    rateLimit({ windowMs: 60_000, maxRequests: 10 }),
+    auditLog('DELETE_LEAVE_TYPE'),
+    hrController.deleteLeaveType
+);
+
+// Leave balance per staff member
+router.get(
+    '/leave/balance/:userId',
+    authenticate,
+    rateLimit({ windowMs: 60_000, maxRequests: 60 }),
+    hrController.getLeaveBalance
+);
+
+// ── Attendance Report ──────────────────────────────────────────────────────────────
+
+router.get(
+    '/attendance/report',
+    authenticate,
+    authorize('ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER', 'ACCOUNTANT'),
+    rateLimit({ windowMs: 60_000, maxRequests: 30 }),
+    hrController.getAttendanceReport
+);
+
 // ── Payroll ──────────────────────────────────────────────────────────────────
 
 router.post(
@@ -210,6 +268,19 @@ router.get(
     authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
     rateLimit({ windowMs: 60_000, maxRequests: 100 }),
     hrController.getPayroll
+);
+
+/**
+ * @route   GET /api/hr/payroll/:id
+ * @desc    Fetch a single payroll record with full staff details for payslip rendering
+ * @access  ADMIN, SUPER_ADMIN, ACCOUNTANT
+ */
+router.get(
+    '/payroll/:id',
+    authenticate,
+    authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+    rateLimit({ windowMs: 60_000, maxRequests: 100 }),
+    hrController.getPayslip
 );
 
 router.put(
@@ -237,7 +308,7 @@ router.post(
 
 /**
  * @route   PUT /api/hr/payroll/pay/:id
- * @desc    Mark a single payroll record as PAID
+ * @desc    Mark a single payroll record as PAID and send SMS notification
  * @access  ADMIN, SUPER_ADMIN, ACCOUNTANT
  */
 router.put(
@@ -251,7 +322,7 @@ router.put(
 
 /**
  * @route   POST /api/hr/payroll/bulk-pay
- * @desc    Mark all GENERATED records for a month/year as PAID
+ * @desc    Mark all GENERATED records for a month/year as PAID and send SMS notifications
  * @access  ADMIN, SUPER_ADMIN, ACCOUNTANT
  */
 router.post(
@@ -261,6 +332,21 @@ router.post(
     rateLimit({ windowMs: 60_000, maxRequests: 5 }),
     auditLog('BULK_MARK_PAYROLL_PAID'),
     hrController.bulkMarkPaid
+);
+
+/**
+ * @route   PUT /api/hr/payroll/void/:id
+ * @desc    Void a DRAFT or GENERATED payroll record (requires a reason)
+ * @access  ADMIN, SUPER_ADMIN
+ */
+router.put(
+    '/payroll/void/:id',
+    authenticate,
+    authorize('ADMIN', 'SUPER_ADMIN'),
+    rateLimit({ windowMs: 60_000, maxRequests: 10 }),
+    validate(voidPayrollSchema),
+    auditLog('VOID_PAYROLL'),
+    hrController.voidPayroll
 );
 
 // ── Performance ──────────────────────────────────────────────────────────────

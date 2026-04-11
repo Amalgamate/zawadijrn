@@ -7,6 +7,10 @@ export const hrAPI = {
     clockOutStaff: async (data = {}) =>
         fetchWithAuth('/hr/attendance/clock-out', { method: 'POST', body: JSON.stringify(data) }),
     getTodayClockIn: async () => fetchWithAuth('/hr/attendance/today'),
+    getAttendanceReport: async (params = {}) => {
+        const qs = new URLSearchParams(params).toString();
+        return fetchWithAuth(`/hr/attendance/report${qs ? '?' + qs : ''}`);
+    },
 
     // ── Staff Directory ───────────────────────────────────────────────────────
     getStaffDirectory: async () => fetchWithAuth('/hr/staff'),
@@ -29,22 +33,31 @@ export const hrAPI = {
 
     // ── Leave ─────────────────────────────────────────────────────────────────
     getLeaveTypes: async () => fetchWithAuth('/hr/leave/types'),
+    createLeaveType: async (data) =>
+        fetchWithAuth('/hr/leave/types', { method: 'POST', body: JSON.stringify(data) }),
+    updateLeaveType: async (id, data) =>
+        fetchWithAuth(`/hr/leave/types/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    deleteLeaveType: async (id) =>
+        fetchWithAuth(`/hr/leave/types/${id}`, { method: 'DELETE' }),
     submitLeaveRequest: async (data) =>
         fetchWithAuth('/hr/leave/apply', { method: 'POST', body: JSON.stringify(data) }),
     getLeaveRequests: async (params = {}) => {
         const queryString = new URLSearchParams(params).toString();
-        return fetchWithAuth(`/hr/leave/requests?${queryString}`);
+        return fetchWithAuth(`/hr/leave/requests${queryString ? '?' + queryString : ''}`);
     },
     approveLeaveRequest: async (requestId, data) =>
         fetchWithAuth(`/hr/leave/approve/${requestId}`, { method: 'PUT', body: JSON.stringify(data) }),
+    getLeaveBalance: async (userId, year) =>
+        fetchWithAuth(`/hr/leave/balance/${userId}?year=${year || new Date().getFullYear()}`),
 
     // ── Payroll ───────────────────────────────────────────────────────────────
     generatePayroll: async (data) =>
         fetchWithAuth('/hr/payroll/generate', { method: 'POST', body: JSON.stringify(data) }),
     getPayrollRecords: async (params = {}) => {
         const queryString = new URLSearchParams(params).toString();
-        return fetchWithAuth(`/hr/payroll?${queryString}`);
+        return fetchWithAuth(`/hr/payroll${queryString ? '?' + queryString : ''}`);
     },
+    getPayslip: async (id) => fetchWithAuth(`/hr/payroll/${id}`),
     confirmPayroll: async (id) =>
         fetchWithAuth(`/hr/payroll/confirm/${id}`, { method: 'PUT' }),
     bulkConfirmPayroll: async (month, year) =>
@@ -53,6 +66,8 @@ export const hrAPI = {
         fetchWithAuth(`/hr/payroll/pay/${id}`, { method: 'PUT', body: JSON.stringify({ paymentReference }) }),
     bulkMarkPaid: async (month, year, paymentReference) =>
         fetchWithAuth('/hr/payroll/bulk-pay', { method: 'POST', body: JSON.stringify({ month, year, paymentReference }) }),
+    voidPayroll: async (id, reason) =>
+        fetchWithAuth(`/hr/payroll/void/${id}`, { method: 'PUT', body: JSON.stringify({ reason }) }),
 
     // ── Performance ───────────────────────────────────────────────────────────
     getPerformanceReviews: async (userId) => {

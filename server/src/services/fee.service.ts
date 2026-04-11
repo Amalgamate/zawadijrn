@@ -127,7 +127,12 @@ export class FeeService {
             const dueDate = new Date();
             dueDate.setDate(dueDate.getDate() + 14);
 
-            const totalAmount = (feeStructure as any).feeItems.reduce((sum: number, item: any) => sum + Number(item.amount), 0);
+            const allItems = (feeStructure as any).feeItems || [];
+            const filteredItems = learner.isTransportStudent 
+                ? allItems 
+                : allItems.filter((i: any) => i.feeType?.code !== 'TRANSPORT');
+
+            const totalAmount = filteredItems.reduce((sum: number, item: any) => sum + Number(item.amount), 0);
 
             // 6. Create Invoice
             const newInvoice = await createInvoiceWithSafeNumber(prisma, {

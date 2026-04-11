@@ -1,6 +1,7 @@
 import prisma from '../config/database';
 import { accountingService } from './accounting.service';
 import { TaxCalculator } from '../utils/tax.calculator';
+import { SmsService } from './sms.service';
 
 export class HRService {
     private toDateOnly(dateValue: Date) {
@@ -12,6 +13,23 @@ export class HRService {
     private toWorkedMinutes(clockInAt: Date, clockOutAt: Date) {
         const ms = new Date(clockOutAt).getTime() - new Date(clockInAt).getTime();
         return Math.max(0, Math.floor(ms / 60000));
+    }
+
+    /**
+     * Calculate the number of working days (Mon–Fri) between two dates, inclusive.
+     */
+    private calcBusinessDays(startDate: Date, endDate: Date): number {
+        let count = 0;
+        const cur = new Date(startDate);
+        cur.setHours(0, 0, 0, 0);
+        const end = new Date(endDate);
+        end.setHours(0, 0, 0, 0);
+        while (cur <= end) {
+            const day = cur.getDay();
+            if (day !== 0 && day !== 6) count++;
+            cur.setDate(cur.getDate() + 1);
+        }
+        return count;
     }
 
     // ─── Staff Directory ──────────────────────────────────────────────────────
@@ -60,12 +78,10 @@ export class HRService {
     }
 
     async updateStaffHRDetails(userId: string, details: any) {
-        // Validate phone number before saving
         if (details.phone) {
             const phoneStr = String(details.phone).trim();
             const isValidPhone = /^(\+?254|0)[17]\d{8}$/.test(phoneStr.replace(/\s/g, ''));
             if (!isValidPhone && phoneStr.length > 0) {
-                // Store as string even if unusual but log warning
                 console.warn(`[HR] Non-standard phone for userId ${userId}: ${phoneStr}`);
             }
         }
@@ -108,22 +124,11 @@ export class HRService {
         if (data.id) {
             return prisma.staffAllowance.update({
                 where: { id: data.id },
-                data: {
-                    type: data.type,
-                    label: data.label,
-                    amount: data.amount,
-                    isActive: data.isActive ?? true
-                }
+                data: { type: data.type, label: data.label, amount: data.amount, isActive: data.isActive ?? true }
             });
         }
         return prisma.staffAllowance.create({
-            data: {
-                userId,
-                type: data.type,
-                label: data.label,
-                amount: data.amount,
-                isActive: data.isActive ?? true
-            }
+            data: { userId, type: data.type, label: data.label, amount: data.amount, isActive: data.isActive ?? true }
         });
     }
 
@@ -187,21 +192,61 @@ export class HRService {
     }
 
     async submitLeaveRequest(userId: string, data: any) {
+        const startDate = new Date(data.startDate);
+        const endDate = new Date(data.endDate);
+
+        // Validate the leave type exists
+        const leaveType = await prisma.leaveType.findUnique({ where: { id: data.leaveTypeId } });
+        if (!leaveType) throw new Error('Invalid leave type');
+
+        // Calculate business days requested
+        const daysRequested = this.calcBusinessDays(startDate, endDate);
+
+        // Check annual balance: sum approved + pending leave days this year for this type
+        const yearStart = new Date(startDate.getFullYear(), 0, 1);
+        const yearEnd = new Date(startDate.getFullYear(), 11, 31, 23, 59, 59);
+        const existingLeaves = await prisma.leaveRequest.findMany({
+            where: {
+                userId,
+                leaveTypeId: data.leaveTypeId,
+                status: { in: ['APPROVED', 'PENDING'] },
+                startDate: { gte: yearStart, lte: yearEnd }
+            }
+        });
+        const usedDays = existingLeaves.reduce(
+            (sum, lr) => sum + this.calcBusinessDays(new Date(lr.startDate), new Date(lr.endDate)),
+            0
+        );
+        const remainingDays = leaveType.maxDays - usedDays;
+
+        if (daysRequested > remainingDays) {
+            throw new Error(
+                `Insufficient leave balance. Requested ${daysRequested} day(s) but only ${remainingDays} remaining for ${leaveType.name} this year.`
+            );
+        }
+
         return prisma.leaveRequest.create({
             data: {
                 userId,
                 leaveTypeId: data.leaveTypeId,
-                startDate: new Date(data.startDate),
-                endDate: new Date(data.endDate),
+                startDate,
+                endDate,
                 reason: data.reason,
                 status: 'PENDING'
             }
         });
     }
 
+    /**
+     * Get leave requests.
+     * Supports filtering by status and/or userId.
+     */
     async getLeaveRequests(filters: any = {}) {
         return prisma.leaveRequest.findMany({
-            where: { status: filters.status || undefined },
+            where: {
+                status: filters.status || undefined,
+                userId: filters.userId || undefined
+            },
             include: {
                 user: { select: { firstName: true, lastName: true, role: true } },
                 leaveType: true
@@ -210,42 +255,58 @@ export class HRService {
         });
     }
 
-    async approveLeaveRequest(requestId: string, approvedById: string, approved: boolean, rejectionReason?: string) {
-        return prisma.leaveRequest.update({
+    async approveLeaveRequest(
+        requestId: string,
+        approvedById: string,
+        approved: boolean,
+        rejectionReason?: string
+    ) {
+        const updated = await prisma.leaveRequest.update({
             where: { id: requestId },
             data: {
                 status: approved ? 'APPROVED' : 'REJECTED',
                 approvedById: approved ? approvedById : null,
                 approvedAt: approved ? new Date() : null,
                 rejectionReason: approved ? null : rejectionReason
+            },
+            include: {
+                user: { select: { firstName: true, phone: true } },
+                leaveType: true
             }
         });
+
+        // ── SMS notification to the staff member ──────────────────────────────
+        if (updated.user?.phone) {
+            const start = new Date(updated.startDate).toLocaleDateString('en-KE', { day: '2-digit', month: 'short', year: 'numeric' });
+            const end   = new Date(updated.endDate).toLocaleDateString('en-KE',   { day: '2-digit', month: 'short', year: 'numeric' });
+            const days  = this.calcBusinessDays(new Date(updated.startDate), new Date(updated.endDate));
+            let message: string;
+            if (approved) {
+                message = `Dear ${updated.user.firstName}, your ${updated.leaveType.name} leave request (${start} – ${end}, ${days} day(s)) has been APPROVED. Enjoy your time off!`;
+            } else {
+                const reasonNote = rejectionReason ? ` Reason: ${rejectionReason}.` : '';
+                message = `Dear ${updated.user.firstName}, your ${updated.leaveType.name} leave request (${start} – ${end}) has been REJECTED.${reasonNote} Please contact HR for clarification.`;
+            }
+            SmsService.sendSms(updated.user.phone, message).catch(err =>
+                console.error('[HR] Leave approval SMS failed:', err)
+            );
+        }
+
+        return updated;
     }
 
     // ─── Payroll: core generation logic ──────────────────────────────────────
 
-    /**
-     * Build the full pay breakdown for one staff member for a given month.
-     * Factors in: basicSalary + active allowances + statutory deductions + custom deductions.
-     */
     private async buildPayBreakdown(userId: string, basicSalary: number, housingLevyExempt: boolean) {
-        // 1. Fetch active allowances
-        const allowances = await prisma.staffAllowance.findMany({
-            where: { userId, isActive: true }
-        });
+        const allowances = await prisma.staffAllowance.findMany({ where: { userId, isActive: true } });
         const allowanceTotal = allowances.reduce((sum, a) => sum + Number(a.amount), 0);
         const grossSalary = basicSalary + allowanceTotal;
 
-        // 2. Statutory deductions (calculated on grossSalary per 2024 rules)
         const statutory = TaxCalculator.getBreakdown(grossSalary, { exemptLevy: housingLevyExempt });
 
-        // 3. Fetch active custom deductions
-        const customDeductions = await prisma.staffDeduction.findMany({
-            where: { userId, isActive: true }
-        });
-        const customDeductionTotal = customDeductions
-            .filter(d => d.totalMonths === 0 || d.monthsApplied < d.totalMonths)
-            .reduce((sum, d) => sum + Number(d.amount), 0);
+        const customDeductions = await prisma.staffDeduction.findMany({ where: { userId, isActive: true } });
+        const eligibleCustom = customDeductions.filter(d => d.totalMonths === 0 || d.monthsApplied < d.totalMonths);
+        const customDeductionTotal = eligibleCustom.reduce((sum, d) => sum + Number(d.amount), 0);
 
         const totalDeductions = statutory.totalDeductions + customDeductionTotal;
         const netSalary = grossSalary - totalDeductions;
@@ -253,14 +314,10 @@ export class HRService {
         return {
             basicSalary,
             grossSalary,
-            allowancesSnapshot: allowances.map(a => ({
-                id: a.id, type: a.type, label: a.label, amount: Number(a.amount)
-            })),
+            allowancesSnapshot: allowances.map(a => ({ id: a.id, type: a.type, label: a.label, amount: Number(a.amount) })),
             allowanceTotal,
             statutory,
-            customDeductions: customDeductions
-                .filter(d => d.totalMonths === 0 || d.monthsApplied < d.totalMonths)
-                .map(d => ({ id: d.id, type: d.type, label: d.label, amount: Number(d.amount) })),
+            customDeductions: eligibleCustom.map(d => ({ id: d.id, type: d.type, label: d.label, amount: Number(d.amount) })),
             customDeductionTotal,
             totalDeductions,
             netSalary
@@ -283,7 +340,10 @@ export class HRService {
             const existing = await prisma.payrollRecord.findUnique({
                 where: { userId_month_year: { userId: member.id, month, year } }
             });
-            if (existing) continue;
+            if (existing) {
+                payrollRecords.push(existing);
+                continue;
+            }
 
             const basicSalary = Number(member.basicSalary);
             const pay = await this.buildPayBreakdown(member.id, basicSalary, !!member.housingLevyExempt);
@@ -296,10 +356,7 @@ export class HRService {
                     basicSalary,
                     grossSalary: pay.grossSalary,
                     netSalary: pay.netSalary,
-                    allowances: {
-                        items: pay.allowancesSnapshot,
-                        total: pay.allowanceTotal
-                    } as any,
+                    allowances: { items: pay.allowancesSnapshot, total: pay.allowanceTotal } as any,
                     deductions: {
                         paye: pay.statutory.paye,
                         nssf: pay.statutory.nssf,
@@ -317,18 +374,13 @@ export class HRService {
 
             // Increment monthsApplied for bounded custom deductions
             for (const cd of pay.customDeductions) {
-                if (cd) {
-                    const ded = await prisma.staffDeduction.findUnique({ where: { id: cd.id } });
-                    if (ded && ded.totalMonths > 0) {
-                        const newApplied = ded.monthsApplied + 1;
-                        await prisma.staffDeduction.update({
-                            where: { id: cd.id },
-                            data: {
-                                monthsApplied: newApplied,
-                                isActive: newApplied < ded.totalMonths
-                            }
-                        });
-                    }
+                const ded = await prisma.staffDeduction.findUnique({ where: { id: cd.id } });
+                if (ded && ded.totalMonths > 0) {
+                    const newApplied = ded.monthsApplied + 1;
+                    await prisma.staffDeduction.update({
+                        where: { id: cd.id },
+                        data: { monthsApplied: newApplied, isActive: newApplied < ded.totalMonths }
+                    });
                 }
             }
 
@@ -355,15 +407,8 @@ export class HRService {
         return updated;
     }
 
-    /**
-     * Bulk confirm all DRAFT records for a given month/year.
-     * Returns counts of confirmed vs already-processed.
-     */
     async bulkConfirmPayroll(month: number, year: number) {
-        const drafts = await prisma.payrollRecord.findMany({
-            where: { month, year, status: 'DRAFT' }
-        });
-
+        const drafts = await prisma.payrollRecord.findMany({ where: { month, year, status: 'DRAFT' } });
         let confirmed = 0;
         const errors: string[] = [];
 
@@ -380,23 +425,19 @@ export class HRService {
             }
         }
 
-        return {
-            total: drafts.length,
-            confirmed,
-            errors
-        };
+        return { total: drafts.length, confirmed, errors };
     }
 
-    /**
-     * Mark a payroll record as PAID with an optional payment reference.
-     */
     async markPayrollPaid(recordId: string, paymentReference?: string) {
-        const record = await prisma.payrollRecord.findUnique({ where: { id: recordId } });
+        const record = await prisma.payrollRecord.findUnique({
+            where: { id: recordId },
+            include: { user: { select: { firstName: true, phone: true, bankName: true } } }
+        });
         if (!record) throw new Error('Payroll record not found');
         if (record.status === 'PAID') throw new Error('Record is already marked as PAID');
         if (record.status === 'VOID') throw new Error('Cannot mark a VOID record as paid');
 
-        return prisma.payrollRecord.update({
+        const updated = await prisma.payrollRecord.update({
             where: { id: recordId },
             data: {
                 status: 'PAID',
@@ -404,14 +445,27 @@ export class HRService {
                 paymentReference: paymentReference || null
             }
         });
+
+        // ── SMS notification to the staff member ──────────────────────────────
+        if (record.user?.phone) {
+            const monthName = new Date(record.year, record.month - 1)
+                .toLocaleString('en-KE', { month: 'long', year: 'numeric' });
+            const net = Number(record.netSalary).toLocaleString('en-KE', { minimumFractionDigits: 2 });
+            const bankNote = record.user.bankName ? ` to ${record.user.bankName}` : '';
+            const refNote  = paymentReference ? ` Ref: ${paymentReference}.` : '';
+            const message  = `Dear ${record.user.firstName}, your salary for ${monthName} of KES ${net} has been disbursed${bankNote}.${refNote} Contact HR for any queries.`;
+            SmsService.sendSms(record.user.phone, message).catch(err =>
+                console.error('[HR] Payroll paid SMS failed:', err)
+            );
+        }
+
+        return updated;
     }
 
-    /**
-     * Bulk mark all GENERATED records for a month as PAID.
-     */
     async bulkMarkPaid(month: number, year: number, paymentReference?: string) {
         const generated = await prisma.payrollRecord.findMany({
-            where: { month, year, status: 'GENERATED' }
+            where: { month, year, status: 'GENERATED' },
+            include: { user: { select: { firstName: true, phone: true, bankName: true } } }
         });
 
         const updated = await prisma.payrollRecord.updateMany({
@@ -423,7 +477,42 @@ export class HRService {
             }
         });
 
+        // ── Bulk SMS notifications ────────────────────────────────────────────
+        const monthName = new Date(year, month - 1).toLocaleString('en-KE', { month: 'long', year: 'numeric' });
+        for (const rec of generated) {
+            if (!rec.user?.phone) continue;
+            const net      = Number(rec.netSalary).toLocaleString('en-KE', { minimumFractionDigits: 2 });
+            const bankNote = rec.user.bankName ? ` to ${rec.user.bankName}` : '';
+            const refNote  = paymentReference ? ` Ref: ${paymentReference}.` : '';
+            const message  = `Dear ${rec.user.firstName}, your salary for ${monthName} of KES ${net} has been disbursed${bankNote}.${refNote} Contact HR for any queries.`;
+            SmsService.sendSms(rec.user.phone, message).catch(err =>
+                console.error('[HR] Bulk payroll paid SMS failed:', err)
+            );
+        }
+
         return { total: generated.length, paid: updated.count };
+    }
+
+    /**
+     * Void a payroll record (DRAFT or GENERATED only).
+     * A PAID record cannot be voided — it must be reversed manually via the accounting module.
+     */
+    async voidPayrollRecord(recordId: string, voidedBy: string, reason: string) {
+        if (!reason?.trim()) throw new Error('A reason is required to void a payroll record');
+        const record = await prisma.payrollRecord.findUnique({ where: { id: recordId } });
+        if (!record) throw new Error('Payroll record not found');
+        if (record.status === 'PAID') {
+            throw new Error('A PAID payroll record cannot be voided. Please create a correcting journal entry in the accounting module.');
+        }
+        if (record.status === 'VOID') throw new Error('Record is already VOID');
+
+        return prisma.payrollRecord.update({
+            where: { id: recordId },
+            data: {
+                status: 'VOID',
+                notes: `VOIDED by userId:${voidedBy} on ${new Date().toISOString()}. Reason: ${reason}`
+            }
+        });
     }
 
     async getPayrollRecords(month: number, year: number) {
@@ -449,7 +538,40 @@ export class HRService {
         });
     }
 
-    // ─── Attendance ───────────────────────────────────────────────────────────
+    /**
+     * Fetch a single payroll record with full staff details for payslip rendering.
+     */
+    async getPayrollRecordById(recordId: string) {
+        const record = await prisma.payrollRecord.findUnique({
+            where: { id: recordId },
+            include: {
+                user: {
+                    select: {
+                        firstName: true,
+                        middleName: true,
+                        lastName: true,
+                        staffId: true,
+                        role: true,
+                        email: true,
+                        phone: true,
+                        bankName: true,
+                        bankAccountNumber: true,
+                        bankAccountName: true,
+                        kraPin: true,
+                        nssfNumber: true,
+                        shifNumber: true,
+                        employmentType: true,
+                        joinedAt: true,
+                        profilePicture: true
+                    }
+                }
+            }
+        });
+        if (!record) throw new Error('Payroll record not found');
+        return record;
+    }
+
+    // ─── Attendance / Dashboard ───────────────────────────────────────────────
 
     async getDashboardStats(month: number, year: number) {
         const [staffCount, pendingLeaveCount, payrollDraftsCount, payrollGeneratedCount, recentRequests] = await Promise.all([
@@ -486,18 +608,8 @@ export class HRService {
 
         const attendance = await prisma.staffAttendanceLog.upsert({
             where: { userId_date: { userId, date: dateOnly } },
-            update: {
-                clockInAt: timestamp,
-                source: payload?.source || 'web',
-                metadata: payload?.metadata || null
-            },
-            create: {
-                userId,
-                date: dateOnly,
-                clockInAt: timestamp,
-                source: payload?.source || 'web',
-                metadata: payload?.metadata || null
-            }
+            update: { clockInAt: timestamp, source: payload?.source || 'web', metadata: payload?.metadata || null },
+            create: { userId, date: dateOnly, clockInAt: timestamp, source: payload?.source || 'web', metadata: payload?.metadata || null }
         });
 
         const user = await prisma.user.findUnique({
@@ -516,19 +628,13 @@ export class HRService {
         if (!payrollRecord && user?.basicSalary && Number(user.basicSalary) > 0) {
             const basicSalary = Number(user.basicSalary);
             const pay = await this.buildPayBreakdown(userId, basicSalary, !!user.housingLevyExempt);
-
             payrollRecord = await prisma.payrollRecord.create({
                 data: {
-                    userId,
-                    month,
-                    year,
+                    userId, month, year,
                     basicSalary,
                     grossSalary: pay.grossSalary,
                     netSalary: pay.netSalary,
-                    allowances: {
-                        items: pay.allowancesSnapshot,
-                        total: pay.allowanceTotal
-                    } as any,
+                    allowances: { items: pay.allowancesSnapshot, total: pay.allowanceTotal } as any,
                     deductions: {
                         paye: pay.statutory.paye,
                         nssf: pay.statutory.nssf,
@@ -559,7 +665,6 @@ export class HRService {
         const attendance = await prisma.staffAttendanceLog.findUnique({
             where: { userId_date: { userId, date: dateOnly } }
         });
-
         if (!attendance) throw new Error('No clock-in record found for today');
         if (timestamp.getTime() < new Date(attendance.clockInAt).getTime()) {
             throw new Error('Clock-out time cannot be earlier than clock-in time');
@@ -583,11 +688,9 @@ export class HRService {
 
         const month = timestamp.getMonth() + 1;
         const year = timestamp.getFullYear();
-
         let payrollRecord = await prisma.payrollRecord.findUnique({
             where: { userId_month_year: { userId, month, year } }
         });
-
         if (payrollRecord) {
             payrollRecord = await prisma.payrollRecord.update({
                 where: { id: payrollRecord.id },
@@ -599,6 +702,75 @@ export class HRService {
         }
 
         return { attendance: updatedAttendance, payroll: payrollRecord, workedMinutesDelta, workedDaysIncremented: shouldIncrementWorkedDays };
+    }
+
+    // ─── Leave Type CRUD ──────────────────────────────────────────────────────
+
+    async createLeaveType(data: { name: string; maxDays: number; description?: string }) {
+        return prisma.leaveType.create({
+            data: { name: data.name, maxDays: Number(data.maxDays), description: data.description, isActive: true }
+        });
+    }
+
+    async updateLeaveType(id: string, data: { name?: string; maxDays?: number; description?: string; isActive?: boolean }) {
+        return prisma.leaveType.update({
+            where: { id },
+            data: {
+                name: data.name ?? undefined,
+                maxDays: data.maxDays !== undefined ? Number(data.maxDays) : undefined,
+                description: data.description ?? undefined,
+                isActive: data.isActive !== undefined ? Boolean(data.isActive) : undefined,
+            }
+        });
+    }
+
+    async deleteLeaveType(id: string) {
+        return prisma.leaveType.update({ where: { id }, data: { isActive: false } });
+    }
+
+    // ─── Leave Balance ────────────────────────────────────────────────────────
+
+    async getLeaveBalance(userId: string, year: number) {
+        const types = await prisma.leaveType.findMany({ where: { isActive: true } });
+        const yearStart = new Date(year, 0, 1);
+        const yearEnd   = new Date(year, 11, 31, 23, 59, 59);
+        return Promise.all(types.map(async (type) => {
+            const requests = await prisma.leaveRequest.findMany({
+                where: {
+                    userId, leaveTypeId: type.id,
+                    status: { in: ['APPROVED', 'PENDING'] },
+                    startDate: { gte: yearStart, lte: yearEnd }
+                }
+            });
+            const usedDays = requests.reduce(
+                (sum, lr) => sum + this.calcBusinessDays(new Date(lr.startDate), new Date(lr.endDate)), 0
+            );
+            return { typeId: type.id, typeName: type.name, maxDays: type.maxDays, usedDays, remainingDays: Math.max(0, type.maxDays - usedDays) };
+        }));
+    }
+
+    // ─── Attendance Report ────────────────────────────────────────────────────
+
+    async getAttendanceReport(params: { userId?: string; startDate: string; endDate: string }) {
+        const start = new Date(params.startDate); start.setHours(0, 0, 0, 0);
+        const end   = new Date(params.endDate);   end.setHours(23, 59, 59, 999);
+        return prisma.staffAttendanceLog.findMany({
+            where: {
+                date: { gte: start, lte: end },
+                ...(params.userId ? { userId: params.userId } : {})
+            },
+            include: { user: { select: { firstName: true, lastName: true, staffId: true, role: true } } },
+            orderBy: [{ date: 'desc' }, { user: { lastName: 'asc' } }]
+        });
+    }
+
+    // ─── Business days in a calendar month ───────────────────────────────────
+
+    calcBusinessDaysInMonth(month: number, year: number): number {
+        return this.calcBusinessDays(
+            new Date(year, month - 1, 1),
+            new Date(year, month, 0)   // last day of month
+        );
     }
 
     // ─── Performance ──────────────────────────────────────────────────────────

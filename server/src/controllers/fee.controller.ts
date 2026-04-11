@@ -306,10 +306,14 @@ export class FeeController {
 
     if (!learner || !feeStructure) throw new ApiError(404, 'Learner or Fee structure not found');
 
-    // [FIX 3] Use shared transport filter helper
+    // Default to learner's transport status if not specified in request
+    const shouldIncludeTransport = includeTransport !== undefined 
+      ? includeTransport === true || includeTransport === 'true'
+      : (learner as any).isTransportStudent;
+
     const filteredItems = applyTransportFilter(
       (feeStructure as any).feeItems || [],
-      includeTransport !== false
+      shouldIncludeTransport
     );
 
     const totalAmount = filteredItems.reduce((sum: number, item: any) => sum + Number(item.amount), 0);
@@ -648,13 +652,13 @@ export class FeeController {
 
     if (!feeStructure) throw new ApiError(404, 'Fee structure not found');
 
-    // [FIX 3] Use shared transport filter helper
-    const filteredItems = applyTransportFilter(
-      (feeStructure as any).feeItems || [],
-      includeTransport !== false
-    );
+    // We pre-calculate both options to keep the loop efficient
+    const allItems = (feeStructure as any).feeItems || [];
+    const transportItems = allItems.filter((i: any) => i.feeType?.code === 'TRANSPORT');
+    const nonTransportItems = allItems.filter((i: any) => i.feeType?.code !== 'TRANSPORT');
 
-    const totalAmount = filteredItems.reduce((sum: number, item: any) => sum + Number(item.amount), 0);
+    const totalWithTransport = allItems.reduce((sum: number, i: any) => sum + Number(i.amount), 0);
+    const totalWithoutTransport = nonTransportItems.reduce((sum: number, i: any) => sum + Number(i.amount), 0);
 
     const learners = await prisma.learner.findMany({
       where: {
@@ -707,25 +711,28 @@ export class FeeController {
 
           let nextSequence = parseInvoiceNumber(maxResult._max.invoiceNumber as string | null) + 1;
 
-          for (const learner of learnersToInvoice) {
-            const invoiceNumber = `INV-${academicYear}-${String(nextSequence).padStart(6, '0')}`;
-            nextSequence += 1;
+            for (const learner of learnersToInvoice) {
+              const invoiceNumber = `INV-${academicYear}-${String(nextSequence).padStart(6, '0')}`;
+              nextSequence += 1;
 
-            const invoice = await tx.feeInvoice.create({
-              data: {
-                invoiceNumber,
-                learnerId: learner.id,
-                feeStructureId,
-                term,
-                academicYear,
-                dueDate: new Date(dueDate),
-                totalAmount,
-                paidAmount: 0,
-                balance: totalAmount,
-                status: 'PENDING',
-                issuedBy: userId
-              }
-            });
+              // [AUTOMATION] Determine total per student
+              const studentTotal = (learner as any).isTransportStudent ? totalWithTransport : totalWithoutTransport;
+
+              const invoice = await tx.feeInvoice.create({
+                data: {
+                  invoiceNumber,
+                  learnerId: learner.id,
+                  feeStructureId,
+                  term,
+                  academicYear,
+                  dueDate: new Date(dueDate),
+                  totalAmount: studentTotal,
+                  paidAmount: 0,
+                  balance: studentTotal,
+                  status: 'PENDING',
+                  issuedBy: userId
+                }
+              });
             invoices.push(invoice);
           }
 
