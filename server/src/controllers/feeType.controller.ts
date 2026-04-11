@@ -218,12 +218,19 @@ export class FeeTypeController {
                                 grade: grade as any,
                                 term: term as any,
                                 academicYear: targetYear
-                            }
+                            },
+                            include: { invoices: { take: 1 } }
                         });
 
                         if (existing) {
-                            skippedCount++;
-                            continue;
+                            if (existing.invoices.length > 0) {
+                                // Keep safely skipping if real invoices use this structure
+                                skippedCount++;
+                                continue;
+                            } else {
+                                // Safely overwrite by replacing the empty structure
+                                await prisma.feeStructure.delete({ where: { id: existing.id } });
+                            }
                         }
 
                         // Create fee structure
