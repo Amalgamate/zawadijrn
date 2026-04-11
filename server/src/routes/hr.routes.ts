@@ -12,8 +12,8 @@ const router = Router();
 
 const leaveRequestSchema = z.object({
     leaveTypeId: z.string().min(1),
-    startDate: z.string().datetime(),
-    endDate: z.string().datetime(),
+    startDate: z.string().min(8),
+    endDate: z.string().min(8),
     reason: z.string().max(1000).optional()
 });
 

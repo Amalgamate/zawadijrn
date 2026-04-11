@@ -31,6 +31,7 @@ const FeeCollectionPage = ({ learnerId }) => {
   const [allLearners, setAllLearners] = useState([]);
   const [searchLearnerId, setSearchLearnerId] = useState(learnerId || null);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [transportFilter, setTransportFilter] = useState('all');
   const { showSuccess, showError, showToast, toastMessage, toastType, hideNotification } = useNotifications();
   const { user } = useAuth();
 
@@ -52,7 +53,10 @@ const FeeCollectionPage = ({ learnerId }) => {
   const fetchInvoices = React.useCallback(async () => {
     try {
       setLoading(true);
-      const params = statusFilter !== 'all' ? { status: statusFilter.toUpperCase() } : {};
+      const params = {
+        ...(statusFilter !== 'all' && { status: statusFilter.toUpperCase() }),
+        ...(transportFilter !== 'all' && { isTransport: transportFilter === 'transport' ? 'true' : 'false' })
+      };
       const response = await api.fees.getAllInvoices(params);
       setInvoices(response.data || []);
     } catch (error) {
@@ -62,7 +66,7 @@ const FeeCollectionPage = ({ learnerId }) => {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, showError]);
+  }, [statusFilter, transportFilter, showError]);
 
   const fetchLearners = React.useCallback(async () => {
     try {
@@ -479,6 +483,16 @@ const FeeCollectionPage = ({ learnerId }) => {
             <option value="pending">Pending</option>
             <option value="partial">Partial</option>
             <option value="paid">Paid</option>
+          </select>
+
+          <select
+            value={transportFilter}
+            onChange={(e) => setTransportFilter(e.target.value)}
+            className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-brand-purple/5 border-brand-purple/20 text-brand-purple font-semibold"
+          >
+            <option value="all">All Students</option>
+            <option value="transport">Transport Only</option>
+            <option value="regular">Regular Only</option>
           </select>
           <button
             onClick={() => setShowCreateModal(true)}

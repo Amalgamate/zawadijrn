@@ -231,6 +231,15 @@ export class FeeController {
     if (learnerId) where.learnerId = learnerId;
     if (grade) where.learner = { grade: normalizeEnumValue(grade) || grade };
 
+    // Support transport filtering
+    const { isTransport } = req.query;
+    if (isTransport !== undefined && isTransport !== 'all') {
+      where.learner = {
+        ...where.learner,
+        isTransportStudent: isTransport === 'true'
+      };
+    }
+
     const invoices = await prisma.feeInvoice.findMany({
       where,
       include: {

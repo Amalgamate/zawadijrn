@@ -125,6 +125,16 @@ const PerformanceManager = () => {
         (rev.user.firstName + ' ' + rev.user.lastName).toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    // Compute real stats from fetched data
+    const avgRating = reviews.length > 0
+        ? (reviews.reduce((sum, r) => sum + Number(r.overallRating), 0) / reviews.length).toFixed(1)
+        : '—';
+    const totalGoals = reviews.reduce((sum, r) => sum + (r.goals?.length || 0), 0);
+    const completedGoals = reviews.reduce((sum, r) =>
+        sum + (r.goals?.filter(g => g.status === 'COMPLETED').length || 0), 0
+    );
+    const goalCompletion = totalGoals > 0 ? Math.round((completedGoals / totalGoals) * 100) : 0;
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -146,10 +156,10 @@ const PerformanceManager = () => {
                 <div className="bg-brand-purple p-6 rounded-2xl shadow-sm text-white relative overflow-hidden group">
                     <Award className="absolute -right-4 -bottom-4 w-32 h-32 opacity-10 group-hover:scale-110 transition-transform duration-500" />
                     <h3 className="text-lg font-medium opacity-80">Average Performance</h3>
-                    <p className="text-3xl font-bold mt-2">4.2 / 5.0</p>
+                    <p className="text-3xl font-bold mt-2">{avgRating} / 5.0</p>
                     <div className="mt-4 flex items-center gap-2 text-sm bg-white/20 w-fit px-2 py-1 rounded-lg">
                         <TrendingUp size={14} />
-                        <span>+0.3 from last term</span>
+                        <span>{reviews.length} review{reviews.length !== 1 ? 's' : ''} recorded</span>
                     </div>
                 </div>
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
@@ -158,7 +168,7 @@ const PerformanceManager = () => {
                     </div>
                     <div>
                         <h3 className="text-sm font-medium text-gray-500">Goal Completion</h3>
-                        <p className="text-2xl font-bold text-gray-900">78%</p>
+                        <p className="text-2xl font-bold text-gray-900">{totalGoals > 0 ? `${goalCompletion}%` : '—'}</p>
                     </div>
                 </div>
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">

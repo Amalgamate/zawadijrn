@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-    CreditCard, Download, Search, X, Printer, Send, CheckCircle2,
+    CreditCard, Download, Search, X, Printer, CheckCircle2,
     AlertCircle, Calendar, TrendingUp, DollarSign, Eye,
-    CheckCheck, Banknote, RefreshCw, ChevronDown, ChevronRight,
-    Layers, Info
+    CheckCheck, Banknote, RefreshCw, ChevronRight,
+    Layers, Info, Ban
 } from 'lucide-react';
 import { hrAPI } from '../../../../services/api';
 import { printWindow, captureSingleReport } from '../../../../utils/simplePdfGenerator';
@@ -294,6 +294,39 @@ const PayslipModal = ({ record, onClose, onConfirm, onMarkPaid, confirming, payi
     );
 };
 
+// ─── Void Modal ─────────────────────────────────────────────────────────────
+const VoidModal = ({ record, onClose, onConfirm, loading }) => {
+    const [reason, setReason] = useState('');
+    if (!record) return null;
+    return (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 space-y-5" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-bold text-gray-900">Void Payroll Record</h2>
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full text-gray-400"><X size={18}/></button>
+                </div>
+                <p className="text-sm text-gray-500">
+                    Voiding the record for <strong>{record.user?.firstName} {record.user?.lastName}</strong>.
+                    This cannot be undone.
+                </p>
+                <textarea
+                    placeholder="Reason for voiding (min 5 chars)…"
+                    value={reason} onChange={e => setReason(e.target.value)} rows={3}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-red-500/30 outline-none resize-none"
+                />
+                <div className="flex gap-3">
+                    <button onClick={onClose} className="flex-1 py-3 border border-gray-200 text-gray-600 rounded-2xl font-bold text-sm hover:bg-gray-50 transition-all">Cancel</button>
+                    <button onClick={() => onConfirm(record.id, reason)} disabled={loading || reason.trim().length < 5}
+                        className="flex-1 py-3 bg-red-600 text-white rounded-2xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-red-700 transition-all disabled:opacity-50">
+                        {loading ? <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/50 border-t-white"/> : <Ban size={15}/>}
+                        Void Record
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // ─── Bulk Pay Modal ───────────────────────────────────────────────────────────
 const BulkPayModal = ({ month, year, count, onClose, onConfirm, loading }) => {
     const [ref, setRef] = useState('');
@@ -344,6 +377,8 @@ const PayrollManager = () => {
     const [bulkConfirming, setBulkConfirming] = useState(false);
     const [showBulkPay, setShowBulkPay] = useState(false);
     const [bulkPaying, setBulkPaying] = useState(false);
+    const [voidRecord, setVoidRecord] = useState(null);
+    const [voiding, setVoiding] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [toast, setToast] = useState(null);
 
@@ -439,6 +474,20 @@ const PayrollManager = () => {
         }
     };
 
+    const handleVoid = async (id, reason) => {
+        try {
+            setVoiding(true);
+            await hrAPI.voidPayroll(id, reason);
+            showToast('Record voided');
+            fetchPayroll();
+            setVoidRecord(null);
+        } catch (err) {
+            showToast('Error: ' + err.message, 'error');
+        } finally {
+            setVoiding(false);
+        }
+    };
+
     const handlePrintAll = async () => {
         setPrinting(true);
         await printWindow('payslip-bulk-content');
@@ -480,13 +529,12 @@ const PayrollManager = () => {
             />
             {showBulkPay && (
                 <BulkPayModal
-                    month={month} year={year}
-                    count={confirmedCount}
+                    month={month} year={year} count={confirmedCount}
                     onClose={() => setShowBulkPay(false)}
-                    onConfirm={handleBulkPay}
-                    loading={bulkPaying}
+                    onConfirm={handleBulkPay} loading={bulkPaying}
                 />
             )}
+            <VoidModal record={voidRecord} onClose={() => setVoidRecord(null)} onConfirm={handleVoid} loading={voiding}/>
 
             {/* Toast */}
             {toast && (
@@ -674,9 +722,18 @@ const PayrollManager = () => {
                                                 </span>
                                             </td>
                                             <td className="px-5 py-4">
-                                                <button className="p-1.5 text-gray-300 group-hover:text-brand-teal transition-colors">
-                                                    <Eye size={15}/>
-                                                </button>
+                                                <div className="flex items-center gap-1">
+                                                    <button onClick={e => { e.stopPropagation(); setSelectedRecord(record); }}
+                                                        className="p-1.5 text-gray-300 group-hover:text-brand-teal transition-colors" title="View">
+                                                        <Eye size={15}/>
+                                                    </button>
+                                                    {['DRAFT','GENERATED'].includes(record.status) && (
+                                                        <button onClick={e => { e.stopPropagation(); setVoidRecord(record); }}
+                                                            className="p-1.5 text-gray-200 hover:text-red-500 transition-colors" title="Void record">
+                                                            <Ban size={14}/>
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </td>
                                         </tr>
                                     );
