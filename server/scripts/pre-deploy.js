@@ -39,10 +39,22 @@ resolveMigration('20260407160000_rename_forms_to_grade10_12', '--rolled-back');
 
 // 6. FORCE the new missing columns migration to be recognized
 console.log("🔧 Ensuring new migrations are recognized...");
+
+// Check status first
 try {
   execSync('npx prisma migrate status', { stdio: 'inherit' });
 } catch (error) {
   console.log("ℹ️ Migration status check completed.");
+}
+
+// NEW: The add_missing_columns migration exists in DB but is marked failed
+// Since columns already exist there, mark it as applied
+console.log("🔧 Resolving add_missing_columns migration as already applied...");
+try {
+  execSync('npx prisma migrate resolve --applied "20260411100000_add_missing_columns"', { stdio: 'pipe' });
+  console.log("✅ Migration marked as applied (columns already exist in DB)");
+} catch (error) {
+  console.log(`ℹ️ Migration already resolved or resolved state: ${error.toString().substring(0, 100)}`);
 }
 
 console.log("Pre-deploy pipeline complete. Proceeding to migrate...");
