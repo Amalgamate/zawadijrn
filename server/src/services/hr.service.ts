@@ -38,7 +38,7 @@ export class HRService {
                 kraPin: true,
                 nhifNumber: true,
                 nssfNumber: true,
-                // shifNumber removed: column doesn't exist in production database
+                shifNumber: true,
                 bankName: true,
                 bankAccountNumber: true,
                 basicSalary: true,
@@ -64,7 +64,7 @@ export class HRService {
                 kraPin: details.kraPin,
                 nhifNumber: details.nhifNumber,
                 nssfNumber: details.nssfNumber,
-                // shifNumber removed: column doesn't exist in production database
+                shifNumber: details.shifNumber,
                 bankName: details.bankName,
                 bankAccountName: details.bankAccountName,
                 bankAccountNumber: details.bankAccountNumber,
@@ -250,7 +250,7 @@ export class HRService {
                         bankAccountNumber: true,
                         kraPin: true,
                         nssfNumber: true,
-                        // shifNumber removed: column doesn't exist in production database
+                        shifNumber: true
                     }
                 }
             }
