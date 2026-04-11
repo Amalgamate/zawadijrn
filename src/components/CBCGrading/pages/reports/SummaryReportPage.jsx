@@ -818,16 +818,15 @@ const SummaryReportPage = () => {
                             return (
                               <td key={`mean-${sub}`} className="border-r border-indigo-100 px-2 py-3 text-center bg-indigo-50">
                                 <div className={`text-sm font-black ${color}`}>{m.mean}</div>
-                                <div className="text-[9px] text-indigo-400 leading-none">{m.percentage.toFixed(0)}% • {getCBCGrade(m.percentage).grade}</div>
                               </td>
                             );
                           })}
                           <td className="bg-indigo-100 border-r border-indigo-200 px-4 py-3 text-center font-black text-indigo-700 w-20 text-sm">—</td>
                           <td className="bg-indigo-100 border-r border-indigo-200 px-4 py-3 text-center font-black text-indigo-700 w-20">
-                            <div className="text-sm font-black text-indigo-700">{classMeanPct.toFixed(1)}%</div>
+                            <div className="text-sm font-black text-indigo-700">{classMeanPct.toFixed(1)}</div>
                           </td>
-                          <td className={`${getCBCGrade(classMeanPct).bg} px-4 py-3 text-center w-20 border-r border-indigo-200`}>
-                            <div className={`text-sm font-black ${getCBCGrade(classMeanPct).color}`}>{getCBCGrade(classMeanPct).grade}</div>
+                          <td className={`bg-indigo-100 px-4 py-3 text-center w-20 border-r border-indigo-200`}>
+                            <div className={`text-sm font-black text-indigo-400`}>—</div>
                           </td>
                         </tr>
                       </>
