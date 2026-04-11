@@ -28,7 +28,7 @@ export class LearnerController {
     if (currentUserRole === 'PARENT') whereClause.parentId = currentUserId;
     if (grade) whereClause.grade = String(grade);
     if (stream) whereClause.stream = String(stream);
-    if (status) whereClause.status = status as LearnerStatus;
+    if (status) whereClause.status = String(status).toUpperCase() as LearnerStatus;
     if (search) {
       whereClause.OR = [
         { firstName: { contains: search as string, mode: 'insensitive' } },
@@ -444,7 +444,7 @@ export class LearnerController {
     const { grade } = req.params;
     const { stream, status = 'ACTIVE' } = req.query;
     const learners = await prisma.learner.findMany({
-      where: { grade: String(grade), status: status as LearnerStatus, stream: stream ? (stream as string) : undefined, archived: false },
+      where: { grade: String(grade), status: String(status).toUpperCase() as LearnerStatus, stream: stream ? (stream as string) : undefined, archived: false },
       include: { parent: { select: { id: true, firstName: true, lastName: true, phone: true } } },
       orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
     });

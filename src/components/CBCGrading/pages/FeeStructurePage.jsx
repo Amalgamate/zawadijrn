@@ -3,7 +3,7 @@
  * Manage fee types, amounts, and academic year structures
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   DollarSign, Plus, Edit2, Trash2, Copy, BookOpen,
   Search, AlertCircle, CheckCircle, Info, ChevronDown, ChevronRight
@@ -46,21 +46,23 @@ const FeeStructurePage = () => {
     feeItems: [] // Array of { feeTypeId, amount, mandatory }
   });
 
-  const uniqueTerms = Array.from(new Set(classes.map(c => c.term).filter(Boolean))).sort();
-  const terms = uniqueTerms.length > 0 ? uniqueTerms : ['TERM_1', 'TERM_2', 'TERM_3'];
+  const terms = useMemo(() => {
+    const uniqueTerms = Array.from(new Set(classes.map(c => c.term).filter(Boolean))).sort();
+    return uniqueTerms.length > 0 ? uniqueTerms : ['TERM_1', 'TERM_2', 'TERM_3'];
+  }, [classes]);
 
   // Make sure to use first available grade and term as defaults to prevent invalid save
   useEffect(() => {
-    if (fetchedGrades.length > 0 && (!formData.grade || formData.grade === 'PP1')) {
+    if (fetchedGrades.length > 0 && (!formData.grade || formData.grade === 'PP1') && formData.grade !== fetchedGrades[0]) {
       setFormData(prev => ({ ...prev, grade: fetchedGrades[0] }));
     }
-  }, [fetchedGrades]);
+  }, [fetchedGrades, formData.grade]);
 
   useEffect(() => {
-    if (terms.length > 0 && (!formData.term || formData.term === 'TERM_1')) {
+    if (terms.length > 0 && (!formData.term || formData.term === 'TERM_1') && formData.term !== terms[0]) {
       setFormData(prev => ({ ...prev, term: terms[0] }));
     }
-  }, [terms]);
+  }, [terms, formData.term]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -668,9 +670,9 @@ const FeeStructurePage = () => {
                   return (
                     <div key={structure.id} className="hover:bg-gray-50 transition">
                       {/* Collapsed Header */}
-                      <button
+                      <div
                         onClick={() => toggleExpanded(structure.id)}
-                        className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition"
+                        className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition cursor-pointer"
                       >
                         <div className="flex items-center gap-4 flex-1 min-w-0">
                           {/* Chevron Icon */}
@@ -741,7 +743,7 @@ const FeeStructurePage = () => {
                             </button>
                           </div>
                         </div>
-                      </button>
+                      </div>
 
                       {/* Expanded Content */}
                       {isExpanded && (

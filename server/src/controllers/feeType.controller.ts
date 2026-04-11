@@ -172,29 +172,22 @@ export class FeeTypeController {
             'GRADE_7': 'Grade 7', 'GRADE_8': 'Grade 8', 'GRADE_9': 'Grade 9'
         };
 
-        // Default fee amounts per grade level
+        // Default fee amounts per grade level based on requested structure
         const getFeeAmounts = (grade: string) => {
-            if (['PLAYGROUP', 'PP1', 'PP2'].includes(grade)) {
-                return {
-                    TUITION: 15000, ACTIVITY: 500, TRANSPORT: 3000, MEALS: 8000,
-                    EXAM: 300, LIBRARY: 500, SPORTS: 500, TECHNOLOGY: 1000, MISC: 500
-                };
-            }
-            if (['GRADE_1', 'GRADE_2', 'GRADE_3', 'GRADE_4', 'GRADE_5', 'GRADE_6'].includes(grade)) {
-                return {
-                    TUITION: 20000, ACTIVITY: 800, TRANSPORT: 4000, MEALS: 10000,
-                    EXAM: 500, LIBRARY: 800, SPORTS: 1000, TECHNOLOGY: 1500, MISC: 800
-                };
-            }
-            if (['GRADE_7', 'GRADE_8', 'GRADE_9'].includes(grade)) {
-                return {
-                    TUITION: 25000, ACTIVITY: 1000, TRANSPORT: 5000, MEALS: 12000,
-                    EXAM: 800, LIBRARY: 1000, SPORTS: 1500, TECHNOLOGY: 2000, MISC: 1000
-                };
-            }
+            let tuition = 0;
+            if (grade === 'PLAYGROUP') tuition = 7000;
+            else if (grade === 'PP1') tuition = 8000;
+            else if (grade === 'PP2') tuition = 8500;
+            else if (['GRADE_1', 'GRADE_2'].includes(grade)) tuition = 10000;
+            else if (grade === 'GRADE_3') tuition = 10500;
+            else if (['GRADE_4', 'GRADE_5'].includes(grade)) tuition = 11000;
+            else if (grade === 'GRADE_6') tuition = 12000;
+            else if (grade === 'GRADE_7') tuition = 17500;
+            else if (['GRADE_8', 'GRADE_9'].includes(grade)) tuition = 18500;
+
             return {
-                TUITION: 30000, ACTIVITY: 1500, TRANSPORT: 6000, MEALS: 15000,
-                EXAM: 1000, LIBRARY: 1500, SPORTS: 2000, TECHNOLOGY: 2500, MISC: 1500
+                TUITION: tuition, ACTIVITY: 0, TRANSPORT: 0, MEALS: 0,
+                EXAM: 0, LIBRARY: 0, SPORTS: 0, TECHNOLOGY: 0, MISC: 0
             };
         };
 

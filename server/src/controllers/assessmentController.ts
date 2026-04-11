@@ -1552,6 +1552,7 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
         ...(stream ? { stream: stream as string } : {})
       },
       test: {
+        grade: grade as string,          // FIX: scope results to the requested grade only
         academicYear: parseInt(academicYear as string),
         term: normalizedTerm,
         archived: false,
@@ -1599,6 +1600,7 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
         Prisma.sql`sr.archived = false`,
         Prisma.sql`st.archived = false`,
         Prisma.sql`l.grade = ${String(grade)}`,
+        Prisma.sql`st.grade = ${String(grade)}`,  // FIX: match grade on test too
         Prisma.sql`st."academicYear" = ${parseInt(academicYear as string)}`,
         Prisma.sql`st.term = ${normalizedTerm}`,
       ];

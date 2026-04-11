@@ -157,19 +157,26 @@ const SummaryReportPage = () => {
     fetchTestTypes();
   }, [stagedGrade, stagedTerm, stagedYear]);
 
-  // Handle Generation
+  // Keep a stable ref to the latest filter values so the generate function
+  // never needs to be in the auto-generate effect's dep array.
+  const filtersRef = useRef({ stagedGrade, stagedStream, stagedTerm, stagedYear, stagedTestType });
+  useEffect(() => {
+    filtersRef.current = { stagedGrade, stagedStream, stagedTerm, stagedYear, stagedTestType };
+  });
+
+  // Handle Generation — stable function reference (no filter deps needed
+  // because it reads from filtersRef instead of closing over state directly).
   const handleGenerate = useCallback(async (forced = false) => {
+    const { stagedGrade, stagedStream, stagedTerm, stagedYear, stagedTestType } = filtersRef.current;
     if (!stagedGrade) return;
 
     const currentConfig = `${stagedGrade}-${stagedStream}-${stagedTerm}-${stagedYear}-${stagedTestType}`;
-    
+
     // Prevent overlapping or redundant calls
     if (!forced && (isFetchingRef.current || lastFetchRef.current === currentConfig)) {
       return;
     }
 
-    console.log(`[Matrix] Generating for: ${currentConfig} (forced: ${forced})`);
-    
     // Synchronously track fetching status to prevent race-condition loops
     isFetchingRef.current = true;
     lastFetchRef.current = currentConfig;
@@ -339,7 +346,8 @@ const SummaryReportPage = () => {
       setLoading(false);
       isFetchingRef.current = false;
     }
-  }, [stagedGrade, stagedStream, stagedTerm, stagedYear, stagedTestType]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // stable — reads filters from filtersRef, never needs to change
 
   // Set default grade when data is ready
   useEffect(() => {
@@ -350,16 +358,16 @@ const SummaryReportPage = () => {
     }
   }, [schoolDataLoading, fetchedGrades, stagedGrade]);
 
-  // Auto-generate whenever filters change
-  // NOTE: !loading removed from guard — isFetchingRef inside handleGenerate
-  // already prevents concurrent calls; checking !loading here was incorrect
-  // because loading is not in the dep array and would silently skip triggers
-  // that fire while a previous fetch is still in flight.
+  // Auto-generate whenever filter values change.
+  // handleGenerate is intentionally excluded from deps — it is now stable
+  // (created once, reads filters via filtersRef) so including it would cause
+  // no extra renders, but excluding it is also correct and avoids confusion.
   useEffect(() => {
     if (stagedGrade) {
-       handleGenerate();
+      handleGenerate();
     }
-  }, [stagedGrade, stagedStream, stagedTerm, stagedYear, stagedTestType, handleGenerate]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stagedGrade, stagedStream, stagedTerm, stagedYear, stagedTestType]);
 
   // Filtered Rows (Search)
   const filteredRows = useMemo(() => {
