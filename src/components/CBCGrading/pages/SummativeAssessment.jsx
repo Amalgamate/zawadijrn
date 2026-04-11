@@ -7,6 +7,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import ExcelJS from 'exceljs';
 import VirtualizedTable from '../shared/VirtualizedTable';
 import { assessmentAPI, gradingAPI, classAPI, configAPI, learnerAPI, aiAPI } from '../../../services/api';
+import { cacheDel } from '../../../services/api/core';
 import { useNotifications } from '../hooks/useNotifications';
 import EmptyState from '../shared/EmptyState';
 import { useAuth } from '../../../hooks/useAuth';
@@ -214,6 +215,10 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
     setSelectedLearningArea(stagedLearningArea);
     setSelectedTestId(stagedTestId);
 
+    // Keep ref in sync so the learner-fetch effect reads the correct stream
+    // value even if the hook state hasn't flushed yet.
+    appliedStreamRef.current = stagedStream;
+
     // Persist applied filters
     localStorage.setItem('cbc_summative_appliedGrade', stagedGrade);
     localStorage.setItem('cbc_summative_appliedStream', stagedStream);
@@ -343,25 +348,37 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
   }, [stagedGrade]);
 
 
+  // Ref that always holds the most recently *applied* stream value so the
+  // learner-fetch effect can read it synchronously without depending on the
+  // setup hook state which may lag one render behind applyFilters().
+  const appliedStreamRef = useRef(localStorage.getItem('cbc_summative_appliedStream') || '');
+
   // Load Terms, and Streams for selectors
   const loadOptions = useCallback(async () => {
     try {
       setAvailableTerms(['TERM_1', 'TERM_2', 'TERM_3']);
-      // Streams from config
-      if (true) {
-        const streamsResp = await configAPI.getStreamConfigs();
-        const streamsArr = (streamsResp && streamsResp.data) ? streamsResp.data : [];
-        const streamNames = streamsArr.filter(s => s.active !== false).map(s => s.name);
-        setAvailableStreams(streamNames);
-      } else {
-        setAvailableStreams([]);
-      }
+
+      // Force-bust the long-lived stream cache so we never show stale/empty
+      // options if the cache was previously primed with bad data.
+      cacheDel('config:streams');
+
+      const streamsResp = await configAPI.getStreamConfigs();
+      const streamsArr = Array.isArray(streamsResp?.data)
+        ? streamsResp.data
+        : Array.isArray(streamsResp)
+          ? streamsResp
+          : [];
+      const streamNames = streamsArr
+        .filter(s => s.active !== false)
+        .map(s => s.name)
+        .filter(Boolean);
+      setAvailableStreams(streamNames);
     } catch (error) {
       console.error('Error loading selector options:', error);
-      // Safe defaults
       setAvailableTerms(['TERM_1', 'TERM_2', 'TERM_3']);
+      setAvailableStreams([]);
     }
-  }, [schoolId]);
+  }, []);
 
   useEffect(() => {
     loadOptions();
@@ -846,39 +863,46 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
 
 
   // Fetch Learners when test is selected
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    if (selectedTestId && selectedTest) {
-      const fetchLearners = async () => {
-        setLoadingLearners(true);
-        try {
-          // Fetch learners for the selected Grade and Stream
-          // Use learnerAPI.getAll with filters
-          const params = {
-            grade: selectedTest.grade,
-            status: 'ACTIVE',
-            limit: 1000 // Get all for the class
-          };
+    if (!selectedTestId) return;
 
-          if (setup.selectedStream) {
-            params.stream = setup.selectedStream;
-          }
+    // Look up the test directly from the tests array — selectedTest (useMemo) may
+    // not yet reflect the updated selectedTestId on the same render cycle.
+    const resolvedTest = tests.find(t => String(t.id) === String(selectedTestId));
+    if (!resolvedTest) return;
 
-          const response = await learnerAPI.getAll(params);
-          const learnersData = response.data || response || [];
-          setFetchedLearners(Array.isArray(learnersData) ? learnersData : []);
-        } catch (error) {
-          console.error('Error fetching learners:', error);
-          toast.error('Failed to load learners');
-          setFetchedLearners([]);
-        } finally {
-          setLoadingLearners(false);
+    const fetchLearners = async () => {
+      setLoadingLearners(true);
+      try {
+        const params = {
+          grade: resolvedTest.grade,
+          status: 'ACTIVE',
+          limit: 1000,
+        };
+
+        // Use the ref instead of setup.selectedStream — the hook state may
+        // still hold the previous value on the same render cycle that
+        // applyFilters() was called.
+        const streamToApply = appliedStreamRef.current || setup.selectedStream;
+        if (streamToApply) {
+          params.stream = streamToApply;
         }
-      };
 
-      fetchLearners();
-    }
-  }, [selectedTestId, selectedTest, setup.selectedStream])
+        const response = await learnerAPI.getAll(params);
+        const learnersData = response.data || response || [];
+        setFetchedLearners(Array.isArray(learnersData) ? learnersData : []);
+      } catch (error) {
+        console.error('Error fetching learners:', error);
+        toast.error('Failed to load learners');
+        setFetchedLearners([]);
+      } finally {
+        setLoadingLearners(false);
+      }
+    };
+
+    fetchLearners();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTestId, tests, setup.selectedStream])
 
   const filteredLearners = useMemo(() => {
     let result = fetchedLearners;

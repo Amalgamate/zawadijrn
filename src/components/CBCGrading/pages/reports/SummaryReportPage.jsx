@@ -21,7 +21,6 @@ import {
   Layout,
   Users
 } from 'lucide-react';
-import { useAuth } from '../../../../hooks/useAuth';
 import api, { configAPI, assessmentAPI, learnerAPI } from '../../../../services/api';
 import { useSchoolData } from '../../../../contexts/SchoolDataContext';
 import VirtualizedTable from '../../shared/VirtualizedTable';
@@ -95,8 +94,7 @@ const getCBCGrade = (percentage) => {
 // ============================================================================
 
 const SummaryReportPage = () => {
-  const { user } = useAuth();
-  const { grades: fetchedGrades, classes, loading: schoolDataLoading } = useSchoolData();
+  const { grades: fetchedGrades, loading: schoolDataLoading } = useSchoolData();
 
   // Filter States
   const [stagedGrade, setStagedGrade] = useState('');
@@ -117,20 +115,21 @@ const SummaryReportPage = () => {
   const lastFetchRef = useRef(null);
   const isFetchingRef = useRef(false);
 
-  // Initial Fetch: Streams
+  // Initial Fetch: Streams — single-tenant, no schoolId guard needed
   useEffect(() => {
     const fetchStreams = async () => {
-      if (user?.schoolId) {
-        try {
-          const resp = await configAPI.getStreamConfigs(user.schoolId);
-          setAvailableStreams(resp?.data?.filter(s => s.active !== false) || []);
-        } catch (error) {
-          console.error('Failed to fetch streams:', error);
-        }
+      try {
+        const resp = await configAPI.getStreamConfigs();
+        const streamsArr = Array.isArray(resp?.data) ? resp.data
+          : Array.isArray(resp) ? resp
+          : [];
+        setAvailableStreams(streamsArr.filter(s => s.active !== false));
+      } catch (error) {
+        console.error('Failed to fetch streams:', error);
       }
     };
     fetchStreams();
-  }, [user?.schoolId]);
+  }, []);
 
   // Fetch available test types when grade/term/year changes
   useEffect(() => {
@@ -193,14 +192,22 @@ const SummaryReportPage = () => {
       }
 
       // 1. Fetch Students & Results concurrently
+      // Use getAll() — it carries institutionType scoping and proper pagination,
+      // unlike getByGrade() which hits a separate route that can 500 on some grades.
+      const studentsParams = {
+        grade: stagedGrade,
+        status: 'ACTIVE',
+        limit: 1000,
+      };
+      if (apiParams.stream) studentsParams.stream = apiParams.stream;
+
       const [studentsResp, resultsResp] = await Promise.all([
-        learnerAPI.getByGrade(stagedGrade, apiParams.stream ? { stream: apiParams.stream } : {}),
+        learnerAPI.getAll(studentsParams),
         assessmentAPI.getBulkResults(apiParams)
       ]);
 
-      if (!studentsResp.success) throw new Error('Failed to fetch students');
-      
-      const students = studentsResp.data || [];
+      const students = studentsResp?.data || (Array.isArray(studentsResp) ? studentsResp : []);
+      if (!Array.isArray(students)) throw new Error('Failed to fetch students');
       const rawResults = resultsResp.data || [];
 
       if (students.length === 0) {
@@ -209,47 +216,46 @@ const SummaryReportPage = () => {
         return;
       }
 
-      // 2. Identify Subjects — robust multi-strategy lookup
+      // 2. Identify Subjects — source from actual results first, fall back to static data
       const gradeObj = gradeStructure.find(g => g.code === stagedGrade);
       const gradeName = gradeObj ? gradeObj.name : stagedGrade.replace(/_/g, ' ');
       const gradeLevelName = gradeObj?.learningArea; // e.g. 'Lower Primary'
 
-      // Build a mapping from gradeLevel label in learningAreas to gradeStructure.learningArea
-      // This bridges the mismatch between 'Early Years' (learningAreas) and 'Pre-Primary' (gradeStructure)
-      // Strategy: match both by grade name in the array AND by grade level
-      const getExpectedSubjectsForGrade = () => {
-        // First try: direct match by grade name in la.grades array
-        const byGradeName = learningAreas.filter(la => 
-          la.grades && la.grades.some(g => g.toLowerCase() === gradeName.toLowerCase())
-        );
-        if (byGradeName.length > 0) return byGradeName.map(la => la.name);
-
-        // Second try: match by gradeLevel — handle Early Years / Pre-Primary mismatch
-        const gradeLevelMap = {
-          'Pre-Primary': ['Pre-Primary'],
-          'Lower Primary': ['Lower Primary'],
-          'Upper Primary': ['Upper Primary'],
-          'Junior School': ['Junior School']
-        };
-        const matchingLevels = gradeLevelMap[gradeLevelName] || [gradeLevelName];
-        const byLevel = learningAreas.filter(la => matchingLevels.includes(la.gradeLevel));
-        if (byLevel.length > 0) return byLevel.map(la => la.name);
-
-        return [];
-      };
-
-      const expectedSubjectNames = getExpectedSubjectsForGrade();
-      
-      // Seed map with expected subjects for this grade
+      // Build subject list from DB results first (authoritative names).
+      // Only fall back to static learningAreas.js when no results exist yet,
+      // so expected columns appear even for grades with no marks entered.
+      // This eliminates the name-mismatch ABS bug where static names like
+      // "Literacy" diverged from DB names like "Literacy Activities".
       const subjectsMap = new Map();
-      expectedSubjectNames.forEach(s => subjectsMap.set(s, s));
-      
-      // Add any subjects found in actual results that aren't already in the map
+
+      // Primary: subjects from actual result data (DB-authoritative names)
       rawResults.forEach(r => {
         if (r.test?.learningArea) {
           subjectsMap.set(r.test.learningArea, r.test.learningArea);
         }
       });
+
+      // Fallback: only use static data when there are zero results (no tests entered yet)
+      if (subjectsMap.size === 0) {
+        const getExpectedSubjectsForGrade = () => {
+          const byGradeName = learningAreas.filter(la =>
+            la.grades && la.grades.some(g => g.toLowerCase() === gradeName.toLowerCase())
+          );
+          if (byGradeName.length > 0) return byGradeName.map(la => la.name);
+
+          const gradeLevelMap = {
+            'Pre-Primary': ['Pre-Primary'],
+            'Lower Primary': ['Lower Primary'],
+            'Upper Primary': ['Upper Primary'],
+            'Junior School': ['Junior School']
+          };
+          const matchingLevels = gradeLevelMap[gradeLevelName] || [gradeLevelName];
+          const byLevel = learningAreas.filter(la => matchingLevels.includes(la.gradeLevel));
+          if (byLevel.length > 0) return byLevel.map(la => la.name);
+          return [];
+        };
+        getExpectedSubjectsForGrade().forEach(s => subjectsMap.set(s, s));
+      }
       
       // Calculate performance for sorting
       const performanceMap = {};
@@ -328,6 +334,7 @@ const SummaryReportPage = () => {
     } catch (error) {
       console.error('Matrix Generation Error:', error);
       toast.error(error.message || 'Failed to generate matrix');
+      lastFetchRef.current = null; // FIX: clear guard so filter changes can retry
     } finally {
       setLoading(false);
       isFetchingRef.current = false;
@@ -343,10 +350,13 @@ const SummaryReportPage = () => {
     }
   }, [schoolDataLoading, fetchedGrades, stagedGrade]);
 
-  // Auto-generate whenever filters change and data is "stale" or missing
+  // Auto-generate whenever filters change
+  // NOTE: !loading removed from guard — isFetchingRef inside handleGenerate
+  // already prevents concurrent calls; checking !loading here was incorrect
+  // because loading is not in the dep array and would silently skip triggers
+  // that fire while a previous fetch is still in flight.
   useEffect(() => {
-    // Rely on handleGenerate's internal guard (isFetchingRef + lastFetchRef)
-    if (stagedGrade && !loading) {
+    if (stagedGrade) {
        handleGenerate();
     }
   }, [stagedGrade, stagedStream, stagedTerm, stagedYear, stagedTestType, handleGenerate]);
