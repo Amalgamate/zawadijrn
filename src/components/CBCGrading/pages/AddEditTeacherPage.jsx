@@ -17,7 +17,12 @@ const AddEditTeacherPage = ({ onSave, onCancel, teacher = null }) => {
         (user?.id === teacher?.id);
     const { showSuccess, showError } = useNotifications();
     const [isSubmitting, setIsSubmitting] = useState(false);
-
+    const [formData, setFormData] = useState({
+        firstName: '',
+        lastName: '',
+        middleName: '',
+        email: '',
+        phone: '',
         gender: '',
         subject: '',
         password: '',
