@@ -13,6 +13,7 @@ import {
 } from '../controllers/school.controller';
 import { validate } from '../middleware/validation.middleware';
 import { rateLimit } from '../middleware/enhanced-rateLimit.middleware';
+import { asyncHandler } from '../utils/async.util';
 import { z } from 'zod';
 
 const router = Router();
@@ -42,7 +43,7 @@ const updateSchoolSchema = z.object({
 });
 
 // Public branding route (no auth)
-router.get('/public/branding', rateLimit({ windowMs: 60_000, maxRequests: 100 }), getPublicBranding);
+router.get('/public/branding', rateLimit({ windowMs: 60_000, maxRequests: 100 }), asyncHandler(getPublicBranding));
 
 // Protect all routes below
 router.use(authenticate);
@@ -54,18 +55,18 @@ router.use(authenticate);
 router.post('/provision',
   authorize('SUPER_ADMIN'),
   rateLimit({ windowMs: 60_000, maxRequests: 5 }),
-  createSchoolWithProvisioning
+  asyncHandler(createSchoolWithProvisioning)
 );
 
 router.get('/',
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
-  getSchool
+  asyncHandler(getSchool)
 );
 
 // Fallback for obsolete ID-based fetches from frontend
 router.get('/:id',
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
-  getSchool
+  asyncHandler(getSchool)
 );
 
 router.put('/',
@@ -73,19 +74,19 @@ router.put('/',
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
   express.json({ limit: '10mb' }),   // logo/favicon/stamp are base64 — needs a higher limit
   validate(updateSchoolSchema),
-  updateSchool
+  asyncHandler(updateSchool)
 );
 
 router.delete('/',
   authorize('SUPER_ADMIN'),
   rateLimit({ windowMs: 60_000, maxRequests: 10 }),
-  deleteSchool
+  asyncHandler(deleteSchool)
 );
 
 router.post('/deactivate',
   authorize('SUPER_ADMIN', 'ADMIN'),
   rateLimit({ windowMs: 60_000, maxRequests: 10 }),
-  deactivateSchool
+  asyncHandler(deactivateSchool)
 );
 
 // ============================================
@@ -94,18 +95,18 @@ router.post('/deactivate',
 
 router.get('/admission-sequence/:academicYear',
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
-  getAdmissionSequence
+  asyncHandler(getAdmissionSequence)
 );
 
 router.get('/admission-number-preview/:academicYear',
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
-  getAdmissionNumberPreview
+  asyncHandler(getAdmissionNumberPreview)
 );
 
 router.post('/reset-sequence',
   authorize('SUPER_ADMIN', 'ADMIN'),
   rateLimit({ windowMs: 60_000, maxRequests: 5 }),
-  resetAdmissionSequence
+  asyncHandler(resetAdmissionSequence)
 );
 
 export default router;

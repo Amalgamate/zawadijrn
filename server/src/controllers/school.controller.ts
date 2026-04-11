@@ -11,58 +11,63 @@ import { deleteSchoolSafely } from '../services/school-deletion.service';
 // ============================================
 
 export const getPublicBranding = async (req: Request, res: Response) => {
-  const school = await prisma.school.findFirst({
-    select: {
-      id: true,
-      name: true,
-      logoUrl: true,
-      faviconUrl: true,
-      brandColor: true,
-      primaryColor: true,
-      secondaryColor: true,
-      accentColor1: true,
-      accentColor2: true,
-      welcomeTitle: true,
-      welcomeMessage: true,
-      onboardingTitle: true,
-      onboardingMessage: true,
-      phone: true,
-      email: true,
-      vision: true,
-      mission: true,
-      latitude: true,
-      longitude: true,
-      stampUrl: true,
-    },
-  });
+  try {
+    const school = await prisma.school.findFirst({
+      select: {
+        id: true,
+        name: true,
+        logoUrl: true,
+        faviconUrl: true,
+        brandColor: true,
+        primaryColor: true,
+        secondaryColor: true,
+        accentColor1: true,
+        accentColor2: true,
+        welcomeTitle: true,
+        welcomeMessage: true,
+        onboardingTitle: true,
+        onboardingMessage: true,
+        phone: true,
+        email: true,
+        vision: true,
+        mission: true,
+        latitude: true,
+        longitude: true,
+        stampUrl: true,
+      },
+    });
 
-  // Return defaults when no school record exists yet (single-tenant, not yet provisioned)
-  const branding = school ?? {
-    id: null,
-    name: 'Zawadi Junior Academy',
-    logoUrl: '/logo-new.png',
-    faviconUrl: null,
-    brandColor: '#5D0057',
-    primaryColor: '#520050',
-    secondaryColor: '#0D9488',
-    accentColor1: '#3b82f6',
-    accentColor2: '#e11d48',
-    welcomeTitle: 'Welcome back!',
-    welcomeMessage: 'Sign in to access your dashboard.',
-    onboardingTitle: 'Join Our Community',
-    onboardingMessage: 'Create an account to start managing your school today.',
-    motto: 'Empowering Excellence',
-    address: 'Nairobi, Kenya',
-    phone: '+254700000000',
-    email: 'info@zawadijunioracademy.co.ke',
-    vision: 'To be a leading center of excellence in education.',
-    mission: 'To provide quality education through modern technology.',
-    latitude: -1.2921,
-    longitude: 36.8219,
-    stampUrl: '/stamp.svg'
-  };
+    // Return defaults when no school record exists yet (single-tenant, not yet provisioned)
+    const branding = school ?? {
+      id: null,
+      name: 'Zawadi Junior Academy',
+      logoUrl: '/logo-new.png',
+      faviconUrl: null,
+      brandColor: '#5D0057',
+      primaryColor: '#520050',
+      secondaryColor: '#0D9488',
+      accentColor1: '#3b82f6',
+      accentColor2: '#e11d48',
+      welcomeTitle: 'Welcome back!',
+      welcomeMessage: 'Sign in to access your dashboard.',
+      onboardingTitle: 'Join Our Community',
+      onboardingMessage: 'Create an account to start managing your school today.',
+      motto: 'Empowering Excellence',
+      address: 'Nairobi, Kenya',
+      phone: '+254700000000',
+      email: 'info@zawadijunioracademy.co.ke',
+      vision: 'To be a leading center of excellence in education.',
+      mission: 'To provide quality education through modern technology.',
+      latitude: -1.2921,
+      longitude: 36.8219,
+      stampUrl: '/stamp.svg'
+    };
 
-  res.status(200).json({ success: true, data: branding });
+    res.status(200).json({ success: true, data: branding });
+  } catch (error) {
+    console.error('Error fetching public branding:', error);
+    throw error;
+  }
 };
 
 export const getSchool = async (req: AuthRequest, res: Response) => {
