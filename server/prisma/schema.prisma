@@ -14,11 +14,10 @@ model User {
   username                  String?                  @unique
   password                  String
   firstName                 String
-  middleName                String?
   lastName                  String
+  middleName                String?
   phone                     String?
   role                      UserRole                 @default(TEACHER)
-  institutionType           InstitutionType          @default(PRIMARY_CBC)
   status                    UserStatus               @default(ACTIVE)
   archived                  Boolean                  @default(false)
   archivedAt                DateTime?
@@ -40,24 +39,24 @@ model User {
   passwordResetToken        String?
   passwordResetExpiry       DateTime?
   profilePicture            String?
-  bankName                  String?
   bankAccountName           String?
   bankAccountNumber         String?
-  kraPin                    String?
-  nhifNumber                String?
-  nssfNumber                String?
-  shifNumber                String?
-  housingLevyExempt         Boolean                  @default(false)
+  bankName                  String?
   basicSalary               Decimal?                 @db.Decimal(10, 2)
   employmentType            String?                  @default("PERMANENT")
   joinedAt                  DateTime?                @default(now())
+  kraPin                    String?
+  nhifNumber                String?
+  nssfNumber                String?
   subject                   String?
   gender                    String?
-  createdEvents             Event[]                  @relation("EventCreator")
-  createdNotices            Notice[]                 @relation("NoticeAuthor")
+  institutionType           InstitutionType          @default(PRIMARY_CBC)
+  shifNumber                String?
+  housingLevyExempt         Boolean                  @default(false)
   createdAggregationConfigs AggregationConfig[]
   assignedAssets            AssetAssignment[]        @relation("AssetUser")
   attendancesMarked         Attendance[]             @relation("AttendanceMarker")
+  biometricCredentials      BiometricCredential[]
   changeHistory             ChangeHistory[]
   schedules                 ClassSchedule[]          @relation("TeacherSchedules")
   classesAsTeacher          Class[]                  @relation("ClassTeacher")
@@ -65,17 +64,27 @@ model User {
   createdContactGroups      ContactGroup[]           @relation("CreatedContactGroups")
   assessedCoreCompetencies  CoreCompetency[]         @relation("AssessorCoreCompetencies")
   uploadedDocuments         Document[]
+  createdEvents             Event[]                  @relation("EventCreator")
   recordedPayments          FeePayment[]             @relation("RecordedPayments")
   createdFeeStructures      FeeStructure[]           @relation("CreatedFeeStructures")
+  waivedFines               Fine[]                   @relation("FineWaivers")
   formativeAssessments      FormativeAssessment[]    @relation("TeacherFormativeAssessments")
   learners                  Learner[]                @relation("ParentLearners")
   approvedLeaves            LeaveRequest[]           @relation("ApprovedLeaves")
   leaveRequests             LeaveRequest[]           @relation("UserLeaves")
+  libraryMember             LibraryMember?
+  uploadedLMSContent        LMSContent[]             @relation("LMSUploadedContent")
+  lmsCourses                LMSCourse[]              @relation("LMSCreatedCourses")
+  lmsEnrollments            LMSEnrollment[]          @relation("LMSEnrolledBy")
+  createdNotices            Notice[]                 @relation("NoticeAuthor")
   payrollRecords            PayrollRecord[]
   conductedReviews          PerformanceReview[]      @relation("ConductedReviews")
   performanceReviews        PerformanceReview[]      @relation("StaffReviews")
+  schemesOfWork             SchemeOfWork[]           @relation("TeacherSchemes")
   staffAttendanceLogs       StaffAttendanceLog[]
   staffDocuments            StaffDocument[]
+  staffAllowances           StaffAllowance[]
+  staffDeductions           StaffDeduction[]
   approvedRequisitions      StockRequisition[]       @relation("ApprovedBy")
   inventoryRequisitions     StockRequisition[]       @relation("RequestedBy")
   subjectAssignments        SubjectAssignment[]
@@ -89,13 +98,6 @@ model User {
   tickets                   SupportTicket[]          @relation("UserTickets")
   createdTermConfigs        TermConfig[]
   assessedValues            ValuesAssessment[]       @relation("AssessorValues")
-  schemesOfWork             SchemeOfWork[]           @relation("TeacherSchemes")
-  biometricCredentials      BiometricCredential[]
-  libraryMember             LibraryMember?
-  waivedFines               Fine[]                   @relation("FineWaivers")
-  lmsCourses                LMSCourse[]              @relation("LMSCreatedCourses")
-  uploadedLMSContent        LMSContent[]             @relation("LMSUploadedContent")
-  lmsEnrollments            LMSEnrollment[]          @relation("LMSEnrolledBy")
 
   @@map("users")
 }
@@ -115,22 +117,10 @@ model School {
   principalPhone      String?
   logoUrl             String?
   faviconUrl          String?
-  stampUrl            String?
-  latitude            Float?
-  longitude           Float?
   schoolType          String?
   motto               String?
   vision              String?
   mission             String?
-  brandColor          String?
-  primaryColor        String?
-  secondaryColor      String?
-  accentColor1        String?
-  accentColor2        String?
-  welcomeTitle        String?
-  welcomeMessage      String?
-  onboardingTitle     String?
-  onboardingMessage   String?
   admissionFormatType AdmissionFormatType @default(BRANCH_PREFIX_START)
   branchSeparator     String              @default("-")
   active              Boolean             @default(true)
@@ -138,15 +128,27 @@ model School {
   curriculumType      CurriculumType      @default(CBC_AND_EXAM)
   assessmentMode      AssessmentMode      @default(MIXED)
   customGradingScale  Json?
-  kraPin              String?
-  vatNumber           String?
-  etimsConfig         Json?
-  nemisConfig         Json?
   archived            Boolean             @default(false)
   archivedAt          DateTime?
   archivedBy          String?
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
+  stampUrl            String?
+  latitude            Float?
+  longitude           Float?
+  brandColor          String?
+  welcomeMessage      String?
+  welcomeTitle        String?
+  onboardingMessage   String?
+  onboardingTitle     String?
+  primaryColor        String?
+  secondaryColor      String?
+  accentColor1        String?
+  accentColor2        String?
+  kraPin              String?
+  vatNumber           String?
+  etimsConfig         Json?
+  nemisConfig         Json?
 
   @@index([kraPin])
   @@index([county])
@@ -209,7 +211,7 @@ model Notice {
   archived       Boolean   @default(false)
   archivedAt     DateTime?
   archivedBy     String?
-  createdBy      User?     @relation("NoticeAuthor", fields: [createdById], references: [id], onDelete: SetNull)
+  createdBy      User?     @relation("NoticeAuthor", fields: [createdById], references: [id])
 
   @@index([status, publishedAt])
   @@index([archived])
@@ -217,29 +219,29 @@ model Notice {
 }
 
 model Class {
-  id           String            @id @default(uuid())
-  classCode    String            @unique
-  name         String
-  grade        String
-  institutionType InstitutionType @default(PRIMARY_CBC)
-  stream       String?
-  teacherId    String?
-  academicYear Int               @default(2025)
-  term         Term              @default(TERM_1)
-  capacity     Int               @default(40)
-  room         String?
-  active       Boolean           @default(true)
-  archived     Boolean           @default(false)
-  archivedAt   DateTime?
-  archivedBy   String?
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-  assets       AssetAssignment[] @relation("AssetClass")
-  attendances  Attendance[]
-  enrollments  ClassEnrollment[]
-  facilities   ClassFacility[]
-  schedules    ClassSchedule[]
-  teacher      User?             @relation("ClassTeacher", fields: [teacherId], references: [id])
+  id              String            @id @default(uuid())
+  classCode       String            @unique
+  name            String
+  grade           String
+  stream          String?
+  teacherId       String?
+  academicYear    Int               @default(2025)
+  term            Term              @default(TERM_1)
+  capacity        Int               @default(40)
+  room            String?
+  active          Boolean           @default(true)
+  archived        Boolean           @default(false)
+  archivedAt      DateTime?
+  archivedBy      String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  institutionType InstitutionType   @default(PRIMARY_CBC)
+  assets          AssetAssignment[] @relation("AssetClass")
+  attendances     Attendance[]
+  enrollments     ClassEnrollment[]
+  facilities      ClassFacility[]
+  schedules       ClassSchedule[]
+  teacher         User?             @relation("ClassTeacher", fields: [teacherId], references: [id])
 
   @@unique([grade, stream, academicYear, term])
   @@index([institutionType, grade, stream])
@@ -322,9 +324,8 @@ model ClassEnrollment {
 }
 
 model Learner {
-  id                     String                 @id @default(uuid())
-  admissionNumber        String                 @unique
-  upiNumber              String?                @unique
+  id                     String                    @id @default(uuid())
+  admissionNumber        String                    @unique
   firstName              String
   lastName               String
   middleName             String?
@@ -333,8 +334,6 @@ model Learner {
   photoUrl               String?
   photoPublicId          String?
   grade                  String
-  institutionType        InstitutionType        @default(PRIMARY_CBC)
-  pathwayId              String?
   stream                 String?
   parentId               String?
   guardianName           String?
@@ -348,8 +347,8 @@ model Learner {
   address                String?
   county                 String?
   subCounty              String?
-  status                 LearnerStatus          @default(ACTIVE)
-  admissionDate          DateTime               @default(now())
+  status                 LearnerStatus             @default(ACTIVE)
+  admissionDate          DateTime                  @default(now())
   exitDate               DateTime?
   exitReason             String?
   previousSchool         String?
@@ -358,41 +357,44 @@ model Learner {
   idCardIssued           DateTime?
   idCardExpiry           DateTime?
   idCardNumber           String?
-  createdAt              DateTime               @default(now())
-  updatedAt              DateTime               @updatedAt
+  createdAt              DateTime                  @default(now())
+  updatedAt              DateTime                  @updatedAt
   createdBy              String?
   updatedBy              String?
-  archived               Boolean                @default(false)
+  archived               Boolean                   @default(false)
   archivedAt             DateTime?
   archivedBy             String?
   fatherName             String?
   fatherPhone            String?
   fatherEmail            String?
-  fatherDeceased         Boolean                @default(false)
+  fatherDeceased         Boolean                   @default(false)
   motherName             String?
   motherPhone            String?
   motherEmail            String?
-  motherDeceased         Boolean                @default(false)
+  motherDeceased         Boolean                   @default(false)
   guardianRelation       String?
   primaryContactType     String?
   primaryContactName     String?
   primaryContactPhone    String?
   primaryContactEmail    String?
-  smsAudits              AssessmentSmsAudit[]   @relation("LearnerSmsAudits")
+  institutionType        InstitutionType           @default(PRIMARY_CBC)
+  pathwayId              String?
+  upiNumber              String?                   @unique
+  smsAudits              AssessmentSmsAudit[]      @relation("LearnerSmsAudits")
   attendances            Attendance[]
-  enrollments            ClassEnrollment[]
-  coCurricularActivities CoCurricularActivity[] @relation("LearnerCoCurricular")
-  coreCompetencies       CoreCompetency[]       @relation("LearnerCoreCompetencies")
-  feeInvoices            FeeInvoice[]           @relation("LearnerInvoices")
-  formativeAssessments   FormativeAssessment[]
-  parent                 User?                  @relation("ParentLearners", fields: [parentId], references: [id])
-  summativeResults       SummativeResult[]
-  reportComments         TermlyReportComment[]  @relation("LearnerReportComments")
-  valuesAssessments      ValuesAssessment[]     @relation("LearnerValues")
   biometricCredentials   BiometricCredential[]
-  lmsEnrollments         LMSEnrollment[]         @relation("LMSEnrolledLearners")
-  pathway                Pathway?              @relation(fields: [pathwayId], references: [id])
+  enrollments            ClassEnrollment[]
+  coCurricularActivities CoCurricularActivity[]    @relation("LearnerCoCurricular")
+  coreCompetencies       CoreCompetency[]          @relation("LearnerCoreCompetencies")
+  feeInvoices            FeeInvoice[]              @relation("LearnerInvoices")
+  formativeAssessments   FormativeAssessment[]
   subjectSelections      LearnerSubjectSelection[]
+  parent                 User?                     @relation("ParentLearners", fields: [parentId], references: [id])
+  pathway                Pathway?                  @relation(fields: [pathwayId], references: [id])
+  lmsEnrollments         LMSEnrollment[]           @relation("LMSEnrolledLearners")
+  summativeResults       SummativeResult[]
+  reportComments         TermlyReportComment[]     @relation("LearnerReportComments")
+  valuesAssessments      ValuesAssessment[]        @relation("LearnerValues")
 
   @@index([admissionNumber])
   @@index([parentId])
@@ -414,26 +416,26 @@ model Pathway {
   active        Boolean           @default(true)
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
-  categories    SubjectCategory[]
-  learningAreas LearningArea[]
   learners      Learner[]
+  learningAreas LearningArea[]
+  categories    SubjectCategory[]
 
   @@map("pathways")
 }
 
 model SubjectCategory {
-  id            String        @id @default(uuid())
+  id            String         @id @default(uuid())
   pathwayId     String
   code          String
   name          String
   description   String?
-  minSelect     Int           @default(0)
+  minSelect     Int            @default(0)
   maxSelect     Int?
-  active        Boolean       @default(true)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  pathway       Pathway       @relation(fields: [pathwayId], references: [id], onDelete: Cascade)
+  active        Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   learningAreas LearningArea[]
+  pathway       Pathway        @relation(fields: [pathwayId], references: [id], onDelete: Cascade)
 
   @@unique([pathwayId, code])
   @@index([pathwayId])
@@ -486,7 +488,6 @@ model FormativeAssessment {
   term             Term                    @default(TERM_1)
   academicYear     Int                     @default(2026)
   learningArea     String
-  learningAreaId   String?
   strand           String?
   subStrand        String?
   overallRating    RubricRating
@@ -504,7 +505,6 @@ model FormativeAssessment {
   teacherId        String
   type             FormativeAssessmentType @default(OPENER)
   status           AssessmentStatus        @default(DRAFT)
-  levelId          String?                 @map("level_id") // New: link to specific Level
   title            String?
   date             DateTime?               @default(now())
   maxScore         Float?
@@ -517,10 +517,12 @@ model FormativeAssessment {
   archivedBy       String?
   createdAt        DateTime                @default(now())
   updatedAt        DateTime                @updatedAt
+  learningAreaId   String?
+  levelId          String?                 @map("level_id")
   learner          Learner                 @relation(fields: [learnerId], references: [id], onDelete: Cascade)
-  teacher          User                    @relation("TeacherFormativeAssessments", fields: [teacherId], references: [id])
-  level            GradingRange?           @relation(fields: [levelId], references: [id]) // New: level lookup
   learningAreaRef  LearningArea?           @relation(fields: [learningAreaId], references: [id])
+  level            GradingRange?           @relation(fields: [levelId], references: [id])
+  teacher          User                    @relation("TeacherFormativeAssessments", fields: [teacherId], references: [id])
 
   @@unique([learnerId, term, academicYear, learningArea, type, title])
   @@index([learnerId])
@@ -533,46 +535,46 @@ model FormativeAssessment {
 }
 
 model SummativeTest {
-  id              String            @id @default(uuid())
+  id              String             @id @default(uuid())
   title           String
   learningArea    String
-  learningAreaId  String?
-  term            Term              @default(TERM_1)
-  academicYear    Int               @default(2026)
+  term            Term               @default(TERM_1)
+  academicYear    Int                @default(2026)
   grade           String
-  testDate        DateTime          @db.Date
+  testDate        DateTime           @db.Date
   totalMarks      Int
   passMarks       Int
   duration        Int?
   description     String?
   instructions    String?
   createdBy       String
-  published       Boolean           @default(false)
-  active          Boolean           @default(true)
-  status          AssessmentStatus  @default(DRAFT)
-  curriculum      CurriculumType    @default(CBC_AND_EXAM)
-  weight          Float             @default(100.0)
-  locked          Boolean           @default(false)
+  published       Boolean            @default(false)
+  active          Boolean            @default(true)
+  status          AssessmentStatus   @default(DRAFT)
+  curriculum      CurriculumType     @default(CBC_AND_EXAM)
+  weight          Float              @default(100.0)
+  locked          Boolean            @default(false)
   lockedAt        DateTime?
   lockedBy        String?
-  statusHistory   Json[]            @default([])
+  statusHistory   Json[]             @default([])
   submittedBy     String?
   submittedAt     DateTime?
   approvedBy      String?
   approvedAt      DateTime?
   scaleId         String?
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  archived        Boolean           @default(false)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  archived        Boolean            @default(false)
   archivedAt      DateTime?
   archivedBy      String?
+  learningAreaId  String?
   testType        SummativeTestType?
   results         SummativeResult[]
-  approvedByUser  User?             @relation("ApprovedTests", fields: [approvedBy], references: [id])
-  creator         User              @relation("CreatedTests", fields: [createdBy], references: [id])
-  scale           GradingSystem?    @relation(fields: [scaleId], references: [id])
-  submittedByUser User?             @relation("SubmittedTests", fields: [submittedBy], references: [id])
-  learningAreaRef LearningArea?     @relation(fields: [learningAreaId], references: [id])
+  approvedByUser  User?              @relation("ApprovedTests", fields: [approvedBy], references: [id])
+  creator         User               @relation("CreatedTests", fields: [createdBy], references: [id])
+  learningAreaRef LearningArea?      @relation(fields: [learningAreaId], references: [id])
+  scale           GradingSystem?     @relation(fields: [scaleId], references: [id])
+  submittedByUser User?              @relation("SubmittedTests", fields: [submittedBy], references: [id])
 
   @@unique([grade, learningArea, term, academicYear, testType])
   @@index([testType])
@@ -644,11 +646,9 @@ model SummativeResult {
   id               String                   @id @default(uuid())
   testId           String
   learnerId        String
-  levelId          String?                  @map("level_id") // New: link to specific Level
   marksObtained    Int
   percentage       Float
   grade            String
-  cbcGrade         String?
   status           TestStatus
   moderationStatus ModerationStatus         @default(DRAFT)
   position         Int?
@@ -661,11 +661,13 @@ model SummativeResult {
   archived         Boolean                  @default(false)
   archivedAt       DateTime?
   archivedBy       String?
+  cbcGrade         String?
+  levelId          String?                  @map("level_id")
   resultHistory    SummativeResultHistory[]
   learner          Learner                  @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  level            GradingRange?            @relation(fields: [levelId], references: [id])
   recorder         User                     @relation("RecordedResults", fields: [recordedBy], references: [id])
   test             SummativeTest            @relation(fields: [testId], references: [id], onDelete: Cascade)
-  level            GradingRange?            @relation(fields: [levelId], references: [id]) // New: level lookup
 
   @@unique([testId, learnerId])
   @@index([moderationStatus])
@@ -893,29 +895,29 @@ model FeeStructureItem {
 }
 
 model FeeInvoice {
-  id             String        @id @default(uuid())
-  invoiceNumber  String        @unique
-  learnerId      String
-  feeStructureId String
-  term           Term
-  academicYear   Int
-  dueDate        DateTime
-  totalAmount    Decimal       @db.Decimal(10, 2)
-  paidAmount     Decimal       @default(0) @db.Decimal(10, 2)
-  balance        Decimal       @db.Decimal(10, 2)
-  status         PaymentStatus @default(PENDING)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  issuedBy       String
+  id               String        @id @default(uuid())
+  invoiceNumber    String        @unique
+  learnerId        String
+  feeStructureId   String
+  term             Term
+  academicYear     Int
+  dueDate          DateTime
+  totalAmount      Decimal       @db.Decimal(10, 2)
+  paidAmount       Decimal       @default(0) @db.Decimal(10, 2)
+  balance          Decimal       @db.Decimal(10, 2)
+  status           PaymentStatus @default(PENDING)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  issuedBy         String
+  archived         Boolean       @default(false)
+  archivedAt       DateTime?
+  archivedBy       String?
   complianceStatus PaymentStatus @default(PENDING)
   etimsControlCode String?
   etimsQRCodeUrl   String?
-  archived       Boolean       @default(false)
-  archivedAt     DateTime?
-  archivedBy     String?
-  feeStructure   FeeStructure  @relation(fields: [feeStructureId], references: [id])
-  learner        Learner       @relation("LearnerInvoices", fields: [learnerId], references: [id], onDelete: Cascade)
-  payments       FeePayment[]
+  feeStructure     FeeStructure  @relation(fields: [feeStructureId], references: [id])
+  learner          Learner       @relation("LearnerInvoices", fields: [learnerId], references: [id], onDelete: Cascade)
+  payments         FeePayment[]
 
   @@index([learnerId])
   @@index([term, academicYear])
@@ -1077,7 +1079,6 @@ model GradingSystem {
   name           String
   type           String
   scaleGroupId   String?
-  grade          String?
   learningArea   String?
   active         Boolean         @default(true)
   archived       Boolean         @default(false)
@@ -1086,6 +1087,7 @@ model GradingSystem {
   isDefault      Boolean         @default(false)
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
+  grade          String?
   ranges         GradingRange[]
   scaleGroup     ScaleGroup?     @relation("ScaleGroupSystems", fields: [scaleGroupId], references: [id])
   summativeTests SummativeTest[]
@@ -1103,9 +1105,7 @@ model GradingRange {
   maxPercentage  Float
   summativeGrade String?
   rubricRating   DetailedRubricRating?
-  parentBand     String?               // New: e.g., "Exceeding Expectations"
-  displayOrder   Int                   @default(0) // New: for sorting
-  points         Int?                  // Restored: to prevent data loss
+  points         Int?
   color          String?
   description    String?
   createdAt      DateTime              @default(now())
@@ -1113,9 +1113,11 @@ model GradingRange {
   archived       Boolean               @default(false)
   archivedAt     DateTime?
   archivedBy     String?
+  parentBand     String?
+  displayOrder   Int                   @default(0)
+  assessments    FormativeAssessment[]
   system         GradingSystem         @relation(fields: [systemId], references: [id], onDelete: Cascade)
   results        SummativeResult[]
-  assessments    FormativeAssessment[]
 
   @@index([systemId])
   @@map("grading_ranges")
@@ -1211,27 +1213,27 @@ model AssessmentSmsAudit {
 }
 
 model LearningArea {
-  id                 String              @id @default(uuid())
-  name               String
-  shortName          String?
-  gradeLevel         String
-  institutionType    InstitutionType     @default(PRIMARY_CBC)
-  isCore             Boolean             @default(false)
-  pathway            String?
-  category           String?
-  pathwayId          String?
-  categoryId         String?
-  icon               String              @default("📚")
-  color              String              @default("#3b82f6")
-  description        String?
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  schedules          ClassSchedule[]
-  subjectAssignments SubjectAssignment[]
-  pathwayRef         Pathway?            @relation(fields: [pathwayId], references: [id])
-  categoryRef        SubjectCategory?    @relation(fields: [categoryId], references: [id])
-  learnerSelections  LearnerSubjectSelection[]
+  id                   String                    @id @default(uuid())
+  name                 String
+  shortName            String?
+  gradeLevel           String
+  icon                 String                    @default("📚")
+  color                String                    @default("#3b82f6")
+  description          String?
+  createdAt            DateTime                  @default(now())
+  updatedAt            DateTime                  @updatedAt
+  institutionType      InstitutionType           @default(PRIMARY_CBC)
+  isCore               Boolean                   @default(false)
+  pathway              String?
+  category             String?
+  pathwayId            String?
+  categoryId           String?
+  schedules            ClassSchedule[]
   formativeAssessments FormativeAssessment[]
+  learnerSelections    LearnerSubjectSelection[]
+  categoryRef          SubjectCategory?          @relation(fields: [categoryId], references: [id])
+  pathwayRef           Pathway?                  @relation(fields: [pathwayId], references: [id])
+  subjectAssignments   SubjectAssignment[]
   summativeTests       SummativeTest[]
 
   @@unique([name, gradeLevel])
@@ -1313,84 +1315,24 @@ model Document {
   @@map("documents")
 }
 
-enum BookStatus {
-  AVAILABLE
-  LIMITED
-  OUT_OF_STOCK
-  DISCARDED
-}
-
-enum BookCondition {
-  EXCELLENT
-  GOOD
-  FAIR
-  POOR
-  DAMAGED
-}
-
-enum CopyStatus {
-  AVAILABLE
-  BORROWED
-  RESERVED
-  LOST
-  DAMAGED
-  DISCARDED
-}
-
-enum MemberType {
-  STUDENT
-  TEACHER
-  STAFF
-  EXTERNAL
-}
-
-enum MemberStatus {
-  ACTIVE
-  SUSPENDED
-  EXPIRED
-  TERMINATED
-}
-
-enum LoanStatus {
-  ACTIVE
-  RETURNED
-  OVERDUE
-  LOST
-  CANCELLED
-}
-
-enum FineReason {
-  OVERDUE
-  DAMAGED
-  LOST
-}
-
-enum FineStatus {
-  UNPAID
-  PAID
-  WAIVED
-}
-
 model Book {
-  id              String      @id @default(uuid())
+  id              String     @id @default(uuid())
   title           String
   author          String?
-  isbn            String?     @unique
+  isbn            String?    @unique
   category        String?
-  publisher       String?
-  publicationYear Int?
-  description     String?
-  language        String?     @default("English")
-  pages           Int?
-  edition         String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  availableCopies Int        @default(1)
   coverImage      String?
-  totalCopies     Int         @default(1)
-  availableCopies Int         @default(1)
-  status          BookStatus  @default(AVAILABLE)
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-
-  // Relations
+  description     String?
+  edition         String?
+  language        String?    @default("English")
+  pages           Int?
+  publicationYear Int?
+  publisher       String?
+  totalCopies     Int        @default(1)
+  status          BookStatus @default(AVAILABLE)
   copies          BookCopy[]
   loans           BookLoan[]
 
@@ -1402,22 +1344,20 @@ model Book {
 }
 
 model BookCopy {
-  id          String        @id @default(uuid())
-  bookId      String
-  copyNumber  String        @unique // e.g., "BK001-001"
-  condition   BookCondition @default(GOOD)
-  status      CopyStatus    @default(AVAILABLE)
-  location    String?       // Shelf location
-  barcode     String?       @unique
-  acquiredAt  DateTime?
+  id           String        @id @default(uuid())
+  bookId       String
+  copyNumber   String        @unique
+  condition    BookCondition @default(GOOD)
+  status       CopyStatus    @default(AVAILABLE)
+  location     String?
+  barcode      String?       @unique
+  acquiredAt   DateTime?
   acquiredFrom String?
-  notes       String?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-
-  // Relations
-  book        Book          @relation(fields: [bookId], references: [id], onDelete: Cascade)
-  loans       BookLoan[]
+  notes        String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  book         Book          @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  loans        BookLoan[]
 
   @@index([bookId])
   @@index([status])
@@ -1426,23 +1366,21 @@ model BookCopy {
 }
 
 model LibraryMember {
-  id            String        @id @default(uuid())
-  userId        String        @unique
-  memberNumber  String        @unique
+  id             String       @id @default(uuid())
+  userId         String       @unique
+  memberNumber   String       @unique
   membershipType MemberType   @default(STUDENT)
-  status        MemberStatus  @default(ACTIVE)
-  maxBooks      Int           @default(3)
-  maxDays       Int           @default(14)
-  joinedAt      DateTime      @default(now())
-  expiryDate    DateTime?
-  notes         String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-
-  // Relations
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  loans         BookLoan[]
-  fines         Fine[]
+  status         MemberStatus @default(ACTIVE)
+  maxBooks       Int          @default(3)
+  maxDays        Int          @default(14)
+  joinedAt       DateTime     @default(now())
+  expiryDate     DateTime?
+  notes          String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  loans          BookLoan[]
+  fines          Fine[]
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([memberNumber])
@@ -1451,25 +1389,23 @@ model LibraryMember {
 }
 
 model BookLoan {
-  id              String      @id @default(uuid())
-  bookId          String
-  bookCopyId      String
-  memberId        String
-  loanedAt        DateTime    @default(now())
-  dueDate         DateTime
-  returnedAt      DateTime?
-  status          LoanStatus  @default(ACTIVE)
-  renewedCount    Int         @default(0)
-  maxRenewals     Int         @default(2)
-  notes           String?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-
-  // Relations
-  book            Book        @relation(fields: [bookId], references: [id], onDelete: Cascade)
-  bookCopy        BookCopy    @relation(fields: [bookCopyId], references: [id], onDelete: Cascade)
-  member          LibraryMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  fines           Fine[]
+  id           String        @id @default(uuid())
+  bookId       String
+  bookCopyId   String
+  memberId     String
+  loanedAt     DateTime      @default(now())
+  dueDate      DateTime
+  returnedAt   DateTime?
+  status       LoanStatus    @default(ACTIVE)
+  renewedCount Int           @default(0)
+  maxRenewals  Int           @default(2)
+  notes        String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  bookCopy     BookCopy      @relation(fields: [bookCopyId], references: [id], onDelete: Cascade)
+  book         Book          @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  member       LibraryMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  fines        Fine[]
 
   @@index([bookId])
   @@index([bookCopyId])
@@ -1480,23 +1416,21 @@ model BookLoan {
 }
 
 model Fine {
-  id          String      @id @default(uuid())
-  loanId      String?
-  memberId    String
-  amount      Decimal     @db.Decimal(10, 2)
-  reason      FineReason
-  status      FineStatus  @default(UNPAID)
-  issuedAt    DateTime    @default(now())
-  paidAt      DateTime?
-  waivedById  String?
-  notes       String?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-
-  // Relations
-  loan        BookLoan?   @relation(fields: [loanId], references: [id], onDelete: Cascade)
-  member      LibraryMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  waivedBy    User?       @relation("FineWaivers", fields: [waivedById], references: [id])
+  id         String        @id @default(uuid())
+  loanId     String?
+  memberId   String
+  amount     Decimal       @db.Decimal(10, 2)
+  reason     FineReason
+  status     FineStatus    @default(UNPAID)
+  issuedAt   DateTime      @default(now())
+  paidAt     DateTime?
+  waivedById String?
+  notes      String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  loan       BookLoan?     @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  member     LibraryMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  waivedBy   User?         @relation("FineWaivers", fields: [waivedById], references: [id])
 
   @@index([loanId])
   @@index([memberId])
@@ -1510,14 +1444,14 @@ model Event {
   description   String?
   startDate     DateTime
   endDate       DateTime
-  allDay        Boolean   @default(false)
-  type          EventType @default(GENERAL)
   location      String?
-  googleEventId String?
-  meetingLink   String?
   creatorId     String
+  allDay        Boolean   @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  googleEventId String?
+  meetingLink   String?
+  type          EventType @default(GENERAL)
   creator       User      @relation("EventCreator", fields: [creatorId], references: [id])
 
   @@map("events")
@@ -1573,29 +1507,68 @@ model LeaveRequest {
   @@map("leave_requests")
 }
 
+// ─── PAYROLL ────────────────────────────────────────────────────────────────
+
 model PayrollRecord {
-  id            String        @id @default(uuid())
-  userId        String
-  month         Int
-  year          Int
-  basicSalary   Decimal       @db.Decimal(10, 2)
-  allowances    Json?
-  deductions    Json?
-  netSalary     Decimal       @db.Decimal(10, 2)
-  status        PayrollStatus @default(DRAFT)
-  generatedAt   DateTime      @default(now())
-  generatedBy   String?
-  workedMinutes Int           @default(0)
-  workedDays    Int           @default(0)
-  paidAt        DateTime?
-  reference     String?
-  notes         String?
-  user          User          @relation(fields: [userId], references: [id])
+  id               String        @id @default(uuid())
+  userId           String
+  month            Int
+  year             Int
+  basicSalary      Decimal       @db.Decimal(10, 2)
+  grossSalary      Decimal?      @db.Decimal(10, 2)   // basicSalary + allowances total
+  allowances       Json?         // snapshot of StaffAllowance amounts at generation time
+  deductions       Json?         // statutory + custom deduction breakdown
+  netSalary        Decimal       @db.Decimal(10, 2)
+  status           PayrollStatus @default(DRAFT)
+  generatedAt      DateTime      @default(now())
+  generatedBy      String?
+  paidAt           DateTime?
+  paymentReference String?       // e.g. bank EFT reference / M-Pesa code
+  reference        String?
+  notes            String?
+  workedDays       Int           @default(0)
+  workedMinutes    Int           @default(0)
+  user             User          @relation(fields: [userId], references: [id])
 
   @@unique([userId, month, year])
   @@index([userId])
   @@index([month, year])
   @@map("payroll_records")
+}
+
+// Per-staff recurring allowances (house, travel, medical, commuter, etc.)
+model StaffAllowance {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String   // HOUSE | TRAVEL | MEDICAL | COMMUTER | OTHER
+  label     String
+  amount    Decimal  @db.Decimal(10, 2)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("staff_allowances")
+}
+
+// Per-staff custom deductions (loans, SACCO, advances, uniform, etc.)
+model StaffDeduction {
+  id            String   @id @default(uuid())
+  userId        String
+  type          String   // LOAN | SACCO | ADVANCE | UNIFORM | OTHER
+  label         String
+  amount        Decimal  @db.Decimal(10, 2)
+  isRecurring   Boolean  @default(true)
+  totalMonths   Int      @default(0)    // 0 = indefinite
+  monthsApplied Int      @default(0)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("staff_deductions")
 }
 
 model StaffAttendanceLog {
@@ -1733,13 +1706,13 @@ model FiscalYear {
 model Vendor {
   id        String    @id @default(uuid())
   name      String    @unique
-  contact   String?
   email     String?
   phone     String?
   address   String?
   isActive  Boolean   @default(true)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+  contact   String?
   expenses  Expense[]
 
   @@map("vendors")
@@ -1950,11 +1923,328 @@ model AssetAssignment {
   @@map("asset_assignments")
 }
 
+model SchemeOfWork {
+  id            String             @id @default(uuid())
+  teacherId     String
+  grade         String
+  learningArea  String
+  term          Term
+  academicYear  Int
+  classId       String?
+  title         String?
+  status        SoWStatus          @default(DRAFT)
+  reviewedBy    String?
+  reviewedAt    DateTime?
+  reviewComment String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  archived      Boolean            @default(false)
+  weeks         SchemeOfWorkWeek[]
+  teacher       User               @relation("TeacherSchemes", fields: [teacherId], references: [id])
+
+  @@unique([teacherId, grade, learningArea, term, academicYear])
+  @@unique([teacherId, grade, learningArea, term, academicYear], map: "schemes_of_work_teacherId_grade_learningArea_term_academic_key")
+  @@index([grade, term, academicYear])
+  @@index([teacherId])
+  @@index([status])
+  @@map("schemes_of_work")
+}
+
+model SchemeOfWorkWeek {
+  id               String       @id @default(uuid())
+  schemeId         String
+  weekNumber       Int
+  strand           String?
+  subStrand        String?
+  outcomes         String?
+  inquiryQuestions String?
+  activities       String?
+  coreCompetencies String?
+  values           String?
+  pertinentIssues  String?
+  resources        String?
+  assessment       String?
+  remarks          String?
+  scheme           SchemeOfWork @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+
+  @@unique([schemeId, weekNumber])
+  @@index([schemeId])
+  @@map("scheme_of_work_weeks")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  action    String
+  userId    String?
+  userEmail String?
+  userRole  String?
+  ipAddress String?
+  method    String
+  path      String
+  params    String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@map("audit_logs")
+}
+
+model BiometricDevice {
+  id        String         @id @default(uuid())
+  name      String
+  deviceId  String         @unique
+  type      String         @default("TERMINAL")
+  location  String?
+  ipAddress String?
+  status    String         @default("OFFLINE")
+  lastSeen  DateTime?
+  token     String         @unique @default(uuid())
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  logs      BiometricLog[]
+
+  @@map("biometric_devices")
+}
+
+model BiometricCredential {
+  id          String   @id @default(uuid())
+  userId      String?
+  learnerId   String?
+  type        String   @default("FINGERPRINT")
+  template    String
+  fingerIndex Int?
+  quality     Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  learner     Learner? @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  user        User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([learnerId])
+  @@map("biometric_credentials")
+}
+
+model BiometricLog {
+  id           String          @id @default(uuid())
+  deviceId     String
+  personId     String
+  personType   String
+  timestamp    DateTime
+  direction    String          @default("IN")
+  status       String          @default("PENDING")
+  errorMessage String?
+  device       BiometricDevice @relation(fields: [deviceId], references: [id])
+
+  @@index([deviceId])
+  @@index([status])
+  @@index([timestamp])
+  @@map("biometric_logs")
+}
+
+model TransportVehicle {
+  id                 String           @id @default(uuid())
+  registrationNumber String           @unique
+  capacity           Int
+  driverName         String
+  driverPhone        String?
+  status             String           @default("ACTIVE")
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  archived           Boolean          @default(false)
+  routes             TransportRoute[]
+
+  @@map("transport_vehicles")
+}
+
+model TransportRoute {
+  id          String                @id @default(uuid())
+  name        String
+  description String?
+  amount      Decimal               @default(0.00) @db.Decimal(10, 2)
+  vehicleId   String?
+  status      String                @default("ACTIVE")
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  archived    Boolean               @default(false)
+  assignments TransportAssignment[]
+  vehicle     TransportVehicle?     @relation(fields: [vehicleId], references: [id])
+
+  @@index([vehicleId])
+  @@map("transport_routes")
+}
+
+model TransportAssignment {
+  id            String         @id @default(uuid())
+  routeId       String
+  passengerId   String
+  passengerType String         @default("LEARNER")
+  pickupPoint   String?
+  dropoffPoint  String?
+  status        String         @default("ACTIVE")
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  archived      Boolean        @default(false)
+  route         TransportRoute @relation(fields: [routeId], references: [id])
+
+  @@index([routeId])
+  @@index([passengerId])
+  @@map("transport_assignments")
+}
+
+model LMSCourse {
+  id          String          @id @default(uuid())
+  title       String
+  description String?
+  subject     String
+  grade       String
+  category    String
+  status      CourseStatus    @default(DRAFT)
+  createdById String
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  archived    Boolean         @default(false)
+  content     LMSContent[]
+  createdBy   User            @relation("LMSCreatedCourses", fields: [createdById], references: [id])
+  enrollments LMSEnrollment[]
+
+  @@index([createdById])
+  @@index([subject])
+  @@index([grade])
+  @@index([status])
+  @@map("lms_courses")
+}
+
+model LMSContent {
+  id           String        @id @default(uuid())
+  courseId     String
+  title        String
+  description  String?
+  type         ContentType
+  url          String
+  duration     Int?
+  fileSize     Int?
+  order        Int           @default(1)
+  uploadedById String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  archived     Boolean       @default(false)
+  course       LMSCourse     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  uploadedBy   User          @relation("LMSUploadedContent", fields: [uploadedById], references: [id])
+  progress     LMSProgress[]
+
+  @@index([courseId])
+  @@index([uploadedById])
+  @@index([type])
+  @@map("lms_content")
+}
+
+model LMSEnrollment {
+  id           String           @id @default(uuid())
+  courseId     String
+  learnerId    String
+  enrolledById String
+  status       EnrollmentStatus @default(ACTIVE)
+  enrolledAt   DateTime         @default(now())
+  unenrolledAt DateTime?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  archived     Boolean          @default(false)
+  course       LMSCourse        @relation(fields: [courseId], references: [id])
+  enrolledBy   User             @relation("LMSEnrolledBy", fields: [enrolledById], references: [id])
+  learner      Learner          @relation("LMSEnrolledLearners", fields: [learnerId], references: [id])
+  progress     LMSProgress[]
+
+  @@unique([courseId, learnerId])
+  @@index([courseId])
+  @@index([learnerId])
+  @@index([enrolledById])
+  @@index([status])
+  @@map("lms_enrollments")
+}
+
+model LMSProgress {
+  id             String        @id @default(uuid())
+  enrollmentId   String
+  contentId      String
+  completed      Boolean       @default(false)
+  progress       Int           @default(0)
+  timeSpent      Int           @default(0)
+  lastAccessedAt DateTime      @default(now())
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  content        LMSContent    @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  enrollment     LMSEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  @@unique([enrollmentId, contentId])
+  @@index([enrollmentId])
+  @@index([contentId])
+  @@map("lms_progress")
+}
+
+// ─── ENUMS ──────────────────────────────────────────────────────────────────
+
+enum BookStatus {
+  AVAILABLE
+  LIMITED
+  OUT_OF_STOCK
+  DISCARDED
+}
+
+enum BookCondition {
+  EXCELLENT
+  GOOD
+  FAIR
+  POOR
+  DAMAGED
+}
+
+enum CopyStatus {
+  AVAILABLE
+  BORROWED
+  RESERVED
+  LOST
+  DAMAGED
+  DISCARDED
+}
+
+enum MemberType {
+  STUDENT
+  TEACHER
+  STAFF
+  EXTERNAL
+}
+
+enum MemberStatus {
+  ACTIVE
+  SUSPENDED
+  EXPIRED
+  TERMINATED
+}
+
+enum LoanStatus {
+  ACTIVE
+  RETURNED
+  OVERDUE
+  LOST
+  CANCELLED
+}
+
+enum FineReason {
+  OVERDUE
+  DAMAGED
+  LOST
+}
+
+enum FineStatus {
+  UNPAID
+  PAID
+  WAIVED
+}
+
 enum UserRole {
   SUPER_ADMIN
   ADMIN
   HEAD_TEACHER
-  HEAD_OF_CURRICULUM
   TEACHER
   PARENT
   ACCOUNTANT
@@ -1967,6 +2257,7 @@ enum UserRole {
   CLEANER
   GROUNDSKEEPER
   IT_SUPPORT
+  HEAD_OF_CURRICULUM
   STUDENT
 }
 
@@ -1975,8 +2266,6 @@ enum UserStatus {
   INACTIVE
   SUSPENDED
 }
-
-
 
 enum LearnerStatus {
   ACTIVE
@@ -2101,8 +2390,6 @@ enum DetailedRubricRating {
   BE1
   BE2
 }
-
-
 
 enum SummativeTestType {
   OPENER
@@ -2284,283 +2571,12 @@ enum AssetCondition {
   REJECTED
 }
 
-// ─── Schemes of Work ─────────────────────────────────────────────────────────
-
 enum SoWStatus {
   DRAFT
   SUBMITTED
   APPROVED
   REJECTED
 }
-
-model SchemeOfWork {
-  id            String             @id @default(uuid())
-  teacherId     String
-  grade         String
-  learningArea  String
-  term          Term
-  academicYear  Int
-  classId       String?
-  title         String?
-  status        SoWStatus          @default(DRAFT)
-  reviewedBy    String?
-  reviewedAt    DateTime?
-  reviewComment String?
-  weeks         SchemeOfWorkWeek[]
-  teacher       User               @relation("TeacherSchemes", fields: [teacherId], references: [id])
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
-  archived      Boolean            @default(false)
-
-  @@unique([teacherId, grade, learningArea, term, academicYear])
-  @@index([grade, term, academicYear])
-  @@index([teacherId])
-  @@index([status])
-  @@map("schemes_of_work")
-}
-
-model SchemeOfWorkWeek {
-  id               String       @id @default(uuid())
-  schemeId         String
-  weekNumber       Int
-  strand           String?
-  subStrand        String?
-  outcomes         String?
-  inquiryQuestions String?
-  activities       String?
-  coreCompetencies String?
-  values           String?
-  pertinentIssues  String?
-  resources        String?
-  assessment       String?
-  remarks          String?
-  scheme           SchemeOfWork @relation(fields: [schemeId], references: [id], onDelete: Cascade)
-
-  @@unique([schemeId, weekNumber])
-  @@index([schemeId])
-  @@map("scheme_of_work_weeks")
-}
-
-model AuditLog {
-  id        String   @id @default(uuid())
-  action    String
-  userId    String?
-  userEmail String?
-  userRole  String?
-  ipAddress String?
-  method    String
-  path      String
-  params    String?
-  createdAt DateTime @default(now())
-
-  @@index([userId])
-  @@index([action])
-  @@map("audit_logs")
-}
-
-model BiometricDevice {
-  id        String         @id @default(uuid())
-  name      String
-  deviceId  String         @unique // Hardware serial number
-  type      String         @default("TERMINAL") // TERMINAL, USB_BRIDGE
-  location  String?
-  ipAddress String?
-  status    String         @default("OFFLINE")
-  lastSeen  DateTime?
-  token     String         @unique @default(uuid()) // For auth
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
-  logs      BiometricLog[]
-
-  @@map("biometric_devices")
-}
-
-model BiometricCredential {
-  id          String   @id @default(uuid())
-  userId      String?
-  learnerId   String?
-  type        String   @default("FINGERPRINT") // FINGERPRINT, FACE, PALM
-  template    String   @db.Text // The mathematical biometric data
-  fingerIndex Int? // 1-10 for fingers
-  quality     Int? // Quality score 0-100
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user        User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  learner     Learner? @relation(fields: [learnerId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([learnerId])
-  @@map("biometric_credentials")
-}
-
-model BiometricLog {
-  id           String          @id @default(uuid())
-  deviceId     String
-  personId     String // Can be admissionNumber or staffId
-  personType   String // LEARNER or STAFF
-  timestamp    DateTime
-  direction    String          @default("IN") // IN, OUT
-  status       String          @default("PENDING") // PENDING, PROCESSED, FAILED
-  errorMessage String?
-  device       BiometricDevice @relation(fields: [deviceId], references: [id])
-
-  @@index([deviceId])
-  @@index([status])
-  @@index([timestamp])
-  @@map("biometric_logs")
-}
-
-model TransportVehicle {
-  id                 String                @id @default(uuid())
-  registrationNumber String                @unique
-  capacity           Int
-  driverName         String
-  driverPhone        String?               
-  status             String                @default("ACTIVE") // ACTIVE, MAINTENANCE, INACTIVE
-  createdAt          DateTime              @default(now())
-  updatedAt          DateTime              @updatedAt
-  archived           Boolean               @default(false)
-  routes             TransportRoute[]
-
-  @@map("transport_vehicles")
-}
-
-model TransportRoute {
-  id          String                @id @default(uuid())
-  name        String                
-  description String?
-  amount      Decimal               @db.Decimal(10, 2) @default(0.00)
-  vehicleId   String?
-  status      String                @default("ACTIVE")
-  createdAt   DateTime              @default(now())
-  updatedAt   DateTime              @updatedAt
-  archived    Boolean               @default(false)
-  vehicle     TransportVehicle?     @relation(fields: [vehicleId], references: [id])
-  assignments TransportAssignment[]
-
-  @@index([vehicleId])
-  @@map("transport_routes")
-}
-
-model TransportAssignment {
-  id           String          @id @default(uuid())
-  routeId      String
-  passengerId  String          // Could be Learner or Staff (we'll use Learner for MVP)
-  passengerType String         @default("LEARNER") 
-  pickupPoint  String?
-  dropoffPoint String?
-  status       String          @default("ACTIVE")
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
-  archived     Boolean         @default(false)
-  route        TransportRoute  @relation(fields: [routeId], references: [id])
-
-  @@index([routeId])
-  @@index([passengerId])
-  @@map("transport_assignments")
-}
-
-// ============================================
-// LEARNING MANAGEMENT SYSTEM (LMS)
-// ============================================
-
-model LMSCourse {
-  id          String        @id @default(uuid())
-  title       String
-  description String?
-  subject     String
-  grade       String
-  category    String
-  status      CourseStatus  @default(DRAFT)
-  createdById String
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  archived    Boolean       @default(false)
-
-  createdBy   User          @relation("LMSCreatedCourses", fields: [createdById], references: [id])
-  content     LMSContent[]
-  enrollments LMSEnrollment[]
-
-  @@index([createdById])
-  @@index([subject])
-  @@index([grade])
-  @@index([status])
-  @@map("lms_courses")
-}
-
-model LMSContent {
-  id           String      @id @default(uuid())
-  courseId     String
-  title        String
-  description  String?
-  type         ContentType
-  url          String
-  duration     Int?        // Duration in seconds for video/audio
-  fileSize     Int?        // File size in bytes
-  order        Int         @default(1)
-  uploadedById String
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  archived     Boolean     @default(false)
-
-  course      LMSCourse     @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  uploadedBy  User          @relation("LMSUploadedContent", fields: [uploadedById], references: [id])
-  progress    LMSProgress[]
-
-  @@index([courseId])
-  @@index([uploadedById])
-  @@index([type])
-  @@map("lms_content")
-}
-
-model LMSEnrollment {
-  id           String            @id @default(uuid())
-  courseId     String
-  learnerId    String
-  enrolledById String
-  status       EnrollmentStatus  @default(ACTIVE)
-  enrolledAt   DateTime          @default(now())
-  unenrolledAt DateTime?
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-  archived     Boolean           @default(false)
-
-  course      LMSCourse     @relation(fields: [courseId], references: [id])
-  learner     Learner       @relation("LMSEnrolledLearners", fields: [learnerId], references: [id])
-  enrolledBy  User          @relation("LMSEnrolledBy", fields: [enrolledById], references: [id])
-  progress    LMSProgress[]
-
-  @@index([courseId])
-  @@index([learnerId])
-  @@index([enrolledById])
-  @@index([status])
-  @@unique([courseId, learnerId])
-  @@map("lms_enrollments")
-}
-
-model LMSProgress {
-  id            String   @id @default(uuid())
-  enrollmentId  String
-  contentId     String
-  completed     Boolean  @default(false)
-  progress      Int      @default(0) // Progress percentage (0-100)
-  timeSpent     Int      @default(0) // Time spent in seconds
-  lastAccessedAt DateTime @default(now())
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  enrollment LMSEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
-  content    LMSContent    @relation(fields: [contentId], references: [id], onDelete: Cascade)
-
-  @@index([enrollmentId])
-  @@index([contentId])
-  @@unique([enrollmentId, contentId])
-  @@map("lms_progress")
-}
-
-// ============================================
-// ENUMS
-// ============================================
 
 enum CourseStatus {
   DRAFT

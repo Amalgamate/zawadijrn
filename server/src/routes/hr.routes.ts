@@ -8,241 +8,289 @@ import { rateLimit } from '../middleware/enhanced-rateLimit.middleware';
 
 const router = Router();
 
-// Validation schemas
+// ── Validation schemas ───────────────────────────────────────────────────────
+
 const leaveRequestSchema = z.object({
-  leaveTypeId: z.string().min(1),
-  startDate: z.string().datetime(),
-  endDate: z.string().datetime(),
-  reason: z.string().max(1000).optional()
+    leaveTypeId: z.string().min(1),
+    startDate: z.string().datetime(),
+    endDate: z.string().datetime(),
+    reason: z.string().max(1000).optional()
 });
 
 const performanceSchema = z.object({
-  userId: z.string().min(1),
-  periodStart: z.string().min(1),
-  periodEnd: z.string().min(1),
-  technicalRating: z.number().min(1).max(5),
-  behavioralRating: z.number().min(1).max(5),
-  collaborationRating: z.number().min(1).max(5),
-  overallRating: z.number().min(1).max(5),
-  comments: z.string().max(1000).optional(),
-  goals: z.array(z.any()).optional(),
-  status: z.string().optional()
+    userId: z.string().min(1),
+    periodStart: z.string().min(1),
+    periodEnd: z.string().min(1),
+    technicalRating: z.number().min(1).max(5),
+    behavioralRating: z.number().min(1).max(5),
+    collaborationRating: z.number().min(1).max(5),
+    overallRating: z.number().min(1).max(5),
+    comments: z.string().max(1000).optional(),
+    goals: z.array(z.any()).optional(),
+    status: z.string().optional()
 });
 
-// ============================================
-// STAFF DIRECTORY & MANAGEMENT
-// ============================================
+const allowanceSchema = z.object({
+    id: z.string().optional(),
+    type: z.enum(['HOUSE', 'TRAVEL', 'MEDICAL', 'COMMUTER', 'OTHER']),
+    label: z.string().min(1).max(100),
+    amount: z.number().min(0),
+    isActive: z.boolean().optional()
+});
 
-/**
- * @route   POST /api/hr/attendance/clock-in
- * @desc    Record authenticated staff clock-in and link monthly payroll draft
- * @access  Authenticated
- */
-router.post(
-  '/attendance/clock-in',
-  authenticate,
-  rateLimit({ windowMs: 60_000, maxRequests: 60 }),
-  auditLog('STAFF_CLOCK_IN'),
-  hrController.clockIn
-);
+const deductionSchema = z.object({
+    id: z.string().optional(),
+    type: z.enum(['LOAN', 'SACCO', 'ADVANCE', 'UNIFORM', 'OTHER']),
+    label: z.string().min(1).max(100),
+    amount: z.number().min(0),
+    isRecurring: z.boolean().optional(),
+    totalMonths: z.number().int().min(0).optional(),
+    isActive: z.boolean().optional()
+});
 
-/**
- * @route   POST /api/hr/attendance/clock-out
- * @desc    Record authenticated staff clock-out and accumulate payroll worked time
- * @access  Authenticated
- */
-router.post(
-  '/attendance/clock-out',
-  authenticate,
-  rateLimit({ windowMs: 60_000, maxRequests: 60 }),
-  auditLog('STAFF_CLOCK_OUT'),
-  hrController.clockOut
-);
+// ── Dashboard ────────────────────────────────────────────────────────────────
 
-/**
- * @route   GET /api/hr/attendance/today
- * @desc    Get authenticated staff clock-in record for today
- * @access  Authenticated
- */
 router.get(
-  '/attendance/today',
-  authenticate,
-  rateLimit({ windowMs: 60_000, maxRequests: 120 }),
-  hrController.getTodayClockIn
+    '/dashboard',
+    authenticate,
+    authorize('ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER', 'ACCOUNTANT'),
+    rateLimit({ windowMs: 60_000, maxRequests: 120 }),
+    hrController.getDashboardStats
 );
 
-/**
- * @route   GET /api/hr/staff
- * @desc    Get staff directory
- * @access  Authenticated
- */
+// ── Attendance ───────────────────────────────────────────────────────────────
+
+router.post(
+    '/attendance/clock-in',
+    authenticate,
+    rateLimit({ windowMs: 60_000, maxRequests: 60 }),
+    auditLog('STAFF_CLOCK_IN'),
+    hrController.clockIn
+);
+
+router.post(
+    '/attendance/clock-out',
+    authenticate,
+    rateLimit({ windowMs: 60_000, maxRequests: 60 }),
+    auditLog('STAFF_CLOCK_OUT'),
+    hrController.clockOut
+);
+
 router.get(
-  '/staff',
-  authenticate,
-  rateLimit({ windowMs: 60_000, maxRequests: 100 }),
-  hrController.getStaffDirectory
+    '/attendance/today',
+    authenticate,
+    rateLimit({ windowMs: 60_000, maxRequests: 120 }),
+    hrController.getTodayClockIn
 );
 
-/**
- * @route   PUT /api/hr/staff/:userId
- * @desc    Update staff HR information
- * @access  ADMIN, SUPER_ADMIN, HEAD_TEACHER
- */
+// ── Staff Directory ──────────────────────────────────────────────────────────
+
+router.get(
+    '/staff',
+    authenticate,
+    rateLimit({ windowMs: 60_000, maxRequests: 100 }),
+    hrController.getStaffDirectory
+);
+
 router.put(
-  '/staff/:userId',
-  authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER'),
-  rateLimit({ windowMs: 60_000, maxRequests: 30 }),
-  auditLog('UPDATE_STAFF_HR'),
-  hrController.updateStaffHR
+    '/staff/:userId',
+    authenticate,
+    authorize('ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER'),
+    rateLimit({ windowMs: 60_000, maxRequests: 30 }),
+    auditLog('UPDATE_STAFF_HR'),
+    hrController.updateStaffHR
 );
 
-// ============================================
-// LEAVE MANAGEMENT
-// ============================================
+// ── Allowances ───────────────────────────────────────────────────────────────
 
-/**
- * @route   GET /api/hr/leave/types
- * @desc    Get leave types
- * @access  Authenticated
- */
 router.get(
-  '/leave/types',
-  authenticate,
-  rateLimit({ windowMs: 60_000, maxRequests: 100 }),
-  hrController.getLeaveTypes
+    '/allowances/:userId',
+    authenticate,
+    authorize('ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER', 'ACCOUNTANT'),
+    rateLimit({ windowMs: 60_000, maxRequests: 100 }),
+    hrController.getStaffAllowances
 );
 
-/**
- * @route   POST /api/hr/leave/apply
- * @desc    Submit leave request
- * @access  Authenticated
- */
 router.post(
-  '/leave/apply',
-  authenticate,
-  rateLimit({ windowMs: 60_000, maxRequests: 30 }),
-  validate(leaveRequestSchema),
-  auditLog('SUBMIT_LEAVE_REQUEST'),
-  hrController.submitLeave
+    '/allowances/:userId',
+    authenticate,
+    authorize('ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER', 'ACCOUNTANT'),
+    rateLimit({ windowMs: 60_000, maxRequests: 30 }),
+    validate(allowanceSchema),
+    auditLog('UPSERT_STAFF_ALLOWANCE'),
+    hrController.upsertAllowance
 );
 
-/**
- * @route   GET /api/hr/leave/requests
- * @desc    Get leave requests
- * @access  Authenticated
- */
+router.delete(
+    '/allowances/:userId/:id',
+    authenticate,
+    authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+    rateLimit({ windowMs: 60_000, maxRequests: 20 }),
+    auditLog('DELETE_STAFF_ALLOWANCE'),
+    hrController.deleteAllowance
+);
+
+// ── Custom Deductions ────────────────────────────────────────────────────────
+
 router.get(
-  '/leave/requests',
-  authenticate,
-  rateLimit({ windowMs: 60_000, maxRequests: 100 }),
-  hrController.getLeaveRequests
+    '/deductions/:userId',
+    authenticate,
+    authorize('ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER', 'ACCOUNTANT'),
+    rateLimit({ windowMs: 60_000, maxRequests: 100 }),
+    hrController.getStaffDeductions
 );
 
-/**
- * @route   PUT /api/hr/leave/approve/:requestId
- * @desc    Approve leave request
- * @access  ADMIN, SUPER_ADMIN, HEAD_TEACHER
- */
+router.post(
+    '/deductions/:userId',
+    authenticate,
+    authorize('ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER', 'ACCOUNTANT'),
+    rateLimit({ windowMs: 60_000, maxRequests: 30 }),
+    validate(deductionSchema),
+    auditLog('UPSERT_STAFF_DEDUCTION'),
+    hrController.upsertDeduction
+);
+
+router.delete(
+    '/deductions/:userId/:id',
+    authenticate,
+    authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+    rateLimit({ windowMs: 60_000, maxRequests: 20 }),
+    auditLog('DELETE_STAFF_DEDUCTION'),
+    hrController.deleteDeduction
+);
+
+// ── Leave ────────────────────────────────────────────────────────────────────
+
+router.get(
+    '/leave/types',
+    authenticate,
+    rateLimit({ windowMs: 60_000, maxRequests: 100 }),
+    hrController.getLeaveTypes
+);
+
+router.post(
+    '/leave/apply',
+    authenticate,
+    rateLimit({ windowMs: 60_000, maxRequests: 30 }),
+    validate(leaveRequestSchema),
+    auditLog('SUBMIT_LEAVE_REQUEST'),
+    hrController.submitLeave
+);
+
+router.get(
+    '/leave/requests',
+    authenticate,
+    rateLimit({ windowMs: 60_000, maxRequests: 100 }),
+    hrController.getLeaveRequests
+);
+
 router.put(
-  '/leave/approve/:requestId',
-  authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER'),
-  rateLimit({ windowMs: 60_000, maxRequests: 30 }),
-  auditLog('APPROVE_LEAVE'),
-  hrController.approveLeave
+    '/leave/approve/:requestId',
+    authenticate,
+    authorize('ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER'),
+    rateLimit({ windowMs: 60_000, maxRequests: 30 }),
+    auditLog('APPROVE_LEAVE'),
+    hrController.approveLeave
 );
 
-// ============================================
-// PAYROLL MANAGEMENT
-// ============================================
+// ── Payroll ──────────────────────────────────────────────────────────────────
+
+router.post(
+    '/payroll/generate',
+    authenticate,
+    authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+    rateLimit({ windowMs: 60_000, maxRequests: 10 }),
+    auditLog('GENERATE_PAYROLL'),
+    hrController.generatePayroll
+);
+
+router.get(
+    '/payroll',
+    authenticate,
+    authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+    rateLimit({ windowMs: 60_000, maxRequests: 100 }),
+    hrController.getPayroll
+);
+
+router.put(
+    '/payroll/confirm/:id',
+    authenticate,
+    authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+    rateLimit({ windowMs: 60_000, maxRequests: 20 }),
+    auditLog('CONFIRM_PAYROLL'),
+    hrController.confirmPayroll
+);
 
 /**
- * @route   POST /api/hr/payroll/generate
- * @desc    Generate payroll
+ * @route   POST /api/hr/payroll/bulk-confirm
+ * @desc    Confirm all DRAFT payroll records for a given month/year
  * @access  ADMIN, SUPER_ADMIN, ACCOUNTANT
  */
 router.post(
-  '/payroll/generate',
-  authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
-  rateLimit({ windowMs: 60_000, maxRequests: 10 }),
-  auditLog('GENERATE_PAYROLL'),
-  hrController.generatePayroll
+    '/payroll/bulk-confirm',
+    authenticate,
+    authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+    rateLimit({ windowMs: 60_000, maxRequests: 5 }),
+    auditLog('BULK_CONFIRM_PAYROLL'),
+    hrController.bulkConfirmPayroll
 );
 
 /**
- * @route   GET /api/hr/payroll
- * @desc    Get payroll information
- * @access  ADMIN, SUPER_ADMIN, ACCOUNTANT
- */
-router.get(
-  '/payroll',
-  authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
-  rateLimit({ windowMs: 60_000, maxRequests: 100 }),
-  hrController.getPayroll
-);
-
-/**
- * @route   PUT /api/hr/payroll/confirm/:id
- * @desc    Confirm payroll
+ * @route   PUT /api/hr/payroll/pay/:id
+ * @desc    Mark a single payroll record as PAID
  * @access  ADMIN, SUPER_ADMIN, ACCOUNTANT
  */
 router.put(
-  '/payroll/confirm/:id',
-  authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
-  rateLimit({ windowMs: 60_000, maxRequests: 20 }),
-  auditLog('CONFIRM_PAYROLL'),
-  hrController.confirmPayroll
-);
-
-// ============================================
-// PERFORMANCE MANAGEMENT
-// ============================================
-
-/**
- * @route   GET /api/hr/performance
- * @desc    Get performance evaluations
- * @access  ADMIN, SUPER_ADMIN, HEAD_TEACHER, HEAD_OF_CURRICULUM
- */
-router.get(
-  '/performance',
-  authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM'),
-  rateLimit({ windowMs: 60_000, maxRequests: 100 }),
-  hrController.getPerformance
+    '/payroll/pay/:id',
+    authenticate,
+    authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+    rateLimit({ windowMs: 60_000, maxRequests: 20 }),
+    auditLog('MARK_PAYROLL_PAID'),
+    hrController.markPayrollPaid
 );
 
 /**
- * @route   POST /api/hr/performance
- * @desc    Create performance evaluation
- * @access  ADMIN, SUPER_ADMIN, HEAD_TEACHER
+ * @route   POST /api/hr/payroll/bulk-pay
+ * @desc    Mark all GENERATED records for a month/year as PAID
+ * @access  ADMIN, SUPER_ADMIN, ACCOUNTANT
  */
 router.post(
-  '/performance',
-  authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER'),
-  rateLimit({ windowMs: 60_000, maxRequests: 30 }),
-  validate(performanceSchema),
-  auditLog('CREATE_PERFORMANCE_EVALUATION'),
-  hrController.createPerformance
+    '/payroll/bulk-pay',
+    authenticate,
+    authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+    rateLimit({ windowMs: 60_000, maxRequests: 5 }),
+    auditLog('BULK_MARK_PAYROLL_PAID'),
+    hrController.bulkMarkPaid
 );
 
-/**
- * @route   PUT /api/hr/performance/:id
- * @desc    Update performance evaluation
- * @access  ADMIN, SUPER_ADMIN, HEAD_TEACHER
- */
+// ── Performance ──────────────────────────────────────────────────────────────
+
+router.get(
+    '/performance',
+    authenticate,
+    authorize('ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM'),
+    rateLimit({ windowMs: 60_000, maxRequests: 100 }),
+    hrController.getPerformance
+);
+
+router.post(
+    '/performance',
+    authenticate,
+    authorize('ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER'),
+    rateLimit({ windowMs: 60_000, maxRequests: 30 }),
+    validate(performanceSchema),
+    auditLog('CREATE_PERFORMANCE_EVALUATION'),
+    hrController.createPerformance
+);
+
 router.put(
-  '/performance/:id',
-  authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER'),
-  rateLimit({ windowMs: 60_000, maxRequests: 30 }),
-  validate(performanceSchema),
-  auditLog('UPDATE_PERFORMANCE_EVALUATION'),
-  hrController.updatePerformance
+    '/performance/:id',
+    authenticate,
+    authorize('ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER'),
+    rateLimit({ windowMs: 60_000, maxRequests: 30 }),
+    validate(performanceSchema),
+    auditLog('UPDATE_PERFORMANCE_EVALUATION'),
+    hrController.updatePerformance
 );
 
 export default router;

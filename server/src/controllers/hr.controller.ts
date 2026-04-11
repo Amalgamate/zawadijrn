@@ -5,6 +5,9 @@ import { ApiError } from '../utils/error.util';
 import { SmsService } from '../services/sms.service';
 
 export class HRController {
+
+    // ─── Dashboard ────────────────────────────────────────────────────────────
+
     async getDashboardStats(req: AuthRequest, res: Response) {
         try {
             const month = req.query.month ? Number(req.query.month) : new Date().getMonth() + 1;
@@ -12,16 +15,17 @@ export class HRController {
             const stats = await hrService.getDashboardStats(month, year);
             res.json({ success: true, data: stats });
         } catch (error: any) {
-            console.error('[HR Controller] Error fetching dashboard stats:', error);
+            console.error('[HR] getDashboardStats:', error);
             res.status(error.statusCode || 500).json({ success: false, message: error.message });
         }
     }
+
+    // ─── Attendance ───────────────────────────────────────────────────────────
 
     async clockIn(req: AuthRequest, res: Response) {
         try {
             const userId = req.user?.userId;
             if (!userId) throw new ApiError(401, 'Unauthorized');
-
             const result = await hrService.clockInStaff(userId, req.body || {});
             res.status(201).json({ success: true, message: 'Clock-in recorded', data: result });
         } catch (error: any) {
@@ -33,7 +37,6 @@ export class HRController {
         try {
             const userId = req.user?.userId;
             if (!userId) throw new ApiError(401, 'Unauthorized');
-
             const data = await hrService.getTodayClockIn(userId);
             res.json({ success: true, data });
         } catch (error: any) {
@@ -45,7 +48,6 @@ export class HRController {
         try {
             const userId = req.user?.userId;
             if (!userId) throw new ApiError(401, 'Unauthorized');
-
             const result = await hrService.clockOutStaff(userId, req.body || {});
             res.status(200).json({ success: true, message: 'Clock-out recorded', data: result });
         } catch (error: any) {
@@ -56,15 +58,14 @@ export class HRController {
         }
     }
 
-    /**
-     * Staff Directory
-     */
+    // ─── Staff Directory ──────────────────────────────────────────────────────
+
     async getStaffDirectory(req: AuthRequest, res: Response) {
         try {
             const staff = await hrService.getStaffDirectory();
             res.json({ success: true, data: staff });
         } catch (error: any) {
-            console.error('[HR Controller] Error fetching staff:', error);
+            console.error('[HR] getStaffDirectory:', error);
             res.status(error.statusCode || 500).json({ success: false, message: error.message });
         }
     }
@@ -72,19 +73,80 @@ export class HRController {
     async updateStaffHR(req: AuthRequest, res: Response) {
         try {
             const { userId } = req.params;
-            const details = req.body;
-
-            const updated = await hrService.updateStaffHRDetails(userId, details);
+            const updated = await hrService.updateStaffHRDetails(userId, req.body);
             res.json({ success: true, message: 'Staff HR details updated', data: updated });
         } catch (error: any) {
-            console.error('[HR Controller] Error updating staff HR:', error);
+            console.error('[HR] updateStaffHR:', error);
             res.status(error.statusCode || 500).json({ success: false, message: error.message });
         }
     }
 
-    /**
-     * Leave Management
-     */
+    // ─── Allowances ───────────────────────────────────────────────────────────
+
+    async getStaffAllowances(req: AuthRequest, res: Response) {
+        try {
+            const { userId } = req.params;
+            const data = await hrService.getStaffAllowances(userId);
+            res.json({ success: true, data });
+        } catch (error: any) {
+            res.status(500).json({ success: false, message: error.message });
+        }
+    }
+
+    async upsertAllowance(req: AuthRequest, res: Response) {
+        try {
+            const { userId } = req.params;
+            const data = await hrService.upsertAllowance(userId, req.body);
+            res.json({ success: true, message: 'Allowance saved', data });
+        } catch (error: any) {
+            res.status(500).json({ success: false, message: error.message });
+        }
+    }
+
+    async deleteAllowance(req: AuthRequest, res: Response) {
+        try {
+            const { id } = req.params;
+            await hrService.deleteAllowance(id);
+            res.json({ success: true, message: 'Allowance deleted' });
+        } catch (error: any) {
+            res.status(500).json({ success: false, message: error.message });
+        }
+    }
+
+    // ─── Custom Deductions ────────────────────────────────────────────────────
+
+    async getStaffDeductions(req: AuthRequest, res: Response) {
+        try {
+            const { userId } = req.params;
+            const data = await hrService.getStaffDeductions(userId);
+            res.json({ success: true, data });
+        } catch (error: any) {
+            res.status(500).json({ success: false, message: error.message });
+        }
+    }
+
+    async upsertDeduction(req: AuthRequest, res: Response) {
+        try {
+            const { userId } = req.params;
+            const data = await hrService.upsertDeduction(userId, req.body);
+            res.json({ success: true, message: 'Deduction saved', data });
+        } catch (error: any) {
+            res.status(500).json({ success: false, message: error.message });
+        }
+    }
+
+    async deleteDeduction(req: AuthRequest, res: Response) {
+        try {
+            const { id } = req.params;
+            await hrService.deleteDeduction(id);
+            res.json({ success: true, message: 'Deduction deleted' });
+        } catch (error: any) {
+            res.status(500).json({ success: false, message: error.message });
+        }
+    }
+
+    // ─── Leave ────────────────────────────────────────────────────────────────
+
     async getLeaveTypes(req: AuthRequest, res: Response) {
         try {
             const types = await hrService.getLeaveTypes();
@@ -97,10 +159,8 @@ export class HRController {
     async submitLeave(req: AuthRequest, res: Response) {
         try {
             const userId = req.user?.userId;
-            const data = req.body;
             if (!userId) throw new ApiError(401, 'Unauthorized');
-
-            const request = await hrService.submitLeaveRequest(userId, data);
+            const request = await hrService.submitLeaveRequest(userId, req.body);
             res.status(201).json({ success: true, message: 'Leave request submitted', data: request });
         } catch (error: any) {
             res.status(error.statusCode || 500).json({ success: false, message: error.message });
@@ -121,9 +181,7 @@ export class HRController {
             const { requestId } = req.params;
             const { approved, rejectionReason } = req.body;
             const approvedBy = req.user?.userId;
-
             if (!approvedBy) throw new ApiError(401, 'Unauthorized');
-
             const updated = await hrService.approveLeaveRequest(requestId, approvedBy, approved, rejectionReason);
             res.json({ success: true, message: `Leave ${approved ? 'approved' : 'rejected'}`, data: updated });
         } catch (error: any) {
@@ -131,16 +189,13 @@ export class HRController {
         }
     }
 
-    /**
-     * Payroll Management
-     */
+    // ─── Payroll ──────────────────────────────────────────────────────────────
+
     async generatePayroll(req: AuthRequest, res: Response) {
         try {
             const { month, year } = req.body;
             const generatedBy = req.user?.userId;
-
             if (!generatedBy) throw new ApiError(401, 'Unauthorized');
-
             const result = await hrService.generateMonthlyPayroll(Number(month), Number(year), generatedBy);
             res.json({ success: true, message: 'Payroll generation complete', data: result });
         } catch (error: any) {
@@ -168,9 +223,47 @@ export class HRController {
         }
     }
 
-    /**
-     * Performance Management
-     */
+    async bulkConfirmPayroll(req: AuthRequest, res: Response) {
+        try {
+            const { month, year } = req.body;
+            const result = await hrService.bulkConfirmPayroll(Number(month), Number(year));
+            res.json({
+                success: true,
+                message: `Bulk confirmed ${result.confirmed} of ${result.total} records`,
+                data: result
+            });
+        } catch (error: any) {
+            res.status(error.statusCode || 500).json({ success: false, message: error.message });
+        }
+    }
+
+    async markPayrollPaid(req: AuthRequest, res: Response) {
+        try {
+            const { id } = req.params;
+            const { paymentReference } = req.body;
+            const updated = await hrService.markPayrollPaid(id, paymentReference);
+            res.json({ success: true, message: 'Payroll record marked as paid', data: updated });
+        } catch (error: any) {
+            res.status(error.statusCode || 500).json({ success: false, message: error.message });
+        }
+    }
+
+    async bulkMarkPaid(req: AuthRequest, res: Response) {
+        try {
+            const { month, year, paymentReference } = req.body;
+            const result = await hrService.bulkMarkPaid(Number(month), Number(year), paymentReference);
+            res.json({
+                success: true,
+                message: `Marked ${result.paid} records as PAID`,
+                data: result
+            });
+        } catch (error: any) {
+            res.status(error.statusCode || 500).json({ success: false, message: error.message });
+        }
+    }
+
+    // ─── Performance ──────────────────────────────────────────────────────────
+
     async getPerformance(req: AuthRequest, res: Response) {
         try {
             const { userId } = req.query;
@@ -184,15 +277,13 @@ export class HRController {
     async createPerformance(req: AuthRequest, res: Response) {
         try {
             const reviewerId = req.user?.userId;
-            const data = req.body;
             if (!reviewerId) throw new ApiError(401, 'Unauthorized');
-
-            const review = await hrService.createPerformanceReview({ ...data, reviewerId });
+            const review = await hrService.createPerformanceReview({ ...req.body, reviewerId });
             res.status(201).json({ success: true, message: 'Performance review created', data: review });
 
             if (review.user?.phone) {
                 const reviewerName = `${review.reviewer?.firstName || 'HR'} ${review.reviewer?.lastName || ''}`.trim();
-                const message = `Hello ${review.user.firstName}, your performance review for the period ${new Date(data.periodStart).toLocaleDateString()} - ${new Date(data.periodEnd).toLocaleDateString()} has been added by ${reviewerName}. Please check your HR portal.`;
+                const message = `Hello ${review.user.firstName}, your performance review for the period ${new Date(req.body.periodStart).toLocaleDateString()} - ${new Date(req.body.periodEnd).toLocaleDateString()} has been added by ${reviewerName}. Please check your HR portal.`;
                 SmsService.sendSms(review.user.phone, message).catch(console.error);
             }
         } catch (error: any) {
@@ -203,9 +294,7 @@ export class HRController {
     async updatePerformance(req: AuthRequest, res: Response) {
         try {
             const { id } = req.params;
-            const data = req.body;
-
-            const updated = await hrService.updatePerformanceReview(id, data);
+            const updated = await hrService.updatePerformanceReview(id, req.body);
             res.json({ success: true, message: 'Performance review updated', data: updated });
 
             if (updated.user?.phone) {

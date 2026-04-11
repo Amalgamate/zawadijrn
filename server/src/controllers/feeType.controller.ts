@@ -174,29 +174,45 @@ export class FeeTypeController {
 
         // Default fee amounts per grade level based on requested structure
         const getFeeAmounts = (grade: string) => {
-            let tuition = 0;
-            if (grade === 'PLAYGROUP') tuition = 7000;
-            else if (grade === 'PP1') tuition = 8000;
-            else if (grade === 'PP2') tuition = 8500;
-            else if (['GRADE_1', 'GRADE_2'].includes(grade)) tuition = 10000;
-            else if (grade === 'GRADE_3') tuition = 10500;
-            else if (['GRADE_4', 'GRADE_5'].includes(grade)) tuition = 11000;
-            else if (grade === 'GRADE_6') tuition = 12000;
-            else if (grade === 'GRADE_7') tuition = 17500;
-            else if (['GRADE_8', 'GRADE_9'].includes(grade)) tuition = 18500;
+            let total = 0;
+            if (grade === 'PLAYGROUP') total = 7000;
+            else if (grade === 'PP1') total = 8000;
+            else if (grade === 'PP2') total = 8500;
+            else if (grade === 'GRADE_1' || grade === 'GRADE_2') total = 10000;
+            else if (grade === 'GRADE_3') total = 10500;
+            else if (grade === 'GRADE_4' || grade === 'GRADE_5') total = 11000;
+            else if (grade === 'GRADE_6') total = 12000;
+            else if (grade === 'GRADE_7') total = 17500;
+            else if (grade === 'GRADE_8') total = 18500;
+            else if (grade === 'GRADE_9') total = 18500;
+
+            // Apply the requested +500 increase
+            const adjustedTotal = total + 500;
+
+            // Distribute fees across categories
+            // We'll allocate 500 each to the primary extras
+            const EXAM_FEE = 500;
+            const LIBRARY_FEE = 500;
+            const ACTIVITY_FEE = 500;
+            const SPORTS_FEE = 500;
+            const EXTRAS_TOTAL = EXAM_FEE + LIBRARY_FEE + ACTIVITY_FEE + SPORTS_FEE;
 
             return {
-                TUITION: tuition, ACTIVITY: 0, TRANSPORT: 0, MEALS: 0,
-                EXAM: 0, LIBRARY: 0, SPORTS: 0, TECHNOLOGY: 0, MISC: 0
+                TUITION: Math.max(0, adjustedTotal - EXTRAS_TOTAL),
+                EXAM: EXAM_FEE,
+                LIBRARY: LIBRARY_FEE,
+                ACTIVITY: ACTIVITY_FEE,
+                SPORTS: SPORTS_FEE,
+                TECHNOLOGY: 0,
+                TRANSPORT: 4500,
+                MEALS: 0,
+                MISC: 0
             };
         };
 
         try {
-            // Resolve academic year: use body param if provided, otherwise current year
-            const bodyYear = req.body?.academicYear;
-            const targetYear: number = (bodyYear && Number.isInteger(Number(bodyYear)) && Number(bodyYear) >= 2000)
-                ? Number(bodyYear)
-                : new Date().getFullYear();
+            // Target specific academic year (2026 for this migration)
+            const targetYear = req.body.academicYear ? parseInt(req.body.academicYear) : 2026;
 
             // Ensure the default fee types exist before seeding structures
             await FeeTypeController.ensureDefaultFeeTypes();
@@ -254,12 +270,15 @@ export class FeeTypeController {
                             const amount = amounts[feeType.code as keyof typeof amounts] || 0;
 
                             if (amount > 0) {
+                                // Transport is optional as per user request
+                                const isMandatory = (feeType.code !== 'TRANSPORT');
+
                                 await prisma.feeStructureItem.create({
                                     data: {
                                         feeStructureId: feeStructure.id,
                                         feeTypeId: feeType.id,
                                         amount: amount.toString(),
-                                        mandatory: true
+                                        mandatory: isMandatory
                                     }
                                 });
                             }
