@@ -506,7 +506,7 @@ async function generateInvoicesAndPayments(
             invoiceId:       invoice.id,
             amount:          Math.max(0, totalPaid),
             paymentMethod:   PaymentMethod.CASH,
-            paymentDate:     new Date('2026-04-08'),   // date of old-system export
+            paymentDate:     new Date(),   // No historical dates available - using today's date as requested
             referenceNumber: `MIGRATED-${row.admNo}`,
             notes: [
               'MIGRATED from old system.',
