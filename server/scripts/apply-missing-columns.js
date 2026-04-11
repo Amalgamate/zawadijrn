@@ -1,115 +1,59 @@
 #!/usr/bin/env node
-const { Pool } = require('pg');
 
 /**
- * Direct SQL migration script to add missing columns
- * This bypasses Prisma and applies SQL directly, ensuring columns are created
- * Used when prisma migrate deploy fails or takes too long
+ * Direct SQL migration script using Prisma
+ * Applies missing columns when prisma migrate deploy fails
  */
 
-const directUrl = process.env.DIRECT_URL;
+const path = require('path');
 
-if (!directUrl) {
-  console.error("❌ DIRECT_URL environment variable not set");
-  process.exit(1);
-}
+// Import Prisma Client directly
+const { PrismaClient } = require('@prisma/client');
 
-const pool = new Pool({ connectionString: directUrl });
+const prisma = new PrismaClient();
 
-const missingColumnsSql = `
--- Add branding columns to schools table
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'schools' AND column_name = 'primaryColor') THEN
-    ALTER TABLE "schools" ADD COLUMN "primaryColor" TEXT;
-    RAISE NOTICE 'Added schools.primaryColor';
-  END IF;
-END $$;
-
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'schools' AND column_name = 'secondaryColor') THEN
-    ALTER TABLE "schools" ADD COLUMN "secondaryColor" TEXT;
-    RAISE NOTICE 'Added schools.secondaryColor';
-  END IF;
-END $$;
-
--- Add missing columns to users table (HR/payroll related fields)
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'shifNumber') THEN
-    ALTER TABLE "users" ADD COLUMN "shifNumber" TEXT;
-    RAISE NOTICE 'Added users.shifNumber';
-  END IF;
-END $$;
-
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'housingLevyExempt') THEN
-    ALTER TABLE "users" ADD COLUMN "housingLevyExempt" BOOLEAN DEFAULT false;
-    RAISE NOTICE 'Added users.housingLevyExempt';
-  END IF;
-END $$;
-
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'idCardPhoto') THEN
-    ALTER TABLE "users" ADD COLUMN "idCardPhoto" TEXT;
-    RAISE NOTICE 'Added users.idCardPhoto';
-  END IF;
-END $$;
-
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'idCardIssued') THEN
-    ALTER TABLE "users" ADD COLUMN "idCardIssued" TIMESTAMP;
-    RAISE NOTICE 'Added users.idCardIssued';
-  END IF;
-END $$;
-
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'idCardExpiry') THEN
-    ALTER TABLE "users" ADD COLUMN "idCardExpiry" TIMESTAMP;
-    RAISE NOTICE 'Added users.idCardExpiry';
-  END IF;
-END $$;
-
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'bankAccountName') THEN
-    ALTER TABLE "users" ADD COLUMN "bankAccountName" TEXT;
-    RAISE NOTICE 'Added users.bankAccountName';
-  END IF;
-END $$;
-
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'basicSalary') THEN
-    ALTER TABLE "users" ADD COLUMN "basicSalary" DECIMAL(10,2);
-    RAISE NOTICE 'Added users.basicSalary';
-  END IF;
-END $$;
-
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'subject') THEN
-    ALTER TABLE "users" ADD COLUMN "subject" TEXT;
-    RAISE NOTICE 'Added users.subject';
-  END IF;
-END $$;
-
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'gender') THEN
-    ALTER TABLE "users" ADD COLUMN "gender" TEXT;
-    RAISE NOTICE 'Added users.gender';
-  END IF;
-END $$;
-`;
+const sqlStatements = [
+  // Add branding columns to schools table
+  `ALTER TABLE "schools" ADD COLUMN IF NOT EXISTS "primaryColor" TEXT;`,
+  `ALTER TABLE "schools" ADD COLUMN IF NOT EXISTS "secondaryColor" TEXT;`,
+  
+  // Add missing columns to users table (HR/payroll related fields)
+  `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "shifNumber" TEXT;`,
+  `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "housingLevyExempt" BOOLEAN DEFAULT false;`,
+  `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "idCardPhoto" TEXT;`,
+  `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "idCardIssued" TIMESTAMP;`,
+  `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "idCardExpiry" TIMESTAMP;`,
+  `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "bankAccountName" TEXT;`,
+  `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "basicSalary" DECIMAL(10,2);`,
+  `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "subject" TEXT;`,
+  `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "gender" TEXT;`,
+];
 
 async function applyMissingColumns() {
-  const client = await pool.connect();
   try {
-    console.log("📝 Applying missing columns migration...");
-    const result = await client.query(missingColumnsSql);
-    console.log("✅ All missing columns have been added (or already existed)");
+    console.log("📝 Applying missing columns via Prisma...");
+    
+    for (const sql of sqlStatements) {
+      try {
+        await prisma.$executeRawUnsafe(sql);
+        console.log(`✅ ${sql.substring(0, 60).trim()}...`);
+      } catch (error) {
+        // Column might already exist, that's OK
+        if (error.toString().includes('already exists')) {
+          console.log(`ℹ️ ${sql.substring(0, 60).trim()}... (already exists)`);
+        } else {
+          throw error;
+        }
+      }
+    }
+    
+    console.log("✅ All missing columns have been applied successfully");
     return true;
   } catch (error) {
     console.error("❌ Error applying columns:", error.message);
     return false;
   } finally {
-    client.release();
-    await pool.end();
+    await prisma.$disconnect();
   }
 }
 
@@ -121,3 +65,4 @@ applyMissingColumns()
     console.error("Fatal error:", error);
     process.exit(1);
   });
+
