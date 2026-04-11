@@ -19,7 +19,8 @@ export const getPublicBranding = async (req: Request, res: Response) => {
         logoUrl: true,
         faviconUrl: true,
         brandColor: true,
-        primaryColor: true,
+        // primaryColor removed: column doesn't exist in production database
+        // Using brandColor instead—frontend has fallback logic
         secondaryColor: true,
         accentColor1: true,
         accentColor2: true,
