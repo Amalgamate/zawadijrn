@@ -11,10 +11,6 @@ export class AccountingService {
         { code: '2000', name: 'Accounts Payable', type: AccountType.LIABILITY_PAYABLE },
         { code: '2100', name: 'Tuition Deposits', type: AccountType.LIABILITY_CURRENT },
         { code: '2110', name: 'Salaries Payable', type: AccountType.LIABILITY_CURRENT },
-        { code: '2120', name: 'PAYE Payable', type: AccountType.LIABILITY_CURRENT },
-        { code: '2130', name: 'NSSF Payable', type: AccountType.LIABILITY_CURRENT },
-        { code: '2140', name: 'SHIF Payable', type: AccountType.LIABILITY_CURRENT },
-        { code: '2150', name: 'Housing Levy Payable', type: AccountType.LIABILITY_CURRENT },
         { code: '3000', name: 'Retained Earnings', type: AccountType.EQUITY },
         { code: '4000', name: 'Tuition Fees Income', type: AccountType.REVENUE },
         { code: '4100', name: 'Transport Fees Income', type: AccountType.REVENUE },
@@ -321,57 +317,33 @@ export class AccountingService {
      * Cr: Salaries Payable
      */
     async postPayrollToLedger(payroll: any) {
-        const { netSalary, basicSalary, deductions, payrollNumber, month, year } = payroll;
-        const tax = (deductions as any) || {};
+        const { netSalary, payrollNumber, month, year } = payroll;
 
         let expenseAccount = await this.getAccountByCode('5000'); // Salaries Expense
-        let netPayableAccount = await this.getAccountByCode('2110'); // Salaries Payable
-        let payeAccount = await this.getAccountByCode('2120'); // PAYE
-        let nssfAccount = await this.getAccountByCode('2130'); // NSSF
-        let shifAccount = await this.getAccountByCode('2140'); // SHIF
-        let levyAccount = await this.getAccountByCode('2150'); // Housing Levy
+        let payableAccount = await this.getAccountByCode('2110'); // Salaries Payable
         let journal = await this.getJournalByCode('MISC');
 
-        if (!expenseAccount || !netPayableAccount || !journal) {
+        if (!expenseAccount || !payableAccount || !journal) {
+            console.warn(`[Accounting] Missing payroll setup. Initializing defaults and retrying.`);
             await this.ensureDefaultAccountingSetup();
             expenseAccount = await this.getAccountByCode('5000');
-            netPayableAccount = await this.getAccountByCode('2110');
-            payeAccount = await this.getAccountByCode('2120');
-            nssfAccount = await this.getAccountByCode('2130');
-            shifAccount = await this.getAccountByCode('2140');
-            levyAccount = await this.getAccountByCode('2150');
+            payableAccount = await this.getAccountByCode('2110');
             journal = await this.getJournalByCode('MISC');
         }
 
-        if (!expenseAccount || !netPayableAccount || !journal) return;
-
-        const journalItems = [
-            // DEBIT: Gross Salary as Expense
-            { accountId: expenseAccount.id, debit: Number(basicSalary), label: `Gross Salary: ${month}/${year}` },
-            
-            // CREDIT: Net Salary to employee
-            { accountId: netPayableAccount.id, credit: Number(netSalary), label: `Net Salary: ${month}/${year}` }
-        ];
-
-        // CREDIT: Statutory Deductions
-        if (Number(tax.paye) > 0 && payeAccount) {
-            journalItems.push({ accountId: payeAccount.id, credit: Number(tax.paye), label: `PAYE Deduction: ${month}/${year}` });
-        }
-        if (Number(tax.nssf) > 0 && nssfAccount) {
-            journalItems.push({ accountId: nssfAccount.id, credit: Number(tax.nssf), label: `NSSF Deduction: ${month}/${year}` });
-        }
-        if (Number(tax.shif) > 0 && shifAccount) {
-            journalItems.push({ accountId: shifAccount.id, credit: Number(tax.shif), label: `SHIF Deduction: ${month}/${year}` });
-        }
-        if (Number(tax.housingLevy) > 0 && levyAccount) {
-            journalItems.push({ accountId: levyAccount.id, credit: Number(tax.housingLevy), label: `Housing Levy: ${month}/${year}` });
+        if (!expenseAccount || !payableAccount || !journal) {
+            console.warn(`[Accounting] Still missing required payroll accounts/journal after initialization. Skipping auto-post.`);
+            return;
         }
 
         const entry = await this.createJournalEntry({
             journalId: journal.id,
             reference: payrollNumber || `PAY/${year}/${month}`,
             date: new Date(),
-            items: journalItems
+            items: [
+                { accountId: expenseAccount.id, debit: Number(netSalary), label: `Payroll Expense for ${month}/${year}` },
+                { accountId: payableAccount.id, credit: Number(netSalary), label: `Salaries Payable for ${month}/${year}` }
+            ]
         });
 
         return this.postJournalEntry(entry.id);
