@@ -1,6 +1,8 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { useNavigation } from '../hooks/useNavigation';
+import { useFeeActions } from '../../../contexts/FeeActionsContext';
+import { Plus, Upload, Trash2, FileSpreadsheet } from 'lucide-react';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 const flattenLeafItems = (items = []) =>
@@ -176,6 +178,10 @@ const GroupDropdown = ({ group, currentPage, onNavigate, color }) => {
 // ── main component ─────────────────────────────────────────────────────────────
 const HorizontalSubmenu = ({ currentPage, onNavigate }) => {
   const { navSections } = useNavigation();
+  const { feeActions } = useFeeActions();
+
+  // Show fee action links only while on the fee collection page
+  const showFeeActions = currentPage === 'fees-collection' && feeActions;
 
   const activeSection = useMemo(() => {
     const byPage = (navSections || []).find((section) => {
@@ -240,6 +246,67 @@ const HorizontalSubmenu = ({ currentPage, onNavigate }) => {
                 {idx < flatItems.length - 1 && <span className="h-4 w-px bg-gray-300" />}
               </React.Fragment>
             ))}
+
+        {/* ── Fee collection action links — right-aligned ─────────────── */}
+        {showFeeActions && (
+          <>
+            <span className="flex-1" />{/* pushes actions to the right */}
+            <span className="h-4 w-px bg-gray-200 mx-1" />
+
+            {/* Create Invoice */}
+            <button
+              type="button"
+              onClick={feeActions.onCreate}
+              className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-md text-blue-600 hover:bg-blue-50 transition-colors"
+              title="Create Invoice"
+            >
+              <Plus size={13} strokeWidth={2.5} />
+              New Invoice
+            </button>
+
+            <span className="h-4 w-px bg-gray-200" />
+
+            {/* Import Fees */}
+            <button
+              type="button"
+              onClick={feeActions.onImport}
+              className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-md text-emerald-600 hover:bg-emerald-50 transition-colors"
+              title="Import Fees"
+            >
+              <Upload size={13} strokeWidth={2.5} />
+              Import
+            </button>
+
+            <span className="h-4 w-px bg-gray-200" />
+
+            {/* Download Template */}
+            <button
+              type="button"
+              onClick={feeActions.onDownloadTemplate}
+              className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-md text-blue-600 hover:bg-blue-50 transition-colors"
+              title="Download Import Template"
+            >
+              <FileSpreadsheet size={13} strokeWidth={2.5} />
+              Template
+            </button>
+
+            {/* Reset — SUPER_ADMIN only */}
+            {feeActions.userRole === 'SUPER_ADMIN' && (
+              <>
+                <span className="h-4 w-px bg-gray-200" />
+                <button
+                  type="button"
+                  onClick={feeActions.onReset}
+                  className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-md text-red-500 hover:bg-red-50 transition-colors"
+                  title="Reset Invoices"
+                >
+                  <Trash2 size={13} strokeWidth={2.5} />
+                  Reset
+                </button>
+              </>
+            )}
+          </>
+        )}
       </div>
     </div>
   );

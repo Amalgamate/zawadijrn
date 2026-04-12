@@ -31,5 +31,21 @@ export const transportAPI = {
         return fetchWithAuth(`/transport/routes/${id}`, {
             method: 'DELETE'
         });
+    },
+
+    // Assignments & Passengers
+    getAssignments: async (routeId) => {
+        return fetchWithAuth(`/transport/assignments/${routeId}`);
+    },
+    createAssignment: async (data) => {
+        return fetchWithAuth('/transport/assignments', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    },
+    deleteAssignment: async (id) => {
+        return fetchWithAuth(`/transport/assignments/${id}`, {
+            method: 'DELETE'
+        });
     }
 };

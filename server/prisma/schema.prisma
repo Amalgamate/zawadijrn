@@ -66,6 +66,10 @@ model User {
   uploadedDocuments         Document[]
   createdEvents             Event[]                  @relation("EventCreator")
   recordedPayments          FeePayment[]             @relation("RecordedPayments")
+  feeComments               FeeComment[]             @relation("FeeCommentAuthor")
+  feePledges                FeePledge[]              @relation("FeePledgeCreator")
+  feeWaivers                FeeWaiver[]              @relation("FeeWaiverCreator")
+  approvedFeeWaivers        FeeWaiver[]              @relation("FeeWaiverApprover")
   createdFeeStructures      FeeStructure[]           @relation("CreatedFeeStructures")
   waivedFines               Fine[]                   @relation("FineWaivers")
   formativeAssessments      FormativeAssessment[]    @relation("TeacherFormativeAssessments")
@@ -919,6 +923,9 @@ model FeeInvoice {
   feeStructure     FeeStructure  @relation(fields: [feeStructureId], references: [id])
   learner          Learner       @relation("LearnerInvoices", fields: [learnerId], references: [id], onDelete: Cascade)
   payments         FeePayment[]
+  comments         FeeComment[]
+  pledges          FeePledge[]
+  waivers          FeeWaiver[]
 
   @@index([learnerId])
   @@index([term, academicYear])
@@ -2600,4 +2607,98 @@ enum EnrollmentStatus {
   INACTIVE
   COMPLETED
   DROPPED
+}
+
+enum CommentType {
+  NOTE
+  PLEDGE
+  CALL_LOG
+  REMINDER_SENT
+}
+
+enum PledgeStatus {
+  PENDING
+  DUE
+  FULFILLED
+  CANCELLED
+  BROKEN
+}
+
+enum WaiverStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model FeeComment {
+  id          String      @id @default(uuid())
+  invoiceId   String
+  type        CommentType @default(NOTE)
+  body        String
+  isInternal  Boolean     @default(true)
+  createdById String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  archived    Boolean     @default(false)
+
+  invoice   FeeInvoice @relation(fields: [invoiceId],   references: [id], onDelete: Cascade)
+  createdBy User       @relation("FeeCommentAuthor",    fields: [createdById], references: [id])
+  pledge    FeePledge?
+
+  @@index([invoiceId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("fee_comments")
+}
+
+model FeePledge {
+  id              String       @id @default(uuid())
+  invoiceId       String
+  commentId       String?      @unique
+  pledgedAmount   Decimal      @db.Decimal(10, 2)
+  pledgeDate      DateTime
+  status          PledgeStatus @default(PENDING)
+  fulfilledAt     DateTime?
+  cancelledAt     DateTime?
+  cancelReason    String?
+  reminderSentAt  DateTime?
+  reminderCount   Int          @default(0)
+  createdById     String
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  archived        Boolean      @default(false)
+
+  invoice   FeeInvoice  @relation(fields: [invoiceId],  references: [id], onDelete: Cascade)
+  comment   FeeComment? @relation(fields: [commentId],  references: [id])
+  createdBy User        @relation("FeePledgeCreator",   fields: [createdById], references: [id])
+
+  @@index([invoiceId])
+  @@index([pledgeDate])
+  @@index([status])
+  @@map("fee_pledges")
+}
+
+model FeeWaiver {
+  id              String        @id @default(uuid())
+  invoiceId       String
+  amountWaived    Decimal       @db.Decimal(10, 2)
+  reason          String
+  waiverCategory  String?       @default("OTHER")
+  status          WaiverStatus  @default(PENDING)
+  approvedById    String?
+  approvedAt      DateTime?
+  rejectionReason String?
+  createdById     String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  archived        Boolean       @default(false)
+
+  invoice    FeeInvoice @relation(fields: [invoiceId],    references: [id], onDelete: Cascade)
+  createdBy  User       @relation("FeeWaiverCreator",     fields: [createdById], references: [id])
+  approvedBy User?      @relation("FeeWaiverApprover",    fields: [approvedById], references: [id])
+
+  @@index([invoiceId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("fee_waivers")
 }

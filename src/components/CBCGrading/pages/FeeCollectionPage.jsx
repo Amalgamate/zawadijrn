@@ -5,8 +5,9 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Plus, Eye, Trash2, CheckCircle, AlertCircle, Clock, FileText, Download,
-  X, Loader2, MessageSquare, Phone, Send, Info, Calendar, User, ShieldCheck, Mail, Upload
+  Plus, Eye, CheckCircle, AlertCircle, Clock, FileText, Download,
+  X, Loader2, MessageSquare, Phone, Info, User, ShieldCheck, Mail, Upload,
+  RefreshCw, Trash2, Gift, ThumbsUp, ArrowUpDown, ArrowUp, ArrowDown
 } from 'lucide-react';
 import { generateDocument } from '../../../utils/simplePdfGenerator';
 import EmptyState from '../shared/EmptyState';
@@ -18,30 +19,43 @@ import api from '../../../services/api';
 import { toInputDate } from '../utils/dateHelpers';
 import SmartLearnerSearch from '../shared/SmartLearnerSearch';
 import FeeImportModal from '../shared/FeeImportModal';
+import FeeWaiverModal from '../shared/FeeWaiverModal';
+import { useFeeActions } from '../../../contexts/FeeActionsContext';
+import usePageNavigation from '../../../hooks/usePageNavigation';
+import { downloadFeeTemplate } from '../../../utils/feeTemplateGenerator';
 
-const FeeCollectionPage = ({ learnerId }) => {
+const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
+  const navigateTo = usePageNavigation();
   const [invoices, setInvoices] = useState([]);
+  const [statsInvoices, setStatsInvoices] = useState([]); // unfiltered — drives the metric cards
   const [selectedInvoice, setSelectedInvoice] = useState(null);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [showDetailModal, setShowDetailModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showWaiverModal, setShowWaiverModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetScope, setResetScope] = useState({ academicYear: new Date().getFullYear(), term: 'TERM_1' });
+  const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' });
+  const [downloadingId, setDownloadingId] = useState(null);
   const [selectedInvoiceIds, setSelectedInvoiceIds] = useState([]);
   const [loading, setLoading] = useState(false);
   const [whatsappStatus, setWhatsappStatus] = useState({ status: 'fetching', qrCode: null });
   const [allLearners, setAllLearners] = useState([]);
   const [searchLearnerId, setSearchLearnerId] = useState(learnerId || null);
+  const [gradeFilter, setGradeFilter] = useState(gradeParam || 'all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [termFilter, setTermFilter] = useState('all');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [transportFilter, setTransportFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const { showSuccess, showError, showToast, toastMessage, toastType, hideNotification } = useNotifications();
   const { user } = useAuth();
+  const { registerFeeActions, clearFeeActions } = useFeeActions();
 
-  // Payment form state
-  const [paymentData, setPaymentData] = useState({
-    amount: '',
-    paymentMethod: 'CASH',
-    referenceNumber: '',
-    notes: ''
-  });
+  // Sync grade filter if navigated here from the reports page
+  useEffect(() => {
+    if (gradeParam) setGradeFilter(gradeParam);
+  }, [gradeParam]);
 
   // Update learner search if prop changes
   useEffect(() => {
@@ -50,15 +64,26 @@ const FeeCollectionPage = ({ learnerId }) => {
     }
   }, [learnerId]);
 
+  // Fetch for the filtered table
   const fetchInvoices = React.useCallback(async () => {
     try {
       setLoading(true);
       const params = {
+        page: currentPage,
+        limit: 50,
         ...(statusFilter !== 'all' && { status: statusFilter.toUpperCase() }),
-        ...(transportFilter !== 'all' && { isTransport: transportFilter === 'transport' ? 'true' : 'false' })
+        ...(termFilter !== 'all' && { term: termFilter }),
+        ...(startDate && { startDate }),
+        ...(endDate && { endDate }),
+        ...(transportFilter !== 'all' && { isTransport: transportFilter === 'transport' ? 'true' : 'false' }),
+        ...(gradeFilter !== 'all' && { grade: gradeFilter }),
+        ...(searchLearnerId && { learnerId: searchLearnerId }),
+        sortBy: sortConfig.key,
+        sortOrder: sortConfig.direction
       };
       const response = await api.fees.getAllInvoices(params);
       setInvoices(response.data || []);
+      setTotalPages(response.pagination?.pages || 1);
     } catch (error) {
       showError('Failed to load invoices');
       console.error(error);
@@ -66,7 +91,17 @@ const FeeCollectionPage = ({ learnerId }) => {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, transportFilter, showError]);
+  }, [statusFilter, termFilter, startDate, endDate, transportFilter, gradeFilter, searchLearnerId, currentPage, sortConfig, showError]);
+
+  // Separate fetch — no filters — solely powers the metric cards
+  const fetchStatsInvoices = React.useCallback(async () => {
+    try {
+      const response = await api.fees.getAllInvoices({ limit: 'all' });
+      setStatsInvoices(response.data || []);
+    } catch (error) {
+      console.error('Failed to load stats invoices:', error);
+    }
+  }, []);
 
   const fetchLearners = React.useCallback(async () => {
     try {
@@ -79,45 +114,45 @@ const FeeCollectionPage = ({ learnerId }) => {
 
   useEffect(() => {
     fetchInvoices();
+    fetchStatsInvoices();
     fetchLearners();
-  }, [fetchInvoices, fetchLearners]);
+  }, [fetchInvoices, fetchStatsInvoices, fetchLearners]);
 
-  const handleRecordPayment = async () => {
-    if (!selectedInvoice || !paymentData.amount) {
-      showError('Please enter payment amount');
-      return;
-    }
+
+  const handleQuickApproveWaiver = async (e, invoice) => {
+    e.stopPropagation();
+    const pendingWaiver = invoice.waivers?.find(w => w.status === 'PENDING');
+    if(!pendingWaiver) return;
+
+    if(!window.confirm(`Quick Approve pending waiver of KES ${pendingWaiver.amountWaived}?`)) return;
 
     try {
-      await api.fees.recordPayment({
-        invoiceId: selectedInvoice.id,
-        amount: parseFloat(paymentData.amount),
-        paymentMethod: paymentData.paymentMethod,
-        referenceNumber: paymentData.referenceNumber || null,
-        notes: paymentData.notes || null
-      });
-
-      showSuccess('Payment recorded successfully!');
-      setShowPaymentModal(false);
-      setSelectedInvoice(null);
-      setPaymentData({ amount: '', paymentMethod: 'CASH', referenceNumber: '', notes: '' });
+      setLoading(true);
+      await api.fees.approveWaiver(pendingWaiver.id);
+      showSuccess('Waiver approved successfully');
       fetchInvoices();
-    } catch (error) {
-      showError(error.message || 'Failed to record payment');
+      fetchStatsInvoices();
+    } catch (err) {
+      showError('Failed to approve waiver');
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleDownloadPdf = async (invoice) => {
-    const isPaid = ['PAID', 'OVERPAID', 'WAIVED'].includes(invoice.status);
-    const docType = isPaid ? 'OFFICIAL RECEIPT' : 'FEE INVOICE';
-    const docRef = isPaid ? `RCT-${invoice.invoiceNumber}` : `INV-${invoice.invoiceNumber}`;
-    const filename = isPaid ? `Receipt_${invoice.invoiceNumber}.pdf` : `Invoice_${invoice.invoiceNumber}.pdf`;
+    setDownloadingId(invoice.id);
+    try {
+      const isPaid = ['PAID', 'OVERPAID', 'WAIVED'].includes(invoice.status);
+      const docType = isPaid ? 'OFFICIAL RECEIPT' : 'FEE INVOICE';
+      const docRef = isPaid ? `RCT-${invoice.invoiceNumber}` : `INV-${invoice.invoiceNumber}`;
+      const filename = isPaid ? `Receipt_${invoice.invoiceNumber}.pdf` : `Invoice_${invoice.invoiceNumber}.pdf`;
 
-    const rowItems = invoice.feeStructure?.items?.length
-      ? invoice.feeStructure.items
-      : (invoice.items || [{ name: 'School Fees', amount: invoice.totalAmount, mandatory: true }]);
+      const rowItems = invoice.feeStructure?.items?.length
+        ? invoice.feeStructure.items
+        : (invoice.items || [{ name: 'School Fees', amount: invoice.totalAmount, mandatory: true }]);
 
-    const html = `
+      const html = `
       <div style="margin-bottom: 30px; display: flex; justify-content: space-between; background: #f8fafc; padding: 20px; border-radius: 8px;">
         <div>
           <p style="font-size: 10px; font-weight: 800; color: #64748b; margin: 0 0 5px 0; text-transform: uppercase;">Bill To:</p>
@@ -164,6 +199,10 @@ const FeeCollectionPage = ({ learnerId }) => {
             <span>Total Paid:</span>
             <span>KES ${Number(invoice.paidAmount || 0).toLocaleString()}</span>
           </div>
+          <div style="display: flex; justify-content: space-between; padding: 5px 0; color: #00A09D; font-size: 12px; font-weight: 600;">
+            <span>Total Waived:</span>
+            <span>KES ${(invoice.waivers || []).reduce((acc, w) => acc + Number(w.amountWaived), 0).toLocaleString()}</span>
+          </div>
           <div style="display: flex; justify-content: space-between; padding: 10px 0; border-top: 2px solid #e2e8f0; margin-top: 5px; color: ${Number(invoice.balance || 0) <= 0 ? '#16a34a' : '#dc2626'}; font-size: 16px; font-weight: 800;">
             <span>BALANCE DUE:</span>
             <span>KES ${Number(invoice.balance || 0).toLocaleString()}</span>
@@ -172,17 +211,20 @@ const FeeCollectionPage = ({ learnerId }) => {
       </div>
     `;
 
-    await generateDocument({
-      html,
-      fileName: filename,
-      docInfo: { type: docType, ref: docRef },
-      includeStamp: true,
-      stampOptions: {
-        status: isPaid ? 'PAID' : 'APPROVED',
-        dept: 'FINANCE OFFICE'
-      },
-      includeLetterhead: false
-    });
+      await generateDocument({
+        html,
+        fileName: filename,
+        docInfo: { type: docType, ref: docRef },
+        includeStamp: true,
+        stampOptions: { status: isPaid ? 'PAID' : 'APPROVED', dept: 'FINANCE OFFICE' },
+        includeLetterhead: false
+      });
+    } catch (error) {
+      console.error('PDF generation failed:', error);
+      showError('Failed to generate PDF');
+    } finally {
+      setDownloadingId(null);
+    }
   };
   const getStatusBadge = (status) => {
     const badges = {
@@ -204,10 +246,7 @@ const FeeCollectionPage = ({ learnerId }) => {
 
 
 
-  const filteredInvoices = React.useMemo(() => invoices.filter(invoice => {
-    if (!searchLearnerId) return true;
-    return invoice.learner?.id === searchLearnerId;
-  }), [invoices, searchLearnerId]);
+
 
   // Create Invoice State
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -347,8 +386,8 @@ const FeeCollectionPage = ({ learnerId }) => {
 
   const checkWhatsAppStatus = async () => {
     try {
-      const status = await api.notifications.getWhatsAppStatus();
-      setWhatsappStatus(status);
+      const res = await api.notifications.getWhatsAppStatus();
+      if (res.success) setWhatsappStatus(res.data);
     } catch (error) {
       console.error('Failed to check WhatsApp status:', error);
     }
@@ -358,11 +397,7 @@ const FeeCollectionPage = ({ learnerId }) => {
     checkWhatsAppStatus();
   }, []);
 
-  useEffect(() => {
-    if (showDetailModal) {
-      checkWhatsAppStatus();
-    }
-  }, [showDetailModal]);
+
 
   const handleBulkReminders = async (channel) => {
     if (selectedInvoiceIds.length === 0) return;
@@ -379,10 +414,10 @@ const FeeCollectionPage = ({ learnerId }) => {
   };
 
   const toggleSelectAll = () => {
-    if (selectedInvoiceIds.length === filteredInvoices.length) {
+    if (selectedInvoiceIds.length === invoices.length) {
       setSelectedInvoiceIds([]);
     } else {
-      setSelectedInvoiceIds(filteredInvoices.map(i => i.id));
+      setSelectedInvoiceIds(invoices.map(i => i.id));
     }
   };
 
@@ -392,74 +427,198 @@ const FeeCollectionPage = ({ learnerId }) => {
     );
   };
 
-  const handleResetInvoices = async () => {
-    if (!window.confirm('⚠️ WARNING: This will delete ALL invoices and payments for the entire school.\nThis action cannot be undone.\n\nAre you sure you want to reset invoices?')) {
-      return;
-    }
+  const handleResetInvoices = () => {
+    // Open the scoped reset modal instead of calling directly
+    setShowResetModal(true);
+  };
 
+  const handleConfirmReset = async () => {
     try {
       setLoading(true);
-      const result = await api.fees.resetInvoices();
-      showSuccess(result.message || 'Invoices reset successfully');
+      await api.fees.resetInvoices(resetScope);
+      showSuccess('Invoices and payments reset successfully');
+      setShowResetModal(false);
       fetchInvoices();
-    } catch (error) {
-      showError(error.message || 'Failed to reset invoices');
+    } catch (err) {
+      showError(err.message || 'Failed to reset invoices');
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading && !showCreateModal && !showPaymentModal) return <LoadingSpinner />;
+  /**
+   * Column Sorter
+   */
+  const handleSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+    // This triggers useEffect which calls fetchInvoices
+  };
+
+  useEffect(() => {
+    fetchInvoices();
+  }, [sortConfig]);
+
+  const handleDownloadTemplate = async () => {
+    try {
+      await downloadFeeTemplate();
+      showSuccess('Template downloaded');
+    } catch (error) {
+      console.error('Template Download Error:', error);
+      showError('Failed to download template');
+    }
+  };
+
+  // Register / clear fee actions in the horizontal submenu
+  useEffect(() => {
+    registerFeeActions({
+      onCreate: () => setShowCreateModal(true),
+      onImport: () => setShowImportModal(true),
+      onDownloadTemplate: handleDownloadTemplate,
+      onReset:  handleResetInvoices,
+      userRole: user?.role
+    });
+    return () => clearFeeActions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.role]);
+
+  // ── Computed KES totals for each metric card (always unfiltered) ─────────────
+  const stats = React.useMemo(() => {
+    const fmt = (n) => `KES ${Number(n || 0).toLocaleString('en-KE')}`;
+    const src = statsInvoices; // never changes with filter clicks
+    return {
+      totalCount:    src.length,
+      totalBilled:   fmt(src.reduce((s, i) => s + Number(i.totalAmount || 0), 0)),
+      pendingCount:  src.filter(i => i.status === 'PENDING').length,
+      pendingAmt:    fmt(src.filter(i => i.status === 'PENDING').reduce((s, i) => s + Number(i.balance || 0), 0)),
+      partialCount:  src.filter(i => i.status === 'PARTIAL').length,
+      partialAmt:    fmt(src.filter(i => i.status === 'PARTIAL').reduce((s, i) => s + Number(i.balance || 0), 0)),
+      paidCount:     src.filter(i => i.status === 'PAID').length,
+      paidAmt:       fmt(src.filter(i => i.status === 'PAID').reduce((s, i) => s + Number(i.paidAmount || 0), 0)),
+      overpaidCount: src.filter(i => i.status === 'OVERPAID').length,
+      overpaidAmt:   fmt(src.filter(i => i.status === 'OVERPAID').reduce((s, i) => s + Math.abs(Number(i.balance || 0)), 0)),
+    };
+  }, [statsInvoices]);
+
+
+  if (loading && !showCreateModal) return <LoadingSpinner />;
 
   return (
     <div className="space-y-6">
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {/* ... (existing stats cards) ... */}
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="flex items-center justify-between">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+
+        {/* Total Invoices — Indigo */}
+        <div
+          onClick={() => setStatusFilter(statusFilter === 'all' ? 'all' : 'all')}
+          className={`relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-800 p-5 shadow-lg shadow-indigo-500/20 text-white cursor-pointer transition-all duration-200 hover:scale-[1.03] hover:shadow-xl ${
+            statusFilter === 'all' ? 'ring-4 ring-white/50 scale-[1.03]' : 'opacity-80 hover:opacity-100'
+          }`}
+        >
+          <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm text-gray-600">Total Invoices</p>
-              <p className="text-2xl font-bold text-gray-800">{invoices.length}</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-indigo-200 mb-1">Total Invoices</p>
+              <p className="text-4xl font-black">{stats.totalCount}</p>
+              <p className="text-xs font-semibold text-indigo-300 mt-1.5">{stats.totalBilled} billed</p>
             </div>
-            <FileText className="text-blue-500" size={32} />
+            <div className="p-2.5 bg-white/15 rounded-xl">
+              <FileText size={22} className="text-white" />
+            </div>
           </div>
+          <div className="absolute -bottom-3 -right-3 w-20 h-20 bg-white/5 rounded-full" />
+          <div className="absolute -bottom-6 -right-6 w-28 h-28 bg-white/5 rounded-full" />
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="flex items-center justify-between">
+
+        {/* Pending — Amber */}
+        <div
+          onClick={() => { setStatusFilter(prev => prev === 'pending' ? 'all' : 'pending'); setCurrentPage(1); }}
+          className={`relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 p-5 shadow-lg shadow-amber-500/20 text-white cursor-pointer transition-all duration-200 hover:scale-[1.03] hover:shadow-xl ${
+            statusFilter === 'pending' ? 'ring-4 ring-white/50 scale-[1.03]' : 'opacity-80 hover:opacity-100'
+          }`}
+        >
+          <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm text-gray-600">Pending</p>
-              <p className="text-2xl font-bold text-yellow-600">
-                {invoices.filter(i => i.status === 'PENDING').length}
-              </p>
+              <p className="text-xs font-bold uppercase tracking-widest text-amber-100 mb-1">Pending</p>
+              <p className="text-4xl font-black">{stats.pendingCount}</p>
+              <p className="text-xs font-semibold text-amber-200 mt-1.5">{stats.pendingAmt} outstanding</p>
             </div>
-            <Clock className="text-yellow-500" size={32} />
+            <div className="p-2.5 bg-white/15 rounded-xl">
+              <Clock size={22} className="text-white" />
+            </div>
           </div>
+          <div className="absolute -bottom-3 -right-3 w-20 h-20 bg-white/5 rounded-full" />
+          <div className="absolute -bottom-6 -right-6 w-28 h-28 bg-white/5 rounded-full" />
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="flex items-center justify-between">
+
+        {/* Partial — Sky Blue */}
+        <div
+          onClick={() => { setStatusFilter(prev => prev === 'partial' ? 'all' : 'partial'); setCurrentPage(1); }}
+          className={`relative overflow-hidden rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 p-5 shadow-lg shadow-sky-500/20 text-white cursor-pointer transition-all duration-200 hover:scale-[1.03] hover:shadow-xl ${
+            statusFilter === 'partial' ? 'ring-4 ring-white/50 scale-[1.03]' : 'opacity-80 hover:opacity-100'
+          }`}
+        >
+          <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm text-gray-600">Partial Payments</p>
-              <p className="text-2xl font-bold text-blue-600">
-                {invoices.filter(i => i.status === 'PARTIAL').length}
-              </p>
+              <p className="text-xs font-bold uppercase tracking-widest text-sky-100 mb-1">Partial Payments</p>
+              <p className="text-4xl font-black">{stats.partialCount}</p>
+              <p className="text-xs font-semibold text-sky-200 mt-1.5">{stats.partialAmt} balance due</p>
             </div>
-            <AlertCircle className="text-blue-500" size={32} />
+            <div className="p-2.5 bg-white/15 rounded-xl">
+              <AlertCircle size={22} className="text-white" />
+            </div>
           </div>
+          <div className="absolute -bottom-3 -right-3 w-20 h-20 bg-white/5 rounded-full" />
+          <div className="absolute -bottom-6 -right-6 w-28 h-28 bg-white/5 rounded-full" />
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="flex items-center justify-between">
+
+        {/* Fully Paid — Emerald */}
+        <div
+          onClick={() => { setStatusFilter(prev => prev === 'paid' ? 'all' : 'paid'); setCurrentPage(1); }}
+          className={`relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-green-700 p-5 shadow-lg shadow-emerald-500/20 text-white cursor-pointer transition-all duration-200 hover:scale-[1.03] hover:shadow-xl ${
+            statusFilter === 'paid' ? 'ring-4 ring-white/50 scale-[1.03]' : 'opacity-80 hover:opacity-100'
+          }`}
+        >
+          <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm text-gray-600">Fully Paid</p>
-              <p className="text-2xl font-bold text-green-600">
-                {invoices.filter(i => i.status === 'PAID').length}
-              </p>
+              <p className="text-xs font-bold uppercase tracking-widest text-emerald-100 mb-1">Fully Paid</p>
+              <p className="text-4xl font-black">{stats.paidCount}</p>
+              <p className="text-xs font-semibold text-emerald-200 mt-1.5">{stats.paidAmt} collected</p>
             </div>
-            <CheckCircle className="text-green-500" size={32} />
+            <div className="p-2.5 bg-white/15 rounded-xl">
+              <CheckCircle size={22} className="text-white" />
+            </div>
           </div>
+          <div className="absolute -bottom-3 -right-3 w-20 h-20 bg-white/5 rounded-full" />
+          <div className="absolute -bottom-6 -right-6 w-28 h-28 bg-white/5 rounded-full" />
         </div>
+
+        {/* Overpaid — Purple */}
+        <div
+          onClick={() => { setStatusFilter(prev => prev === 'overpaid' ? 'all' : 'overpaid'); setCurrentPage(1); }}
+          className={`relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-500 to-violet-700 p-5 shadow-lg shadow-purple-500/20 text-white cursor-pointer transition-all duration-200 hover:scale-[1.03] hover:shadow-xl ${
+            statusFilter === 'overpaid' ? 'ring-4 ring-white/50 scale-[1.03]' : 'opacity-80 hover:opacity-100'
+          }`}
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-purple-200 mb-1">Overpaid</p>
+              <p className="text-4xl font-black">{stats.overpaidCount}</p>
+              <p className="text-xs font-semibold text-purple-200 mt-1.5">{stats.overpaidAmt} credit</p>
+            </div>
+            <div className="p-2.5 bg-white/15 rounded-xl">
+              <ShieldCheck size={22} className="text-white" />
+            </div>
+          </div>
+          <div className="absolute -bottom-3 -right-3 w-20 h-20 bg-white/5 rounded-full" />
+          <div className="absolute -bottom-6 -right-6 w-28 h-28 bg-white/5 rounded-full" />
+        </div>
+
       </div>
+
 
       {/* Search and Filters */}
       <div className="bg-white rounded-lg shadow p-4">
@@ -469,25 +628,79 @@ const FeeCollectionPage = ({ learnerId }) => {
               <SmartLearnerSearch
                 learners={allLearners}
                 selectedLearnerId={searchLearnerId}
-                onSelect={setSearchLearnerId}
+                onSelect={(id) => { setSearchLearnerId(id); setCurrentPage(1); }}
                 placeholder="Search invoices by student..."
               />
             </div>
           </div>
           <select
+            value={gradeFilter}
+            onChange={(e) => { setGradeFilter(e.target.value); setCurrentPage(1); }}
+            className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">All Classes</option>
+            <option value="GRADE_1">Grade 1</option>
+            <option value="GRADE_2">Grade 2</option>
+            <option value="GRADE_3">Grade 3</option>
+            <option value="GRADE_4">Grade 4</option>
+            <option value="GRADE_5">Grade 5</option>
+            <option value="GRADE_6">Grade 6</option>
+            <option value="GRADE_7">Grade 7</option>
+            <option value="GRADE_8">Grade 8</option>
+            <option value="GRADE_9">Grade 9</option>
+            <option value="GRADE_10">Grade 10</option>
+            <option value="GRADE_11">Grade 11</option>
+            <option value="GRADE_12">Grade 12</option>
+            <option value="PP1">PP1</option>
+            <option value="PP2">PP2</option>
+          </select>
+
+          <select
+            value={termFilter}
+            onChange={(e) => { setTermFilter(e.target.value); setCurrentPage(1); }}
+            className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">All Terms</option>
+            <option value="TERM_1">Term 1</option>
+            <option value="TERM_2">Term 2</option>
+            <option value="TERM_3">Term 3</option>
+          </select>
+
+          <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
             className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">All Status</option>
             <option value="pending">Pending</option>
             <option value="partial">Partial</option>
             <option value="paid">Paid</option>
+            <option value="overpaid">Overpaid</option>
           </select>
+
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] font-bold text-gray-400 uppercase">From</label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }}
+              className="px-4 py-1.5 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] font-bold text-gray-400 uppercase">To</label>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }}
+              className="px-4 py-1.5 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+            />
+          </div>
 
           <select
             value={transportFilter}
-            onChange={(e) => setTransportFilter(e.target.value)}
+            onChange={(e) => { setTransportFilter(e.target.value); setCurrentPage(1); }}
             className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-brand-purple/5 border-brand-purple/20 text-brand-purple font-semibold"
           >
             <option value="all">All Students</option>
@@ -495,38 +708,17 @@ const FeeCollectionPage = ({ learnerId }) => {
             <option value="regular">Regular Only</option>
           </select>
           <button
-            onClick={() => setShowCreateModal(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold flex items-center gap-2 whitespace-nowrap"
+            onClick={fetchInvoices}
+            className="px-4 py-2 border rounded-lg hover:bg-gray-50 text-gray-600 font-semibold flex items-center gap-2"
+            title="Refresh invoices"
           >
-            <Plus size={18} />
-            Create Invoice
+            <RefreshCw size={16} />
           </button>
-          
-          <button
-            onClick={() => setShowImportModal(true)}
-            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-semibold flex items-center gap-2 whitespace-nowrap"
-          >
-            <Upload size={18} />
-            Import Fees
-          </button>
-
-          {user?.role === 'SUPER_ADMIN' && (
-            <button
-              onClick={handleResetInvoices}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold flex items-center gap-2 whitespace-nowrap"
-              title="Delete ALL invoices and payments"
-            >
-              <Trash2 size={18} />
-              Reset Invoices
-            </button>
-          )}
-
         </div>
       </div>
 
       {/* Invoices Table */}
-      {/* ... (existing table code) ... */}
-      {filteredInvoices.length === 0 ? (
+      {invoices.length === 0 ? (
         <EmptyState
           icon={FileText}
           title="No Invoices Found"
@@ -543,35 +735,105 @@ const FeeCollectionPage = ({ learnerId }) => {
       ) : (
         <div className="bg-white rounded-xl shadow overflow-hidden">
           <table className="w-full">
-            <thead className="border-b border-[color:var(--table-border)]">
-              <tr>
+            <thead className="bg-[color:var(--table-header-bg)]">
+              <tr className="border-b border-[color:var(--table-border)]">
                 <th className="px-6 py-3 text-left">
                   <input
                     type="checkbox"
-                    checked={selectedInvoiceIds.length === filteredInvoices.length && filteredInvoices.length > 0}
+                    checked={selectedInvoiceIds.length === invoices.length && invoices.length > 0}
                     onChange={toggleSelectAll}
                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Invoice #</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Student</th>
+                <th 
+                  className="px-6 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50"
+                  onClick={() => handleSort('invoiceNumber')}
+                >
+                  <div className="flex items-center gap-1">
+                    Invoice #
+                    {sortConfig.key === 'invoiceNumber' ? (
+                      sortConfig.direction === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />
+                    ) : <ArrowUpDown size={12} className="text-gray-400" />}
+                  </div>
+                </th>
+                <th 
+                  className="px-6 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50"
+                  onClick={() => handleSort('studentName')}
+                >
+                  <div className="flex items-center gap-1">
+                    Student
+                    {sortConfig.key === 'studentName' ? (
+                      sortConfig.direction === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />
+                    ) : <ArrowUpDown size={12} className="text-gray-400" />}
+                  </div>
+                </th>
+                <th 
+                  className="px-6 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50"
+                  onClick={() => handleSort('grade')}
+                >
+                  <div className="flex items-center gap-1">
+                    Grade
+                    {sortConfig.key === 'grade' ? (
+                      sortConfig.direction === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />
+                    ) : <ArrowUpDown size={12} className="text-gray-400" />}
+                  </div>
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Fee Type</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Total</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Paid</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Balance</th>
+                <th 
+                  className="px-6 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50"
+                  onClick={() => handleSort('createdAt')}
+                >
+                  <div className="flex items-center gap-1">
+                    Date Issue
+                    {sortConfig.key === 'createdAt' ? (
+                      sortConfig.direction === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />
+                    ) : <ArrowUpDown size={12} className="text-gray-400" />}
+                  </div>
+                </th>
+                <th 
+                  className="px-6 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50"
+                  onClick={() => handleSort('totalAmount')}
+                >
+                  <div className="flex items-center gap-1">
+                    Billed
+                    {sortConfig.key === 'totalAmount' ? (
+                      sortConfig.direction === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />
+                    ) : <ArrowUpDown size={12} className="text-gray-400" />}
+                  </div>
+                </th>
+                <th 
+                  className="px-6 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50"
+                  onClick={() => handleSort('paidAmount')}
+                >
+                  <div className="flex items-center gap-1">
+                    Paid
+                    {sortConfig.key === 'paidAmount' ? (
+                      sortConfig.direction === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />
+                    ) : <ArrowUpDown size={12} className="text-gray-400" />}
+                  </div>
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Waived</th>
+                <th 
+                  className="px-6 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50"
+                  onClick={() => handleSort('balance')}
+                >
+                  <div className="flex items-center gap-1">
+                    Balance
+                    {sortConfig.key === 'balance' ? (
+                      sortConfig.direction === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />
+                    ) : <ArrowUpDown size={12} className="text-gray-400" />}
+                  </div>
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Status</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y">
-              {filteredInvoices.map((invoice) => (
+              {invoices.map((invoice) => (
                 <tr
                   key={invoice.id}
                   className={`hover:bg-gray-50 transition-colors cursor-pointer ${selectedInvoiceIds.includes(invoice.id) ? 'bg-blue-50/50' : ''}`}
-                  onClick={() => {
-                    setSelectedInvoice(invoice);
-                    setShowDetailModal(true);
-                  }}
+                  onClick={() => navigateTo('fees-invoice-detail', { invoice })}
                 >
                   <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                     <input
@@ -588,15 +850,39 @@ const FeeCollectionPage = ({ learnerId }) => {
                         {invoice.learner?.firstName} {invoice.learner?.lastName}
                       </p>
                       <p className="text-xs text-gray-500">{invoice.learner?.admissionNumber}</p>
-                      <p className="text-xs text-gray-500">{invoice.learner?.grade} {invoice.learner?.stream}</p>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{invoice.feeStructure?.name}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600">{invoice.learner?.grade} {invoice.learner?.stream}</td>
+                  <td className="px-6 py-4">
+                    <div className="text-sm font-semibold text-gray-800">
+                      {invoice.feeStructure?.name || 'Standard Fees'}
+                    </div>
+                    {invoice.totalAmount > 0 && (
+                      <div className="text-[10px] font-bold text-blue-600 uppercase tracking-tight mt-0.5">
+                        Total Fee: KES {Number(invoice.totalAmount).toLocaleString()}
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-600">
+                    {new Date(invoice.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                  </td>
                   <td className="px-6 py-4 text-sm font-semibold text-gray-900">
                     KES {Number(invoice.totalAmount).toLocaleString()}
                   </td>
                   <td className="px-6 py-4 text-sm text-green-600">
                     KES {Number(invoice.paidAmount).toLocaleString()}
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="text-sm font-semibold text-teal-600">
+                      KES {(invoice.waivers || [])
+                        .filter(w => w.status === 'APPROVED')
+                        .reduce((acc, w) => acc + Number(w.amountWaived), 0).toLocaleString()}
+                    </div>
+                    {invoice.waivers?.some(w => w.status === 'PENDING') && (
+                      <span className="inline-flex items-center mt-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800 border border-amber-200">
+                        <Clock size={10} className="mr-1" /> Pending Request
+                      </span>
+                    )}
                   </td>
                   <td className="px-6 py-4 text-sm font-semibold text-red-600">
                     KES {Number(invoice.balance).toLocaleString()}
@@ -605,10 +891,7 @@ const FeeCollectionPage = ({ learnerId }) => {
                   <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => {
-                          setSelectedInvoice(invoice);
-                          setShowDetailModal(true);
-                        }}
+                        onClick={() => navigateTo('fees-invoice-detail', { invoice })}
                         className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
                         title="View Details"
                       >
@@ -616,11 +899,7 @@ const FeeCollectionPage = ({ learnerId }) => {
                       </button>
                       {invoice.status !== 'PAID' && invoice.status !== 'WAIVED' && (
                         <button
-                          onClick={() => {
-                            setSelectedInvoice(invoice);
-                            setPaymentData({ ...paymentData, amount: invoice.balance });
-                            setShowPaymentModal(true);
-                          }}
+                          onClick={() => navigateTo('fees-record-payment', { invoice })}
                           className="p-2 text-green-600 hover:bg-green-50 rounded-lg"
                           title="Record Payment"
                         >
@@ -628,12 +907,40 @@ const FeeCollectionPage = ({ learnerId }) => {
                         </button>
                       )}
 
+                      {/* Fee Waiver Button */}
+                      {['PENDING', 'PARTIAL'].includes(invoice.status) && (
+                        <button
+                          onClick={() => {
+                            setSelectedInvoice(invoice);
+                            setShowWaiverModal(true);
+                          }}
+                          className="p-2 bg-[#00A09D]/15 text-[#00A09D] hover:bg-[#00A09D]/25 rounded-lg font-semibold transition-all"
+                          title="Request Fee Waiver"
+                        >
+                          <Gift size={18} />
+                        </button>
+                      )}
+
+                      {/* Quick Approve Waiver Button */}
+                      {invoice.waivers?.some(w => w.status === 'PENDING') && (user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN') && (
+                        <button
+                          onClick={(e) => handleQuickApproveWaiver(e, invoice)}
+                          className="p-2 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg transition-all"
+                          title="Quick Approve Pending Waiver"
+                        >
+                          <ThumbsUp size={18} />
+                        </button>
+                      )}
+
                       <button
                         onClick={() => handleDownloadPdf(invoice)}
-                        className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                        disabled={downloadingId === invoice.id}
+                        className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-50"
                         title="Download PDF"
                       >
-                        <Download size={18} />
+                        {downloadingId === invoice.id
+                          ? <Loader2 size={18} className="animate-spin text-blue-500" />
+                          : <Download size={18} />}
                       </button>
                     </div>
                   </td>
@@ -641,6 +948,31 @@ const FeeCollectionPage = ({ learnerId }) => {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {!loading && totalPages > 1 && (
+        <div className="flex justify-between items-center px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+          <span className="text-sm text-gray-500 font-medium">
+            Page {currentPage} of {totalPages}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-4 py-2 rounded-lg border border-gray-200 text-sm font-bold shadow-sm hover:bg-[#00A09D] hover:text-white hover:border-[#00A09D] disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-gray-500 disabled:hover:border-gray-200 transition-all"
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 rounded-lg border border-gray-200 text-sm font-bold shadow-sm hover:bg-[#00A09D] hover:text-white hover:border-[#00A09D] disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-gray-500 disabled:hover:border-gray-200 transition-all"
+            >
+              Next
+            </button>
+          </div>
         </div>
       )}
 
@@ -842,253 +1174,83 @@ const FeeCollectionPage = ({ learnerId }) => {
         }}
       />
 
+      {/* Fee Waiver Modal */}
+      {selectedInvoice && (
+        <FeeWaiverModal 
+          invoice={selectedInvoice}
+          isOpen={showWaiverModal} 
+          onClose={() => {
+            setShowWaiverModal(false);
+            setSelectedInvoice(null);
+          }}
+          onSuccess={() => {
+            fetchInvoices();
+          }}
+        />
+      )}
 
-      {/* Payment Modal */}
-      {showPaymentModal && selectedInvoice && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="bg-green-600 px-6 py-4 rounded-t-xl">
-              <h3 className="text-xl font-bold text-white">Record Payment</h3>
+
+
+
+      {/* Reset Confirmation Modal */}
+      {showResetModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            {/* Header */}
+            <div className="bg-red-600 px-6 py-4 flex items-center gap-3 text-white">
+              <Trash2 size={22} />
+              <div>
+                <h3 className="text-lg font-black tracking-tight">Reset Fee Invoices</h3>
+                <p className="text-red-200 text-xs font-semibold">This action permanently deletes invoices &amp; payments</p>
+              </div>
             </div>
 
-            <div className="p-6 space-y-4">
-              {/* Invoice Details */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="font-semibold mb-2">Invoice Details</h4>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div>
-                    <span className="text-gray-600">Student:</span>
-                    <span className="ml-2 font-semibold">
-                      {selectedInvoice.learner?.firstName} {selectedInvoice.learner?.lastName}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Invoice #:</span>
-                    <span className="ml-2 font-semibold">{selectedInvoice.invoiceNumber}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Total Amount:</span>
-                    <span className="ml-2 font-semibold">KES {Number(selectedInvoice.totalAmount).toLocaleString()}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Amount Paid:</span>
-                    <span className="ml-2 font-semibold text-green-600">KES {Number(selectedInvoice.paidAmount).toLocaleString()}</span>
-                  </div>
-                  <div className="col-span-2">
-                    <span className="text-gray-600">Outstanding Balance:</span>
-                    <span className="ml-2 font-bold text-red-600 text-lg">
-                      KES {Number(selectedInvoice.balance).toLocaleString()}
-                    </span>
-                  </div>
+            <div className="p-6 space-y-5">
+              <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-semibold">
+                ⚠️ Only invoices and payments matching the selected <strong>Term</strong> and <strong>Year</strong> will be deleted. This cannot be undone.
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-black text-gray-600 uppercase tracking-wider">Academic Year</label>
+                  <select
+                    value={resetScope.academicYear}
+                    onChange={(e) => setResetScope(prev => ({ ...prev, academicYear: e.target.value }))}
+                    className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl font-bold focus:border-red-400 focus:ring-2 focus:ring-red-100 outline-none transition-all"
+                  >
+                    {[2024, 2025, 2026, 2027].map(y => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-black text-gray-600 uppercase tracking-wider">Term</label>
+                  <select
+                    value={resetScope.term}
+                    onChange={(e) => setResetScope(prev => ({ ...prev, term: e.target.value }))}
+                    className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl font-bold focus:border-red-400 focus:ring-2 focus:ring-red-100 outline-none transition-all"
+                  >
+                    <option value="TERM_1">Term 1</option>
+                    <option value="TERM_2">Term 2</option>
+                    <option value="TERM_3">Term 3</option>
+                  </select>
                 </div>
               </div>
 
-              {/* Payment Form */}
-              <div>
-                <label className="block text-sm font-semibold mb-2">Amount to Pay *</label>
-                <input
-                  type="number"
-                  value={paymentData.amount}
-                  onChange={(e) => setPaymentData({ ...paymentData, amount: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg"
-                  placeholder="Enter amount"
-                  step="0.01"
-                  max={selectedInvoice.balance}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold mb-2">Payment Method *</label>
-                <select
-                  value={paymentData.paymentMethod}
-                  onChange={(e) => setPaymentData({ ...paymentData, paymentMethod: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg"
-                >
-                  <option value="CASH">Cash</option>
-                  <option value="MPESA">M-Pesa</option>
-                  <option value="BANK_TRANSFER">Bank Transfer</option>
-                  <option value="CHEQUE">Cheque</option>
-                  <option value="CARD">Card</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold mb-2">
-                  Reference Number {paymentData.paymentMethod === 'MPESA' && '*'}
-                </label>
-                <input
-                  type="text"
-                  value={paymentData.referenceNumber}
-                  onChange={(e) => setPaymentData({ ...paymentData, referenceNumber: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg"
-                  placeholder={paymentData.paymentMethod === 'MPESA' ? 'M-Pesa transaction code' : 'Reference number (optional)'}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold mb-2">Notes</label>
-                <textarea
-                  value={paymentData.notes}
-                  onChange={(e) => setPaymentData({ ...paymentData, notes: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg"
-                  rows="3"
-                  placeholder="Additional notes (optional)"
-                />
-              </div>
-
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-3 pt-2">
                 <button
-                  onClick={handleRecordPayment}
-                  className="flex-1 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 font-semibold"
-                >
-                  Record Payment
-                </button>
-                <button
-                  onClick={() => {
-                    setShowPaymentModal(false);
-                    setPaymentData({ amount: '', paymentMethod: 'CASH', referenceNumber: '', notes: '' });
-                  }}
-                  className="px-6 py-3 border rounded-lg hover:bg-gray-50"
+                  onClick={() => setShowResetModal(false)}
+                  className="flex-1 py-3 px-4 rounded-xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-all"
                 >
                   Cancel
                 </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* Invoice Detail Modal */}
-      {showDetailModal && selectedInvoice && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-            {/* Elegant Header */}
-            <div className="bg-[#002C60] px-8 py-6 flex justify-between items-center text-white relative">
-              <div className="space-y-1">
-                <h3 className="text-2xl font-bold tracking-tight">Invoice Details</h3>
-                <p className="text-blue-200 text-sm font-medium uppercase tracking-widest">{selectedInvoice.invoiceNumber}</p>
-              </div>
-              <button
-                onClick={() => setShowDetailModal(false)}
-                className="hover:bg-white/10 p-2 rounded-xl transition-all"
-              >
-                <X size={24} />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-8 space-y-8 bg-gray-50/50">
-              {/* Top Quick Stats */}
-              <div className="grid grid-cols-3 gap-6">
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center text-center">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase mb-1">Total Due</span>
-                  <span className="text-lg font-bold text-gray-900">KES {Number(selectedInvoice.totalAmount).toLocaleString()}</span>
-                </div>
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center text-center">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase mb-1">Paid</span>
-                  <span className="text-lg font-bold text-green-600">KES {Number(selectedInvoice.paidAmount).toLocaleString()}</span>
-                </div>
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center text-center">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase mb-1">Balance</span>
-                  <span className="text-lg font-bold text-rose-600">KES {Number(selectedInvoice.balance).toLocaleString()}</span>
-                </div>
-              </div>
-
-              {/* Student & Parent Info */}
-              <div className="grid grid-cols-2 gap-8">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 text-[#002C60] font-bold text-xs uppercase tracking-wider">
-                    <User size={14} /> Student Information
-                  </div>
-                  <div className="bg-white p-4 rounded-xl border border-gray-100 space-y-1">
-                    <p className="font-bold text-gray-900">{selectedInvoice.learner?.firstName} {selectedInvoice.learner?.lastName}</p>
-                    <p className="text-sm text-gray-500">ADM: {selectedInvoice.learner?.admissionNumber}</p>
-                    <p className="text-sm text-gray-500">Grade: {selectedInvoice.learner?.grade} {selectedInvoice.learner?.stream}</p>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 text-[#002C60] font-bold text-xs uppercase tracking-wider">
-                    <ShieldCheck size={14} /> Parent/Guardian
-                  </div>
-                  <div className="bg-white p-4 rounded-xl border border-gray-100 space-y-1">
-                    <p className="font-bold text-gray-900">{selectedInvoice.learner?.primaryContactName || 'N/A'}</p>
-                    <p className="text-sm text-green-600 font-medium">Phone: {selectedInvoice.learner?.primaryContactPhone || selectedInvoice.learner?.guardianPhone || 'N/A'}</p>
-                    <p className="text-xs text-gray-400 italic">Preferred contact for reminders</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Invoice Specifics */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-[#002C60] font-bold text-xs uppercase tracking-wider">
-                  <Info size={14} /> Billing Details
-                </div>
-                <div className="bg-white p-5 rounded-xl border border-gray-100 grid grid-cols-2 gap-10">
-                  <div className="space-y-3">
-                    <div className="flex justify-between border-b border-gray-50 pb-2">
-                      <span className="text-xs text-gray-400 font-bold uppercase">Term</span>
-                      <span className="text-sm font-semibold">{selectedInvoice.term} {selectedInvoice.academicYear}</span>
-                    </div>
-                    <div className="flex justify-between border-b border-gray-50 pb-2">
-                      <span className="text-xs text-gray-400 font-bold uppercase">Due Date</span>
-                      <span className="text-sm font-semibold text-rose-500">{new Date(selectedInvoice.dueDate).toLocaleDateString()}</span>
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="flex justify-between border-b border-gray-50 pb-2">
-                      <span className="text-xs text-gray-400 font-bold uppercase">Structure</span>
-                      <span className="text-sm font-semibold truncate max-w-[120px]">{selectedInvoice.feeStructure?.name}</span>
-                    </div>
-                    <div className="flex justify-between border-b border-gray-50 pb-2">
-                      <span className="text-xs text-gray-400 font-bold uppercase">Issued On</span>
-                      <span className="text-sm font-semibold">{new Date(selectedInvoice.createdAt).toLocaleDateString()}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Bar inside Modal */}
-              <div className="pt-4 flex gap-3">
-                <div className="flex-1 flex gap-2">
-                  <button
-                    onClick={() => handleSendReminder(selectedInvoice, 'SMS')}
-                    disabled={loading}
-                    className="flex-1 bg-blue-600 text-white px-4 py-3 rounded-xl hover:bg-blue-700 font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 disabled:opacity-50"
-                  >
-                    <MessageSquare size={16} /> Send SMS
-                  </button>
-                  <button
-                    onClick={() => handleSendReminder(selectedInvoice, 'WHATSAPP')}
-                    disabled={loading || whatsappStatus.status !== 'authenticated'}
-                    className={`flex-1 text-white px-4 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 disabled:opacity-50 ${whatsappStatus.status === 'authenticated' ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400 cursor-not-allowed'}`}
-                    title={whatsappStatus.status !== 'authenticated' ? 'WhatsApp not authenticated. Go to settings to scan QR code.' : 'Send WhatsApp Reminder'}
-                  >
-                    <Phone size={16} /> WhatsApp
-                  </button>
-                </div>
                 <button
-                  onClick={() => handleDownloadPdf(selectedInvoice)}
-                  className="bg-gray-100 text-gray-700 p-3 rounded-xl hover:bg-gray-200 transition-all font-bold tooltip"
-                  title="Download PDF Invoice"
+                  onClick={handleConfirmReset}
+                  className="flex-1 py-3 px-4 rounded-xl font-black text-white bg-red-600 hover:bg-red-700 shadow-lg shadow-red-600/20 transition-all active:scale-95 transform"
                 >
-                  <Download size={20} />
+                  Confirm Reset
                 </button>
-                {selectedInvoice.status !== 'PAID' && (
-                  <button
-                    onClick={() => {
-                      setShowDetailModal(false);
-                      setPaymentData({ ...paymentData, amount: selectedInvoice.balance });
-                      setShowPaymentModal(true);
-                    }}
-                    className="bg-[#002C60] text-white px-6 py-3 rounded-xl font-bold text-sm hover:shadow-lg transition-all"
-                  >
-                    Pay Now
-                  </button>
-                )}
               </div>
-            </div>
-
-            <div className="bg-gray-100/50 px-8 py-4 text-[10px] text-gray-400 text-center font-medium letter-spacing-wider">
-              OFFICIAL FINANCIAL DOCUMENT - ZAWADI SMS CORE UNIT
             </div>
           </div>
         </div>

@@ -18,4 +18,9 @@ router.get('/routes', transportController.getRoutes);
 router.post('/routes', transportController.createRoute);
 router.delete('/routes/:id', transportController.deleteRoute);
 
+// Assignments & Passengers
+router.get('/assignments/:routeId', transportController.getAssignments);
+router.post('/assignments', transportController.createAssignment);
+router.delete('/assignments/:id', transportController.deleteAssignment);
+
 export default router;

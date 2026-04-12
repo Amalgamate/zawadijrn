@@ -167,9 +167,10 @@ async function parseExcelData(): Promise<FeeRow[]> {
       continue;
     }
 
-    const tuitionBilled  = Number(row[7]) || 0;
+    // Index 6: Billed Total, Index 8: Total Paid (Index 7 is current balance, Index 9 is Score %)
+    const tuitionBilled  = Number(row[6]) || 0;
     const tuitionPaid    = Number(row[8]) || 0;
-    const tuitionBalance = Number(row[9]) || 0;
+    const tuitionBalance = tuitionBilled - tuitionPaid;
 
     const trans = transportMap.get(admNo);
 

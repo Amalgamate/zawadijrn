@@ -128,11 +128,34 @@ export class FeeService {
             dueDate.setDate(dueDate.getDate() + 14);
 
             const allItems = (feeStructure as any).feeItems || [];
-            const filteredItems = learner.isTransportStudent 
-                ? allItems 
-                : allItems.filter((i: any) => i.feeType?.code !== 'TRANSPORT');
+            
+            // Phase 1: Filter out any existing TRANSPORT items from the base structure 
+            // (Logically we don't need the fixed fee to include transport so increment is done once)
+            const baseItems = allItems.filter((i: any) => i.feeType?.code !== 'TRANSPORT');
+            let totalAmount = baseItems.reduce((sum: number, item: any) => sum + Number(item.amount), 0);
 
-            const totalAmount = filteredItems.reduce((sum: number, item: any) => sum + Number(item.amount), 0);
+            // Phase 2: Dynamically add the specific Route Fee if they are a transport student
+            let transportFeeName = 'Transport';
+            let transportAmount = 0;
+
+            if (learner.isTransportStudent) {
+                // Fetch active assignment to get specific route amount
+                const assignment = await prisma.transportAssignment.findFirst({
+                    where: { passengerId: learner.id, archived: false },
+                    include: { route: true }
+                });
+
+                if (assignment?.route) {
+                    transportAmount = Number(assignment.route.amount);
+                    transportFeeName = `Transport: ${assignment.route.name}`;
+                } else {
+                    // Fallback to standard 4500 if flag is true but route is missing/legacy
+                    transportAmount = 4500;
+                    transportFeeName = 'Transport (Standard)';
+                }
+                
+                totalAmount += transportAmount;
+            }
 
             // 6. Create Invoice
             const newInvoice = await createInvoiceWithSafeNumber(prisma, {

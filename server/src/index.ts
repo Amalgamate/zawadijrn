@@ -7,9 +7,11 @@ validateEnvironment();
 import app from './server';
 import prisma from './config/database';
 import http from 'http';
+import cron from 'node-cron';
 import { initializeSocket } from './services/socket.service';
 import { ensureSuperAdmin } from './utils/setup-admin';
 import messageService from './services/message.service';
+import { pledgeReminderService } from './services/pledgeReminder.service';
 import logger from './utils/logger';
 
 const PORT = process.env.PORT || 5000;
@@ -30,6 +32,12 @@ async function startServer() {
     httpServer.listen(PORT, () => {
       // Start background jobs
       messageService.startScheduler();
+
+      // Schedule pledge reminder CRON job: daily at 8:00 AM EAT (05:00 UTC)
+      cron.schedule('0 5 * * *', () => {
+        pledgeReminderService.runDailyCheck().catch(console.error);
+      });
+      console.log('[CRON] Pledge reminder job scheduled (daily 08:00 EAT)');
 
       const isDev = process.env.NODE_ENV !== 'production';
 

@@ -5,6 +5,7 @@
 
 import { Router } from 'express';
 import { FeeController } from '../controllers/fee.controller';
+import { feeCommentsController } from '../controllers/feeComments.controller';
 import { authenticate, authorize } from '../middleware/auth.middleware';
 import { requireRole, auditLog } from '../middleware/permissions.middleware';
 import { requireSchoolContext } from '../middleware/school.middleware';
@@ -43,8 +44,8 @@ const processPaymentSchema = z.object({
   learnerId: z.string().min(1).optional(),
   amount: z.number().min(0),
   paymentMethod: z.enum(['CASH', 'BANK_TRANSFER', 'CHEQUE', 'MPESA']),
-  transactionId: z.string().min(1).optional(),
-  notes: z.string().optional()
+  referenceNumber: z.string().min(1).optional(), // was incorrectly named transactionId
+  notes: z.string().nullable().optional()
 }).superRefine((data, ctx) => {
   if (!data.invoiceId && !data.learnerId) {
     ctx.addIssue({
@@ -261,6 +262,169 @@ router.get(
   requireRole(['ACCOUNTANT', 'ADMIN', 'SUPER_ADMIN']),
   rateLimit({ windowMs: 60_000, maxRequests: 50 }),
   asyncHandler(feeController.getPaymentStats)
+);
+
+// ── Fee Comments & Pledges ───────────────────────────────────
+
+/**
+ * @route   GET /api/fees/invoices/:id/comments
+ * @desc    Get all comments and pledges for an invoice
+ * @access  ACCOUNTANT, ADMIN, SUPER_ADMIN
+ */
+router.get(
+  '/invoices/:id/comments',
+  requireRole(['ACCOUNTANT', 'ADMIN', 'SUPER_ADMIN']),
+  rateLimit({ windowMs: 60_000, maxRequests: 100 }),
+  asyncHandler(feeCommentsController.listComments.bind(feeCommentsController))
+);
+
+/**
+ * @route   POST /api/fees/invoices/:id/comments
+ * @desc    Add a comment / call log to an invoice
+ * @access  ACCOUNTANT, ADMIN, SUPER_ADMIN
+ */
+router.post(
+  '/invoices/:id/comments',
+  requireRole(['ACCOUNTANT', 'ADMIN', 'SUPER_ADMIN']),
+  rateLimit({ windowMs: 60_000, maxRequests: 50 }),
+  auditLog('ADD_FEE_COMMENT'),
+  asyncHandler(feeCommentsController.addComment.bind(feeCommentsController))
+);
+
+/**
+ * @route   POST /api/fees/invoices/:id/pledges
+ * @desc    Record a parent pledge (promise to pay on a date)
+ * @access  ACCOUNTANT, ADMIN, SUPER_ADMIN
+ */
+router.post(
+  '/invoices/:id/pledges',
+  requireRole(['ACCOUNTANT', 'ADMIN', 'SUPER_ADMIN']),
+  rateLimit({ windowMs: 60_000, maxRequests: 30 }),
+  auditLog('RECORD_FEE_PLEDGE'),
+  asyncHandler(feeCommentsController.addPledge.bind(feeCommentsController))
+);
+
+/**
+ * @route   PATCH /api/fees/pledges/:pledgeId/cancel
+ * @desc    Cancel a pledge
+ * @access  ACCOUNTANT, ADMIN, SUPER_ADMIN
+ */
+router.patch(
+  '/pledges/:pledgeId/cancel',
+  requireRole(['ACCOUNTANT', 'ADMIN', 'SUPER_ADMIN']),
+  rateLimit({ windowMs: 60_000, maxRequests: 20 }),
+  auditLog('CANCEL_FEE_PLEDGE'),
+  asyncHandler(feeCommentsController.cancelPledge.bind(feeCommentsController))
+);
+
+/**
+ * @route   PATCH /api/fees/pledges/:pledgeId/fulfil
+ * @desc    Manually mark a pledge as fulfilled
+ * @access  ACCOUNTANT, ADMIN, SUPER_ADMIN
+ */
+router.patch(
+  '/pledges/:pledgeId/fulfil',
+  requireRole(['ACCOUNTANT', 'ADMIN', 'SUPER_ADMIN']),
+  rateLimit({ windowMs: 60_000, maxRequests: 20 }),
+  auditLog('FULFIL_FEE_PLEDGE'),
+  asyncHandler(feeCommentsController.fulfilPledge.bind(feeCommentsController))
+);
+
+// ============================================
+// FEE WAIVER ROUTES
+// ============================================
+
+import { feeWaiverController } from '../controllers/feeWaiver.controller';
+
+const createWaiverSchema = z.object({
+  invoiceId: z.string().min(1),
+  amountWaived: z.union([z.string(), z.number()]).transform((value) => 
+    typeof value === 'string' ? parseFloat(value) : value
+  ),
+  reason: z.string().min(5).max(500),
+  waiverCategory: z.enum(['HARDSHIP', 'DISABILITY', 'SCHOLARSHIP', 'OTHER']).optional()
+});
+
+const rejectWaiverSchema = z.object({
+  rejectionReason: z.string().min(5).max(500)
+});
+
+/**
+ * @route   POST /api/fees/waivers
+ * @desc    Create a new fee waiver request
+ * @access  ACCOUNTANT, ADMIN, SUPER_ADMIN
+ */
+router.post(
+  '/waivers',
+  requireRole(['ACCOUNTANT', 'ADMIN', 'SUPER_ADMIN']),
+  rateLimit({ windowMs: 60_000, maxRequests: 30 }),
+  validate(createWaiverSchema),
+  auditLog('CREATE_FEE_WAIVER'),
+  asyncHandler(feeWaiverController.createWaiver.bind(feeWaiverController))
+);
+
+/**
+ * @route   GET /api/fees/waivers
+ * @desc    List all fee waivers with filters
+ * @access  ACCOUNTANT, ADMIN, SUPER_ADMIN
+ */
+router.get(
+  '/waivers',
+  requireRole(['ACCOUNTANT', 'ADMIN', 'SUPER_ADMIN']),
+  rateLimit({ windowMs: 60_000, maxRequests: 50 }),
+  asyncHandler(feeWaiverController.listWaivers.bind(feeWaiverController))
+);
+
+/**
+ * @route   GET /api/fees/waivers/:id
+ * @desc    Get fee waiver by ID
+ * @access  ACCOUNTANT, ADMIN, SUPER_ADMIN
+ */
+router.get(
+  '/waivers/:id',
+  requireRole(['ACCOUNTANT', 'ADMIN', 'SUPER_ADMIN']),
+  rateLimit({ windowMs: 60_000, maxRequests: 100 }),
+  asyncHandler(feeWaiverController.getWaiverById.bind(feeWaiverController))
+);
+
+/**
+ * @route   PATCH /api/fees/waivers/:id/approve
+ * @desc    Approve a fee waiver request
+ * @access  ADMIN, SUPER_ADMIN (requires higher approval authority)
+ */
+router.patch(
+  '/waivers/:id/approve',
+  requireRole(['ADMIN', 'SUPER_ADMIN']),
+  rateLimit({ windowMs: 60_000, maxRequests: 20 }),
+  auditLog('APPROVE_FEE_WAIVER'),
+  asyncHandler(feeWaiverController.approveWaiver.bind(feeWaiverController))
+);
+
+/**
+ * @route   PATCH /api/fees/waivers/:id/reject
+ * @desc    Reject a fee waiver request
+ * @access  ADMIN, SUPER_ADMIN (requires higher approval authority)
+ */
+router.patch(
+  '/waivers/:id/reject',
+  requireRole(['ADMIN', 'SUPER_ADMIN']),
+  rateLimit({ windowMs: 60_000, maxRequests: 20 }),
+  validate(rejectWaiverSchema),
+  auditLog('REJECT_FEE_WAIVER'),
+  asyncHandler(feeWaiverController.rejectWaiver.bind(feeWaiverController))
+);
+
+/**
+ * @route   DELETE /api/fees/waivers/:id
+ * @desc    Archive a fee waiver (soft delete)
+ * @access  ADMIN, SUPER_ADMIN
+ */
+router.delete(
+  '/waivers/:id',
+  requireRole(['ADMIN', 'SUPER_ADMIN']),
+  rateLimit({ windowMs: 60_000, maxRequests: 20 }),
+  auditLog('DELETE_FEE_WAIVER'),
+  asyncHandler(feeWaiverController.deleteWaiver.bind(feeWaiverController))
 );
 
 export default router;

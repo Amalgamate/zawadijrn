@@ -23,6 +23,7 @@ function normalizeEnumValue(value?: string): string | undefined {
 }
 
 const INVOICE_NUMBER_RETRY_COUNT = 3;
+const RECEIPT_NUMBER_RETRY_COUNT = 3;
 
 function parseInvoiceNumber(raw: string | null): number {
   if (!raw) return 0;
@@ -222,7 +223,7 @@ export class FeeController {
    * Get all invoices
    */
   async getAllInvoices(req: AuthRequest, res: Response) {
-    const { status, term, academicYear, grade, learnerId } = req.query;
+    const { status, term, academicYear, grade, learnerId, startDate, endDate } = req.query;
     const where: any = {};
 
     if (status) where.status = status;
@@ -231,8 +232,17 @@ export class FeeController {
     if (learnerId) where.learnerId = learnerId;
     if (grade) where.learner = { grade: normalizeEnumValue(grade) || grade };
 
-    // Support transport filtering
-    const { isTransport } = req.query;
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) where.createdAt.gte = new Date(startDate as string);
+      if (endDate) {
+        const end = new Date(endDate as string);
+        end.setHours(23, 59, 59, 999);
+        where.createdAt.lte = end;
+      }
+    }
+
+    const { isTransport, sortBy, sortOrder } = req.query;
     if (isTransport !== undefined && isTransport !== 'all') {
       where.learner = {
         ...where.learner,
@@ -240,34 +250,70 @@ export class FeeController {
       };
     }
 
-    const invoices = await prisma.feeInvoice.findMany({
-      where,
-      include: {
-        learner: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            admissionNumber: true,
-            grade: true,
-            stream: true,
-            parent: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                phone: true
+    // Dynamic Sorter Logic
+    const orderBy: any = {};
+    if (sortBy) {
+      if (sortBy === 'studentName') {
+         orderBy.learner = { firstName: sortOrder === 'desc' ? 'desc' : 'asc' };
+      } else if (sortBy === 'grade') {
+         orderBy.learner = { grade: sortOrder === 'desc' ? 'desc' : 'asc' };
+      } else {
+         orderBy[sortBy as string] = sortOrder === 'desc' ? 'desc' : 'asc';
+      }
+    } else {
+      orderBy.createdAt = 'desc';
+    }
+
+    // Pagination — accept 'all' to bypass cap for dashboard total metric sums
+    const page = Math.max(1, parseInt((req.query.page as string) || '1', 10));
+    const limitParam = req.query.limit as string;
+    const limit = limitParam === 'all' 
+      ? undefined 
+      : Math.min(200, Math.max(1, parseInt(limitParam || '50', 10)));
+    const skip = limit ? (page - 1) * limit : undefined;
+
+    const [invoices, total] = await Promise.all([
+        prisma.feeInvoice.findMany({
+        where,
+        orderBy,
+        include: {
+          learner: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              admissionNumber: true,
+              grade: true,
+              stream: true,
+              parent: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  phone: true
+                }
               }
             }
+          },
+          feeStructure: true,
+          waivers: {
+            where: { archived: false },
+            select: { id: true, status: true, amountWaived: true }
           }
         },
-        feeStructure: true,
-        payments: true
-      },
-      orderBy: { createdAt: 'desc' }
-    });
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit
+      }),
+      prisma.feeInvoice.count({ where })
+    ]);
 
-    res.json({ success: true, data: invoices, count: invoices.length });
+    res.json({
+      success: true,
+      data: invoices,
+      count: invoices.length,
+      pagination: { total, page, limit, pages: Math.ceil(total / limit) }
+    });
   }
 
   /**
@@ -278,11 +324,22 @@ export class FeeController {
     const learner = await prisma.learner.findUnique({ where: { id: learnerId } });
     if (!learner) throw new ApiError(404, 'Learner not found');
 
+    // PARENT role may only view their own child's invoices
+    if (req.user!.role === 'PARENT') {
+      if ((learner as any).parentId !== req.user!.userId) {
+        throw new ApiError(403, 'You can only view invoices for your own children');
+      }
+    }
+
     const invoices = await prisma.feeInvoice.findMany({
       where: { learnerId },
       include: {
         feeStructure: true,
-        payments: { orderBy: { paymentDate: 'desc' } }
+        payments: { orderBy: { paymentDate: 'desc' } },
+        waivers: {
+          where: { status: 'APPROVED', archived: false },
+          select: { amountWaived: true }
+        }
       },
       orderBy: { createdAt: 'desc' }
     });
@@ -428,54 +485,71 @@ export class FeeController {
 
     const actualInvoiceId = invoice.id;
 
-    const result: any = await prisma.$transaction(async (tx) => {
-      // Use MAX instead of COUNT so concurrent transactions never produce
-      // the same receipt number even if payments are deleted later.
-      const maxResult = await tx.feePayment.aggregate({ _max: { receiptNumber: true } });
-      const lastSeq = (() => {
-        const raw = maxResult._max.receiptNumber as string | null;
-        if (!raw) return 0;
-        const m = raw.match(/(\d+)$/);
-        return m ? parseInt(m[1], 10) : 0;
-      })();
-      const receiptNumber = `RCP-${new Date().getFullYear()}-${String(lastSeq + 1).padStart(6, '0')}`;
+    // Retry loop — guards against concurrent P2002 collisions on receiptNumber
+    let result: any;
+    let lastPaymentError: any;
 
-      const payment = await tx.feePayment.create({
-        data: {
-          receiptNumber,
-          invoiceId: actualInvoiceId,
-          amount,
-          paymentMethod,
-          referenceNumber,
-          notes,
-          recordedBy: userId
+    for (let attempt = 1; attempt <= RECEIPT_NUMBER_RETRY_COUNT; attempt++) {
+      try {
+        result = await prisma.$transaction(async (tx) => {
+          // Use MAX instead of COUNT so concurrent transactions never produce
+          // the same receipt number even if payments are deleted later.
+          const maxResult = await tx.feePayment.aggregate({ _max: { receiptNumber: true } });
+          const lastSeq = (() => {
+            const raw = maxResult._max.receiptNumber as string | null;
+            if (!raw) return 0;
+            const m = raw.match(/(\d+)$/);
+            return m ? parseInt(m[1], 10) : 0;
+          })();
+          const receiptNumber = `RCP-${new Date().getFullYear()}-${String(lastSeq + 1).padStart(6, '0')}`;
+
+          const payment = await tx.feePayment.create({
+            data: {
+              receiptNumber,
+              invoiceId: actualInvoiceId,
+              amount,
+              paymentMethod,
+              referenceNumber,
+              notes,
+              recordedBy: userId
+            }
+          });
+
+          const updatedInvoice = await tx.feeInvoice.update({
+            where: { id: actualInvoiceId },
+            data: {
+              paidAmount: { increment: amount },
+              balance: { decrement: amount }
+            }
+          });
+
+          let newStatus: PaymentStatus = updatedInvoice.status;
+          const balance = Number(updatedInvoice.balance);
+          if (balance <= 0) {
+            newStatus = balance < 0 ? 'OVERPAID' : 'PAID';
+          } else {
+            newStatus = 'PARTIAL';
+          }
+
+          const finalInvoice = await tx.feeInvoice.update({
+            where: { id: actualInvoiceId },
+            data: { status: newStatus },
+            include: { learner: true, payments: true }
+          });
+
+          return { payment, invoice: finalInvoice };
+        });
+        break; // success — exit retry loop
+      } catch (error: any) {
+        lastPaymentError = error;
+        if (error?.code === 'P2002' && attempt < RECEIPT_NUMBER_RETRY_COUNT) {
+          continue;
         }
-      });
-
-      const updatedInvoice = await tx.feeInvoice.update({
-        where: { id: actualInvoiceId },
-        data: {
-          paidAmount: { increment: amount },
-          balance: { decrement: amount }
-        }
-      });
-
-      let newStatus: PaymentStatus = updatedInvoice.status;
-      const balance = Number(updatedInvoice.balance);
-      if (balance <= 0) {
-        newStatus = balance < 0 ? 'OVERPAID' : 'PAID';
-      } else {
-        newStatus = 'PARTIAL';
+        throw error;
       }
+    }
 
-      const finalInvoice = await tx.feeInvoice.update({
-        where: { id: actualInvoiceId },
-        data: { status: newStatus },
-        include: { learner: true, payments: true }
-      });
-
-      return { payment, invoice: finalInvoice };
-    });
+    if (!result) throw lastPaymentError;
 
     // Handle Accounting & Notifications Async
     (async () => {
@@ -622,6 +696,52 @@ export class FeeController {
       collectionRate: gm.expected > 0 ? Math.round((gm.collected / gm.expected) * 100) : 0
     }));
 
+    // ── Transport metrics ─────────────────────────────────────────────────
+    // Count learners who are transport students and have invoices in scope,
+    // then sum the transport fee component from their invoices.
+    const transportLearnerIds = learnerIds.length > 0
+      ? await prisma.learner.findMany({
+          where: { id: { in: learnerIds }, isTransportStudent: true },
+          select: { id: true }
+        })
+      : [];
+    const transportLearnerIdSet = new Set(transportLearnerIds.map((l: any) => l.id));
+    const transportStudentCount = transportLearnerIdSet.size;
+
+    // Sum the TRANSPORT fee-type items across all invoices in scope
+    const transportFeeItems = await prisma.feeStructureItem.findMany({
+      where: { feeType: { code: 'TRANSPORT' } },
+      select: { feeStructureId: true, amount: true }
+    });
+    const transportAmountByStructure = new Map(
+      transportFeeItems.map((i: any) => [i.feeStructureId, Number(i.amount)])
+    );
+
+    // Get invoices in scope that belong to transport students
+    const transportInvoices = await prisma.feeInvoice.findMany({
+      where: { ...invoiceWhere, learnerId: { in: Array.from(transportLearnerIdSet) } },
+      select: { feeStructureId: true, paidAmount: true, balance: true, totalAmount: true }
+    });
+
+    let transportExpected = 0;
+    let transportCollected = 0;
+    let transportOutstanding = 0;
+
+    for (const inv of transportInvoices) {
+      const tAmt = transportAmountByStructure.get(inv.feeStructureId) ?? 0;
+      transportExpected    += tAmt;
+      // Collected proportion: if fully paid, full transport amount collected
+      const total = Number(inv.totalAmount);
+      const paid  = Number(inv.paidAmount);
+      const collectRatio = total > 0 ? Math.min(paid / total, 1) : 0;
+      transportCollected    += Math.round(tAmt * collectRatio);
+      transportOutstanding  += Math.round(tAmt * (1 - collectRatio));
+    }
+
+    const transportCollectionRate = transportExpected > 0
+      ? Math.round((transportCollected / transportExpected) * 100)
+      : 0;
+
     res.json({
       success: true,
       data: {
@@ -635,7 +755,14 @@ export class FeeController {
         pendingInvoices,
         overdueInvoices,
         paymentMethods,
-        gradeWiseCollection
+        gradeWiseCollection,
+        transport: {
+          studentCount: transportStudentCount,
+          expected: transportExpected,
+          collected: transportCollected,
+          outstanding: transportOutstanding,
+          collectionRate: transportCollectionRate
+        }
       }
     });
   }
@@ -779,16 +906,41 @@ export class FeeController {
 
   /**
    * Reset invoices (Super Admin only)
+   *
+   * Requires explicit academicYear + term in the request body so a mis-click
+   * can never wipe the entire fee history. A confirmToken (the string
+   * "CONFIRM_RESET") must also be supplied to prevent accidental calls.
    */
   async resetInvoices(req: AuthRequest, res: Response) {
     if (req.user!.role !== 'SUPER_ADMIN') {
       throw new ApiError(403, 'Global reset restricted to SUPER_ADMIN');
     }
 
-    await prisma.feePayment.deleteMany({});
-    const result = await prisma.feeInvoice.deleteMany({});
+    const { academicYear, term, confirmToken } = req.body;
 
-    res.json({ success: true, message: `System reset complete. Deleted ${result.count} invoices and all payments.` });
+    if (!academicYear || !term) {
+      throw new ApiError(400, 'academicYear and term are required to scope the reset');
+    }
+    if (confirmToken !== 'CONFIRM_RESET') {
+      throw new ApiError(400, 'confirmToken must equal "CONFIRM_RESET" to proceed');
+    }
+
+    // Collect invoice IDs for the target period first
+    const targetInvoices = await prisma.feeInvoice.findMany({
+      where: { academicYear: parseInt(academicYear, 10), term },
+      select: { id: true }
+    });
+    const invoiceIds = targetInvoices.map((i: any) => i.id);
+
+    const [paymentsResult, invoicesResult] = await prisma.$transaction([
+      prisma.feePayment.deleteMany({ where: { invoiceId: { in: invoiceIds } } }),
+      prisma.feeInvoice.deleteMany({ where: { id: { in: invoiceIds } } })
+    ]);
+
+    res.json({
+      success: true,
+      message: `Reset complete for ${academicYear} ${term}. Deleted ${invoicesResult.count} invoices and ${paymentsResult.count} payments.`
+    });
   }
 
   /**
@@ -874,23 +1026,46 @@ export class FeeController {
       include: { learner: true }
     });
 
-    // Run in background to avoid timeout
+    // Run in background to avoid timeout; track outcomes per invoice
     setImmediate(async () => {
+      const outcomes: Array<{ invoiceNumber: string; learnerId: string; sms?: string; whatsapp?: string; skipped?: string }> = [];
+
       for (const invoice of invoices) {
         const learner = invoice.learner;
         const contactPhone = learner.primaryContactPhone || learner.guardianPhone;
-        if (!contactPhone) continue;
 
+        if (!contactPhone) {
+          outcomes.push({ invoiceNumber: invoice.invoiceNumber, learnerId: learner.id, skipped: 'No contact phone' });
+          continue;
+        }
+
+        const outcome: typeof outcomes[number] = { invoiceNumber: invoice.invoiceNumber, learnerId: learner.id };
         const message = `Reminder: Fee Invoice ${invoice.invoiceNumber} for ${learner.firstName} is outstanding. Balance: KES ${invoice.balance.toLocaleString()}. Thank you.`;
 
         if (channel === 'SMS' || channel === 'BOTH') {
-          await SmsService.sendSms(contactPhone, message).catch(() => { });
+          outcome.sms = await SmsService.sendSms(contactPhone, message)
+            .then(r => r.success ? 'Sent' : `Failed: ${r.error}`)
+            .catch(e => `Error: ${e.message}`);
         }
         if (channel === 'WHATSAPP' || channel === 'BOTH') {
-          await whatsappService.sendMessage({ to: contactPhone, message }).catch(() => { });
+          outcome.whatsapp = await whatsappService.sendMessage({ to: contactPhone, message })
+            .then(r => r.success ? 'Sent' : `Failed: ${r.message}`)
+            .catch(e => `Error: ${e.message}`);
         }
-        // Small delay to avoid rate limiting
+
+        outcomes.push(outcome);
+        // Small delay to avoid carrier rate limiting
         await new Promise(r => setTimeout(r, 500));
+      }
+
+      const failed = outcomes.filter(o =>
+        (o.sms && !o.sms.startsWith('Sent')) ||
+        (o.whatsapp && !o.whatsapp.startsWith('Sent')) ||
+        o.skipped
+      );
+
+      if (failed.length > 0) {
+        console.warn(`[BulkReminders] ${failed.length}/${outcomes.length} reminders failed or skipped:`, JSON.stringify(failed));
       }
     });
 
@@ -958,6 +1133,17 @@ export class FeeController {
 
     if (!pdfBase64) {
       throw new ApiError(400, 'PDF document is required');
+    }
+
+    // Validate that the payload is a PDF data URI
+    if (!pdfBase64.startsWith('data:application/pdf;base64,')) {
+      throw new ApiError(400, 'Invalid file type — only PDF documents are accepted');
+    }
+
+    // Guard against excessively large uploads (~5 MB base64 ≈ ~3.75 MB decoded)
+    const MAX_BASE64_LENGTH = 7 * 1024 * 1024; // 7 MB
+    if (pdfBase64.length > MAX_BASE64_LENGTH) {
+      throw new ApiError(413, 'PDF file is too large — maximum size is 5 MB');
     }
 
     const learner = await prisma.learner.findUnique({
