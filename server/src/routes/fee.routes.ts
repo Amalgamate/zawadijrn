@@ -50,8 +50,8 @@ const processPaymentSchema = z.object({
   invoiceId: z.string().min(1).optional(),
   learnerId: z.string().min(1).optional(),
   amount: z.number().min(0),
-  paymentMethod: z.enum(['CASH', 'BANK_TRANSFER', 'CHEQUE', 'MPESA']),
-  referenceNumber: z.string().min(1).optional(),
+  paymentMethod: z.enum(['CASH', 'BANK_TRANSFER', 'CHEQUE', 'MPESA', 'CARD', 'OTHER']),
+  referenceNumber: z.string().min(1).nullable().optional(),
   notes: z.string().nullable().optional()
 }).superRefine((data, ctx) => {
   if (!data.invoiceId && !data.learnerId) {
