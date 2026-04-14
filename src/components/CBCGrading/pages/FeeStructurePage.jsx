@@ -6,7 +6,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   DollarSign, Plus, Edit2, Trash2, Copy, BookOpen,
-  Search, AlertCircle, CheckCircle, Info, ChevronDown, ChevronRight
+  Search, AlertCircle, CheckCircle, Info, ChevronDown, ChevronRight, Filter, X
 } from 'lucide-react';
 import EmptyState from '../shared/EmptyState';
 import LoadingSpinner from '../shared/LoadingSpinner';
@@ -26,6 +26,13 @@ const FeeStructurePage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterGrade, setFilterGrade] = useState('all');
   const [filterTerm, setFilterTerm] = useState('all');
+  const [showGlobalFilters, setShowGlobalFilters] = useState(false);
+  
+  const activeFilterCount = (filterGrade !== 'all' ? 1 : 0) + (filterTerm !== 'all' ? 1 : 0);
+  const clearAllFilters = () => {
+    setFilterGrade('all');
+    setFilterTerm('all');
+  };
   const [isSeedingTypes, setIsSeedingTypes] = useState(false);
   const [isSeedingStructures, setIsSeedingStructures] = useState(false);
   const [seedTypesComplete, setSeedTypesComplete] = useState(false);
@@ -586,41 +593,80 @@ const FeeStructurePage = () => {
         </button>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-4">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-              <input
-                type="text"
-                placeholder="Search fee structures (e.g., Grade 1 Term 1)..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
+      {/* Top Row: Omni-Search & Actions */}
+      <div className="flex flex-col md:flex-row gap-3 items-end w-full">
+        {/* Search */}
+        <div className="flex-1 w-full relative z-40">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+            <input
+              type="text"
+              placeholder="Search fee structures by name or description..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm shadow-sm transition-all"
+            />
           </div>
-          <select
-            value={filterGrade}
-            onChange={(e) => setFilterGrade(e.target.value)}
-            className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+        </div>
+
+        {/* Unified Filter Button */}
+        <div className="relative">
+          <button
+            onClick={() => setShowGlobalFilters(!showGlobalFilters)}
+            className={`px-5 py-2.5 border rounded-xl font-bold flex items-center gap-2 transition-all ${activeFilterCount > 0 ? 'bg-blue-50 border-blue-200 text-blue-700' : 'hover:bg-gray-50 text-gray-700 bg-white shadow-sm'}`}
           >
-            <option value="all">All Grades</option>
-            {fetchedGrades.map(grade => (
-              <option key={grade} value={grade}>{grade.replace(/_/g, ' ')}</option>
-            ))}
-          </select>
-          <select
-            value={filterTerm}
-            onChange={(e) => setFilterTerm(e.target.value)}
-            className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">All Terms</option>
-            {terms.map(term => (
-              <option key={term} value={term}>{term.replace(/_/g, ' ')}</option>
-            ))}
-          </select>
+            <Filter size={18} className={activeFilterCount > 0 ? "text-blue-600" : "text-gray-500"} />
+            Filters
+            {activeFilterCount > 0 && (
+              <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-[10px] ml-1">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+
+          {/* Filter Popover Drawer */}
+          {showGlobalFilters && (
+            <div className="absolute right-0 top-full mt-2 w-[320px] bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden animate-fade-in origin-top-right">
+              <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                  <Filter size={16} className="text-blue-600" /> Structure Filters
+                </h3>
+                {activeFilterCount > 0 && (
+                  <button onClick={clearAllFilters} className="text-[11px] font-bold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-md transition-colors">
+                    Clear All
+                  </button>
+                )}
+              </div>
+
+              <div className="p-5 space-y-5 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                <div>
+                  <h4 className="text-[11px] font-extrabold text-blue-500 uppercase tracking-widest mb-3">Academic Term</h4>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-semibold text-gray-600">Grade Level</label>
+                      <select value={filterGrade} onChange={(e) => setFilterGrade(e.target.value)} className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm w-full outline-blue-500">
+                        <option value="all">All Grades</option>
+                        {fetchedGrades.map(g => <option key={g} value={g}>{g.replace(/_/g, ' ')}</option>)}
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-semibold text-gray-600">Term</label>
+                      <select value={filterTerm} onChange={(e) => setFilterTerm(e.target.value)} className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm w-full outline-blue-500">
+                        <option value="all">All Terms</option>
+                        {terms.map(t => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+                <button onClick={() => setShowGlobalFilters(false)} className="px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm">
+                  Apply & Close
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -759,22 +805,22 @@ const FeeStructurePage = () => {
                           <div>
                             <p className="text-xs font-semibold text-gray-600 uppercase mb-2">Fee Breakdown</p>
                             <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                              <table className="w-full text-sm">
+                              <table className="w-full text-sm border-collapse">
                                 <thead className="border-b border-[color:var(--table-border)]">
                                   <tr>
-                                    <th className="px-3 py-2 text-left font-semibold text-[color:var(--table-header-fg)]">Fee Type</th>
-                                    <th className="px-3 py-2 text-right font-semibold text-[color:var(--table-header-fg)]">Amount</th>
-                                    <th className="px-3 py-2 text-center font-semibold text-[color:var(--table-header-fg)]">Mandatory</th>
+                                    <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Fee Type</th>
+                                    <th className="px-3 py-1.5 text-right text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Amount</th>
+                                    <th className="px-3 py-1.5 text-center text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase">Mandatory</th>
                                   </tr>
                                 </thead>
                                 <tbody>
                                   {(structure.feeItems || []).map((item, i) => (
                                     <tr key={i} className="border-t border-gray-100 hover:bg-gray-50 transition">
-                                      <td className="px-3 py-2 text-gray-900">{item.feeType?.name || 'Unknown'}</td>
-                                      <td className="px-3 py-2 text-right font-semibold text-gray-900">
+                                      <td className="px-3 py-1.5 text-gray-900 border-r border-gray-100">{item.feeType?.name || 'Unknown'}</td>
+                                      <td className="px-3 py-1.5 text-right font-semibold text-gray-900 border-r border-gray-100">
                                         KES {parseFloat(item.amount).toLocaleString()}
                                       </td>
-                                      <td className="px-3 py-2 text-center">
+                                      <td className="px-3 py-1.5 text-center">
                                         {item.mandatory ? (
                                           <CheckCircle size={16} className="text-green-500 mx-auto" />
                                         ) : (
@@ -784,11 +830,11 @@ const FeeStructurePage = () => {
                                     </tr>
                                   ))}
                                   <tr className="bg-blue-50 border-t-2 border-blue-200 font-bold">
-                                    <td className="px-3 py-2 text-gray-900">Total</td>
-                                    <td className="px-3 py-2 text-right text-blue-600">
+                                    <td className="px-3 py-1.5 text-gray-900 border-r border-blue-200/50">Total</td>
+                                    <td className="px-3 py-1.5 text-right text-blue-600 border-r border-blue-200/50">
                                       KES {total.toLocaleString()}
                                     </td>
-                                    <td className="px-3 py-2"></td>
+                                    <td className="px-3 py-1.5"></td>
                                   </tr>
                                 </tbody>
                               </table>

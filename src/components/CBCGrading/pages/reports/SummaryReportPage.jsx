@@ -652,11 +652,10 @@ const SummaryReportPage = () => {
               <select
                 value={stagedTestType}
                 onChange={(e) => setStagedTestType(e.target.value)}
-                disabled={availableTestTypes.length === 0}
-                className="w-full h-9 px-2.5 py-1.5 border border-slate-300 rounded text-xs bg-white text-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-purple appearance-none cursor-pointer hover:border-slate-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full h-9 px-2.5 py-1.5 border border-slate-300 rounded text-xs bg-white text-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-purple appearance-none cursor-pointer hover:border-slate-400 transition-colors"
               >
                 <option value="all">All Exams</option>
-                {availableTestTypes.map(t => (
+                {Array.from(new Set(['OPENER', 'MID_TERM', 'END_OF_TERM', ...availableTestTypes])).map(t => (
                   <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>
                 ))}
               </select>

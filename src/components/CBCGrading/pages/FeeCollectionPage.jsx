@@ -49,6 +49,8 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [transportFilter, setTransportFilter] = useState('all');
+  const [minBalance, setMinBalance] = useState('');
+  const [maxBalance, setMaxBalance] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [printingInvoice, setPrintingInvoice] = useState(null);
@@ -76,7 +78,9 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
     (statusFilter !== 'all' ? 1 : 0) +
     (transportFilter !== 'all' ? 1 : 0) +
     (startDate ? 1 : 0) +
-    (endDate ? 1 : 0);
+    (endDate ? 1 : 0) +
+    (minBalance ? 1 : 0) +
+    (maxBalance ? 1 : 0);
   
   const clearAllFilters = () => {
     setGradeFilter('all');
@@ -85,6 +89,8 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
     setTransportFilter('all');
     setStartDate('');
     setEndDate('');
+    setMinBalance('');
+    setMaxBalance('');
     setCurrentPage(1);
     setSearchLearnerId(null);
   };
@@ -685,13 +691,48 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
         {/* Top Row: Omni-Search & Actions */}
         <div className="flex flex-col md:flex-row gap-3 items-end w-full">
           {/* Omni Search */}
-          <div className="flex-1 w-full relative z-40">
+          <div className="flex-[2] w-full relative z-40">
             <SmartLearnerSearch
               learners={allLearners}
               selectedLearnerId={searchLearnerId}
               onSelect={(id) => { setSearchLearnerId(id); setCurrentPage(1); }}
               placeholder="Search by student name, adm no, or invoice #..."
             />
+          </div>
+
+          {/* Inline Balance Filter */}
+          <div className="flex-1 relative">
+            <div className="flex items-center gap-2 p-2.5 bg-gray-50 border border-gray-200 rounded-xl shadow-sm focus-within:ring-2 focus-within:ring-emerald-400 focus-within:border-emerald-400 transition-all">
+              <span className="text-[10px] font-extrabold text-emerald-600 uppercase tracking-widest shrink-0">Balance ≥</span>
+              <span className="text-xs font-bold text-gray-400 shrink-0">KES</span>
+              <input
+                type="number"
+                placeholder="e.g. 10,000"
+                value={minBalance}
+                onChange={(e) => setMinBalance(e.target.value)}
+                min="0"
+                className="flex-1 bg-transparent border-none outline-none text-sm font-semibold text-gray-800 placeholder-gray-300 min-w-0"
+              />
+              {minBalance && (
+                <button onClick={() => setMinBalance('')} className="text-gray-400 hover:text-red-500 transition-colors shrink-0">
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+            {/* quick picks */}
+            {minBalance === '' && (
+              <div className="absolute top-full left-0 mt-1 flex gap-1 z-10">
+                {[1000, 5000, 10000, 50000].map(v => (
+                  <button
+                    key={v}
+                    onClick={() => setMinBalance(v)}
+                    className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 transition-colors"
+                  >
+                    {v >= 1000 ? `>${v/1000}K` : `>${v}`}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Unified Filter Button */}
@@ -781,6 +822,60 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                         </select>
                       </div>
                     </div>
+
+                    {/* Balance Range Filter */}
+                    <div className="mt-4">
+                      <label className="text-xs font-semibold text-gray-600 flex items-center gap-1.5 mb-2">
+                        Balance Range
+                        <span className="text-[9px] font-normal text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">KES</span>
+                        {(minBalance || maxBalance) && (
+                          <button onClick={() => { setMinBalance(''); setMaxBalance(''); }} className="ml-auto text-[10px] text-red-500 hover:text-red-700 font-bold">
+                            Reset
+                          </button>
+                        )}
+                      </label>
+                      <div className="flex gap-2 items-center">
+                        <div className="flex-1 relative">
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400">≥</span>
+                          <input
+                            type="number"
+                            placeholder="Min (e.g. 5000)"
+                            value={minBalance}
+                            onChange={(e) => setMinBalance(e.target.value)}
+                            min="0"
+                            className="w-full pl-6 pr-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-emerald-500 focus:border-emerald-300"
+                          />
+                        </div>
+                        <span className="text-gray-300 font-bold text-sm shrink-0">—</span>
+                        <div className="flex-1 relative">
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400">≤</span>
+                          <input
+                            type="number"
+                            placeholder="Max (optional)"
+                            value={maxBalance}
+                            onChange={(e) => setMaxBalance(e.target.value)}
+                            min="0"
+                            className="w-full pl-6 pr-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-emerald-500 focus:border-emerald-300"
+                          />
+                        </div>
+                      </div>
+                      {/* Quick balance chips */}
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {[[1000, null, '>1K'], [5000, null, '>5K'], [10000, null, '>10K'], [50000, null, '>50K'], [0, 1000, 'Under 1K'], [0, 5000, 'Under 5K']].map(([min, max, label]) => (
+                          <button
+                            key={label}
+                            onClick={() => { setMinBalance(min || ''); setMaxBalance(max || ''); }}
+                            className={`px-2.5 py-1 text-[10px] font-bold rounded-full border transition-colors ${
+                              String(minBalance) === String(min || '') && String(maxBalance) === String(max || '')
+                                ? 'bg-emerald-600 text-white border-emerald-600'
+                                : 'border-gray-200 text-gray-500 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700'
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -855,22 +950,82 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
 
         {/* Quick Action Chips Bar */}
         <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-gray-100 items-center">
-          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mr-1">Quick Filters:</span>
-          
-          <button onClick={() => { setTermFilter('TERM_1'); setGradeFilter('all'); setStatusFilter('all'); setCurrentPage(1); }} className="px-3 py-1 text-xs font-semibold rounded-full border border-gray-200 bg-gray-50 text-gray-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 transition-colors">
-            Current Term (T1)
+          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mr-1 shrink-0">Quick Filters:</span>
+
+          {/* Terms */}
+          {[['TERM_1', 'Term 1'], ['TERM_2', 'Term 2'], ['TERM_3', 'Term 3']].map(([val, label]) => (
+            <button
+              key={val}
+              onClick={() => { setTermFilter(val); setCurrentPage(1); }}
+              className={`px-3 py-1 text-xs font-semibold rounded-full border transition-colors ${termFilter === val ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700'}`}
+            >
+              {label}
+            </button>
+          ))}
+
+          <span className="w-px h-4 bg-gray-200 mx-1 shrink-0" />
+
+          {/* Payment Status */}
+          {[
+            ['pending',  'Pending',  'hover:border-red-300 hover:bg-red-50 hover:text-red-700',    'bg-red-500 text-white border-red-500'],
+            ['partial',  'Partial',  'hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700', 'bg-amber-500 text-white border-amber-500'],
+            ['paid',     'Paid',     'hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700', 'bg-emerald-500 text-white border-emerald-500'],
+            ['overpaid', 'Overpaid', 'hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700', 'bg-purple-500 text-white border-purple-500'],
+          ].map(([val, label, hoverCls, activeCls]) => (
+            <button
+              key={val}
+              onClick={() => { setStatusFilter(val); setCurrentPage(1); }}
+              className={`px-3 py-1 text-xs font-semibold rounded-full border transition-colors ${statusFilter === val ? activeCls : `border-gray-200 bg-gray-50 text-gray-600 ${hoverCls}`}`}
+            >
+              {label}
+            </button>
+          ))}
+
+          <span className="w-px h-4 bg-gray-200 mx-1 shrink-0" />
+
+          {/* Category */}
+          <button
+            onClick={() => { setTransportFilter('transport'); setCurrentPage(1); }}
+            className={`px-3 py-1 text-xs font-semibold rounded-full border transition-colors ${transportFilter === 'transport' ? 'bg-violet-600 text-white border-violet-600' : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700'}`}
+          >
+            🚌 Transport
           </button>
-          
-          <button onClick={() => { setStatusFilter('pending'); setCurrentPage(1); }} className="px-3 py-1 text-xs font-semibold rounded-full border border-gray-200 bg-gray-50 text-gray-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700 transition-colors">
-            Defaulters (Pending)
+          <button
+            onClick={() => { setTransportFilter('regular'); setCurrentPage(1); }}
+            className={`px-3 py-1 text-xs font-semibold rounded-full border transition-colors ${transportFilter === 'regular' ? 'bg-cyan-600 text-white border-cyan-600' : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-700'}`}
+          >
+            📚 Regular
           </button>
-          
-          <button onClick={() => { setTransportFilter('transport'); setCurrentPage(1); }} className="px-3 py-1 text-xs font-semibold rounded-full border border-gray-200 bg-gray-50 text-gray-600 hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700 transition-colors">
-            Transport Students
+
+          <span className="w-px h-4 bg-gray-200 mx-1 shrink-0" />
+
+          {/* Date shortcut — Today */}
+          <button
+            onClick={() => {
+              const today = new Date().toISOString().split('T')[0];
+              setStartDate(today);
+              setEndDate(today);
+              setCurrentPage(1);
+            }}
+            className="px-3 py-1 text-xs font-semibold rounded-full border border-gray-200 bg-gray-50 text-gray-600 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
+          >
+            📅 Today
           </button>
-          
+          <button
+            onClick={() => {
+              const today = new Date();
+              const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+              setStartDate(firstDay);
+              setEndDate(today.toISOString().split('T')[0]);
+              setCurrentPage(1);
+            }}
+            className="px-3 py-1 text-xs font-semibold rounded-full border border-gray-200 bg-gray-50 text-gray-600 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
+          >
+            📅 This Month
+          </button>
+
           {activeFilterCount > 0 && (
-            <button onClick={clearAllFilters} className="ml-auto flex items-center gap-1 px-3 py-1 text-xs font-bold rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-colors">
+            <button onClick={clearAllFilters} className="ml-auto flex items-center gap-1 px-3 py-1 text-xs font-bold rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-colors shrink-0">
               <X size={12} /> Clear All
             </button>
           )}
@@ -1012,7 +1167,13 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {invoices.map((invoice) => (
+              {invoices
+                .filter(inv => {
+                  if (minBalance !== '' && Number(inv.balance) < Number(minBalance)) return false;
+                  if (maxBalance !== '' && Number(inv.balance) > Number(maxBalance)) return false;
+                  return true;
+                })
+                .map((invoice) => (
                 <tr
                   key={invoice.id}
                   className={`hover:bg-blue-50/30 transition-colors cursor-pointer border-b border-gray-100 ${selectedInvoiceIds.includes(invoice.id) ? 'bg-blue-50/50' : ''}`}

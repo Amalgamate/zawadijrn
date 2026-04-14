@@ -142,20 +142,20 @@ const WaiversPage = () => {
             <p className="text-sm">Try adjusting your filters or search criteria.</p>
           </div>
         ) : (
-          <table className="w-full text-left">
+          <table className="w-full text-left text-xs border-collapse">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Student</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Amount</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Reason</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Status</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Actions</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100">Student</th>
+                <th className="px-3 py-1.5 text-right text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100">Amount</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100">Reason</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100">Status</th>
+                <th className="px-3 py-1.5 text-center text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {waivers.map((waiver) => (
                 <tr key={waiver.id} className="hover:bg-gray-50/50 transition-colors group">
-                  <td className="px-6 py-4">
+                  <td className="px-3 py-1.5 border-r border-gray-100">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-[#002C60] font-bold text-xs border border-blue-100">
                         {waiver.invoice?.learner?.firstName?.charAt(0)}{waiver.invoice?.learner?.lastName?.charAt(0)}
@@ -170,11 +170,11 @@ const WaiversPage = () => {
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-3 py-1.5 text-right border-r border-gray-100">
                     <p className="text-sm font-bold text-[#002C60]">KES {Number(waiver.amountWaived).toLocaleString()}</p>
                     <p className="text-[10px] text-gray-400 italic font-medium">Original Balance: KES {Number(waiver.invoice?.balance).toLocaleString()}</p>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-3 py-1.5 border-r border-gray-100">
                     <div className="max-w-xs">
                       <p className="text-sm text-gray-600 line-clamp-1" title={waiver.reason}>{waiver.reason}</p>
                       <p className="text-[10px] text-gray-400 flex items-center gap-1 mt-0.5">
@@ -182,12 +182,12 @@ const WaiversPage = () => {
                       </p>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-3 py-1.5 border-r border-gray-100">
                     <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border uppercase ${WAIVER_STATUS_COLORS[waiver.status]}`}>
                       {waiver.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-3 py-1.5 border-r border-gray-100">
                     <div className="flex justify-center items-center gap-2">
                       <button 
                         onClick={() => navigateTo('fees-invoice-detail', { invoice: waiver.invoice })}
@@ -277,3 +277,4 @@ const WaiversPage = () => {
 };
 
 export default WaiversPage;
+

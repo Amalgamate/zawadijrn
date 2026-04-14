@@ -14,7 +14,7 @@ import React, { useState, useEffect } from 'react';
 import {
   FileText, Download, TrendingUp, TrendingDown,
   DollarSign, AlertCircle, CheckCircle, RefreshCw, Bus,
-  Users, ArrowRight, Loader2
+  Users, ArrowRight, Loader2, Filter, X
 } from 'lucide-react';
 import LoadingSpinner from '../shared/LoadingSpinner';
 import { useNotifications } from '../hooks/useNotifications';
@@ -44,7 +44,29 @@ const FeeReportsPage = () => {
   });
   const [filterGrade, setFilterGrade] = useState('all');
   const [filterTerm, setFilterTerm] = useState('all');
+  const [showGlobalFilters, setShowGlobalFilters] = useState(false);
   const [exporting, setExporting] = useState(false);
+
+  const isDefaultDate = (range) => {
+    const today = new Date();
+    const defaultStart = new Date(today.getFullYear(), 0, 1).toISOString().split('T')[0];
+    const defaultEnd = today.toISOString().split('T')[0];
+    return range.startDate === defaultStart && range.endDate === defaultEnd;
+  };
+
+  const activeFilterCount = (filterGrade !== 'all' ? 1 : 0) +
+    (filterTerm !== 'all' ? 1 : 0) +
+    (!isDefaultDate(dateRange) ? 1 : 0);
+
+  const clearAllFilters = () => {
+    setFilterGrade('all');
+    setFilterTerm('all');
+    const today = new Date();
+    setDateRange({
+      startDate: new Date(today.getFullYear(), 0, 1).toISOString().split('T')[0],
+      endDate: today.toISOString().split('T')[0]
+    });
+  };
   const { showSuccess, showError } = useNotifications();
   const { grades: fetchedGrades, classes } = useSchoolData();
   const { setCurrentPage } = useUIStore();
@@ -249,73 +271,106 @@ const FeeReportsPage = () => {
         </button>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-3">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <div>
-            <label className="block text-xs font-semibold mb-1">Start Date</label>
-            <input
-              type="date"
-              value={toInputDate(dateRange.startDate)}
-              onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-xs"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold mb-1">End Date</label>
-            <input
-              type="date"
-              value={toInputDate(dateRange.endDate)}
-              onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-xs"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold mb-1">Grade</label>
-            <select
-              value={filterGrade}
-              onChange={(e) => setFilterGrade(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-xs"
+      {/* Top Bar: Tabs & Filters */}
+      <div className="flex flex-col md:flex-row gap-3 items-end w-full">
+        {/* Navigation Tabs */}
+        <div className="flex-1 w-full bg-white p-1 rounded-xl shadow-sm border border-gray-100 flex overflow-x-auto scrollbar-hide">
+          {[
+            { id: 'summary', label: 'Overview' },
+            { id: 'detailed', label: 'All Invoices' },
+            { id: 'collection', label: 'Payments' },
+            { id: 'defaulters', label: 'Overdue' },
+            { id: 'learner', label: 'By Student' },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setReportType(tab.id)}
+              className={`flex-1 min-w-[100px] text-xs font-bold py-2 px-3 rounded-lg transition-all ${
+                reportType === tab.id
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
+              }`}
             >
-              <option value="all">All Grades</option>
-              {fetchedGrades.map(grade => (
-                <option key={grade} value={grade}>{grade.replace(/_/g, ' ')}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold mb-1">Term</label>
-            <select
-              value={filterTerm}
-              onChange={(e) => setFilterTerm(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-xs"
-            >
-              <option value="all">All Terms</option>
-              {terms.map(term => (
-                <option key={term} value={term}>{term.replace(/_/g, ' ')}</option>
-              ))}
-            </select>
-          </div>
+              {tab.label}
+            </button>
+          ))}
         </div>
-        <div className="flex items-center gap-2 mt-3">
+
+        {/* Filter Button */}
+        <div className="relative">
           <button
-            onClick={fetchStats}
-            className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-xs"
+            onClick={() => setShowGlobalFilters(!showGlobalFilters)}
+            className={`px-5 py-2.5 border rounded-xl font-bold flex items-center gap-2 transition-all ${activeFilterCount > 0 ? 'bg-blue-50 border-blue-200 text-blue-700' : 'hover:bg-gray-50 text-gray-700 bg-white shadow-sm'}`}
           >
-            <RefreshCw size={14} />
-            Refresh
+            <Filter size={18} className={activeFilterCount > 0 ? "text-blue-600" : "text-gray-500"} />
+            Filters
+            {activeFilterCount > 0 && (
+              <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-[10px] ml-1">
+                {activeFilterCount}
+              </span>
+            )}
           </button>
-          <select
-            value={reportType}
-            onChange={(e) => setReportType(e.target.value)}
-            className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-xs"
-          >
-            <option value="summary">Summary Report</option>
-            <option value="detailed">Detailed Report</option>
-            <option value="collection">Collection Report</option>
-            <option value="defaulters">Defaulters Report</option>
-            <option value="learner">Learner Report</option>
-          </select>
+
+          {/* Filter Popover Drawer */}
+          {showGlobalFilters && (
+            <div className="absolute right-0 top-full mt-2 w-[400px] bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden animate-fade-in origin-top-right">
+              <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                  <Filter size={16} className="text-blue-600" /> Report Filters
+                </h3>
+                {activeFilterCount > 0 && (
+                  <button onClick={clearAllFilters} className="text-[11px] font-bold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-md transition-colors">
+                    Clear All
+                  </button>
+                )}
+              </div>
+
+              <div className="p-5 space-y-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                {/* Academic Context */}
+                <div>
+                  <h4 className="text-[11px] font-extrabold text-blue-500 uppercase tracking-widest mb-3">Academic Term</h4>
+                  <div className="flex gap-3">
+                    <div className="flex-1 flex flex-col gap-1.5">
+                      <label className="text-xs font-semibold text-gray-600">Grade Level</label>
+                      <select value={filterGrade} onChange={(e) => setFilterGrade(e.target.value)} className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm w-full outline-blue-500">
+                        <option value="all">All Grades</option>
+                        {fetchedGrades.map(g => <option key={g} value={g}>{g.replace(/_/g, ' ')}</option>)}
+                      </select>
+                    </div>
+                    <div className="flex-1 flex flex-col gap-1.5">
+                      <label className="text-xs font-semibold text-gray-600">Term</label>
+                      <select value={filterTerm} onChange={(e) => setFilterTerm(e.target.value)} className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm w-full outline-blue-500">
+                        <option value="all">All Terms</option>
+                        {terms.map(t => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Date Range */}
+                <div>
+                  <h4 className="text-[11px] font-extrabold text-blue-500 uppercase tracking-widest mb-3">Date Range</h4>
+                  <div className="flex gap-3">
+                    <div className="flex-1 flex flex-col gap-1.5">
+                      <label className="text-xs font-semibold text-gray-600">Start</label>
+                      <input type="date" value={toInputDate(dateRange.startDate)} onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })} className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm w-full outline-blue-500" />
+                    </div>
+                    <div className="flex-1 flex flex-col gap-1.5">
+                      <label className="text-xs font-semibold text-gray-600">End</label>
+                      <input type="date" value={toInputDate(dateRange.endDate)} onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })} className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm w-full outline-blue-500" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 bg-gray-50 border-t border-gray-100 flex gap-2 justify-end">
+                <button onClick={() => setShowGlobalFilters(false)} className="px-4 py-2 text-xs font-bold text-gray-600 hover:bg-gray-200 rounded-lg">Close</button>
+                <button onClick={() => { setShowGlobalFilters(false); fetchStats(); }} className="px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm flex items-center gap-2">
+                  <RefreshCw size={14} /> Apply & Refresh
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -484,15 +539,15 @@ const FeeReportsPage = () => {
           </span>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full border-collapse">
             <thead className="border-b border-[color:var(--table-border)]">
               <tr>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Grade</th>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Students</th>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Expected</th>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Collected</th>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Outstanding</th>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Rate</th>
+                <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Grade</th>
+                <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Students</th>
+                <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Expected</th>
+                <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Collected</th>
+                <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Outstanding</th>
+                <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Rate</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -503,19 +558,19 @@ const FeeReportsPage = () => {
                   className="hover:bg-blue-50 cursor-pointer transition-colors group"
                   title={`View ${grade.grade} fee records`}
                 >
-                  <td className="px-3 py-2 font-semibold text-blue-700 text-xs group-hover:underline flex items-center gap-1">
+                  <td className="px-3 py-1.5 border-r border-gray-100 font-semibold text-blue-700 text-xs group-hover:underline flex items-center gap-1">
                     {grade.grade}
                     <ArrowRight size={10} className="opacity-0 group-hover:opacity-60 transition-opacity" />
                   </td>
-                  <td className="px-3 py-2 text-gray-600 text-xs">{grade.studentCount}</td>
-                  <td className="px-3 py-2 text-gray-900 text-xs">{fmtKES(grade.expected)}</td>
+                  <td className="px-3 py-1.5 border-r border-gray-100 text-gray-600 text-xs">{grade.studentCount}</td>
+                  <td className="px-3 py-1.5 border-r border-gray-100 text-gray-900 text-xs">{fmtKES(grade.expected)}</td>
                   <td className={`px-3 py-2 text-xs ${collectedClass(grade.collected)}`}>
                     {fmtKES(grade.collected)}
                   </td>
                   <td className={`px-3 py-2 text-xs ${outstandingClass(grade.outstanding)}`}>
                     {fmtKES(grade.outstanding)}
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-1.5 border-r border-gray-100">
                     <div className="flex items-center gap-2">
                       <div className="flex-1 bg-gray-200 rounded-full h-1.5 max-w-[80px]">
                         <div
@@ -561,12 +616,12 @@ const FeeReportsPage = () => {
               return (
                 <tfoot className="border-t-2 border-gray-300 bg-gray-50">
                   <tr>
-                    <td className="px-3 py-2 text-xs font-bold text-gray-700">TOTAL</td>
-                    <td className="px-3 py-2 text-xs font-bold text-gray-700">{totals.students}</td>
-                    <td className="px-3 py-2 text-xs font-bold text-gray-900">{fmtKES(totals.expected)}</td>
+                    <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-bold text-gray-700">TOTAL</td>
+                    <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-bold text-gray-700">{totals.students}</td>
+                    <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-bold text-gray-900">{fmtKES(totals.expected)}</td>
                     <td className={`px-3 py-2 text-xs font-bold ${collectedClass(totals.collected)}`}>{fmtKES(totals.collected)}</td>
                     <td className={`px-3 py-2 text-xs font-bold ${outstandingClass(totals.outstanding)}`}>{fmtKES(totals.outstanding)}</td>
-                    <td className="px-3 py-2 text-xs font-bold text-gray-700">{totalRate}%</td>
+                    <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-bold text-gray-700">{totalRate}%</td>
                   </tr>
                 </tfoot>
               );
@@ -587,18 +642,18 @@ const FeeReportsPage = () => {
             <p className="text-center text-xs text-gray-500 py-6">No invoices found for the selected filters.</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-xs">
+              <table className="w-full text-xs border-collapse">
                 <thead className="border-b">
                   <tr className="text-left text-[10px] uppercase text-gray-500 font-semibold">
-                    <th className="px-3 py-2">Invoice #</th>
-                    <th className="px-3 py-2">Learner</th>
-                    <th className="px-3 py-2">Grade</th>
-                    <th className="px-3 py-2">Term</th>
-                    <th className="px-3 py-2">Total</th>
-                    <th className="px-3 py-2">Paid</th>
-                    <th className="px-3 py-2">Balance</th>
-                    <th className="px-3 py-2">Status</th>
-                    <th className="px-3 py-2">Due</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Invoice #</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Learner</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Grade</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Term</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Total</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Paid</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Balance</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Status</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Due</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -609,14 +664,14 @@ const FeeReportsPage = () => {
                     const overdue = inv.dueDate && new Date(inv.dueDate) < new Date() && inv.status !== 'PAID';
                     return (
                       <tr key={inv.id} className="hover:bg-gray-50">
-                        <td className="px-3 py-1.5 font-mono text-blue-700">{inv.invoiceNumber}</td>
-                        <td className="px-3 py-1.5">{inv.learner ? `${inv.learner.firstName} ${inv.learner.lastName}` : '—'}</td>
-                        <td className="px-3 py-1.5">{inv.learner?.grade?.replace(/_/g, ' ') || '—'}</td>
-                        <td className="px-3 py-1.5">{inv.term?.replace(/_/g, ' ') || '—'}</td>
-                        <td className="px-3 py-1.5 font-semibold">{fmtKES(total)}</td>
+                        <td className="px-3 py-1.5 border-r border-gray-100 font-mono text-blue-700">{inv.invoiceNumber}</td>
+                        <td className="px-3 py-1.5 border-r border-gray-100">{inv.learner ? `${inv.learner.firstName} ${inv.learner.lastName}` : '—'}</td>
+                        <td className="px-3 py-1.5 border-r border-gray-100">{inv.learner?.grade?.replace(/_/g, ' ') || '—'}</td>
+                        <td className="px-3 py-1.5 border-r border-gray-100">{inv.term?.replace(/_/g, ' ') || '—'}</td>
+                        <td className="px-3 py-1.5 border-r border-gray-100 font-semibold">{fmtKES(total)}</td>
                         <td className={`px-3 py-1.5 ${collectedClass(paid)}`}>{fmtKES(paid)}</td>
                         <td className={`px-3 py-1.5 ${outstandingClass(balance)}`}>{fmtKES(balance)}</td>
-                        <td className="px-3 py-1.5">
+                        <td className="px-3 py-1.5 border-r border-gray-100">
                           <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
                             inv.status === 'PAID' ? 'bg-green-100 text-green-700' :
                             inv.status === 'PARTIAL' ? 'bg-blue-100 text-blue-700' :
@@ -653,17 +708,17 @@ const FeeReportsPage = () => {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-xs">
+              <table className="w-full text-xs border-collapse">
                 <thead className="border-b">
                   <tr className="text-left text-[10px] uppercase text-gray-500 font-semibold">
-                    <th className="px-3 py-2">Learner</th>
-                    <th className="px-3 py-2">Grade</th>
-                    <th className="px-3 py-2">Invoice #</th>
-                    <th className="px-3 py-2">Total</th>
-                    <th className="px-3 py-2">Paid</th>
-                    <th className="px-3 py-2">Balance</th>
-                    <th className="px-3 py-2">Due Date</th>
-                    <th className="px-3 py-2">Days Overdue</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Learner</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Grade</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Invoice #</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Total</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Paid</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Balance</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Due Date</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Days Overdue</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -676,18 +731,18 @@ const FeeReportsPage = () => {
                       : null;
                     return (
                       <tr key={inv.id} className="hover:bg-red-50">
-                        <td className="px-3 py-1.5 font-medium">
+                        <td className="px-3 py-1.5 border-r border-gray-100 font-medium">
                           {inv.learner ? `${inv.learner.firstName} ${inv.learner.lastName}` : '—'}
                         </td>
-                        <td className="px-3 py-1.5 text-gray-600">{inv.learner?.grade?.replace(/_/g, ' ') || '—'}</td>
-                        <td className="px-3 py-1.5 font-mono text-blue-700">{inv.invoiceNumber}</td>
-                        <td className="px-3 py-1.5 font-semibold">{fmtKES(total)}</td>
+                        <td className="px-3 py-1.5 border-r border-gray-100 text-gray-600">{inv.learner?.grade?.replace(/_/g, ' ') || '—'}</td>
+                        <td className="px-3 py-1.5 border-r border-gray-100 font-mono text-blue-700">{inv.invoiceNumber}</td>
+                        <td className="px-3 py-1.5 border-r border-gray-100 font-semibold">{fmtKES(total)}</td>
                         <td className={`px-3 py-1.5 ${collectedClass(paid)}`}>{fmtKES(paid)}</td>
-                        <td className="px-3 py-1.5 text-red-600 font-bold">{fmtKES(balance)}</td>
-                        <td className="px-3 py-1.5 text-red-500 font-semibold">
+                        <td className="px-3 py-1.5 border-r border-gray-100 text-red-600 font-bold">{fmtKES(balance)}</td>
+                        <td className="px-3 py-1.5 border-r border-gray-100 text-red-500 font-semibold">
                           {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : '—'}
                         </td>
-                        <td className="px-3 py-1.5">
+                        <td className="px-3 py-1.5 border-r border-gray-100">
                           {daysOverdue !== null ? (
                             <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
                               daysOverdue > 30 ? 'bg-red-200 text-red-800' : 'bg-orange-100 text-orange-700'
@@ -700,8 +755,8 @@ const FeeReportsPage = () => {
                 </tbody>
                 <tfoot className="border-t-2 border-gray-300 bg-red-50">
                   <tr>
-                    <td colSpan={5} className="px-3 py-2 text-xs font-bold text-gray-700">TOTAL OUTSTANDING</td>
-                    <td className="px-3 py-2 text-xs font-bold text-red-700">
+                    <td colSpan={5} className="px-3 py-1.5 border-r border-gray-100 text-xs font-bold text-gray-700">TOTAL OUTSTANDING</td>
+                    <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-bold text-red-700">
                       {fmtKES(defaulters.reduce((s, inv) => s + Number(inv.totalAmount || 0) - Number(inv.amountPaid || 0), 0))}
                     </td>
                     <td colSpan={2} />
@@ -727,17 +782,17 @@ const FeeReportsPage = () => {
             <p className="text-center text-xs text-gray-500 py-6">No paid invoices found for the selected period.</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-xs">
+              <table className="w-full text-xs border-collapse">
                 <thead className="border-b">
                   <tr className="text-left text-[10px] uppercase text-gray-500 font-semibold">
-                    <th className="px-3 py-2">Invoice #</th>
-                    <th className="px-3 py-2">Learner</th>
-                    <th className="px-3 py-2">Grade</th>
-                    <th className="px-3 py-2">Term</th>
-                    <th className="px-3 py-2">Total</th>
-                    <th className="px-3 py-2">Collected</th>
-                    <th className="px-3 py-2">Balance</th>
-                    <th className="px-3 py-2">Status</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Invoice #</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Learner</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Grade</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Term</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Total</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Collected</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Balance</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -747,14 +802,14 @@ const FeeReportsPage = () => {
                     const balance = total - paid;
                     return (
                       <tr key={inv.id} className="hover:bg-green-50">
-                        <td className="px-3 py-1.5 font-mono text-blue-700">{inv.invoiceNumber}</td>
-                        <td className="px-3 py-1.5">{inv.learner ? `${inv.learner.firstName} ${inv.learner.lastName}` : '—'}</td>
-                        <td className="px-3 py-1.5">{inv.learner?.grade?.replace(/_/g, ' ') || '—'}</td>
-                        <td className="px-3 py-1.5">{inv.term?.replace(/_/g, ' ') || '—'}</td>
-                        <td className="px-3 py-1.5 font-semibold">{fmtKES(total)}</td>
+                        <td className="px-3 py-1.5 border-r border-gray-100 font-mono text-blue-700">{inv.invoiceNumber}</td>
+                        <td className="px-3 py-1.5 border-r border-gray-100">{inv.learner ? `${inv.learner.firstName} ${inv.learner.lastName}` : '—'}</td>
+                        <td className="px-3 py-1.5 border-r border-gray-100">{inv.learner?.grade?.replace(/_/g, ' ') || '—'}</td>
+                        <td className="px-3 py-1.5 border-r border-gray-100">{inv.term?.replace(/_/g, ' ') || '—'}</td>
+                        <td className="px-3 py-1.5 border-r border-gray-100 font-semibold">{fmtKES(total)}</td>
                         <td className={`px-3 py-1.5 ${collectedClass(paid)}`}>{fmtKES(paid)}</td>
                         <td className={`px-3 py-1.5 ${outstandingClass(balance)}`}>{fmtKES(balance)}</td>
-                        <td className="px-3 py-1.5">
+                        <td className="px-3 py-1.5 border-r border-gray-100">
                           <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
                             inv.status === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
                           }`}>{inv.status}</span>
@@ -765,10 +820,10 @@ const FeeReportsPage = () => {
                 </tbody>
                 <tfoot className="border-t-2 border-gray-300 bg-green-50">
                   <tr>
-                    <td colSpan={4} className="px-3 py-2 text-xs font-bold text-gray-700">TOTALS</td>
-                    <td className="px-3 py-2 text-xs font-bold text-gray-900">{fmtKES(collectionEntries.reduce((s, i) => s + Number(i.totalAmount || 0), 0))}</td>
-                    <td className="px-3 py-2 text-xs font-bold text-green-700">{fmtKES(collectionEntries.reduce((s, i) => s + Number(i.amountPaid || 0), 0))}</td>
-                    <td className="px-3 py-2 text-xs font-bold text-gray-700">{fmtKES(collectionEntries.reduce((s, i) => s + (Number(i.totalAmount || 0) - Number(i.amountPaid || 0)), 0))}</td>
+                    <td colSpan={4} className="px-3 py-1.5 border-r border-gray-100 text-xs font-bold text-gray-700">TOTALS</td>
+                    <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-bold text-gray-900">{fmtKES(collectionEntries.reduce((s, i) => s + Number(i.totalAmount || 0), 0))}</td>
+                    <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-bold text-green-700">{fmtKES(collectionEntries.reduce((s, i) => s + Number(i.amountPaid || 0), 0))}</td>
+                    <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-bold text-gray-700">{fmtKES(collectionEntries.reduce((s, i) => s + (Number(i.totalAmount || 0) - Number(i.amountPaid || 0)), 0))}</td>
                     <td />
                   </tr>
                 </tfoot>
@@ -794,17 +849,17 @@ const FeeReportsPage = () => {
             <p className="text-center text-xs text-gray-500 py-6">No invoices found for this learner.</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-xs">
+              <table className="w-full text-xs border-collapse">
                 <thead className="border-b">
                   <tr className="text-left text-[10px] uppercase text-gray-500 font-semibold">
-                    <th className="px-3 py-2">Invoice #</th>
-                    <th className="px-3 py-2">Term</th>
-                    <th className="px-3 py-2">Year</th>
-                    <th className="px-3 py-2">Total</th>
-                    <th className="px-3 py-2">Paid</th>
-                    <th className="px-3 py-2">Balance</th>
-                    <th className="px-3 py-2">Status</th>
-                    <th className="px-3 py-2">Due Date</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Invoice #</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Term</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Year</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Total</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Paid</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Balance</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Status</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Due Date</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -815,13 +870,13 @@ const FeeReportsPage = () => {
                     const overdue = inv.dueDate && new Date(inv.dueDate) < new Date() && inv.status !== 'PAID';
                     return (
                       <tr key={inv.id} className="hover:bg-purple-50">
-                        <td className="px-3 py-1.5 font-mono text-blue-700">{inv.invoiceNumber}</td>
-                        <td className="px-3 py-1.5">{inv.term?.replace(/_/g, ' ') || '—'}</td>
-                        <td className="px-3 py-1.5">{inv.academicYear || '—'}</td>
-                        <td className="px-3 py-1.5 font-semibold">{fmtKES(total)}</td>
+                        <td className="px-3 py-1.5 border-r border-gray-100 font-mono text-blue-700">{inv.invoiceNumber}</td>
+                        <td className="px-3 py-1.5 border-r border-gray-100">{inv.term?.replace(/_/g, ' ') || '—'}</td>
+                        <td className="px-3 py-1.5 border-r border-gray-100">{inv.academicYear || '—'}</td>
+                        <td className="px-3 py-1.5 border-r border-gray-100 font-semibold">{fmtKES(total)}</td>
                         <td className={`px-3 py-1.5 ${collectedClass(paid)}`}>{fmtKES(paid)}</td>
                         <td className={`px-3 py-1.5 ${outstandingClass(balance)}`}>{fmtKES(balance)}</td>
-                        <td className="px-3 py-1.5">
+                        <td className="px-3 py-1.5 border-r border-gray-100">
                           <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
                             inv.status === 'PAID' ? 'bg-green-100 text-green-700' :
                             inv.status === 'PARTIAL' ? 'bg-blue-100 text-blue-700' :
@@ -837,10 +892,10 @@ const FeeReportsPage = () => {
                 </tbody>
                 <tfoot className="border-t-2 border-gray-300 bg-purple-50">
                   <tr>
-                    <td colSpan={3} className="px-3 py-2 text-xs font-bold text-gray-700">TOTALS</td>
-                    <td className="px-3 py-2 text-xs font-bold text-gray-900">{fmtKES(learnerInvoices.reduce((s, i) => s + Number(i.totalAmount || 0), 0))}</td>
-                    <td className="px-3 py-2 text-xs font-bold text-green-700">{fmtKES(learnerInvoices.reduce((s, i) => s + Number(i.amountPaid || 0), 0))}</td>
-                    <td className="px-3 py-2 text-xs font-bold text-gray-700">{fmtKES(learnerInvoices.reduce((s, i) => s + (Number(i.totalAmount || 0) - Number(i.amountPaid || 0)), 0))}</td>
+                    <td colSpan={3} className="px-3 py-1.5 border-r border-gray-100 text-xs font-bold text-gray-700">TOTALS</td>
+                    <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-bold text-gray-900">{fmtKES(learnerInvoices.reduce((s, i) => s + Number(i.totalAmount || 0), 0))}</td>
+                    <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-bold text-green-700">{fmtKES(learnerInvoices.reduce((s, i) => s + Number(i.amountPaid || 0), 0))}</td>
+                    <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-bold text-gray-700">{fmtKES(learnerInvoices.reduce((s, i) => s + (Number(i.totalAmount || 0) - Number(i.amountPaid || 0)), 0))}</td>
                     <td colSpan={2} />
                   </tr>
                 </tfoot>
@@ -869,3 +924,4 @@ const FeeReportsPage = () => {
 };
 
 export default FeeReportsPage;
+

@@ -553,7 +553,13 @@ const UniformAllocationPage = () => {
                         {/* Student */}
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
-                            <span className="text-xl">{learner.avatar || '👨‍🎓'}</span>
+                            {learner.avatar && (learner.avatar.startsWith('http') || learner.avatar.startsWith('/') || learner.avatar.startsWith('data:image')) ? (
+                              <img src={learner.avatar} alt="" className="w-8 h-8 rounded-full object-cover border border-gray-200" />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-brand-purple/10 text-brand-purple flex justify-center items-center font-bold text-xs border border-brand-purple/20 flex-shrink-0">
+                                {`${learner.firstName?.charAt(0) || ''}${learner.lastName?.charAt(0) || ''}`}
+                              </div>
+                            )}
                             <div>
                               <p className="font-semibold text-gray-900">
                                 {learner.firstName} {learner.lastName}

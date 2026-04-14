@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Plus, Edit, Trash2, Eye, Loader, Database, ChevronDown, GraduationCap, RefreshCw } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, Loader, Database, ChevronDown, GraduationCap, RefreshCw, Search, X } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
 import { useAuth } from '../../../hooks/useAuth';
 import { assessmentAPI, classAPI } from '../../../services/api';
@@ -159,6 +159,18 @@ const SummativeTests = ({ onNavigate }) => {
 
   const [expandedGrades, setExpandedGrades] = useState([]);
   const [expandedMajorGrades, setExpandedMajorGrades] = useState([]); // High-level grade accordions
+
+  // ── Filter State ──────────────────────────────────────────────────────────────
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterGrade, setFilterGrade] = useState('');
+  const [filterTerm, setFilterTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+
+  // Derived filter options from loaded tests
+  const availableGrades = useMemo(() => [...new Set(tests.map(t => t.grade).filter(Boolean))].sort(), [tests]);
+  const availableTerms = useMemo(() => [...new Set(tests.map(t => t.term).filter(Boolean))].sort(), [tests]);
+  const activeFilterCount = [filterGrade, filterTerm, filterStatus].filter(Boolean).length;
+  const clearAllFilters = () => { setSearchQuery(''); setFilterGrade(''); setFilterTerm(''); setFilterStatus(''); };
   const toggleGrade = (grade) => {
     setExpandedGrades(prev =>
       prev.includes(grade) ? prev.filter(g => g !== grade) : [...prev, grade]
@@ -178,9 +190,27 @@ const SummativeTests = ({ onNavigate }) => {
     return g?.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Unknown Grade';
   };
 
+  // Filtered tests honouring the search + filter bar
+  const filteredTests = useMemo(() => {
+    let result = tests;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(t =>
+        (t.title || '').toLowerCase().includes(q) ||
+        (t.learningArea || '').toLowerCase().includes(q) ||
+        (t.grade || '').toLowerCase().includes(q) ||
+        (t.term || '').toLowerCase().includes(q)
+      );
+    }
+    if (filterGrade) result = result.filter(t => toCanonicalGrade(t.grade) === toCanonicalGrade(filterGrade));
+    if (filterTerm) result = result.filter(t => (t.term || '') === filterTerm);
+    if (filterStatus) result = result.filter(t => (t.status || '').toUpperCase() === filterStatus.toUpperCase());
+    return result;
+  }, [tests, searchQuery, filterGrade, filterTerm, filterStatus]);
+
   const groupedData = useMemo(() => {
     const grouped = {};
-    tests.forEach(test => {
+    filteredTests.forEach(test => {
       const gradeKey = test.grade || 'UNASSIGNED';
       if (!grouped[gradeKey]) {
         grouped[gradeKey] = {};
@@ -334,63 +364,95 @@ const SummativeTests = ({ onNavigate }) => {
 
   return (
     <div className="space-y-4">
-      {/* Compact Toolbar with Metrics */}
+      {/* Toolbar */}
       <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
-        <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
+        <div className="flex flex-col md:flex-row gap-4 justify-between items-start">
+
+          {/* Left: Stats + Bulk actions */}
           {selectedIds.length > 0 ? (
-            <div className="flex items-center gap-4 bg-brand-purple/5 px-4 py-2 rounded-lg border border-brand-purple/10 flex-1">
+            <div className="flex items-center gap-4 bg-brand-purple/5 px-4 py-2 rounded-lg border border-brand-purple/10">
               <span className="text-sm font-bold text-brand-purple">{selectedIds.length} Selected</span>
               <div className="flex gap-2">
-                <button
-                  onClick={handleBulkDelete}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded-md hover:bg-red-700 transition"
-                >
+                <button onClick={handleBulkDelete} className="flex items-center gap-2 px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded-md hover:bg-red-700 transition">
                   <Trash2 size={14} /> Bulk Delete
                 </button>
-
-                <button
-                  onClick={() => setSelectedIds([])}
-                  className="px-3 py-1.5 bg-white text-gray-600 text-xs font-bold rounded-md border border-gray-200 hover:bg-gray-50 transition"
-                >
+                <button onClick={() => setSelectedIds([])} className="px-3 py-1.5 bg-white text-gray-600 text-xs font-bold rounded-md border border-gray-200 hover:bg-gray-50 transition">
                   Cancel
                 </button>
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-4 overflow-x-auto pb-2 md:pb-0">
+            <div className="flex items-center gap-4 overflow-x-auto pb-2 md:pb-0 shrink-0">
               <div className="text-right border-r pr-4 border-gray-200 min-w-[80px]">
                 <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Total Tests</p>
-                <p className="text-xl font-bold text-gray-800 leading-none">{stats.total}</p>
+                <p className="text-xl font-bold text-gray-800 leading-none">{filteredTests.length}</p>
               </div>
             </div>
           )}
 
-          <div className="flex-shrink-0">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleAddSingleTest}
-                className="flex items-center gap-2 px-4 py-2 bg-brand-teal text-white rounded-lg hover:bg-brand-teal/90 transition shadow-sm font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Create a single test"
-              >
-                <Plus size={16} /> <span className="hidden sm:inline">New Test</span><span className="inline sm:hidden">+</span>
-              </button>
-              <button
-                onClick={handleAdd}
-                className="flex items-center gap-2 px-4 py-2 bg-brand-purple text-white rounded-lg hover:bg-brand-purple/90 transition shadow-sm font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed border border-brand-purple/20"
-                title="Create all tests for a series"
-              >
-                <Plus size={16} /> <span className="hidden sm:inline">Bulk Create</span><span className="inline sm:hidden">Bulk</span>
-              </button>
-              {user?.role !== 'TEACHER' && (
-                <button
-                  onClick={() => setViewMode('reset')}
-                  className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition shadow-sm font-bold text-sm"
-                  title="System Reset Utility"
-                >
-                  <RefreshCw size={16} /> <span className="hidden sm:inline">Reset Database</span><span className="inline sm:hidden">Reset</span>
-                </button>
-              )}
+          {/* Centre: Search + Filters */}
+          <div className="flex flex-wrap gap-2 items-center flex-1">
+            {/* Search */}
+            <div className="relative min-w-[200px] flex-grow">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search tests, subjects…"
+                className="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-brand-purple focus:border-transparent shadow-sm"
+              />
             </div>
+            {/* Grade */}
+            <select
+              value={filterGrade}
+              onChange={(e) => setFilterGrade(e.target.value)}
+              className="h-9 px-2.5 border border-slate-300 rounded-xl text-xs bg-white text-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-purple cursor-pointer hover:border-slate-400 transition-colors"
+            >
+              <option value="">All Grades</option>
+              {availableGrades.map(g => <option key={g} value={g}>{formatGradeDisplay(g)}</option>)}
+            </select>
+            {/* Term */}
+            <select
+              value={filterTerm}
+              onChange={(e) => setFilterTerm(e.target.value)}
+              className="h-9 px-2.5 border border-slate-300 rounded-xl text-xs bg-white text-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-purple cursor-pointer hover:border-slate-400 transition-colors"
+            >
+              <option value="">All Terms</option>
+              {availableTerms.map(t => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
+            </select>
+            {/* Status */}
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="h-9 px-2.5 border border-slate-300 rounded-xl text-xs bg-white text-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-purple cursor-pointer hover:border-slate-400 transition-colors"
+            >
+              <option value="">All Status</option>
+              <option value="PUBLISHED">Published</option>
+              <option value="DRAFT">Draft</option>
+              <option value="ARCHIVED">Archived</option>
+            </select>
+            {/* Clear */}
+            {(searchQuery || activeFilterCount > 0) && (
+              <button onClick={clearAllFilters} className="flex items-center gap-1 h-9 px-3 text-xs font-bold text-red-600 hover:bg-red-50 border border-red-200 rounded-xl transition">
+                <X size={13} /> Clear
+              </button>
+            )}
+          </div>
+
+          {/* Right: Action buttons */}
+          <div className="flex-shrink-0 flex items-center gap-2">
+            <button onClick={handleAddSingleTest} className="flex items-center gap-2 px-4 py-2 bg-brand-teal text-white rounded-xl hover:bg-brand-teal/90 transition shadow-sm font-bold text-sm">
+              <Plus size={16} /> <span className="hidden sm:inline">New Test</span><span className="inline sm:hidden">+</span>
+            </button>
+            <button onClick={handleAdd} className="flex items-center gap-2 px-4 py-2 bg-brand-purple text-white rounded-xl hover:bg-brand-purple/90 transition shadow-sm font-bold text-sm border border-brand-purple/20">
+              <Plus size={16} /> <span className="hidden sm:inline">Bulk Create</span><span className="inline sm:hidden">Bulk</span>
+            </button>
+            {user?.role !== 'TEACHER' && (
+              <button onClick={() => setViewMode('reset')} className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition shadow-sm font-bold text-sm">
+                <RefreshCw size={16} /> <span className="hidden sm:inline">Reset DB</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -3,7 +3,7 @@
  */
 
 import React, { useMemo, useState, useEffect } from 'react';
-import { Plus, Upload, Eye, Edit, Trash2, LogOut, Lock, ChevronLeft, ChevronRight, Search, RefreshCw, Users, MoreVertical, MessageCircle, MessageSquare, X, Loader2, Send } from 'lucide-react';
+import { Plus, Upload, Eye, Edit, Trash2, LogOut, Lock, ChevronLeft, ChevronRight, Search, RefreshCw, Users, MoreVertical, MessageCircle, MessageSquare, X, Loader2, Send, Filter } from 'lucide-react';
 import StatusBadge from '../shared/StatusBadge';
 import EmptyState from '../shared/EmptyState';
 import { usePermissions } from '../../../hooks/usePermissions';
@@ -38,6 +38,10 @@ const LearnersList = ({
   const [selectedLearners, setSelectedLearners] = useState([]);
   const [selectAllDatabase, setSelectAllDatabase] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
+  const [showGlobalFilters, setShowGlobalFilters] = useState(false);
+
+  const activeFilterCount = (filterGrade !== 'all' ? 1 : 0) + (filterStatus !== 'all' ? 1 : 0) + (filterStream !== 'all' ? 1 : 0);
+  const clearAllFiltersLearners = () => { setFilterGrade('all'); setFilterStatus('all'); setFilterStream('all'); };
   const [isDeleting, setIsDeleting] = useState(false);
   const [showQuickContact, setShowQuickContact] = useState(false);
   const [selectedGuardian, setSelectedGuardian] = useState(null);
@@ -324,68 +328,69 @@ const LearnersList = ({
       <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
         <div className="flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center">
 
-          {/* Search and Filters */}
-          <div className="flex flex-col md:flex-row gap-3 w-full xl:w-auto flex-1">
+          <div className="flex flex-col md:flex-row gap-3 w-full xl:w-auto flex-1 items-center">
             {/* Search */}
-            <div className="relative flex-grow md:max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <div className="relative flex-grow">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search by name or admission number..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-purple focus:border-brand-purple"
+                className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm shadow-sm"
               />
             </div>
 
-            {/* Filters */}
-            <div className="flex gap-2">
-              <select
-                value={filterGrade}
-                onChange={(e) => setFilterGrade(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-purple bg-white"
+            {/* Unified Filter Popover */}
+            <div className="relative flex-shrink-0">
+              <button
+                onClick={() => setShowGlobalFilters(!showGlobalFilters)}
+                className={`px-5 py-2.5 border rounded-xl font-bold flex items-center gap-2 transition-all ${activeFilterCount > 0 ? 'bg-blue-50 border-blue-200 text-blue-700' : 'hover:bg-gray-50 text-gray-700 bg-white shadow-sm'}`}
               >
-                <option value="all">All Grades</option>
-                {gradeOptions.map(g => (
-                  <option key={g} value={g}>{formatGradeLabel(g)}</option>
-                ))}
-              </select>
+                <Filter size={16} className={activeFilterCount > 0 ? 'text-blue-600' : 'text-gray-500'} />
+                Filters
+                {activeFilterCount > 0 && (
+                  <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-[10px] ml-1">{activeFilterCount}</span>
+                )}
+              </button>
 
-              <select
-                value={filterStream}
-                onChange={(e) => setFilterStream(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-purple bg-white"
-              >
-                <option value="all">All Streams</option>
-                {availableStreams.map(stream => (
-                  <option key={stream.id} value={stream.name}>
-                    {stream.name}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-purple bg-white"
-              >
-                <option value="all">All Status</option>
-                <option value="ACTIVE">Active</option>
-                <option value="DROPPED_OUT">Archived</option>
-                <option value="TRANSFERRED_OUT">Transferred Out</option>
-                <option value="GRADUATED">Graduated</option>
-                <option value="SUSPENDED">Suspended</option>
-              </select>
-
-              {/* Reset Button */}
-              {(searchTerm || filterGrade !== 'all' || filterStatus !== 'all' || filterStream !== 'all') && (
-                <button
-                  onClick={handleReset}
-                  className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition"
-                  title="Reset filters"
-                >
-                  <RefreshCw size={20} />
-                </button>
+              {showGlobalFilters && (
+                <div className="absolute right-0 top-full mt-2 w-[320px] bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden animate-fade-in origin-top-right">
+                  <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                    <h3 className="font-bold text-gray-800 flex items-center gap-2"><Filter size={16} className="text-blue-600" /> Student Filters</h3>
+                    {activeFilterCount > 0 && <button onClick={clearAllFiltersLearners} className="text-[11px] font-bold text-red-600 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-md">Clear All</button>}
+                  </div>
+                  <div className="p-5 space-y-5 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                    {/* Grade */}
+                    <div>
+                      <h4 className="text-[11px] font-extrabold text-blue-500 uppercase tracking-widest mb-2">Grade</h4>
+                      <select value={filterGrade} onChange={(e) => setFilterGrade(e.target.value)} className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm w-full outline-blue-500">
+                        <option value="all">All Grades</option>
+                        {gradeOptions.map(g => <option key={g} value={g}>{formatGradeLabel(g)}</option>)}
+                      </select>
+                    </div>
+                    {/* Stream */}
+                    <div>
+                      <h4 className="text-[11px] font-extrabold text-blue-500 uppercase tracking-widest mb-2">Stream</h4>
+                      <select value={filterStream} onChange={(e) => setFilterStream(e.target.value)} className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm w-full outline-blue-500">
+                        <option value="all">All Streams</option>
+                        {availableStreams.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+                      </select>
+                    </div>
+                    {/* Status */}
+                    <div>
+                      <h4 className="text-[11px] font-extrabold text-blue-500 uppercase tracking-widest mb-2">Enrolment Status</h4>
+                      <div className="flex flex-col gap-1.5">
+                        {[['all','All Status'],['ACTIVE','Active'],['DROPPED_OUT','Archived'],['TRANSFERRED_OUT','Transferred Out'],['GRADUATED','Graduated'],['SUSPENDED','Suspended']].map(([val, label]) => (
+                          <button key={val} onClick={() => setFilterStatus(val)} className={`text-left text-sm px-3 py-1.5 rounded-lg font-semibold transition-all ${filterStatus === val ? 'bg-blue-600 text-white' : 'hover:bg-gray-50 text-gray-700'}`}>{label}</button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-4 bg-gray-50 border-t flex justify-end">
+                    <button onClick={() => setShowGlobalFilters(false)} className="px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm">Apply & Close</button>
+                  </div>
+                </div>
               )}
             </div>
           </div>
@@ -555,8 +560,12 @@ const LearnersList = ({
                     className="w-4 h-4 text-brand-teal border-gray-300 rounded focus:ring-brand-teal"
                   />
                 </div>
-                <div className="text-3xl bg-gray-50 p-2 rounded-xl border border-gray-100 flex-shrink-0">
-                  {learner.avatar || '👨‍🎓'}
+                <div className="w-10 h-10 bg-brand-purple/10 text-brand-purple rounded-xl border border-brand-purple/20 flex-shrink-0 flex items-center justify-center font-bold text-base">
+                  {learner.avatar && (learner.avatar.startsWith('http') || learner.avatar.startsWith('/') || learner.avatar.startsWith('data:image')) ? (
+                    <img src={learner.avatar} alt="avatar" className="w-full h-full object-cover rounded-xl" />
+                  ) : (
+                    `${learner.firstName?.charAt(0) || ''}${learner.lastName?.charAt(0) || ''}`
+                  )}
                 </div>
 
                 {/* Primary Student Info */}
@@ -682,7 +691,7 @@ const LearnersList = ({
             visibleHeight={600}
             header={
               <tr>
-                <th className="px-3 py-2 w-4">
+                <th className="px-3 py-1.5 w-4">
                   <input
                     type="checkbox"
                     checked={displayLearners.length > 0 && selectedLearners.length === displayLearners.length}
@@ -690,17 +699,17 @@ const LearnersList = ({
                     className="w-4 h-4 text-brand-teal border-gray-300 rounded focus:ring-brand-teal"
                   />
                 </th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Student</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Admission No</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Grade</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Parent/Guardian</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Student</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Admission No</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Grade</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Status</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Parent/Guardian</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase">Actions</th>
               </tr>
             }
             renderRow={(learner) => (
               <tr key={learner.id} onClick={() => onViewLearner(learner)} className={`hover:bg-gray-50 cursor-pointer transition ${selectedLearners.includes(learner.id) ? 'bg-brand-purple/5' : ''}`}>
-                <td className="px-3 py-2">
+                <td className="px-3 py-1.5 border-r border-gray-100">
                   <input
                     type="checkbox"
                     checked={selectedLearners.includes(learner.id)}
@@ -709,18 +718,24 @@ const LearnersList = ({
                     className="w-4 h-4 text-brand-teal border-gray-300 rounded focus:ring-brand-teal"
                   />
                 </td>
-                <td className="px-3 py-2">
+                <td className="px-3 py-1.5 border-r border-gray-100">
                   <div className="flex items-center gap-2">
-                    <span className="text-xl">{learner.avatar || '👨‍🎓'}</span>
+                    <div className="w-8 h-8 rounded-full bg-brand-purple/10 text-brand-purple flex justify-center items-center font-bold text-xs border border-brand-purple/20 flex-shrink-0">
+                      {learner.avatar && (learner.avatar.startsWith('http') || learner.avatar.startsWith('/') || learner.avatar.startsWith('data:image')) ? (
+                        <img src={learner.avatar} alt="avatar" className="w-full h-full object-cover rounded-full" />
+                      ) : (
+                        `${learner.firstName?.charAt(0) || ''}${learner.lastName?.charAt(0) || ''}`
+                      )}
+                    </div>
                     <div>
                       <p className="font-semibold text-sm">{learner.firstName} {learner.lastName}</p>
                       <p className="text-xs text-gray-500">{learner.gender}</p>
                     </div>
                   </div>
                 </td>
-                <td className="px-3 py-2 text-sm text-gray-600">{learner.admNo || learner.admissionNumber}</td>
-                <td className="px-3 py-2 text-sm font-semibold">{learner.grade} {learner.stream}</td>
-                <td className="px-3 py-2">
+                <td className="px-3 py-1.5 border-r border-gray-100 text-gray-600">{learner.admNo || learner.admissionNumber}</td>
+                <td className="px-3 py-1.5 border-r border-gray-100 font-semibold">{learner.grade} {learner.stream}</td>
+                <td className="px-3 py-1.5 border-r border-gray-100">
                   <div className="flex items-center gap-2">
                     {learner.primaryContactType && (
                       <span className={`text-xs font-bold px-2 py-1 rounded-full ${learner.primaryContactType === 'FATHER' ? 'bg-blue-100 text-blue-800' :
@@ -769,10 +784,10 @@ const LearnersList = ({
                     </div>
                   </div>
                 </td>
-                <td className="px-3 py-2">
+                <td className="px-3 py-1.5 border-r border-gray-100">
                   <StatusBadge status={learner.status} size="sm" />
                 </td>
-                <td className="px-3 py-2">
+                <td className="px-3 py-1.5 border-r border-gray-100">
                   <div className="flex items-center gap-1">
                     <button
                       onClick={(e) => { e.stopPropagation(); onViewLearner(learner); }}
@@ -960,3 +975,4 @@ const LearnersList = ({
 };
 
 export default LearnersList;
+

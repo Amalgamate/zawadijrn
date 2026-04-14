@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Upload, Eye, Edit, Trash2, GraduationCap, BookOpen, Search, RefreshCw, MoreVertical } from 'lucide-react';
+import { Plus, Upload, Eye, Edit, Trash2, GraduationCap, BookOpen, Search, RefreshCw, MoreVertical, Filter, X } from 'lucide-react';
 import StatusBadge from '../shared/StatusBadge';
 import EmptyState from '../shared/EmptyState';
 import { useAuth } from '../../../hooks/useAuth';
@@ -24,8 +24,11 @@ const TeachersList = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [showGlobalFilters, setShowGlobalFilters] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
+
+  const activeFilterCount = filterStatus !== 'all' ? 1 : 0;
   const [selectedTeacherForAssignment, setSelectedTeacherForAssignment] = useState(null);
   useAuth();
 
@@ -76,42 +79,52 @@ const TeachersList = ({
       <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
         <div className="flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center">
 
-          {/* Search and Filters */}
-          <div className="flex flex-col md:flex-row gap-3 w-full xl:w-auto flex-1">
+          <div className="flex flex-col md:flex-row gap-3 w-full xl:w-auto flex-1 items-center">
             {/* Search */}
-            <div className="relative flex-grow md:max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <div className="relative flex-grow">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search by name, employee number, or subject..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-purple focus:border-transparent"
+                placeholder="Search name, employee number, or subject..."
+                className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm shadow-sm"
               />
             </div>
 
-            {/* Filters */}
-            <div className="flex gap-2">
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-purple bg-white"
+            {/* Unified Filter */}
+            <div className="relative flex-shrink-0">
+              <button
+                onClick={() => setShowGlobalFilters(!showGlobalFilters)}
+                className={`px-5 py-2.5 border rounded-xl font-bold flex items-center gap-2 transition-all ${activeFilterCount > 0 ? 'bg-blue-50 border-blue-200 text-blue-700' : 'hover:bg-gray-50 text-gray-700 bg-white shadow-sm'}`}
               >
-                <option value="all">All Status</option>
-                <option value="ACTIVE">Active</option>
-                <option value="ON_LEAVE">On Leave</option>
-                <option value="INACTIVE">Inactive</option>
-              </select>
+                <Filter size={16} className={activeFilterCount > 0 ? 'text-blue-600' : 'text-gray-500'} />
+                Filters
+                {activeFilterCount > 0 && (
+                  <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-[10px] ml-1">{activeFilterCount}</span>
+                )}
+              </button>
 
-              {/* Reset Button */}
-              {(searchTerm || filterStatus !== 'all') && (
-                <button
-                  onClick={handleReset}
-                  className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition"
-                  title="Reset filters"
-                >
-                  <RefreshCw size={20} />
-                </button>
+              {showGlobalFilters && (
+                <div className="absolute right-0 top-full mt-2 w-[280px] bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden animate-fade-in origin-top-right">
+                  <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                    <h3 className="font-bold text-gray-800 flex items-center gap-2"><Filter size={16} className="text-blue-600" /> Tutor Filters</h3>
+                    {activeFilterCount > 0 && <button onClick={() => setFilterStatus('all')} className="text-[11px] font-bold text-red-600 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-md">Clear</button>}
+                  </div>
+                  <div className="p-5">
+                    <h4 className="text-[11px] font-extrabold text-blue-500 uppercase tracking-widest mb-3">Employment Status</h4>
+                    <div className="flex flex-col gap-1.5">
+                      {['all', 'ACTIVE', 'ON_LEAVE', 'INACTIVE'].map(s => (
+                        <button key={s} onClick={() => setFilterStatus(s)} className={`text-left text-sm px-3 py-1.5 rounded-lg font-semibold transition-all ${filterStatus === s ? 'bg-blue-600 text-white' : 'hover:bg-gray-50 text-gray-700'}`}>
+                          {s === 'all' ? 'All Status' : s.replace(/_/g, ' ')}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="p-4 bg-gray-50 border-t flex justify-end">
+                    <button onClick={() => setShowGlobalFilters(false)} className="px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm">Apply & Close</button>
+                  </div>
+                </div>
               )}
             </div>
           </div>
@@ -185,22 +198,22 @@ const TeachersList = ({
         />
       ) : (
         <div className={`bg-white rounded-xl shadow-md overflow-hidden ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
-          <table className="w-full">
+          <table className="w-full border-collapse text-xs">
             <thead className="border-b border-[color:var(--table-border)]">
               <tr>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Teacher</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Employee No</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Role</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Subject</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Contact</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Status</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Actions</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Teacher</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Employee No</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Role</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Subject</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Contact</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Status</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {teachers.map((teacher) => (
                 <tr key={teacher.id} onClick={() => onViewTeacher(teacher)} className="hover:bg-gray-50 cursor-pointer transition">
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-1.5 border-r border-gray-100">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-full bg-brand-purple/10 text-brand-purple flex items-center justify-center text-xs font-bold">
                         {teacher.avatar || getInitials(teacher.firstName, teacher.lastName)}
@@ -211,22 +224,22 @@ const TeachersList = ({
                       </div>
                     </div>
                   </td>
-                  <td className="px-3 py-2 text-sm text-gray-600 font-mono">{teacher.staffId || '---'}</td>
-                  <td className="px-3 py-2 text-sm font-semibold">{teacher.role}</td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-1.5 text-gray-600 font-mono border-r border-gray-100">{teacher.staffId || '---'}</td>
+                  <td className="px-3 py-1.5 font-semibold border-r border-gray-100">{teacher.role}</td>
+                  <td className="px-3 py-1.5 border-r border-gray-100">
                     <div className="flex items-center gap-1">
                       <BookOpen size={16} className="text-brand-teal" />
                       <span className="text-sm">{teacher.subject}</span>
                     </div>
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-1.5 border-r border-gray-100">
                     <p className="text-sm font-semibold">{teacher.email}</p>
                     <p className="text-xs text-gray-500">{teacher.phone}</p>
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-1.5 border-r border-gray-100">
                     <StatusBadge status={teacher.status} />
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-1.5 border-r border-gray-100">
                     <div className="flex items-center gap-1">
                       <button
                         onClick={(e) => { e.stopPropagation(); setSelectedTeacherForAssignment(teacher); }}
@@ -319,3 +332,5 @@ const TeachersList = ({
 };
 
 export default TeachersList;
+
+

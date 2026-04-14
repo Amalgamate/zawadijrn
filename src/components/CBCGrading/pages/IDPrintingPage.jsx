@@ -466,9 +466,13 @@ const IDPrintingPage = () => {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
-                            {learner.photoUrl
-                              ? <img src={learner.photoUrl} alt="" className="w-9 h-9 rounded-full object-cover border border-gray-200" />
-                              : <span className="text-2xl">{learner.gender === 'FEMALE' ? '👩‍🎓' : '👨‍🎓'}</span>}
+                            {learner.photoUrl && (learner.photoUrl.startsWith('http') || learner.photoUrl.startsWith('/') || learner.photoUrl.startsWith('data:image')) ? (
+                              <img src={learner.photoUrl} alt="" className="w-9 h-9 rounded-full object-cover border border-gray-200" />
+                            ) : (
+                              <div className="w-9 h-9 rounded-full bg-brand-purple/10 text-brand-purple flex justify-center items-center font-bold text-xs border border-brand-purple/20 flex-shrink-0">
+                                {`${learner.firstName?.charAt(0) || ''}${learner.lastName?.charAt(0) || ''}`}
+                              </div>
+                            )}
                             <div>
                               <p className="font-semibold text-gray-900">{learner.firstName} {learner.lastName}</p>
                               {learner.middleName && <p className="text-xs text-gray-400">{learner.middleName}</p>}

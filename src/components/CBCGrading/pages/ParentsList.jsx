@@ -99,14 +99,14 @@ const ParentsList = ({ parents = [], pagination, onFetchParents, onAddParent, on
 
           {/* Search */}
           <div className="flex flex-col md:flex-row gap-3 w-full xl:w-auto flex-1">
-            <div className="relative flex-grow md:max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <div className="relative flex-grow">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search parents by name, phone, or email..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-purple focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm shadow-sm"
               />
             </div>
 
@@ -146,24 +146,24 @@ const ParentsList = ({ parents = [], pagination, onFetchParents, onAddParent, on
         />
       ) : (
         <div className="bg-white rounded-xl shadow-md overflow-hidden">
-          <table className="w-full">
+          <table className="w-full border-collapse text-xs">
             <thead className="border-b border-[color:var(--table-border)]">
               <tr>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Parent/Guardian</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Relationship</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Email</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Phone</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Occupation</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Learners</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Status</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">WhatsApp</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-[color:var(--table-header-fg)] uppercase">Actions</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Parent/Guardian</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Relationship</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Email</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Phone</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Occupation</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Learners</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Status</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">WhatsApp</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {filteredParents.map((parent) => (
                 <tr key={parent.id} onClick={() => onViewParent(parent)} className="hover:bg-gray-50 cursor-pointer transition">
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-1.5 border-r border-gray-100">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 bg-brand-purple rounded-full flex items-center justify-center text-white font-bold text-xs shadow-sm">
                         {parent.name?.substring(0, 2).toUpperCase()}
@@ -174,27 +174,27 @@ const ParentsList = ({ parents = [], pagination, onFetchParents, onAddParent, on
                       </div>
                     </div>
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-1.5 border-r border-gray-100">
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-brand-purple/10 text-brand-purple">
                       {parent.relationship}
                     </span>
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-1.5 border-r border-gray-100">
                     <div className="flex items-center gap-1 text-sm text-gray-600">
                       <Mail size={14} className="text-brand-purple" />
                       <span className="truncate max-w-[150px] text-xs">{parent.email || 'N/A'}</span>
                     </div>
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-1.5 border-r border-gray-100">
                     <div className="flex items-center gap-1 text-sm text-gray-600">
                       <Phone size={14} className="text-brand-purple" />
                       <span className="text-xs">{parent.phone || 'N/A'}</span>
                     </div>
                   </td>
-                  <td className="px-3 py-2 text-xs text-gray-700">
+                  <td className="px-3 py-1.5 text-gray-700 border-r border-gray-100">
                     {parent.occupation || 'N/A'}
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-1.5 border-r border-gray-100">
                     <div className="flex items-center gap-1 text-sm">
                       <Users size={14} className="text-gray-500" />
                       <span className="font-semibold text-gray-700 text-xs">
@@ -205,10 +205,10 @@ const ParentsList = ({ parents = [], pagination, onFetchParents, onAddParent, on
                       </span>
                     </div>
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-1.5 border-r border-gray-100">
                     <StatusBadge status={parent.status} size="sm" />
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-1.5 border-r border-gray-100">
                     <button
                       onClick={(e) => { e.stopPropagation(); handleWhatsAppMessage(parent); }}
                       disabled={!parent.phone}
@@ -221,7 +221,7 @@ const ParentsList = ({ parents = [], pagination, onFetchParents, onAddParent, on
                       <MessageCircle size={16} />
                     </button>
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-1.5 border-r border-gray-100">
                     <div className="flex items-center gap-1">
                       <button
                         onClick={(e) => { e.stopPropagation(); onViewParent(parent); }}
@@ -323,3 +323,4 @@ const ParentsList = ({ parents = [], pagination, onFetchParents, onAddParent, on
 };
 
 export default ParentsList;
+

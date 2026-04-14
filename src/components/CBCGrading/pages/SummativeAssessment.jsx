@@ -1383,10 +1383,10 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
                 setStagedLearningArea('');
                 setStagedTestId('');
               }}
-              className="h-9 px-2.5 py-1.5 border border-slate-300 rounded text-xs bg-white text-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-purple appearance-none cursor-pointer hover:border-slate-400 transition-colors w-24"
+              className="h-9 px-2.5 py-1.5 border border-slate-300 rounded text-xs bg-white text-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-purple appearance-none cursor-pointer hover:border-slate-400 transition-colors w-28"
               title="Select Grade"
             >
-              <option value="">Grade</option>
+              <option value="">— Grade —</option>
               {filteredGrades.map(g => (
                 <option key={g} value={g}>
                   {formatGradeLabel(g)}
@@ -1398,16 +1398,16 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
             <select
               value={stagedStream}
               onChange={(e) => setStagedStream(e.target.value)}
-              className="h-9 px-2.5 py-1.5 border border-slate-300 rounded text-xs bg-white text-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-purple appearance-none cursor-pointer hover:border-slate-400 transition-colors w-20"
+              className="h-9 px-2.5 py-1.5 border border-slate-300 rounded text-xs bg-white text-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-purple appearance-none cursor-pointer hover:border-slate-400 transition-colors w-24"
               title="Select Stream"
             >
-              <option value="">Stream</option>
+              <option value="">— Stream —</option>
               {availableStreams.map(s => (
                 <option key={s} value={s}>{s}</option>
               ))}
             </select>
 
-            {/* Academic Term - Compact */}
+            {/* Academic Term */}
             <select
               value={stagedTerm}
               onChange={(e) => {
@@ -1418,13 +1418,13 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
               className="h-9 px-2.5 py-1.5 border border-slate-300 rounded text-xs bg-white text-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-purple appearance-none cursor-pointer hover:border-slate-400 transition-colors w-24"
               title="Select Term"
             >
-              <option value="">Term</option>
+              <option value="">— Term —</option>
               {availableTerms.map(t => (
                 <option key={t} value={t}>{t.replace('_', ' ')}</option>
               ))}
             </select>
 
-            {/* Academic Year - Compact */}
+            {/* Academic Year */}
             <select
               value={stagedAcademicYear}
               onChange={(e) => {
@@ -1435,13 +1435,13 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
               className="h-9 px-2.5 py-1.5 border border-slate-300 rounded text-xs bg-white text-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-purple appearance-none cursor-pointer hover:border-slate-400 transition-colors w-24"
               title="Select Academic Year"
             >
-              <option value="">Year</option>
+              <option value="">— Year —</option>
               {getAcademicYearOptions().map(y => (
                 <option key={y.value} value={y.value}>{y.label}</option>
               ))}
             </select>
 
-            {/* Learning Area - Balanced */}
+            {/* Learning Area */}
             <select
               value={stagedLearningArea}
               onChange={(e) => {
@@ -1449,26 +1449,34 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
                 setStagedTestId('');
               }}
               disabled={!stagedGrade || !stagedTerm || stagedAvailableLearningAreas.length === 0}
-              className="h-9 px-2.5 py-1.5 border border-slate-300 rounded text-xs bg-white text-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-purple appearance-none cursor-pointer hover:border-slate-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-50 flex-1 min-w-[120px]"
+              className="h-9 px-2.5 py-1.5 border border-slate-300 rounded text-xs bg-white text-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-purple appearance-none cursor-pointer hover:border-slate-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-50 flex-1 min-w-[140px]"
               title="Select Learning Area"
             >
               <option value="">
-                {!stagedGrade || !stagedTerm
-                  ? 'Area'
-                  : 'Area'}
+                {!stagedGrade ? '← Select Grade first' : !stagedTerm ? '← Select Term first' : '— Subject / Area —'}
               </option>
               {stagedFilteredLearningAreasByWorkload.map(area => (
                 <option key={area} value={area}>{area}</option>
               ))}
             </select>
 
-            {/* ── Test Picker — custom dropdown so we can show the green tick ── */}
+            {/* Divider */}
+            <div className="h-6 w-px bg-slate-200 flex-shrink-0" />
+
+            {/* ── Test Picker ── */}
             <TestPicker
               tests={stagedFinalTests}
               value={stagedTestId}
               onChange={(id) => setStagedTestId(id)}
               disabled={stagedFinalTests.length === 0}
             />
+
+            {/* No tests hint */}
+            {stagedGrade && stagedTerm && stagedLearningArea && stagedFinalTests.length === 0 && (
+              <span className="text-[10px] text-amber-600 font-bold bg-amber-50 border border-amber-200 rounded px-2 py-1 whitespace-nowrap">
+                No tests found for selection
+              </span>
+            )}
 
             {/* Apply Filters Button - Green button clicked to apply filters */}
             <button

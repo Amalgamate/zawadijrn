@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   FileText, Download, Search, User,
-  CheckCircle, AlertCircle, Clock, Printer, Mail, Eye, Loader2
+  CheckCircle, AlertCircle, Clock, Printer, Mail, Eye, Loader2, Filter, X
 } from 'lucide-react';
 import EmptyState from '../shared/EmptyState';
 import LoadingSpinner from '../shared/LoadingSpinner';
@@ -23,7 +23,11 @@ const StudentStatementsPage = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterGrade, setFilterGrade] = useState('all');
+  const [showGlobalFilters, setShowGlobalFilters] = useState(false);
   const [showStatement, setShowStatement] = useState(false);
+
+  const activeFilterCount = filterGrade !== 'all' ? 1 : 0;
+  const clearAllFilters = () => setFilterGrade('all');
   const [schoolInfo, setSchoolInfo] = useState(null);
   const [pdfGenerating, setPdfGenerating] = useState(false);
   const [pdfProgress, setPdfProgress] = useState('');
@@ -200,31 +204,71 @@ const StudentStatementsPage = () => {
 
       {!showStatement ? (
         <>
-          {/* Search and Filters */}
-          <div className="bg-white rounded-lg shadow p-3">
-            <div className="flex flex-col md:flex-row gap-3">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-                  <input
-                    type="text"
-                    placeholder="Search by student name or admission number..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-9 pr-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
+          {/* Top Row: Omni-Search & Actions */}
+          <div className="flex flex-col md:flex-row gap-3 items-end w-full">
+            {/* Search */}
+            <div className="flex-[2] w-full relative z-40">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                <input
+                  type="text"
+                  placeholder="Search learners by name or adm no..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm shadow-sm transition-all"
+                />
               </div>
-              <select
-                value={filterGrade}
-                onChange={(e) => setFilterGrade(e.target.value)}
-                className="px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500"
+            </div>
+
+            {/* Unified Filter Button */}
+            <div className="relative">
+              <button
+                onClick={() => setShowGlobalFilters(!showGlobalFilters)}
+                className={`px-5 py-2.5 border rounded-xl font-bold flex items-center gap-2 transition-all ${activeFilterCount > 0 ? 'bg-blue-50 border-blue-200 text-blue-700' : 'hover:bg-gray-50 text-gray-700 bg-white shadow-sm'}`}
               >
-                <option value="all">All Grades</option>
-                {fetchedGrades.map(grade => (
-                  <option key={grade} value={grade}>{grade.replace(/_/g, ' ')}</option>
-                ))}
-              </select>
+                <Filter size={18} className={activeFilterCount > 0 ? "text-blue-600" : "text-gray-500"} />
+                Filters
+                {activeFilterCount > 0 && (
+                  <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-[10px] ml-1">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Filter Popover Drawer */}
+              {showGlobalFilters && (
+                <div className="absolute right-0 top-full mt-2 w-[320px] bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden animate-fade-in origin-top-right">
+                  <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                    <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                      <Filter size={16} className="text-blue-600" /> Learner Filters
+                    </h3>
+                    {activeFilterCount > 0 && (
+                      <button onClick={clearAllFilters} className="text-[11px] font-bold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-md transition-colors">
+                        Clear All
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="p-5 space-y-5 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                    <div>
+                      <h4 className="text-[11px] font-extrabold text-blue-500 uppercase tracking-widest mb-3">Academic Context</h4>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-semibold text-gray-600">Grade Level</label>
+                        <select value={filterGrade} onChange={(e) => setFilterGrade(e.target.value)} className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm w-full outline-blue-500">
+                          <option value="all">All Grades</option>
+                          {fetchedGrades.map(g => <option key={g} value={g}>{g.replace(/_/g, ' ')}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+                    <button onClick={() => setShowGlobalFilters(false)} className="px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm">
+                      Apply & Close
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -237,19 +281,19 @@ const StudentStatementsPage = () => {
             />
           ) : (
             <div className="bg-white rounded-lg shadow overflow-hidden">
-              <table className="w-full">
+              <table className="w-full border-collapse">
                 <thead className="border-b border-[color:var(--table-border)]">
                   <tr>
-                    <th className="px-4 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Student</th>
-                    <th className="px-4 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Grade</th>
-                    <th className="px-4 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Admission No.</th>
-                    <th className="px-4 py-2 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase">Actions</th>
+                    <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Student</th>
+                    <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Grade</th>
+                    <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Admission No.</th>
+                    <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
                   {filteredLearners.map((learner) => (
                     <tr key={learner.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-2">
+                      <td className="px-3 py-1.5 border-r border-gray-100">
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                             <User className="text-blue-600" size={16} />
@@ -264,13 +308,13 @@ const StudentStatementsPage = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-2 text-xs text-gray-600">
+                      <td className="px-3 py-1.5 border-r border-gray-100 text-xs text-gray-600">
                         {learner.grade} {learner.stream}
                       </td>
-                      <td className="px-4 py-2 text-xs font-medium text-gray-900">
+                      <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-medium text-gray-900">
                         {learner.admissionNumber || 'N/A'}
                       </td>
-                      <td className="px-4 py-2">
+                      <td className="px-3 py-1.5 border-r border-gray-100">
                         <button
                           onClick={() => handleViewStatement(learner)}
                           className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-xs"
@@ -450,22 +494,22 @@ const StudentStatementsPage = () => {
                 Fee Invoices Breakdown
               </h3>
               <div className="overflow-hidden border border-gray-100 rounded-xl shadow-sm">
-                <table className="w-full text-left">
+                <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-100">
-                      <th className="px-5 py-3 text-[10px] font-black text-gray-500 uppercase tracking-widest">Inv #</th>
-                      <th className="px-5 py-3 text-[10px] font-black text-gray-500 uppercase tracking-widest">Fee Type</th>
-                      <th className="px-5 py-3 text-[10px] font-black text-gray-500 uppercase tracking-widest text-center">Term</th>
-                      <th className="px-5 py-3 text-[10px] font-black text-gray-500 uppercase tracking-widest text-right">Amount</th>
-                      <th className="px-5 py-3 text-[10px] font-black text-gray-500 uppercase tracking-widest text-right">Paid</th>
-                      <th className="px-5 py-3 text-[10px] font-black text-gray-500 uppercase tracking-widest text-right">Balance</th>
-                      <th className="px-5 py-3 text-[10px] font-black text-gray-500 uppercase tracking-widest text-center">Status</th>
+                      <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100">Inv #</th>
+                      <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100">Fee Type</th>
+                      <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100 text-center">Term</th>
+                      <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100 text-right">Amount</th>
+                      <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100 text-right">Paid</th>
+                      <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100 text-right">Balance</th>
+                      <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100 text-center">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
                     {invoices.map((invoice, idx) => (
                       <tr key={invoice.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}>
-                        <td className="px-5 py-3.5">
+                        <td className="px-3 py-1.5 border-r border-gray-100">
                           <div className="text-xs font-black text-gray-900">{invoice.invoiceNumber}</div>
                           {invoice.etimsControlCode && (
                             <div className="text-[9px] text-emerald-600 font-bold uppercase tracking-tighter mt-0.5 flex items-center gap-1">
@@ -473,18 +517,18 @@ const StudentStatementsPage = () => {
                             </div>
                           )}
                         </td>
-                        <td className="px-5 py-3.5 text-xs font-medium text-gray-700">{invoice.feeStructure?.name}</td>
-                        <td className="px-5 py-3.5 text-xs font-bold text-gray-500 text-center uppercase tracking-tighter">{invoice.feeStructure?.term}</td>
-                        <td className="px-5 py-3.5 text-xs font-black text-gray-900 text-right">
+                        <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-medium text-gray-700">{invoice.feeStructure?.name}</td>
+                        <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-bold text-gray-500 text-center uppercase tracking-tighter">{invoice.feeStructure?.term}</td>
+                        <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-black text-gray-900 text-right">
                           {Number(invoice.totalAmount).toLocaleString()}
                         </td>
-                        <td className="px-5 py-3.5 text-xs font-black text-emerald-600 text-right">
+                        <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-black text-emerald-600 text-right">
                           {Number(invoice.paidAmount).toLocaleString()}
                         </td>
-                        <td className="px-5 py-3.5 text-xs font-black text-rose-600 text-right bg-rose-50/20">
+                        <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-black text-rose-600 text-right bg-rose-50/20">
                           {Number(invoice.balance).toLocaleString()}
                         </td>
-                        <td className="px-5 py-3.5 text-center">{getStatusBadge(invoice.status)}</td>
+                        <td className="px-3 py-1.5 border-r border-gray-100 text-center">{getStatusBadge(invoice.status)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -504,32 +548,32 @@ const StudentStatementsPage = () => {
                 </div>
               ) : (
                 <div className="overflow-hidden border border-gray-100 rounded-xl shadow-sm">
-                  <table className="w-full text-left">
+                  <table className="w-full text-left text-xs border-collapse">
                     <thead>
                       <tr className="bg-gray-50 border-b border-gray-100">
-                        <th className="px-5 py-3 text-[10px] font-black text-gray-500 uppercase tracking-widest">Date</th>
-                        <th className="px-5 py-3 text-[10px] font-black text-gray-500 uppercase tracking-widest">Invoice</th>
-                        <th className="px-5 py-3 text-[10px] font-black text-gray-500 uppercase tracking-widest text-right">Amount</th>
-                        <th className="px-5 py-3 text-[10px] font-black text-gray-500 uppercase tracking-widest text-center">Method</th>
-                        <th className="px-5 py-3 text-[10px] font-black text-gray-500 uppercase tracking-widest">Reference No.</th>
+                        <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100">Date</th>
+                        <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100">Invoice</th>
+                        <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100 text-right">Amount</th>
+                        <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100 text-center">Method</th>
+                        <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100">Reference No.</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
                       {payments.map((payment, idx) => (
                         <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}>
-                          <td className="px-5 py-3.5 text-xs font-bold text-gray-600">
+                          <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-bold text-gray-600">
                             {new Date(payment.paymentDate).toLocaleDateString()}
                           </td>
-                          <td className="px-5 py-3.5 text-xs font-black text-gray-800">{payment.invoiceNumber}</td>
-                          <td className="px-5 py-3.5 text-xs font-black text-emerald-600 text-right bg-emerald-50/10">
+                          <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-black text-gray-800">{payment.invoiceNumber}</td>
+                          <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-black text-emerald-600 text-right bg-emerald-50/10">
                             {Number(payment.amount).toLocaleString()}
                           </td>
-                          <td className="px-5 py-3.5 text-center">
+                          <td className="px-3 py-1.5 border-r border-gray-100 text-center">
                              <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 text-[10px] font-black uppercase tracking-tighter">
                                {payment.paymentMethod}
                              </span>
                           </td>
-                          <td className="px-5 py-3.5 text-xs text-gray-500 font-mono tracking-tighter">
+                          <td className="px-3 py-1.5 border-r border-gray-100 text-xs text-gray-500 font-mono tracking-tighter">
                             {payment.referenceNumber || 'INTERNAL'}
                           </td>
                         </tr>
@@ -554,3 +598,4 @@ const StudentStatementsPage = () => {
 };
 
 export default StudentStatementsPage;
+
