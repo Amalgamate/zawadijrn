@@ -34,13 +34,21 @@ async function parseWorkbook(buffer: Buffer): Promise<Record<string, any>[]> {
       }
     } else {
       const obj: Record<string, any> = {};
+      let hasData = false;
       headers.forEach((h: string, i: number) => {
+        if (!h) return;
         const cell = values[i];
-        obj[h] = cell && typeof cell === 'object' && 'richText' in cell
+        const val = cell && typeof cell === 'object' && 'richText' in cell
           ? cell.richText.map((r: any) => r.text).join('')
           : cell ?? null;
+        
+        obj[h] = val;
+        if (val != null && val !== '') hasData = true;
       });
-      rows.push(obj);
+      
+      if (hasData) {
+        rows.push(obj);
+      }
     }
   });
 
@@ -159,10 +167,16 @@ router.post(
       const paymentMap = new Map(existingPayments.map(p => [p.invoiceId, p]));
 
       // 6. Process Main Loop (Now using in-memory lookups)
-      const totalRows = data.length;
+      // [FIX] Pre-filter to ensure "Total" is honest
+      const filteredData = data.filter(row => {
+        const adm = String(row['Adm No'] ?? row['Admission Number'] ?? '').trim();
+        return adm && adm !== 'undefined';
+      });
+
+      const totalRows = filteredData.length;
       sendStatus('start', { total: totalRows });
 
-      for (const [index, row] of data.entries()) {
+      for (const [index, row] of filteredData.entries()) {
         if (isAborted) {
           console.log('[BulkImport] Stopping balance loop due to cancellation.');
           break;
@@ -346,10 +360,17 @@ router.post(
         res.write(JSON.stringify({ type, ...payload }) + '\n');
       };
 
-      const totalRows = data.length;
+      // 5. Process Main Loop (Now using in-memory lookups)
+      // [FIX] Pre-filter for honest progress
+      const filteredData = data.filter(row => {
+        const adm = String(row['Adm No'] ?? row['Admission Number'] ?? '').trim();
+        return adm && adm !== 'undefined';
+      });
+
+      const totalRows = filteredData.length;
       sendStatus('start', { total: totalRows });
 
-      for (const [index, row] of data.entries()) {
+      for (const [index, row] of filteredData.entries()) {
         if (isAborted) {
           console.log('[BulkImport] Stopping payment loop due to cancellation.');
           break;
