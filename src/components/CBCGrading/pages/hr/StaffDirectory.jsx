@@ -3,7 +3,8 @@ import {
     Search, Filter, Edit2, Download, Mail, Phone,
     Shield, Banknote, ArrowLeft, Plus, Trash2,
     CheckCircle2, AlertCircle, X, ChevronDown,
-    Building2, CreditCard, User, FileText, Layers
+    Building2, CreditCard, User, FileText, Layers,
+    DollarSign
 } from 'lucide-react';
 import { hrAPI } from '../../../../services/api';
 
