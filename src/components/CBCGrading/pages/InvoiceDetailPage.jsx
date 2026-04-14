@@ -13,7 +13,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   ArrowLeft, MessageSquare, Phone, User, ShieldCheck, Info, Plus, Loader2,
   FileText, Bookmark, Calendar, X, CheckCircle2, AlertTriangle, Clock,
-  ChevronDown, ChevronUp, Send, Gift
+  ChevronDown, ChevronUp, Send, Gift, Download
 } from 'lucide-react';
 import usePageNavigation from '../../../hooks/usePageNavigation';
 import { generateDocument } from '../../../utils/simplePdfGenerator';
