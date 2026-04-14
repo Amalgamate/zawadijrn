@@ -110,15 +110,15 @@ export class FeeTypeController {
 
     // Seed default fee types for a school (idempotent - only creates missing types)
     private static readonly DEFAULT_FEE_TYPES = [
-        { code: 'TUITION',    name: 'Tuition',          category: 'ACADEMIC'        as const, description: 'School tuition fees' },
+        { code: 'TUITION',    name: 'Tuition',          category: 'ACADEMIC'         as const, description: 'School tuition fees' },
         { code: 'ACTIVITY',   name: 'Activity Fee',     category: 'EXTRA_CURRICULAR' as const, description: 'Co-curricular activities' },
-        { code: 'TRANSPORT',  name: 'Transport',        category: 'TRANSPORT'       as const, description: 'School transport' },
-        { code: 'MEALS',      name: 'Meals',            category: 'BOARDING'        as const, description: 'School meals and catering' },
-        { code: 'EXAM',       name: 'Examination Fee',  category: 'ACADEMIC'        as const, description: 'Examination fees' },
-        { code: 'LIBRARY',    name: 'Library',          category: 'ACADEMIC'        as const, description: 'Library resources and materials' },
+        { code: 'TRANSPORT',  name: 'Transport',        category: 'TRANSPORT'        as const, description: 'School transport' },
+        { code: 'MEALS',      name: 'Meals',            category: 'BOARDING'         as const, description: 'School meals and catering' },
+        { code: 'EXAM',       name: 'Examination Fee',  category: 'ACADEMIC'         as const, description: 'Examination fees' },
+        { code: 'LIBRARY',    name: 'Library',          category: 'ACADEMIC'         as const, description: 'Library resources and materials' },
         { code: 'SPORTS',     name: 'Sports Fee',       category: 'EXTRA_CURRICULAR' as const, description: 'Sports programs and facilities' },
-        { code: 'TECHNOLOGY', name: 'Technology Fee',   category: 'ACADEMIC'        as const, description: 'Computer lab and tech resources' },
-        { code: 'MISC',       name: 'Miscellaneous',    category: 'OTHER'           as const, description: 'Other school charges' }
+        { code: 'TECHNOLOGY', name: 'Technology Fee',   category: 'ACADEMIC'         as const, description: 'Computer lab and tech resources' },
+        { code: 'MISC',       name: 'Miscellaneous',    category: 'OTHER'            as const, description: 'Other school charges' }
     ];
 
     private static async ensureDefaultFeeTypes(): Promise<void> {
@@ -152,9 +152,21 @@ export class FeeTypeController {
         }
     }
 
-    // Seed default fee structures for all grades and terms.
-    // Accepts an optional `academicYear` body field (integer) so you can seed
-    // for the upcoming year in advance without waiting for January 1st.
+    /**
+     * Seed default fee structures for all grades and terms.
+     * Accepts an optional `academicYear` body field (integer) so you can seed
+     * for the upcoming year in advance without waiting for January 1st.
+     *
+     * FIX (Task 8 — P3): Added a concurrent-generation safety guard.
+     * The previous version deleted empty structures unconditionally, creating a
+     * race window where a concurrent bulkGenerateInvoices() job could start
+     * against a structure that was about to be deleted and recreated.
+     *
+     * Guard: a structure is only replaced if it has NO invoices AND it was
+     * created more than 60 seconds ago (i.e. not mid-flight from a concurrent
+     * operation). Structures created within the last 60 seconds are treated as
+     * potentially in-use and are skipped rather than deleted.
+     */
     static async seedStructures(req: Request, res: Response) {
         const GRADES = [
             'PLAYGROUP', 'PP1', 'PP2',
@@ -189,8 +201,6 @@ export class FeeTypeController {
             // Apply the requested +500 increase
             const adjustedTotal = total + 500;
 
-            // Distribute fees across categories
-            // We'll allocate 500 each to the primary extras
             const EXAM_FEE = 500;
             const LIBRARY_FEE = 500;
             const ACTIVITY_FEE = 500;
@@ -211,10 +221,8 @@ export class FeeTypeController {
         };
 
         try {
-            // Target specific academic year (2026 for this migration)
             const targetYear = req.body.academicYear ? parseInt(req.body.academicYear) : 2026;
 
-            // Ensure the default fee types exist before seeding structures
             await FeeTypeController.ensureDefaultFeeTypes();
             const feeTypes = await prisma.feeType.findMany({ where: {} });
 
@@ -225,10 +233,14 @@ export class FeeTypeController {
             let createdCount = 0;
             let skippedCount = 0;
 
+            // FIX (Task 8 — P3): Safety cutoff — structures created within the last
+            // 60 seconds are considered potentially in-flight from a concurrent
+            // bulkGenerateInvoices() call and must NOT be deleted or replaced.
+            const safeDeleteCutoff = new Date(Date.now() - 60_000);
+
             for (const grade of GRADES) {
                 for (const term of TERMS) {
                     try {
-                        // Check if already exists for the target year
                         const existing = await prisma.feeStructure.findFirst({
                             where: {
                                 grade: grade as any,
@@ -240,13 +252,26 @@ export class FeeTypeController {
 
                         if (existing) {
                             if (existing.invoices.length > 0) {
-                                // Keep safely skipping if real invoices use this structure
+                                // Has real invoices — never touch it
                                 skippedCount++;
                                 continue;
-                            } else {
-                                // Safely overwrite by replacing the empty structure
-                                await prisma.feeStructure.delete({ where: { id: existing.id } });
                             }
+
+                            // FIX: Guard against concurrent bulk generation.
+                            // If the structure was created very recently, skip instead of
+                            // deleting — a concurrent job might be using it right now.
+                            if (existing.createdAt > safeDeleteCutoff) {
+                                console.warn(
+                                    `[SeedStructures] Skipping ${grade} ${term} ${targetYear} — ` +
+                                    `structure created ${Math.round((Date.now() - existing.createdAt.getTime()) / 1000)}s ago ` +
+                                    `(within 60s safety window, possible concurrent bulk generation)`
+                                );
+                                skippedCount++;
+                                continue;
+                            }
+
+                            // Empty structure created > 60s ago — safe to replace
+                            await prisma.feeStructure.delete({ where: { id: existing.id } });
                         }
 
                         // Create fee structure
@@ -297,7 +322,7 @@ export class FeeTypeController {
 
             const totalExpected = GRADES.length * TERMS.length;
             const message = skippedCount > 0
-                ? `Created ${createdCount} fee structures (${skippedCount}/${totalExpected} already existed)`
+                ? `Created ${createdCount} fee structures (${skippedCount}/${totalExpected} already existed or were skipped)`
                 : createdCount === 0
                 ? `All ${totalExpected} fee structures already exist`
                 : `Successfully seeded ${createdCount} fee structures (${GRADES.length} grades × ${TERMS.length} terms)`;

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, Upload, FileSpreadsheet, Loader2, RefreshCw, CreditCard } from 'lucide-react';
+import { X, Upload, FileSpreadsheet, Loader2, RefreshCw, CreditCard, Download, Info } from 'lucide-react';
 import axiosInstance from '../../../services/api/index';
+import { downloadFeeTemplate, downloadBalanceTemplate } from '../../../utils/feeTemplateGenerator';
 
 const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
   const [importMode, setImportMode] = useState('balances'); // 'balances' or 'payments'
@@ -154,15 +155,37 @@ const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   />
                   <FileSpreadsheet className="mx-auto text-blue-400 group-hover:text-blue-500 mb-3 transition-colors" size={48} />
-                  <p className="text-sm font-bold text-blue-900">
-                    {file ? file.name : "Click or drag to upload .xlsx or .csv data file"}
-                  </p>
-                  {!file && (
-                    <p className="text-xs text-blue-600/70 mt-2">
-                       {importMode === 'balances' ? 'Requires: Adm No, Billed, Paid, Balance' : 'Requires: Adm No, Amount, Date, Reference'}
-                    </p>
+                  {file ? (
+                    <p className="text-sm font-bold text-blue-900">{file.name}</p>
+                  ) : (
+                    <>
+                      <p className="text-sm font-bold text-blue-900">Click or drag to upload .xlsx or .csv data file</p>
+                      <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-blue-200 rounded-lg shadow-sm text-xs font-bold text-blue-700 hover:bg-blue-50 transition-all pointer-events-auto" onClick={(e) => { e.stopPropagation(); importMode === 'balances' ? downloadBalanceTemplate() : downloadFeeTemplate(); }}>
+                        <Download size={14} /> Download {importMode === 'balances' ? 'Balances' : 'Payments'} Template
+                      </div>
+                    </>
                   )}
                 </div>
+                
+                {/* Requirement Guide */}
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 flex items-start gap-3">
+                  <div className="p-1.5 bg-blue-100 text-blue-600 rounded-lg">
+                    <Info size={16} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-gray-700 uppercase tracking-tight">Required Columns:</p>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {(importMode === 'balances' 
+                        ? ['Adm No', 'Billed', 'Paid', 'Balance'] 
+                        : ['Adm No', 'Amount', 'Date', 'Reference']
+                      ).map(col => (
+                        <span key={col} className="px-2 py-1 bg-white border border-gray-300 rounded text-[10px] font-black text-gray-600 shadow-sm">{col}</span>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-gray-500 mt-2 italic font-medium"> Note: Matching is done via Admission Number. Ensure student records already exist.</p>
+                  </div>
+                </div>
+
                 {error && <p className="text-sm text-red-600 font-medium px-1 flex items-center gap-1.5"><X size={16}/>{error}</p>}
               </div>
 

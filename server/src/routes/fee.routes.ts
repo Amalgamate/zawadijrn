@@ -6,6 +6,17 @@
  *  - Added PATCH /invoices/:id/cancel (wires up the previously-dead CANCELLED status)
  *  - All waiver routes consolidated here (removed stray import block at the bottom)
  *  - Comments & Pledges routes kept after payment routes for readability
+ *
+ * FIX (Task 3 — P2): Added PATCH /invoices/:id route to update dueDate /
+ *   totalAmount before any payment is recorded. Guarded by updateInvoiceSchema.
+ *
+ * FIX (Task 5 — P2): Added bulkGenerateInvoicesSchema Zod validation on
+ *   POST /invoices/bulk (was previously unvalidated).
+ *
+ * FIX (Task 6 — P3): Changed DELETE /invoices/reset → POST /invoices/reset.
+ *   The DELETE pattern clashed with DELETE /invoices/:id if the router ever
+ *   processed routes in a different order. POST makes the intent explicit and
+ *   avoids the ambiguity entirely.
  */
 
 import { Router } from 'express';
@@ -57,6 +68,26 @@ const processPaymentSchema = z.object({
   if (!data.invoiceId && !data.learnerId) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Either invoiceId or learnerId must be provided' });
   }
+});
+
+// FIX (Task 3 — P2): Validation for PATCH /invoices/:id
+// At least one of dueDate or totalAmount must be supplied.
+const updateInvoiceSchema = z.object({
+  dueDate: z.string().optional(),
+  totalAmount: z.number().positive().optional()
+}).refine(
+  (data) => data.dueDate !== undefined || data.totalAmount !== undefined,
+  { message: 'Provide at least one field to update: dueDate or totalAmount' }
+);
+
+// FIX (Task 5 — P2): Validation for POST /invoices/bulk (was previously missing)
+const bulkGenerateInvoicesSchema = z.object({
+  feeStructureId: z.string().min(1, 'feeStructureId is required'),
+  term: z.string().min(1, 'term is required'),
+  academicYear: z.number().int().min(2000, 'academicYear must be a valid year'),
+  dueDate: z.string().min(1, 'dueDate is required'),
+  grade: z.string().min(1, 'grade is required'),
+  stream: z.string().optional()
 });
 
 const createWaiverSchema = z.object({
@@ -157,12 +188,32 @@ router.post(
   asyncHandler(feeController.createInvoice.bind(feeController))
 );
 
+/**
+ * @route   POST /api/fees/invoices/bulk
+ * @desc    Bulk generate invoices for a whole grade/stream.
+ *          FIX (Task 5 — P2): Zod validation now applied (was previously missing).
+ */
 router.post(
   '/invoices/bulk',
   requireRole(['ACCOUNTANT', 'ADMIN', 'SUPER_ADMIN']),
   rateLimit({ windowMs: 60_000, maxRequests: 10 }),
+  validate(bulkGenerateInvoicesSchema),
   auditLog('BULK_CREATE_INVOICES'),
   asyncHandler(feeController.bulkGenerateInvoices.bind(feeController))
+);
+
+/**
+ * @route   PATCH /api/fees/invoices/:id
+ * @desc    Edit dueDate or totalAmount before any payment is recorded.
+ *          FIX (Task 3 — P2): New route. Controller guards paidAmount === 0.
+ */
+router.patch(
+  '/invoices/:id',
+  requireRole(['ACCOUNTANT', 'ADMIN', 'SUPER_ADMIN']),
+  rateLimit({ windowMs: 60_000, maxRequests: 30 }),
+  validate(updateInvoiceSchema),
+  auditLog('UPDATE_INVOICE'),
+  asyncHandler(feeController.updateInvoice.bind(feeController))
 );
 
 /**
@@ -180,7 +231,15 @@ router.patch(
   asyncHandler(feeController.cancelInvoice.bind(feeController))
 );
 
-router.delete(
+/**
+ * @route   POST /api/fees/invoices/reset
+ * @desc    Reset all invoices for a given academicYear + term (SUPER_ADMIN only).
+ *          FIX (Task 6 — P3): Changed from DELETE to POST. The old
+ *          DELETE /invoices/reset pattern was ambiguous with DELETE /invoices/:id
+ *          and could be misrouted if Express ever processed routes differently.
+ *          POST /invoices/reset is explicit and unambiguous.
+ */
+router.post(
   '/invoices/reset',
   requireRole(['SUPER_ADMIN']),
   rateLimit({ windowMs: 60_000, maxRequests: 5 }),

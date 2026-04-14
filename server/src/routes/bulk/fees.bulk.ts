@@ -77,9 +77,9 @@ router.post(
           const admNo = String(row['Adm No'] ?? row['Admission Number'] ?? '').trim();
           if (!admNo || admNo === 'undefined') continue; // Skip empty rows
 
-          const billedRaw = row['Billed'];
-          const paidRaw = row['Paid'];
-          const balanceRaw = row['Balance'];
+          const billedRaw = row['Billed'] ?? row['Total Amount'];
+          const paidRaw = row['Paid'] ?? row['Paid Amount'];
+          const balanceRaw = row['Balance'] ?? row['Balances'] ?? row['Outstanding'];
 
           if (billedRaw == null && paidRaw == null && balanceRaw == null) {
             continue;
@@ -132,7 +132,7 @@ router.post(
                 totalAmount: billed,
                 paidAmount: paid,
                 balance: balance,
-                status: balance <= 0 ? 'PAID' : paid > 0 ? 'PARTIAL' : 'PENDING',
+                status: balance < 0 ? 'OVERPAID' : balance === 0 ? 'PAID' : paid > 0 ? 'PARTIAL' : 'PENDING',
                 issuedBy: req.user!.userId
               }
             });
@@ -145,7 +145,7 @@ router.post(
                 totalAmount: billed,
                 paidAmount: paid,
                 balance: balance,
-                status: balance <= 0 ? 'PAID' : paid > 0 ? 'PARTIAL' : 'PENDING'
+                status: balance < 0 ? 'OVERPAID' : balance === 0 ? 'PAID' : paid > 0 ? 'PARTIAL' : 'PENDING'
               }
             });
             results.updated++;

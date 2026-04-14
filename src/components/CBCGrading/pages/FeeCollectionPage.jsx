@@ -538,14 +538,14 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
         {/* Total Invoices — Indigo */}
         <div
           onClick={() => setStatusFilter(statusFilter === 'all' ? 'all' : 'all')}
-          className={`relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-800 p-5 shadow-lg shadow-indigo-500/20 text-white cursor-pointer transition-all duration-200 hover:scale-[1.03] hover:shadow-xl ${
+          className={`relative overflow-hidden rounded-2xl bg-indigo-600 p-5 shadow-lg shadow-indigo-500/20 text-white cursor-pointer transition-all duration-200 hover:scale-[1.03] hover:shadow-xl ${
             statusFilter === 'all' ? 'ring-4 ring-white/50 scale-[1.03]' : 'opacity-80 hover:opacity-100'
           }`}
         >
           <div className="flex items-start justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-widest text-indigo-200 mb-1">Total Invoices</p>
-              <p className="text-4xl font-black">{stats.totalCount}</p>
+              <p className="text-5xl font-black">{stats.totalCount}</p>
               <p className="text-xs font-semibold text-indigo-300 mt-1.5">{stats.totalBilled} billed</p>
             </div>
             <div className="p-2.5 bg-white/15 rounded-xl">
@@ -559,15 +559,15 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
         {/* Pending — Amber */}
         <div
           onClick={() => { setStatusFilter(prev => prev === 'pending' ? 'all' : 'pending'); setCurrentPage(1); }}
-          className={`relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 p-5 shadow-lg shadow-amber-500/20 text-white cursor-pointer transition-all duration-200 hover:scale-[1.03] hover:shadow-xl ${
+          className={`relative overflow-hidden rounded-2xl bg-red-600 p-5 shadow-lg shadow-red-500/20 text-white cursor-pointer transition-all duration-200 hover:scale-[1.03] hover:shadow-xl ${
             statusFilter === 'pending' ? 'ring-4 ring-white/50 scale-[1.03]' : 'opacity-80 hover:opacity-100'
           }`}
         >
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-amber-100 mb-1">Pending</p>
-              <p className="text-4xl font-black">{stats.pendingCount}</p>
-              <p className="text-xs font-semibold text-amber-200 mt-1.5">{stats.pendingAmt} outstanding</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-red-100 mb-1">Pending</p>
+              <p className="text-5xl font-black">{stats.pendingCount}</p>
+              <p className="text-xs font-semibold text-red-200 mt-1.5">{stats.pendingAmt} outstanding</p>
             </div>
             <div className="p-2.5 bg-white/15 rounded-xl">
               <Clock size={22} className="text-white" />
@@ -580,15 +580,15 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
         {/* Partial — Sky Blue */}
         <div
           onClick={() => { setStatusFilter(prev => prev === 'partial' ? 'all' : 'partial'); setCurrentPage(1); }}
-          className={`relative overflow-hidden rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 p-5 shadow-lg shadow-sky-500/20 text-white cursor-pointer transition-all duration-200 hover:scale-[1.03] hover:shadow-xl ${
+          className={`relative overflow-hidden rounded-2xl bg-orange-500 p-5 shadow-lg shadow-orange-500/20 text-white cursor-pointer transition-all duration-200 hover:scale-[1.03] hover:shadow-xl ${
             statusFilter === 'partial' ? 'ring-4 ring-white/50 scale-[1.03]' : 'opacity-80 hover:opacity-100'
           }`}
         >
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-sky-100 mb-1">Partial Payments</p>
-              <p className="text-4xl font-black">{stats.partialCount}</p>
-              <p className="text-xs font-semibold text-sky-200 mt-1.5">{stats.partialAmt} balance due</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-orange-100 mb-1">Partial Payments</p>
+              <p className="text-5xl font-black">{stats.partialCount}</p>
+              <p className="text-xs font-semibold text-orange-200 mt-1.5">{stats.partialAmt} balance due</p>
             </div>
             <div className="p-2.5 bg-white/15 rounded-xl">
               <AlertCircle size={22} className="text-white" />
@@ -601,14 +601,14 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
         {/* Fully Paid — Emerald */}
         <div
           onClick={() => { setStatusFilter(prev => prev === 'paid' ? 'all' : 'paid'); setCurrentPage(1); }}
-          className={`relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-green-700 p-5 shadow-lg shadow-emerald-500/20 text-white cursor-pointer transition-all duration-200 hover:scale-[1.03] hover:shadow-xl ${
+          className={`relative overflow-hidden rounded-2xl bg-emerald-600 p-5 shadow-lg shadow-emerald-500/20 text-white cursor-pointer transition-all duration-200 hover:scale-[1.03] hover:shadow-xl ${
             statusFilter === 'paid' ? 'ring-4 ring-white/50 scale-[1.03]' : 'opacity-80 hover:opacity-100'
           }`}
         >
           <div className="flex items-start justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-widest text-emerald-100 mb-1">Fully Paid</p>
-              <p className="text-4xl font-black">{stats.paidCount}</p>
+              <p className="text-5xl font-black">{stats.paidCount}</p>
               <p className="text-xs font-semibold text-emerald-200 mt-1.5">{stats.paidAmt} collected</p>
             </div>
             <div className="p-2.5 bg-white/15 rounded-xl">
@@ -622,14 +622,14 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
         {/* Overpaid — Purple */}
         <div
           onClick={() => { setStatusFilter(prev => prev === 'overpaid' ? 'all' : 'overpaid'); setCurrentPage(1); }}
-          className={`relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-500 to-violet-700 p-5 shadow-lg shadow-purple-500/20 text-white cursor-pointer transition-all duration-200 hover:scale-[1.03] hover:shadow-xl ${
+          className={`relative overflow-hidden rounded-2xl bg-purple-600 p-5 shadow-lg shadow-purple-500/20 text-white cursor-pointer transition-all duration-200 hover:scale-[1.03] hover:shadow-xl ${
             statusFilter === 'overpaid' ? 'ring-4 ring-white/50 scale-[1.03]' : 'opacity-80 hover:opacity-100'
           }`}
         >
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-purple-200 mb-1">Overpaid</p>
-              <p className="text-4xl font-black">{stats.overpaidCount}</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-purple-100 mb-1">Overpaid</p>
+              <p className="text-5xl font-black">{stats.overpaidCount}</p>
               <p className="text-xs font-semibold text-purple-200 mt-1.5">{stats.overpaidAmt} credit</p>
             </div>
             <div className="p-2.5 bg-white/15 rounded-xl">
@@ -858,7 +858,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                   className={`hover:bg-gray-50 transition-colors cursor-pointer ${selectedInvoiceIds.includes(invoice.id) ? 'bg-blue-50/50' : ''}`}
                   onClick={() => navigateTo('fees-invoice-detail', { invoice })}
                 >
-                  <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                  <td className="px-6 py-2" onClick={(e) => e.stopPropagation()}>
                     <input
                       type="checkbox"
                       checked={selectedInvoiceIds.includes(invoice.id)}
@@ -866,8 +866,8 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                   </td>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">{invoice.invoiceNumber}</td>
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-2 text-sm font-medium text-gray-900">{invoice.invoiceNumber}</td>
+                  <td className="px-6 py-2">
                     <div>
                       <p className="font-semibold text-gray-800">
                         {invoice.learner?.firstName} {invoice.learner?.lastName}
@@ -875,8 +875,8 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                       <p className="text-xs text-gray-500">{invoice.learner?.admissionNumber}</p>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{invoice.learner?.grade} {invoice.learner?.stream}</td>
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-2 text-sm text-gray-600">{invoice.learner?.grade} {invoice.learner?.stream}</td>
+                  <td className="px-6 py-2">
                     <div className="text-sm font-semibold text-gray-800">
                       {invoice.feeStructure?.name || 'Standard Fees'}
                     </div>
@@ -886,16 +886,16 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                       </div>
                     )}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
+                  <td className="px-6 py-2 text-sm text-gray-600">
                     {new Date(invoice.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                   </td>
-                  <td className="px-6 py-4 text-sm font-semibold text-gray-900">
+                  <td className="px-6 py-2 text-sm font-semibold text-gray-900">
                     KES {Number(invoice.totalAmount).toLocaleString()}
                   </td>
-                  <td className="px-6 py-4 text-sm text-green-600">
+                  <td className="px-6 py-2 text-sm text-green-600">
                     KES {Number(invoice.paidAmount).toLocaleString()}
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-2">
                     <div className="text-sm font-semibold text-teal-600">
                       KES {(invoice.waivers || [])
                         .filter(w => w.status === 'APPROVED')
@@ -907,10 +907,10 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                       </span>
                     )}
                   </td>
-                  <td className="px-6 py-4 text-sm font-semibold text-red-600">
+                  <td className="px-6 py-2 text-sm font-semibold text-red-600">
                     KES {Number(invoice.balance).toLocaleString()}
                   </td>
-                  <td className="px-6 py-4">{getStatusBadge(invoice.status)}</td>
+                  <td className="px-6 py-2">{getStatusBadge(invoice.status)}</td>
                   <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center gap-2">
                       <button

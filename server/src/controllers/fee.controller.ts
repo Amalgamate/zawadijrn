@@ -11,6 +11,11 @@
  *       - cancelInvoice() sets status → CANCELLED
  *       - (WAIVED is applied by feeWaiver.controller on full-waiver approval)
  *  5. SmsService calls are all via the static sendSms() — no instance-method divergence.
+ *  6. updateInvoice() added (Task 3 — P2): PATCH /invoices/:id allows editing
+ *     dueDate and adjusting totalAmount/balance before any payment is recorded.
+ *  7. recordPayment() now returns receiptData in the response (Task 4 — P2):
+ *     a structured payload that the frontend can use to render/download a PDF receipt,
+ *     since server-side PDF generation is deprecated on the current hosting environment.
  */
 
 import { Response } from 'express';
@@ -421,9 +426,80 @@ export class FeeController {
   }
 
   /**
+   * Update an invoice (Task 3 — P2).
+   *
+   * Allows editing dueDate and adjusting totalAmount/balance before any payment
+   * is recorded. Guards:
+   *  - Invoice must exist.
+   *  - Invoice must have paidAmount === 0 (no payments recorded yet).
+   *  - If CANCELLED, editing is not allowed.
+   *  - newTotalAmount must be > 0.
+   */
+  async updateInvoice(req: AuthRequest, res: Response) {
+    const { id } = req.params;
+    const { dueDate, totalAmount } = req.body;
+
+    if (!dueDate && totalAmount === undefined) {
+      throw new ApiError(400, 'Provide at least one field to update: dueDate or totalAmount');
+    }
+
+    const invoice = await prisma.feeInvoice.findUnique({ where: { id } });
+    if (!invoice) throw new ApiError(404, 'Invoice not found');
+
+    if (invoice.status === 'CANCELLED') {
+      throw new ApiError(400, 'Cannot edit a cancelled invoice');
+    }
+    if (Number(invoice.paidAmount) > 0) {
+      throw new ApiError(
+        400,
+        'Cannot edit an invoice that already has recorded payments. Reverse the payment(s) first.'
+      );
+    }
+
+    const updateData: any = {};
+
+    if (dueDate) {
+      const parsed = new Date(dueDate);
+      if (isNaN(parsed.getTime())) throw new ApiError(400, 'Invalid dueDate format');
+      updateData.dueDate = parsed;
+    }
+
+    if (totalAmount !== undefined) {
+      const newTotal = Number(totalAmount);
+      if (isNaN(newTotal) || newTotal <= 0) {
+        throw new ApiError(400, 'totalAmount must be a positive number');
+      }
+      updateData.totalAmount = newTotal;
+      updateData.balance = newTotal; // balance === total when no payments recorded
+    }
+
+    const updated = await prisma.feeInvoice.update({
+      where: { id },
+      data: updateData,
+      include: {
+        learner: {
+          select: {
+            id: true, firstName: true, lastName: true,
+            admissionNumber: true, grade: true
+          }
+        },
+        feeStructure: true
+      }
+    });
+
+    res.json({ success: true, data: updated });
+  }
+
+  /**
    * Record payment.
    * Status transitions: PENDING/PARTIAL → PARTIAL | PAID | OVERPAID
    * All SmsService calls use the static sendSms() method.
+   *
+   * FIX (Task 4 — P2): The response now includes a `receiptData` object
+   * containing all the fields needed for the frontend to render or download
+   * a PDF receipt. Server-side PDF generation is deprecated on the current
+   * hosting environment (Render Native Node); the frontend should use
+   * html2canvas / jsPDF with this data.
    */
   async recordPayment(req: AuthRequest, res: Response) {
     const { invoiceId, learnerId, amount: rawAmount, paymentMethod, referenceNumber, notes } = req.body;
@@ -494,8 +570,8 @@ export class FeeController {
           const finalInvoice = await tx.feeInvoice.update({
             where: { id: actualInvoiceId },
             data: { status: newStatus },
-            include: { 
-              learner: true, 
+            include: {
+              learner: true,
               payments: { orderBy: { paymentDate: 'desc' } },
               feeStructure: { include: { feeItems: { include: { feeType: true } } } } as any
             }
@@ -532,7 +608,6 @@ export class FeeController {
             smsMessage = `Payment of KES ${amount.toLocaleString()} received for ${learner.firstName}. Outstanding balance: KES ${Number(result.invoice.balance).toLocaleString()}. Thank you.`;
           }
 
-          // Fetch school name for WhatsApp (optional but better)
           const school = await prisma.school.findFirst({ select: { name: true } });
           const schoolName = school?.name || 'Zawadi Junior Academy';
 
@@ -555,7 +630,41 @@ export class FeeController {
       }
     })();
 
-    res.status(201).json({ success: true, data: result });
+    // ── RECEIPT DATA (Task 4 — P2) ─────────────────────────────────────────
+    // Structured receipt payload for frontend PDF generation.
+    // Server-side PDF generation is unavailable on the current hosting
+    // environment; the frontend (html2canvas / jsPDF) consumes this object.
+    const school = await prisma.school.findFirst({ select: { name: true, logoUrl: true, phone: true, email: true, address: true } });
+    const learner = result.invoice.learner;
+    const receiptData = {
+      receiptNumber: result.payment.receiptNumber,
+      paymentDate: result.payment.paymentDate,
+      paymentMethod,
+      referenceNumber: referenceNumber || null,
+      amount,
+      invoiceNumber: result.invoice.invoiceNumber,
+      invoiceStatus: result.invoice.status,
+      balance: Number(result.invoice.balance),
+      totalAmount: Number(result.invoice.totalAmount),
+      paidAmount: Number(result.invoice.paidAmount),
+      term: result.invoice.term,
+      academicYear: result.invoice.academicYear,
+      student: {
+        name: `${learner.firstName} ${learner.lastName}`,
+        admissionNumber: learner.admissionNumber,
+        grade: learner.grade
+      },
+      school: {
+        name: school?.name || 'Zawadi Junior Academy',
+        logoUrl: school?.logoUrl || null,
+        phone: school?.phone || null,
+        email: school?.email || null,
+        address: school?.address || null
+      }
+    };
+    // ────────────────────────────────────────────────────────────────────────
+
+    res.status(201).json({ success: true, data: result, receiptData });
   }
 
   /**
@@ -602,8 +711,13 @@ export class FeeController {
   }
 
   /**
-   * Reverse a payment
+   * Reverse a payment.
    * Updates invoice balance/status and archives the payment record.
+   *
+   * NOTE (Task 7 — P3): FeePayment.archivedBy is stored as String? (no FK
+   * relation to User). The reversal actor's userId is already captured in
+   * archivedBy and emitted to the audit log via the route middleware, so user
+   * lookup can be performed via the AuditLog table if needed in future.
    */
   async reversePayment(req: AuthRequest, res: Response) {
     const { id } = req.params;
