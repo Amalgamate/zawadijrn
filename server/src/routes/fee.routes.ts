@@ -20,12 +20,6 @@ import { feeCommentsController } from '../controllers/feeComments.controller';
 const router = Router();
 const feeController = new FeeController();
 
-// DIAGNOSTIC: Verify route is loaded
-router.get('/ping-fees', (_req, res) => res.json({ 
-  status: 'Fees route is alive', 
-  timestamp: new Date().toISOString(),
-  environment: process.env.NODE_ENV || 'development'
-}));
 
 // Validation schemas
 const feeStructureItemSchema = z.object({
