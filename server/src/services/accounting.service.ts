@@ -312,6 +312,56 @@ export class AccountingService {
     }
 
     /**
+     * Automatic Ledger Posting: Fee Waiver
+     * Dr: Fee Waivers (Expense/Discount)
+     * Cr: Accounts Receivable
+     */
+    async postFeeWaiverToLedger(waiver: any) {
+        const { amountWaived, id } = waiver;
+        const invoiceNumber = waiver.invoice?.invoiceNumber || 'N/A';
+
+        // Find required accounts and journal
+        let arAccount = await this.getAccountByCode('1100'); // AR
+        let waiverAccount = await this.getAccountByCode('5400'); // Fee Waivers (Expense)
+        let miscJournal = await this.getJournalByCode('MISC');
+
+        if (!arAccount || !waiverAccount || !miscJournal) {
+            console.warn(`[Accounting] Missing accounting setup for fee waiver. Ensuring defaults.`);
+            
+            // Ensure 5400 exists if missing
+            if (!waiverAccount) {
+                await prisma.account.upsert({
+                    where: { code: '5400' },
+                    update: {},
+                    create: { code: '5400', name: 'Fee Waivers & Discounts', type: AccountType.EXPENSE }
+                });
+                waiverAccount = await this.getAccountByCode('5400');
+            }
+
+            await this.ensureDefaultAccountingSetup();
+            arAccount = await this.getAccountByCode('1100');
+            miscJournal = await this.getJournalByCode('MISC');
+        }
+
+        if (!arAccount || !waiverAccount || !miscJournal) {
+            console.warn(`[Accounting] Still missing required accounts/journal for waiver. Skipping auto-post.`);
+            return;
+        }
+
+        const entry = await this.createJournalEntry({
+            journalId: miscJournal.id,
+            reference: `WAV/${id.slice(0, 8)}`,
+            date: new Date(),
+            items: [
+                { accountId: waiverAccount.id, debit: Number(amountWaived), label: `Fee Waiver Approved: Inv ${invoiceNumber}` },
+                { accountId: arAccount.id, credit: Number(amountWaived), label: `Receivable Reduction: Inv ${invoiceNumber}` }
+            ]
+        });
+
+        return this.postJournalEntry(entry.id);
+    }
+
+    /**
      * Automatic Ledger Posting: Payroll Record
      * Dr: Salaries Expense
      * Cr: Salaries Payable

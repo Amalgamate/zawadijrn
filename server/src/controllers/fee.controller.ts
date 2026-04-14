@@ -301,7 +301,6 @@ export class FeeController {
             select: { id: true, status: true, amountWaived: true }
           }
         },
-        orderBy: { createdAt: 'desc' },
         skip,
         take: limit
       }),
@@ -312,7 +311,12 @@ export class FeeController {
       success: true,
       data: invoices,
       count: invoices.length,
-      pagination: { total, page, limit, pages: Math.ceil(total / limit) }
+      pagination: { 
+        total, 
+        page, 
+        limit: limit || total, 
+        pages: Math.ceil(total / (limit || total || 1)) 
+      }
     });
   }
 

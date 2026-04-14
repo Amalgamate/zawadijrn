@@ -14,8 +14,7 @@ import { accountingService } from '../services/accounting.service';
 import { EmailService } from '../services/email.service';
 
 export class FeeWaiverController {
-  private smsService = new SmsService();
-  private emailService = new EmailService();
+
 
   /**
    * Create a fee waiver request
@@ -297,8 +296,8 @@ export class FeeWaiverController {
     });
 
     // Create accounting entry for waived amount
-    if (updatedWaiver.amountWaived > 0) {
-      await this.recordWaiverInAccounting(updatedWaiver);
+    if (Number(updatedWaiver.amountWaived) > 0) {
+      await accountingService.postFeeWaiverToLedger(updatedWaiver);
     }
 
     // Notify parent and accountant
@@ -389,27 +388,6 @@ export class FeeWaiverController {
     res.json({ success: true, message: 'Fee waiver archived successfully' });
   }
 
-  /**
-   * Helper: Record waiver in accounting system
-   */
-  private async recordWaiverInAccounting(waiver: any) {
-    try {
-      const school = await prisma.school.findFirst();
-      // Create a journal entry for the waived amount
-      // This would typically be recorded as expense or discount
-      await accountingService.recordTransaction({
-        type: 'EXPENSE',
-        description: `Fee waiver for ${waiver.invoice.learner.firstName} ${waiver.invoice.learner.lastName} - ${waiver.reason}`,
-        amount: Number(waiver.amountWaived),
-        category: 'FEE_WAIVER',
-        referenceId: waiver.id,
-        schoolId: school?.id
-      });
-    } catch (error) {
-      console.error('Failed to record waiver in accounting:', error);
-      // Don't throw - waiver should still be approved even if accounting fails
-    }
-  }
 
   /**
    * Helper: Notify that waiver was requested
@@ -423,7 +401,7 @@ export class FeeWaiverController {
 
       // Send SMS if phone available
       if (recipient.phone) {
-        await this.smsService.sendSMS(
+        await SmsService.sendSms(
           recipient.phone,
           message
         );
@@ -431,25 +409,28 @@ export class FeeWaiverController {
 
       // Send WhatsApp if business number available
       if ((recipient as any).whatsappNumber) {
-        await whatsappService.sendMessage(
-          (recipient as any).whatsappNumber,
+        await whatsappService.sendMessage({
+          to: (recipient as any).whatsappNumber,
           message
-        );
+        });
       }
 
       // Email to school admin
       if (recipient.email) {
-        await this.emailService.sendEmail({
+        const html = `
+          <h2>New Fee Waiver Request</h2>
+          <p>A new waiver request has been received for <b>${waiver.invoice.learner.firstName} ${waiver.invoice.learner.lastName}</b>.</p>
+          <ul>
+            <li><b>Amount:</b> KES ${Number(waiver.amountWaived).toLocaleString()}</li>
+            <li><b>Reason:</b> ${waiver.reason}</li>
+            <li><b>Invoice:</b> ${waiver.invoice.invoiceNumber}</li>
+          </ul>
+          <p>Please log in to the system to review and approve/reject this request.</p>
+        `;
+        await EmailService.sendNotificationEmail({
           to: recipient.email,
           subject: 'New Fee Waiver Request',
-          template: 'fee-waiver-requested',
-          context: {
-            schoolName: recipient.name,
-            learnerName: `${waiver.invoice.learner.firstName} ${waiver.invoice.learner.lastName}`,
-            amount: waiver.amountWaived,
-            reason: waiver.reason,
-            invoiceNumber: waiver.invoice.invoiceNumber
-          }
+          html
         });
       }
     } catch (error) {
@@ -471,7 +452,7 @@ export class FeeWaiverController {
 
       // SMS to parent
       if (parent.phone) {
-        await this.smsService.sendSMS(
+        await SmsService.sendSms(
           parent.phone,
           message
         );
@@ -479,25 +460,26 @@ export class FeeWaiverController {
 
       // WhatsApp to parent
       if ((parent as any).whatsappPhone) {
-        await whatsappService.sendMessage(
-          (parent as any).whatsappPhone,
+        await whatsappService.sendMessage({
+          to: (parent as any).whatsappPhone,
           message
-        );
+        });
       }
 
       // Email to parent
       if (parent.email) {
-        await this.emailService.sendEmail({
+        const html = `
+          <h2>Fee Waiver Approved</h2>
+          <p>Dear ${parent.firstName},</p>
+          <p>We are pleased to inform you that a fee waiver of <b>KES ${Number(waiver.amountWaived).toLocaleString()}</b> has been approved for <b>${waiver.invoice.learner.firstName}</b>.</p>
+          <p><b>Updated Balance:</b> KES ${newBalance.toLocaleString()}</p>
+          <p>Thank you.</p>
+          <p><b>${school?.name || 'School Management'}</b></p>
+        `;
+        await EmailService.sendNotificationEmail({
           to: parent.email,
           subject: 'Fee Waiver Approved',
-          template: 'fee-waiver-approved',
-          context: {
-            parentName: parent.firstName,
-            learnerName: waiver.invoice.learner.firstName,
-            amount: waiver.amountWaived,
-            newBalance: waiver.invoice.balance,
-            schoolName: school?.name
-          }
+          html
         });
       }
     } catch (error) {
@@ -519,7 +501,7 @@ export class FeeWaiverController {
 
       // SMS to parent
       if (parent.phone) {
-        await this.smsService.sendSMS(
+        await SmsService.sendSms(
           parent.phone,
           message
         );
@@ -527,25 +509,26 @@ export class FeeWaiverController {
 
       // WhatsApp to parent
       if ((parent as any).whatsappPhone) {
-        await whatsappService.sendMessage(
-          (parent as any).whatsappPhone,
+        await whatsappService.sendMessage({
+          to: (parent as any).whatsappPhone,
           message
-        );
+        });
       }
 
       // Email to parent
       if (parent.email) {
-        await this.emailService.sendEmail({
+        const html = `
+          <h2>Fee Waiver Declined</h2>
+          <p>Dear ${parent.firstName},</p>
+          <p>Your fee waiver request of <b>KES ${Number(waiver.amountWaived).toLocaleString()}</b> for <b>${waiver.invoice.learner.firstName}</b> has been declined.</p>
+          <p><b>Reason:</b> ${waiver.rejectionReason}</p>
+          <p>If you have any questions, please contact the school office.</p>
+          <p><b>${school?.name || 'School Management'}</b></p>
+        `;
+        await EmailService.sendNotificationEmail({
           to: parent.email,
           subject: 'Fee Waiver Declined',
-          template: 'fee-waiver-rejected',
-          context: {
-            parentName: parent.firstName,
-            learnerName: waiver.invoice.learner.firstName,
-            amount: waiver.amountWaived,
-            reason: waiver.rejectionReason,
-            schoolName: school?.name
-          }
+          html
         });
       }
     } catch (error) {
