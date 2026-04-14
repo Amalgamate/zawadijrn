@@ -219,7 +219,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
   }, [readNotificationKeys, readStorageKey]);
 
   useEffect(() => {
-    if (!shouldScheduleReminder({ unreadCount })) {
+    if (!shouldScheduleReminder({ unreadCount: totalUnreadCount })) {
       setShowUnreadReminder(false);
       return;
     }
@@ -247,7 +247,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
 
     const lastReminderAt = Number(localStorage.getItem(reminderStorageKey) || 0) || null;
     const delay = getReminderDelay({
-      unreadCount,
+      unreadCount: totalUnreadCount,
       sessionStartedAt: sessionStartedAtRef.current,
       lastReminderAt,
       now
@@ -264,7 +264,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
     }, delay);
 
     return () => clearTimeout(timer);
-  }, [unreadCount, reminderStorageKey, snoozeStorageKey, reminderCycle]);
+  }, [totalUnreadCount, reminderStorageKey, snoozeStorageKey, reminderCycle]);
 
   // Close notifications when clicking outside
   useEffect(() => {
