@@ -20,8 +20,10 @@ import { generateDocument } from '../../../utils/simplePdfGenerator';
 import { useNotifications } from '../hooks/useNotifications';
 import DownloadReportButton from '../shared/DownloadReportButton';
 import FeeWaiverModal from '../shared/FeeWaiverModal';
+import ThermalReceipt from '../shared/ThermalReceipt';
 import Toast from '../shared/Toast';
 import api from '../../../services/api';
+import '../../../styles/receipt-print.css';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -55,6 +57,9 @@ const InvoiceDetailPage = ({ invoice }) => {
   const navigateTo = usePageNavigation();
   const { showSuccess, showError, showToast, toastMessage, toastType, hideNotification } = useNotifications();
   const [loading, setLoading] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [printingInvoice, setPrintingInvoice] = useState(null);
+  const [schoolInfo, setSchoolInfo] = useState(null);
   const [whatsappStatus, setWhatsappStatus] = useState({ status: 'fetching', qrCode: null });
 
   // Activity section state
@@ -105,6 +110,14 @@ const InvoiceDetailPage = ({ invoice }) => {
       } catch (e) { /* non-critical */ }
     };
     checkWhatsApp();
+
+    const fetchBranding = async () => {
+      try {
+        const resp = await api.branding.get();
+        if (resp.success) setSchoolInfo(resp.data);
+      } catch (e) {}
+    };
+    fetchBranding();
   }, []);
 
   // ── handlers ───────────────────────────────────────────────────────────────
@@ -210,6 +223,14 @@ const InvoiceDetailPage = ({ invoice }) => {
     await generateDocument({ html, fileName: filename, docInfo: { type: docType, ref: docRef }, includeStamp: true, stampOptions: { status: isPaid ? 'PAID' : 'APPROVED', dept: 'FINANCE OFFICE' }, includeLetterhead: false });
   };
 
+  const handlePrintThermal = () => {
+    setPrintingInvoice(invoice);
+    setTimeout(() => {
+      window.print();
+      setPrintingInvoice(null);
+    }, 100);
+  };
+
   // ── guard ──────────────────────────────────────────────────────────────────
   if (!invoice) {
     return (
@@ -242,23 +263,36 @@ const InvoiceDetailPage = ({ invoice }) => {
             </span>
           )}
         </div>
-        <div className="flex gap-3">
-          <DownloadReportButton onDownload={handleDownloadPdf} label="PDF" processingLabel="Generating..." successLabel="Downloaded!" className="!px-4 !py-2 !text-sm !rounded-xl" />
-          {invoice.status !== 'PAID' && invoice.status !== 'WAIVED' && (
-            <div className="flex gap-2">
-              <button onClick={() => navigateTo('fees-record-payment', { invoice })} className="flex items-center gap-2 bg-white text-[#002C60] hover:bg-blue-50 px-4 py-2 rounded-xl font-bold text-sm transition-all border border-blue-100">
-                <Plus size={16} /> Record Payment
-              </button>
-              
-              <button 
-                onClick={() => setShowWaiverModal(true)} 
-                className="flex items-center gap-2 bg-[#00A09D] text-white hover:bg-[#008c89] px-4 py-2 rounded-xl font-bold text-sm transition-all"
-                title="Request Fee Waiver"
-              >
-                <Gift size={16} /> Waiver
-              </button>
-            </div>
-          )}
+        <div className="flex items-center gap-3">
+          <DownloadReportButton 
+            onDownload={handleDownloadPdf} 
+            label="A4" 
+            processingLabel="..." 
+            className="!px-3 !py-2 !text-xs !bg-indigo-600 !text-white !rounded-xl !font-bold" 
+          />
+          
+          <button
+            onClick={handlePrintThermal}
+            className="flex items-center gap-1.5 bg-amber-500 text-white hover:bg-amber-600 px-3 py-2 rounded-xl font-bold text-xs transition-all shadow-sm"
+            title="Thermal Printer (POS)"
+          >
+            <Download size={14} className="rotate-180" />
+            <span>POS</span>
+          </button>
+
+          <div className="h-8 w-px bg-white/20 mx-1" />
+
+          <button onClick={() => navigateTo('fees-record-payment', { invoice })} className="flex items-center gap-2 bg-white text-[#002C60] hover:bg-blue-50 px-4 py-2 rounded-xl font-bold text-sm transition-all border border-blue-100">
+            <Plus size={16} /> Collect Payment
+          </button>
+          
+          <button 
+            onClick={() => setShowWaiverModal(true)} 
+            className="flex items-center gap-2 bg-[#00A09D] text-white hover:bg-[#008c89] px-4 py-2 rounded-xl font-bold text-sm transition-all"
+            title="Request Fee Waiver"
+          >
+            <Gift size={16} /> Waiver
+          </button>
         </div>
       </div>
 
@@ -534,6 +568,13 @@ const InvoiceDetailPage = ({ invoice }) => {
             fetchActivity(); // Refresh activity to show the new waiver request
           }}
         />
+      )}
+
+      {/* Thermal Print Overlay */}
+      {printingInvoice && (
+        <div id="printable-thermal-receipt" className="thermal-print-overlay">
+          <ThermalReceipt invoice={printingInvoice} schoolInfo={schoolInfo} />
+        </div>
       )}
     </div>
   );
