@@ -4,7 +4,7 @@ import {
   Eye, EyeOff, Mail, Archive, ArchiveRestore,
   Settings, Lock, Check, AlertCircle, Clock, Activity, BookOpen, MessageCircle, Key
 } from 'lucide-react';
-import { userAPI } from '../../../../services/api';
+import { userAPI, learnerAPI } from '../../../../services/api';
 import { getStoredUser } from '../../../../services/schoolContext';
 import ResetPasswordModal from '../../shared/ResetPasswordModal';
 
@@ -196,6 +196,7 @@ const UserManagement = () => {
   const [activityFilterUser, setActivityFilterUser] = useState('all');
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetTargetUser, setResetTargetUser] = useState(null);
+  const [learnerStats, setLearnerStats] = useState({ total: 0 });
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -250,6 +251,17 @@ const UserManagement = () => {
       }));
 
       setUsers(mappedUsers);
+
+      // Fetch Learner Stats for the tab count
+      try {
+        const stats = await learnerAPI.getStats();
+        if (stats && stats.data) {
+          setLearnerStats({ total: stats.data.totalActive || stats.data.total || 0 });
+        }
+      } catch (err) {
+        console.warn('Failed to fetch learner stats', err);
+      }
+
     } catch (error) {
       console.error('Failed to load users:', error);
       showNotification('Failed to load users: ' + error.message, 'error');
@@ -543,7 +555,7 @@ const UserManagement = () => {
                   <span className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full ${activeTab === tab.id ? 'bg-white/20' : 'bg-gray-100 text-gray-500'
                     }`}>
                     {tab.id === 'archive' ? users.filter(u => u.archived).length :
-                      tab.id === 'students' ? getStudentUsers().length :
+                      tab.id === 'students' ? (learnerStats.total > 0 ? learnerStats.total : getStudentUsers().length) :
                         tab.id === 'parents' ? getParentUsers().length :
                           tab.id === 'staff' ? getTutorUsers().length :
                             getAdminUsers().length}
@@ -607,6 +619,23 @@ const UserManagement = () => {
                 <div className="p-12 text-center">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
                   <p className="mt-4 text-gray-600">Loading users...</p>
+                </div>
+              ) : activeTab === 'students' && filteredUsers.length === 0 ? (
+                <div className="p-12 text-center bg-orange-50/20">
+                  <BookOpen size={48} className="mx-auto text-orange-200 mb-4" />
+                  <p className="text-gray-800 font-bold text-lg">Managing {learnerStats.total || 'All'} Students</p>
+                  <p className="text-gray-500 text-sm mt-2 max-w-sm mx-auto">
+                    Uploaded students appear here once they are assigned portal login accounts. To manage your full student database, use the Admissions page.
+                  </p>
+                  <div className="mt-8 flex justify-center gap-4">
+                    <button 
+                      onClick={() => window.location.href = '/learners/list'}
+                      className="px-6 py-2.5 bg-orange-600 text-white rounded-xl shadow-lg shadow-orange-600/20 font-bold hover:bg-orange-700 transition-all flex items-center gap-2"
+                    >
+                      <Users size={18} />
+                      Go to Full Student List
+                    </button>
+                  </div>
                 </div>
               ) : filteredUsers.length === 0 ? (
                 <div className="p-12 text-center">

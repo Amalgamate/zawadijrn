@@ -278,10 +278,10 @@ export class UserController {
 
     let whereClause: any = { archived: false };
     
-    // If requesting TEACHER role, include other teaching roles like HEAD_TEACHER, ADMIN, etc.
+    // If requesting TEACHER role, include other teaching roles
     if (roleParam === 'TEACHER') {
         whereClause.role = { 
-            in: ['TEACHER', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM', 'ADMIN', 'SUPER_ADMIN'] 
+            in: ['TEACHER', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM'] 
         };
     } else {
         whereClause.role = roleParam as any;
