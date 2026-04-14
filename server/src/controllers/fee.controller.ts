@@ -533,8 +533,8 @@ export class FeeController {
           }
 
           // Fetch school name for WhatsApp (optional but better)
-          const school = await prisma.schoolConfig.findFirst({ select: { schoolName: true } });
-          const schoolName = school?.schoolName || 'Zawadi Junior Academy';
+          const school = await prisma.school.findFirst({ select: { name: true } });
+          const schoolName = school?.name || 'Zawadi Junior Academy';
 
           await Promise.allSettled([
             SmsService.sendSms(contactPhone, smsMessage),

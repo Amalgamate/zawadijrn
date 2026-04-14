@@ -226,7 +226,7 @@ export class DashboardController {
                     const collected = Number(row._sum.paidAmount  || 0);
                     const bal       = Number(row._sum.balance     || 0);
                     return {
-                        name:      fs.name || fs.grade.replace('_', ' '),
+                        name:      fs.name || fs.grade?.replace('_', ' ') || 'General',
                         target,
                         collected,
                         bal,
