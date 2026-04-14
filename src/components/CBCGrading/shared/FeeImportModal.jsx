@@ -11,6 +11,7 @@ const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [results, setResults] = useState(null);
+  const [progress, setProgress] = useState(null); // { current, total, percent, message }
 
   if (!isOpen) return null;
 
@@ -34,6 +35,7 @@ const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
     setLoading(true);
     setError('');
     setResults(null);
+    setProgress({ percent: 0, current: 0, total: 0, message: 'Preparing upload...' });
 
     const formData = new FormData();
     formData.append('file', file);
@@ -41,26 +43,69 @@ const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
     formData.append('term', term);
 
     try {
+      const baseUrl = axiosInstance.defaults.baseURL || '';
       let endpoint = '/bulk/fees/upload-balances';
       if (importMode === 'payments') {
         endpoint = '/bulk/fees/upload-payments';
       }
 
-      const response = await axiosInstance.post(endpoint, formData, {
+      // We use native fetch for streaming
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: 'POST',
         headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+          'Authorization': `Bearer ${localStorage.getItem('token')}` // Ensure auth header if needed
+        },
+        body: formData
       });
 
-      const data = response.data;
-      if (!data.success) {
-        throw new Error(data.error || data.details || 'Upload failed');
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || `Upload failed with status ${response.status}`);
       }
 
-      setResults(data);
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop(); // Keep last partial line
+
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const data = JSON.parse(line);
+            if (data.type === 'info') {
+              setProgress(prev => ({ ...prev, message: data.message }));
+            } else if (data.type === 'start') {
+              setProgress(prev => ({ ...prev, total: data.total, message: 'Processing started...' }));
+            } else if (data.type === 'progress') {
+              setProgress(prev => ({
+                ...prev,
+                current: data.current,
+                total: data.total,
+                percent: data.percent,
+                message: `Importingstudent ${data.current} of ${data.total}`
+              }));
+            } else if (data.type === 'complete') {
+              setResults(data);
+              setProgress(null);
+              setLoading(false);
+            } else if (data.type === 'error') {
+              throw new Error(data.error || data.details);
+            }
+          } catch (e) {
+            console.warn('Failed to parse stream chunk:', line, e);
+          }
+        }
+      }
     } catch (err) {
+      console.error('Upload Error:', err);
       setError(err.message || 'An error occurred during upload.');
-    } finally {
       setLoading(false);
     }
   };
@@ -187,6 +232,40 @@ const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
                 </div>
 
                 {error && <p className="text-sm text-red-600 font-medium px-1 flex items-center gap-1.5"><X size={16}/>{error}</p>}
+                
+                {/* Real-time Progress Indicator */}
+                {loading && progress && (
+                  <div className="space-y-3 p-6 bg-blue-50/50 border border-blue-100 rounded-2xl animate-fade-in shadow-inner">
+                    <div className="flex justify-between items-end mb-1">
+                      <div>
+                        <p className="text-xs font-black text-blue-800 uppercase tracking-widest flex items-center gap-2">
+                          <Loader2 size={12} className="animate-spin" />
+                          {progress.message || 'Importing...'}
+                        </p>
+                      </div>
+                      <p className="text-2xl font-black text-blue-600 tabular-nums leading-none">
+                        {progress.percent}%
+                      </p>
+                    </div>
+                    
+                    <div className="w-full bg-blue-100 rounded-full h-4 p-1 overflow-hidden shadow-inner">
+                      <div 
+                        className="bg-gradient-to-r from-blue-500 to-indigo-600 h-full rounded-full transition-all duration-300 ease-out relative"
+                        style={{ width: `${progress.percent}%` }}
+                      >
+                        <div className="absolute inset-0 bg-white/20 animate-pulse" />
+                      </div>
+                    </div>
+                    
+                    {progress.total > 0 && (
+                      <div className="flex justify-between text-[10px] font-bold text-blue-400 uppercase tracking-tighter">
+                        <span>Initiated</span>
+                        <span>{progress.current} of {progress.total} Students</span>
+                        <span>Complete</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
             </>
@@ -262,10 +341,12 @@ const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
                 <button
                   onClick={handleUpload}
                   disabled={!file || loading}
-                  className="flex-[2] py-3.5 px-6 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-600/20 disabled:opacity-50 flex items-center justify-center gap-2 transition-all"
+                  className={`flex-[2] py-3.5 px-6 rounded-xl font-bold text-white shadow-md disabled:opacity-50 flex items-center justify-center gap-2 transition-all ${
+                    loading ? 'bg-indigo-600' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'
+                  }`}
                 >
                   {loading && <Loader2 className="animate-spin" size={20} />}
-                  <span>{loading ? 'Processing Upload...' : 'Upload & Process'}</span>
+                  <span>{loading ? 'Processing...' : 'Upload & Process'}</span>
                 </button>
               </>
             ) : (

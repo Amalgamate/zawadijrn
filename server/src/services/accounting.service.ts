@@ -3,6 +3,9 @@ import { JournalType, AccountType, Term } from '@prisma/client';
 import { configService } from './config.service';
 
 export class AccountingService {
+    private accountByCodeCache = new Map<string, any>();
+    private journalByCodeCache = new Map<string, any>();
+
     private defaultAccounts = [
         { code: '1000', name: 'Fixed Assets', type: AccountType.ASSET_NON_CURRENT },
         { code: '1100', name: 'Accounts Receivable (Fees)', type: AccountType.ASSET_RECEIVABLE },
@@ -211,21 +214,39 @@ export class AccountingService {
     }
 
     /**
-     * Helper to find an account by its code
+     * Helper to find an account by its code (with caching)
      */
     async getAccountByCode(code: string) {
-        return prisma.account.findUnique({
+        if (this.accountByCodeCache.has(code)) {
+            return this.accountByCodeCache.get(code);
+        }
+        const account = await prisma.account.findUnique({
             where: { code }
         });
+        if (account) this.accountByCodeCache.set(code, account);
+        return account;
     }
 
     /**
-     * Helper to find a journal by its code
+     * Helper to find a journal by its code (with caching)
      */
     async getJournalByCode(code: string) {
-        return prisma.journal.findUnique({
+        if (this.journalByCodeCache.has(code)) {
+            return this.journalByCodeCache.get(code);
+        }
+        const journal = await prisma.journal.findUnique({
             where: { code }
         });
+        if (journal) this.journalByCodeCache.set(code, journal);
+        return journal;
+    }
+
+    /**
+     * Clear accounting caches
+     */
+    clearCache() {
+        this.accountByCodeCache.clear();
+        this.journalByCodeCache.clear();
     }
 
     /**

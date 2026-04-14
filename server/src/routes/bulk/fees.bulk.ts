@@ -70,18 +70,103 @@ router.post(
       const yearInt = parseInt(academicYear);
       const data = await parseWorkbook(req.file.buffer);
 
+      // Set headers for streaming NDJSON
+      res.setHeader('Content-Type', 'application/x-ndjson');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+
       const results = { updated: 0, created: 0, failed: 0, errors: [] as any[] };
+
+      // Helper to send progress
+      const sendStatus = (type: string, payload: any) => {
+        res.write(JSON.stringify({ type, ...payload }) + '\n');
+      };
+
+      // [OPTIMIZATION] 1. Pre-fetch and Cache Accounting Lookups
+      sendStatus('info', { message: 'Initializing accounting cache...' });
+      try {
+        await accountingService.getAccountByCode('1100');
+        await accountingService.getAccountByCode('4000');
+        await accountingService.getAccountByCode('1200');
+        await accountingService.getAccountByCode('1210');
+        await accountingService.getAccountByCode('2100');
+        await accountingService.getJournalByCode('INV');
+        await accountingService.getJournalByCode('CSH1');
+      } catch (e) {
+        console.warn('[BulkImport-Optimization] Failed to pre-warm accounting cache', e);
+      }
+
+      // [OPTIMIZATION] 2. Extract Admission Numbers and Bulk Fetch Learners
+      sendStatus('info', { message: 'Loading student records...' });
+      const uniqueAdmNos = Array.from(new Set(
+        data.map(row => String(row['Adm No'] ?? row['Admission Number'] ?? '').trim()).filter(Boolean)
+      ));
+
+      const learners = await prisma.learner.findMany({
+        where: { admissionNumber: { in: uniqueAdmNos } }
+      });
+      const learnerMap = new Map(learners.map(l => [l.admissionNumber, l]));
+      const learnerIds = learners.map(l => l.id);
+
+      // [OPTIMIZATION] 3. Pre-fetch existing Invoices
+      sendStatus('info', { message: 'Analyzing existing invoices...' });
+      const existingInvoices = await prisma.feeInvoice.findMany({
+        where: {
+          learnerId: { in: learnerIds },
+          term: term as Term,
+          academicYear: yearInt,
+          archived: false
+        }
+      });
+      const invoiceMap = new Map(existingInvoices.map(i => [i.learnerId, i]));
+
+      // [OPTIMIZATION] 4. Pre-fetch Fee Structures
+      const distinctGrades = Array.from(new Set(learners.map(l => l.grade)));
+      const searchGrades = distinctGrades.map(g => {
+        if (g === 'GRADE_10') return 'FORM_1' as any;
+        if (g === 'GRADE_11') return 'FORM_2' as any;
+        if (g === 'GRADE_12') return 'FORM_3' as any;
+        return g;
+      });
+
+      const structures = await prisma.feeStructure.findMany({
+        where: {
+          grade: { in: searchGrades },
+          term: term as Term,
+          academicYear: yearInt,
+          archived: false
+        }
+      });
+      const structureMap = new Map(structures.map(s => [s.grade, s]));
+
+      // [OPTIMIZATION] 5. Pre-fetch existing Payments (Opening Balances)
+      const existingPayments = await prisma.feePayment.findMany({
+        where: {
+          invoiceId: { in: existingInvoices.map(i => i.id) },
+          paymentMethod: 'OTHER',
+          notes: 'Opening Balance Import'
+        }
+      });
+      const paymentMap = new Map(existingPayments.map(p => [p.invoiceId, p]));
+
+      // 6. Process Main Loop (Now using in-memory lookups)
+      const totalRows = data.length;
+      sendStatus('start', { total: totalRows });
 
       for (const [index, row] of data.entries()) {
         try {
           const admNo = String(row['Adm No'] ?? row['Admission Number'] ?? '').trim();
-          if (!admNo || admNo === 'undefined') continue; // Skip empty rows
+          if (!admNo || admNo === 'undefined') {
+            sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
+            continue;
+          }
 
           const billedRaw = row['Billed'] ?? row['Total Amount'];
           const paidRaw = row['Paid'] ?? row['Paid Amount'];
           const balanceRaw = row['Balance'] ?? row['Balances'] ?? row['Outstanding'];
 
           if (billedRaw == null && paidRaw == null && balanceRaw == null) {
+            sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
             continue;
           }
 
@@ -89,20 +174,15 @@ router.post(
           const paid = parseFloat(String(paidRaw).replace(/,/g, '')) || 0;
           const balance = parseFloat(String(balanceRaw).replace(/,/g, '')) || 0;
 
-          const learner = await prisma.learner.findUnique({
-            where: { admissionNumber: admNo }
-          });
-
+          const learner = learnerMap.get(admNo);
           if (!learner) {
             results.failed++;
-            results.errors.push({ row: index + 3, admNo, error: 'Student not found' });
+            results.errors.push({ row: index + 3, admNo, error: 'Student not found in registry' });
+            sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
             continue;
           }
 
-          // 1. Get or Create FeeInvoice for current term
-          let invoice = await prisma.feeInvoice.findFirst({
-            where: { learnerId: learner.id, term: term as Term, academicYear: yearInt, archived: false }
-          });
+          let invoice = invoiceMap.get(learner.id);
 
           if (!invoice) {
             let mappedGrade = learner.grade;
@@ -110,14 +190,11 @@ router.post(
             if (mappedGrade === 'GRADE_11') mappedGrade = 'FORM_2' as any;
             if (mappedGrade === 'GRADE_12') mappedGrade = 'FORM_3' as any;
 
-            // Find appropriate fee structure
-            const structure = await prisma.feeStructure.findFirst({
-              where: { grade: mappedGrade as any, term: term as Term, academicYear: yearInt, archived: false }
-            });
-
+            const structure = structureMap.get(mappedGrade as any);
             if (!structure) {
               results.failed++;
               results.errors.push({ row: index + 3, admNo, error: `No fee structure found for grade ${learner.grade}` });
+              sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
               continue;
             }
 
@@ -138,7 +215,6 @@ router.post(
             });
             results.created++;
           } else {
-            // Update existing invoice
             invoice = await prisma.feeInvoice.update({
               where: { id: invoice.id },
               data: {
@@ -151,18 +227,15 @@ router.post(
             results.updated++;
           }
 
-          // 1.5 Sync with Accounting Ledger
+          // Sync with Accounting Ledger
           try {
             await accountingService.postFeeInvoiceToLedger(invoice);
           } catch (accErr) {
             console.error(`[BulkImport-Accounting] Failed to post invoice ledger: ${admNo}`, accErr);
           }
 
-          // 2. If paid > 0, make sure there's an Opening Balance payment record
           if (paid > 0) {
-            const existingPayment = await prisma.feePayment.findFirst({
-              where: { invoiceId: invoice.id, paymentMethod: 'OTHER', notes: 'Opening Balance Import' }
-            });
+            const existingPayment = paymentMap.get(invoice.id);
 
             if (existingPayment) {
               await prisma.feePayment.update({
@@ -182,7 +255,6 @@ router.post(
                 }
               });
 
-              // Sync Payment with Accounting
               try {
                 await accountingService.postFeePaymentToLedger(payment, 'OTHER');
               } catch (accErr) {
@@ -190,20 +262,32 @@ router.post(
               }
             }
           }
+
+          // [PROGRESS UPDATE]
+          sendStatus('progress', { 
+            current: index + 1, 
+            total: totalRows, 
+            percent: Math.round(((index + 1) / totalRows) * 100) 
+          });
+
         } catch (err: any) {
           results.failed++;
           results.errors.push({ row: index + 3, error: err.message });
+          sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
         }
       }
 
-      res.json({
-        success: true,
+      // [FINAL RESULT]
+      sendStatus('complete', {
         summary: { totalRows: data.length, ...results },
         errors: results.errors.slice(0, 50)
       });
+      res.end();
     } catch (error: any) {
       console.error('Upload Balances Error:', error);
-      res.status(500).json({ success: false, error: 'Failed to process import', details: error.message });
+      // Since we already might have started streaming, this catch might fail to send status code
+      res.write(JSON.stringify({ type: 'error', error: 'Failed to process import', details: error.message }) + '\n');
+      res.end();
     }
   }
 );
@@ -227,26 +311,49 @@ router.post(
       const { academicYear, term } = req.body;
       const data = await parseWorkbook(req.file.buffer);
 
+      // Set headers for streaming NDJSON
+      res.setHeader('Content-Type', 'application/x-ndjson');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+
       const results = { processed: 0, failed: 0, errors: [] as any[] };
+
+      // Helper to send progress
+      const sendStatus = (type: string, payload: any) => {
+        res.write(JSON.stringify({ type, ...payload }) + '\n');
+      };
+
+      const totalRows = data.length;
+      sendStatus('start', { total: totalRows });
 
       for (const [index, row] of data.entries()) {
         try {
           const admNo = String(row['Adm No'] ?? row['Admission Number'] ?? '').trim();
-          if (!admNo || admNo === 'undefined') continue;
+          if (!admNo || admNo === 'undefined') {
+             sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
+             continue;
+          }
 
           const amountRaw = row['Amount'] ?? row['Paid'];
           const dateRaw = row['Date'] ?? row['Payment Date'];
           const refRaw = row['Reference'] ?? row['Ref No'];
           
-          if (!amountRaw) continue;
+          if (!amountRaw) {
+             sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
+             continue;
+          }
 
           const amount = parseFloat(String(amountRaw).replace(/,/g, ''));
-          if (isNaN(amount) || amount <= 0) continue;
+          if (isNaN(amount) || amount <= 0) {
+             sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
+             continue;
+          }
 
           const learner = await prisma.learner.findUnique({ where: { admissionNumber: admNo } });
           if (!learner) {
             results.failed++;
             results.errors.push({ row: index + 2, admNo, error: 'Student not found' });
+            sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
             continue;
           }
 
@@ -259,6 +366,7 @@ router.post(
           if (!invoice) {
             results.failed++;
             results.errors.push({ row: index + 2, admNo, error: `No active invoice for ${term} found` });
+            sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
             continue;
           }
 
@@ -296,28 +404,39 @@ router.post(
             return createdPayment;
           });
 
-          // Sync Daily Payment with Accounting
+          // Sync with Ledger
           try {
-            await accountingService.postFeePaymentToLedger(payment, 'CASH');
-          } catch (accErr) {
-            console.error(`[BulkPayment-Accounting] Failed to post payment ledger: ${admNo}`, accErr);
+             await accountingService.postFeePaymentToLedger(payment, 'OTHER');
+          } catch (e) {
+             console.error(`Ledger sync failed for payment ${payment.id}`, e);
           }
 
           results.processed++;
+          
+          // [PROGRESS UPDATE]
+          sendStatus('progress', { 
+            current: index + 1, 
+            total: totalRows, 
+            percent: Math.round(((index + 1) / totalRows) * 100) 
+          });
+
         } catch (err: any) {
           results.failed++;
           results.errors.push({ row: index + 2, error: err.message });
+          sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
         }
       }
 
-      res.json({
-        success: true,
+      // [FINAL RESULT]
+      sendStatus('complete', {
         summary: { totalRows: data.length, ...results },
         errors: results.errors.slice(0, 50)
       });
+      res.end();
     } catch (error: any) {
       console.error('Upload Payments Error:', error);
-      res.status(500).json({ success: false, error: 'Failed to process import', details: error.message });
+      res.write(JSON.stringify({ type: 'error', error: 'Failed to process payments', details: error.message }) + '\n');
+      res.end();
     }
   }
 );
