@@ -53,6 +53,7 @@ const InvoiceDetailPage = lazy(() => import('../pages/InvoiceDetailPage'));
 const RecordPaymentPage = lazy(() => import('../pages/RecordPaymentPage'));
 const FeeStructurePage = lazy(() => import('../pages/FeeStructurePage'));
 const FeeReportsPage = lazy(() => import('../pages/FeeReportsPage'));
+const WaiversPage = lazy(() => import('../pages/WaiversPage'));
 const StudentStatementsPage = lazy(() => import('../pages/StudentStatementsPage'));
 const DocumentCenter = lazy(() => import('../pages/DocumentCenter'));
 const LearnerProfile = lazy(() => import('../pages/profiles/LearnerProfile'));
@@ -368,6 +369,7 @@ const PageRouter = ({
           case 'fees-collection': return <FeeCollectionPage learnerId={pageParams.learnerId} grade={pageParams.grade} />;
           case 'fees-invoice-detail': return <InvoiceDetailPage invoice={pageParams.invoice} />;
           case 'fees-record-payment': return <RecordPaymentPage invoice={pageParams.invoice} />;
+          case 'fees-waivers': return <WaiversPage />;
           case 'fees-reports': return <FeeReportsPage />;
           case 'fees-statements': return <StudentStatementsPage />;
 

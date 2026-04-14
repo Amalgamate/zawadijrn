@@ -13,6 +13,8 @@ import { ArrowLeft, Loader2, CheckCircle2, MessageSquare } from 'lucide-react';
 import usePageNavigation from '../../../hooks/usePageNavigation';
 import { useNotifications } from '../hooks/useNotifications';
 import Toast from '../shared/Toast';
+import InvoiceA5 from '../shared/InvoiceA5';
+import ThermalReceipt from '../shared/ThermalReceipt';
 import api from '../../../services/api';
 
 const RecordPaymentPage = ({ invoice }) => {
@@ -27,6 +29,21 @@ const RecordPaymentPage = ({ invoice }) => {
   });
   // After success we show an inline confirmation panel before navigating
   const [successResult, setSuccessResult] = useState(null);
+  const [showA5Preview, setShowA5Preview] = useState(false);
+  const [showThermalReceipt, setShowThermalReceipt] = useState(false);
+  const [schoolInfo, setSchoolInfo] = useState(null);
+
+  React.useEffect(() => {
+    const fetchBranding = async () => {
+      try {
+        const resp = await api.branding.get();
+        if (resp.success) setSchoolInfo(resp.data);
+      } catch (err) {
+        console.error('Failed to load branding:', err);
+      }
+    };
+    fetchBranding();
+  }, []);
 
   if (!invoice) {
     return (
@@ -69,9 +86,7 @@ const RecordPaymentPage = ({ invoice }) => {
       });
 
       setSuccessResult({ data: result.data, noteSaved });
-
-      // Navigate to invoice detail after a short pause so staff can read confirmation
-      setTimeout(() => navigateTo('fees-invoice-detail', { invoice }), 2800);
+      // Removed auto-navigate to allow for printing
     } catch (error) {
       showError(error.message || 'Failed to record payment');
     } finally {
@@ -94,6 +109,21 @@ const RecordPaymentPage = ({ invoice }) => {
             Receipt #{successResult.data?.payment?.receiptNumber}
           </p>
 
+          <div className="grid grid-cols-2 gap-3 w-full mt-4">
+            <button
+              onClick={() => setShowA5Preview(true)}
+              className="flex items-center justify-center gap-2 bg-[#002C60] text-white px-4 py-3 rounded-xl font-bold text-sm hover:bg-[#003a7a] transition shadow-md"
+            >
+              Print A5 Receipt
+            </button>
+            <button
+              onClick={() => setShowThermalReceipt(true)}
+              className="flex items-center justify-center gap-2 bg-indigo-600 text-white px-4 py-3 rounded-xl font-bold text-sm hover:bg-indigo-700 transition shadow-md"
+            >
+              Print Thermal
+            </button>
+          </div>
+
           {successResult.noteSaved ? (
             <div className="flex items-start gap-2 bg-white border border-green-200 rounded-xl px-4 py-3 text-left w-full mt-2">
               <MessageSquare size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
@@ -109,7 +139,57 @@ const RecordPaymentPage = ({ invoice }) => {
             <p className="text-xs text-gray-400 italic">No note was added for this payment.</p>
           )}
 
-          <p className="text-xs text-gray-400 mt-2">Returning to invoice detail…</p>
+          <div className="flex flex-col items-center gap-3 mt-6">
+            <button
+              onClick={() => navigateTo('fees-collection')}
+              className="text-[#002C60] font-bold text-sm hover:underline"
+            >
+              Done & Return to List
+            </button>
+            <p className="text-[10px] text-gray-400">The parent has also been notified via SMS/WhatsApp.</p>
+          </div>
+        </div>
+
+        {showA5Preview && (
+          <InvoiceA5
+            invoice={successResult.data.invoice}
+            schoolInfo={schoolInfo}
+            onClose={() => setShowA5Preview(false)}
+          />
+        )}
+
+        {showThermalReceipt && (
+          <div className="fixed inset-0 z-[10000] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl relative">
+              <button 
+                onClick={() => setShowThermalReceipt(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+              >
+                <ArrowLeft size={20} className="rotate-90" />
+              </button>
+              <h3 className="text-lg font-bold text-gray-800 mb-4">Thermal Preview</h3>
+              <div className="bg-gray-50 p-4 rounded-xl border border-dashed border-gray-200 overflow-auto max-h-[60vh]">
+                <ThermalReceipt invoice={successResult.data.invoice} schoolInfo={schoolInfo} />
+              </div>
+              <button
+                onClick={() => {
+                   const win = window.open('', '_blank');
+                   const content = document.getElementById('printable-thermal-receipt-hidden').innerHTML;
+                   win.document.write(`<html><head><style>@page { size: 58mm auto; margin: 0; } body { margin: 0; }</style></head><body>${content}</body></html>`);
+                   win.document.close();
+                   win.print();
+                }}
+                className="w-full mt-6 bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition"
+              >
+                Send to Printer
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Hidden area for printing */}
+        <div id="printable-thermal-receipt-hidden" className="hidden">
+           <ThermalReceipt invoice={successResult.data.invoice} schoolInfo={schoolInfo} />
         </div>
       </div>
     );

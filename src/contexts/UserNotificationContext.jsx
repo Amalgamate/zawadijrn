@@ -35,7 +35,7 @@ export const UserNotificationProvider = ({ children }) => {
   const fetchNotifications = useCallback(async () => {
     if (!isAuthenticated) return;
     try {
-      const resp = await api.get('/user-notifications');
+      const resp = await api.userNotifications.getAll();
       if (resp.success) {
         setNotifications(resp.data);
         setUnreadCount(resp.data.length);
@@ -94,25 +94,25 @@ export const UserNotificationProvider = ({ children }) => {
     };
   }, [isAuthenticated, user?.id, playBeep, showBrowserNotification, fetchNotifications]);
 
-  const markAsRead = async (id) => {
+  const markAsRead = useCallback(async (id) => {
     try {
-      await api.patch(`/user-notifications/${id}/read`);
+      await api.userNotifications.markAsRead(id);
       setNotifications(prev => prev.filter(n => n.id !== id));
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (err) {
       console.error('Failed to mark notification as read:', err);
     }
-  };
+  }, [api.userNotifications]);
 
-  const markAllAsRead = async () => {
+  const markAllAsRead = useCallback(async () => {
     try {
-      await api.patch('/user-notifications/read-all');
+      await api.userNotifications.markAllAsRead();
       setNotifications([]);
       setUnreadCount(0);
     } catch (err) {
       console.error('Failed to mark all as read:', err);
     }
-  };
+  }, [api.userNotifications]);
 
   return (
     <UserNotificationContext.Provider value={{ 

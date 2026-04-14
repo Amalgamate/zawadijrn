@@ -21,6 +21,7 @@ import { useNotifications } from '../hooks/useNotifications';
 import DownloadReportButton from '../shared/DownloadReportButton';
 import FeeWaiverModal from '../shared/FeeWaiverModal';
 import ThermalReceipt from '../shared/ThermalReceipt';
+import InvoiceA5 from '../shared/InvoiceA5';
 import Toast from '../shared/Toast';
 import api from '../../../services/api';
 import '../../../styles/receipt-print.css';
@@ -84,6 +85,7 @@ const InvoiceDetailPage = ({ invoice }) => {
 
   // Waiver modal
   const [showWaiverModal, setShowWaiverModal] = useState(false);
+  const [showA5Preview, setShowA5Preview] = useState(false);
 
   // ── data fetching ──────────────────────────────────────────────────────────
   const fetchActivity = useCallback(async () => {
@@ -264,12 +266,14 @@ const InvoiceDetailPage = ({ invoice }) => {
           )}
         </div>
         <div className="flex items-center gap-3">
-          <DownloadReportButton 
-            onDownload={handleDownloadPdf} 
-            label="A4" 
-            processingLabel="..." 
-            className="!px-3 !py-2 !text-xs !bg-indigo-600 !text-white !rounded-xl !font-bold" 
-          />
+          <button 
+            onClick={() => setShowA5Preview(true)}
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl font-bold text-xs transition-all shadow-sm"
+            title="Download/Print A5 Invoice"
+          >
+            <Download size={14} />
+            <span>A5</span>
+          </button>
           
           <button
             onClick={handlePrintThermal}
@@ -575,6 +579,13 @@ const InvoiceDetailPage = ({ invoice }) => {
         <div id="printable-thermal-receipt" className="thermal-print-overlay">
           <ThermalReceipt invoice={printingInvoice} schoolInfo={schoolInfo} />
         </div>
+      )}
+      {showA5Preview && (
+        <InvoiceA5
+          invoice={invoice}
+          schoolInfo={schoolInfo}
+          onClose={() => setShowA5Preview(false)}
+        />
       )}
     </div>
   );

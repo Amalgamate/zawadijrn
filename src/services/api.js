@@ -79,10 +79,21 @@ export { plannerAPI as planner };
 export { idTemplateAPI };
 
 const api = {
+  // ── Core Axios-like Methods ───────────────────────────────────────────
+  get:    async (url, params) => fetchWithAuth(url, { method: 'GET', params }),
+  post:   async (url, data)   => fetchWithAuth(url, { method: 'POST', body: JSON.stringify(data) }),
+  put:    async (url, data)   => fetchWithAuth(url, { method: 'PUT', body: JSON.stringify(data) }),
+  patch:  async (url, data)   => fetchWithAuth(url, { method: 'PATCH', body: JSON.stringify(data) }),
+  delete: async (url)         => fetchWithAuth(url, { method: 'DELETE' }),
+
+  // ── Service Modules ───────────────────────────────────────────────────
   auth: authAPI,
   onboarding: onboardingAPI,
   dashboard: dashboardAPI,
   config: configAPI,
+  branding: {
+    get: async () => configAPI.getBranding()
+  },
   ...configAPI,
   communication: communicationAPI,
   broadcasts: broadcastAPI,
@@ -108,6 +119,11 @@ const api = {
       const queryString = new URLSearchParams(params).toString();
       return fetchWithAuth(`/notifications/audit-logs${queryString ? `?${queryString}` : ''}`);
     },
+  },
+  userNotifications: {
+    getAll: async () => fetchWithAuth('/user-notifications'),
+    markAsRead: async (id) => fetchWithAuth(`/user-notifications/${id}/read`, { method: 'PATCH' }),
+    markAllAsRead: async () => fetchWithAuth('/user-notifications/read-all', { method: 'PATCH' }),
   },
   reports: reportAPI,
   health: healthAPI,

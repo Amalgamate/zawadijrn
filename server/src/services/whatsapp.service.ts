@@ -282,6 +282,29 @@ class WhatsAppService {
     return this.sendMessage({ to: params.parentPhone, message: params.message });
   }
 
+  async sendFeePaymentNotification(params: {
+    parentPhone: string;
+    parentName: string;
+    learnerName: string;
+    receiptNumber: string;
+    amount: number;
+    balance: number;
+    status: string;
+    schoolName: string;
+  }): Promise<{ success: boolean; message: string; error?: string }> {
+    const message = 
+      `*${params.schoolName.toUpperCase()}*\n` +
+      `_OFFICIAL RECEIPT: ${params.receiptNumber}_\n\n` +
+      `Dear *${params.parentName}*,\n` +
+      `We have received KES *${params.amount.toLocaleString()}* for *${params.learnerName}*.\n\n` +
+      `*Status:* ${params.status}\n` +
+      `*Current Balance:* KES ${params.balance.toLocaleString()}\n\n` +
+      `Thank you for your payment.\n` +
+      `_Zawadi SMS_`;
+
+    return this.sendMessage({ to: params.parentPhone, message });
+  }
+
   async sendBulkMessages(messages: Array<{ phone: string; message: string; mediaBuffer?: Buffer; mediaType?: string; mediaFileName?: string }>): Promise<{ sent: number; failed: number; results: Array<any> }> {
     let sent = 0;
     let failed = 0;

@@ -865,8 +865,8 @@ model FeeStructure {
   id           String             @id @default(uuid())
   name         String
   description  String?
-  grade        Grade
-  term         Term
+  grade        Grade?
+  term         Term?
   academicYear Int
   active       Boolean            @default(true)
   mandatory    Boolean            @default(true)

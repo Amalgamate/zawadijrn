@@ -21,7 +21,7 @@ import {
     TrendingUp, Zap, CheckSquare, Settings, BookOpen,
     Users2, Truck, Fingerprint, CreditCard, PieChart,
     Package, Building2, HelpCircle, Receipt, FileText,
-    Shirt, ClipboardList, Video, PlayCircle
+    Shirt, ClipboardList, Video, PlayCircle, Gift
 } from 'lucide-react';
 
 const focusModules = ['dashboard', 'communications', 'planner', 'learners', 'teachers', 'parents', 'assessment', 'learning-hub', 'lms', 'attendance', 'docs-center', 'facilities', 'settings', 'hr', 'finance', 'inventory', 'library', 'transport', 'biometric'];
@@ -237,6 +237,7 @@ export const allNavSections = [
                 permission: 'FEE_MANAGEMENT',
                 items: [
                     { id: 'fees-collection',  label: 'Fee Collection',     path: 'fees-collection',  permission: 'FEE_MANAGEMENT' },
+                    { id: 'fees-waivers',     label: 'Fee Waivers',        path: 'fees-waivers',     permission: 'FEE_MANAGEMENT', icon: Gift },
                     { id: 'fees-reports',     label: 'Fee Reports',        path: 'fees-reports',     permission: 'FEE_MANAGEMENT' },
                     { id: 'fees-statements',  label: 'Student Statements', path: 'fees-statements',  permission: 'FEE_MANAGEMENT' },
                     { id: 'fees-structure',   label: 'Fee Structure',      path: 'fees-structure',   permission: 'FEE_MANAGEMENT' }

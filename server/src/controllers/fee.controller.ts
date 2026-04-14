@@ -494,7 +494,11 @@ export class FeeController {
           const finalInvoice = await tx.feeInvoice.update({
             where: { id: actualInvoiceId },
             data: { status: newStatus },
-            include: { learner: true, payments: true }
+            include: { 
+              learner: true, 
+              payments: { orderBy: { paymentDate: 'desc' } },
+              feeStructure: { include: { feeItems: { include: { feeType: true } } } } as any
+            }
           });
 
           return { payment, invoice: finalInvoice };
@@ -527,7 +531,24 @@ export class FeeController {
           } else {
             smsMessage = `Payment of KES ${amount.toLocaleString()} received for ${learner.firstName}. Outstanding balance: KES ${Number(result.invoice.balance).toLocaleString()}. Thank you.`;
           }
-          await SmsService.sendSms(contactPhone, smsMessage);
+
+          // Fetch school name for WhatsApp (optional but better)
+          const school = await prisma.schoolConfig.findFirst({ select: { schoolName: true } });
+          const schoolName = school?.schoolName || 'Zawadi Junior Academy';
+
+          await Promise.allSettled([
+            SmsService.sendSms(contactPhone, smsMessage),
+            whatsappService.sendFeePaymentNotification({
+              parentPhone: contactPhone,
+              parentName: learner.primaryContactName || 'Parent',
+              learnerName: `${learner.firstName} ${learner.lastName}`,
+              receiptNumber: result.payment.receiptNumber,
+              amount: amount,
+              balance: Number(result.invoice.balance),
+              status: newStatus.replace('_', ' '),
+              schoolName
+            })
+          ]);
         }
       } catch (err) {
         console.error('Post-payment error:', err);
@@ -577,6 +598,76 @@ export class FeeController {
       success: true,
       data: cancelled,
       message: `Invoice ${invoice.invoiceNumber} cancelled successfully`
+    });
+  }
+
+  /**
+   * Reverse a payment
+   * Updates invoice balance/status and archives the payment record.
+   */
+  async reversePayment(req: AuthRequest, res: Response) {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const userId = req.user!.userId;
+    const role = req.user!.role;
+
+    if (!['SUPER_ADMIN', 'ADMIN'].includes(role)) {
+      throw new ApiError(403, 'Only ADMIN or SUPER_ADMIN can reverse payments');
+    }
+
+    const payment = await prisma.feePayment.findUnique({
+      where: { id },
+      include: { invoice: true }
+    });
+
+    if (!payment) throw new ApiError(404, 'Payment record not found');
+    if (payment.archived) throw new ApiError(400, 'Payment has already been reversed');
+
+    const amount = Number(payment.amount);
+    const invoiceId = payment.invoiceId;
+
+    const [updatedPayment, updatedInvoice] = await prisma.$transaction(async (tx) => {
+      // 1. Archive the payment
+      const archived = await tx.feePayment.update({
+        where: { id },
+        data: {
+          archived: true,
+          archivedAt: new Date(),
+          archivedBy: userId,
+          notes: payment.notes ? `${payment.notes} | Reversed: ${reason || 'Error correction'}` : `Reversed: ${reason || 'Error correction'}`
+        }
+      });
+
+      // 2. Adjust invoice balance
+      const freshInv = await tx.feeInvoice.update({
+        where: { id: invoiceId },
+        data: {
+          paidAmount: { decrement: amount },
+          balance: { increment: amount }
+        }
+      });
+
+      // 3. Re-calculate status
+      const balance = Number(freshInv.balance);
+      const paid = Number(freshInv.paidAmount);
+      let newStatus: PaymentStatus = 'PARTIAL';
+      if (paid <= 0) newStatus = 'PENDING';
+      if (balance <= 0) newStatus = paid < 0 ? 'OVERPAID' : 'PAID';
+
+      const finalInv = await tx.feeInvoice.update({
+        where: { id: invoiceId },
+        data: { status: newStatus }
+      });
+
+      return [archived, finalInv];
+    });
+
+    console.log(`[FeeController] Payment ${payment.receiptNumber} reversed by ${userId}. Reason: ${reason}`);
+
+    res.json({
+      success: true,
+      data: { payment: updatedPayment, invoice: updatedInvoice },
+      message: `Payment ${payment.receiptNumber} reversed successfully`
     });
   }
 

@@ -15,7 +15,7 @@ const ThermalReceipt = ({ invoice, schoolInfo }) => {
   const balance = Number(invoice.balance || 0);
 
   return (
-    <div className="thermal-receipt-container font-mono text-[11px] leading-tight text-black p-2 w-[80mm] mx-auto bg-white">
+    <div className="thermal-receipt-container font-mono text-[10px] leading-tight text-black p-1 w-[58mm] mx-auto bg-white border border-gray-100">
       {/* Header */}
       <div className="text-center mb-4 space-y-1">
         <h1 className="text-sm font-black uppercase">{schoolInfo?.name || 'ZAWADI SCHOOL'}</h1>

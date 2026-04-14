@@ -256,6 +256,14 @@ router.post(
 
 // ─── Stats ─────────────────────────────────────────────────────────────────
 
+router.patch(
+  '/payments/:id/reverse',
+  requireRole(['ADMIN', 'SUPER_ADMIN']),
+  rateLimit({ windowMs: 60_000, maxRequests: 20 }),
+  auditLog('REVERSE_PAYMENT'),
+  asyncHandler(feeController.reversePayment.bind(feeController))
+);
+
 router.get(
   '/stats',
   requireRole(['ACCOUNTANT', 'ADMIN', 'SUPER_ADMIN']),

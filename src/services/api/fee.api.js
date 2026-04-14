@@ -21,8 +21,12 @@ export const feeAPI = {
     fetchWithAuth('/fees/invoices', { method: 'POST', body: JSON.stringify(data) }),
   bulkGenerateInvoices: async (data) =>
     fetchWithAuth('/fees/invoices/bulk', { method: 'POST', body: JSON.stringify(data) }),
+  cancelInvoice: async (id, data = {}) =>
+    fetchWithAuth(`/fees/invoices/${id}/cancel`, { method: 'PATCH', body: JSON.stringify(data) }),
   recordPayment: async (data) =>
     fetchWithAuth('/fees/payments', { method: 'POST', body: JSON.stringify(data) }),
+  reversePayment: async (id, data = {}) =>
+    fetchWithAuth(`/fees/payments/${id}/reverse`, { method: 'PATCH', body: JSON.stringify(data) }),
   getAllFeeTypes: async (params = {}) => {
     const query = new URLSearchParams(params).toString();
     return fetchWithAuth(`/fees/types${query ? `?${query}` : ''}`);
