@@ -458,7 +458,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
   const handleConfirmReset = async () => {
     try {
       setLoading(true);
-      await api.fees.resetInvoices(resetScope);
+      await api.fees.resetInvoices({ ...resetScope, confirmToken: 'CONFIRM_RESET' });
       showSuccess('Invoices and payments reset successfully');
       setShowResetModal(false);
       fetchInvoices();
