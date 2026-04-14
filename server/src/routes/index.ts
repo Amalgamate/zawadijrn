@@ -44,6 +44,7 @@ import backupRoutes from './backup.routes';
 import schemeOfWorkRoutes from './schemeOfWork.routes';
 import pathwayRoutes from './pathway.routes';
 import pathwayRecommendationRoutes from './pathwayRecommendation.routes';
+import userNotificationRoutes from './userNotification.routes';
 import { issueCsrfToken } from '../middleware/csrf.middleware';
 import { authenticate } from '../middleware/auth.middleware';
 
@@ -103,6 +104,7 @@ router.use('/notices', noticeRoutes);
 router.use('/pdf', pdfRoutes);
 router.use('/id-templates', idTemplateRoutes);
 router.use('/transport', transportRoutes);
+router.use('/user-notifications', userNotificationRoutes);
 router.use('/lms', lmsRoutes);
 
 export default router;

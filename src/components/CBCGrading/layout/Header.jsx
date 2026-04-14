@@ -8,6 +8,8 @@ import { Button } from "../../ui/button";
 import { Badge } from "../../ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "../../ui/popover";
 import { cn } from "../../../utils/cn";
+import { useUserNotifications } from '../../../contexts/UserNotificationContext';
+import '../../../styles/notifications.css';
 
 const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate }) => {
   const [showNotifications, setShowNotifications] = useState(false);
@@ -19,6 +21,14 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
   const [reminderCycle, setReminderCycle] = useState(0);
   const [clockInState, setClockInState] = useState(() => getCurrentUserClockInStatus(user));
   const [smsBalance, setSmsBalance] = useState(null);
+  
+  // Real-time notifications from our new context
+  const { 
+    notifications: systemNotifications, 
+    unreadCount: systemUnreadCount,
+    markAsRead,
+    markAllAsRead: markAllSystemAsRead
+  } = useUserNotifications();
 
   const notificationRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -79,9 +89,10 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
   }));
 
   const notificationItems = [...birthdayNotificationItems, ...noticeNotificationItems];
-
+  
+  // Combined totals for the UI badge
   const unreadNotifications = notificationItems.filter((item) => !readNotificationKeys.has(item.key));
-  const unreadCount = unreadNotifications.length;
+  const totalUnreadCount = unreadNotifications.length + systemUnreadCount;
 
   const markAllNotificationsAsRead = () => {
     if (notificationItems.length === 0) return;
@@ -90,6 +101,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
       notificationItems.forEach((item) => next.add(item.key));
       return next;
     });
+    markAllSystemAsRead();
     setShowUnreadReminder(false);
   };
 
@@ -384,15 +396,18 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
             <Button
               variant="ghost"
               size="icon"
-              className="relative h-10 w-10 text-gray-600 hover:text-brand-purple hover:bg-brand-purple/5 transition-all"
+              className={cn(
+                "relative h-10 w-10 text-gray-600 hover:text-brand-purple hover:bg-brand-purple/5 transition-all outline-none ring-0",
+                totalUnreadCount > 0 && "ripple-bell"
+              )}
             >
-              <Bell size={20} className={cn(unreadCount > 0 && "animate-wiggle")} />
-              {unreadCount > 0 && (
+              <Bell size={20} className={cn(totalUnreadCount > 0 && "animate-wiggle")} />
+              {totalUnreadCount > 0 && (
                 <Badge
                   variant="destructive"
-                  className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 flex items-center justify-center font-black text-[10px] border-2 border-white"
+                  className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 flex items-center justify-center font-black text-[10px] border-2 border-white animate-in zoom-in-50 duration-300"
                 >
-                  {unreadCount > 99 ? '99+' : unreadCount}
+                  {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
                 </Badge>
               )}
             </Button>
@@ -452,9 +467,33 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
                         >
                           <p className="text-sm font-bold text-gray-900 group-hover:text-brand-purple transition-colors line-clamp-1">{n.title}</p>
                           <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{n.content}</p>
-                          <div className="flex gap-2 mt-2">
-                            <Badge variant="outline" className="text-[8px] h-4 font-bold uppercase">{n.priority || 'NORMAL'}</Badge>
-                            <Badge variant="outline" className="text-[8px] h-4 font-bold uppercase">{n.category || 'GENERAL'}</Badge>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {systemNotifications.length > 0 && (
+                    <div className="space-y-1 pt-2 border-t border-gray-50 mt-2">
+                      <div className="px-3 py-2 text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-2">
+                        <Zap size={14} /> Priority Alerts
+                      </div>
+                      {systemNotifications.map((n) => (
+                        <button
+                          key={n.id}
+                          onClick={() => {
+                            if (n.link) onNavigate?.(n.link.replace('/app/', ''));
+                            markAsRead(n.id);
+                            setShowNotifications(false);
+                          }}
+                          className="w-full text-left p-3 hover:bg-gray-50 rounded-lg transition-all group flex items-start gap-3"
+                        >
+                          <div className={cn(
+                            "w-2 h-2 mt-2 rounded-full shrink-0",
+                            n.type === 'SUCCESS' ? "bg-emerald-500" : n.type === 'ERROR' ? "bg-rose-500" : "bg-amber-500"
+                          )} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-gray-900 line-clamp-1">{n.title}</p>
+                            <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{n.message}</p>
                           </div>
                         </button>
                       ))}
@@ -464,7 +503,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
               ) : (
                 <div className="py-12 text-center text-gray-400">
                   <Bell size={32} className="mx-auto mb-3 opacity-20" />
-                  <p className="text-xs font-bold uppercase tracking-widest">No notifications</p>
+                  <p className="text-xs font-bold uppercase tracking-widest">No unread alerts</p>
                 </div>
               )}
             </div>
@@ -518,7 +557,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
       </div>
 
       {/* Unread Reminder Toast (Styled) */}
-      {showUnreadReminder && unreadCount > 0 && (
+      {showUnreadReminder && totalUnreadCount > 0 && (
         <div className="fixed top-24 right-8 z-[140] w-80 bg-white/95 backdrop-blur-xl border border-gray-200 rounded-2xl shadow-2xl p-5 animate-in slide-in-from-right-10 duration-500">
           <div className="flex items-start gap-4">
             <div className="p-2.5 rounded-full bg-brand-purple/10 text-brand-purple shadow-inner">
@@ -527,7 +566,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
             <div className="flex-1">
               <p className="text-sm font-black text-gray-900 uppercase tracking-tight">Gentle Reminder</p>
               <p className="text-xs text-gray-500 mt-1 font-medium leading-relaxed">
-                You have <span className="text-brand-purple font-black">{unreadCount}</span> unread notification{unreadCount === 1 ? '' : 's'}. Review them when convenient.
+                You have <span className="text-brand-purple font-black">{totalUnreadCount}</span> unread notification{totalUnreadCount === 1 ? '' : 's'}. Review them when convenient.
               </p>
               <div className="mt-5 flex flex-wrap gap-2">
                 <Button variant="outline" size="sm" onClick={() => setShowUnreadReminder(false)} className="h-8 text-[9px] font-black uppercase flex-1 border-gray-200">

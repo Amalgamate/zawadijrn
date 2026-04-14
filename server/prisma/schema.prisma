@@ -98,6 +98,7 @@ model User {
   createdTests              SummativeTest[]          @relation("CreatedTests")
   submittedTests            SummativeTest[]          @relation("SubmittedTests")
   sentMessages              SupportMessage[]         @relation("SentMessages")
+  notifications             UserNotification[]        @relation("UserNotifications")
   assignedTickets           SupportTicket[]          @relation("AssignedTickets")
   tickets                   SupportTicket[]          @relation("UserTickets")
   createdTermConfigs        TermConfig[]
@@ -2701,4 +2702,20 @@ model FeeWaiver {
   @@index([status])
   @@index([createdAt])
   @@map("fee_waivers")
+}
+
+model UserNotification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("INFO") // INFO, SUCCESS, WARNING, ERROR, WAIVER
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@map("user_notifications")
 }

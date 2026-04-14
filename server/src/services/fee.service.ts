@@ -1,3 +1,17 @@
+/**
+ * Fee Service
+ *
+ * Canonical transport-amount resolution lives here and is shared by both
+ * auto-generation (on admission) and the fee controller's createInvoice /
+ * bulkGenerateInvoices paths.
+ *
+ * FIX: The previous split between fee.service.ts (route-based transport) and
+ * fee.controller.ts (fee-structure-item-based transport) meant the same learner
+ * could get different totals depending on which code path ran. Both paths now
+ * call resolveTransportAmount() from this file so the logic is a single
+ * source of truth.
+ */
+
 import prisma from '../config/database';
 import { configService } from './config.service';
 import { SmsService } from './sms.service';
@@ -48,203 +62,209 @@ async function createInvoiceWithSafeNumber(client: any, invoiceData: any, includ
   throw lastError;
 }
 
+/**
+ * Canonical transport amount resolver.
+ *
+ * Strategy (priority order):
+ *  1. If the fee structure already has a TRANSPORT fee-type line item, use that
+ *     amount — this is the standard case for manually-created structures.
+ *  2. Otherwise, if the learner has an active TransportAssignment with a route,
+ *     use the route's amount — this covers route-specific pricing.
+ *  3. Fallback: return 0 (no transport charged).
+ *
+ * The hardcoded 4500 fallback that existed in the old service has been removed;
+ * transport fees should always come from a persisted data source.
+ */
+export async function resolveTransportAmount(
+  learnerId: string,
+  feeStructureItems: Array<{ amount: number | string; feeType?: { code: string } }>
+): Promise<number> {
+  // Strategy 1: fee structure has a TRANSPORT line item
+  const structureTransportItem = feeStructureItems.find(
+    (i) => i.feeType?.code === 'TRANSPORT'
+  );
+  if (structureTransportItem) {
+    return Number(structureTransportItem.amount);
+  }
+
+  // Strategy 2: learner has an active transport route assignment
+  const assignment = await prisma.transportAssignment.findFirst({
+    where: { passengerId: learnerId, archived: false },
+    include: { route: true }
+  });
+
+  if (assignment?.route && Number(assignment.route.amount) > 0) {
+    return Number(assignment.route.amount);
+  }
+
+  // Strategy 3: no transport fee found
+  return 0;
+}
+
 export class FeeService {
-    /**
-     * Automatically generate an invoice for a learner based on their grade and the active term.
-     */
-    async generateInvoiceForLearner(learnerId: string): Promise<any> {
-        console.log(`[FeeService] Attempting to generate invoice for learner: ${learnerId}`);
+  /**
+   * Automatically generate an invoice for a learner based on their grade and the active term.
+   * Called when a learner is admitted or when the onboarding workflow triggers it.
+   */
+  async generateInvoiceForLearner(learnerId: string): Promise<any> {
+    console.log(`[FeeService] Attempting to generate invoice for learner: ${learnerId}`);
 
-        try {
-            // 1. Fetch Learner details
-            const learner = await prisma.learner.findUnique({
-                where: { id: learnerId },
-                include: {
-                    parent: true
-                }
-            });
+    try {
+      // 1. Fetch learner details
+      const learner = await prisma.learner.findUnique({
+        where: { id: learnerId },
+        include: { parent: true }
+      });
 
-            if (!learner) {
-                console.error(`[FeeService] Learner not found: ${learnerId}`);
-                return { success: false, error: 'Learner not found' };
-            }
+      if (!learner) {
+        console.error(`[FeeService] Learner not found: ${learnerId}`);
+        return { success: false, error: 'Learner not found' };
+      }
 
-            if (learner.status !== 'ACTIVE' || learner.archived) {
-                console.log(`[FeeService] Learner ${learner.admissionNumber} is not active. Skipping.`);
-                return { success: false, error: 'Learner is not active' };
-            }
+      if (learner.status !== 'ACTIVE' || learner.archived) {
+        console.log(`[FeeService] Learner ${learner.admissionNumber} is not active. Skipping.`);
+        return { success: false, error: 'Learner is not active' };
+      }
 
-            const { grade } = learner;
+      // 2. Determine active term
+      const activeTermConfig = await configService.getActiveTermConfig();
+      if (!activeTermConfig) {
+        const errorMsg =
+          'No active term configuration found. Please set a term as active in Settings.';
+        console.warn(`[FeeService] ${errorMsg}`);
+        return { success: false, error: errorMsg };
+      }
 
-            // 2. Determine Active Term
-            const activeTermConfig = await configService.getActiveTermConfig();
+      const { term, academicYear } = activeTermConfig;
+      console.log(`[FeeService] Active Period: ${term} ${academicYear}`);
 
-            if (!activeTermConfig) {
-                const errorMsg = 'No active term configuration found. Please set a term as active in Settings.';
-                console.warn(`[FeeService] ${errorMsg}`);
-                return { success: false, error: errorMsg };
-            }
-
-            const { term, academicYear } = activeTermConfig;
-            console.log(`[FeeService] Active Period: ${term} ${academicYear}`);
-
-            // 3. Find Matching Fee Structure
-            const feeStructure = await prisma.feeStructure.findFirst({
-                where: {
-                    academicYear,
-                    term,
-                    grade: grade as any,
-                    active: true
-                },
-                include: {
-                    feeItems: {
-                        include: { feeType: true }
-                    }
-                }
-            });
-
-            if (!feeStructure) {
-                const errorMsg = `No matching fee structure found for ${grade.replace('_', ' ')} (${term.replace('_', ' ')} ${academicYear})`;
-                console.warn(`[FeeService] ${errorMsg}`);
-                return { success: false, error: errorMsg };
-            }
-
-            // 4. Check if Invoice already exists
-            const existingInvoice = await prisma.feeInvoice.findFirst({
-                where: {
-                    learnerId,
-                    feeStructureId: feeStructure.id,
-                    term,
-                    academicYear
-                }
-            });
-
-            if (existingInvoice) {
-                return { success: true, invoice: existingInvoice, created: false };
-            }
-
-            // 5. Calculate Amount and Due Date
-            const dueDate = new Date();
-            dueDate.setDate(dueDate.getDate() + 14);
-
-            const allItems = (feeStructure as any).feeItems || [];
-            
-            // Phase 1: Filter out any existing TRANSPORT items from the base structure 
-            // (Logically we don't need the fixed fee to include transport so increment is done once)
-            const baseItems = allItems.filter((i: any) => i.feeType?.code !== 'TRANSPORT');
-            let totalAmount = baseItems.reduce((sum: number, item: any) => sum + Number(item.amount), 0);
-
-            // Phase 2: Dynamically add the specific Route Fee if they are a transport student
-            let transportFeeName = 'Transport';
-            let transportAmount = 0;
-
-            if (learner.isTransportStudent) {
-                // Fetch active assignment to get specific route amount
-                const assignment = await prisma.transportAssignment.findFirst({
-                    where: { passengerId: learner.id, archived: false },
-                    include: { route: true }
-                });
-
-                if (assignment?.route) {
-                    transportAmount = Number(assignment.route.amount);
-                    transportFeeName = `Transport: ${assignment.route.name}`;
-                } else {
-                    // Fallback to standard 4500 if flag is true but route is missing/legacy
-                    transportAmount = 4500;
-                    transportFeeName = 'Transport (Standard)';
-                }
-                
-                totalAmount += transportAmount;
-            }
-
-            // 6. Create Invoice
-            const newInvoice = await createInvoiceWithSafeNumber(prisma, {
-                learnerId,
-                feeStructureId: feeStructure.id,
-                term,
-                academicYear,
-                dueDate,
-                totalAmount,
-                paidAmount: 0,
-                balance: totalAmount,
-                status: 'PENDING',
-                issuedBy: 'SYSTEM'
-            }, {
-                learner: true
-            });
-
-            // Post to Accounting Ledger
-            try {
-                await accountingService.postFeeInvoiceToLedger(newInvoice);
-            } catch (ledgerError: any) {
-                console.warn(`[FeeService] Failed to post invoice to ledger: ${ledgerError?.message || ledgerError}`);
-            }
-
-            // 7. Trigger Notifications (best-effort, do not block invoice creation)
-            if (!SKIP_FEE_NOTIFICATIONS && learner.parent && learner.parent.phone) {
-                const parentPhone = learner.parent.phone;
-                const parentName = `${learner.parent.firstName} ${learner.parent.lastName}`;
-                const learnerName = `${learner.firstName} ${learner.lastName}`;
-
-                // Fetch school name for email/sms
-                const school = await prisma.school.findFirst();
-                const schoolName = school?.name || 'School';
-
-                try {
-                    await SmsService.sendFeeInvoiceNotification({
-                        parentPhone,
-                        parentName,
-                        learnerName,
-                        invoiceNumber: newInvoice.invoiceNumber,
-                        term: `${term.replace('_', ' ')} ${academicYear}`,
-                        amount: totalAmount,
-                        dueDate: dueDate.toLocaleDateString()
-                    });
-                } catch (smsError: any) {
-                    console.warn(`[FeeService] SMS notification failed: ${smsError?.message || smsError}`);
-                }
-
-                try {
-                    await whatsappService.sendFeeReminder({
-                        parentPhone,
-                        parentName,
-                        learnerName,
-                        amountDue: totalAmount,
-                        dueDate: dueDate.toLocaleDateString()
-                    });
-                } catch (whatsappError: any) {
-                    console.warn(`[FeeService] WhatsApp notification failed: ${whatsappError?.message || whatsappError}`);
-                }
-
-                if (learner.parent.email) {
-                    try {
-                        await EmailService.sendFeeInvoiceEmail({
-                            to: learner.parent.email,
-                            schoolName,
-                            parentName,
-                            learnerName,
-                            invoiceNumber: newInvoice.invoiceNumber,
-                            term: `${term.replace('_', ' ')} ${academicYear}`,
-                            amount: totalAmount,
-                            dueDate: dueDate.toLocaleDateString(),
-                            feeItems: (feeStructure as any).feeItems.map((item: any) => ({
-                                name: item.feeType.name,
-                                amount: Number(item.amount)
-                            }))
-                        });
-                    } catch (emailError: any) {
-                        console.warn(`[FeeService] Email notification failed: ${emailError?.message || emailError}`);
-                    }
-                }
-            }
-
-            return { success: true, invoice: newInvoice, created: true };
-
-        } catch (error: any) {
-            console.error(`[FeeService] Error: ${error.message}`);
-            return { success: false, error: error.message };
+      // 3. Find matching fee structure for this grade + term
+      const feeStructure = await prisma.feeStructure.findFirst({
+        where: {
+          academicYear,
+          term: term as any,
+          grade: learner.grade as any,
+          active: true
+        },
+        include: {
+          feeItems: { include: { feeType: true } }
         }
+      });
+
+      if (!feeStructure) {
+        const errorMsg = `No matching fee structure found for ${learner.grade.replace('_', ' ')} (${term.replace('_', ' ')} ${academicYear})`;
+        console.warn(`[FeeService] ${errorMsg}`);
+        return { success: false, error: errorMsg };
+      }
+
+      // 4. Check for existing invoice (idempotent)
+      const existingInvoice = await prisma.feeInvoice.findFirst({
+        where: { learnerId, feeStructureId: feeStructure.id, term: term as any, academicYear }
+      });
+      if (existingInvoice) {
+        return { success: true, invoice: existingInvoice, created: false };
+      }
+
+      // 5. Calculate amount — use resolveTransportAmount() for canonical transport logic
+      const allItems = (feeStructure as any).feeItems || [];
+      const nonTransportItems = allItems.filter((i: any) => i.feeType?.code !== 'TRANSPORT');
+      const baseTotal = nonTransportItems.reduce(
+        (sum: number, item: any) => sum + Number(item.amount),
+        0
+      );
+
+      let totalAmount = baseTotal;
+      if (learner.isTransportStudent) {
+        const transportAmount = await resolveTransportAmount(learnerId, allItems);
+        totalAmount += transportAmount;
+        console.log(
+          `[FeeService] Transport fee for ${learner.admissionNumber}: KES ${transportAmount}`
+        );
+      }
+
+      // 6. Due date = 14 days from today
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + 14);
+
+      // 7. Create invoice
+      const newInvoice = await createInvoiceWithSafeNumber(
+        prisma,
+        {
+          learnerId,
+          feeStructureId: feeStructure.id,
+          term,
+          academicYear,
+          dueDate,
+          totalAmount,
+          paidAmount: 0,
+          balance: totalAmount,
+          status: 'PENDING',
+          issuedBy: 'SYSTEM'
+        },
+        { learner: true }
+      );
+
+      // 8. Post to accounting ledger (best-effort)
+      try {
+        await accountingService.postFeeInvoiceToLedger(newInvoice);
+      } catch (ledgerError: any) {
+        console.warn(
+          `[FeeService] Failed to post invoice to ledger: ${ledgerError?.message || ledgerError}`
+        );
+      }
+
+      // 9. Notifications (best-effort — never blocks invoice creation)
+      if (!SKIP_FEE_NOTIFICATIONS && learner.parent && learner.parent.phone) {
+        const parentPhone = learner.parent.phone;
+        const parentName = `${learner.parent.firstName} ${learner.parent.lastName}`;
+        const learnerName = `${learner.firstName} ${learner.lastName}`;
+        const school = await prisma.school.findFirst();
+        const schoolName = school?.name || 'School';
+
+        await Promise.allSettled([
+          SmsService.sendFeeInvoiceNotification({
+            parentPhone,
+            parentName,
+            learnerName,
+            invoiceNumber: newInvoice.invoiceNumber,
+            term: `${term.replace('_', ' ')} ${academicYear}`,
+            amount: totalAmount,
+            dueDate: dueDate.toLocaleDateString()
+          }),
+          whatsappService.sendFeeReminder({
+            parentPhone,
+            parentName,
+            learnerName,
+            amountDue: totalAmount,
+            dueDate: dueDate.toLocaleDateString()
+          }),
+          ...(learner.parent.email
+            ? [
+                EmailService.sendFeeInvoiceEmail({
+                  to: learner.parent.email,
+                  schoolName,
+                  parentName,
+                  learnerName,
+                  invoiceNumber: newInvoice.invoiceNumber,
+                  term: `${term.replace('_', ' ')} ${academicYear}`,
+                  amount: totalAmount,
+                  dueDate: dueDate.toLocaleDateString(),
+                  feeItems: allItems.map((item: any) => ({
+                    name: item.feeType.name,
+                    amount: Number(item.amount)
+                  }))
+                })
+              ]
+            : [])
+        ]);
+      }
+
+      return { success: true, invoice: newInvoice, created: true };
+    } catch (error: any) {
+      console.error(`[FeeService] Error: ${error.message}`);
+      return { success: false, error: error.message };
     }
+  }
 }
 
 export const feeService = new FeeService();

@@ -6,6 +6,7 @@ import CBCGradingSystem from './components/CBCGrading/CBCGradingSystem';
 import SplashScreen from './components/mobile/SplashScreen';
 import { SchoolDataProvider } from './contexts/SchoolDataContext';
 import { FeeActionsProvider } from './contexts/FeeActionsContext';
+import { UserNotificationProvider } from './contexts/UserNotificationContext';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import api from './services/api';
 import axiosInstance from './services/api/axiosConfig';
@@ -183,12 +184,14 @@ function AppContent() {
           element={
             <SchoolDataProvider>
               <FeeActionsProvider>
+              <UserNotificationProvider>
               <CBCGradingSystem
                 user={user}
                 onLogout={handleLogout}
                 brandingSettings={brandingSettings}
                 setBrandingSettings={setBrandingSettings}
               />
+              </UserNotificationProvider>
               </FeeActionsProvider>
             </SchoolDataProvider>
           }
