@@ -24,6 +24,7 @@ import { SmsService } from '../services/sms.service';
 import { EmailService } from '../services/email.service';
 import { whatsappService } from '../services/whatsapp.service';
 import { accountingService } from '../services/accounting.service';
+import { NotificationService, NotificationType } from '../services/notification.service';
 
 export class FeeWaiverController {
 
@@ -300,6 +301,14 @@ export class FeeWaiverController {
           `
         });
       }
+
+      // 4. Internal System Alert for Admins
+      await NotificationService.notifyRoles(['ADMIN', 'SUPER_ADMIN'], {
+        title: 'New Waiver Request',
+        message: `KES ${Number(waiver.amountWaived).toLocaleString()} requested for ${learnerName}`,
+        type: NotificationType.WAIVER,
+        link: '/finance/fees'
+      });
     } catch (err) {
       console.error('[FeeWaiver] Failed to notify waiver requested:', err);
     }
@@ -330,6 +339,17 @@ export class FeeWaiverController {
             <p><b>Updated balance:</b> KES ${newBalance.toLocaleString()}</p>
             <p>${school?.name || 'School Management'}</p>
           `
+        });
+      }
+
+      // 4. Internal System Alert for the staff member who requested it
+      if (waiver.createdById) {
+        await NotificationService.createNotification({
+          userId: waiver.createdById,
+          title: 'Waiver Approved',
+          message: `Your request of KES ${Number(waiver.amountWaived).toLocaleString()} for ${waiver.invoice.learner.firstName} was approved.`,
+          type: NotificationType.SUCCESS,
+          link: '/finance/fees'
         });
       }
     } catch (err) {
@@ -363,6 +383,17 @@ export class FeeWaiverController {
             <p>Contact the school office if you have questions.</p>
             <p>${school?.name || 'School Management'}</p>
           `
+        });
+      }
+
+      // 4. Internal System Alert for the staff member who requested it
+      if (waiver.createdById) {
+        await NotificationService.createNotification({
+          userId: waiver.createdById,
+          title: 'Waiver Rejected',
+          message: `Your request of KES ${Number(waiver.amountWaived).toLocaleString()} for ${waiver.invoice.learner.firstName} was declined.`,
+          type: NotificationType.ERROR,
+          link: '/finance/fees'
         });
       }
     } catch (err) {
