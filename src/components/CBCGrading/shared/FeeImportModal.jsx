@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { X, Upload, FileSpreadsheet, Loader2, RefreshCw, CreditCard, Download, Info } from 'lucide-react';
 import axiosInstance from '../../../services/api/index';
 import { downloadFeeTemplate, downloadBalanceTemplate } from '../../../utils/feeTemplateGenerator';
@@ -12,6 +12,28 @@ const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
   const [error, setError] = useState('');
   const [results, setResults] = useState(null);
   const [progress, setProgress] = useState(null); // { current, total, percent, message }
+  const abortControllerRef = useRef(null);
+
+  const handleCancelImport = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setLoading(false);
+    setProgress(null);
+    setError('Import cancelled by user');
+  };
+
+  const handleCloseTrigger = () => {
+    if (loading) {
+      if (window.confirm('Import is in progress. Are you sure you want to stop it?')) {
+        handleCancelImport();
+        onClose();
+      }
+    } else {
+      onClose();
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -49,13 +71,17 @@ const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
         endpoint = '/bulk/fees/upload-payments';
       }
 
+      // Initialize AbortController
+      abortControllerRef.current = new AbortController();
+
       // We use native fetch for streaming
       const response = await fetch(`${baseUrl}${endpoint}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}` // Ensure auth header if needed
         },
-        body: formData
+        body: formData,
+        signal: abortControllerRef.current.signal
       });
 
       if (!response.ok) {
@@ -124,7 +150,7 @@ const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
               <p className="text-blue-200 text-sm">Upload Excel or CSV fee data</p>
             </div>
           </div>
-          <button onClick={onClose} className="hover:bg-white/20 p-2 rounded-xl transition-colors">
+          <button onClick={handleCloseTrigger} className="hover:bg-white/20 p-2 rounded-xl transition-colors">
             <X size={24} />
           </button>
         </div>
@@ -333,7 +359,7 @@ const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
               <>
                 <button
                   type="button"
-                  onClick={onClose}
+                  onClick={handleCloseTrigger}
                   className="flex-1 py-3.5 px-6 rounded-xl font-bold text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 transition-colors"
                 >
                   Cancel

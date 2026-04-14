@@ -77,6 +77,15 @@ router.post(
 
       const results = { updated: 0, created: 0, failed: 0, errors: [] as any[] };
 
+      // [CANCELLATION SUPPORT] Monitor for client disconnect
+      let isAborted = false;
+      req.on('close', () => {
+        if (!res.writableEnded) {
+          isAborted = true;
+          console.log('[BulkImport] Client disconnected. Aborting balance import...');
+        }
+      });
+
       // Helper to send progress
       const sendStatus = (type: string, payload: any) => {
         res.write(JSON.stringify({ type, ...payload }) + '\n');
@@ -154,6 +163,11 @@ router.post(
       sendStatus('start', { total: totalRows });
 
       for (const [index, row] of data.entries()) {
+        if (isAborted) {
+          console.log('[BulkImport] Stopping balance loop due to cancellation.');
+          break;
+        }
+
         try {
           const admNo = String(row['Adm No'] ?? row['Admission Number'] ?? '').trim();
           if (!admNo || admNo === 'undefined') {
@@ -318,6 +332,15 @@ router.post(
 
       const results = { processed: 0, failed: 0, errors: [] as any[] };
 
+      // [CANCELLATION SUPPORT] Monitor for client disconnect
+      let isAborted = false;
+      req.on('close', () => {
+        if (!res.writableEnded) {
+          isAborted = true;
+          console.log('[BulkImport] Client disconnected. Aborting payment import...');
+        }
+      });
+
       // Helper to send progress
       const sendStatus = (type: string, payload: any) => {
         res.write(JSON.stringify({ type, ...payload }) + '\n');
@@ -327,6 +350,11 @@ router.post(
       sendStatus('start', { total: totalRows });
 
       for (const [index, row] of data.entries()) {
+        if (isAborted) {
+          console.log('[BulkImport] Stopping payment loop due to cancellation.');
+          break;
+        }
+
         try {
           const admNo = String(row['Adm No'] ?? row['Admission Number'] ?? '').trim();
           if (!admNo || admNo === 'undefined') {
