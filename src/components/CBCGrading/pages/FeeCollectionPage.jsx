@@ -13,6 +13,8 @@ import { generateDocument } from '../../../utils/simplePdfGenerator';
 import EmptyState from '../shared/EmptyState';
 import Toast from '../shared/Toast';
 import LoadingSpinner from '../shared/LoadingSpinner';
+import ThermalReceipt from '../shared/ThermalReceipt';
+import '../../../styles/receipt-print.css';
 import { useNotifications } from '../hooks/useNotifications';
 import { useAuth } from '../../../hooks/useAuth';
 import api from '../../../services/api';
@@ -48,6 +50,8 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
   const [transportFilter, setTransportFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [printingInvoice, setPrintingInvoice] = useState(null);
+  const [schoolInfo, setSchoolInfo] = useState(null);
   const { showSuccess, showError, showToast, toastMessage, toastType, hideNotification } = useNotifications();
   const { user } = useAuth();
   const { registerFeeActions, clearFeeActions } = useFeeActions();
@@ -112,11 +116,21 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
     }
   }, []);
 
+  const fetchBranding = React.useCallback(async () => {
+    try {
+      const resp = await api.branding.get();
+      if (resp.success) setSchoolInfo(resp.data);
+    } catch (err) {
+      console.error('Failed to load branding:', err);
+    }
+  }, []);
+
   useEffect(() => {
     fetchInvoices();
     fetchStatsInvoices();
     fetchLearners();
-  }, [fetchInvoices, fetchStatsInvoices, fetchLearners]);
+    fetchBranding();
+  }, [fetchInvoices, fetchStatsInvoices, fetchLearners, fetchBranding]);
 
 
   const handleQuickApproveWaiver = async (e, invoice) => {
@@ -225,6 +239,15 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
     } finally {
       setDownloadingId(null);
     }
+  };
+
+  const handlePrintThermal = async (invoice) => {
+    setPrintingInvoice(invoice);
+    // Give react a moment to render the hidden thermal receipt
+    setTimeout(() => {
+      window.print();
+      setPrintingInvoice(null);
+    }, 100);
   };
   const getStatusBadge = (status) => {
     const badges = {
@@ -935,12 +958,22 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                       <button
                         onClick={() => handleDownloadPdf(invoice)}
                         disabled={downloadingId === invoice.id}
-                        className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-50"
-                        title="Download PDF"
+                        className="p-1.5 text-indigo-600 hover:bg-indigo-50 border border-indigo-100 rounded-lg disabled:opacity-50 flex items-center gap-1"
+                        title="Normal Printer (A4 PDF)"
                       >
                         {downloadingId === invoice.id
-                          ? <Loader2 size={18} className="animate-spin text-blue-500" />
-                          : <Download size={18} />}
+                          ? <Loader2 size={16} className="animate-spin" />
+                          : <FileText size={16} />}
+                        <span className="text-[10px] font-bold">A4</span>
+                      </button>
+
+                      <button
+                        onClick={() => handlePrintThermal(invoice)}
+                        className="p-1.5 text-amber-600 hover:bg-amber-50 border border-amber-100 rounded-lg flex items-center gap-1"
+                        title="Thermal Printer (80mm POS)"
+                      >
+                        <Download size={16} className="rotate-180" />
+                        <span className="text-[10px] font-bold">POS</span>
                       </button>
                     </div>
                   </td>
@@ -1253,6 +1286,13 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Thermal Print Overlay (Hidden from screen, visible during print) */}
+      {printingInvoice && (
+        <div id="printable-thermal-receipt" className="thermal-print-overlay">
+          <ThermalReceipt invoice={printingInvoice} schoolInfo={schoolInfo} />
         </div>
       )}
 
