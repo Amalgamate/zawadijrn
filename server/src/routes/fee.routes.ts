@@ -20,6 +20,13 @@ import { feeCommentsController } from '../controllers/feeComments.controller';
 const router = Router();
 const feeController = new FeeController();
 
+// DIAGNOSTIC: Verify route is loaded
+router.get('/ping-fees', (_req, res) => res.json({ 
+  status: 'Fees route is alive', 
+  timestamp: new Date().toISOString(),
+  environment: process.env.NODE_ENV || 'development'
+}));
+
 // Validation schemas
 const feeStructureItemSchema = z.object({
   feeTypeId: z.string().min(1),
@@ -265,6 +272,87 @@ router.get(
   asyncHandler(feeController.getPaymentStats)
 );
 
+// ── Fee Waivers ─────────────────────────────────────────────
+
+const createWaiverSchema = z.object({
+  invoiceId: z.string().min(1),
+  amountWaived: z.union([z.string(), z.number()]).transform((value) => 
+    typeof value === 'string' ? parseFloat(value) : value
+  ),
+  reason: z.string().min(5).max(500),
+  waiverCategory: z.enum(['HARDSHIP', 'DISABILITY', 'SCHOLARSHIP', 'OTHER']).optional()
+});
+
+const rejectWaiverSchema = z.object({
+  rejectionReason: z.string().min(5).max(500)
+});
+
+/**
+ * @route   POST /api/fees/waivers
+ */
+router.post(
+  '/waivers',
+  requireRole(['ACCOUNTANT', 'ADMIN', 'SUPER_ADMIN']),
+  rateLimit({ windowMs: 60_000, maxRequests: 30 }),
+  validate(createWaiverSchema),
+  auditLog('CREATE_FEE_WAIVER'),
+  asyncHandler(feeWaiverController.createWaiver.bind(feeWaiverController))
+);
+
+/**
+ * @route   GET /api/fees/waivers
+ */
+router.get(
+  '/waivers',
+  requireRole(['ACCOUNTANT', 'ADMIN', 'SUPER_ADMIN']),
+  rateLimit({ windowMs: 60_000, maxRequests: 50 }),
+  asyncHandler(feeWaiverController.listWaivers.bind(feeWaiverController))
+);
+
+/**
+ * @route   GET /api/fees/waivers/:id
+ */
+router.get(
+  '/waivers/:id',
+  requireRole(['ACCOUNTANT', 'ADMIN', 'SUPER_ADMIN']),
+  rateLimit({ windowMs: 60_000, maxRequests: 100 }),
+  asyncHandler(feeWaiverController.getWaiverById.bind(feeWaiverController))
+);
+
+/**
+ * @route   PATCH /api/fees/waivers/:id/approve
+ */
+router.patch(
+  '/waivers/:id/approve',
+  requireRole(['ADMIN', 'SUPER_ADMIN']),
+  rateLimit({ windowMs: 60_000, maxRequests: 20 }),
+  auditLog('APPROVE_FEE_WAIVER'),
+  asyncHandler(feeWaiverController.approveWaiver.bind(feeWaiverController))
+);
+
+/**
+ * @route   PATCH /api/fees/waivers/:id/reject
+ */
+router.patch(
+  '/waivers/:id/reject',
+  requireRole(['ADMIN', 'SUPER_ADMIN']),
+  rateLimit({ windowMs: 60_000, maxRequests: 20 }),
+  validate(rejectWaiverSchema),
+  auditLog('REJECT_FEE_WAIVER'),
+  asyncHandler(feeWaiverController.rejectWaiver.bind(feeWaiverController))
+);
+
+/**
+ * @route   DELETE /api/fees/waivers/:id
+ */
+router.delete(
+  '/waivers/:id',
+  requireRole(['ADMIN', 'SUPER_ADMIN']),
+  rateLimit({ windowMs: 60_000, maxRequests: 20 }),
+  auditLog('DELETE_FEE_WAIVER'),
+  asyncHandler(feeWaiverController.deleteWaiver.bind(feeWaiverController))
+);
+
 // ── Fee Comments & Pledges ───────────────────────────────────
 
 /**
@@ -331,100 +419,5 @@ router.patch(
   asyncHandler(feeCommentsController.fulfilPledge.bind(feeCommentsController))
 );
 
-// ============================================
-// FEE WAIVER ROUTES
-// ============================================
-
-
-const createWaiverSchema = z.object({
-  invoiceId: z.string().min(1),
-  amountWaived: z.union([z.string(), z.number()]).transform((value) => 
-    typeof value === 'string' ? parseFloat(value) : value
-  ),
-  reason: z.string().min(5).max(500),
-  waiverCategory: z.enum(['HARDSHIP', 'DISABILITY', 'SCHOLARSHIP', 'OTHER']).optional()
-});
-
-const rejectWaiverSchema = z.object({
-  rejectionReason: z.string().min(5).max(500)
-});
-
-/**
- * @route   POST /api/fees/waivers
- * @desc    Create a new fee waiver request
- * @access  ACCOUNTANT, ADMIN, SUPER_ADMIN
- */
-router.post(
-  '/waivers',
-  requireRole(['ACCOUNTANT', 'ADMIN', 'SUPER_ADMIN']),
-  rateLimit({ windowMs: 60_000, maxRequests: 30 }),
-  validate(createWaiverSchema),
-  auditLog('CREATE_FEE_WAIVER'),
-  asyncHandler(feeWaiverController.createWaiver.bind(feeWaiverController))
-);
-
-/**
- * @route   GET /api/fees/waivers
- * @desc    List all fee waivers with filters
- * @access  ACCOUNTANT, ADMIN, SUPER_ADMIN
- */
-router.get(
-  '/waivers',
-  requireRole(['ACCOUNTANT', 'ADMIN', 'SUPER_ADMIN']),
-  rateLimit({ windowMs: 60_000, maxRequests: 50 }),
-  asyncHandler(feeWaiverController.listWaivers.bind(feeWaiverController))
-);
-
-/**
- * @route   GET /api/fees/waivers/:id
- * @desc    Get fee waiver by ID
- * @access  ACCOUNTANT, ADMIN, SUPER_ADMIN
- */
-router.get(
-  '/waivers/:id',
-  requireRole(['ACCOUNTANT', 'ADMIN', 'SUPER_ADMIN']),
-  rateLimit({ windowMs: 60_000, maxRequests: 100 }),
-  asyncHandler(feeWaiverController.getWaiverById.bind(feeWaiverController))
-);
-
-/**
- * @route   PATCH /api/fees/waivers/:id/approve
- * @desc    Approve a fee waiver request
- * @access  ADMIN, SUPER_ADMIN (requires higher approval authority)
- */
-router.patch(
-  '/waivers/:id/approve',
-  requireRole(['ADMIN', 'SUPER_ADMIN']),
-  rateLimit({ windowMs: 60_000, maxRequests: 20 }),
-  auditLog('APPROVE_FEE_WAIVER'),
-  asyncHandler(feeWaiverController.approveWaiver.bind(feeWaiverController))
-);
-
-/**
- * @route   PATCH /api/fees/waivers/:id/reject
- * @desc    Reject a fee waiver request
- * @access  ADMIN, SUPER_ADMIN (requires higher approval authority)
- */
-router.patch(
-  '/waivers/:id/reject',
-  requireRole(['ADMIN', 'SUPER_ADMIN']),
-  rateLimit({ windowMs: 60_000, maxRequests: 20 }),
-  validate(rejectWaiverSchema),
-  auditLog('REJECT_FEE_WAIVER'),
-  asyncHandler(feeWaiverController.rejectWaiver.bind(feeWaiverController))
-);
-
-/**
- * @route   DELETE /api/fees/waivers/:id
- * @desc    Archive a fee waiver (soft delete)
- * @access  ADMIN, SUPER_ADMIN
- */
-router.delete(
-  '/waivers/:id',
-  requireRole(['ADMIN', 'SUPER_ADMIN']),
-  rateLimit({ windowMs: 60_000, maxRequests: 20 }),
-  auditLog('DELETE_FEE_WAIVER'),
-  asyncHandler(feeWaiverController.deleteWaiver.bind(feeWaiverController))
-);
 
 export default router;
