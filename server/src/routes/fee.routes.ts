@@ -189,6 +189,14 @@ router.delete(
 );
 
 router.post(
+  '/maintenance/reset-all',
+  requireRole(['SUPER_ADMIN']),
+  rateLimit({ windowMs: 60_000, maxRequests: 3 }),
+  auditLog('TOTAL_ACCOUNTING_RESET'),
+  asyncHandler(feeController.resetAllAccounting.bind(feeController))
+);
+
+router.post(
   '/invoices/:id/remind',
   requireRole(['ACCOUNTANT', 'ADMIN', 'SUPER_ADMIN']),
   rateLimit({ windowMs: 60_000, maxRequests: 50 }),

@@ -14,6 +14,13 @@
  *  - On full-waiver approval (newBalance === 0), invoice status is set to
  *    WAIVED (wiring up the previously-dead WAIVED PaymentStatus enum value)
  *    rather than PAID, to accurately distinguish paid-in-full from waived.
+ *
+ * FIX (Task 2 — P1): Added cumulative waiver balance guard in approveWaiver().
+ *  Before applying a waiver, the sum of all existing APPROVED waivers for the
+ *  invoice is checked. If adding the new waiver would exceed invoice.totalAmount,
+ *  the request is rejected with a clear error message.
+ *  This prevents two or more independently-approved waivers from together
+ *  cancelling more than the student actually owes.
  */
 
 import { Response } from 'express';
@@ -177,6 +184,34 @@ export class FeeWaiverController {
     if (!waiver) throw new ApiError(404, 'Fee waiver not found');
     if (waiver.status !== 'PENDING') throw new ApiError(400, `Cannot approve waiver with status: ${waiver.status}`);
 
+    // ── CUMULATIVE WAIVER GUARD (Task 2 — P1) ───────────────────────────────
+    // Sum all already-APPROVED waivers for this invoice to prevent multiple
+    // independently-approved waivers from together exceeding the invoice total.
+    const approvedAggregate = await prisma.feeWaiver.aggregate({
+      where: {
+        invoiceId: waiver.invoiceId,
+        status: 'APPROVED',
+        archived: false,
+        id: { not: id }          // exclude the current waiver being approved
+      },
+      _sum: { amountWaived: true }
+    });
+
+    const alreadyWaived = Number(approvedAggregate._sum.amountWaived ?? 0);
+    const thisWaiverAmount = Number(waiver.amountWaived);
+    const newWaivedTotal = alreadyWaived + thisWaiverAmount;
+    const invoiceTotal = Number(waiver.invoice.totalAmount);
+
+    if (newWaivedTotal > invoiceTotal) {
+      throw new ApiError(
+        400,
+        `Cannot approve: cumulative waivers (KES ${newWaivedTotal.toLocaleString()}) ` +
+        `would exceed invoice total of KES ${invoiceTotal.toLocaleString()}. ` +
+        `Already approved: KES ${alreadyWaived.toLocaleString()}.`
+      );
+    }
+    // ────────────────────────────────────────────────────────────────────────
+
     const [updatedWaiver, updatedInvoice] = await prisma.$transaction(async (tx) => {
       const approved = await tx.feeWaiver.update({
         where: { id },
@@ -193,7 +228,7 @@ export class FeeWaiverController {
         select: { balance: true, paidAmount: true, totalAmount: true }
       });
 
-      const newBalance = Math.max(0, Number(fresh!.balance) - Number(approved.amountWaived));
+      const newBalance = Math.max(0, Number(fresh!.balance) - thisWaiverAmount);
 
       // FIX: use WAIVED when the invoice is fully cleared by a waiver,
       // rather than PAID — keeping the two cases distinguishable in reports.
@@ -302,7 +337,7 @@ export class FeeWaiverController {
         });
       }
 
-      // 4. Internal System Alert for Admins
+      // Internal System Alert for Admins
       await NotificationService.notifyRoles(['ADMIN', 'SUPER_ADMIN'], {
         title: 'New Waiver Request',
         message: `KES ${Number(waiver.amountWaived).toLocaleString()} requested for ${learnerName}`,
@@ -342,7 +377,7 @@ export class FeeWaiverController {
         });
       }
 
-      // 4. Internal System Alert for the staff member who requested it
+      // Internal System Alert for the staff member who requested it
       if (waiver.createdById) {
         await NotificationService.createNotification({
           userId: waiver.createdById,
@@ -386,7 +421,7 @@ export class FeeWaiverController {
         });
       }
 
-      // 4. Internal System Alert for the staff member who requested it
+      // Internal System Alert for the staff member who requested it
       if (waiver.createdById) {
         await NotificationService.createNotification({
           userId: waiver.createdById,

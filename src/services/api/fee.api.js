@@ -120,5 +120,8 @@ export const feeAPI = {
     }),
 
   deleteWaiver: async (id) =>
-    fetchWithAuth(`/fees/waivers/${id}`, { method: 'DELETE' })
+    fetchWithAuth(`/fees/waivers/${id}`, { method: 'DELETE' }),
+
+  resetAllAccounting: async (data) =>
+    fetchWithAuth('/fees/maintenance/reset-all', { method: 'POST', body: JSON.stringify(data) })
 };

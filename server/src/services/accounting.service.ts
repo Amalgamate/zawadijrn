@@ -363,40 +363,68 @@ export class AccountingService {
 
     /**
      * Automatic Ledger Posting: Payroll Record
-     * Dr: Salaries Expense
-     * Cr: Salaries Payable
+     *
+     * Two entries are created in a single transaction:
+     *
+     * Entry 1 — Payroll accrual (at payroll generation time)
+     *   Dr: Salaries Expense  5000  (gross/net cost to the school)
+     *   Cr: Salaries Payable  2110  (liability until disbursed)
+     *
+     * Entry 2 — Payroll disbursement (clears the payable against the bank)
+     *   Dr: Salaries Payable  2110  (removes the liability)
+     *   Cr: Main Bank Account 1210  (cash leaves the school account)
+     *
+     * Both entries are posted immediately so the ledger is balanced.
+     * If disbursement timing differs, split this into two separate calls.
      */
     async postPayrollToLedger(payroll: any) {
         const { netSalary, payrollNumber, month, year } = payroll;
+        const ref = payrollNumber || `PAY/${year}/${month}`;
 
         let expenseAccount = await this.getAccountByCode('5000'); // Salaries Expense
         let payableAccount = await this.getAccountByCode('2110'); // Salaries Payable
-        let journal = await this.getJournalByCode('MISC');
+        let bankAccount    = await this.getAccountByCode('1210'); // Main Bank Account
+        let journal        = await this.getJournalByCode('MISC');
 
-        if (!expenseAccount || !payableAccount || !journal) {
+        if (!expenseAccount || !payableAccount || !bankAccount || !journal) {
             console.warn(`[Accounting] Missing payroll setup. Initializing defaults and retrying.`);
             await this.ensureDefaultAccountingSetup();
             expenseAccount = await this.getAccountByCode('5000');
             payableAccount = await this.getAccountByCode('2110');
-            journal = await this.getJournalByCode('MISC');
+            bankAccount    = await this.getAccountByCode('1210');
+            journal        = await this.getJournalByCode('MISC');
         }
 
-        if (!expenseAccount || !payableAccount || !journal) {
+        if (!expenseAccount || !payableAccount || !bankAccount || !journal) {
             console.warn(`[Accounting] Still missing required payroll accounts/journal after initialization. Skipping auto-post.`);
             return;
         }
 
-        const entry = await this.createJournalEntry({
+        const amount = Number(netSalary);
+
+        // Entry 1: Accrual — Expense recognised, liability created
+        const accrualEntry = await this.createJournalEntry({
             journalId: journal.id,
-            reference: payrollNumber || `PAY/${year}/${month}`,
+            reference: `${ref}/ACCRUAL`,
             date: new Date(),
             items: [
-                { accountId: expenseAccount.id, debit: Number(netSalary), label: `Payroll Expense for ${month}/${year}` },
-                { accountId: payableAccount.id, credit: Number(netSalary), label: `Salaries Payable for ${month}/${year}` }
+                { accountId: expenseAccount.id, debit: amount, label: `Payroll Expense for ${month}/${year}` },
+                { accountId: payableAccount.id, credit: amount, label: `Salaries Payable for ${month}/${year}` }
             ]
         });
+        await this.postJournalEntry(accrualEntry.id);
 
-        return this.postJournalEntry(entry.id);
+        // Entry 2: Disbursement — Liability cleared, cash leaves the bank
+        const disbursementEntry = await this.createJournalEntry({
+            journalId: journal.id,
+            reference: `${ref}/DISBURSEMENT`,
+            date: new Date(),
+            items: [
+                { accountId: payableAccount.id, debit: amount, label: `Salary Disbursement for ${month}/${year}` },
+                { accountId: bankAccount.id,    credit: amount, label: `Bank Payment: Payroll ${month}/${year}` }
+            ]
+        });
+        return this.postJournalEntry(disbursementEntry.id);
     }
 
     async getVendors() {

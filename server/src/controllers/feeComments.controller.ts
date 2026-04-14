@@ -1,6 +1,6 @@
 /**
  * Fee Comments & Pledges Controller
- * New file: server/src/controllers/feeComments.controller.ts
+ * server/src/controllers/feeComments.controller.ts
  *
  * Handles:
  *  - GET    /fees/invoices/:id/comments        list comments + pledges
@@ -8,6 +8,11 @@
  *  - POST   /fees/invoices/:id/pledges         record a pledge
  *  - PATCH  /fees/pledges/:pledgeId/cancel     cancel a pledge
  *  - PATCH  /fees/pledges/:pledgeId/fulfil     manually mark fulfilled
+ *
+ * FIX (Task 1 — P1): Removed all (prisma as any) casts.
+ * FeeComment and FeePledge are confirmed present in the Prisma schema and
+ * generated client, so typed prisma.feeComment / prisma.feePledge are safe.
+ * This restores full compile-time type-checking on all queries in this file.
  */
 
 import { Response } from 'express';
@@ -28,14 +33,14 @@ export class FeeCommentsController {
     if (!invoice) throw new ApiError(404, 'Invoice not found');
 
     const [comments, pledges] = await Promise.all([
-      (prisma as any).feeComment.findMany({
+      prisma.feeComment.findMany({
         where: { invoiceId: id, archived: false },
         include: {
           createdBy: { select: { id: true, firstName: true, lastName: true, role: true } }
         },
         orderBy: { createdAt: 'desc' }
       }),
-      (prisma as any).feePledge.findMany({
+      prisma.feePledge.findMany({
         where: { invoiceId: id, archived: false },
         include: {
           createdBy: { select: { id: true, firstName: true, lastName: true } }
@@ -61,7 +66,7 @@ export class FeeCommentsController {
     const invoice = await prisma.feeInvoice.findUnique({ where: { id } });
     if (!invoice) throw new ApiError(404, 'Invoice not found');
 
-    const comment = await (prisma as any).feeComment.create({
+    const comment = await prisma.feeComment.create({
       data: {
         invoiceId: id,
         type,
@@ -103,7 +108,7 @@ export class FeeCommentsController {
     const parsedDate = new Date(pledgeDate);
     if (isNaN(parsedDate.getTime())) throw new ApiError(400, 'Invalid pledgeDate format');
 
-    const result = await (prisma as any).$transaction(async (tx: any) => {
+    const result = await prisma.$transaction(async (tx) => {
       // 1. Create the comment for the timeline
       const commentBody = notes
         ? `Pledged KES ${amount.toLocaleString()} by ${parsedDate.toLocaleDateString('en-GB')}. Note: ${notes}`
@@ -148,12 +153,12 @@ export class FeeCommentsController {
     const { pledgeId } = req.params;
     const { reason } = req.body;
 
-    const pledge = await (prisma as any).feePledge.findUnique({ where: { id: pledgeId } });
+    const pledge = await prisma.feePledge.findUnique({ where: { id: pledgeId } });
     if (!pledge) throw new ApiError(404, 'Pledge not found');
     if (pledge.status === 'FULFILLED') throw new ApiError(400, 'Cannot cancel a fulfilled pledge');
     if (pledge.status === 'CANCELLED') throw new ApiError(400, 'Pledge is already cancelled');
 
-    const updated = await (prisma as any).feePledge.update({
+    const updated = await prisma.feePledge.update({
       where: { id: pledgeId },
       data: {
         status: 'CANCELLED',
@@ -172,12 +177,12 @@ export class FeeCommentsController {
   async fulfilPledge(req: AuthRequest, res: Response) {
     const { pledgeId } = req.params;
 
-    const pledge = await (prisma as any).feePledge.findUnique({ where: { id: pledgeId } });
+    const pledge = await prisma.feePledge.findUnique({ where: { id: pledgeId } });
     if (!pledge) throw new ApiError(404, 'Pledge not found');
     if (pledge.status === 'FULFILLED') throw new ApiError(400, 'Pledge already fulfilled');
     if (pledge.status === 'CANCELLED') throw new ApiError(400, 'Cannot fulfil a cancelled pledge');
 
-    const updated = await (prisma as any).feePledge.update({
+    const updated = await prisma.feePledge.update({
       where: { id: pledgeId },
       data: { status: 'FULFILLED', fulfilledAt: new Date() }
     });

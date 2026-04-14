@@ -1148,6 +1148,42 @@ export class FeeController {
 
     res.json({ success: true, message: 'Statement emailed successfully' });
   }
+
+  async resetAllAccounting(req: AuthRequest, res: Response) {
+    const { confirmToken } = req.body;
+    if (confirmToken !== 'RESET_TOTAL_ACCOUNTING') {
+      throw new ApiError(400, 'Invalid confirmation token for total reset');
+    }
+
+    console.log('[SystemMaintenance] Starting Total Financial Reset...');
+
+    try {
+      await prisma.$transaction([
+        // 1. Fee Relations
+        prisma.feePayment.deleteMany({}),
+        prisma.feeWaiver.deleteMany({}),
+        prisma.feePledge.deleteMany({}),
+        prisma.feeComment.deleteMany({}),
+        prisma.feeInvoice.deleteMany({}),
+
+        // 2. Ledger
+        prisma.journalItem.deleteMany({}),
+        prisma.journalEntry.deleteMany({}),
+
+        // 3. Peripheral Financials
+        prisma.expense.deleteMany({}),
+        prisma.payrollRecord.deleteMany({}),
+        prisma.bankStatementLine.deleteMany({}),
+        prisma.bankStatement.deleteMany({})
+      ]);
+
+      console.log('[SystemMaintenance] Total Reset Success.');
+      res.json({ success: true, message: 'All financial data has been reset to zero successfully.' });
+    } catch (error: any) {
+      console.error('[SystemMaintenance] Total Reset Failed:', error);
+      throw new ApiError(500, `Reset failed: ${error.message}`);
+    }
+  }
 }
 
 export const feeController = new FeeController();

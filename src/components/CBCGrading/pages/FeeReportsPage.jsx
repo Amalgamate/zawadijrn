@@ -30,6 +30,14 @@ const FeeReportsPage = () => {
   const [reportType, setReportType] = useState('summary');
   const [learners, setLearners] = useState([]);
   const [selectedLearnerId, setSelectedLearnerId] = useState('');
+  const [learnerInvoices, setLearnerInvoices] = useState([]);
+  const [learnerLoading, setLearnerLoading] = useState(false);
+  const [defaulters, setDefaulters] = useState([]);
+  const [defaultersLoading, setDefaultersLoading] = useState(false);
+  const [detailedInvoices, setDetailedInvoices] = useState([]);
+  const [detailedLoading, setDetailedLoading] = useState(false);
+  const [collectionEntries, setCollectionEntries] = useState([]);
+  const [collectionLoading, setCollectionLoading] = useState(false);
   const [dateRange, setDateRange] = useState({
     startDate: new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0]
@@ -69,9 +77,95 @@ const FeeReportsPage = () => {
     }
   }, [dateRange, filterGrade, filterTerm, showError, learners.length]);
 
+  // Defaulters tab: invoices that are PENDING or PARTIAL past due date
+  const fetchDefaulters = React.useCallback(async () => {
+    try {
+      setDefaultersLoading(true);
+      const params = { status: 'PENDING', startDate: dateRange.startDate, endDate: dateRange.endDate };
+      if (filterGrade !== 'all') params.grade = filterGrade;
+      if (filterTerm !== 'all') params.term = filterTerm;
+      const [pendingRes, partialRes] = await Promise.all([
+        api.fees.getAllInvoices({ ...params, status: 'PENDING', limit: 200 }),
+        api.fees.getAllInvoices({ ...params, status: 'PARTIAL', limit: 200 })
+      ]);
+      const all = [...(pendingRes.data || []), ...(partialRes.data || [])];
+      const today = new Date();
+      setDefaulters(all.filter(inv => inv.dueDate && new Date(inv.dueDate) < today));
+    } catch (error) {
+      showError('Failed to load defaulters');
+    } finally {
+      setDefaultersLoading(false);
+    }
+  }, [dateRange, filterGrade, filterTerm, showError]);
+
+  // Detailed tab: all invoices with full breakdown
+  const fetchDetailed = React.useCallback(async () => {
+    try {
+      setDetailedLoading(true);
+      const params = { startDate: dateRange.startDate, endDate: dateRange.endDate, limit: 200 };
+      if (filterGrade !== 'all') params.grade = filterGrade;
+      if (filterTerm !== 'all') params.term = filterTerm;
+      const res = await api.fees.getAllInvoices(params);
+      setDetailedInvoices(res.data || []);
+    } catch (error) {
+      showError('Failed to load detailed invoices');
+    } finally {
+      setDetailedLoading(false);
+    }
+  }, [dateRange, filterGrade, filterTerm, showError]);
+
+  // Collection tab: paid/partial invoices showing payment history
+  const fetchCollection = React.useCallback(async () => {
+    try {
+      setCollectionLoading(true);
+      const params = { startDate: dateRange.startDate, endDate: dateRange.endDate, limit: 200 };
+      if (filterGrade !== 'all') params.grade = filterGrade;
+      if (filterTerm !== 'all') params.term = filterTerm;
+      const [paidRes, partialRes] = await Promise.all([
+        api.fees.getAllInvoices({ ...params, status: 'PAID' }),
+        api.fees.getAllInvoices({ ...params, status: 'PARTIAL' })
+      ]);
+      setCollectionEntries([...(paidRes.data || []), ...(partialRes.data || [])]);
+    } catch (error) {
+      showError('Failed to load collection data');
+    } finally {
+      setCollectionLoading(false);
+    }
+  }, [dateRange, filterGrade, filterTerm, showError]);
+
   useEffect(() => {
     fetchStats();
   }, [fetchStats]);
+
+  // Trigger the right data fetch when tab changes or filters change
+  useEffect(() => {
+    if (reportType === 'defaulters') fetchDefaulters();
+    else if (reportType === 'detailed') fetchDetailed();
+    else if (reportType === 'collection') fetchCollection();
+    // 'summary' and 'learner' are handled by fetchStats + per-learner fetch below
+  }, [reportType, fetchDefaulters, fetchDetailed, fetchCollection]);
+
+  // Fetch individual learner invoices when a learner is selected on the learner tab
+  useEffect(() => {
+    if (reportType !== 'learner' || !selectedLearnerId) {
+      setLearnerInvoices([]);
+      return;
+    }
+    let cancelled = false;
+    const load = async () => {
+      try {
+        setLearnerLoading(true);
+        const res = await api.fees.getLearnerInvoices(selectedLearnerId);
+        if (!cancelled) setLearnerInvoices(res.data || []);
+      } catch {
+        if (!cancelled) showError('Failed to load learner invoices');
+      } finally {
+        if (!cancelled) setLearnerLoading(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [selectedLearnerId, reportType, showError]);
 
   const handleExport = async () => {
     try {
@@ -480,6 +574,281 @@ const FeeReportsPage = () => {
           </table>
         </div>
       </div>
+
+      {/* ── TAB-SPECIFIC CONTENT PANELS ── */}
+
+      {/* DETAILED TAB */}
+      {reportType === 'detailed' && (
+        <div className="bg-white rounded-lg shadow p-3">
+          <h3 className="text-sm font-bold text-gray-800 mb-2">All Invoices — Detailed</h3>
+          {detailedLoading ? (
+            <div className="flex items-center justify-center py-8"><Loader2 size={20} className="animate-spin text-blue-500" /></div>
+          ) : detailedInvoices.length === 0 ? (
+            <p className="text-center text-xs text-gray-500 py-6">No invoices found for the selected filters.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead className="border-b">
+                  <tr className="text-left text-[10px] uppercase text-gray-500 font-semibold">
+                    <th className="px-3 py-2">Invoice #</th>
+                    <th className="px-3 py-2">Learner</th>
+                    <th className="px-3 py-2">Grade</th>
+                    <th className="px-3 py-2">Term</th>
+                    <th className="px-3 py-2">Total</th>
+                    <th className="px-3 py-2">Paid</th>
+                    <th className="px-3 py-2">Balance</th>
+                    <th className="px-3 py-2">Status</th>
+                    <th className="px-3 py-2">Due</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {detailedInvoices.map(inv => {
+                    const paid = Number(inv.amountPaid || 0);
+                    const total = Number(inv.totalAmount || 0);
+                    const balance = total - paid;
+                    const overdue = inv.dueDate && new Date(inv.dueDate) < new Date() && inv.status !== 'PAID';
+                    return (
+                      <tr key={inv.id} className="hover:bg-gray-50">
+                        <td className="px-3 py-1.5 font-mono text-blue-700">{inv.invoiceNumber}</td>
+                        <td className="px-3 py-1.5">{inv.learner ? `${inv.learner.firstName} ${inv.learner.lastName}` : '—'}</td>
+                        <td className="px-3 py-1.5">{inv.learner?.grade?.replace(/_/g, ' ') || '—'}</td>
+                        <td className="px-3 py-1.5">{inv.term?.replace(/_/g, ' ') || '—'}</td>
+                        <td className="px-3 py-1.5 font-semibold">{fmtKES(total)}</td>
+                        <td className={`px-3 py-1.5 ${collectedClass(paid)}`}>{fmtKES(paid)}</td>
+                        <td className={`px-3 py-1.5 ${outstandingClass(balance)}`}>{fmtKES(balance)}</td>
+                        <td className="px-3 py-1.5">
+                          <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
+                            inv.status === 'PAID' ? 'bg-green-100 text-green-700' :
+                            inv.status === 'PARTIAL' ? 'bg-blue-100 text-blue-700' :
+                            overdue ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
+                          }`}>{overdue && inv.status !== 'PAID' ? 'OVERDUE' : inv.status}</span>
+                        </td>
+                        <td className={`px-3 py-1.5 ${overdue ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>
+                          {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : '—'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* DEFAULTERS TAB */}
+      {reportType === 'defaulters' && (
+        <div className="bg-white rounded-lg shadow p-3">
+          <div className="flex items-center gap-2 mb-2">
+            <AlertCircle size={16} className="text-red-500" />
+            <h3 className="text-sm font-bold text-gray-800">Defaulters — Overdue Unpaid Invoices</h3>
+            {!defaultersLoading && <span className="ml-auto text-xs text-red-600 font-semibold">{defaulters.length} overdue</span>}
+          </div>
+          {defaultersLoading ? (
+            <div className="flex items-center justify-center py-8"><Loader2 size={20} className="animate-spin text-red-400" /></div>
+          ) : defaulters.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 gap-2">
+              <CheckCircle size={28} className="text-green-500" />
+              <p className="text-xs text-gray-500">No overdue invoices. All payments are up to date.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead className="border-b">
+                  <tr className="text-left text-[10px] uppercase text-gray-500 font-semibold">
+                    <th className="px-3 py-2">Learner</th>
+                    <th className="px-3 py-2">Grade</th>
+                    <th className="px-3 py-2">Invoice #</th>
+                    <th className="px-3 py-2">Total</th>
+                    <th className="px-3 py-2">Paid</th>
+                    <th className="px-3 py-2">Balance</th>
+                    <th className="px-3 py-2">Due Date</th>
+                    <th className="px-3 py-2">Days Overdue</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {defaulters.map(inv => {
+                    const paid = Number(inv.amountPaid || 0);
+                    const total = Number(inv.totalAmount || 0);
+                    const balance = total - paid;
+                    const daysOverdue = inv.dueDate
+                      ? Math.floor((new Date() - new Date(inv.dueDate)) / 86400000)
+                      : null;
+                    return (
+                      <tr key={inv.id} className="hover:bg-red-50">
+                        <td className="px-3 py-1.5 font-medium">
+                          {inv.learner ? `${inv.learner.firstName} ${inv.learner.lastName}` : '—'}
+                        </td>
+                        <td className="px-3 py-1.5 text-gray-600">{inv.learner?.grade?.replace(/_/g, ' ') || '—'}</td>
+                        <td className="px-3 py-1.5 font-mono text-blue-700">{inv.invoiceNumber}</td>
+                        <td className="px-3 py-1.5 font-semibold">{fmtKES(total)}</td>
+                        <td className={`px-3 py-1.5 ${collectedClass(paid)}`}>{fmtKES(paid)}</td>
+                        <td className="px-3 py-1.5 text-red-600 font-bold">{fmtKES(balance)}</td>
+                        <td className="px-3 py-1.5 text-red-500 font-semibold">
+                          {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : '—'}
+                        </td>
+                        <td className="px-3 py-1.5">
+                          {daysOverdue !== null ? (
+                            <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                              daysOverdue > 30 ? 'bg-red-200 text-red-800' : 'bg-orange-100 text-orange-700'
+                            }`}>{daysOverdue}d</span>
+                          ) : '—'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot className="border-t-2 border-gray-300 bg-red-50">
+                  <tr>
+                    <td colSpan={5} className="px-3 py-2 text-xs font-bold text-gray-700">TOTAL OUTSTANDING</td>
+                    <td className="px-3 py-2 text-xs font-bold text-red-700">
+                      {fmtKES(defaulters.reduce((s, inv) => s + Number(inv.totalAmount || 0) - Number(inv.amountPaid || 0), 0))}
+                    </td>
+                    <td colSpan={2} />
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* COLLECTION TAB */}
+      {reportType === 'collection' && (
+        <div className="bg-white rounded-lg shadow p-3">
+          <div className="flex items-center gap-2 mb-2">
+            <CheckCircle size={16} className="text-green-500" />
+            <h3 className="text-sm font-bold text-gray-800">Collection Report — Paid & Partial Invoices</h3>
+            {!collectionLoading && <span className="ml-auto text-xs text-green-600 font-semibold">{collectionEntries.length} entries</span>}
+          </div>
+          {collectionLoading ? (
+            <div className="flex items-center justify-center py-8"><Loader2 size={20} className="animate-spin text-green-400" /></div>
+          ) : collectionEntries.length === 0 ? (
+            <p className="text-center text-xs text-gray-500 py-6">No paid invoices found for the selected period.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead className="border-b">
+                  <tr className="text-left text-[10px] uppercase text-gray-500 font-semibold">
+                    <th className="px-3 py-2">Invoice #</th>
+                    <th className="px-3 py-2">Learner</th>
+                    <th className="px-3 py-2">Grade</th>
+                    <th className="px-3 py-2">Term</th>
+                    <th className="px-3 py-2">Total</th>
+                    <th className="px-3 py-2">Collected</th>
+                    <th className="px-3 py-2">Balance</th>
+                    <th className="px-3 py-2">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {collectionEntries.map(inv => {
+                    const paid = Number(inv.amountPaid || 0);
+                    const total = Number(inv.totalAmount || 0);
+                    const balance = total - paid;
+                    return (
+                      <tr key={inv.id} className="hover:bg-green-50">
+                        <td className="px-3 py-1.5 font-mono text-blue-700">{inv.invoiceNumber}</td>
+                        <td className="px-3 py-1.5">{inv.learner ? `${inv.learner.firstName} ${inv.learner.lastName}` : '—'}</td>
+                        <td className="px-3 py-1.5">{inv.learner?.grade?.replace(/_/g, ' ') || '—'}</td>
+                        <td className="px-3 py-1.5">{inv.term?.replace(/_/g, ' ') || '—'}</td>
+                        <td className="px-3 py-1.5 font-semibold">{fmtKES(total)}</td>
+                        <td className={`px-3 py-1.5 ${collectedClass(paid)}`}>{fmtKES(paid)}</td>
+                        <td className={`px-3 py-1.5 ${outstandingClass(balance)}`}>{fmtKES(balance)}</td>
+                        <td className="px-3 py-1.5">
+                          <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
+                            inv.status === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+                          }`}>{inv.status}</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot className="border-t-2 border-gray-300 bg-green-50">
+                  <tr>
+                    <td colSpan={4} className="px-3 py-2 text-xs font-bold text-gray-700">TOTALS</td>
+                    <td className="px-3 py-2 text-xs font-bold text-gray-900">{fmtKES(collectionEntries.reduce((s, i) => s + Number(i.totalAmount || 0), 0))}</td>
+                    <td className="px-3 py-2 text-xs font-bold text-green-700">{fmtKES(collectionEntries.reduce((s, i) => s + Number(i.amountPaid || 0), 0))}</td>
+                    <td className="px-3 py-2 text-xs font-bold text-gray-700">{fmtKES(collectionEntries.reduce((s, i) => s + (Number(i.totalAmount || 0) - Number(i.amountPaid || 0)), 0))}</td>
+                    <td />
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* LEARNER TAB */}
+      {reportType === 'learner' && selectedLearnerId && (
+        <div className="bg-white rounded-lg shadow p-3">
+          <div className="flex items-center gap-2 mb-2">
+            <Users size={16} className="text-purple-500" />
+            <h3 className="text-sm font-bold text-gray-800">Individual Learner Invoice History</h3>
+            {!learnerLoading && learnerInvoices.length > 0 && (
+              <span className="ml-auto text-xs text-purple-600 font-semibold">{learnerInvoices.length} invoice{learnerInvoices.length !== 1 ? 's' : ''}</span>
+            )}
+          </div>
+          {learnerLoading ? (
+            <div className="flex items-center justify-center py-8"><Loader2 size={20} className="animate-spin text-purple-400" /></div>
+          ) : learnerInvoices.length === 0 ? (
+            <p className="text-center text-xs text-gray-500 py-6">No invoices found for this learner.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead className="border-b">
+                  <tr className="text-left text-[10px] uppercase text-gray-500 font-semibold">
+                    <th className="px-3 py-2">Invoice #</th>
+                    <th className="px-3 py-2">Term</th>
+                    <th className="px-3 py-2">Year</th>
+                    <th className="px-3 py-2">Total</th>
+                    <th className="px-3 py-2">Paid</th>
+                    <th className="px-3 py-2">Balance</th>
+                    <th className="px-3 py-2">Status</th>
+                    <th className="px-3 py-2">Due Date</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {learnerInvoices.map(inv => {
+                    const paid = Number(inv.amountPaid || 0);
+                    const total = Number(inv.totalAmount || 0);
+                    const balance = total - paid;
+                    const overdue = inv.dueDate && new Date(inv.dueDate) < new Date() && inv.status !== 'PAID';
+                    return (
+                      <tr key={inv.id} className="hover:bg-purple-50">
+                        <td className="px-3 py-1.5 font-mono text-blue-700">{inv.invoiceNumber}</td>
+                        <td className="px-3 py-1.5">{inv.term?.replace(/_/g, ' ') || '—'}</td>
+                        <td className="px-3 py-1.5">{inv.academicYear || '—'}</td>
+                        <td className="px-3 py-1.5 font-semibold">{fmtKES(total)}</td>
+                        <td className={`px-3 py-1.5 ${collectedClass(paid)}`}>{fmtKES(paid)}</td>
+                        <td className={`px-3 py-1.5 ${outstandingClass(balance)}`}>{fmtKES(balance)}</td>
+                        <td className="px-3 py-1.5">
+                          <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
+                            inv.status === 'PAID' ? 'bg-green-100 text-green-700' :
+                            inv.status === 'PARTIAL' ? 'bg-blue-100 text-blue-700' :
+                            overdue ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
+                          }`}>{overdue && inv.status !== 'PAID' ? 'OVERDUE' : inv.status}</span>
+                        </td>
+                        <td className={`px-3 py-1.5 ${overdue ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>
+                          {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : '—'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot className="border-t-2 border-gray-300 bg-purple-50">
+                  <tr>
+                    <td colSpan={3} className="px-3 py-2 text-xs font-bold text-gray-700">TOTALS</td>
+                    <td className="px-3 py-2 text-xs font-bold text-gray-900">{fmtKES(learnerInvoices.reduce((s, i) => s + Number(i.totalAmount || 0), 0))}</td>
+                    <td className="px-3 py-2 text-xs font-bold text-green-700">{fmtKES(learnerInvoices.reduce((s, i) => s + Number(i.amountPaid || 0), 0))}</td>
+                    <td className="px-3 py-2 text-xs font-bold text-gray-700">{fmtKES(learnerInvoices.reduce((s, i) => s + (Number(i.totalAmount || 0) - Number(i.amountPaid || 0)), 0))}</td>
+                    <td colSpan={2} />
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Export Options */}
       <div className="bg-white rounded-lg shadow p-3">

@@ -56,6 +56,7 @@ const FeeReportsPage = lazy(() => import('../pages/FeeReportsPage'));
 const WaiversPage = lazy(() => import('../pages/WaiversPage'));
 const StudentStatementsPage = lazy(() => import('../pages/StudentStatementsPage'));
 const DocumentCenter = lazy(() => import('../pages/DocumentCenter'));
+const SystemMaintenancePage = lazy(() => import('../pages/SystemMaintenancePage'));
 const LearnerProfile = lazy(() => import('../pages/profiles/LearnerProfile'));
 const TeacherProfile = lazy(() => import('../pages/profiles/TeacherProfile'));
 const ParentProfile = lazy(() => import('../pages/profiles/ParentProfile'));
@@ -390,6 +391,8 @@ const PageRouter = ({
           case 'settings-communication': return <ErrorBoundary><CommunicationSettings /></ErrorBoundary>;
           case 'settings-payment': return <PaymentSettings />;
           case 'settings-id-templates': return <ErrorBoundary><IDCardTemplatesDesigner /></ErrorBoundary>;
+
+          case 'system-maintenance': return <SystemMaintenancePage />;
 
           // ── Secondary School modules (placeholders) ───────────────────────────
           case 'sec-pathways':        return <PathwaysHub />;

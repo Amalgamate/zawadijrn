@@ -21,7 +21,7 @@ import {
     TrendingUp, Zap, CheckSquare, Settings, BookOpen,
     Users2, Truck, Fingerprint, CreditCard, PieChart,
     Package, Building2, HelpCircle, Receipt, FileText,
-    Shirt, ClipboardList, Video, PlayCircle, Gift
+    Shirt, ClipboardList, Video, PlayCircle, Gift, Wrench
 } from 'lucide-react';
 
 const focusModules = ['dashboard', 'communications', 'planner', 'learners', 'teachers', 'parents', 'assessment', 'learning-hub', 'lms', 'attendance', 'docs-center', 'facilities', 'settings', 'hr', 'finance', 'inventory', 'library', 'transport', 'biometric'];
@@ -319,7 +319,8 @@ export const allNavSections = [
             { id: 'settings-payment',        label: 'Payment Settings',        path: 'settings-payment',        permission: 'SCHOOL_SETTINGS'   },
             { id: 'settings-users',          label: 'User Management',         path: 'settings-users',          permission: 'EDIT_USER'         },
             { id: 'settings-branding',       label: 'Branding',                path: 'settings-branding',       permission: 'BRANDING_SETTINGS' },
-            { id: 'settings-backup',         label: 'Backup & Restore',        path: 'settings-backup',         permission: 'BACKUP_SETTINGS'   }
+            { id: 'settings-backup',         label: 'Backup & Restore',        path: 'settings-backup',         permission: 'BACKUP_SETTINGS'   },
+            { id: 'system-maintenance',      label: 'System Maintenance',      path: 'system-maintenance',      permission: 'SYSTEM_SETTINGS', icon: Wrench }
         ]
     }
 ];

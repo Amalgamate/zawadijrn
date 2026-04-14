@@ -1,6 +1,20 @@
 import prisma from '../config/database';
 import { FeeInvoice } from '@prisma/client';
 
+/**
+ * Compliance status values for eTIMS sync.
+ * These are string constants used in the `complianceStatus` field, which
+ * currently maps to the `PaymentStatus` enum in Prisma as a workaround.
+ * TODO: Create a dedicated `ComplianceStatus` enum in schema.prisma:
+ *   enum ComplianceStatus { PENDING SYNCED FAILED }
+ * and update the feeInvoice model to use it instead.
+ */
+export const COMPLIANCE_STATUS = {
+  PENDING: 'PENDING' as const,
+  SYNCED:  'PAID'    as const, // 'PAID' maps to SYNCED in current schema workaround
+  FAILED:  'PARTIAL' as const  // 'PARTIAL' maps to FAILED in current schema workaround
+} as const;
+
 export interface ETIMSPayload {
   invoiceNumber: string;
   customerName: string;
@@ -32,7 +46,11 @@ export class ComplianceService {
       });
 
       if (!invoice) throw new Error('Invoice not found');
-      if (invoice.complianceStatus === 'PAID') return; // Already synced (using PAID status as SYNCED for now or check prisma)
+      // Already synced check — use COMPLIANCE_STATUS constant, not a raw 'PAID' literal
+      if (invoice.complianceStatus === COMPLIANCE_STATUS.SYNCED) {
+        console.log(`[Compliance] Invoice ${invoice.invoiceNumber} already synced. Skipping.`);
+        return true;
+      }
 
       console.log(`[Compliance] Syncing Invoice ${invoice.invoiceNumber} to KRA eTIMS...`);
 
@@ -56,10 +74,11 @@ export class ComplianceService {
       const mockResult = await this.mockETIMSCall(payload);
 
       // 3. Update Invoice with Compliance Data
+      // Using COMPLIANCE_STATUS.SYNCED until the dedicated ComplianceStatus enum is added to schema
       await prisma.feeInvoice.update({
         where: { id: invoiceId },
         data: {
-          complianceStatus: 'PAID', // In our schema we use PaymentStatus.PAID as a placeholder or we should have updated the enum
+          complianceStatus: COMPLIANCE_STATUS.SYNCED,
           etimsControlCode: mockResult.controlCode,
           etimsQRCodeUrl: mockResult.qrCode
         }
@@ -69,6 +88,15 @@ export class ComplianceService {
       return true;
     } catch (error) {
       console.error(`[Compliance] eTIMS Sync Failed for Invoice ${invoiceId}:`, error);
+      // Mark as FAILED so retries and dashboards can surface it
+      try {
+        await prisma.feeInvoice.update({
+          where: { id: invoiceId },
+          data: { complianceStatus: COMPLIANCE_STATUS.FAILED }
+        });
+      } catch (updateErr) {
+        console.error(`[Compliance] Could not mark invoice ${invoiceId} as FAILED:`, updateErr);
+      }
       return false;
     }
   }
