@@ -5,7 +5,6 @@
 
 import { Router } from 'express';
 import { FeeController } from '../controllers/fee.controller';
-import { feeCommentsController } from '../controllers/feeComments.controller';
 import { authenticate, authorize } from '../middleware/auth.middleware';
 import { requireRole, auditLog } from '../middleware/permissions.middleware';
 import { requireSchoolContext } from '../middleware/school.middleware';
@@ -15,6 +14,8 @@ import { rateLimit } from '../middleware/enhanced-rateLimit.middleware';
 import { z } from 'zod';
 
 import feeTypeRoutes from './feeType.routes';
+import { feeWaiverController } from '../controllers/feeWaiver.controller';
+import { feeCommentsController } from '../controllers/feeComments.controller';
 
 const router = Router();
 const feeController = new FeeController();
@@ -334,7 +335,6 @@ router.patch(
 // FEE WAIVER ROUTES
 // ============================================
 
-import { feeWaiverController } from '../controllers/feeWaiver.controller';
 
 const createWaiverSchema = z.object({
   invoiceId: z.string().min(1),
