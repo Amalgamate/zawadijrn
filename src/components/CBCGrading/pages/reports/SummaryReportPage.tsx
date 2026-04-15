@@ -401,11 +401,16 @@ const SummaryReportPage = () => {
     const means = {};
     matrixData.subjects.forEach(sub => {
       const scored = filteredRows.filter(r => r.subjectScores[sub] !== null);
+      if (scored.length === 0) {
+        means[sub] = null;
+        return;
+      }
       const total = scored.reduce((acc, r) => acc + parseFloat(r.subjectScores[sub].marks), 0);
-      const maxTotal = scored.reduce((acc, r) => acc + parseFloat(r.subjectScores[sub].max), 100 * scored.length);
+      const maxTotal = scored.reduce((acc, r) => acc + parseFloat(r.subjectScores[sub].max), 0);
       means[sub] = {
         mean: (total / scored.length).toFixed(1),
         totalSum: total.toFixed(0),
+        totalMaxSum: maxTotal.toFixed(0),
         percentage: maxTotal > 0 ? (total / maxTotal) * 100 : 0,
         count: scored.length
       };
@@ -417,7 +422,12 @@ const SummaryReportPage = () => {
   const classMeanPct = useMemo(() => {
     const vals = Object.values(subjectMeans).filter(Boolean);
     if (vals.length === 0) return 0;
-    return vals.reduce((acc, v) => acc + v.percentage, 0) / vals.length;
+    
+    // Grand totals for overall class mean percentage
+    const grandTotalScored = vals.reduce((acc, v) => acc + parseFloat(v.totalSum), 0);
+    const grandTotalPossible = vals.reduce((acc, v) => acc + parseFloat(v.totalMaxSum), 0);
+    
+    return grandTotalPossible > 0 ? (grandTotalScored / grandTotalPossible) * 100 : 0;
   }, [subjectMeans]);
 
 
