@@ -961,6 +961,7 @@ export const getSummativeTests = async (req: AuthRequest, res: Response) => {
           st.id,
           st.title,
           st."learningArea",
+          st."testType"::text AS "testType",
           st.term,
           st."academicYear",
           st."testDate",
@@ -1538,13 +1539,32 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
   try {
     const { grade, stream, academicYear, term, testType } = req.query;
 
+    console.log('━━━ 📊 [ASSESSMENT] getBulkSummativeResults STARTED', {
+      grade, stream, academicYear, term, testType,
+      timestamp: new Date().toISOString()
+    });
+
     if (!grade || !academicYear || !term) {
       return res.status(400).json({ success: false, message: 'Missing required filters: grade, academicYear, term' });
     }
 
+    console.log('[getBulkSummativeResults] Filters:', { grade, stream, academicYear, term, testType });
+
     const normalizedTerm = String(term || '')
       .toUpperCase()
       .replace(/\s+/g, '_');
+
+    // Normalize testType: UI sends OPENER/MIDTERM/END_TERM but schema defines MID_TERM/END_TERM.
+    // Build a set of accepted values for the IN filter — ONLY include valid Prisma enum values.
+    const normalizeTestType = (raw: string): string[] => {
+      const v = raw.toUpperCase().replace(/[\s-]+/g, '_');
+      // Only return values that exist in the Prisma enum definition
+      if (v === 'MID_TERM' || v === 'MIDTERM')  return ['MID_TERM']; // DB may have MIDTERM, fallback query handles it
+      if (v === 'END_OF_TERM' || v === 'END_TERM') return ['END_TERM'];
+      if (v === 'OPENER' || v === 'CAT' || v === 'ASSESSMENT' || v === 'OTHER') return [v];
+      return [v]; // Unknown type — let query handle it, fallback will catch errors
+    };
+    const testTypeFilter = testType ? normalizeTestType(String(testType)) : null;
 
     const whereClause: any = {
       learner: {
@@ -1556,9 +1576,11 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
         academicYear: parseInt(academicYear as string),
         term: normalizedTerm,
         archived: false,
-        ...(testType ? { testType: String(testType) } : {})
+        ...(testTypeFilter ? { testType: { in: testTypeFilter } } : {})
       }
     };
+
+    console.log('📋 [ASSESSMENT] Prisma whereClause:', JSON.stringify(whereClause, null, 2));
 
     let results: any[] = [];
     try {
@@ -1606,7 +1628,18 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
       ];
 
       if (stream) conditions.push(Prisma.sql`l.stream = ${String(stream)}`);
-      if (testType) conditions.push(Prisma.sql`st."testType"::text = ${String(testType)}`);
+      if (testTypeFilter) {
+        // Map the normalized filter back to what might actually be in the database
+        const dbVariants: string[] = [];
+        if (testTypeFilter.includes('MID_TERM')) {
+          dbVariants.push('MID_TERM', 'MIDTERM');
+        } else if (testTypeFilter.includes('END_TERM')) {
+          dbVariants.push('END_TERM', 'END_OF_TERM');
+        } else {
+          dbVariants.push(...testTypeFilter);
+        }
+        conditions.push(Prisma.sql`st."testType"::text = ANY(${dbVariants})`);
+      }
 
       const rawRows = await prisma.$queryRaw<Array<any>>(Prisma.sql`
         SELECT
@@ -1668,6 +1701,19 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
         }
       }));
     }
+
+    console.log('📦 [ASSESSMENT] Results fetched:', {
+      resultsCount: results.length,
+      filters: { grade, stream, academicYear, term, testType },
+      uniqueLearnerStreams: Array.from(new Set(results.map(r => r.learner?.stream))),
+      uniqueTestTypes: Array.from(new Set(results.map(r => r.test?.testType))),
+      firstResult: results[0] ? {
+        learnerId: results[0].learnerId,
+        learnerStream: results[0].learner?.stream,
+        testArea: results[0].test?.learningArea,
+        marks: results[0].marksObtained
+      } : 'NO RESULTS'
+    });
 
     const learnerIds = Array.from(new Set(results.map(r => r.learnerId)));
 

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 
 /**
  * A highly performant Virtualized Table component
@@ -18,6 +18,11 @@ const VirtualizedTable = ({
 }) => {
     const containerRef = useRef(null);
     const [scrollTop, setScrollTop] = useState(0);
+
+    // Log data changes
+    useEffect(() => {
+        console.log('✅ [VirtualizedTable] Data updated:', { dataLength: data.length, firstItem: data[0] });
+    }, [data]);
 
     // Use passive scroll listener for better performance
     const onScroll = useCallback((e) => {

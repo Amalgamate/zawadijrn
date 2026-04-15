@@ -88,7 +88,6 @@ const FeeWaiverModal = ({ invoice, isOpen, onClose, onSuccess }) => {
         reason: '',
         waiverCategory: 'OTHER'
       });
-      setActiveTab('history');
 
       await fetchWaivers();
       if (onSuccess) onSuccess();

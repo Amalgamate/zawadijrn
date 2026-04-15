@@ -4,7 +4,7 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import api from '../../../services/api';
+import { attendanceAPI } from '../../../services/api';
 import { useSchoolData } from '../../../contexts/SchoolDataContext';
 import { useAuth } from '../../../hooks/useAuth';
 import toast from 'react-hot-toast';
@@ -59,7 +59,7 @@ export const useAttendance = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.attendance.getRecords(params);
+      const response = await attendanceAPI.getRecords(params);
       if (response.success) {
         setAttendanceRecords(response.data);
         return response.data;
@@ -86,7 +86,7 @@ export const useAttendance = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.attendance.mark({
+      const response = await attendanceAPI.mark({
         ...attendanceData,
         date: attendanceData.date || selectedDate,
       });
@@ -131,7 +131,7 @@ export const useAttendance = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.attendance.markBulk({
+      const response = await attendanceAPI.markBulk({
         date: date || selectedDate,
         classId,
         attendanceRecords: attendanceRecordsList,
@@ -164,7 +164,7 @@ export const useAttendance = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.attendance.getDailyClassReport(
+      const response = await attendanceAPI.getDailyClassReport(
         classId,
         date || selectedDate
       );
@@ -189,7 +189,7 @@ export const useAttendance = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.attendance.getStats(params);
+      const response = await attendanceAPI.getStats(params);
 
       if (response.success) {
         return response.data;
@@ -212,7 +212,7 @@ export const useAttendance = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.attendance.getLearnerSummary(learnerId, params);
+      const response = await attendanceAPI.getLearnerSummary(learnerId, params);
 
       if (response.success) {
         return response.data;

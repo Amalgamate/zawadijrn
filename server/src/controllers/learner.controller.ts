@@ -24,6 +24,8 @@ export class LearnerController {
     const { grade, stream, status, search, page = 1, limit = 50 } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
 
+    console.log('📚 [LEARNER] getAllLearners called with filters:', { grade, stream, status, search, page, limit });
+
     let whereClause: any = { archived: false, institutionType };
     if (currentUserRole === 'PARENT') whereClause.parentId = currentUserId;
     if (grade) whereClause.grade = String(grade);
@@ -61,6 +63,15 @@ export class LearnerController {
         }),
         prisma.learner.count({ where: whereClause }),
       ]);
+
+      console.log('📚 [LEARNER] Query results:', { 
+        learnersCount: learners.length, 
+        total, 
+        whereClause,
+        uniqueStreams: Array.from(new Set(learners.map(l => l.stream))),
+        sampleLearners: learners.slice(0, 3).map(l => ({ id: l.id, name: `${l.firstName} ${l.lastName}`, stream: l.stream }))
+      });
+
       res.json({ success: true, data: learners, pagination: { total, page: Number(page), limit: Number(limit), pages: Math.ceil(total / Number(limit)) } });
     } catch (error: any) {
       throw new ApiError(500, 'Server error fetching learners: ' + error.message);

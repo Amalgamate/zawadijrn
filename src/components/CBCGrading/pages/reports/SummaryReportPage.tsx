@@ -103,11 +103,15 @@ const SummaryReportPage = () => {
   const [stagedYear, setStagedYear] = useState(getCurrentAcademicYear());
   const [stagedTestType, setStagedTestType] = useState('all');
 
+
+
   // Data States
   const [loading, setLoading] = useState(false);
   const [matrixData, setMatrixData] = useState(null);
   const [noStudentsFound, setNoStudentsFound] = useState(false);
   const [availableStreams, setAvailableStreams] = useState([]);
+
+
   const [availableTestTypes, setAvailableTestTypes] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -145,11 +149,17 @@ const SummaryReportPage = () => {
           academicYear: stagedYear
         });
         const tests = resp?.data || [];
-        // Extract unique testTypes
-        const types = [...new Set(tests.map(t => t.testType).filter(Boolean))].sort();
+        // Extract unique testTypes — normalize to uppercase for dedup
+        const types = [...new Set(tests.map((t: any) => t.testType).filter(Boolean))].sort() as string[];
         setAvailableTestTypes(types);
-        // Reset selection if current type no longer available
-        setStagedTestType(prev => (prev === 'all' || types.includes(prev)) ? prev : 'all');
+        // Reset selection only if the current value can't match anything in the new list
+        setStagedTestType(prev => {
+          if (prev === 'all') return prev;
+          // Accept if the exact value OR a case-insensitive normalized match exists
+          const prevNorm = prev.toUpperCase().replace(/[\s-]+/g, '_');
+          const hasMatch = types.some(t => t === prev || t.toUpperCase().replace(/[\s-]+/g, '_') === prevNorm);
+          return hasMatch ? prev : 'all';
+        });
       } catch {
         setAvailableTestTypes([]);
       }
@@ -371,13 +381,18 @@ const SummaryReportPage = () => {
 
   // Filtered Rows (Search)
   const filteredRows = useMemo(() => {
-    if (!matrixData) return [];
-    if (!searchQuery) return matrixData.rows;
+    if (!matrixData) {
+      return [];
+    }
+    if (!searchQuery) {
+      return matrixData.rows;
+    }
     const q = searchQuery.toLowerCase();
-    return matrixData.rows.filter(r => 
+    const filtered = matrixData.rows.filter(r => 
       r.name.toLowerCase().includes(q) || 
       r.admissionNumber.toLowerCase().includes(q)
     );
+    return filtered;
   }, [matrixData, searchQuery]);
 
   // Class mean per subject (excludes absent/null scores)
@@ -655,9 +670,14 @@ const SummaryReportPage = () => {
                 className="w-full h-9 px-2.5 py-1.5 border border-slate-300 rounded text-xs bg-white text-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-purple appearance-none cursor-pointer hover:border-slate-400 transition-colors"
               >
                 <option value="all">All Exams</option>
-                {Array.from(new Set(['OPENER', 'MID_TERM', 'END_OF_TERM', ...availableTestTypes])).map(t => (
-                  <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>
-                ))}
+                {availableTestTypes.length > 0
+                  ? availableTestTypes.map(t => (
+                    <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>
+                  ))
+                  : ['OPENER', 'MIDTERM', 'END_TERM'].map(t => (
+                    <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>
+                  ))
+                }
               </select>
             </div>
 
