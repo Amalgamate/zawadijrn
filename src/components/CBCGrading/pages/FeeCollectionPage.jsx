@@ -587,7 +587,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
         >
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-indigo-200 mb-1">Total Bills Issued</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-indigo-200 mb-1">Expected Income</p>
               <p className="text-2xl font-bold">{stats.totalBilled}</p>
               <p className="text-lg font-semibold text-indigo-300 mt-1">{stats.totalCount} Students</p>
             </div>
