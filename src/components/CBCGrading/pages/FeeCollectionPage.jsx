@@ -566,6 +566,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
       paidAmt:       fmt(src.filter(i => i.status === 'PAID').reduce((s, i) => s + Number(i.paidAmount || 0), 0)),
       overpaidCount: src.filter(i => i.status === 'OVERPAID').length,
       overpaidAmt:   fmt(src.filter(i => i.status === 'OVERPAID').reduce((s, i) => s + Math.abs(Number(i.balance || 0)), 0)),
+      actualCollected: fmt(src.reduce((s, i) => s + Number(i.paidAmount || 0), 0))
     };
   }, [statsInvoices]);
 
@@ -683,6 +684,24 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
           <div className="absolute -bottom-6 -right-6 w-28 h-28 bg-white/5 rounded-full" />
         </div>
 
+      </div>
+
+      {/* Financial Reconciliation Bar */}
+      <div className="bg-emerald-50 border border-emerald-100 rounded-xl px-6 py-3 flex items-center justify-between shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-emerald-100 rounded-lg">
+            <ThumbsUp size={18} className="text-emerald-700" />
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest leading-tight">Total Collection Check</p>
+            <p className="text-sm font-medium text-emerald-800">
+               Actual Money in Hand: <span className="font-black underline decoration-emerald-300 underline-offset-4">{stats.actualCollected}</span>
+            </p>
+          </div>
+        </div>
+        <div className="hidden md:block text-[10px] font-bold text-emerald-500 uppercase italic">
+          * Sum of all payments received from all students
+        </div>
       </div>
 
 
