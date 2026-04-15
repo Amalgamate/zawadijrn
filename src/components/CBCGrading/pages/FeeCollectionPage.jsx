@@ -587,7 +587,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
         >
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-indigo-200 mb-1">Total Invoices</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-indigo-200 mb-1">Total Bills Issued</p>
               <p className="text-2xl font-bold">{stats.totalBilled}</p>
               <p className="text-lg font-semibold text-indigo-300 mt-1">{stats.totalCount} Students</p>
             </div>
@@ -608,7 +608,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
         >
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-red-100 mb-1">Pending Balance</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-red-100 mb-1">Not Paid Anything</p>
               <p className="text-2xl font-bold">{stats.pendingAmt}</p>
               <p className="text-lg font-semibold text-red-200 mt-1">{stats.pendingCount} Students</p>
             </div>
@@ -629,7 +629,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
         >
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-orange-100 mb-1">Partial Pmt Balance</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-orange-100 mb-1">Paid Part but Owe</p>
               <p className="text-2xl font-bold">{stats.partialAmt}</p>
               <p className="text-lg font-semibold text-orange-200 mt-1">{stats.partialCount} Students</p>
             </div>
@@ -650,7 +650,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
         >
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-emerald-100 mb-1">Total Collected</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-emerald-100 mb-1">Completely Cleared</p>
               <p className="text-2xl font-bold">{stats.paidAmt}</p>
               <p className="text-lg font-semibold text-emerald-200 mt-1">{stats.paidCount} Students</p>
             </div>
@@ -671,7 +671,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
         >
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-purple-100 mb-1">Credit Balance</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-purple-100 mb-1">Paid More (Overpaid)</p>
               <p className="text-2xl font-bold">{stats.overpaidAmt}</p>
               <p className="text-lg font-semibold text-purple-200 mt-1">{stats.overpaidCount} Students</p>
             </div>
