@@ -588,8 +588,8 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-widest text-indigo-200 mb-1">Total Invoices</p>
-              <p className="text-4xl font-bold">{stats.totalCount}</p>
-              <p className="text-lg font-semibold text-indigo-300 mt-1.5">{stats.totalBilled} billed</p>
+              <p className="text-2xl font-bold">{stats.totalBilled}</p>
+              <p className="text-lg font-semibold text-indigo-300 mt-1">{stats.totalCount} Students</p>
             </div>
             <div className="p-2.5 bg-white/15 rounded-xl">
               <FileText size={22} className="text-white" />
@@ -608,9 +608,9 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
         >
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-red-100 mb-1">Pending</p>
-              <p className="text-4xl font-bold">{stats.pendingCount}</p>
-              <p className="text-lg font-semibold text-red-200 mt-1.5">{stats.pendingAmt} outstanding</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-red-100 mb-1">Pending Balance</p>
+              <p className="text-2xl font-bold">{stats.pendingAmt}</p>
+              <p className="text-lg font-semibold text-red-200 mt-1">{stats.pendingCount} Students</p>
             </div>
             <div className="p-2.5 bg-white/15 rounded-xl">
               <Clock size={22} className="text-white" />
@@ -629,9 +629,9 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
         >
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-orange-100 mb-1">Partial Payments</p>
-              <p className="text-4xl font-bold">{stats.partialCount}</p>
-              <p className="text-lg font-semibold text-orange-200 mt-1.5">{stats.partialAmt} balance due</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-orange-100 mb-1">Partial Pmt Balance</p>
+              <p className="text-2xl font-bold">{stats.partialAmt}</p>
+              <p className="text-lg font-semibold text-orange-200 mt-1">{stats.partialCount} Students</p>
             </div>
             <div className="p-2.5 bg-white/15 rounded-xl">
               <AlertCircle size={22} className="text-white" />
@@ -650,9 +650,9 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
         >
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-emerald-100 mb-1">Fully Paid</p>
-              <p className="text-4xl font-bold">{stats.paidCount}</p>
-              <p className="text-lg font-semibold text-emerald-200 mt-1.5">{stats.paidAmt} collected</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-emerald-100 mb-1">Total Collected</p>
+              <p className="text-2xl font-bold">{stats.paidAmt}</p>
+              <p className="text-lg font-semibold text-emerald-200 mt-1">{stats.paidCount} Students</p>
             </div>
             <div className="p-2.5 bg-white/15 rounded-xl">
               <CheckCircle size={22} className="text-white" />
@@ -671,9 +671,9 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
         >
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-purple-100 mb-1">Overpaid</p>
-              <p className="text-4xl font-bold">{stats.overpaidCount}</p>
-              <p className="text-lg font-semibold text-purple-200 mt-1.5">{stats.overpaidAmt} credit</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-purple-100 mb-1">Credit Balance</p>
+              <p className="text-2xl font-bold">{stats.overpaidAmt}</p>
+              <p className="text-lg font-semibold text-purple-200 mt-1">{stats.overpaidCount} Students</p>
             </div>
             <div className="p-2.5 bg-white/15 rounded-xl">
               <ShieldCheck size={22} className="text-white" />
