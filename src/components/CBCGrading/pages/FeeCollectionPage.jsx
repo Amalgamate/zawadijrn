@@ -23,6 +23,8 @@ import { toInputDate } from '../utils/dateHelpers';
 import SmartLearnerSearch from '../shared/SmartLearnerSearch';
 import FeeImportModal from '../shared/FeeImportModal';
 import FeeWaiverModal from '../shared/FeeWaiverModal';
+import FeeNoteModal from '../shared/FeeNoteModal';
+import FeePledgeModal from '../shared/FeePledgeModal';
 import { useFeeActions } from '../../../contexts/FeeActionsContext';
 import usePageNavigation from '../../../hooks/usePageNavigation';
 import { downloadFeeTemplate } from '../../../utils/feeTemplateGenerator';
@@ -34,6 +36,8 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showWaiverModal, setShowWaiverModal] = useState(false);
+  const [showNoteModal, setShowNoteModal] = useState(false);
+  const [showPledgeModal, setShowPledgeModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetScope, setResetScope] = useState({ academicYear: new Date().getFullYear(), term: 'TERM_1' });
   const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' });
@@ -1354,13 +1358,6 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                   {visibleColumns.actions && (
                   <td className="px-2 py-1" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end">
-                      <button
-                        onClick={() => navigateTo('fees-invoice-detail', { invoice })}
-                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
-                        title="View Details"
-                      >
-                        <Eye size={14} />
-                      </button>
                       {invoice.status !== 'PAID' && invoice.status !== 'WAIVED' && (
                         <button
                           onClick={() => navigateTo('fees-record-payment', { invoice })}
@@ -1368,6 +1365,32 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                           title="Record Payment"
                         >
                           <Plus size={14} />
+                        </button>
+                      )}
+
+                      {/* Add Note Button */}
+                      <button
+                        onClick={() => {
+                          setSelectedInvoice(invoice);
+                          setShowNoteModal(true);
+                        }}
+                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
+                        title="Add Collection Note"
+                      >
+                        <MessageSquare size={14} />
+                      </button>
+
+                      {/* Record Pledge Button */}
+                      {invoice.status !== 'PAID' && (
+                        <button
+                          onClick={() => {
+                            setSelectedInvoice(invoice);
+                            setShowPledgeModal(true);
+                          }}
+                          className="p-1.5 text-amber-600 hover:bg-amber-50 rounded"
+                          title="Record Payment Pledge"
+                        >
+                          <Clock size={14} />
                         </button>
                       )}
 
@@ -1395,25 +1418,6 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                           <ThumbsUp size={14} />
                         </button>
                       )}
-
-                      <button
-                        onClick={() => handleDownloadPdf(invoice)}
-                        disabled={downloadingId === invoice.id}
-                        className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded disabled:opacity-50"
-                        title="Normal Printer (A4 PDF)"
-                      >
-                        {downloadingId === invoice.id
-                          ? <Loader2 size={14} className="animate-spin" />
-                          : <FileText size={14} />}
-                      </button>
-
-                      <button
-                        onClick={() => handlePrintThermal(invoice)}
-                        className="p-1.5 text-amber-600 hover:bg-amber-50 rounded"
-                        title="Thermal Printer (80mm POS)"
-                      >
-                        <Download size={14} className="rotate-180" />
-                      </button>
                     </div>
                   </td>
                   )}
@@ -1647,19 +1651,46 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
         }}
       />
 
-      {/* Fee Waiver Modal */}
+      {/* Fee Action Modals */}
       {selectedInvoice && (
-        <FeeWaiverModal 
-          invoice={selectedInvoice}
-          isOpen={showWaiverModal} 
-          onClose={() => {
-            setShowWaiverModal(false);
-            setSelectedInvoice(null);
-          }}
-          onSuccess={() => {
-            fetchInvoices();
-          }}
-        />
+        <>
+          <FeeWaiverModal 
+            invoice={selectedInvoice}
+            isOpen={showWaiverModal} 
+            onClose={() => {
+              setShowWaiverModal(false);
+              setSelectedInvoice(null);
+            }}
+            onSuccess={() => {
+              fetchInvoices();
+              fetchStatsInvoices();
+            }}
+          />
+          <FeeNoteModal
+            invoice={selectedInvoice}
+            isOpen={showNoteModal}
+            onClose={() => {
+              setShowNoteModal(false);
+              setSelectedInvoice(null);
+            }}
+            onSuccess={(msg) => {
+              showSuccess(msg);
+              fetchInvoices();
+            }}
+          />
+          <FeePledgeModal
+            invoice={selectedInvoice}
+            isOpen={showPledgeModal}
+            onClose={() => {
+              setShowPledgeModal(false);
+              setSelectedInvoice(null);
+            }}
+            onSuccess={(msg) => {
+              showSuccess(msg);
+              fetchInvoices();
+            }}
+          />
+        </>
       )}
 
 
