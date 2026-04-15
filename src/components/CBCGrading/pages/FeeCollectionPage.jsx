@@ -1033,13 +1033,13 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
             onClick={() => { setTransportFilter('transport'); setCurrentPage(1); }}
             className={`px-3 py-1 text-xs font-semibold rounded-full border transition-colors ${transportFilter === 'transport' ? 'bg-violet-600 text-white border-violet-600' : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700'}`}
           >
-            ≡ƒÜî Transport
+            🚌 Transport
           </button>
           <button
             onClick={() => { setTransportFilter('regular'); setCurrentPage(1); }}
             className={`px-3 py-1 text-xs font-semibold rounded-full border transition-colors ${transportFilter === 'regular' ? 'bg-cyan-600 text-white border-cyan-600' : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-700'}`}
           >
-            ≡ƒôÜ Regular
+            📖 Regular
           </button>
 
           <span className="w-px h-4 bg-gray-200 mx-1 shrink-0" />
@@ -1054,7 +1054,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
             }}
             className="px-3 py-1 text-xs font-semibold rounded-full border border-gray-200 bg-gray-50 text-gray-600 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
           >
-            ≡ƒôà Today
+            📅 Today
           </button>
           <button
             onClick={() => {
@@ -1066,7 +1066,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
             }}
             className="px-3 py-1 text-xs font-semibold rounded-full border border-gray-200 bg-gray-50 text-gray-600 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
           >
-            ≡ƒôà This Month
+            📅 This Month
           </button>
 
           {activeFilterCount > 0 && (
