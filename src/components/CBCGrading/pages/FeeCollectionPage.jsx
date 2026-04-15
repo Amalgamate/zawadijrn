@@ -8,7 +8,7 @@ import {
   Plus, Eye, CheckCircle, AlertCircle, Clock, FileText, Download,
   X, Loader2, MessageSquare, Phone, Info, User, ShieldCheck, Mail, Upload,
   RefreshCw, Trash2, Gift, ThumbsUp, ArrowUpDown, ArrowUp, ArrowDown,
-  Filter, Search
+  Filter, Search, DollarSign
 } from 'lucide-react';
 import { generateDocument } from '../../../utils/simplePdfGenerator';
 import EmptyState from '../shared/EmptyState';
@@ -1364,7 +1364,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                           className="p-1.5 text-green-600 hover:bg-green-50 rounded"
                           title="Record Payment"
                         >
-                          <Plus size={14} />
+                          <DollarSign size={14} />
                         </button>
                       )}
 
