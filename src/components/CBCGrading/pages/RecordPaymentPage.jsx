@@ -17,13 +17,13 @@ import InvoiceA5 from '../shared/InvoiceA5';
 import ThermalReceipt from '../shared/ThermalReceipt';
 import api from '../../../services/api';
 
-const RecordPaymentPage = ({ invoice }) => {
+const RecordPaymentPage = ({ invoice, initialMode }) => {
   const navigateTo = usePageNavigation();
   const { showSuccess, showError, showToast, toastMessage, toastType, hideNotification } = useNotifications();
   const [loading, setLoading] = useState(false);
   const [paymentData, setPaymentData] = useState({
     amount: invoice?.balance ?? '',
-    paymentMethod: 'CASH',
+    paymentMethod: initialMode || 'CASH',
     referenceNumber: '',
     notes: ''
   });

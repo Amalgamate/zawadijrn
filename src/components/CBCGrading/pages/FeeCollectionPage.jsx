@@ -68,6 +68,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
     waived: true,
     balance: true,
     status: true,
+    paymentMode: true,
     actions: true
   });
   const [showColumnFilter, setShowColumnFilter] = useState(false);
@@ -980,7 +981,9 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                       onChange={() => setVisibleColumns(prev => ({...prev, [colKey]: !prev[colKey]}))}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
                     />
-                    <span className="capitalize text-gray-700 font-medium group-hover:text-blue-700">{colKey.replace(/([A-Z])/g, ' $1').trim()}</span>
+                    <span className="capitalize text-gray-700 font-medium group-hover:text-blue-700">
+                      {colKey === 'paymentMode' ? 'Mode / Quick Pay' : colKey.replace(/([A-Z])/g, ' $1').trim()}
+                    </span>
                   </label>
                 ))}
               </div>
@@ -1210,6 +1213,9 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                 {visibleColumns.status && (
                 <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Status</th>
                 )}
+                {visibleColumns.paymentMode && (
+                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Mode / Quick Pay</th>
+                )}
                 {visibleColumns.actions && (
                 <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase">Actions</th>
                 )}
@@ -1301,6 +1307,37 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                   {visibleColumns.status && (
                   <td className="px-3 py-1.5 border-r border-gray-100 whitespace-nowrap">
                     <div className="scale-90 origin-left">{getStatusBadge(invoice.status)}</div>
+                  </td>
+                  )}
+                  {visibleColumns.paymentMode && (
+                  <td className="px-3 py-1.5 border-r border-gray-100 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                    {invoice.status === 'PAID' ? (
+                       <div className="flex items-center gap-1.5 text-[10px] font-bold text-gray-500 uppercase px-2 py-0.5 bg-gray-50 rounded-md border border-gray-100 w-fit">
+                         <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+                         {invoice.paymentType || 'MPESA'}
+                       </div>
+                    ) : (
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => navigateTo('fees-record-payment', { invoice, initialMode: 'MPESA' })}
+                          className={`px-2 py-0.5 text-[9px] font-black rounded transition-all border ${invoice.paymentType === 'MPESA' || !invoice.paymentType ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-white text-emerald-600 border-emerald-100 hover:bg-emerald-50'}`}
+                        >
+                          MPESA
+                        </button>
+                        <button
+                          onClick={() => navigateTo('fees-record-payment', { invoice, initialMode: 'CASH' })}
+                          className={`px-2 py-0.5 text-[9px] font-black rounded transition-all border ${invoice.paymentType === 'CASH' ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-blue-600 border-blue-100 hover:bg-blue-50'}`}
+                        >
+                          CASH
+                        </button>
+                        <button
+                          onClick={() => navigateTo('fees-record-payment', { invoice, initialMode: 'BANK_TRANSFER' })}
+                          className="px-2 py-0.5 text-[9px] font-black rounded border border-gray-100 text-gray-400 hover:bg-gray-50 hover:text-gray-700 transition-all"
+                        >
+                          BANK
+                        </button>
+                      </div>
+                    )}
                   </td>
                   )}
                   {visibleColumns.actions && (

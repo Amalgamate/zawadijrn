@@ -369,7 +369,7 @@ const PageRouter = ({
           case 'fees-structure': return <FeeStructurePage />;
           case 'fees-collection': return <FeeCollectionPage learnerId={pageParams.learnerId} grade={pageParams.grade} />;
           case 'fees-invoice-detail': return <InvoiceDetailPage invoice={pageParams.invoice} />;
-          case 'fees-record-payment': return <RecordPaymentPage invoice={pageParams.invoice} />;
+          case 'fees-record-payment': return <RecordPaymentPage invoice={pageParams.invoice} initialMode={pageParams.initialMode} />;
           case 'fees-waivers': return <WaiversPage />;
           case 'fees-reports': return <FeeReportsPage />;
           case 'fees-statements': return <StudentStatementsPage />;
