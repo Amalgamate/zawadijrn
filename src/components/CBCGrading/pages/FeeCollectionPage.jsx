@@ -566,6 +566,11 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
       paidAmt:       fmt(src.filter(i => i.status === 'PAID').reduce((s, i) => s + Number(i.paidAmount || 0), 0)),
       overpaidCount: src.filter(i => i.status === 'OVERPAID').length,
       overpaidAmt:   fmt(src.filter(i => i.status === 'OVERPAID').reduce((s, i) => s + Math.abs(Number(i.balance || 0)), 0)),
+      
+      // Breakdown logic
+      actualCollectedRaw: src.reduce((s, i) => s + Number(i.paidAmount || 0), 0),
+      mpesaTotal: fmt(src.reduce((s, i) => s + (i.payments || []).filter(p => p.paymentMethod === 'MPESA').reduce((ss, p) => ss + Number(p.amount), 0), 0)),
+      cashTotal:  fmt(src.reduce((s, i) => s + (i.payments || []).filter(p => p.paymentMethod === 'CASH').reduce((ss, p) => ss + Number(p.amount), 0), 0)),
       actualCollected: fmt(src.reduce((s, i) => s + Number(i.paidAmount || 0), 0))
     };
   }, [statsInvoices]);
@@ -686,21 +691,42 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
 
       </div>
 
-      {/* Financial Reconciliation Bar */}
-      <div className="bg-emerald-50 border border-emerald-100 rounded-xl px-6 py-3 flex items-center justify-between shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-emerald-100 rounded-lg">
-            <ThumbsUp size={18} className="text-emerald-700" />
+      {/* Financial Reconciliation Strip */}
+      <div className="bg-white border border-emerald-100 rounded-xl px-6 py-4 flex flex-col md:flex-row items-center justify-between shadow-sm gap-4">
+        <div className="flex items-center gap-4">
+          <div className="p-2.5 bg-emerald-50 rounded-xl border border-emerald-100 shadow-sm">
+            <ThumbsUp size={20} className="text-emerald-600" />
           </div>
-          <div>
-            <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest leading-tight">Total Collection Check</p>
-            <p className="text-sm font-medium text-emerald-800">
-               Actual Money in Hand: <span className="font-black underline decoration-emerald-300 underline-offset-4">{stats.actualCollected}</span>
+          <div className="space-y-0.5">
+            <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest leading-tight">Total Collection Source of Truth</p>
+            <p className="text-lg font-bold text-gray-900 leading-none">
+               Money in Hand: <span className="text-emerald-700 underline decoration-2 decoration-emerald-200 underline-offset-4">{stats.actualCollected}</span>
             </p>
           </div>
         </div>
-        <div className="hidden md:block text-[10px] font-bold text-emerald-500 uppercase italic">
-          * Sum of all payments received from all students
+
+        <div className="flex items-center gap-6 md:border-l md:pl-8 border-gray-100">
+          <div className="flex flex-col items-end">
+            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Mpesa Collected</span>
+            <span className="text-sm font-black text-emerald-600 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              {stats.mpesaTotal}
+            </span>
+          </div>
+          
+          <div className="w-px h-8 bg-gray-100" />
+
+          <div className="flex flex-col items-end">
+            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Cash Handled</span>
+            <span className="text-sm font-black text-blue-600 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-blue-500" />
+              {stats.cashTotal}
+            </span>
+          </div>
+        </div>
+
+        <div className="hidden lg:block text-[9px] font-medium text-gray-400 max-w-[150px] text-right leading-snug">
+          * Reconciliation based on all verified payment methods on record
         </div>
       </div>
 
