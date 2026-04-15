@@ -138,7 +138,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, termFilter, startDate, endDate, transportFilter, gradeFilter, searchLearnerId, currentPage, sortConfig, showError]);
+  }, [statusFilter, termFilter, startDate, endDate, transportFilter, gradeFilter, searchLearnerId, currentPage, sortConfig, showError, minBalance, maxBalance]);
 
   // Separate fetch ΓÇö no filters ΓÇö solely powers the metric cards
   const fetchStatsInvoices = React.useCallback(async () => {
@@ -869,56 +869,60 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                     </div>
 
                     {/* Balance Range Filter */}
-                    <div className="mt-4">
-                      <label className="text-xs font-semibold text-gray-600 flex items-center gap-1.5 mb-2">
-                        Balance Range
-                        <span className="text-[9px] font-normal text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">KES</span>
+                    <div className="mt-4 p-3 bg-white border border-gray-100 rounded-xl shadow-inner-sm">
+                      <div className="flex items-center justify-between mb-3">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
+                          Balance Range
+                          <span className="text-[10px] font-bold text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded">KES</span>
+                        </label>
                         {(minBalance || maxBalance) && (
-                          <button onClick={() => { setMinBalance(''); setMaxBalance(''); }} className="ml-auto text-[10px] text-red-500 hover:text-red-700 font-bold">
-                            Reset
+                          <button onClick={() => { setMinBalance(''); setMaxBalance(''); }} className="text-[10px] text-red-500 hover:text-red-700 font-black hover:underline">
+                            RESET ALL
                           </button>
                         )}
-                      </label>
-                      <div className="flex gap-2 items-center">
-                        <div className="flex-1 relative">
-                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400">ΓëÑ</span>
-                          <input
-                            type="number"
-                            placeholder="Min (e.g. 5000)"
-                            value={minBalance}
-                            onChange={(e) => setMinBalance(e.target.value)}
-                            min="0"
-                            className="w-full pl-6 pr-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-emerald-500 focus:border-emerald-300"
-                          />
-                        </div>
-                        <span className="text-gray-300 font-bold text-sm shrink-0">ΓÇö</span>
-                        <div className="flex-1 relative">
-                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400">Γëñ</span>
-                          <input
-                            type="number"
-                            placeholder="Max (optional)"
-                            value={maxBalance}
-                            onChange={(e) => setMaxBalance(e.target.value)}
-                            min="0"
-                            className="w-full pl-6 pr-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-emerald-500 focus:border-emerald-300"
-                          />
-                        </div>
                       </div>
-                      {/* Quick balance chips */}
-                      <div className="flex flex-wrap gap-1.5 mt-2">
-                        {[[1000, null, '>1K'], [5000, null, '>5K'], [10000, null, '>10K'], [50000, null, '>50K'], [0, 1000, 'Under 1K'], [0, 5000, 'Under 5K']].map(([min, max, label]) => (
+
+                      {/* Pills Inside the section */}
+                      <div className="flex flex-wrap gap-1.5 mb-3 pb-3 border-b border-gray-50">
+                        {[[1000, null, '>1K'], [5000, null, '>5K'], [10000, null, '>10K'], [50000, null, '>50K'], [0, 1000, '<1K'], [0, 5000, '<5K']].map(([min, max, label]) => (
                           <button
                             key={label}
-                            onClick={() => { setMinBalance(min || ''); setMaxBalance(max || ''); }}
-                            className={`px-2.5 py-1 text-[10px] font-bold rounded-full border transition-colors ${
+                            onClick={() => { setMinBalance(min || ''); setMaxBalance(max || ''); setCurrentPage(1); }}
+                            className={`px-2 py-1 text-[10px] font-black rounded-lg transition-all ${
                               String(minBalance) === String(min || '') && String(maxBalance) === String(max || '')
-                                ? 'bg-emerald-600 text-white border-emerald-600'
-                                : 'border-gray-200 text-gray-500 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700'
+                                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/20'
+                                : 'bg-gray-50 text-gray-500 hover:bg-emerald-50 hover:text-emerald-700 border border-gray-100'
                             }`}
                           >
                             {label}
                           </button>
                         ))}
+                      </div>
+
+                      <div className="flex gap-2 items-center">
+                        <div className="flex-1 relative">
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] font-black text-gray-400">≥</span>
+                          <input
+                            type="number"
+                            placeholder="Min"
+                            value={minBalance}
+                            onChange={(e) => { setMinBalance(e.target.value); setCurrentPage(1); }}
+                            min="0"
+                            className="w-full pl-6 pr-2 py-2 bg-gray-50/50 border border-gray-200 rounded-lg text-sm outline-emerald-500 transition-all focus:bg-white"
+                          />
+                        </div>
+                        <span className="text-gray-300 font-bold text-sm shrink-0">to</span>
+                        <div className="flex-1 relative">
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] font-black text-gray-400">≤</span>
+                          <input
+                            type="number"
+                            placeholder="Max"
+                            value={maxBalance}
+                            onChange={(e) => { setMaxBalance(e.target.value); setCurrentPage(1); }}
+                            min="0"
+                            className="w-full pl-6 pr-2 py-2 bg-gray-50/50 border border-gray-200 rounded-lg text-sm outline-emerald-500 transition-all focus:bg-white"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
