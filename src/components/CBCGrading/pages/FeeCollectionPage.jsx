@@ -568,10 +568,18 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
       overpaidCount: src.filter(i => i.status === 'OVERPAID').length,
       overpaidAmt:   fmt(src.filter(i => i.status === 'OVERPAID').reduce((s, i) => s + Math.abs(Number(i.balance || 0)), 0)),
       
-      // Breakdown logic
+      // Breakdown logic ΓÇö refined to handle both detailed logs and summary fields
       actualCollectedRaw: src.reduce((s, i) => s + Number(i.paidAmount || 0), 0),
-      mpesaTotal: fmt(src.reduce((s, i) => s + (i.payments || []).filter(p => p.paymentMethod === 'MPESA').reduce((ss, p) => ss + Number(p.amount), 0), 0)),
-      cashTotal:  fmt(src.reduce((s, i) => s + (i.payments || []).filter(p => p.paymentMethod === 'CASH').reduce((ss, p) => ss + Number(p.amount), 0), 0)),
+      mpesaTotal: fmt(src.reduce((s, i) => {
+        const detail = (i.payments || []).filter(p => p.paymentMethod === 'MPESA').reduce((ss, p) => ss + Number(p.amount), 0);
+        if (detail > 0) return s + detail;
+        return (i.paymentType === 'MPESA' || (!i.paymentType && i.paidAmount > 0)) ? s + Number(i.paidAmount || 0) : s;
+      }, 0)),
+      cashTotal: fmt(src.reduce((s, i) => {
+        const detail = (i.payments || []).filter(p => p.paymentMethod === 'CASH').reduce((ss, p) => ss + Number(p.amount), 0);
+        if (detail > 0) return s + detail;
+        return i.paymentType === 'CASH' ? s + Number(i.paidAmount || 0) : s;
+      }, 0)),
       actualCollected: fmt(src.reduce((s, i) => s + Number(i.paidAmount || 0), 0))
     };
   }, [statsInvoices]);
@@ -1311,10 +1319,13 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                   )}
                   {visibleColumns.paymentMode && (
                   <td className="px-3 py-1.5 border-r border-gray-100 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                    {invoice.status === 'PAID' ? (
-                       <div className="flex items-center gap-1.5 text-[10px] font-bold text-gray-500 uppercase px-2 py-0.5 bg-gray-50 rounded-md border border-gray-100 w-fit">
-                         <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+                    {Number(invoice.paidAmount) > 0 ? (
+                       <div className={`flex items-center gap-1.5 text-[9px] font-black uppercase px-2 py-1 rounded-md border w-fit shadow-inner-sm ${
+                         (invoice.paymentType === 'MPESA' || !invoice.paymentType) ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-blue-50 text-blue-700 border-blue-100'
+                       }`}>
+                         <span className={`w-1.5 h-1.5 rounded-full ${ (invoice.paymentType === 'MPESA' || !invoice.paymentType) ? 'bg-emerald-500 animate-pulse' : 'bg-blue-500'}`} />
                          {invoice.paymentType || 'MPESA'}
+                         {invoice.status !== 'PAID' && <span className="ml-1 text-[8px] opacity-60">(Partial)</span>}
                        </div>
                     ) : (
                       <div className="flex items-center gap-1">
