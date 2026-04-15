@@ -58,10 +58,10 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
   
   // Column Visibility State
   const [visibleColumns, setVisibleColumns] = useState({
-    invoiceNumber: true,
+    invoiceNumber: false,
     student: true,
     grade: true,
-    feeType: true,
+    feeType: false,
     dateIssue: true,
     billed: true,
     paid: true,
