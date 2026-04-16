@@ -605,7 +605,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
       paidCount:     src.filter(i => i.status === 'PAID').length,
       paidAmt:       fmt(src.filter(i => i.status === 'PAID').reduce((s, i) => s + Number(i.paidAmount || 0), 0)),
       overpaidCount: src.filter(i => i.status === 'OVERPAID').length,
-      overpaidAmt:   fmt(src.filter(i => i.status === 'OVERPAID').reduce((s, i) => s + Number(i.paidAmount || 0), 0)),
+      overpaidAmt:   fmt(src.filter(i => i.status === 'OVERPAID').reduce((s, i) => s + Math.abs(Number(i.balance || 0)), 0)),
       
       waivedTotal: fmt(waivedTotalRaw),
       waivedTotalRaw,
@@ -622,12 +622,14 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
       mpesaTotal: fmt(src.reduce((s, i) => {
         const detail = (i.payments || []).filter(p => p.paymentMethod === 'MPESA').reduce((ss, p) => ss + Number(p.amount), 0);
         if (detail > 0) return s + detail;
-        return (i.paymentType === 'MPESA' || (!i.paymentType && i.paidAmount > 0)) ? s + Number(i.paidAmount || 0) : s;
+        const recentMode = (i.payments && i.payments.length > 0) ? i.payments[0].paymentMethod : 'MPESA';
+        return recentMode === 'MPESA' ? s + Number(i.paidAmount || 0) : s;
       }, 0)),
       cashTotal: fmt(src.reduce((s, i) => {
         const detail = (i.payments || []).filter(p => p.paymentMethod === 'CASH').reduce((ss, p) => ss + Number(p.amount), 0);
         if (detail > 0) return s + detail;
-        return i.paymentType === 'CASH' ? s + Number(i.paidAmount || 0) : s;
+        const recentMode = (i.payments && i.payments.length > 0) ? i.payments[0].paymentMethod : 'MPESA';
+        return recentMode === 'CASH' ? s + Number(i.paidAmount || 0) : s;
       }, 0))
     };
   }, [statsInvoices]);
@@ -754,7 +756,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
       {/* Financial Reconciliation Strip — Redesigned for Premium Look */}
       <div className="relative overflow-hidden bg-white border-[0.5px] border-gray-300 rounded-2xl p-0 shadow-sm flex flex-col lg:flex-row items-stretch gap-0">
         
-        {/* Money in Hand - Emerald */}
+        {/* Total Collections - Emerald */}
         <div className="flex-1 flex items-center gap-4 p-5 bg-emerald-50/80 border-r-[0.5px] border-emerald-200/80 hover:bg-emerald-50 transition-colors">
           <div className="p-3 bg-emerald-500 text-white rounded-xl shadow-sm">
             <Wallet size={24} />
@@ -762,7 +764,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
           <div className="space-y-1">
             <p className="text-[10px] font-black text-emerald-700 uppercase tracking-widest flex items-center gap-1.5 leading-none">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Money in Hand
+              Total Collections
             </p>
             <span className="text-2xl font-black text-gray-900 tracking-tight leading-none block">
               {stats.actualCollected.replace('KES ', '')}
@@ -782,7 +784,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
               Total Balances
             </p>
             <span className="text-2xl font-black text-gray-900 tracking-tight leading-none block">
-              {stats.totalBalance.replace('KES ', '')}
+              {Number(listTotals.totalBalance || 0).toLocaleString()}
               <span className="text-xs font-bold text-gray-500 ml-1">KES</span>
             </span>
           </div>
@@ -1343,7 +1345,9 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                   if (maxBalance !== '' && Number(inv.balance) > Number(maxBalance)) return false;
                   return true;
                 })
-                .map((invoice) => (
+                .map((invoice) => {
+                  const recentMode = (invoice.payments && invoice.payments.length > 0) ? invoice.payments[0].paymentMethod : 'MPESA';
+                  return (
                 <tr
                   key={invoice.id}
                   className={`hover:bg-blue-50/30 transition-colors cursor-pointer border-b border-gray-100 ${selectedInvoiceIds.includes(invoice.id) ? 'bg-blue-50/50' : ''}`}
@@ -1428,23 +1432,23 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                   <td className="px-3 py-1.5 border-r border-gray-100 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                     {Number(invoice.paidAmount) > 0 ? (
                        <div className={`flex items-center gap-1.5 text-[9px] font-black uppercase px-2 py-1 rounded-md border w-fit shadow-inner-sm ${
-                         (invoice.paymentType === 'MPESA' || !invoice.paymentType) ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-blue-50 text-blue-700 border-blue-100'
+                         recentMode === 'MPESA' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-blue-50 text-blue-700 border-blue-100'
                        }`}>
-                         <span className={`w-1.5 h-1.5 rounded-full ${ (invoice.paymentType === 'MPESA' || !invoice.paymentType) ? 'bg-emerald-500 animate-pulse' : 'bg-blue-500'}`} />
-                         {invoice.paymentType || 'MPESA'}
+                         <span className={`w-1.5 h-1.5 rounded-full ${ recentMode === 'MPESA' ? 'bg-emerald-500 animate-pulse' : 'bg-blue-500'}`} />
+                         {recentMode.replace('_', ' ')}
                          {invoice.status !== 'PAID' && <span className="ml-1 text-[8px] opacity-60">(Partial)</span>}
                        </div>
                     ) : (
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => navigateTo('fees-record-payment', { invoice, initialMode: 'MPESA' })}
-                          className={`px-2 py-0.5 text-[9px] font-black rounded transition-all border ${invoice.paymentType === 'MPESA' || !invoice.paymentType ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-white text-emerald-600 border-emerald-100 hover:bg-emerald-50'}`}
+                          className={`px-2 py-0.5 text-[9px] font-black rounded transition-all border ${recentMode === 'MPESA' ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-white text-emerald-600 border-emerald-100 hover:bg-emerald-50'}`}
                         >
                           MPESA
                         </button>
                         <button
                           onClick={() => navigateTo('fees-record-payment', { invoice, initialMode: 'CASH' })}
-                          className={`px-2 py-0.5 text-[9px] font-black rounded transition-all border ${invoice.paymentType === 'CASH' ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-blue-600 border-blue-100 hover:bg-blue-50'}`}
+                          className={`px-2 py-0.5 text-[9px] font-black rounded transition-all border ${recentMode === 'CASH' ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-blue-600 border-blue-100 hover:bg-blue-50'}`}
                         >
                           CASH
                         </button>
@@ -1525,7 +1529,8 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                   </td>
                   )}
                 </tr>
-              ))}
+              );
+              })}
             </tbody>
 
             {/* Table Totals Footer */}

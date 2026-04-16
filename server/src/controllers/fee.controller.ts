@@ -271,6 +271,11 @@ export class FeeController {
           waivers: {
             where: { archived: false },
             select: { id: true, status: true, amountWaived: true }
+          },
+          payments: {
+            where: { archived: false },
+            orderBy: { paymentDate: 'desc' },
+            select: { paymentMethod: true, amount: true }
           }
         },
         skip,
