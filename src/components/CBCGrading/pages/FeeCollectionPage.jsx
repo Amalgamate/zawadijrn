@@ -8,7 +8,7 @@ import {
   Plus, Eye, CheckCircle, AlertCircle, Clock, FileText, Download,
   X, Loader2, MessageSquare, Phone, Info, User, ShieldCheck, Mail, Upload,
   RefreshCw, Trash2, Gift, ThumbsUp, ArrowUpDown, ArrowUp, ArrowDown,
-  Filter, Search, DollarSign, Wallet, Banknote, Coins
+  Filter, Search, DollarSign, Wallet, Banknote, Coins, Building2
 } from 'lucide-react';
 import { generateDocument } from '../../../utils/simplePdfGenerator';
 import EmptyState from '../shared/EmptyState';
@@ -50,6 +50,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
   const [gradeFilter, setGradeFilter] = useState(gradeParam || 'all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [termFilter, setTermFilter] = useState('all');
+  const [paymentMethodFilter, setPaymentMethodFilter] = useState('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [transportFilter, setTransportFilter] = useState('all');
@@ -84,6 +85,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
     (termFilter !== 'all' ? 1 : 0) +
     (statusFilter !== 'all' ? 1 : 0) +
     (transportFilter !== 'all' ? 1 : 0) +
+    (paymentMethodFilter !== 'all' ? 1 : 0) +
     (startDate ? 1 : 0) +
     (endDate ? 1 : 0) +
     (minBalance ? 1 : 0) +
@@ -94,6 +96,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
     setTermFilter('all');
     setStatusFilter('all');
     setTransportFilter('all');
+    setPaymentMethodFilter('all');
     setStartDate('');
     setEndDate('');
     setMinBalance('');
@@ -132,6 +135,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
         ...(transportFilter !== 'all' && { isTransport: transportFilter === 'transport' ? 'true' : 'false' }),
         ...(gradeFilter !== 'all' && { grade: gradeFilter }),
         ...(searchLearnerId && { learnerId: searchLearnerId }),
+        ...(paymentMethodFilter !== 'all' && { paymentMethod: paymentMethodFilter }),
         sortBy: sortConfig.key,
         sortOrder: sortConfig.direction
       };
@@ -148,7 +152,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, termFilter, startDate, endDate, transportFilter, gradeFilter, searchLearnerId, currentPage, sortConfig, showError, minBalance, maxBalance]);
+  }, [statusFilter, termFilter, startDate, endDate, transportFilter, gradeFilter, searchLearnerId, currentPage, sortConfig, showError, minBalance, maxBalance, paymentMethodFilter]);
 
   // Separate fetch — no filters — solely powers the metric cards
   const fetchStatsInvoices = React.useCallback(async () => {
@@ -603,10 +607,10 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
       partialAmt:    fmt(src.filter(i => i.status === 'PARTIAL').reduce((s, i) => s + Number(i.paidAmount || 0), 0)),
       partialBalanceAmt: fmt(src.filter(i => i.status === 'PARTIAL').reduce((s, i) => s + Number(i.balance || 0), 0)),
       totalBalance:  fmt(src.reduce((s, i) => s + Number(i.balance || 0), 0)),
-      paidCount:     src.filter(i => i.status === 'PAID').length,
-      paidAmt:       fmt(src.filter(i => i.status === 'PAID').reduce((s, i) => s + Number(i.paidAmount || 0), 0)),
-      overpaidCount: src.filter(i => i.status === 'OVERPAID').length,
-      overpaidAmt:   fmt(src.filter(i => i.status === 'OVERPAID').reduce((s, i) => s + Math.abs(Number(i.balance || 0)), 0)),
+      paidCount:     src.filter(i => Number(i.balance) <= 0).length,
+      paidAmt:       fmt(src.filter(i => Number(i.balance) <= 0).reduce((s, i) => s + Number(i.totalAmount || 0), 0)),
+      overpaidCount: src.filter(i => Number(i.paidAmount || 0) > Number(i.totalAmount || 0)).length,
+      overpaidAmt:   fmt(src.reduce((s, i) => s + Math.max(0, Number(i.paidAmount || 0) - Number(i.totalAmount || 0)), 0)),
       
       waivedTotal: fmt(waivedTotalRaw),
       waivedTotalRaw,
@@ -631,6 +635,12 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
         if (detail > 0) return s + detail;
         const recentMode = (i.payments && i.payments.length > 0) ? i.payments[0].paymentMethod : 'MPESA';
         return recentMode === 'CASH' ? s + Number(i.paidAmount || 0) : s;
+      }, 0)),
+      bankTotal: fmt(src.reduce((s, i) => {
+        const detail = (i.payments || []).filter(p => ['BANK_TRANSFER', 'CHEQUE'].includes(p.paymentMethod)).reduce((ss, p) => ss + Number(p.amount), 0);
+        if (detail > 0) return s + detail;
+        const recentMode = (i.payments && i.payments.length > 0) ? i.payments[0].paymentMethod : 'MPESA';
+        return recentMode === 'BANK_TRANSFER' ? s + Number(i.paidAmount || 0) : s;
       }, 0))
     };
   }, [statsInvoices]);
@@ -825,39 +835,71 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
           </div>
         </div>
 
-        {/* Breakdown Section — Mpesa/Cash (Lime/Blue) */}
-        <div className="flex-[1.7] flex items-center justify-around p-5 bg-gradient-to-r from-lime-50/30 to-blue-50/30">
+        {/* Breakdown Section — Mpesa/Cash/Bank (Lime/Blue/Indigo) */}
+        <div className="flex-[2.5] flex items-center justify-around p-5 bg-gradient-to-r from-lime-50/20 via-blue-50/20 to-indigo-50/20">
           
           {/* Mpesa */}
-          <div className="flex-1 flex items-center gap-4 pr-6 border-r-[0.5px] border-lime-300/80 justify-end">
-            <div className="w-11 h-11 bg-lime-500 text-white rounded-xl shadow-sm shadow-lime-200 flex items-center justify-center font-black text-2xl">
+          <div 
+            onClick={() => setPaymentMethodFilter(prev => prev === 'MPESA' ? 'all' : 'MPESA')}
+            className={`flex-1 flex items-center gap-4 pr-4 border-r-[0.5px] border-gray-200 justify-center cursor-pointer transition-all duration-200 hover:scale-[1.02] ${
+              paymentMethodFilter === 'MPESA' ? 'bg-lime-50/50 ring-2 ring-lime-400 ring-inset rounded-l-xl' : ''
+            }`}
+          >
+            <div className={`w-11 h-11 bg-lime-500 text-white rounded-xl shadow-sm shadow-lime-200 flex items-center justify-center font-black text-2xl shrink-0 ${paymentMethodFilter === 'MPESA' ? 'ring-2 ring-white' : ''}`}>
               M
             </div>
             <div className="flex flex-col">
               <div className="flex items-center gap-1.5 mb-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-lime-500 animate-pulse" />
-                <span className="text-[10px] font-black text-lime-700 uppercase tracking-widest">Mpesa Collected</span>
+                <span className={`w-1.5 h-1.5 rounded-full bg-lime-500 ${paymentMethodFilter === 'MPESA' ? 'animate-ping' : 'animate-pulse'}`} />
+                <span className="text-[10px] font-black text-lime-700 uppercase tracking-widest">Mpesa</span>
               </div>
-              <span className="text-2xl font-black text-gray-900 tracking-tight leading-none block">
+              <span className="text-xl font-black text-gray-900 tracking-tight leading-none block">
                 {stats.mpesaTotal.replace('KES ', '')}
-                <span className="text-xs font-bold text-gray-500 ml-1">KES</span>
+                <span className="text-[10px] font-bold text-gray-500 ml-1">KES</span>
               </span>
             </div>
           </div>
           
           {/* Cash */}
-          <div className="flex-1 flex items-center gap-4 pl-6 justify-start">
-            <div className="w-11 h-11 bg-blue-500 text-white rounded-xl shadow-sm shadow-blue-200 flex items-center justify-center">
+          <div 
+            onClick={() => setPaymentMethodFilter(prev => prev === 'CASH' ? 'all' : 'CASH')}
+            className={`flex-1 flex items-center gap-4 px-4 border-r-[0.5px] border-gray-200 justify-center cursor-pointer transition-all duration-200 hover:scale-[1.02] ${
+              paymentMethodFilter === 'CASH' ? 'bg-blue-50/50 ring-2 ring-blue-400 ring-inset' : ''
+            }`}
+          >
+            <div className={`w-11 h-11 bg-blue-500 text-white rounded-xl shadow-sm shadow-blue-200 flex items-center justify-center shrink-0 ${paymentMethodFilter === 'CASH' ? 'ring-2 ring-white' : ''}`}>
               <Banknote size={24} />
             </div>
             <div className="flex flex-col">
               <div className="flex items-center gap-1.5 mb-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 border border-blue-400" />
-                <span className="text-[10px] font-black text-blue-700 uppercase tracking-widest">Cash Collected</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                <span className="text-[10px] font-black text-blue-700 uppercase tracking-widest">Cash</span>
               </div>
-              <span className="text-2xl font-black text-gray-900 tracking-tight leading-none block">
+              <span className="text-xl font-black text-gray-900 tracking-tight leading-none block">
                 {stats.cashTotal.replace('KES ', '')}
-                <span className="text-xs font-bold text-gray-500 ml-1">KES</span>
+                <span className="text-[10px] font-bold text-gray-500 ml-1">KES</span>
+              </span>
+            </div>
+          </div>
+
+          {/* Bank */}
+          <div 
+            onClick={() => setPaymentMethodFilter(prev => prev === 'BANK_TRANSFER' ? 'all' : 'BANK_TRANSFER')}
+            className={`flex-1 flex items-center gap-4 pl-4 justify-center cursor-pointer transition-all duration-200 hover:scale-[1.02] ${
+              paymentMethodFilter === 'BANK_TRANSFER' ? 'bg-indigo-50/50 ring-2 ring-indigo-400 ring-inset rounded-r-xl' : ''
+            }`}
+          >
+            <div className={`w-11 h-11 bg-indigo-600 text-white rounded-xl shadow-sm shadow-indigo-200 flex items-center justify-center shrink-0 ${paymentMethodFilter === 'BANK_TRANSFER' ? 'ring-2 ring-white' : ''}`}>
+              <Building2 size={24} />
+            </div>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                <span className="text-[10px] font-black text-indigo-700 uppercase tracking-widest">Bank/Cheque</span>
+              </div>
+              <span className="text-xl font-black text-gray-900 tracking-tight leading-none block">
+                {stats.bankTotal.replace('KES ', '')}
+                <span className="text-[10px] font-bold text-gray-500 ml-1">KES</span>
               </span>
             </div>
           </div>
@@ -1450,7 +1492,9 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                   )}
                   {visibleColumns.overpaid && (
                   <td className="px-3 py-1.5 text-xs font-bold text-purple-600 border-r border-gray-100 text-right w-24">
-                    {invoice.balance < 0 ? Math.abs(Number(invoice.balance)).toLocaleString() : '0'}
+                    {Number(invoice.paidAmount) > Number(invoice.totalAmount) 
+                      ? (Number(invoice.paidAmount) - Number(invoice.totalAmount)).toLocaleString() 
+                      : '0'}
                   </td>
                   )}
                   {visibleColumns.status && (

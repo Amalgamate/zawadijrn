@@ -203,10 +203,21 @@ export class FeeController {
   // ─── Invoices ──────────────────────────────────────────────────────────────
 
   async getAllInvoices(req: AuthRequest, res: Response) {
-    const { status, term, academicYear, grade, learnerId, startDate, endDate } = req.query;
+    const { status, term, academicYear, grade, learnerId, startDate, endDate, paymentMethod } = req.query;
     const where: any = {};
 
-    if (status) where.status = status;
+    if (paymentMethod && paymentMethod !== 'all') {
+      where.payments = {
+        some: {
+          paymentMethod: paymentMethod as string,
+          archived: false
+        }
+      };
+    }
+
+    if (status && status !== 'undefined' && status !== 'all' && status !== 'ALL') {
+      where.status = status;
+    }
     if (term) where.term = normalizeEnumValue(term as string) || term;
     if (academicYear) where.academicYear = parseInt(academicYear as string);
     if (learnerId) where.learnerId = learnerId;
@@ -312,10 +323,40 @@ export class FeeController {
         _sum: { balance: true }
       }),
       prisma.feeInvoice.aggregate({
-        where: { ...where, balance: { lt: 0 } },
-        _sum: { balance: true }
+        where: { ...where, paidAmount: { gt: prisma.feeInvoice.fields.totalAmount } },
+        _sum: { paidAmount: true, totalAmount: true },
+        _count: true
       })
-    ]);
+    ]).catch(async (err) => {
+      // If the field-to-field comparison gt fails (some prisma versions/dialects), fallback to manual sum
+      console.warn('[FeeController] gt comparison failed, falling back to all-invoice sum');
+      return [...(await Promise.all([
+        prisma.feeInvoice.count({ where }),
+        prisma.feeInvoice.aggregate({ where, _sum: { totalAmount: true, paidAmount: true, balance: true } }),
+        prisma.feeWaiver.aggregate({ where: { status: 'APPROVED', archived: false, invoice: where }, _sum: { amountWaived: true } }),
+        prisma.feeInvoice.aggregate({ where: { ...where, balance: { gt: 0 } }, _sum: { balance: true } }),
+      ])), null];
+    });
+
+    // If step 4 (creditAggregate) was null, we fetch all relevant to compute accurately
+    let overpaidSum = 0;
+    let overpaidCount = 0;
+    if (creditAggregate) {
+      overpaidSum = Number(creditAggregate._sum.paidAmount || 0) - Number(creditAggregate._sum.totalAmount || 0);
+      overpaidCount = creditAggregate._count || 0;
+    } else {
+      const allInvoicesShort = await prisma.feeInvoice.findMany({
+        where,
+        select: { totalAmount: true, paidAmount: true }
+      });
+      allInvoicesShort.forEach(inv => {
+        const surplus = Number(inv.paidAmount) - Number(inv.totalAmount);
+        if (surplus > 0) {
+          overpaidSum += surplus;
+          overpaidCount += 1;
+        }
+      });
+    }
 
     // Guard: when fetching all records limit is undefined — use total to keep pages=1
     const effectiveLimit = limit ?? total;
@@ -327,8 +368,9 @@ export class FeeController {
         totalBilled: Number(aggregate._sum.totalAmount || 0),
         totalPaid: Number(aggregate._sum.paidAmount || 0),
         totalBalance: Number(debtAggregate._sum.balance || 0),
-        totalOverpaid: Math.abs(Number(creditAggregate._sum.balance || 0)),
-        totalWaived: Number(waiverAggregate._sum.amountWaived || 0)
+        totalOverpaid: overpaidSum,
+        totalWaived: Number(waiverAggregate._sum.amountWaived || 0),
+        overpaidInvoices: overpaidCount
       },
       pagination: {
         total,
@@ -608,9 +650,21 @@ export class FeeController {
           });
 
           const balance = Number(updatedInvoice.balance);
-          const newStatus: PaymentStatus = balance <= 0
-            ? (balance < 0 ? 'OVERPAID' : 'PAID')
-            : 'PARTIAL';
+          const totalAmount = Number(updatedInvoice.totalAmount);
+          const paidAmount = Number(updatedInvoice.paidAmount);
+
+          let newStatus: PaymentStatus;
+          if (paidAmount > totalAmount) {
+            newStatus = 'OVERPAID';
+          } else if (balance <= 0) {
+            newStatus = 'PAID';
+          } else if (paidAmount > 0) {
+            newStatus = 'PARTIAL';
+          } else {
+            // Check if there are any waivers (even if balance > 0)
+            const hasWaivers = updatedInvoice.waivers && updatedInvoice.waivers.length > 0;
+            newStatus = hasWaivers ? 'PARTIAL' : 'PENDING';
+          }
 
           const finalInvoice = await tx.feeInvoice.update({
             where: { id: actualInvoiceId },

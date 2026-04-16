@@ -89,7 +89,9 @@ export class FeeWaiverController {
     const { status, invoiceId, learnerId, waiverCategory, page = '1', limit = '20' } = req.query;
     const where: any = { archived: false };
 
-    if (status)         where.status = status;
+    if (status && status !== 'undefined' && status !== 'ALL') {
+      where.status = status;
+    }
     if (invoiceId)      where.invoiceId = invoiceId;
     if (waiverCategory) where.waiverCategory = waiverCategory;
 
@@ -128,7 +130,9 @@ export class FeeWaiverController {
     const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 20));
     const skip = (pageNum - 1) * limitNum;
     const where: any = { invoice: { learnerId }, archived: false };
-    if (status) where.status = status;
+    if (status && status !== 'undefined' && status !== 'ALL') {
+      where.status = status;
+    }
 
     const [waivers, total] = await Promise.all([
       prisma.feeWaiver.findMany({

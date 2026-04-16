@@ -115,7 +115,17 @@ const WaiversPage = () => {
           {['ALL', 'PENDING', 'APPROVED', 'REJECTED'].map(status => (
             <button
               key={status}
-              onClick={() => setFilters(prev => ({ ...prev, status: status === 'ALL' ? undefined : status }))}
+              onClick={() => {
+                setFilters(prev => {
+                  const newFilters = { ...prev };
+                  if (status === 'ALL') {
+                    delete newFilters.status;
+                  } else {
+                    newFilters.status = status;
+                  }
+                  return newFilters;
+                });
+              }}
               className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
                 (status === 'ALL' && !filters.status) || filters.status === status
                   ? 'bg-[#002C60] text-white shadow-md'
