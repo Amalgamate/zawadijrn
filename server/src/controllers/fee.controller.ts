@@ -262,7 +262,7 @@ export class FeeController {
       : Math.min(200, Math.max(1, parseInt(limitParam || '50', 10)));
     const skip = limit ? (page - 1) * limit : undefined;
 
-    const [invoices, total, aggregate, waiverAggregate, debtAggregate, creditAggregate] = await Promise.all([
+    const results = await Promise.all([
       prisma.feeInvoice.findMany({
         where,
         orderBy,
@@ -326,17 +326,15 @@ export class FeeController {
         where: { ...where, paidAmount: { gt: prisma.feeInvoice.fields.totalAmount } },
         _sum: { paidAmount: true, totalAmount: true },
         _count: true
-      })
-    ]).catch(async (err) => {
-      // If the field-to-field comparison gt fails (some prisma versions/dialects), fallback to manual sum
-      console.warn('[FeeController] gt comparison failed, falling back to all-invoice sum');
-      return [...(await Promise.all([
-        prisma.feeInvoice.count({ where }),
-        prisma.feeInvoice.aggregate({ where, _sum: { totalAmount: true, paidAmount: true, balance: true } }),
-        prisma.feeWaiver.aggregate({ where: { status: 'APPROVED', archived: false, invoice: where }, _sum: { amountWaived: true } }),
-        prisma.feeInvoice.aggregate({ where: { ...where, balance: { gt: 0 } }, _sum: { balance: true } }),
-      ])), null];
-    });
+      }).catch(() => null)
+    ]);
+
+    const invoices = results[0] as any[];
+    const total = results[1] as number;
+    const aggregate = results[2] as any;
+    const waiverAggregate = results[3] as any;
+    const debtAggregate = results[4] as any;
+    const creditAggregate = results[5] as any;
 
     // If step 4 (creditAggregate) was null, we fetch all relevant to compute accurately
     let overpaidSum = 0;
@@ -365,11 +363,11 @@ export class FeeController {
       data: invoices,
       count: invoices.length,
       totals: {
-        totalBilled: Number(aggregate._sum.totalAmount || 0),
-        totalPaid: Number(aggregate._sum.paidAmount || 0),
-        totalBalance: Number(debtAggregate._sum.balance || 0),
+        totalBilled: Number(aggregate?._sum?.totalAmount || 0),
+        totalPaid: Number(aggregate?._sum?.paidAmount || 0),
+        totalBalance: Number(debtAggregate?._sum?.balance || 0),
         totalOverpaid: overpaidSum,
-        totalWaived: Number(waiverAggregate._sum.amountWaived || 0),
+        totalWaived: Number(waiverAggregate?._sum?.amountWaived || 0),
         overpaidInvoices: overpaidCount
       },
       pagination: {
@@ -646,7 +644,8 @@ export class FeeController {
 
           const updatedInvoice = await tx.feeInvoice.update({
             where: { id: actualInvoiceId },
-            data: { paidAmount: { increment: amount }, balance: { decrement: amount } }
+            data: { paidAmount: { increment: amount }, balance: { decrement: amount } },
+            include: { waivers: { where: { archived: false } } }
           });
 
           const balance = Number(updatedInvoice.balance);
