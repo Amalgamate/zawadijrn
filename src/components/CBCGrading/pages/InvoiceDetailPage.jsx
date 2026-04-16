@@ -66,6 +66,7 @@ const InvoiceDetailPage = ({ invoice }) => {
   // Activity section state
   const [comments, setComments] = useState([]);
   const [pledges, setPledges] = useState([]);
+  const [payments, setPayments] = useState(invoice?.payments || []);
   const [activityLoading, setActivityLoading] = useState(false);
   const [activityExpanded, setActivityExpanded] = useState(true);
 
@@ -95,6 +96,7 @@ const InvoiceDetailPage = ({ invoice }) => {
       const res = await api.fees.getInvoiceComments(invoice.id);
       setComments(res.data?.comments || []);
       setPledges(res.data?.pledges || []);
+      setPayments(res.data?.payments || []);
     } catch (e) {
       console.error('Failed to fetch invoice activity:', e);
     } finally {
@@ -303,12 +305,17 @@ const InvoiceDetailPage = ({ invoice }) => {
       {/* Quick stats */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: 'Total Due', value: `KES ${Number(invoice.totalAmount).toLocaleString()}`, color: 'text-gray-900' },
-          { label: 'Paid', value: `KES ${Number(invoice.paidAmount).toLocaleString()}`, color: 'text-green-600' },
-          { label: 'Waived', value: `KES ${(invoice.waivers || []).reduce((acc, w) => acc + Number(w.amountWaived), 0).toLocaleString()}`, color: 'text-teal-600' },
-          { label: 'Balance', value: `KES ${Number(invoice.balance).toLocaleString()}`, color: 'text-rose-600' },
+          { label: 'Total Due', value: `KES ${Number(invoice.totalAmount).toLocaleString()}`, color: 'text-gray-900', bg: 'bg-white' },
+          { label: 'Total Paid', value: `KES ${Number(invoice.paidAmount).toLocaleString()}`, color: 'text-green-600', bg: 'bg-white' },
+          { label: 'Waived', value: `KES ${(invoice.waivers || []).reduce((acc, w) => acc + Number(w.amountWaived), 0).toLocaleString()}`, color: 'text-teal-600', bg: 'bg-white' },
+          { 
+            label: Number(invoice.balance) < 0 ? 'Overpaid (Credit)' : 'Balance Due', 
+            value: `KES ${Math.abs(Number(invoice.balance)).toLocaleString()}`, 
+            color: Number(invoice.balance) < 0 ? 'text-purple-600' : 'text-rose-600',
+            bg: Number(invoice.balance) < 0 ? 'bg-purple-50/50 border-purple-100' : 'bg-white'
+          },
         ].map(s => (
-          <div key={s.label} className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center text-center">
+          <div key={s.label} className={`${s.bg} p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center text-center transition-all`}>
             <span className="text-[10px] font-bold text-gray-400 uppercase mb-1">{s.label}</span>
             <span className={`text-xl font-bold ${s.color}`}>{s.value}</span>
           </div>
@@ -347,6 +354,70 @@ const InvoiceDetailPage = ({ invoice }) => {
             <div className="flex justify-between border-b border-gray-100 pb-2"><span className="text-xs text-gray-400 font-bold uppercase">Structure</span><span className="text-sm font-semibold truncate max-w-[140px]">{invoice.feeStructure?.name}</span></div>
             <div className="flex justify-between border-b border-gray-100 pb-2"><span className="text-xs text-gray-400 font-bold uppercase">Issued On</span><span className="text-sm font-semibold">{new Date(invoice.createdAt).toLocaleDateString()}</span></div>
           </div>
+        </div>
+      </div>
+
+      {/* Payment History — Fee Statement */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="bg-[#f8fafc] px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-[#002C60] font-bold text-xs uppercase tracking-wider">
+            <FileText size={14} /> Payment History / Fee Statement
+          </div>
+          <span className="bg-emerald-100 text-emerald-700 text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
+            {payments.length} Transactions
+          </span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="bg-gray-50/50 border-b border-gray-100">
+                <th className="px-6 py-3 font-bold text-gray-400 uppercase tracking-widest text-[9px]">Date</th>
+                <th className="px-6 py-3 font-bold text-gray-400 uppercase tracking-widest text-[9px]">Receipt #</th>
+                <th className="px-6 py-3 font-bold text-gray-400 uppercase tracking-widest text-[9px]">Method</th>
+                <th className="px-6 py-3 font-bold text-gray-400 uppercase tracking-widest text-[9px]">Reference</th>
+                <th className="px-6 py-3 font-bold text-gray-400 uppercase tracking-widest text-[9px] text-right">Amount</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {payments.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="px-6 py-8 text-center text-gray-400 italic">
+                    No payments have been recorded for this invoice yet.
+                  </td>
+                </tr>
+              ) : (
+                <>
+                  {payments.map((p) => (
+                    <tr key={p.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-6 py-3 text-gray-600 font-medium">
+                        {new Date(p.paymentDate).toLocaleDateString('en-GB')}
+                      </td>
+                      <td className="px-6 py-3 font-bold text-gray-900">{p.receiptNumber}</td>
+                      <td className="px-6 py-3">
+                        <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 text-[10px] font-black uppercase tracking-tighter">
+                          {p.paymentMethod.replace('_', ' ')}
+                        </span>
+                      </td>
+                      <td className="px-6 py-3 text-gray-500 font-mono tracking-tighter uppercase whitespace-nowrap">
+                        {p.referenceNumber || 'INTERNAL'}
+                      </td>
+                      <td className="px-6 py-3 text-right font-black text-emerald-600">
+                        {Number(p.amount).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                  <tr className="bg-emerald-50/30">
+                    <td colSpan="4" className="px-6 py-3 text-right text-[10px] font-black text-emerald-700 uppercase tracking-widest">
+                      Total Payments Recorded
+                    </td>
+                    <td className="px-6 py-3 text-right font-black text-base text-emerald-700">
+                      KES {payments.reduce((sum, p) => sum + Number(p.amount), 0).toLocaleString()}
+                    </td>
+                  </tr>
+                </>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 

@@ -32,7 +32,7 @@ export class FeeCommentsController {
     const invoice = await prisma.feeInvoice.findUnique({ where: { id } });
     if (!invoice) throw new ApiError(404, 'Invoice not found');
 
-    const [comments, pledges] = await Promise.all([
+    const [comments, pledges, payments] = await Promise.all([
       prisma.feeComment.findMany({
         where: { invoiceId: id, archived: false },
         include: {
@@ -46,10 +46,22 @@ export class FeeCommentsController {
           createdBy: { select: { id: true, firstName: true, lastName: true } }
         },
         orderBy: { createdAt: 'desc' }
+      }),
+      prisma.feePayment.findMany({
+        where: { invoiceId: id, archived: false },
+        orderBy: { paymentDate: 'desc' },
+        select: {
+          id: true,
+          paymentDate: true,
+          amount: true,
+          paymentMethod: true,
+          referenceNumber: true,
+          receiptNumber: true
+        }
       })
     ]);
 
-    res.json({ success: true, data: { comments, pledges } });
+    res.json({ success: true, data: { comments, pledges, payments } });
   }
 
   /**

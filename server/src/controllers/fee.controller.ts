@@ -275,7 +275,14 @@ export class FeeController {
           payments: {
             where: { archived: false },
             orderBy: { paymentDate: 'desc' },
-            select: { paymentMethod: true, amount: true }
+            select: { 
+              id: true, 
+              paymentDate: true, 
+              amount: true, 
+              paymentMethod: true, 
+              referenceNumber: true, 
+              receiptNumber: true 
+            }
           }
         },
         skip,
