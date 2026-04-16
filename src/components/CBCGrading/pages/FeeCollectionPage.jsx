@@ -59,7 +59,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
   const [totalPages, setTotalPages] = useState(1);
   const [printingInvoice, setPrintingInvoice] = useState(null);
   const [schoolInfo, setSchoolInfo] = useState(null);
-  const [listTotals, setListTotals] = useState({ totalBilled: 0, totalPaid: 0, totalBalance: 0, totalWaived: 0 });
+  const [listTotals, setListTotals] = useState({ totalBilled: 0, totalPaid: 0, totalBalance: 0, totalWaived: 0, totalOverpaid: 0 });
   
   // Column Visibility State
   const [visibleColumns, setVisibleColumns] = useState({
@@ -72,6 +72,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
     paid: true,
     waived: true,
     balance: true,
+    overpaid: true,
     status: true,
     paymentMode: true,
     actions: true
@@ -270,8 +271,8 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
             <span>KES ${(invoice.waivers || []).reduce((acc, w) => acc + Number(w.amountWaived), 0).toLocaleString()}</span>
           </div>
           <div style="display: flex; justify-content: space-between; padding: 10px 0; border-top: 2px solid #e2e8f0; margin-top: 5px; color: ${Number(invoice.balance || 0) <= 0 ? '#16a34a' : '#dc2626'}; font-size: 16px; font-weight: 800;">
-            <span>BALANCE DUE:</span>
-            <span>KES ${Number(invoice.balance || 0).toLocaleString()}</span>
+            <span>${Number(invoice.balance || 0) < 0 ? 'CREDIT BALANCE:' : 'BALANCE DUE:'}</span>
+            <span>KES ${Math.abs(Number(invoice.balance || 0)).toLocaleString()}</span>
           </div>
         </div>
       </div>
@@ -785,6 +786,23 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
             </p>
             <span className="text-2xl font-black text-gray-900 tracking-tight leading-none block">
               {Number(listTotals.totalBalance || 0).toLocaleString()}
+              <span className="text-xs font-bold text-gray-500 ml-1">KES</span>
+            </span>
+          </div>
+        </div>
+
+        {/* Total Overpaid - Purple */}
+        <div className="flex-1 flex items-center gap-4 p-5 bg-purple-50/80 border-r-[0.5px] border-purple-200/80 hover:bg-purple-50 transition-colors">
+          <div className="p-3 bg-purple-500 text-white rounded-xl shadow-sm">
+            <ShieldCheck size={24} />
+          </div>
+          <div className="space-y-1">
+            <p className="text-[10px] font-black text-purple-700 uppercase tracking-widest flex items-center gap-1.5 leading-none">
+              <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+              Total Overpaid
+            </p>
+            <span className="text-2xl font-black text-gray-900 tracking-tight leading-none block">
+              {Number(listTotals.totalOverpaid || 0).toLocaleString()}
               <span className="text-xs font-bold text-gray-500 ml-1">KES</span>
             </span>
           </div>
@@ -1327,6 +1345,13 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                   </div>
                 </th>
                 )}
+                {visibleColumns.overpaid && (
+                  <th 
+                    className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100"
+                  >
+                    Overpaid
+                  </th>
+                )}
                 {visibleColumns.status && (
                 <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Status</th>
                 )}
@@ -1420,7 +1445,12 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                   )}
                   {visibleColumns.balance && (
                   <td className="px-3 py-1.5 text-xs font-bold text-red-600 border-r border-gray-100 text-right w-24">
-                    {Number(invoice.balance).toLocaleString()}
+                    {invoice.balance > 0 ? Number(invoice.balance).toLocaleString() : '0'}
+                  </td>
+                  )}
+                  {visibleColumns.overpaid && (
+                  <td className="px-3 py-1.5 text-xs font-bold text-purple-600 border-r border-gray-100 text-right w-24">
+                    {invoice.balance < 0 ? Math.abs(Number(invoice.balance)).toLocaleString() : '0'}
                   </td>
                   )}
                   {visibleColumns.status && (
@@ -1568,6 +1598,11 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                 {visibleColumns.balance && (
                   <td className="px-3 py-3 text-xs font-black text-red-600 border-r border-gray-100 text-right">
                     {Number(listTotals.totalBalance || 0).toLocaleString()}
+                  </td>
+                )}
+                {visibleColumns.overpaid && (
+                  <td className="px-3 py-3 text-xs font-black text-purple-600 border-r border-gray-100 text-right">
+                    {Number(listTotals.totalOverpaid || 0).toLocaleString()}
                   </td>
                 )}
                 

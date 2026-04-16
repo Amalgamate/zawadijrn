@@ -76,26 +76,27 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
     }
   };
 
-  const birthdayNotificationItems = birthdays.map((b) => ({
+  const birthdayNotificationItemsRaw = birthdays.map((b) => ({
     ...b,
     type: 'birthday',
     key: `birthday-${b.id}-${b.turningAge}-${b.daysUntil}-${b.isToday ? 'today' : 'upcoming'}`
   }));
 
-  const noticeNotificationItems = latestNotices.map((n) => ({
+  const noticeNotificationItemsRaw = latestNotices.map((n) => ({
     ...n,
     type: 'notice',
     key: `notice-${n.id}-${n.publishedAt || n.createdAt || ''}`
   }));
 
+  const birthdayNotificationItems = birthdayNotificationItemsRaw.filter(item => !readNotificationKeys.has(item.key));
+  const noticeNotificationItems = noticeNotificationItemsRaw.filter(item => !readNotificationKeys.has(item.key));
+
   const notificationItems = [...birthdayNotificationItems, ...noticeNotificationItems];
   
   // Combined totals for the UI badge
-  const unreadNotifications = notificationItems.filter((item) => !readNotificationKeys.has(item.key));
-  const totalUnreadCount = unreadNotifications.length + systemUnreadCount;
+  const totalUnreadCount = notificationItems.length + systemUnreadCount;
 
   const markAllNotificationsAsRead = () => {
-    if (notificationItems.length === 0) return;
     setReadNotificationKeys((prev) => {
       const next = new Set(prev);
       notificationItems.forEach((item) => next.add(item.key));

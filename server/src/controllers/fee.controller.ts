@@ -251,7 +251,7 @@ export class FeeController {
       : Math.min(200, Math.max(1, parseInt(limitParam || '50', 10)));
     const skip = limit ? (page - 1) * limit : undefined;
 
-    const [invoices, total, aggregate, waiverAggregate] = await Promise.all([
+    const [invoices, total, aggregate, waiverAggregate, debtAggregate, creditAggregate] = await Promise.all([
       prisma.feeInvoice.findMany({
         where,
         orderBy,
@@ -299,6 +299,14 @@ export class FeeController {
         _sum: {
           amountWaived: true
         }
+      }),
+      prisma.feeInvoice.aggregate({
+        where: { ...where, balance: { gt: 0 } },
+        _sum: { balance: true }
+      }),
+      prisma.feeInvoice.aggregate({
+        where: { ...where, balance: { lt: 0 } },
+        _sum: { balance: true }
       })
     ]);
 
@@ -311,7 +319,8 @@ export class FeeController {
       totals: {
         totalBilled: Number(aggregate._sum.totalAmount || 0),
         totalPaid: Number(aggregate._sum.paidAmount || 0),
-        totalBalance: Number(aggregate._sum.balance || 0),
+        totalBalance: Number(debtAggregate._sum.balance || 0),
+        totalOverpaid: Math.abs(Number(creditAggregate._sum.balance || 0)),
         totalWaived: Number(waiverAggregate._sum.amountWaived || 0)
       },
       pagination: {
