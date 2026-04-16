@@ -490,4 +490,190 @@ router.post(
   }
 );
 
+/**
+ * POST /api/bulk/fees/upload-waivers
+ * Import Bulk Waivers (Adjustments for past periods)
+ */
+router.post(
+  '/upload-waivers',
+  upload.single('file'),
+  rateLimit({ windowMs: 60_000, maxRequests: 5 }),
+  auditLog('BULK_UPLOAD_FEE_WAIVERS'),
+  async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ success: false, error: 'No file uploaded' });
+      }
+
+      const { academicYear, term } = req.body;
+      const data = await parseWorkbook(req.file.buffer);
+
+      // Set headers for streaming NDJSON
+      res.setHeader('Content-Type', 'application/x-ndjson');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+
+      const results = { processed: 0, failed: 0, errors: [] as any[] };
+
+      // [CANCELLATION SUPPORT] Monitor for client disconnect
+      let isAborted = false;
+      req.on('close', () => {
+        if (!res.writableEnded) {
+          isAborted = true;
+          console.log('[BulkImport] Client disconnected. Aborting waiver import...');
+        }
+      });
+
+      // Helper to send progress
+      const sendStatus = (type: string, payload: any) => {
+        if (!res.writableEnded) {
+          res.write(JSON.stringify({ type, ...payload }) + '\n');
+        }
+      };
+
+      // Filter data and skip "TOTAL" rows or empty ones
+      const filteredData = data.filter(row => {
+        const adm = String(row['Adm No'] ?? row['Admission Number'] ?? '').trim();
+        return adm && adm !== 'undefined' && adm.toUpperCase() !== 'TOTAL';
+      });
+
+      const totalRows = filteredData.length;
+      sendStatus('start', { total: totalRows });
+
+      for (const [index, row] of filteredData.entries()) {
+        if (isAborted) break;
+
+        try {
+          const admNo = String(row['Adm No'] ?? row['Admission Number'] ?? '').trim();
+          const amountRaw = row['Waiver'] ?? row['Amount'] ?? row['Amount Waived'];
+          const dateRaw = row['Date'] ?? row['Waiver Date'];
+          const reason = row['Reason'] ?? row['Notes'] ?? `Bulk Adjustment for ${term} ${academicYear}`;
+
+          if (!amountRaw || amountRaw === 0) {
+            sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
+            continue;
+          }
+
+          const amount = parseFloat(String(amountRaw).replace(/,/g, ''));
+          if (isNaN(amount) || amount <= 0) {
+            sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
+            continue;
+          }
+
+          const learner = await prisma.learner.findUnique({ where: { admissionNumber: admNo } });
+          if (!learner) {
+            results.failed++;
+            results.errors.push({ row: index + 3, admNo, error: 'Student not found' });
+            sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
+            continue;
+          }
+
+          // Find relevant invoice for the period
+          const invoice = await prisma.feeInvoice.findFirst({
+            where: { 
+              learnerId: learner.id, 
+              term: term as Term, 
+              academicYear: parseInt(academicYear), 
+              archived: false 
+            },
+            orderBy: { createdAt: 'desc' }
+          });
+
+          if (!invoice) {
+            results.failed++;
+            results.errors.push({ row: index + 3, admNo, error: `No invoice found for ${term} ${academicYear}` });
+            sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
+            continue;
+          }
+
+          // [FIX] cumulative waiver check to avoid over-waiving
+          const approvedAggregate = await prisma.feeWaiver.aggregate({
+            where: { invoiceId: invoice.id, status: 'APPROVED', archived: false },
+            _sum: { amountWaived: true }
+          });
+          const alreadyWaived = Number(approvedAggregate._sum.amountWaived ?? 0);
+          
+          if (alreadyWaived + amount > Number(invoice.totalAmount)) {
+             results.failed++;
+             results.errors.push({ 
+               row: index + 3, 
+               admNo, 
+               error: `Waiver amount exceeds remaining invoice total (Already waived: ${alreadyWaived})` 
+             });
+             sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
+             continue;
+          }
+
+          // Create waiver and update invoice in transaction
+          const waiver = await prisma.$transaction(async (tx) => {
+            const createdWaiver = await tx.feeWaiver.create({
+              data: {
+                invoiceId: invoice.id,
+                amountWaived: amount,
+                reason: String(reason),
+                status: 'APPROVED',
+                waiverCategory: 'OTHER',
+                createdById: req.user!.userId,
+                approvedById: req.user!.userId,
+                approvedAt: dateRaw ? new Date(dateRaw) : new Date(),
+                createdAt: dateRaw ? new Date(dateRaw) : new Date()
+              }
+            });
+
+            // Re-read invoice for fresh balance
+            const freshInv = await tx.feeInvoice.findUnique({ where: { id: invoice.id } });
+            const newBalance = Math.max(0, Number(freshInv!.balance) - amount);
+            
+            let newStatus: PaymentStatus;
+            if (newBalance <= 0) {
+              newStatus = Number(freshInv!.paidAmount) > 0 ? 'PAID' : 'WAIVED';
+            } else if (Number(freshInv!.paidAmount) > 0) {
+              newStatus = 'PARTIAL';
+            } else {
+              newStatus = 'PENDING';
+            }
+
+            await tx.feeInvoice.update({
+              where: { id: invoice.id },
+              data: {
+                balance: newBalance,
+                status: newStatus
+              }
+            });
+
+            return createdWaiver;
+          });
+
+          // Sync with Ledger
+          try {
+             await accountingService.postFeeWaiverToLedger(waiver);
+          } catch (e) {
+             console.error(`Ledger sync failed for waiver ${waiver.id}`, e);
+          }
+
+          results.processed++;
+          sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
+
+        } catch (err: any) {
+          results.failed++;
+          results.errors.push({ row: index + 3, error: err.message });
+          sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
+        }
+      }
+
+      sendStatus('complete', {
+        summary: { totalRows: data.length, ...results },
+        errors: results.errors.slice(0, 50)
+      });
+      res.end();
+    } catch (error: any) {
+      console.error('Upload Waivers Error:', error);
+      if (!res.writableEnded) {
+        res.write(JSON.stringify({ type: 'error', error: 'Failed to process waivers', details: error.message }) + '\n');
+        res.end();
+      }
+    }
+  }
+);
+
 export default router;

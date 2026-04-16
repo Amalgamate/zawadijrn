@@ -1,10 +1,10 @@
 import React, { useState, useRef } from 'react';
-import { X, Upload, FileSpreadsheet, Loader2, RefreshCw, CreditCard, Download, Info } from 'lucide-react';
+import { X, Upload, FileSpreadsheet, Loader2, RefreshCw, CreditCard, Download, Info, Gift } from 'lucide-react';
 import axiosInstance from '../../../services/api/index';
-import { downloadFeeTemplate, downloadBalanceTemplate } from '../../../utils/feeTemplateGenerator';
+import { downloadFeeTemplate, downloadBalanceTemplate, downloadWaiverTemplate } from '../../../utils/feeTemplateGenerator';
 
 const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
-  const [importMode, setImportMode] = useState('balances'); // 'balances' or 'payments'
+  const [importMode, setImportMode] = useState('balances'); // 'balances', 'payments', or 'waivers'
   const [file, setFile] = useState(null);
   const [academicYear, setAcademicYear] = useState(new Date().getFullYear());
   const [term, setTerm] = useState('TERM_1');
@@ -69,6 +69,8 @@ const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
       let endpoint = '/bulk/fees/upload-balances';
       if (importMode === 'payments') {
         endpoint = '/bulk/fees/upload-payments';
+      } else if (importMode === 'waivers') {
+        endpoint = '/bulk/fees/upload-waivers';
       }
 
       // Initialize AbortController
@@ -187,6 +189,19 @@ const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
                     <h3 className={`font-bold ${importMode === 'payments' ? 'text-green-900' : 'text-gray-700'}`}>Daily Payments</h3>
                     <p className="text-xs text-gray-500 mt-1">Upload daily bank statements and individual transactions.</p>
                   </div>
+
+                  <div
+                    onClick={() => setImportMode('waivers')}
+                    className={`cursor-pointer p-4 rounded-xl border-2 transition-all col-span-2 ${
+                      importMode === 'waivers' 
+                      ? 'border-teal-600 bg-teal-50 shadow-sm' 
+                      : 'border-gray-200 hover:border-teal-200 hover:bg-gray-50'
+                    }`}
+                  >
+                    <Gift className={`mb-2 ${importMode === 'waivers' ? 'text-teal-600' : 'text-gray-400'}`} size={24} />
+                    <h3 className={`font-bold ${importMode === 'waivers' ? 'text-teal-900' : 'text-gray-700'}`}>Fee Waivers</h3>
+                    <p className="text-xs text-gray-500 mt-1">Import bulk scholarship adjustments and Term 1 waivers.</p>
+                  </div>
                 </div>
               </div>
 
@@ -231,8 +246,13 @@ const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
                   ) : (
                     <>
                       <p className="text-sm font-bold text-blue-900">Click or drag to upload .xlsx or .csv data file</p>
-                      <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-blue-200 rounded-lg shadow-sm text-xs font-bold text-blue-700 hover:bg-blue-50 transition-all pointer-events-auto" onClick={(e) => { e.stopPropagation(); importMode === 'balances' ? downloadBalanceTemplate() : downloadFeeTemplate(); }}>
-                        <Download size={14} /> Download {importMode === 'balances' ? 'Balances' : 'Payments'} Template
+                      <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-blue-200 rounded-lg shadow-sm text-xs font-bold text-blue-700 hover:bg-blue-50 transition-all pointer-events-auto" onClick={(e) => { 
+                        e.stopPropagation(); 
+                        if (importMode === 'balances') downloadBalanceTemplate();
+                        else if (importMode === 'waivers') downloadWaiverTemplate();
+                        else downloadFeeTemplate(); 
+                      }}>
+                        <Download size={14} /> Download {importMode === 'balances' ? 'Balances' : importMode === 'waivers' ? 'Waivers' : 'Payments'} Template
                       </div>
                     </>
                   )}
@@ -248,6 +268,8 @@ const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
                     <div className="flex flex-wrap gap-2 mt-2">
                       {(importMode === 'balances' 
                         ? ['Adm No', 'Billed', 'Paid', 'Balance'] 
+                        : importMode === 'waivers'
+                        ? ['Adm No', 'Waiver', 'Date', 'Reason']
                         : ['Adm No', 'Amount', 'Date', 'Reference']
                       ).map(col => (
                         <span key={col} className="px-2 py-1 bg-white border border-gray-300 rounded text-[10px] font-black text-gray-600 shadow-sm">{col}</span>

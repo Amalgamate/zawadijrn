@@ -153,3 +153,77 @@ export const downloadBalanceTemplate = async () => {
   window.URL.revokeObjectURL(url);
   document.body.removeChild(anchor);
 };
+
+/**
+ * Generates a template for Fee Waivers import.
+ * Maps Adm No, Waiver, Date, Reason.
+ */
+export const downloadWaiverTemplate = async () => {
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'Zawadi SMS';
+  workbook.lastModifiedBy = 'Zawadi SMS';
+  workbook.created = new Date();
+  workbook.modified = new Date();
+
+  // Create sheet
+  const sheet = workbook.addWorksheet('Fee Waivers Template', {
+    views: [{ state: 'frozen', ySplit: 1 }]
+  });
+
+  // Define columns
+  sheet.columns = [
+    { header: 'Adm No', key: 'admNo', width: 15 },
+    { header: 'Waiver', key: 'waiver', width: 15 },
+    { header: 'Date', key: 'date', width: 15 },
+    { header: 'Reason', key: 'reason', width: 30 }
+  ];
+
+  // Professional Styling for Header
+  const headerRow = sheet.getRow(1);
+  headerRow.height = 30;
+  headerRow.eachCell((cell) => {
+    cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF0D9488' } // Teal 600
+    };
+    cell.font = {
+      name: 'Arial',
+      family: 2,
+      size: 11,
+      bold: true,
+      color: { argb: 'FFFFFFFF' } // White
+    };
+    cell.alignment = { vertical: 'middle', horizontal: 'center' };
+    cell.border = {
+      top: { style: 'thin' },
+      bottom: { style: 'medium' },
+      left: { style: 'thin' },
+      right: { style: 'thin' }
+    };
+  });
+
+  // Add Sample Data for Guidance
+  const sampleData = [
+    { admNo: '1462', waiver: 19700, date: '2026-02-25', reason: 'Term 1 Scholarship Adjustment' },
+    { admNo: '965', waiver: 18500, date: '2026-02-25', reason: 'Sibling Discount' },
+    { admNo: '1307', waiver: 18300, date: '2026-02-25', reason: 'Sports Talent Waiver' }
+  ];
+
+  sampleData.forEach(data => {
+    const row = sheet.addRow(data);
+    row.font = { italic: true, color: { argb: 'FF64748B' } }; // Slate 500
+  });
+
+  // Write to Buffer and Trigger Download
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = window.URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `Zawadi_Fee_Waivers_Template_${new Date().getFullYear()}.xlsx`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(anchor);
+};

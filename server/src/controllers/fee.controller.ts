@@ -251,7 +251,7 @@ export class FeeController {
       : Math.min(200, Math.max(1, parseInt(limitParam || '50', 10)));
     const skip = limit ? (page - 1) * limit : undefined;
 
-    const [invoices, total] = await Promise.all([
+    const [invoices, total, aggregate, waiverAggregate] = await Promise.all([
       prisma.feeInvoice.findMany({
         where,
         orderBy,
@@ -276,7 +276,25 @@ export class FeeController {
         skip,
         take: limit
       }),
-      prisma.feeInvoice.count({ where })
+      prisma.feeInvoice.count({ where }),
+      prisma.feeInvoice.aggregate({
+        where,
+        _sum: {
+          totalAmount: true,
+          paidAmount: true,
+          balance: true
+        }
+      }),
+      prisma.feeWaiver.aggregate({
+        where: {
+          status: 'APPROVED',
+          archived: false,
+          invoice: where
+        },
+        _sum: {
+          amountWaived: true
+        }
+      })
     ]);
 
     // Guard: when fetching all records limit is undefined — use total to keep pages=1
@@ -285,6 +303,12 @@ export class FeeController {
       success: true,
       data: invoices,
       count: invoices.length,
+      totals: {
+        totalBilled: Number(aggregate._sum.totalAmount || 0),
+        totalPaid: Number(aggregate._sum.paidAmount || 0),
+        totalBalance: Number(aggregate._sum.balance || 0),
+        totalWaived: Number(waiverAggregate._sum.amountWaived || 0)
+      },
       pagination: {
         total,
         page,
