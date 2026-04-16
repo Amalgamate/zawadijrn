@@ -8,7 +8,7 @@ import {
   Plus, Eye, CheckCircle, AlertCircle, Clock, FileText, Download,
   X, Loader2, MessageSquare, Phone, Info, User, ShieldCheck, Mail, Upload,
   RefreshCw, Trash2, Gift, ThumbsUp, ArrowUpDown, ArrowUp, ArrowDown,
-  Filter, Search, DollarSign, Wallet, Banknote
+  Filter, Search, DollarSign, Wallet, Banknote, Coins
 } from 'lucide-react';
 import { generateDocument } from '../../../utils/simplePdfGenerator';
 import EmptyState from '../shared/EmptyState';
@@ -563,21 +563,62 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
   // ——— Computed KES totals for each metric card (always unfiltered) —————————————
   const stats = React.useMemo(() => {
     const fmt = (n) => `KES ${Number(n || 0).toLocaleString('en-KE')}`;
-    const src = statsInvoices; // never changes with filter clicks
+    const src = statsInvoices;
+
+    const totalBilledRaw = src.reduce((s, i) => s + Number(i.totalAmount || 0), 0);
+    const waivedTotalRaw = src.reduce((s, i) => {
+      const rowWaived = (i.waivers || [])
+        .filter(w => w.status === 'APPROVED')
+        .reduce((acc, w) => acc + Number(w.amountWaived), 0);
+      return s + rowWaived;
+    }, 0);
+    const actualCollectedRaw = src.reduce((s, i) => s + Number(i.paidAmount || 0), 0);
+    const netExpectedRaw = totalBilledRaw - waivedTotalRaw;
+    const efficiency = netExpectedRaw > 0 ? (actualCollectedRaw / netExpectedRaw) * 100 : 0;
+
+    // Sub-Categorization Tool
+    const getMetrics = (list) => {
+      const billed = list.reduce((s, i) => s + Number(i.totalAmount || 0), 0);
+      const paid = list.reduce((s, i) => s + Number(i.paidAmount || 0), 0);
+      const waived = list.reduce((s, i) => s + (i.waivers || []).filter(w => w.status === 'APPROVED').reduce((acc, w) => acc + Number(w.amountWaived), 0), 0);
+      const net = billed - waived;
+      return {
+        billed: fmt(billed),
+        paid: fmt(paid),
+        waived: fmt(waived),
+        net: fmt(net),
+        efficiency: net > 0 ? ((paid / net) * 100).toFixed(1) + '%' : '0%',
+        count: list.length
+      };
+    };
+
     return {
       totalCount:    src.length,
-      totalBilled:   fmt(src.reduce((s, i) => s + Number(i.totalAmount || 0), 0)),
+      totalBilled:   fmt(totalBilledRaw),
+      totalBilledRaw,
       pendingCount:  src.filter(i => i.status === 'PENDING').length,
       pendingAmt:    fmt(src.filter(i => i.status === 'PENDING').reduce((s, i) => s + Number(i.balance || 0), 0)),
       partialCount:  src.filter(i => i.status === 'PARTIAL').length,
-      partialAmt:    fmt(src.filter(i => i.status === 'PARTIAL').reduce((s, i) => s + Number(i.balance || 0), 0)),
+      partialAmt:    fmt(src.filter(i => i.status === 'PARTIAL').reduce((s, i) => s + Number(i.paidAmount || 0), 0)),
+      partialBalanceAmt: fmt(src.filter(i => i.status === 'PARTIAL').reduce((s, i) => s + Number(i.balance || 0), 0)),
+      totalBalance:  fmt(src.reduce((s, i) => s + Number(i.balance || 0), 0)),
       paidCount:     src.filter(i => i.status === 'PAID').length,
       paidAmt:       fmt(src.filter(i => i.status === 'PAID').reduce((s, i) => s + Number(i.paidAmount || 0), 0)),
       overpaidCount: src.filter(i => i.status === 'OVERPAID').length,
-      overpaidAmt:   fmt(src.filter(i => i.status === 'OVERPAID').reduce((s, i) => s + Math.abs(Number(i.balance || 0)), 0)),
+      overpaidAmt:   fmt(src.filter(i => i.status === 'OVERPAID').reduce((s, i) => s + Number(i.paidAmount || 0), 0)),
       
-      // Breakdown logic — refined to handle both detailed logs and summary fields
-      actualCollectedRaw: src.reduce((s, i) => s + Number(i.paidAmount || 0), 0),
+      waivedTotal: fmt(waivedTotalRaw),
+      waivedTotalRaw,
+      netExpected: fmt(netExpectedRaw),
+      netExpectedRaw,
+      actualCollectedRaw,
+      actualCollected: fmt(actualCollectedRaw),
+      collectionEfficiency: efficiency.toFixed(1) + '%',
+
+      // Departmental Splits
+      tuition: getMetrics(src.filter(i => !i.learner?.isTransportStudent)),
+      transport: getMetrics(src.filter(i => i.learner?.isTransportStudent)),
+
       mpesaTotal: fmt(src.reduce((s, i) => {
         const detail = (i.payments || []).filter(p => p.paymentMethod === 'MPESA').reduce((ss, p) => ss + Number(p.amount), 0);
         if (detail > 0) return s + detail;
@@ -587,14 +628,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
         const detail = (i.payments || []).filter(p => p.paymentMethod === 'CASH').reduce((ss, p) => ss + Number(p.amount), 0);
         if (detail > 0) return s + detail;
         return i.paymentType === 'CASH' ? s + Number(i.paidAmount || 0) : s;
-      }, 0)),
-      waivedTotal: fmt(src.reduce((s, i) => {
-        const rowWaived = (i.waivers || [])
-          .filter(w => w.status === 'APPROVED')
-          .reduce((acc, w) => acc + Number(w.amountWaived), 0);
-        return s + rowWaived;
-      }, 0)),
-      actualCollected: fmt(src.reduce((s, i) => s + Number(i.paidAmount || 0), 0))
+      }, 0))
     };
   }, [statsInvoices]);
 
@@ -649,7 +683,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
           <div className="absolute -bottom-6 -right-6 w-28 h-28 bg-white/5 rounded-full" />
         </div>
 
-        {/* Partial — Sky Blue */}
+        {/* Partial — Sky Blue (Now Orange) */}
         <div
           onClick={() => { setStatusFilter(prev => prev === 'partial' ? 'all' : 'partial'); setCurrentPage(1); }}
           className={`relative overflow-hidden rounded-2xl bg-orange-500 p-5 shadow-lg shadow-orange-500/20 text-white cursor-pointer transition-all duration-200 hover:scale-[1.03] hover:shadow-xl ${
@@ -658,9 +692,12 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
         >
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-orange-100 mb-1">Partial Paid Balances</p>
-              <p className="text-2xl font-bold">{stats.partialAmt}</p>
-              <p className="text-lg font-semibold text-orange-200 mt-1">{stats.partialCount} Students</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-orange-100 mb-1">Partial Payments</p>
+              <p className="text-2xl font-bold mb-2">{stats.partialAmt}</p>
+              <div className="flex flex-col items-start gap-1">
+                <p className="text-xs font-black text-orange-100 tracking-wider">BALANCE: {stats.partialBalanceAmt}</p>
+                <p className="text-sm font-semibold text-orange-200">{stats.partialCount} Students</p>
+              </div>
             </div>
             <div className="p-2.5 bg-white/15 rounded-xl">
               <AlertCircle size={22} className="text-white" />
@@ -700,7 +737,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
         >
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-purple-100 mb-1">Paid More (Overpaid)</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-purple-100 mb-1">Collected (Overpaid)</p>
               <p className="text-2xl font-bold">{stats.overpaidAmt}</p>
               <p className="text-lg font-semibold text-purple-200 mt-1">{stats.overpaidCount} Students</p>
             </div>
@@ -715,76 +752,99 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
       </div>
 
       {/* Financial Reconciliation Strip — Redesigned for Premium Look */}
-      <div className="relative overflow-hidden bg-white border border-emerald-200/60 rounded-2xl p-0 shadow-sm flex flex-col md:flex-row items-stretch gap-0">
+      <div className="relative overflow-hidden bg-white border-[0.5px] border-gray-300 rounded-2xl p-0 shadow-sm flex flex-col lg:flex-row items-stretch gap-0">
         
-        {/* Main "Source of Truth" Section — Money in Hand */}
-        <div className="flex-[1.5] flex items-center gap-5 p-5 bg-gradient-to-br from-emerald-50/80 to-white border-r border-emerald-100">
-          <div className="p-3 bg-emerald-600 text-white rounded-2xl shadow-lg shadow-emerald-200">
+        {/* Money in Hand - Emerald */}
+        <div className="flex-1 flex items-center gap-4 p-5 bg-emerald-50/80 border-r-[0.5px] border-emerald-200/80 hover:bg-emerald-50 transition-colors">
+          <div className="p-3 bg-emerald-500 text-white rounded-xl shadow-sm">
             <Wallet size={24} />
           </div>
           <div className="space-y-1">
             <p className="text-[10px] font-black text-emerald-700 uppercase tracking-widest flex items-center gap-1.5 leading-none">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              Realized Revenue
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Money in Hand
             </p>
-            <div className="flex flex-col">
-              <span className="text-xs font-bold text-gray-400 uppercase tracking-tighter leading-none mb-1">Money in Hand</span>
-              <span className="text-3xl font-black text-gray-900 tracking-tight leading-none">
-                {stats.actualCollected.replace('KES ', '')}
-                <span className="text-sm font-bold text-emerald-600 ml-1.5 align-top">KES</span>
-              </span>
-            </div>
+            <span className="text-2xl font-black text-gray-900 tracking-tight leading-none block">
+              {stats.actualCollected.replace('KES ', '')}
+              <span className="text-xs font-bold text-gray-500 ml-1">KES</span>
+            </span>
           </div>
         </div>
 
-        {/* Adjustments Section — Waivers */}
-        <div className="flex-1 flex items-center gap-5 p-5 bg-emerald-50/20 border-r border-gray-100">
-          <div className="p-3 bg-teal-100 text-teal-700 rounded-2xl">
-            <Gift size={22} />
+        {/* Total Balances - Red */}
+        <div className="flex-1 flex items-center gap-4 p-5 bg-red-50/80 border-r-[0.5px] border-red-200/80 hover:bg-red-50 transition-colors">
+          <div className="p-3 bg-red-500 text-white rounded-xl shadow-sm">
+            <AlertCircle size={24} />
           </div>
           <div className="space-y-1">
-            <p className="text-[10px] font-black text-teal-600 uppercase tracking-widest leading-none">System Adjustments</p>
+            <p className="text-[10px] font-black text-red-700 uppercase tracking-widest flex items-center gap-1.5 leading-none">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+              Total Balances
+            </p>
+            <span className="text-2xl font-black text-gray-900 tracking-tight leading-none block">
+              {stats.totalBalance.replace('KES ', '')}
+              <span className="text-xs font-bold text-gray-500 ml-1">KES</span>
+            </span>
+          </div>
+        </div>
+
+        {/* Adjustments Section — Waivers (Teal) */}
+        <div className="flex-1 flex items-center gap-4 p-5 bg-teal-50/80 border-r-[0.5px] border-teal-200/80 hover:bg-teal-50 transition-colors">
+          <div className="p-3 bg-teal-500 text-white rounded-xl shadow-sm">
+            <Gift size={24} />
+          </div>
+          <div className="space-y-1">
+            <p className="text-[10px] font-black text-teal-700 uppercase tracking-widest flex items-center gap-1.5 leading-none">
+              <span className="w-1.5 h-1.5 rounded-full bg-teal-400" />
+              Total Waived
+            </p>
+            <span className="text-2xl font-black text-gray-900 tracking-tight leading-none block">
+              - {stats.waivedTotal.replace('KES ', '')}
+              <span className="text-xs font-bold text-gray-500 ml-1">KES</span>
+            </span>
+          </div>
+        </div>
+
+        {/* Breakdown Section — Mpesa/Cash (Lime/Blue) */}
+        <div className="flex-[1.7] flex items-center justify-around p-5 bg-gradient-to-r from-lime-50/30 to-blue-50/30">
+          
+          {/* Mpesa */}
+          <div className="flex-1 flex items-center gap-4 pr-6 border-r-[0.5px] border-lime-300/80 justify-end">
+            <div className="w-11 h-11 bg-lime-500 text-white rounded-xl shadow-sm shadow-lime-200 flex items-center justify-center font-black text-2xl">
+              M
+            </div>
             <div className="flex flex-col">
-              <span className="text-xs font-bold text-gray-400 uppercase tracking-tighter leading-none mb-1">Total Waived</span>
-              <span className="text-xl font-black text-teal-700 tracking-tight leading-none">
-                {stats.waivedTotal}
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-lime-500 animate-pulse" />
+                <span className="text-[10px] font-black text-lime-700 uppercase tracking-widest">Mpesa Collected</span>
+              </div>
+              <span className="text-2xl font-black text-gray-900 tracking-tight leading-none block">
+                {stats.mpesaTotal.replace('KES ', '')}
+                <span className="text-xs font-bold text-gray-500 ml-1">KES</span>
               </span>
             </div>
           </div>
-        </div>
-
-        {/* Breakdown Section — Mpesa/Cash */}
-        <div className="flex-[1.2] flex items-center justify-around p-5 gap-4">
-          <div className="flex flex-col items-center group">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Mpesa Collected</span>
+          
+          {/* Cash */}
+          <div className="flex-1 flex items-center gap-4 pl-6 justify-start">
+            <div className="w-11 h-11 bg-blue-500 text-white rounded-xl shadow-sm shadow-blue-200 flex items-center justify-center">
+              <Banknote size={24} />
             </div>
-            <span className="text-lg font-black text-emerald-700 bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-100 group-hover:bg-emerald-100 transition-colors">
-              {stats.mpesaTotal}
-            </span>
-          </div>
-
-          <div className="w-px h-8 bg-gray-100" />
-
-          <div className="flex flex-col items-center group">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-2 h-2 rounded-full bg-blue-500" />
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Cash Handled</span>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 border border-blue-400" />
+                <span className="text-[10px] font-black text-blue-700 uppercase tracking-widest">Cash Collected</span>
+              </div>
+              <span className="text-2xl font-black text-gray-900 tracking-tight leading-none block">
+                {stats.cashTotal.replace('KES ', '')}
+                <span className="text-xs font-bold text-gray-500 ml-1">KES</span>
+              </span>
             </div>
-            <span className="text-lg font-black text-blue-700 bg-blue-50 px-3 py-1 rounded-lg border border-blue-100 group-hover:bg-blue-100 transition-colors">
-              {stats.cashTotal}
-            </span>
           </div>
-        </div>
 
-        {/* Footnote */}
-        <div className="hidden lg:flex items-center px-6 border-l border-gray-50 bg-gray-50/30">
-          <div className="text-[9px] font-medium text-gray-400 max-w-[120px] text-right italic leading-relaxed">
-            * Reconciliation based on all verified payment records
-          </div>
         </div>
       </div>
+
 
 
       {/* Smart Search & Unified Filters */}
