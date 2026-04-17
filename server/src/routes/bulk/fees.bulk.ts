@@ -182,8 +182,12 @@ router.post(
           break;
         }
 
+        let currentAdmNo = '';
+        let currentStudentName: string | undefined;
+
         try {
           const admNo = String(row['Adm No'] ?? row['Admission Number'] ?? '').trim();
+          currentAdmNo = admNo;
           if (!admNo || admNo === 'undefined') {
             sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
             continue;
@@ -209,6 +213,10 @@ router.post(
             sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
             continue;
           }
+          currentStudentName = `${Math.max(0, 0) === 0 ? learner.firstName : ''} ${learner.lastName}`.trim();
+          if (!currentStudentName || currentStudentName === 'undefined') {
+             currentStudentName = `${learner.firstName} ${learner.lastName}`;
+          }
 
           let invoice = invoiceMap.get(learner.id);
 
@@ -221,7 +229,7 @@ router.post(
             const structure = structureMap.get(mappedGrade as any);
             if (!structure) {
               results.failed++;
-              results.errors.push({ row: index + 3, admNo, error: `No fee structure found for grade ${learner.grade}` });
+              results.errors.push({ row: index + 3, admNo, studentName: currentStudentName, error: `No fee structure found for grade ${learner.grade}` });
               sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
               continue;
             }
@@ -300,7 +308,7 @@ router.post(
 
         } catch (err: any) {
           results.failed++;
-          results.errors.push({ row: index + 3, error: err.message });
+          results.errors.push({ row: index + 3, admNo: currentAdmNo, studentName: currentStudentName, error: err.message });
           sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
         }
       }
@@ -376,8 +384,12 @@ router.post(
           break;
         }
 
+        let currentAdmNo = '';
+        let currentStudentName: string | undefined;
+
         try {
           const admNo = String(row['Adm No'] ?? row['Admission Number'] ?? '').trim();
+          currentAdmNo = admNo;
           if (!admNo || admNo === 'undefined') {
              sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
              continue;
@@ -405,6 +417,7 @@ router.post(
             sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
             continue;
           }
+          currentStudentName = `${learner.firstName} ${learner.lastName}`;
 
           // Use active invoice
           const invoice = await prisma.feeInvoice.findFirst({
@@ -414,7 +427,7 @@ router.post(
 
           if (!invoice) {
             results.failed++;
-            results.errors.push({ row: index + 2, admNo, error: `No active invoice for ${term} found` });
+            results.errors.push({ row: index + 2, admNo, studentName: currentStudentName, error: `No active invoice for ${term} found` });
             sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
             continue;
           }
@@ -471,7 +484,7 @@ router.post(
 
         } catch (err: any) {
           results.failed++;
-          results.errors.push({ row: index + 2, error: err.message });
+          results.errors.push({ row: index + 2, admNo: currentAdmNo, studentName: currentStudentName, error: err.message });
           sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
         }
       }
@@ -543,8 +556,12 @@ router.post(
       for (const [index, row] of filteredData.entries()) {
         if (isAborted) break;
 
+        let currentAdmNo = '';
+        let currentStudentName: string | undefined;
+
         try {
           const admNo = String(row['Adm No'] ?? row['Admission Number'] ?? '').trim();
+          currentAdmNo = admNo;
           const amountRaw = row['Waiver'] ?? row['Amount'] ?? row['Amount Waived'];
           const dateRaw = row['Date'] ?? row['Waiver Date'];
           const reason = row['Reason'] ?? row['Notes'] ?? `Bulk Adjustment for ${term} ${academicYear}`;
@@ -567,6 +584,7 @@ router.post(
             sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
             continue;
           }
+          currentStudentName = `${learner.firstName} ${learner.lastName}`;
 
           // Find relevant invoice for the period
           const invoice = await prisma.feeInvoice.findFirst({
@@ -581,7 +599,7 @@ router.post(
 
           if (!invoice) {
             results.failed++;
-            results.errors.push({ row: index + 3, admNo, error: `No invoice found for ${term} ${academicYear}` });
+            results.errors.push({ row: index + 3, admNo, studentName: currentStudentName, error: `No invoice found for ${term} ${academicYear}` });
             sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
             continue;
           }
@@ -598,6 +616,7 @@ router.post(
              results.errors.push({ 
                row: index + 3, 
                admNo, 
+               studentName: currentStudentName,
                error: `Waiver amount exceeds remaining invoice total (Already waived: ${alreadyWaived})` 
              });
              sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
@@ -656,7 +675,7 @@ router.post(
 
         } catch (err: any) {
           results.failed++;
-          results.errors.push({ row: index + 3, error: err.message });
+          results.errors.push({ row: index + 3, admNo: currentAdmNo, studentName: currentStudentName, error: err.message });
           sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
         }
       }

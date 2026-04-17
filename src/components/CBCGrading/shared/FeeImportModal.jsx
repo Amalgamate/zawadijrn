@@ -140,231 +140,201 @@ const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-fade-in">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-slide-up">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-slide-up">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-700 to-blue-900 px-6 py-4 flex justify-between items-center text-white">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/10 flex items-center justify-center rounded-lg">
-              <Upload size={24} className="text-blue-100" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold">Import Fee Records</h2>
-              <p className="text-blue-200 text-sm">Upload Excel or CSV fee data</p>
-            </div>
+        <div className="bg-gradient-to-r from-blue-700 to-blue-900 px-5 py-3 flex justify-between items-center text-white">
+          <div className="flex items-center gap-2">
+            <Upload size={20} className="text-blue-100" />
+            <h2 className="text-lg font-bold">Import Records</h2>
           </div>
-          <button onClick={handleCloseTrigger} className="hover:bg-white/20 p-2 rounded-xl transition-colors">
-            <X size={24} />
+          <button onClick={handleCloseTrigger} className="hover:bg-white/20 p-1.5 rounded-lg transition-colors">
+            <X size={20} />
           </button>
         </div>
 
-        <div className="p-6 md:p-8 space-y-6">
+        <div className="p-5 space-y-4">
           {!results ? (
             <>
-              {/* Import Mode Selection */}
-              <div className="space-y-3">
-                <label className="text-sm font-bold text-gray-700">1. Select Import Type</label>
-                <div className="grid grid-cols-2 gap-4">
-                  <div
-                    onClick={() => setImportMode('balances')}
-                    className={`cursor-pointer p-4 rounded-xl border-2 transition-all ${
-                      importMode === 'balances' 
-                      ? 'border-blue-600 bg-blue-50 shadow-sm' 
-                      : 'border-gray-200 hover:border-blue-200 hover:bg-gray-50'
-                    }`}
-                  >
-                    <RefreshCw className={`mb-2 ${importMode === 'balances' ? 'text-blue-600' : 'text-gray-400'}`} size={24} />
-                    <h3 className={`font-bold ${importMode === 'balances' ? 'text-blue-900' : 'text-gray-700'}`}>Initial Balances</h3>
-                    <p className="text-xs text-gray-500 mt-1 shadow-sm">Sync cumulative Billed, Paid & Balance for students.</p>
-                  </div>
-
-                  <div
-                    onClick={() => setImportMode('payments')}
-                    className={`cursor-pointer p-4 rounded-xl border-2 transition-all ${
-                      importMode === 'payments' 
-                      ? 'border-green-600 bg-green-50 shadow-sm' 
-                      : 'border-gray-200 hover:border-green-200 hover:bg-gray-50'
-                    }`}
-                  >
-                    <CreditCard className={`mb-2 ${importMode === 'payments' ? 'text-green-600' : 'text-gray-400'}`} size={24} />
-                    <h3 className={`font-bold ${importMode === 'payments' ? 'text-green-900' : 'text-gray-700'}`}>Daily Payments</h3>
-                    <p className="text-xs text-gray-500 mt-1">Upload daily bank statements and individual transactions.</p>
-                  </div>
-
-                  <div
-                    onClick={() => setImportMode('waivers')}
-                    className={`cursor-pointer p-4 rounded-xl border-2 transition-all col-span-2 ${
-                      importMode === 'waivers' 
-                      ? 'border-teal-600 bg-teal-50 shadow-sm' 
-                      : 'border-gray-200 hover:border-teal-200 hover:bg-gray-50'
-                    }`}
-                  >
-                    <Gift className={`mb-2 ${importMode === 'waivers' ? 'text-teal-600' : 'text-gray-400'}`} size={24} />
-                    <h3 className={`font-bold ${importMode === 'waivers' ? 'text-teal-900' : 'text-gray-700'}`}>Fee Waivers</h3>
-                    <p className="text-xs text-gray-500 mt-1">Import bulk scholarship adjustments and Term 1 waivers.</p>
-                  </div>
-                </div>
+              {/* Import Mode Selection - Tabs */}
+              <div className="bg-gray-100 p-1 rounded-lg flex gap-1">
+                <button
+                  onClick={() => setImportMode('balances')}
+                  className={`flex-1 py-1.5 text-[13px] font-bold rounded-md flex items-center justify-center gap-1.5 transition-all ${
+                    importMode === 'balances' ? 'bg-white shadow-sm text-blue-700' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <RefreshCw size={14} /> Balances
+                </button>
+                <button
+                  onClick={() => setImportMode('payments')}
+                  className={`flex-1 py-1.5 text-[13px] font-bold rounded-md flex items-center justify-center gap-1.5 transition-all ${
+                    importMode === 'payments' ? 'bg-white shadow-sm text-green-700' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <CreditCard size={14} /> Payments
+                </button>
+                <button
+                  onClick={() => setImportMode('waivers')}
+                  className={`flex-1 py-1.5 text-[13px] font-bold rounded-md flex items-center justify-center gap-1.5 transition-all ${
+                    importMode === 'waivers' ? 'bg-white shadow-sm text-teal-700' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <Gift size={14} /> Waivers
+                </button>
               </div>
 
               {/* Term & Year Selection */}
-              <div className="space-y-3">
-                <label className="text-sm font-bold text-gray-700">2. Select Period</label>
-                <div className="grid grid-cols-2 gap-4">
-                  <select
-                    value={academicYear}
-                    onChange={(e) => setAcademicYear(e.target.value)}
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 font-semibold text-gray-700"
-                  >
-                    <option value="2025">2025</option>
-                    <option value="2026">2026</option>
-                    <option value="2027">2027</option>
-                  </select>
-                  <select
-                    value={term}
-                    onChange={(e) => setTerm(e.target.value)}
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 font-semibold text-gray-700"
-                  >
-                    <option value="TERM_1">Term 1</option>
-                    <option value="TERM_2">Term 2</option>
-                    <option value="TERM_3">Term 3</option>
-                  </select>
-                </div>
+              <div className="grid grid-cols-2 gap-3">
+                <select
+                  value={academicYear}
+                  onChange={(e) => setAcademicYear(e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm font-semibold text-gray-700 outline-none"
+                >
+                  <option value="2025">2025</option>
+                  <option value="2026">2026</option>
+                  <option value="2027">2027</option>
+                </select>
+                <select
+                  value={term}
+                  onChange={(e) => setTerm(e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm font-semibold text-gray-700 outline-none"
+                >
+                  <option value="TERM_1">Term 1</option>
+                  <option value="TERM_2">Term 2</option>
+                  <option value="TERM_3">Term 3</option>
+                </select>
               </div>
 
               {/* File Upload Area */}
-              <div className="space-y-3">
-                <label className="text-sm font-bold text-gray-700">3. Upload File</label>
-                <div className="relative border-2 border-dashed border-blue-200 bg-blue-50/50 rounded-xl p-8 hover:bg-blue-50 transition-colors group text-center cursor-pointer">
-                  <input
-                    type="file"
-                    accept=".xlsx,.csv"
-                    onChange={handleFileChange}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  />
-                  <FileSpreadsheet className="mx-auto text-blue-400 group-hover:text-blue-500 mb-3 transition-colors" size={48} />
-                  {file ? (
-                    <p className="text-sm font-bold text-blue-900">{file.name}</p>
-                  ) : (
-                    <>
-                      <p className="text-sm font-bold text-blue-900">Click or drag to upload .xlsx or .csv data file</p>
-                      <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-blue-200 rounded-lg shadow-sm text-xs font-bold text-blue-700 hover:bg-blue-50 transition-all pointer-events-auto" onClick={(e) => { 
-                        e.stopPropagation(); 
-                        if (importMode === 'balances') downloadBalanceTemplate();
-                        else if (importMode === 'waivers') downloadWaiverTemplate();
-                        else downloadFeeTemplate(); 
-                      }}>
-                        <Download size={14} /> Download {importMode === 'balances' ? 'Balances' : importMode === 'waivers' ? 'Waivers' : 'Payments'} Template
-                      </div>
-                    </>
-                  )}
-                </div>
-                
-                {/* Requirement Guide */}
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 flex items-start gap-3">
-                  <div className="p-1.5 bg-blue-100 text-blue-600 rounded-lg">
-                    <Info size={16} />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-gray-700 uppercase tracking-tight">Required Columns:</p>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {(importMode === 'balances' 
-                        ? ['Adm No', 'Billed', 'Paid', 'Balance'] 
-                        : importMode === 'waivers'
-                        ? ['Adm No', 'Waiver', 'Date', 'Reason']
-                        : ['Adm No', 'Amount', 'Date', 'Reference']
-                      ).map(col => (
-                        <span key={col} className="px-2 py-1 bg-white border border-gray-300 rounded text-[10px] font-black text-gray-600 shadow-sm">{col}</span>
-                      ))}
-                    </div>
-                    <p className="text-[10px] text-gray-500 mt-2 italic font-medium"> Note: Matching is done via Admission Number. Ensure student records already exist.</p>
-                  </div>
-                </div>
-
-                {error && <p className="text-sm text-red-600 font-medium px-1 flex items-center gap-1.5"><X size={16}/>{error}</p>}
-                
-                {/* Real-time Progress Indicator */}
-                {loading && progress && (
-                  <div className="space-y-3 p-6 bg-blue-50/50 border border-blue-100 rounded-2xl animate-fade-in shadow-inner">
-                    <div className="flex justify-between items-end mb-1">
-                      <div>
-                        <p className="text-xs font-black text-blue-800 uppercase tracking-widest flex items-center gap-2">
-                          <Loader2 size={12} className="animate-spin" />
-                          {progress.message || 'Importing...'}
-                        </p>
-                      </div>
-                      <p className="text-2xl font-black text-blue-600 tabular-nums leading-none">
-                        {progress.percent}%
-                      </p>
-                    </div>
-                    
-                    <div className="w-full bg-blue-100 rounded-full h-4 p-1 overflow-hidden shadow-inner">
-                      <div 
-                        className="bg-gradient-to-r from-blue-500 to-indigo-600 h-full rounded-full transition-all duration-300 ease-out relative"
-                        style={{ width: `${progress.percent}%` }}
+              <div className="relative border border-dashed border-blue-300 bg-blue-50/50 rounded-lg p-5 hover:bg-blue-50 transition-colors text-center cursor-pointer group">
+                <input
+                  type="file"
+                  accept=".xlsx,.csv"
+                  onChange={handleFileChange}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                />
+                <FileSpreadsheet className="mx-auto text-blue-500 mb-2 transition-colors" size={32} />
+                {file ? (
+                  <p className="text-sm font-bold text-blue-900">{file.name}</p>
+                ) : (
+                  <>
+                    <p className="text-sm font-bold text-blue-900">Click or drag .xlsx/.csv</p>
+                    <div className="mt-3 flex justify-center">
+                      <button 
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-blue-200 rounded-md shadow-sm text-[11px] font-bold text-blue-700 hover:bg-blue-50 cursor-pointer relative z-20" 
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          e.preventDefault();
+                          if (importMode === 'balances') downloadBalanceTemplate();
+                          else if (importMode === 'waivers') downloadWaiverTemplate();
+                          else downloadFeeTemplate(); 
+                        }}
                       >
-                        <div className="absolute inset-0 bg-white/20 animate-pulse" />
-                      </div>
+                        <Download size={14} /> Download Template
+                      </button>
                     </div>
-                    
-                    {progress.total > 0 && (
-                      <div className="flex justify-between text-[10px] font-bold text-blue-400 uppercase tracking-tighter">
-                        <span>Initiated</span>
-                        <span>{progress.current} of {progress.total} Students</span>
-                        <span>Complete</span>
-                      </div>
-                    )}
-                  </div>
+                  </>
                 )}
               </div>
+              
+              {/* Requirement Guide */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Info size={14} className="text-blue-600" />
+                  <p className="text-[11px] font-bold text-gray-700 uppercase tracking-tight">Required Columns</p>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {(importMode === 'balances' 
+                    ? ['Adm No', 'Billed', 'Paid', 'Balance'] 
+                    : importMode === 'waivers'
+                    ? ['Adm No', 'Waiver', 'Date', 'Reason']
+                    : ['Adm No', 'Amount', 'Date', 'Reference']
+                  ).map(col => (
+                    <span key={col} className="px-1.5 py-0.5 bg-white border border-gray-200 rounded text-[10px] font-bold text-gray-600 shadow-sm">{col}</span>
+                  ))}
+                </div>
+              </div>
+
+              {error && (
+                <div className="bg-red-50 text-red-600 text-xs font-bold p-2.5 rounded-lg flex items-center gap-2 border border-red-100">
+                  <X size={14} className="text-red-500"/>
+                  {error}
+                </div>
+              )}
+              
+              {/* Real-time Progress Indicator */}
+              {loading && progress && (
+                <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg">
+                  <div className="flex justify-between items-end mb-2">
+                    <p className="text-[11px] font-bold text-blue-800 uppercase tracking-wider flex items-center gap-1.5">
+                      <Loader2 size={12} className="animate-spin" />
+                      {progress.message || 'Importing...'}
+                    </p>
+                    <p className="text-lg font-black text-blue-700 tabular-nums leading-none">
+                      {progress.percent}%
+                    </p>
+                  </div>
+                  
+                  <div className="w-full bg-blue-200 rounded-full h-2 overflow-hidden">
+                    <div 
+                      className="bg-blue-600 h-full rounded-full transition-all duration-300 ease-out"
+                      style={{ width: `${progress.percent}%` }}
+                    />
+                  </div>
+                </div>
+              )}
 
             </>
           ) : (
             /* Results Screen */
-            <div className="space-y-6">
-              <div className="p-6 bg-green-50 rounded-xl border border-green-100 flex flex-col items-center text-center">
-                <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-4">
-                  <Upload size={32} />
+            <div className="space-y-4">
+              <div className="p-4 bg-green-50 rounded-lg border border-green-100 flex items-center gap-3">
+                <div className="w-10 h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center shrink-0">
+                  <Upload size={20} />
                 </div>
-                <h3 className="text-xl font-bold text-green-900 mb-2">Import Complete!</h3>
-                <p className="text-green-700 font-medium">Successfully processed {results.summary?.totalRows} rows.</p>
+                <div>
+                  <h3 className="text-sm font-bold text-green-900">Import Complete!</h3>
+                  <p className="text-xs text-green-700 font-medium">Successfully processed {results.summary?.totalRows} rows.</p>
+                </div>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 text-center">
-                  <p className="text-xs font-bold text-gray-500 uppercase">Total Rows</p>
-                  <p className="text-2xl font-black text-gray-800">{results.summary?.totalRows || 0}</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="p-3 bg-gray-50 rounded-lg border border-gray-100 text-center">
+                  <p className="text-[10px] font-bold text-gray-500 uppercase">Total Rows</p>
+                  <p className="text-lg font-black text-gray-800">{results.summary?.totalRows || 0}</p>
                 </div>
                 {importMode === 'balances' ? (
                   <>
-                    <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 text-center">
-                      <p className="text-xs font-bold text-blue-500 uppercase">Created</p>
-                      <p className="text-2xl font-black text-blue-700">{results.summary?.created || 0}</p>
+                    <div className="p-3 bg-blue-50 rounded-lg border border-blue-100 text-center">
+                      <p className="text-[10px] font-bold text-blue-500 uppercase">Created</p>
+                      <p className="text-lg font-black text-blue-700">{results.summary?.created || 0}</p>
                     </div>
-                    <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100 text-center">
-                      <p className="text-xs font-bold text-emerald-500 uppercase">Updated</p>
-                      <p className="text-2xl font-black text-emerald-700">{results.summary?.updated || 0}</p>
+                    <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-100 text-center">
+                      <p className="text-[10px] font-bold text-emerald-500 uppercase">Updated</p>
+                      <p className="text-lg font-black text-emerald-700">{results.summary?.updated || 0}</p>
                     </div>
                   </>
                 ) : (
-                  <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 text-center col-span-2">
-                    <p className="text-xs font-bold text-blue-500 uppercase">Payments Processed</p>
-                    <p className="text-2xl font-black text-blue-700">{results.summary?.processed || 0}</p>
+                  <div className="p-3 bg-blue-50 rounded-lg border border-blue-100 text-center col-span-2">
+                    <p className="text-[10px] font-bold text-blue-500 uppercase">Processed</p>
+                    <p className="text-lg font-black text-blue-700">{results.summary?.processed || 0}</p>
                   </div>
                 )}
                 
-                <div className="p-4 bg-red-50 rounded-xl border border-red-100 text-center">
-                  <p className="text-xs font-bold text-red-500 uppercase">Failed</p>
-                  <p className="text-2xl font-black text-red-700">{results.summary?.failed || 0}</p>
+                <div className="p-3 bg-red-50 rounded-lg border border-red-100 text-center">
+                  <p className="text-[10px] font-bold text-red-500 uppercase">Failed</p>
+                  <p className="text-lg font-black text-red-700">{results.summary?.failed || 0}</p>
                 </div>
               </div>
 
               {results.errors?.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="font-bold text-red-800 flex items-center gap-2">
-                    <X size={18} className="p-0.5 bg-red-200 rounded-full" />
-                    Review Errors (Top 50)
+                <div className="space-y-1.5">
+                  <h4 className="text-xs font-bold text-red-800 flex items-center gap-1.5">
+                    <X size={14} className="p-0.5 bg-red-200 rounded-full" />
+                    Review Errors
                   </h4>
-                  <div className="bg-red-50 p-4 rounded-xl border border-red-100 h-40 overflow-y-auto">
-                    <ul className="text-xs text-red-700 space-y-1.5 list-disc pl-4 font-medium">
+                  <div className="bg-red-50 p-3 rounded-lg border border-red-100 max-h-32 overflow-y-auto">
+                    <ul className="text-[11px] text-red-700 space-y-1 list-disc pl-4 font-medium">
                       {results.errors.map((e, idx) => (
                         <li key={idx}>Row {e.row}: {e.error} {e.admNo ? `(Adm: ${e.admNo})` : ''}</li>
                       ))}
@@ -376,33 +346,33 @@ const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
           )}
 
           {/* Footer actions */}
-          <div className="flex gap-4 pt-4 border-t border-gray-100">
+          <div className="flex gap-3 pt-2">
             {!results ? (
               <>
                 <button
                   type="button"
                   onClick={handleCloseTrigger}
-                  className="flex-1 py-3.5 px-6 rounded-xl font-bold text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 transition-colors"
+                  className="flex-1 py-2 px-4 rounded-lg text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleUpload}
                   disabled={!file || loading}
-                  className={`flex-[2] py-3.5 px-6 rounded-xl font-bold text-white shadow-md disabled:opacity-50 flex items-center justify-center gap-2 transition-all ${
-                    loading ? 'bg-indigo-600' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'
+                  className={`flex-[2] py-2 px-4 rounded-lg text-sm font-bold text-white disabled:opacity-50 flex items-center justify-center gap-2 transition-all ${
+                    loading ? 'bg-indigo-600' : 'bg-blue-600 hover:bg-blue-700 shadow-sm'
                   }`}
                 >
-                  {loading && <Loader2 className="animate-spin" size={20} />}
+                  {loading && <Loader2 className="animate-spin" size={16} />}
                   <span>{loading ? 'Processing...' : 'Upload & Process'}</span>
                 </button>
               </>
             ) : (
               <button
                 onClick={onComplete || onClose}
-                className="w-full py-4 rounded-xl font-bold text-white bg-gray-900 hover:bg-black shadow-xl transition-all"
+                className="w-full py-2.5 rounded-lg text-sm font-bold text-white bg-gray-900 hover:bg-black transition-all"
               >
-                Close Window
+                Close
               </button>
             )}
           </div>

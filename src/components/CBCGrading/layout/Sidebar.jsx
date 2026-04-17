@@ -40,6 +40,31 @@ const findDefaultPath = (items = []) => {
   return null;
 };
 
+const getCollapsedIconColor = (id, isActive) => {
+  if (isActive) return 'text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.7)]';
+  switch (id) {
+    case 'finance': return 'text-red-500 drop-shadow-[0_0_6px_rgba(239,68,68,0.7)] group-hover:text-red-400 group-hover:drop-shadow-[0_0_10px_rgba(239,68,68,0.9)]';
+    case 'learners': return 'text-blue-500 drop-shadow-[0_0_6px_rgba(59,130,246,0.7)] group-hover:text-blue-400 group-hover:drop-shadow-[0_0_10px_rgba(59,130,246,0.9)]';
+    case 'teachers': return 'text-emerald-500 drop-shadow-[0_0_6px_rgba(16,185,129,0.7)] group-hover:text-emerald-400 group-hover:drop-shadow-[0_0_10px_rgba(16,185,129,0.9)]';
+    case 'parents': return 'text-fuchsia-500 drop-shadow-[0_0_6px_rgba(217,70,239,0.7)] group-hover:text-fuchsia-400 group-hover:drop-shadow-[0_0_10px_rgba(217,70,239,0.9)]';
+    case 'assessment': return 'text-amber-500 drop-shadow-[0_0_6px_rgba(245,158,11,0.7)] group-hover:text-amber-400 group-hover:drop-shadow-[0_0_10px_rgba(245,158,11,0.9)]';
+    case 'communications': return 'text-cyan-500 drop-shadow-[0_0_6px_rgba(6,182,212,0.7)] group-hover:text-cyan-400 group-hover:drop-shadow-[0_0_10px_rgba(6,182,212,0.9)]';
+    case 'planner': return 'text-orange-500 drop-shadow-[0_0_6px_rgba(249,115,22,0.7)] group-hover:text-orange-400 group-hover:drop-shadow-[0_0_10px_rgba(249,115,22,0.9)]';
+    case 'learning-hub': return 'text-indigo-500 drop-shadow-[0_0_6px_rgba(99,102,241,0.7)] group-hover:text-indigo-400 group-hover:drop-shadow-[0_0_10px_rgba(99,102,241,0.9)]';
+    case 'lms': return 'text-pink-500 drop-shadow-[0_0_6px_rgba(236,72,153,0.7)] group-hover:text-pink-400 group-hover:drop-shadow-[0_0_10px_rgba(236,72,153,0.9)]';
+    case 'attendance': return 'text-lime-500 drop-shadow-[0_0_6px_rgba(132,204,22,0.7)] group-hover:text-lime-400 group-hover:drop-shadow-[0_0_10px_rgba(132,204,22,0.9)]';
+    case 'docs-center': return 'text-sky-500 drop-shadow-[0_0_6px_rgba(14,165,233,0.7)] group-hover:text-sky-400 group-hover:drop-shadow-[0_0_10px_rgba(14,165,233,0.9)]';
+    case 'hr': return 'text-teal-500 drop-shadow-[0_0_6px_rgba(20,184,166,0.7)] group-hover:text-teal-400 group-hover:drop-shadow-[0_0_10px_rgba(20,184,166,0.9)]';
+    case 'library': return 'text-violet-500 drop-shadow-[0_0_6px_rgba(139,92,246,0.7)] group-hover:text-violet-400 group-hover:drop-shadow-[0_0_10px_rgba(139,92,246,0.9)]';
+    case 'transport': return 'text-rose-500 drop-shadow-[0_0_6px_rgba(244,63,94,0.7)] group-hover:text-rose-400 group-hover:drop-shadow-[0_0_10px_rgba(244,63,94,0.9)]';
+    case 'inventory': return 'text-yellow-500 drop-shadow-[0_0_6px_rgba(234,179,8,0.7)] group-hover:text-yellow-400 group-hover:drop-shadow-[0_0_10px_rgba(234,179,8,0.9)]';
+    case 'biometric': return 'text-emerald-400 drop-shadow-[0_0_6px_rgba(52,211,153,0.7)] group-hover:text-emerald-300 group-hover:drop-shadow-[0_0_10px_rgba(52,211,153,0.9)]';
+    case 'settings': return 'text-slate-400 drop-shadow-[0_0_6px_rgba(148,163,184,0.7)] group-hover:text-slate-300 group-hover:drop-shadow-[0_0_10px_rgba(148,163,184,0.9)]';
+    case 'dashboard': return 'text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.7)] group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.9)]';
+    default: return 'text-white/60 group-hover:text-white group-hover:drop-shadow-md';
+  }
+};
+
 // ─── Sidebar (root) ───────────────────────────────────────────────────────────
 const Sidebar = React.memo(({
   sidebarOpen,
@@ -220,9 +245,11 @@ const SingleItem = ({ section, currentPage, onNavigate, sidebarOpen }) => {
       disabled={!!section.greyedOut}
       title={!sidebarOpen ? section.label : undefined}
       className={`
-        relative w-full flex items-center gap-3 px-3 rounded-lg transition-all duration-200
-        ${isActive
+        relative w-full flex items-center gap-3 px-3 rounded-lg transition-all duration-300 group
+        ${isActive && sidebarOpen
           ? 'bg-white/15 text-white font-semibold shadow-sm ring-1 ring-white/20'
+          : isActive && !sidebarOpen
+          ? 'bg-white/10'
           : 'text-white/60 hover:text-white hover:bg-white/8'}
         ${section.greyedOut ? 'opacity-40 cursor-not-allowed' : ''}
       `}
@@ -232,7 +259,7 @@ const SingleItem = ({ section, currentPage, onNavigate, sidebarOpen }) => {
         <span className="absolute left-0 top-3 bottom-3 w-0.5 bg-brand-teal rounded-r-full" />
       )}
       <span className="flex-shrink-0 flex items-center justify-center" style={{ width: 20 }}>
-        <section.icon size={18} />
+        <section.icon size={18} className={!sidebarOpen ? `${getCollapsedIconColor(section.id, isActive)} transition-all duration-300` : ''} />
       </span>
       {sidebarOpen && (
         <span className="text-sm font-semibold truncate">{section.label}</span>
@@ -370,9 +397,14 @@ const NavSection = React.memo(({
             onClick={() => !section.greyedOut && handleSectionClick(section)}
             disabled={!!section.greyedOut}
             title={section.label}
-            className={`${headerClass} ${
-              isAssessment ? 'hover:text-amber-300 hover:bg-amber-500/10' : 'hover:text-white hover:bg-white/8'
-            } ${section.greyedOut ? 'cursor-not-allowed' : ''}`}
+            className={`
+              relative w-full flex items-center px-3 rounded-lg transition-all duration-300 group
+              ${isActive
+                ? 'bg-white/10'
+                : 'hover:bg-white/8'
+              }
+              ${section.greyedOut ? 'opacity-40 cursor-not-allowed' : ''}
+            `}
             style={{ height: 44 }}
           >
             {isActive && (
@@ -380,7 +412,7 @@ const NavSection = React.memo(({
             )}
             <div className="flex items-center gap-3 flex-1 min-w-0 justify-center">
               <span className="flex-shrink-0 flex items-center justify-center" style={{ width: 20 }}>
-                <section.icon size={18} />
+                <section.icon size={18} className={`${getCollapsedIconColor(section.id, isActive)} transition-all duration-300`} />
               </span>
             </div>
           </button>
