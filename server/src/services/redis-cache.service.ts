@@ -88,7 +88,7 @@ class RedisCacheService {
 
       this.redis.on('connect', () => {
         this.useRedis = true;
-        console.log('[Cache] Connected to Redis');
+        console.log('[Cache] Connected to Redis ✅');
       });
 
       this.redis.on('error', (err) => {
@@ -101,13 +101,14 @@ class RedisCacheService {
         console.log('[Cache] Redis connection closed');
       });
 
-      // Test connection
-      await this.redis.ping();
-      this.useRedis = true;
+      // Don't ping() here — it races against the TCP handshake when
+      // enableOfflineQueue is false, causing a spurious failure that nulls
+      // the client before the 'connect' event fires.
+      // State is managed entirely by the event listeners above.
     } catch (error) {
-      console.log(`[Cache] Redis unavailable: ${error}, using memory fallback`);
+      console.log(`[Cache] Redis init error: ${error}, using memory fallback`);
       this.useRedis = false;
-      this.redis = null;
+      // Do NOT null this.redis — the client may still connect via event listener
     }
   }
 
