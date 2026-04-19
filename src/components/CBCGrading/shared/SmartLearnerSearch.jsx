@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import ReactDOM from 'react-dom';
 import { Search, X, Check, User, Hash, GraduationCap } from 'lucide-react';
 
 /**
@@ -20,11 +21,13 @@ const SmartLearnerSearch = ({
   onSelect, 
   placeholder = "Search learner by name, adm no...", 
   disabled = false,
-  className = ""
+  className = "",
+  compact = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 });
   const wrapperRef = useRef(null);
   const inputRef = useRef(null);
   const listRef = useRef(null);
@@ -108,6 +111,39 @@ const SmartLearnerSearch = ({
     }
   };
 
+  // Update dropdown position when opened
+  useEffect(() => {
+    if (isOpen && wrapperRef.current) {
+      const rect = wrapperRef.current.getBoundingClientRect();
+      setDropdownPos({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width
+      });
+    }
+  }, [isOpen]);
+
+  // Handle scroll/resize to update/close dropdown
+  useEffect(() => {
+    if (!isOpen) return;
+    const update = () => {
+      if (wrapperRef.current) {
+        const rect = wrapperRef.current.getBoundingClientRect();
+        setDropdownPos({
+          top: rect.bottom + window.scrollY,
+          left: rect.left + window.scrollX,
+          width: rect.width
+        });
+      }
+    };
+    window.addEventListener('scroll', update, true);
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('scroll', update, true);
+      window.removeEventListener('resize', update);
+    };
+  }, [isOpen]);
+
   const handleSelect = (learner) => {
     onSelect(learner.id);
     const admNo = learner.admissionNumber || learner.admNo || '';
@@ -162,17 +198,19 @@ const SmartLearnerSearch = ({
 
   return (
     <div ref={wrapperRef} className={`relative ${className}`}>
-      <label className="block text-sm font-semibold text-gray-700 mb-2">
-        Learner
-      </label>
+      {!compact && (
+        <label className="block text-sm font-semibold text-gray-700 mb-1">
+          Learner
+        </label>
+      )}
       <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <Search className="h-5 w-5 text-gray-400" />
+          <Search className={`h-4 w-4 ${compact ? 'text-gray-400' : 'text-gray-400'}`} />
         </div>
         <input
           ref={inputRef}
           type="text"
-          className={`w-full pl-10 pr-10 py-2 border-2 ${isOpen ? 'border-blue-500 ring-2 ring-blue-100' : 'border-gray-300'} rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200`}
+          className={`w-full bg-white pl-9 pr-9 ${compact ? 'py-1.5' : 'py-2'} border-[1.5px] ${isOpen ? 'border-blue-500 ring-2 ring-blue-100' : 'border-gray-200'} rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200 text-sm`}
           placeholder={placeholder}
           value={searchTerm}
           onChange={handleInputChange}
@@ -190,61 +228,73 @@ const SmartLearnerSearch = ({
         )}
       </div>
 
-      {/* Dropdown Results */}
+      {/* Dropdown Results — Portalized */}
       {isOpen && !disabled && (
-        <div className="absolute z-50 w-full mt-1 bg-white rounded-lg shadow-xl border border-gray-100 max-h-60 overflow-y-auto" ref={listRef}>
-          {filteredLearners.length > 0 ? (
-            <ul className="py-1">
-              {filteredLearners.map((learner, index) => {
-                const isSelected = learner.id === selectedLearnerId;
-                const isHighlighted = index === highlightedIndex;
+        typeof document !== 'undefined' && ReactDOM.createPortal(
+          <div 
+            className="fixed z-[9999] bg-white rounded-lg shadow-2xl border border-gray-200 overflow-y-auto animate-in fade-in zoom-in-95 duration-100" 
+            style={{ 
+              top: dropdownPos.top - window.scrollY + 4, 
+              left: dropdownPos.left - window.scrollX, 
+              width: dropdownPos.width,
+              maxHeight: '240px'
+            }} 
+            ref={listRef}
+          >
+            {filteredLearners.length > 0 ? (
+              <ul className="py-1">
+                {filteredLearners.map((learner, index) => {
+                  const isSelected = learner.id === selectedLearnerId;
+                  const isHighlighted = index === highlightedIndex;
 
-                return (
-                  <li
-                    key={learner.id}
-                    onClick={() => handleSelect(learner)}
-                    onMouseEnter={() => setHighlightedIndex(index)}
-                    className={`px-4 py-3 cursor-pointer transition-colors duration-150 flex items-center justify-between
-                      ${isHighlighted ? 'bg-blue-50' : 'hover:bg-gray-50'}
-                      ${isSelected ? 'bg-blue-50' : ''}
-                    `}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold
-                        ${isSelected ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}
-                      `}>
-                        {learner.firstName.charAt(0)}{learner.lastName.charAt(0)}
-                      </div>
-                      <div>
-                        <div className={`font-medium ${isSelected ? 'text-blue-900' : 'text-gray-900'}`}>
-                          {learner.firstName} {learner.lastName}
+                  return (
+                    <li
+                      key={learner.id}
+                      onClick={() => handleSelect(learner)}
+                      onMouseEnter={() => setHighlightedIndex(index)}
+                      className={`px-4 py-2.5 cursor-pointer transition-colors duration-150 flex items-center justify-between
+                        ${isHighlighted ? 'bg-blue-50' : 'hover:bg-gray-50'}
+                        ${isSelected ? 'bg-blue-50' : ''}
+                      `}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold
+                          ${isSelected ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}
+                        `}>
+                          {learner.firstName.charAt(0)}{learner.lastName.charAt(0)}
                         </div>
-                        <div className="flex items-center gap-3 text-xs text-gray-500">
-                          <span className="flex items-center gap-1">
-                            <Hash size={12} />
-                            {learner.admissionNumber || learner.admNo}
-                          </span>
-                          {learner.grade && (
+                        <div>
+                          <div className={`text-xs font-bold ${isSelected ? 'text-blue-900' : 'text-gray-900'}`}>
+                            {learner.firstName} {learner.lastName}
+                          </div>
+                          <div className="flex items-center gap-3 text-[10px] text-gray-500">
                             <span className="flex items-center gap-1">
-                              <GraduationCap size={12} />
-                              {learner.grade}
+                              <Hash size={10} />
+                              {learner.admissionNumber || learner.admNo}
                             </span>
-                          )}
+                            {learner.grade && (
+                              <span className="flex items-center gap-1">
+                                <GraduationCap size={10} />
+                                {learner.grade.replace(/_/g, ' ')}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    {isSelected && <Check className="h-5 w-5 text-blue-600" />}
-                  </li>
-                );
-              })}
-            </ul>
-          ) : (
-            <div className="px-4 py-8 text-center text-gray-500">
-              <User className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-              <p>No learners found</p>
-            </div>
-          )}
-        </div>
+                      {isSelected && <Check className="h-4 w-4 text-blue-600" />}
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <div className="px-4 py-8 text-center text-gray-500">
+                <User className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                <p className="text-xs">No learners found</p>
+              </div>
+            )}
+          </div>,
+          document.body
+        )
       )}
     </div>
   );

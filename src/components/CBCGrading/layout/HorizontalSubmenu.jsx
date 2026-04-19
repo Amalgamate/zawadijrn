@@ -2,7 +2,8 @@ import React, { useMemo, useState, useRef, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { useNavigation } from '../hooks/useNavigation';
 import { useFeeActions } from '../../../contexts/FeeActionsContext';
-import { Plus, Upload, Trash2, FileSpreadsheet } from 'lucide-react';
+import { Plus, Upload, Download, Search, ChevronDown, BarChart3 } from 'lucide-react';
+import SmartLearnerSearch from '../shared/SmartLearnerSearch';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 const flattenLeafItems = (items = []) =>
@@ -207,7 +208,7 @@ const HorizontalSubmenu = ({ currentPage, onNavigate }) => {
   if (!hasGroups && !flatItems.length) return null;
 
   return (
-    <div className="border-b border-gray-200 bg-white/95 backdrop-blur-sm px-6">
+    <div className="border-b border-gray-200 bg-gray-100/95 backdrop-blur-md px-6">
       <div className="max-w-screen-2xl mx-auto flex items-center gap-1 overflow-x-auto custom-scrollbar whitespace-nowrap py-2">
         <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mr-2">
           {activeSection.label}
@@ -250,8 +251,39 @@ const HorizontalSubmenu = ({ currentPage, onNavigate }) => {
         {/* ── Fee collection action links — right-aligned ─────────────── */}
         {showFeeActions && (
           <>
-            <span className="flex-1" />{/* pushes actions to the right */}
-            <span className="h-4 w-px bg-gray-200 mx-1" />
+            {/* Metrics Toggle */}
+            {feeActions.metricsProps && (
+              <button
+                onClick={feeActions.metricsProps.toggle}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
+                  feeActions.metricsProps.show 
+                  ? 'bg-blue-600 text-white border-blue-600 shadow-sm' 
+                  : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                }`}
+              >
+                <BarChart3 size={14} />
+                Metrics
+                <ChevronDown 
+                  size={14} 
+                  className={`transition-transform duration-200 ${feeActions.metricsProps.show ? 'rotate-180' : ''}`} 
+                />
+              </button>
+            )}
+
+            {/* Student Search Integration */}
+            {feeActions.searchProps && (
+              <div className="mx-4 min-w-[320px] flex-1 relative z-50">
+                <SmartLearnerSearch
+                  learners={feeActions.searchProps.learners}
+                  selectedLearnerId={feeActions.searchProps.selectedLearnerId}
+                  onSelect={feeActions.searchProps.onSelect}
+                  placeholder="Student search..."
+                  compact={true}
+                />
+              </div>
+            )}
+
+            <span className="h-4 w-px bg-gray-200 ml-auto mr-1" />
 
             {/* Create Invoice */}
             <button
@@ -279,32 +311,16 @@ const HorizontalSubmenu = ({ currentPage, onNavigate }) => {
 
             <span className="h-4 w-px bg-gray-200" />
 
-            {/* Download Template */}
+            {/* Export Data */}
             <button
               type="button"
-              onClick={feeActions.onDownloadTemplate}
+              onClick={feeActions.onExport}
               className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-md text-blue-600 hover:bg-blue-50 transition-colors"
-              title="Download Import Template"
+              title="Export Data to Excel"
             >
-              <FileSpreadsheet size={13} strokeWidth={2.5} />
-              Template
+              <Download size={13} strokeWidth={2.5} />
+              Export
             </button>
-
-            {/* Reset — SUPER_ADMIN only */}
-            {feeActions.userRole === 'SUPER_ADMIN' && (
-              <>
-                <span className="h-4 w-px bg-gray-200" />
-                <button
-                  type="button"
-                  onClick={feeActions.onReset}
-                  className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-md text-red-500 hover:bg-red-50 transition-colors"
-                  title="Reset Invoices"
-                >
-                  <Trash2 size={13} strokeWidth={2.5} />
-                  Reset
-                </button>
-              </>
-            )}
           </>
         )}
       </div>

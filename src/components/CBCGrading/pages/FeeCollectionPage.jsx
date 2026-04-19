@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Plus, Eye, CheckCircle, AlertCircle, Clock, FileText, Download,
   X, Loader2, MessageSquare, Phone, Info, User, ShieldCheck, Mail, Upload,
-  RefreshCw, Trash2, Gift, ThumbsUp, ArrowUpDown, ArrowUp, ArrowDown,
+  Trash2, Gift, ThumbsUp, ArrowUpDown, ArrowUp, ArrowDown,
   Filter, Search, DollarSign, Wallet, Banknote, Coins, Building2
 } from 'lucide-react';
 import { generateDocument } from '../../../utils/simplePdfGenerator';
@@ -29,7 +29,7 @@ import { useFeeActions } from '../../../contexts/FeeActionsContext';
 import usePageNavigation from '../../../hooks/usePageNavigation';
 import { downloadFeeTemplate } from '../../../utils/feeTemplateGenerator';
 
-const FeeCollectionPage = ({ learnerId, grade: gradeParam, initialTransportFilter = 'all' }) => {
+const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
   const navigateTo = usePageNavigation();
   const [invoices, setInvoices] = useState([]);
   const [statsInvoices, setStatsInvoices] = useState([]); // unfiltered — drives the metric cards
@@ -53,14 +53,14 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam, initialTransportFilte
   const [paymentMethodFilter, setPaymentMethodFilter] = useState('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [transportFilter, setTransportFilter] = useState(initialTransportFilter);
-  const [minBalance, setMinBalance] = useState('');
-  const [maxBalance, setMaxBalance] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [printingInvoice, setPrintingInvoice] = useState(null);
   const [schoolInfo, setSchoolInfo] = useState(null);
   const [listTotals, setListTotals] = useState({ totalBilled: 0, totalPaid: 0, totalBalance: 0, totalWaived: 0, totalOverpaid: 0 });
+  const [showMetrics, setShowMetrics] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exporting, setExporting] = useState(false);
   
   // Column Visibility State
   const [visibleColumns, setVisibleColumns] = useState({
@@ -73,7 +73,6 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam, initialTransportFilte
     paid: true,
     waived: true,
     balance: true,
-    transport: true,
     overpaid: true,
     status: true,
     paymentMode: true,
@@ -85,23 +84,17 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam, initialTransportFilte
   const activeFilterCount = (gradeFilter !== 'all' ? 1 : 0) +
     (termFilter !== 'all' ? 1 : 0) +
     (statusFilter !== 'all' ? 1 : 0) +
-    (transportFilter !== 'all' ? 1 : 0) +
     (paymentMethodFilter !== 'all' ? 1 : 0) +
     (startDate ? 1 : 0) +
-    (endDate ? 1 : 0) +
-    (minBalance ? 1 : 0) +
-    (maxBalance ? 1 : 0);
+    (endDate ? 1 : 0);
   
   const clearAllFilters = () => {
     setGradeFilter('all');
     setTermFilter('all');
     setStatusFilter('all');
-    setTransportFilter('all');
     setPaymentMethodFilter('all');
     setStartDate('');
     setEndDate('');
-    setMinBalance('');
-    setMaxBalance('');
     setCurrentPage(1);
     setSearchLearnerId(null);
   };
@@ -133,7 +126,6 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam, initialTransportFilte
         ...(termFilter !== 'all' && { term: termFilter }),
         ...(startDate && { startDate }),
         ...(endDate && { endDate }),
-        ...(transportFilter !== 'all' && { isTransport: transportFilter === 'transport' ? 'true' : 'false' }),
         ...(gradeFilter !== 'all' && { grade: gradeFilter }),
         ...(searchLearnerId && { learnerId: searchLearnerId }),
         ...(paymentMethodFilter !== 'all' && { paymentMethod: paymentMethodFilter }),
@@ -153,7 +145,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam, initialTransportFilte
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, termFilter, startDate, endDate, transportFilter, gradeFilter, searchLearnerId, currentPage, sortConfig, showError, minBalance, maxBalance, paymentMethodFilter]);
+  }, [statusFilter, termFilter, startDate, endDate, gradeFilter, searchLearnerId, currentPage, sortConfig, showError, paymentMethodFilter]);
 
   // Separate fetch — no filters — solely powers the metric cards
   const fetchStatsInvoices = React.useCallback(async () => {
@@ -209,6 +201,86 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam, initialTransportFilte
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExportExcel = async () => {
+    try {
+      setExporting(true);
+      const params = {
+        limit: 'all',
+        ...(statusFilter !== 'all' && { status: statusFilter.toUpperCase() }),
+        ...(termFilter !== 'all' && { term: termFilter }),
+        ...(startDate && { startDate }),
+        ...(endDate && { endDate }),
+        ...(gradeFilter !== 'all' && { grade: gradeFilter }),
+        ...(searchLearnerId && { learnerId: searchLearnerId }),
+        ...(paymentMethodFilter !== 'all' && { paymentMethod: paymentMethodFilter }),
+        sortBy: sortConfig.key,
+        sortOrder: sortConfig.direction
+      };
+
+      const response = await api.fees.getAllInvoices(params);
+      const data = response.data || [];
+
+      if (data.length === 0) {
+        showError('No records found to export');
+        return;
+      }
+
+      const headers = [
+        'Student Name',
+        'Admission No',
+        'Grade',
+        'Stream',
+        'Invoice #',
+        'Date issued',
+        'Fee Type',
+        'Term',
+        'Billed (KES)',
+        'Paid (KES)',
+        'Waived (KES)',
+        'Balance (KES)',
+        'Status',
+        'Payment Mode'
+      ];
+
+      const rows = data.map(i => [
+        `${i.learner?.firstName || ''} ${i.learner?.lastName || ''}`,
+        i.learner?.admissionNumber || '',
+        i.learner?.grade || '',
+        i.learner?.stream || '',
+        i.invoiceNumber || '',
+        new Date(i.createdAt).toLocaleDateString(),
+        i.feeType || i.feeName || '',
+        i.term || '',
+        i.totalAmount || 0,
+        i.paidAmount || 0,
+        (i.waivers || []).filter(w => w.status === 'APPROVED').reduce((acc, w) => acc + Number(w.amountWaived), 0),
+        i.balance || 0,
+        i.status || '',
+        i.paymentMethod || ''
+      ]);
+
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `fee_collections_export_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      showSuccess(`Successfully exported ${data.length} records`);
+      setShowExportModal(false);
+    } catch (error) {
+      console.error('Export error:', error);
+      showError('Failed to export data');
     }
   };
 
@@ -558,13 +630,21 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam, initialTransportFilte
     registerFeeActions({
       onCreate: () => setShowCreateModal(true),
       onImport: () => setShowImportModal(true),
-      onDownloadTemplate: handleDownloadTemplate,
-      onReset:  handleResetInvoices,
-      userRole: user?.role
+      onExport: () => setShowExportModal(true),
+      userRole: user?.role,
+      searchProps: {
+        learners: allLearners,
+        selectedLearnerId: searchLearnerId,
+        onSelect: (id) => { setSearchLearnerId(id); setCurrentPage(1); }
+      },
+      metricsProps: {
+        show: showMetrics,
+        toggle: () => setShowMetrics(prev => !prev)
+      }
     });
     return () => clearFeeActions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.role]);
+  }, [user?.role, allLearners, searchLearnerId, showMetrics]);
 
   // ——— Computed KES totals for each metric card (always unfiltered) —————————————
   const stats = React.useMemo(() => {
@@ -652,7 +732,14 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam, initialTransportFilte
   return (
     <div className="space-y-6">
 
-      {/* Stats Cards */}
+      {/* Collapsible Metrics Section */}
+      <div 
+        className={`grid transition-all duration-500 ease-in-out ${
+          showMetrics ? 'grid-rows-[1fr] opacity-100 mb-6' : 'grid-rows-[0fr] opacity-0 mb-0'
+        }`}
+      >
+        <div className="overflow-hidden space-y-6">
+          {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
 
         {/* Total Invoices — Indigo */}
@@ -709,7 +796,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam, initialTransportFilte
               <p className="text-xs font-bold uppercase tracking-widest text-orange-100 mb-1">Partial Payments</p>
               <p className="text-2xl font-bold mb-2">{stats.partialAmt}</p>
               <div className="flex flex-col items-start gap-1">
-                <p className="text-xs font-black text-orange-100 tracking-wider">BALANCE: {stats.partialBalanceAmt}</p>
+                <p className="text-lg font-bold text-orange-100 uppercase tracking-tight leading-none">BAL: {stats.partialBalanceAmt}</p>
                 <p className="text-sm font-semibold text-orange-200">{stats.partialCount} Students</p>
               </div>
             </div>
@@ -769,75 +856,75 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam, initialTransportFilte
       <div className="relative overflow-hidden bg-white border-[0.5px] border-gray-300 rounded-2xl p-0 shadow-sm flex flex-col lg:flex-row items-stretch gap-0">
         
         {/* Total Collections - Emerald */}
-        <div className="flex-1 flex items-center gap-4 p-5 bg-emerald-50/80 border-r-[0.5px] border-emerald-200/80 hover:bg-emerald-50 transition-colors">
-          <div className="p-3 bg-emerald-500 text-white rounded-xl shadow-sm">
-            <Wallet size={24} />
+        <div className="flex-1 flex items-center gap-4 p-4 bg-emerald-50/80 border-r-[0.5px] border-emerald-200/80 hover:bg-emerald-50 transition-colors">
+          <div className="w-10 h-10 bg-emerald-500 text-white rounded-xl shadow-sm flex items-center justify-center shrink-0">
+            <Wallet size={20} />
           </div>
-          <div className="space-y-1">
-            <p className="text-[10px] font-black text-emerald-700 uppercase tracking-widest flex items-center gap-1.5 leading-none">
+          <div className="space-y-0.5">
+            <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-widest flex items-center gap-1.5 leading-none">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               Total Collections
             </p>
-            <span className="text-2xl font-black text-gray-900 tracking-tight leading-none block">
+            <span className="text-xl font-bold text-gray-900 tracking-tight leading-none block">
               {stats.actualCollected.replace('KES ', '')}
-              <span className="text-xs font-bold text-gray-500 ml-1">KES</span>
+              <span className="text-[10px] font-bold text-gray-500 ml-1">KES</span>
             </span>
           </div>
         </div>
 
         {/* Total Balances - Red */}
-        <div className="flex-1 flex items-center gap-4 p-5 bg-red-50/80 border-r-[0.5px] border-red-200/80 hover:bg-red-50 transition-colors">
-          <div className="p-3 bg-red-500 text-white rounded-xl shadow-sm">
-            <AlertCircle size={24} />
+        <div className="flex-1 flex items-center gap-4 p-4 bg-red-50/80 border-r-[0.5px] border-red-200/80 hover:bg-red-50 transition-colors">
+          <div className="w-10 h-10 bg-red-500 text-white rounded-xl shadow-sm flex items-center justify-center shrink-0">
+            <AlertCircle size={20} />
           </div>
-          <div className="space-y-1">
-            <p className="text-[10px] font-black text-red-700 uppercase tracking-widest flex items-center gap-1.5 leading-none">
+          <div className="space-y-0.5">
+            <p className="text-[10px] font-bold text-red-700 uppercase tracking-widest flex items-center gap-1.5 leading-none">
               <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
               Total Balances
             </p>
-            <span className="text-2xl font-black text-gray-900 tracking-tight leading-none block">
+            <span className="text-xl font-bold text-gray-900 tracking-tight leading-none block">
               {Number(listTotals.totalBalance || 0).toLocaleString()}
-              <span className="text-xs font-bold text-gray-500 ml-1">KES</span>
+              <span className="text-[10px] font-bold text-gray-500 ml-1">KES</span>
             </span>
           </div>
         </div>
 
         {/* Total Overpaid - Purple */}
-        <div className="flex-1 flex items-center gap-4 p-5 bg-purple-50/80 border-r-[0.5px] border-purple-200/80 hover:bg-purple-50 transition-colors">
-          <div className="p-3 bg-purple-500 text-white rounded-xl shadow-sm">
-            <ShieldCheck size={24} />
+        <div className="flex-1 flex items-center gap-4 p-4 bg-purple-50/80 border-r-[0.5px] border-purple-200/80 hover:bg-purple-50 transition-colors">
+          <div className="w-10 h-10 bg-purple-500 text-white rounded-xl shadow-sm flex items-center justify-center shrink-0">
+            <ShieldCheck size={20} />
           </div>
-          <div className="space-y-1">
-            <p className="text-[10px] font-black text-purple-700 uppercase tracking-widest flex items-center gap-1.5 leading-none">
+          <div className="space-y-0.5">
+            <p className="text-[10px] font-bold text-purple-700 uppercase tracking-widest flex items-center gap-1.5 leading-none">
               <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
               Total Overpaid
             </p>
-            <span className="text-2xl font-black text-gray-900 tracking-tight leading-none block">
+            <span className="text-xl font-bold text-gray-900 tracking-tight leading-none block">
               {Number(listTotals.totalOverpaid || 0).toLocaleString()}
-              <span className="text-xs font-bold text-gray-500 ml-1">KES</span>
+              <span className="text-[10px] font-bold text-gray-500 ml-1">KES</span>
             </span>
           </div>
         </div>
 
         {/* Adjustments Section — Waivers (Teal) */}
-        <div className="flex-1 flex items-center gap-4 p-5 bg-teal-50/80 border-r-[0.5px] border-teal-200/80 hover:bg-teal-50 transition-colors">
-          <div className="p-3 bg-teal-500 text-white rounded-xl shadow-sm">
-            <Gift size={24} />
+        <div className="flex-1 flex items-center gap-4 p-4 bg-teal-50/80 border-r-[0.5px] border-teal-200/80 hover:bg-teal-50 transition-colors">
+          <div className="w-10 h-10 bg-teal-500 text-white rounded-xl shadow-sm flex items-center justify-center shrink-0">
+            <Gift size={20} />
           </div>
-          <div className="space-y-1">
-            <p className="text-[10px] font-black text-teal-700 uppercase tracking-widest flex items-center gap-1.5 leading-none">
+          <div className="space-y-0.5">
+            <p className="text-[10px] font-bold text-teal-700 uppercase tracking-widest flex items-center gap-1.5 leading-none">
               <span className="w-1.5 h-1.5 rounded-full bg-teal-400" />
               Total Waived
             </p>
-            <span className="text-2xl font-black text-gray-900 tracking-tight leading-none block">
+            <span className="text-xl font-bold text-gray-900 tracking-tight leading-none block">
               - {stats.waivedTotal.replace('KES ', '')}
-              <span className="text-xs font-bold text-gray-500 ml-1">KES</span>
+              <span className="text-[10px] font-bold text-gray-500 ml-1">KES</span>
             </span>
           </div>
         </div>
 
         {/* Breakdown Section — Mpesa/Cash/Bank (Lime/Blue/Indigo) */}
-        <div className="flex-[2.5] flex items-center justify-around p-5 bg-gradient-to-r from-lime-50/20 via-blue-50/20 to-indigo-50/20">
+        <div className="flex-[2.5] flex items-center justify-around p-4 bg-gradient-to-r from-lime-50/20 via-blue-50/20 to-indigo-50/20">
           
           {/* Mpesa */}
           <div 
@@ -846,15 +933,15 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam, initialTransportFilte
               paymentMethodFilter === 'MPESA' ? 'bg-lime-50/50 ring-2 ring-lime-400 ring-inset rounded-l-xl' : ''
             }`}
           >
-            <div className={`w-11 h-11 bg-lime-500 text-white rounded-xl shadow-sm shadow-lime-200 flex items-center justify-center font-black text-2xl shrink-0 ${paymentMethodFilter === 'MPESA' ? 'ring-2 ring-white' : ''}`}>
+            <div className={`w-10 h-10 bg-lime-500 text-white rounded-xl shadow-sm shadow-lime-200 flex items-center justify-center font-bold text-base shrink-0 ${paymentMethodFilter === 'MPESA' ? 'ring-2 ring-white' : ''}`}>
               M
             </div>
             <div className="flex flex-col">
               <div className="flex items-center gap-1.5 mb-1">
                 <span className={`w-1.5 h-1.5 rounded-full bg-lime-500 ${paymentMethodFilter === 'MPESA' ? 'animate-ping' : 'animate-pulse'}`} />
-                <span className="text-[10px] font-black text-lime-700 uppercase tracking-widest">Mpesa</span>
+                <span className="text-[10px] font-bold text-lime-700 uppercase tracking-widest">Mpesa</span>
               </div>
-              <span className="text-xl font-black text-gray-900 tracking-tight leading-none block">
+              <span className="text-xl font-bold text-gray-900 tracking-tight leading-none block">
                 {stats.mpesaTotal.replace('KES ', '')}
                 <span className="text-[10px] font-bold text-gray-500 ml-1">KES</span>
               </span>
@@ -862,21 +949,21 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam, initialTransportFilte
           </div>
           
           {/* Cash */}
-          <div 
-            onClick={() => setPaymentMethodFilter(prev => prev === 'CASH' ? 'all' : 'CASH')}
-            className={`flex-1 flex items-center gap-4 px-4 border-r-[0.5px] border-gray-200 justify-center cursor-pointer transition-all duration-200 hover:scale-[1.02] ${
-              paymentMethodFilter === 'CASH' ? 'bg-blue-50/50 ring-2 ring-blue-400 ring-inset' : ''
-            }`}
-          >
-            <div className={`w-11 h-11 bg-blue-500 text-white rounded-xl shadow-sm shadow-blue-200 flex items-center justify-center shrink-0 ${paymentMethodFilter === 'CASH' ? 'ring-2 ring-white' : ''}`}>
-              <Banknote size={24} />
-            </div>
+        <div 
+          onClick={() => setPaymentMethodFilter(prev => prev === 'CASH' ? 'all' : 'CASH')}
+          className={`flex-1 flex items-center gap-4 px-4 border-r-[0.5px] border-gray-200 justify-center cursor-pointer transition-all duration-200 hover:scale-[1.02] ${
+            paymentMethodFilter === 'CASH' ? 'bg-blue-50/50 ring-2 ring-blue-400 ring-inset' : ''
+          }`}
+        >
+          <div className={`w-10 h-10 bg-blue-500 text-white rounded-xl shadow-sm shadow-blue-200 flex items-center justify-center shrink-0 ${paymentMethodFilter === 'CASH' ? 'ring-2 ring-white' : ''}`}>
+            <Banknote size={20} />
+          </div>
             <div className="flex flex-col">
               <div className="flex items-center gap-1.5 mb-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                <span className="text-[10px] font-black text-blue-700 uppercase tracking-widest">Cash</span>
+                <span className="text-[10px] font-bold text-blue-700 uppercase tracking-widest">Cash</span>
               </div>
-              <span className="text-xl font-black text-gray-900 tracking-tight leading-none block">
+              <span className="text-xl font-bold text-gray-900 tracking-tight leading-none block">
                 {stats.cashTotal.replace('KES ', '')}
                 <span className="text-[10px] font-bold text-gray-500 ml-1">KES</span>
               </span>
@@ -884,21 +971,21 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam, initialTransportFilte
           </div>
 
           {/* Bank */}
-          <div 
-            onClick={() => setPaymentMethodFilter(prev => prev === 'BANK_TRANSFER' ? 'all' : 'BANK_TRANSFER')}
-            className={`flex-1 flex items-center gap-4 pl-4 justify-center cursor-pointer transition-all duration-200 hover:scale-[1.02] ${
-              paymentMethodFilter === 'BANK_TRANSFER' ? 'bg-indigo-50/50 ring-2 ring-indigo-400 ring-inset rounded-r-xl' : ''
-            }`}
-          >
-            <div className={`w-11 h-11 bg-indigo-600 text-white rounded-xl shadow-sm shadow-indigo-200 flex items-center justify-center shrink-0 ${paymentMethodFilter === 'BANK_TRANSFER' ? 'ring-2 ring-white' : ''}`}>
-              <Building2 size={24} />
-            </div>
+        <div 
+          onClick={() => setPaymentMethodFilter(prev => prev === 'BANK_TRANSFER' ? 'all' : 'BANK_TRANSFER')}
+          className={`flex-1 flex items-center gap-4 pl-4 justify-center cursor-pointer transition-all duration-200 hover:scale-[1.02] ${
+            paymentMethodFilter === 'BANK_TRANSFER' ? 'bg-indigo-50/50 ring-2 ring-indigo-400 ring-inset rounded-r-xl' : ''
+          }`}
+        >
+          <div className={`w-10 h-10 bg-indigo-600 text-white rounded-xl shadow-sm shadow-indigo-200 flex items-center justify-center shrink-0 ${paymentMethodFilter === 'BANK_TRANSFER' ? 'ring-2 ring-white' : ''}`}>
+            <Building2 size={20} />
+          </div>
             <div className="flex flex-col">
               <div className="flex items-center gap-1.5 mb-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                <span className="text-[10px] font-black text-indigo-700 uppercase tracking-widest">Bank/Cheque</span>
+                <span className="text-[10px] font-bold text-indigo-700 uppercase tracking-widest">Bank/Cheque</span>
               </div>
-              <span className="text-xl font-black text-gray-900 tracking-tight leading-none block">
+              <span className="text-xl font-bold text-gray-900 tracking-tight leading-none block">
                 {stats.bankTotal.replace('KES ', '')}
                 <span className="text-[10px] font-bold text-gray-500 ml-1">KES</span>
               </span>
@@ -907,358 +994,226 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam, initialTransportFilte
 
         </div>
       </div>
+    </div>
+  </div>
 
 
 
-      {/* Smart Search & Unified Filters */}
-      <div className="bg-white rounded-xl shadow p-4">
-        {/* Top Row: Omni-Search & Actions */}
-        <div className="flex flex-col md:flex-row gap-3 items-end w-full">
-          {/* Omni Search */}
-          <div className="flex-[2] w-full relative z-40">
-            <SmartLearnerSearch
-              learners={allLearners}
-              selectedLearnerId={searchLearnerId}
-              onSelect={(id) => { setSearchLearnerId(id); setCurrentPage(1); }}
-              placeholder="Search by student name, adm no, or invoice #..."
-            />
+      {/* Unified Action & Filter Toolbar */}
+      <div className="bg-white rounded-xl shadow-sm p-4 border-[0.5px] border-gray-200">
+        <div className="flex flex-wrap items-center gap-4 w-full">          {/* Quick Action Chips Bar (Unified) */}
+          <div className="flex flex-wrap gap-2 items-center flex-1 overflow-x-auto custom-scrollbar whitespace-nowrap pb-1 lg:pb-0">
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mr-1 shrink-0">Quick Filters:</span>
+
+            {/* Terms */}
+            {[['TERM_1', 'Term 1'], ['TERM_2', 'Term 2'], ['TERM_3', 'Term 3']].map(([val, label]) => (
+              <button
+                key={val}
+                onClick={() => { setTermFilter(val); setCurrentPage(1); }}
+                className={`px-3 py-1 text-xs font-semibold rounded-full border transition-colors ${termFilter === val ? 'bg-blue-600 text-white border-blue-600 shadow-sm scale-105' : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700'}`}
+              >
+                {label}
+              </button>
+            ))}
+
+            <span className="w-px h-4 bg-gray-200 mx-1 shrink-0" />
+
+            {/* Payment Status */}
+            {[
+              ['pending',  'Pending',  'hover:border-red-300 hover:bg-red-50 hover:text-red-700',    'bg-red-600 text-white border-red-600 shadow-sm scale-105'],
+              ['partial',  'Partial',  'hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700', 'bg-orange-500 text-white border-orange-500 shadow-sm scale-105'],
+              ['paid',     'Paid',     'hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700', 'bg-emerald-600 text-white border-emerald-600 shadow-sm scale-105'],
+              ['overpaid', 'Overpaid', 'hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700', 'bg-purple-600 text-white border-purple-600 shadow-sm scale-105'],
+            ].map(([val, label, hoverCls, activeCls]) => (
+              <button
+                key={val}
+                onClick={() => { setStatusFilter(val); setCurrentPage(1); }}
+                className={`px-3 py-1 text-xs font-semibold rounded-full border transition-colors ${statusFilter === val ? activeCls : `border-gray-200 bg-gray-50 text-gray-600 ${hoverCls}`}`}
+              >
+                {label}
+              </button>
+            ))}
+
+            <span className="w-px h-4 bg-gray-200 mx-1 shrink-0" />
+
+            {/* Date shortcuts */}
+            <button
+              onClick={() => {
+                const today = new Date().toISOString().split('T')[0];
+                setStartDate(today);
+                setEndDate(today);
+                setCurrentPage(1);
+              }}
+              className={`px-3 py-1 text-xs font-semibold rounded-full border border-gray-200 bg-gray-50 text-gray-600 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 transition-colors ${startDate === new Date().toISOString().split('T')[0] && endDate === new Date().toISOString().split('T')[0] ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm scale-105' : ''}`}
+            >
+              📅 Today
+            </button>
+            <button
+              onClick={() => {
+                const today = new Date();
+                const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+                setStartDate(firstDay);
+                setEndDate(today.toISOString().split('T')[0]);
+                setCurrentPage(1);
+              }}
+              className="px-3 py-1 text-xs font-semibold rounded-full border border-gray-200 bg-gray-50 text-gray-600 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
+            >
+              📅 This Month
+            </button>
+
+            {activeFilterCount > 0 && (
+              <button 
+                onClick={clearAllFilters} 
+                className="flex items-center gap-1 px-3 py-1 text-xs font-bold rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-colors shrink-0 ml-2"
+              >
+                <X size={12} /> Clear All
+              </button>
+            )}
           </div>
 
-          {/* Inline Balance Filter */}
-          <div className="flex-1 relative">
-            <div className="flex items-center gap-2 p-2.5 bg-gray-50 border border-gray-200 rounded-xl shadow-sm focus-within:ring-2 focus-within:ring-emerald-400 focus-within:border-emerald-400 transition-all">
-              <span className="text-[10px] font-extrabold text-emerald-600 uppercase tracking-widest shrink-0">Balance ≥</span>
-              <span className="text-xs font-bold text-gray-400 shrink-0">KES</span>
-              <input
-                type="number"
-                placeholder="e.g. 10,000"
-                value={minBalance}
-                onChange={(e) => setMinBalance(e.target.value)}
-                min="0"
-                className="flex-1 bg-transparent border-none outline-none text-sm font-semibold text-gray-800 placeholder-gray-300 min-w-0"
-              />
-              {minBalance && (
-                <button onClick={() => setMinBalance('')} className="text-gray-400 hover:text-red-500 transition-colors shrink-0">
-                  <X size={14} />
-                </button>
+          <div className="flex items-center gap-3 ml-auto">
+            <div className="relative">
+              <button
+                onClick={() => setShowGlobalFilters(!showGlobalFilters)}
+                className={`px-4 py-2 border rounded-xl font-bold flex items-center gap-2 transition-all text-sm ${activeFilterCount > 0 ? 'bg-blue-50 border-blue-200 text-blue-700' : 'hover:bg-gray-50 text-gray-700 bg-white shadow-sm'}`}
+              >
+                <Filter size={16} className={activeFilterCount > 0 ? "text-blue-600" : "text-gray-500"} />
+                Filters
+                {activeFilterCount > 0 && (
+                  <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-[10px] ml-1">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Filter Drawer/Popover */}
+              {showGlobalFilters && (
+                <div className="absolute left-0 mt-2 w-[480px] bg-white border border-gray-200 rounded-2xl shadow-2xl z-50 p-6 flex flex-col gap-6 animate-in slide-in-from-top-2">
+                  <div className="flex justify-between items-center border-b pb-3">
+                    <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                      <Filter size={18} className="text-gray-400" /> Refine Results
+                    </h3>
+                    <button onClick={() => setShowGlobalFilters(false)} className="text-gray-400 hover:text-gray-700 p-1 bg-gray-50 rounded-lg hover:bg-gray-100">
+                      <X size={16} />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-6">
+                    {/* Academic Context */}
+                    <div>
+                      <h4 className="text-[11px] font-bold text-blue-500 uppercase tracking-widest mb-3">Academic Context</h4>
+                      <div className="flex gap-3">
+                        <div className="flex-1 flex flex-col gap-1.5">
+                          <label className="text-xs font-semibold text-gray-600">Grade</label>
+                          <select value={gradeFilter} onChange={(e) => { setGradeFilter(e.target.value); setCurrentPage(1); }} className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm w-full outline-blue-500">
+                            <option value="all">All Classes</option>
+                            <option value="GRADE_1">Grade 1</option>
+                            <option value="GRADE_2">Grade 2</option>
+                            <option value="GRADE_3">Grade 3</option>
+                            <option value="GRADE_4">Grade 4</option>
+                            <option value="GRADE_5">Grade 5</option>
+                            <option value="GRADE_6">Grade 6</option>
+                            <option value="GRADE_7">Grade 7</option>
+                            <option value="GRADE_8">Grade 8</option>
+                            <option value="GRADE_9">Grade 9</option>
+                            <option value="GRADE_10">Grade 10</option>
+                            <option value="GRADE_11">Grade 11</option>
+                            <option value="GRADE_12">Grade 12</option>
+                            <option value="PP1">PP1</option>
+                            <option value="PP2">PP2</option>
+                          </select>
+                        </div>
+                        <div className="flex-1 flex flex-col gap-1.5">
+                          <label className="text-xs font-semibold text-gray-600">Term</label>
+                          <select value={termFilter} onChange={(e) => { setTermFilter(e.target.value); setCurrentPage(1); }} className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm w-full outline-blue-500">
+                            <option value="all">All Terms</option>
+                            <option value="TERM_1">Term 1</option>
+                            <option value="TERM_2">Term 2</option>
+                            <option value="TERM_3">Term 3</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Financial Context */}
+                    <div>
+                      <h4 className="text-[11px] font-bold text-emerald-500 uppercase tracking-widest mb-3">Financials</h4>
+                      <div className="flex gap-3">
+                        <div className="flex-1 flex flex-col gap-1.5">
+                          <label className="text-xs font-semibold text-gray-600">Status</label>
+                          <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }} className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm w-full outline-emerald-500">
+                            <option value="all">All Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="partial">Partial</option>
+                            <option value="paid">Paid</option>
+                            <option value="overpaid">Overpaid</option>
+                          </select>
+                        </div>
+
+                      </div>
+
+
+                    </div>
+                  </div>
+
+                  {/* Date Bounds */}
+                  <div className="border-t pt-4">
+                    <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3">Date Bounds</h4>
+                    <div className="flex gap-3">
+                      <div className="flex-1 flex flex-col gap-1.5">
+                        <label className="text-xs font-semibold text-gray-600">From</label>
+                        <input type="date" value={startDate} onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }} className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm w-full" />
+                      </div>
+                      <div className="flex-1 flex flex-col gap-1.5">
+                        <label className="text-xs font-semibold text-gray-600">To</label>
+                        <input type="date" value={endDate} onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }} className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm w-full" />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Actions */}
+                  <div className="flex justify-end gap-2 border-t pt-4 bg-gray-50/50 -mx-6 -mb-6 p-4 rounded-b-2xl">
+                    {activeFilterCount > 0 && (
+                      <button onClick={clearAllFilters} className="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-800 hover:bg-gray-200 rounded-lg transition-colors">
+                        Clear Filters
+                      </button>
+                    )}
+                    <button onClick={() => { setShowGlobalFilters(false); fetchInvoices(); }} className="px-6 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-md hover:shadow-lg transition-all">
+                      Apply Filters
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
-            {/* quick picks */}
-            {minBalance === '' && (
-              <div className="absolute top-full left-0 mt-1 flex gap-1 z-10">
-                {[1000, 5000, 10000, 50000].map(v => (
-                  <button
-                    key={v}
-                    onClick={() => setMinBalance(v)}
-                    className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 transition-colors"
-                  >
-                    {v >= 1000 ? `>${v/1000}K` : `>${v}`}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
 
-          {/* Unified Filter Button */}
-          <div className="relative">
-            <button
-              onClick={() => setShowGlobalFilters(!showGlobalFilters)}
-              className={`px-5 py-2.5 border rounded-xl font-bold flex items-center gap-2 transition-all ${activeFilterCount > 0 ? 'bg-blue-50 border-blue-200 text-blue-700' : 'hover:bg-gray-50 text-gray-700 bg-white shadow-sm'}`}
-            >
-              <Filter size={18} className={activeFilterCount > 0 ? "text-blue-600" : "text-gray-500"} />
-              Filters
-              {activeFilterCount > 0 && (
-                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-[10px] ml-1">
-                  {activeFilterCount}
-                </span>
+            <div className="relative">
+              <button
+                onClick={() => setShowColumnFilter(!showColumnFilter)}
+                className="px-4 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 text-gray-600 font-bold text-sm flex items-center gap-2 shadow-sm transition-all"
+                title="Toggle Layout Columns"
+              >
+                Columns <ArrowUpDown size={16} className="text-gray-400" />
+              </button>
+              {showColumnFilter && (
+                <div className="absolute left-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 p-2 text-sm flex flex-col">
+                  <div className="font-bold border-b pb-2 mb-2 px-2 text-gray-700 bg-gray-50/80 -mx-2 -mt-2 p-2 rounded-t-xl text-[11px] uppercase tracking-wider">Display Columns</div>
+                  {Object.keys(visibleColumns).map(colKey => (
+                    <label key={colKey} className="flex items-center gap-3 cursor-pointer hover:bg-blue-50/50 p-1.5 rounded transition-colors group">
+                      <input 
+                        type="checkbox" 
+                        checked={visibleColumns[colKey]}
+                        onChange={() => setVisibleColumns(prev => ({...prev, [colKey]: !prev[colKey]}))}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+                      />
+                      <span className="capitalize text-gray-700 font-medium group-hover:text-blue-700">
+                        {colKey === 'paymentMode' ? 'Mode / Quick Pay' : colKey.replace(/([A-Z])/g, ' $1').trim()}
+                      </span>
+                    </label>
+                  ))}
+                </div>
               )}
-            </button>
-
-            {/* Filter Drawer/Popover */}
-            {showGlobalFilters && (
-              <div className="absolute right-0 mt-2 w-[480px] bg-white border border-gray-200 rounded-2xl shadow-2xl z-50 p-6 flex flex-col gap-6 animate-in slide-in-from-top-2">
-                <div className="flex justify-between items-center border-b pb-3">
-                  <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                    <Filter size={18} className="text-gray-400" /> Refine Results
-                  </h3>
-                  <button onClick={() => setShowGlobalFilters(false)} className="text-gray-400 hover:text-gray-700 p-1 bg-gray-50 rounded-lg hover:bg-gray-100">
-                    <X size={16} />
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 gap-6">
-                  {/* Academic Context */}
-                  <div>
-                    <h4 className="text-[11px] font-extrabold text-blue-500 uppercase tracking-widest mb-3">Academic Context</h4>
-                    <div className="flex gap-3">
-                      <div className="flex-1 flex flex-col gap-1.5">
-                        <label className="text-xs font-semibold text-gray-600">Grade</label>
-                        <select value={gradeFilter} onChange={(e) => { setGradeFilter(e.target.value); setCurrentPage(1); }} className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm w-full outline-blue-500">
-                          <option value="all">All Classes</option>
-                          <option value="GRADE_1">Grade 1</option>
-                          <option value="GRADE_2">Grade 2</option>
-                          <option value="GRADE_3">Grade 3</option>
-                          <option value="GRADE_4">Grade 4</option>
-                          <option value="GRADE_5">Grade 5</option>
-                          <option value="GRADE_6">Grade 6</option>
-                          <option value="GRADE_7">Grade 7</option>
-                          <option value="GRADE_8">Grade 8</option>
-                          <option value="GRADE_9">Grade 9</option>
-                          <option value="GRADE_10">Grade 10</option>
-                          <option value="GRADE_11">Grade 11</option>
-                          <option value="GRADE_12">Grade 12</option>
-                          <option value="PP1">PP1</option>
-                          <option value="PP2">PP2</option>
-                        </select>
-                      </div>
-                      <div className="flex-1 flex flex-col gap-1.5">
-                        <label className="text-xs font-semibold text-gray-600">Term</label>
-                        <select value={termFilter} onChange={(e) => { setTermFilter(e.target.value); setCurrentPage(1); }} className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm w-full outline-blue-500">
-                          <option value="all">All Terms</option>
-                          <option value="TERM_1">Term 1</option>
-                          <option value="TERM_2">Term 2</option>
-                          <option value="TERM_3">Term 3</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Financial Context */}
-                  <div>
-                    <h4 className="text-[11px] font-extrabold text-emerald-500 uppercase tracking-widest mb-3">Financials</h4>
-                    <div className="flex gap-3">
-                      <div className="flex-1 flex flex-col gap-1.5">
-                        <label className="text-xs font-semibold text-gray-600">Status</label>
-                        <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }} className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm w-full outline-emerald-500">
-                          <option value="all">All Status</option>
-                          <option value="pending">Pending</option>
-                          <option value="partial">Partial</option>
-                          <option value="paid">Paid</option>
-                          <option value="overpaid">Overpaid</option>
-                        </select>
-                      </div>
-                      <div className="flex-1 flex flex-col gap-1.5">
-                        <label className="text-xs font-semibold text-gray-600">Category</label>
-                        <select value={transportFilter} onChange={(e) => { setTransportFilter(e.target.value); setCurrentPage(1); }} className="p-2 bg-purple-50 border border-purple-200 rounded-lg text-sm w-full outline-purple-500 text-purple-700 font-medium">
-                          <option value="all">All Fees</option>
-                          <option value="transport">Transport Fees Only</option>
-                          <option value="regular">Regular Tuition Only</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    {/* Balance Range Filter */}
-                    <div className="mt-4 p-3 bg-white border border-gray-100 rounded-xl shadow-inner-sm">
-                      <div className="flex items-center justify-between mb-3">
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
-                          Balance Range
-                          <span className="text-[10px] font-bold text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded">KES</span>
-                        </label>
-                        {(minBalance || maxBalance) && (
-                          <button onClick={() => { setMinBalance(''); setMaxBalance(''); }} className="text-[10px] text-red-500 hover:text-red-700 font-black hover:underline">
-                            RESET ALL
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Pills Inside the section */}
-                      <div className="flex flex-wrap gap-1.5 mb-3 pb-3 border-b border-gray-50">
-                        {[[1000, null, '>1K'], [5000, null, '>5K'], [10000, null, '>10K'], [50000, null, '>50K'], [0, 1000, '<1K'], [0, 5000, '<5K']].map(([min, max, label]) => (
-                          <button
-                            key={label}
-                            onClick={() => { setMinBalance(min || ''); setMaxBalance(max || ''); setCurrentPage(1); }}
-                            className={`px-2 py-1 text-[10px] font-black rounded-lg transition-all ${
-                              String(minBalance) === String(min || '') && String(maxBalance) === String(max || '')
-                                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/20'
-                                : 'bg-gray-50 text-gray-500 hover:bg-emerald-50 hover:text-emerald-700 border border-gray-100'
-                            }`}
-                          >
-                            {label}
-                          </button>
-                        ))}
-                      </div>
-
-                      <div className="flex gap-2 items-center">
-                        <div className="flex-1 relative">
-                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] font-black text-gray-400">≥</span>
-                          <input
-                            type="number"
-                            placeholder="Min"
-                            value={minBalance}
-                            onChange={(e) => { setMinBalance(e.target.value); setCurrentPage(1); }}
-                            min="0"
-                            className="w-full pl-6 pr-2 py-2 bg-gray-50/50 border border-gray-200 rounded-lg text-sm outline-emerald-500 transition-all focus:bg-white"
-                          />
-                        </div>
-                        <span className="text-gray-300 font-bold text-sm shrink-0">to</span>
-                        <div className="flex-1 relative">
-                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] font-black text-gray-400">≤</span>
-                          <input
-                            type="number"
-                            placeholder="Max"
-                            value={maxBalance}
-                            onChange={(e) => { setMaxBalance(e.target.value); setCurrentPage(1); }}
-                            min="0"
-                            className="w-full pl-6 pr-2 py-2 bg-gray-50/50 border border-gray-200 rounded-lg text-sm outline-emerald-500 transition-all focus:bg-white"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Date Bounds */}
-                <div className="border-t pt-4">
-                  <h4 className="text-[11px] font-extrabold text-gray-400 uppercase tracking-widest mb-3">Date Bounds</h4>
-                  <div className="flex gap-3">
-                    <div className="flex-1 flex flex-col gap-1.5">
-                      <label className="text-xs font-semibold text-gray-600">From</label>
-                      <input type="date" value={startDate} onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }} className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm w-full" />
-                    </div>
-                    <div className="flex-1 flex flex-col gap-1.5">
-                      <label className="text-xs font-semibold text-gray-600">To</label>
-                      <input type="date" value={endDate} onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }} className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm w-full" />
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Actions */}
-                <div className="flex justify-end gap-2 border-t pt-4 bg-gray-50/50 -mx-6 -mb-6 p-4 rounded-b-2xl">
-                  {activeFilterCount > 0 && (
-                    <button onClick={clearAllFilters} className="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-800 hover:bg-gray-200 rounded-lg transition-colors">
-                      Clear Filters
-                    </button>
-                  )}
-                  <button onClick={() => { setShowGlobalFilters(false); fetchInvoices(); }} className="px-6 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-md hover:shadow-lg transition-all">
-                    Apply Filters
-                  </button>
-                </div>
-              </div>
-            )}
+            </div>
           </div>
-
-          <div className="w-px h-10 bg-gray-200 mx-1 hidden md:block"></div>
-
-          {/* Toggle Columns */}
-          <div className="relative">
-            <button
-              onClick={() => setShowColumnFilter(!showColumnFilter)}
-              className="px-4 py-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 text-gray-600 font-semibold flex items-center gap-2 shadow-sm transition-all"
-              title="Toggle Layout Columns"
-            >
-              Columns <ArrowUpDown size={16} className="text-gray-400" />
-            </button>
-            {showColumnFilter && (
-              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 p-2 text-sm flex flex-col">
-                <div className="font-bold border-b pb-2 mb-2 px-2 text-gray-700 bg-gray-50/80 -mx-2 -mt-2 p-2 rounded-t-xl text-[11px] uppercase tracking-wider">Display Columns</div>
-                {Object.keys(visibleColumns).map(colKey => (
-                  <label key={colKey} className="flex items-center gap-3 cursor-pointer hover:bg-blue-50/50 p-1.5 rounded transition-colors group">
-                    <input 
-                      type="checkbox" 
-                      checked={visibleColumns[colKey]}
-                      onChange={() => setVisibleColumns(prev => ({...prev, [colKey]: !prev[colKey]}))}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
-                    />
-                    <span className="capitalize text-gray-700 font-medium group-hover:text-blue-700">
-                      {colKey === 'paymentMode' ? 'Mode / Quick Pay' : colKey.replace(/([A-Z])/g, ' $1').trim()}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Refresh Action */}
-          <button
-            onClick={fetchInvoices}
-            className="px-3 py-2.5 bg-white border border-gray-200 rounded-xl hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600 text-gray-500 transition-all shadow-sm flex items-center gap-2"
-            title="Refresh Records"
-          >
-            <RefreshCw size={18} />
-          </button>
-        </div>
-
-        {/* Quick Action Chips Bar */}
-        <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-gray-100 items-center">
-          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mr-1 shrink-0">Quick Filters:</span>
-
-          {/* Terms */}
-          {[['TERM_1', 'Term 1'], ['TERM_2', 'Term 2'], ['TERM_3', 'Term 3']].map(([val, label]) => (
-            <button
-              key={val}
-              onClick={() => { setTermFilter(val); setCurrentPage(1); }}
-              className={`px-3 py-1 text-xs font-semibold rounded-full border transition-colors ${termFilter === val ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700'}`}
-            >
-              {label}
-            </button>
-          ))}
-
-          <span className="w-px h-4 bg-gray-200 mx-1 shrink-0" />
-
-          {/* Payment Status */}
-          {[
-            ['pending',  'Pending',  'hover:border-red-300 hover:bg-red-50 hover:text-red-700',    'bg-red-500 text-white border-red-500'],
-            ['partial',  'Partial',  'hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700', 'bg-amber-500 text-white border-amber-500'],
-            ['paid',     'Paid',     'hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700', 'bg-emerald-500 text-white border-emerald-500'],
-            ['overpaid', 'Overpaid', 'hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700', 'bg-purple-500 text-white border-purple-500'],
-          ].map(([val, label, hoverCls, activeCls]) => (
-            <button
-              key={val}
-              onClick={() => { setStatusFilter(val); setCurrentPage(1); }}
-              className={`px-3 py-1 text-xs font-semibold rounded-full border transition-colors ${statusFilter === val ? activeCls : `border-gray-200 bg-gray-50 text-gray-600 ${hoverCls}`}`}
-            >
-              {label}
-            </button>
-          ))}
-
-          <span className="w-px h-4 bg-gray-200 mx-1 shrink-0" />
-
-          {/* Category */}
-          <button
-            onClick={() => { setTransportFilter('transport'); setCurrentPage(1); }}
-            className={`px-3 py-1 text-xs font-semibold rounded-full border transition-colors ${transportFilter === 'transport' ? 'bg-violet-600 text-white border-violet-600' : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700'}`}
-          >
-            🚌 Transport
-          </button>
-          <button
-            onClick={() => { setTransportFilter('regular'); setCurrentPage(1); }}
-            className={`px-3 py-1 text-xs font-semibold rounded-full border transition-colors ${transportFilter === 'regular' ? 'bg-cyan-600 text-white border-cyan-600' : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-700'}`}
-          >
-            📖 Regular
-          </button>
-
-          <span className="w-px h-4 bg-gray-200 mx-1 shrink-0" />
-
-          {/* Date shortcut ΓÇö Today */}
-          <button
-            onClick={() => {
-              const today = new Date().toISOString().split('T')[0];
-              setStartDate(today);
-              setEndDate(today);
-              setCurrentPage(1);
-            }}
-            className="px-3 py-1 text-xs font-semibold rounded-full border border-gray-200 bg-gray-50 text-gray-600 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
-          >
-            📅 Today
-          </button>
-          <button
-            onClick={() => {
-              const today = new Date();
-              const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
-              setStartDate(firstDay);
-              setEndDate(today.toISOString().split('T')[0]);
-              setCurrentPage(1);
-            }}
-            className="px-3 py-1 text-xs font-semibold rounded-full border border-gray-200 bg-gray-50 text-gray-600 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
-          >
-            📅 This Month
-          </button>
-
-          {activeFilterCount > 0 && (
-            <button onClick={clearAllFilters} className="ml-auto flex items-center gap-1 px-3 py-1 text-xs font-bold rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-colors shrink-0">
-              <X size={12} /> Clear All
-            </button>
-          )}
         </div>
       </div>
 
@@ -1279,11 +1234,11 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam, initialTransportFilte
           }
         />
       ) : (
-        <div className="bg-white rounded border shadow-sm overflow-x-auto text-sm scrollbar-thin">
+        <div className="bg-white rounded-xl border-[0.5px] border-gray-200 shadow-sm overflow-auto max-h-[70vh] text-sm scrollbar-thin relative">
           <table className="w-full min-w-max border-collapse">
-            <thead className="bg-[color:var(--table-header-bg)]">
-              <tr className="border-b border-[color:var(--table-border)]">
-                <th className="px-3 py-1.5 text-left border-r border-gray-100">
+            <thead className="sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm border-b-[0.5px] border-gray-200">
+              <tr className="">
+                <th className="px-3 py-2 text-left border-r-[0.5px] border-gray-200 w-10 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm">
                   <input
                     type="checkbox"
                     checked={selectedInvoiceIds.length === invoices.length && invoices.length > 0}
@@ -1293,7 +1248,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam, initialTransportFilte
                 </th>
                 {visibleColumns.invoiceNumber && (
                 <th 
-                  className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r border-gray-100"
+                  className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
                   onClick={() => handleSort('invoiceNumber')}
                 >
                   <div className="flex items-center gap-1">
@@ -1306,7 +1261,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam, initialTransportFilte
                 )}
                 {visibleColumns.student && (
                 <th 
-                  className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r border-gray-100"
+                  className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
                   onClick={() => handleSort('studentName')}
                 >
                   <div className="flex items-center gap-1">
@@ -1319,7 +1274,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam, initialTransportFilte
                 )}
                 {visibleColumns.grade && (
                 <th 
-                  className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r border-gray-100"
+                  className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
                   onClick={() => handleSort('grade')}
                 >
                   <div className="flex items-center gap-1">
@@ -1331,11 +1286,11 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam, initialTransportFilte
                 </th>
                 )}
                 {visibleColumns.feeType && (
-                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Fee Type</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm">Fee Type</th>
                 )}
                 {visibleColumns.dateIssue && (
                 <th 
-                  className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r border-gray-100"
+                  className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
                   onClick={() => handleSort('createdAt')}
                 >
                   <div className="flex items-center gap-1">
@@ -1348,7 +1303,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam, initialTransportFilte
                 )}
                 {visibleColumns.billed && (
                 <th 
-                  className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r border-gray-100"
+                  className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
                   onClick={() => handleSort('totalAmount')}
                 >
                   <div className="flex items-center gap-1">
@@ -1361,7 +1316,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam, initialTransportFilte
                 )}
                 {visibleColumns.paid && (
                 <th 
-                  className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r border-gray-100"
+                  className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
                   onClick={() => handleSort('paidAmount')}
                 >
                   <div className="flex items-center gap-1">
@@ -1373,11 +1328,11 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam, initialTransportFilte
                 </th>
                 )}
                 {visibleColumns.waived && (
-                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Waived</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm">Waived</th>
                 )}
                 {visibleColumns.balance && (
                 <th 
-                  className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r border-gray-100"
+                  className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
                   onClick={() => handleSort('balance')}
                 >
                   <div className="flex items-center gap-1">
@@ -1390,45 +1345,34 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam, initialTransportFilte
                 )}
                 {visibleColumns.overpaid && (
                   <th 
-                    className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100"
+                    className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
                   >
                     Overpaid
                   </th>
                 )}
-                {visibleColumns.transport && (
-                  <th 
-                    className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100"
-                  >
-                    Transport
-                  </th>
-                )}
+
                 {visibleColumns.status && (
-                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Status</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm">Status</th>
                 )}
                 {visibleColumns.paymentMode && (
-                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Mode / Quick Pay</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm">Mode / Quick Pay</th>
                 )}
                 {visibleColumns.actions && (
-                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase">Actions</th>
+                <th className="px-3 py-1.5 text-right text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm">Actions</th>
                 )}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {invoices
-                .filter(inv => {
-                  if (minBalance !== '' && Number(inv.balance) < Number(minBalance)) return false;
-                  if (maxBalance !== '' && Number(inv.balance) > Number(maxBalance)) return false;
-                  return true;
-                })
                 .map((invoice) => {
                   const recentMode = (invoice.payments && invoice.payments.length > 0) ? invoice.payments[0].paymentMethod : 'MPESA';
                   return (
                 <tr
                   key={invoice.id}
-                  className={`hover:bg-blue-50/30 transition-colors cursor-pointer border-b border-gray-100 ${selectedInvoiceIds.includes(invoice.id) ? 'bg-blue-50/50' : ''}`}
+                  className={`hover:bg-blue-50/30 transition-colors cursor-pointer border-b-[0.5px] border-gray-200 ${selectedInvoiceIds.includes(invoice.id) ? 'bg-blue-50/50' : ''}`}
                   onClick={() => navigateTo('fees-invoice-detail', { invoice })}
                 >
-                  <td className="px-3 py-1.5 border-r border-gray-100" onClick={(e) => e.stopPropagation()}>
+                  <td className="px-3 py-1.5 border-r-[0.5px] border-gray-200" onClick={(e) => e.stopPropagation()}>
                     <input
                       type="checkbox"
                       checked={selectedInvoiceIds.includes(invoice.id)}
@@ -1437,10 +1381,10 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam, initialTransportFilte
                     />
                   </td>
                   {visibleColumns.invoiceNumber && (
-                    <td className="px-3 py-1.5 text-xs font-semibold text-gray-900 border-r border-gray-100">{invoice.invoiceNumber}</td>
+                    <td className="px-3 py-1.5 text-xs font-semibold text-gray-900 border-r-[0.5px] border-gray-200">{invoice.invoiceNumber}</td>
                   )}
                   {visibleColumns.student && (
-                  <td className="px-3 py-1.5 border-r border-gray-100">
+                  <td className="px-3 py-1.5 border-r-[0.5px] border-gray-200">
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-semibold text-gray-800 text-xs">
                         {invoice.learner?.firstName} {invoice.learner?.lastName}
@@ -1450,10 +1394,10 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam, initialTransportFilte
                   </td>
                   )}
                   {visibleColumns.grade && (
-                  <td className="px-3 py-1.5 text-xs text-gray-600 border-r border-gray-100 whitespace-nowrap">{invoice.learner?.grade} {invoice.learner?.stream}</td>
+                  <td className="px-3 py-1.5 text-xs text-gray-600 border-r-[0.5px] border-gray-200 whitespace-nowrap">{invoice.learner?.grade} {invoice.learner?.stream}</td>
                   )}
                   {visibleColumns.feeType && (
-                  <td className="px-3 py-1.5 border-r border-gray-100">
+                  <td className="px-3 py-1.5 border-r-[0.5px] border-gray-200">
                     <div className="text-xs font-semibold text-gray-800 line-clamp-1">
                       {invoice.feeStructure?.name || 'Standard Fees'}
                     </div>
@@ -1465,22 +1409,22 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam, initialTransportFilte
                   </td>
                   )}
                   {visibleColumns.dateIssue && (
-                  <td className="px-3 py-1.5 text-xs text-gray-600 border-r border-gray-100 whitespace-nowrap">
+                  <td className="px-3 py-1.5 text-xs text-gray-600 border-r-[0.5px] border-gray-200 whitespace-nowrap">
                     {new Date(invoice.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                   </td>
                   )}
                   {visibleColumns.billed && (
-                  <td className="px-3 py-1.5 text-xs font-bold text-gray-900 border-r border-gray-100 text-right w-24">
+                  <td className="px-3 py-1.5 text-xs font-bold text-gray-900 border-r-[0.5px] border-gray-200 text-right w-24">
                     {Number(invoice.totalAmount).toLocaleString()}
                   </td>
                   )}
                   {visibleColumns.paid && (
-                  <td className="px-3 py-1.5 text-xs font-bold text-green-600 border-r border-gray-100 text-right w-24">
+                  <td className="px-3 py-1.5 text-xs font-bold text-green-600 border-r-[0.5px] border-gray-200 text-right w-24">
                     {Number(invoice.paidAmount).toLocaleString()}
                   </td>
                   )}
                   {visibleColumns.waived && (
-                  <td className="px-3 py-1.5 border-r border-gray-100 text-right w-24">
+                  <td className="px-3 py-1.5 border-r-[0.5px] border-gray-200 text-right w-24">
                     <div className="text-xs font-bold text-teal-600">
                       {(invoice.waivers || [])
                         .filter(w => w.status === 'APPROVED')
@@ -1494,36 +1438,25 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam, initialTransportFilte
                   </td>
                   )}
                   {visibleColumns.balance && (
-                  <td className="px-3 py-1.5 text-xs font-bold text-red-600 border-r border-gray-100 text-right w-24">
+                  <td className="px-3 py-1.5 text-xs font-bold text-red-600 border-r-[0.5px] border-gray-200 text-right w-24">
                     {invoice.balance > 0 ? Number(invoice.balance).toLocaleString() : '0'}
                   </td>
                   )}
                   {visibleColumns.overpaid && (
-                  <td className="px-3 py-1.5 text-xs font-bold text-purple-600 border-r border-gray-100 text-right w-24">
+                  <td className="px-3 py-1.5 text-xs font-bold text-purple-600 border-r-[0.5px] border-gray-200 text-right w-24">
                     {Number(invoice.paidAmount) > Number(invoice.totalAmount) 
                       ? (Number(invoice.paidAmount) - Number(invoice.totalAmount)).toLocaleString() 
                       : '0'}
                   </td>
                   )}
-                  {visibleColumns.transport && (
-                  <td className="px-3 py-1.5 border-r border-gray-100">
-                    {invoice.learner?.isTransportStudent ? (
-                      <div className="flex flex-col">
-                        <span className="text-[11px] font-bold text-gray-800">Bal: {Number(invoice.transportBalance || 0).toLocaleString()}</span>
-                        <span className="text-[10px] text-gray-500">Billed: {Number(invoice.transportBilled || 0).toLocaleString()}</span>
-                      </div>
-                    ) : (
-                      <span className="text-[10px] text-gray-400 italic">N/A</span>
-                    )}
-                  </td>
-                  )}
+
                   {visibleColumns.status && (
-                  <td className="px-3 py-1.5 border-r border-gray-100 whitespace-nowrap">
+                  <td className="px-3 py-1.5 border-r-[0.5px] border-gray-200 whitespace-nowrap">
                     <div className="scale-90 origin-left">{getStatusBadge(invoice.status)}</div>
                   </td>
                   )}
                   {visibleColumns.paymentMode && (
-                  <td className="px-3 py-1.5 border-r border-gray-100 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                  <td className="px-3 py-1.5 border-r-[0.5px] border-gray-200 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                     {Number(invoice.paidAmount) > 0 ? (
                        <div className={`flex items-center gap-1.5 text-[9px] font-black uppercase px-2 py-1 rounded-md border w-fit shadow-inner-sm ${
                          recentMode === 'MPESA' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-blue-50 text-blue-700 border-blue-100'
@@ -1557,7 +1490,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam, initialTransportFilte
                   </td>
                   )}
                   {visibleColumns.actions && (
-                  <td className="px-2 py-1" onClick={(e) => e.stopPropagation()}>
+                   <td className="px-3 py-1.5" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end">
                       {invoice.status !== 'PAID' && invoice.status !== 'WAIVED' && (
                         <button
@@ -1569,17 +1502,6 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam, initialTransportFilte
                         </button>
                       )}
 
-                      {/* Add Note Button */}
-                      <button
-                        onClick={() => {
-                          setSelectedInvoice(invoice);
-                          setShowNoteModal(true);
-                        }}
-                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
-                        title="Add Collection Note"
-                      >
-                        <MessageSquare size={14} />
-                      </button>
 
                       {/* Record Pledge Button */}
                       {invoice.status !== 'PAID' && (
@@ -1628,51 +1550,51 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam, initialTransportFilte
             </tbody>
 
             {/* Table Totals Footer */}
-            <tfoot className="bg-gray-50 border-t-2 border-gray-200">
+            <tfoot className="bg-gray-50 border-t-[0.5px] border-gray-200">
               <tr className="font-bold text-gray-900">
-                <td className="px-3 py-3 border-r border-gray-100"></td>
-                {visibleColumns.invoiceNumber && <td className="px-3 py-3 border-r border-gray-100"></td>}
+                <td className="px-3 py-3 border-r-[0.5px] border-gray-200"></td>
+                {visibleColumns.invoiceNumber && <td className="px-3 py-3 border-r-[0.5px] border-gray-200"></td>}
                 {visibleColumns.student && (
-                  <td className="px-3 py-3 border-r border-gray-100 text-xs">
+                  <td className="px-3 py-3 border-r-[0.5px] border-gray-200 text-xs">
                     <div className="flex flex-col">
                       <span className="uppercase tracking-wider text-[10px] text-gray-500">Totals</span>
                       <span className="text-gray-400 font-medium text-[9px]">Entire Filtered List</span>
                     </div>
                   </td>
                 )}
-                {visibleColumns.grade && <td className="px-3 py-3 border-r border-gray-100"></td>}
-                {visibleColumns.feeType && <td className="px-3 py-3 border-r border-gray-100"></td>}
-                {visibleColumns.dateIssue && <td className="px-3 py-3 border-r border-gray-100"></td>}
+                {visibleColumns.grade && <td className="px-3 py-3 border-r-[0.5px] border-gray-200"></td>}
+                {visibleColumns.feeType && <td className="px-3 py-3 border-r-[0.5px] border-gray-200"></td>}
+                {visibleColumns.dateIssue && <td className="px-3 py-3 border-r-[0.5px] border-gray-200"></td>}
                 
                 {visibleColumns.billed && (
-                  <td className="px-3 py-3 text-xs font-black text-gray-900 border-r border-gray-100 text-right">
+                  <td className="px-3 py-3 text-xs font-black text-gray-900 border-r-[0.5px] border-gray-200 text-right">
                     {Number(listTotals.totalBilled || 0).toLocaleString()}
                   </td>
                 )}
                 {visibleColumns.paid && (
-                  <td className="px-3 py-3 text-xs font-black text-emerald-600 border-r border-gray-100 text-right">
+                  <td className="px-3 py-3 text-xs font-black text-emerald-600 border-r-[0.5px] border-gray-200 text-right">
                     {Number(listTotals.totalPaid || 0).toLocaleString()}
                   </td>
                 )}
                 {visibleColumns.waived && (
-                  <td className="px-3 py-3 text-xs font-black text-teal-600 border-r border-gray-100 text-right">
+                  <td className="px-3 py-3 text-xs font-black text-teal-600 border-r-[0.5px] border-gray-200 text-right">
                     {Number(listTotals.totalWaived || 0).toLocaleString()}
                   </td>
                 )}
                 {visibleColumns.balance && (
-                  <td className="px-3 py-3 text-xs font-black text-red-600 border-r border-gray-100 text-right">
+                  <td className="px-3 py-3 text-xs font-black text-red-600 border-r-[0.5px] border-gray-200 text-right">
                     {Number(listTotals.totalBalance || 0).toLocaleString()}
                   </td>
                 )}
                 {visibleColumns.overpaid && (
-                  <td className="px-3 py-3 text-xs font-black text-purple-600 border-r border-gray-100 text-right">
+                  <td className="px-3 py-3 text-xs font-black text-purple-600 border-r-[0.5px] border-gray-200 text-right">
                     {Number(listTotals.totalOverpaid || 0).toLocaleString()}
                   </td>
                 )}
-                {visibleColumns.transport && <td className="px-3 py-3 border-r border-gray-100"></td>}
+
                 
-                {visibleColumns.status && <td className="px-3 py-3 border-r border-gray-100"></td>}
-                {visibleColumns.paymentMode && <td className="px-3 py-3 border-r border-gray-100"></td>}
+                {visibleColumns.status && <td className="px-3 py-3 border-r-[0.5px] border-gray-200"></td>}
+                {visibleColumns.paymentMode && <td className="px-3 py-3 border-r-[0.5px] border-gray-200"></td>}
                 {visibleColumns.actions && <td className="px-2 py-3"></td>}
               </tr>
               {/* Footnote Message */}
@@ -1829,22 +1751,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam, initialTransportFilte
                   )}
               </div>
 
-              {/* Enhanced Transport Checkbox Selection Area */}
-              <div className="flex items-center gap-3 p-4 bg-[#00A09D]/5 border border-[#00A09D]/20 rounded-xl transition-all hover:bg-[#00A09D]/10">
-                <div className="relative flex items-center">
-                  <input
-                    type="checkbox"
-                    id="includeTransport"
-                    checked={newInvoice.includeTransport}
-                    onChange={(e) => setNewInvoice({ ...newInvoice, includeTransport: e.target.checked })}
-                    className="w-5 h-5 text-[#00A09D] border-gray-300 rounded focus:ring-[#00A09D] cursor-pointer transition-all"
-                  />
-                </div>
-                <label htmlFor="includeTransport" className="flex flex-col cursor-pointer">
-                  <span className="text-sm font-bold text-[#00706e]">Include Transport Fees</span>
-                  <span className="text-[10px] text-gray-500">Enable this if student uses school transport</span>
-                </label>
-              </div>
+
 
               {/* Form Grid for Term/Year/Due Date */}
               <div className="grid grid-cols-2 gap-4">
@@ -1972,7 +1879,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam, initialTransportFilte
 
             <div className="p-6 space-y-5">
               <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-semibold">
-                ΓÜá∩╕Å Only invoices and payments matching the selected <strong>Term</strong> and <strong>Year</strong> will be deleted. This cannot be undone.
+                ⚠️ Only invoices and payments matching the selected <strong>Term</strong> and <strong>Year</strong> will be deleted. This cannot be undone.
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -2025,6 +1932,64 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam, initialTransportFilte
       {printingInvoice && (
         <div id="printable-thermal-receipt" className="thermal-print-overlay">
           <ThermalReceipt invoice={printingInvoice} schoolInfo={schoolInfo} />
+        </div>
+      )}
+
+      {/* Export Modal */}
+      {showExportModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div className="bg-blue-600 px-6 py-4 flex items-center gap-3 text-white">
+              <Download size={22} />
+              <div>
+                <h3 className="text-lg font-black tracking-tight">Export Fee Data</h3>
+                <p className="text-blue-200 text-xs font-semibold">Generate an Excel-compatible CSV report</p>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex gap-3">
+                <Info size={20} className="text-blue-500 shrink-0" />
+                <div className="text-sm text-blue-800">
+                  <p className="font-bold mb-1 border-b border-blue-200 pb-1">Current Filters Applied:</p>
+                  <ul className="space-y-1 list-disc list-inside text-xs opacity-90">
+                    <li>Grade: <span className="font-bold">{gradeFilter === 'all' ? 'All Classes' : gradeFilter}</span></li>
+                    <li>Term: <span className="font-bold">{termFilter === 'all' ? 'All Terms' : termFilter}</span></li>
+                    <li>Status: <span className="font-bold capitalize">{statusFilter}</span></li>
+                    {startDate && <li>From: <span className="font-bold">{startDate}</span></li>}
+                    {endDate && <li>To: <span className="font-bold">{endDate}</span></li>}
+                  </ul>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={handleExportExcel}
+                  disabled={exporting}
+                  className="w-full bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 hover:shadow-lg font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {exporting ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      <span>Generating Report...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download size={18} />
+                      <span>Download Excel (.csv)</span>
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => setShowExportModal(false)}
+                  disabled={exporting}
+                  className="w-full px-6 py-3 border-2 border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 font-bold transition-all"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

@@ -556,7 +556,7 @@ export const useNavigation = () => {
         return built;
     }, [can, role]);
 
-    return {
+    return useMemo(() => ({
         navSections,
         dashboardSection,
         communicationSection,
@@ -566,7 +566,17 @@ export const useNavigation = () => {
         backOfficeSections,
         docsCenterSection,
         systemAdminSections
-    };
+    }), [
+        navSections,
+        dashboardSection,
+        communicationSection,
+        schoolSections,
+        lmsSection,
+        studentLmsSection,
+        backOfficeSections,
+        docsCenterSection,
+        systemAdminSections
+    ]);
 };
 
 /**
