@@ -112,10 +112,16 @@
   }
 }
 
-/* App-wide data tables */
+/* App-wide data tables: Unified single-line grid */
 @layer components {
   body table {
     border-collapse: collapse;
+    border: 1px solid var(--table-border);
+  }
+
+  body table th,
+  body table td {
+    border: 1px solid var(--table-border);
   }
 
   /* VirtualizedTable spacer rows: no grid lines on height-padding cells */
