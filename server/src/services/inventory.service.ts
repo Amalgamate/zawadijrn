@@ -22,7 +22,7 @@ export class InventoryService {
     }
 
     async getCategories() {
-        return (prisma as any).inventoryCategory.findMany({
+        return prisma.inventoryCategory.findMany({
             include: { children: true }
         });
     }
@@ -34,7 +34,7 @@ export class InventoryService {
     }
 
     async getStores() {
-        return (prisma as any).inventoryStore.findMany({
+        return prisma.inventoryStore.findMany({
             where: { isActive: true }
         });
     }
@@ -57,7 +57,7 @@ export class InventoryService {
     }
 
     async getItems(categoryId?: string) {
-        return (prisma as any).inventoryItem.findMany({
+        return prisma.inventoryItem.findMany({
             where: {
                 isActive: true,
                 ...(categoryId ? { categoryId } : {})
@@ -81,13 +81,13 @@ export class InventoryService {
     }) {
         return prisma.$transaction(async (tx) => {
             // 1. Record the movement
-            const movement = await (tx as any).stockMovement.create({
+            const movement = await tx.stockMovement.create({
                 data: { ...data }
             });
 
             // 2. If it's an asset and being moved into a store, update asset location
             if (data.type === 'IN' || data.type === 'TRANSFER') {
-                const item = await (tx as any).inventoryItem.findUnique({ where: { id: data.itemId } });
+                const item = await tx.inventoryItem.findUnique({ where: { id: data.itemId } });
                 if (item?.type === 'ASSET' && data.toStoreId) {
                     // Logic to update assets if they are tracked individually
                 }
@@ -98,7 +98,7 @@ export class InventoryService {
     }
 
     async getStockLevels(itemId: string) {
-        const movements = await (prisma as any).stockMovement.findMany({
+        const movements = await prisma.stockMovement.findMany({
             where: { itemId }
         });
 
@@ -113,7 +113,7 @@ export class InventoryService {
     }
 
     async getMovements() {
-        return (prisma as any).stockMovement.findMany({
+        return prisma.stockMovement.findMany({
             include: {
                 item: true,
                 fromStore: true,
@@ -137,7 +137,7 @@ export class InventoryService {
     }) {
         const requisitionNo = `REQ/${new Date().getFullYear()}/${Math.floor(1000 + Math.random() * 9000)}`;
 
-        return (prisma as any).stockRequisition.create({
+        return prisma.stockRequisition.create({
             data: {
                 requisitionNo,
                 requestedById,
@@ -168,7 +168,7 @@ export class InventoryService {
     }
 
     async getRequisitions() {
-        return (prisma as any).stockRequisition.findMany({
+        return prisma.stockRequisition.findMany({
             include: {
                 requestedBy: true,
                 approvedBy: true,
@@ -191,7 +191,7 @@ export class InventoryService {
         purchaseCost?: number;
         currentStoreId?: string;
     }) {
-        return (prisma as any).fixedAsset.create({
+        return prisma.fixedAsset.create({
             data: { ...data }
         });
     }
@@ -206,12 +206,12 @@ export class InventoryService {
     }) {
         return prisma.$transaction(async (tx) => {
             // 1. Create assignment
-            const assignment = await (tx as any).assetAssignment.create({
+            const assignment = await tx.assetAssignment.create({
                 data: { ...data }
             });
 
             // 2. Update asset status
-            await (tx as any).fixedAsset.update({
+            await tx.fixedAsset.update({
                 where: { id: data.assetId },
                 data: { status: 'ASSIGNED' }
             });
@@ -221,7 +221,7 @@ export class InventoryService {
     }
 
     async getAssetRegister() {
-        return (prisma as any).fixedAsset.findMany({
+        return prisma.fixedAsset.findMany({
             include: {
                 assignments: {
                     where: { returnedAt: null },
