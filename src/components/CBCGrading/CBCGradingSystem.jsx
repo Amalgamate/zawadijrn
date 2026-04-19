@@ -78,11 +78,18 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
     // Push real browser history. We prefix the URL with a tiny harmless hash so the browser 
     // actually logs a new distinct entry that the back button can pop.
     try {
+      // Ensure we preserve the #/app prefix so the global HashRouter doesn't detect a 
+      // route escape and trigger a redirect loop.
+      const currentUrl = new URL(window.location.href);
       const uniqueHash = `#${page}`;
+      
+      // We want to keep #/app and just append/replace the secondary hash
+      const newUrl = `${currentUrl.pathname}${currentUrl.search}#/app${uniqueHash}`;
+      
       window.history.pushState(
           { appPage: page, appParams: params }, 
           '', 
-          window.location.pathname + window.location.search + uniqueHash
+          newUrl
       );
     } catch (e) {
       console.error('History push failed:', e);

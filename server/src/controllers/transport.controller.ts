@@ -611,7 +611,12 @@ export class TransportController {
             }).filter(Boolean).sort((a: any, b: any) => a.grade.localeCompare(b.grade) || a.name.localeCompare(b.name));
 
             // ── 8. Billing totals ────────────────────────────────────────────
-            const billingTotals = {
+            const billingTotals: {
+                totalBilled: number;
+                totalCollected: number;
+                totalOutstanding: number;
+                collectionRate?: number;
+            } = {
                 totalBilled:      invoices.reduce((s, i) => s + Number(i.transportBilled),  0),
                 totalCollected:   invoices.reduce((s, i) => s + Number(i.transportPaid),    0),
                 totalOutstanding: invoices.reduce((s, i) => s + Number(i.transportBalance), 0),

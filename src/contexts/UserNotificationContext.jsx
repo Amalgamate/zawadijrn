@@ -8,8 +8,11 @@ const UserNotificationContext = createContext();
 export const UserNotificationProvider = ({ children }) => {
   const { user, isAuthenticated } = useAuth();
   const [notifications, setNotifications] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [socket, setSocket] = useState(null);
+
+  // Derived — always computed from `notifications` so it never drifts out of sync.
+  const unreadNotifications = notifications.filter(n => !n.isRead);
+  const unreadCount = unreadNotifications.length;
   const audioRef = useRef(null);
 
   // Sound Options (using base64 encoded short modern pings)
@@ -37,9 +40,17 @@ export const UserNotificationProvider = ({ children }) => {
     try {
       const resp = await api.userNotifications.getAll();
       if (resp.success) {
-        setNotifications(resp.data);
-        // Only count notifications that haven't been read yet
-        setUnreadCount(resp.data.filter(n => !n.isRead).length);
+        // Server only returns isRead:false records. Merge with local state
+        // so any notification already marked read locally stays read and
+        // never pops back as "new" on a refetch.
+        setNotifications(prev => {
+          const localReadIds = new Set(
+            prev.filter(n => n.isRead).map(n => n.id)
+          );
+          return resp.data.map(n =>
+            localReadIds.has(n.id) ? { ...n, isRead: true } : n
+          );
+        });
       }
     } catch (err) {
       console.error('Failed to fetch user notifications:', err);
@@ -106,8 +117,12 @@ export const UserNotificationProvider = ({ children }) => {
 
     newSocket.on('notification:new', (notification) => {
       console.log('🔔 New notification received:', notification);
-      setNotifications(prev => [notification, ...prev]);
-      setUnreadCount(prev => prev + 1);
+      // Avoid duplicate: if this notification ID already exists locally, skip
+      setNotifications(prev => {
+        if (prev.some(n => n.id === notification.id)) return prev;
+        return [{ ...notification, isRead: false }, ...prev];
+      });
+      // unreadCount is derived — no manual increment needed.
       
       // Play sound
       playBeep();
@@ -138,29 +153,41 @@ export const UserNotificationProvider = ({ children }) => {
   }, [isAuthenticated, user?.id, playBeep, showBrowserNotification, fetchNotifications, registerPushSubscription]);
 
   const markAsRead = useCallback(async (id) => {
+    // Optimistically mark as read in local state immediately so it
+    // never reappears as "new" even if the API call is slow or fails.
+    setNotifications(prev =>
+      prev.map(n => n.id === id ? { ...n, isRead: true } : n)
+    );
+    // unreadCount is derived — no manual decrement needed.
     try {
       await api.userNotifications.markAsRead(id);
-      setNotifications(prev => prev.filter(n => n.id !== id));
-      setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (err) {
       console.error('Failed to mark notification as read:', err);
+      // Revert on failure
+      setNotifications(prev =>
+        prev.map(n => n.id === id ? { ...n, isRead: false } : n)
+      );
     }
   }, []);
 
   const markAllAsRead = useCallback(async () => {
+    // Optimistically mark all read in local state immediately.
+    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    // unreadCount is derived — no manual reset needed.
     try {
       await api.userNotifications.markAllAsRead();
-      setNotifications([]);
-      setUnreadCount(0);
     } catch (err) {
       console.error('Failed to mark all as read:', err);
+      // On failure, re-fetch from server to restore accurate state
+      fetchNotifications();
     }
-  }, []);
+  }, [fetchNotifications]);
 
   return (
     <UserNotificationContext.Provider value={{ 
-      notifications, 
-      unreadCount, 
+      notifications,
+      unreadNotifications,   // only the unread ones — use this in the bell dropdown
+      unreadCount,           // derived count — always accurate
       markAsRead, 
       markAllAsRead,
       fetchNotifications 

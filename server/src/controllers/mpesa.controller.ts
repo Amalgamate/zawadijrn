@@ -38,7 +38,7 @@ export const handleCallback = async (req: Request, res: Response) => {
 
     try {
         // Find the transaction
-        const transaction = await prisma.$transaction.findUnique({
+        const transaction = await prisma.mpesaTransaction.findUnique({
             where: { checkoutRequestId: CheckoutRequestID }
         });
 
@@ -62,13 +62,14 @@ export const handleCallback = async (req: Request, res: Response) => {
             const receipt = metadata.find((i: any) => i.Name === 'MpesaReceiptNumber')?.Value;
             const phone = metadata.find((i: any) => i.Name === 'PhoneNumber')?.Value;
 
-            await prisma.$transaction.update({
+            await prisma.mpesaTransaction.update({
                 where: { id: transaction.id },
                 data: {
                     status: 'SUCCESS',
                     resultCode: ResultCode,
                     resultDesc: ResultDesc,
-                    transactionId: receipt,
+                    transactionId: receipt || null,
+                    phoneNumber: phone || null,
                     metadata: { amount, phone, receipt }
                 }
             });
@@ -113,7 +114,7 @@ export const handleCallback = async (req: Request, res: Response) => {
             console.log(`[MpesaCallback] Payment successful for ${transaction.id} | Receipt: ${receipt}`);
         } else {
             // Failure
-            await prisma.$transaction.update({
+            await prisma.mpesaTransaction.update({
                 where: { id: transaction.id },
                 data: {
                     status: 'FAILED',

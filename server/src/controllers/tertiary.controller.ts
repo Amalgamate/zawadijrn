@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { prisma } from '../index'; // or wherever prisma is exported from
+import prisma from '../config/database';
 
 // ==========================================
 // Departments

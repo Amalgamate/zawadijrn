@@ -22,9 +22,11 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
   const [clockInState, setClockInState] = useState(() => getCurrentUserClockInStatus(user));
   const [smsBalance, setSmsBalance] = useState(null);
   
-  // Real-time notifications from our new context
+  // Real-time notifications from our new context.
+  // `unreadNotifications` is pre-filtered to isRead:false so the bell
+  // dropdown only ever shows notifications the user hasn't seen yet.
   const { 
-    notifications: systemNotifications, 
+    unreadNotifications: systemNotifications, 
     unreadCount: systemUnreadCount,
     markAsRead,
     markAllAsRead: markAllSystemAsRead

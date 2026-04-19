@@ -25,7 +25,7 @@ import { workflowAPI } from './workflow.api';
 import { gradingAPI } from './grading.api';
 import { adminAPI } from './admin.api';
 import { documentsAPI } from './documents.api';
-import { bookAPI } from './book.api';
+import { bookAPI, libraryAPI } from './book.api';
 import { sharingAPI } from './sharing.api';
 import { hrAPI } from './hr.api';
 import { accountingAPI } from './accounting.api';
@@ -68,6 +68,7 @@ export { gradingAPI };
 export { adminAPI };
 export { documentsAPI };
 export { bookAPI };
+export { libraryAPI };
 export { sharingAPI };
 export { hrAPI };
 export { accountingAPI };
@@ -140,6 +141,7 @@ const api = {
   admin: adminAPI,
   documents: documentsAPI,
   books: bookAPI,
+  library: libraryAPI,
   sharing: sharingAPI,
   hr: hrAPI,
   accounting: accountingAPI,
