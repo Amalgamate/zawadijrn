@@ -112,16 +112,10 @@
   }
 }
 
-/* App-wide data tables: full grid; borders track --brand-purple (school theme) */
+/* App-wide data tables */
 @layer components {
   body table {
-    border: 1px solid var(--table-border) !important;
     border-collapse: collapse;
-  }
-
-  body table th,
-  body table td {
-    border: 1px solid var(--table-border) !important;
   }
 
   /* VirtualizedTable spacer rows: no grid lines on height-padding cells */
@@ -140,7 +134,6 @@
     font-weight: 600;
     color: var(--table-header-fg);
     vertical-align: middle;
-    border-color: var(--table-border) !important;
   }
 
   /* Solid bar headers (white text on brand) — e.g. summative marks grid */

@@ -37,7 +37,16 @@ resolveMigration('20260406121000_enforce_cbc_eight_level_grading', '--rolled-bac
 // 5. Rename Forms to Grade 10-12
 resolveMigration('20260407160000_rename_forms_to_grade10_12', '--rolled-back');
 
-// 6. FORCE the new missing columns migration to be recognized
+// 6. Production Sync / Render / Push Notifications / System Stabilizations
+resolveMigration('20260411000000_production_sync_render', '--applied');
+resolveMigration('20260411130000_add_transport_flag_learner', '--applied');
+resolveMigration('20260414103000_add_user_notifications', '--applied');
+resolveMigration('20260419000000_add_push_subscriptions', '--applied');
+resolveMigration('20260419000001_add_system_changelogs', '--applied');
+resolveMigration('20260419111300_add_shifnumber_drift', '--applied');
+resolveMigration('add_allowances_deductions', '--applied');
+
+// 7. FORCE the new missing columns migration to be recognized
 console.log("🔧 Ensuring new migrations are recognized...");
 
 // Check status first

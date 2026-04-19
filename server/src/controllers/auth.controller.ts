@@ -34,13 +34,13 @@ export class AuthController {
     const commonOptions: any = {
       httpOnly: true,
       secure: isProd,
-      sameSite: isProd ? 'strict' : 'lax',
+      sameSite: isProd ? 'lax' : 'lax', // Use 'lax' for better custom domain support
       path: '/'
     };
 
     res.cookie('accessToken', accessToken, {
       ...commonOptions,
-      maxAge: 15 * 60 * 1000 // 15 mins (matching JWT_EXPIRES_IN default)
+      maxAge: 60 * 60 * 1000 // 60 mins (align with 1h JWT expiration)
     });
 
     res.cookie('refreshToken', refreshToken, {
