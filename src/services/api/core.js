@@ -25,14 +25,15 @@ const fetchWithAuth = async (url, options = {}) => {
       data: requestData,
       headers: { ...options.headers },
       params: options.params,
+      onUploadProgress: options.onUploadProgress,
     };
 
     if (options.body instanceof FormData) {
       delete config.headers['Content-Type'];
     }
 
-    const response = await axiosInstance(config);
-    return response.data;
+            const response = await axiosInstance(config);
+            return response.data;
   } catch (error) {
     if (error.response?.data) {
       const data = error.response.data;

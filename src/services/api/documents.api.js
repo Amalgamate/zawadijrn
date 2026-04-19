@@ -7,10 +7,10 @@ export const documentsAPI = {
     return fetchWithAuth(`/documents${queryString ? `?${queryString}` : ''}`);
   },
   getCategories: async () => fetchWithAuth('/documents/categories'),
-  upload: async (formData) =>
-    fetchWithAuth('/documents/upload', { method: 'POST', body: formData }),
-  uploadMultiple: async (formData) =>
-    fetchWithAuth('/documents/upload-multiple', { method: 'POST', body: formData }),
+  upload: async (formData, onUploadProgress) =>
+    fetchWithAuth('/documents/upload', { method: 'POST', body: formData, onUploadProgress }),
+  uploadMultiple: async (formData, onUploadProgress) =>
+    fetchWithAuth('/documents/upload-multiple', { method: 'POST', body: formData, onUploadProgress }),
   update: async (id, data) =>
     fetchWithAuth(`/documents/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: async (id) =>

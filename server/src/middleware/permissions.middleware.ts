@@ -2,7 +2,9 @@ import { Request, Response, NextFunction } from 'express';
 import { Permission, Role, hasPermission } from '../config/permissions';
 import prisma from '../config/database';
 
-// Globally augment Express Request to include school and user info
+type InstitutionType = 'PRIMARY_CBC' | 'SECONDARY' | 'TERTIARY';
+
+// Globally augment Express Request to include user info
 declare global {
   namespace Express {
     interface Request {
@@ -10,12 +12,11 @@ declare global {
         userId: string;
         email: string;
         role: Role;
-        institutionType?: 'PRIMARY_CBC' | 'SECONDARY';
+        institutionType?: InstitutionType;
       };
     }
   }
 }
-
 
 /**
  * Extended Request interface with user information and common middleware properties
@@ -25,7 +26,7 @@ export interface AuthRequest extends Request {
     userId: string;
     email: string;
     role: Role;
-    institutionType?: 'PRIMARY_CBC' | 'SECONDARY';
+    institutionType?: InstitutionType;
   };
   file?: any;
   files?: any;
@@ -37,10 +38,10 @@ export interface AuthRequest extends Request {
 
 /**
  * Middleware to check if user has required permission
- * 
+ *
  * @param permission - The permission to check
  * @returns Express middleware function
- * 
+ *
  * @example
  * router.post('/learners', requirePermission('CREATE_LEARNER'), createLearner);
  */
@@ -50,10 +51,7 @@ export const requirePermission = (permission: Permission) => {
       const userRole = req.user?.role?.toUpperCase();
 
       if (!userRole) {
-        res.status(401).json({
-          success: false,
-          message: 'Authentication required'
-        });
+        res.status(401).json({ success: false, message: 'Authentication required' });
         return;
       }
 
@@ -77,12 +75,9 @@ export const requirePermission = (permission: Permission) => {
 
 /**
  * Middleware to check if user has any of the required permissions
- * 
+ *
  * @param permissions - Array of permissions, user needs at least one
  * @returns Express middleware function
- * 
- * @example
- * router.get('/reports', requireAnyPermission(['VIEW_ALL_REPORTS', 'VIEW_OWN_REPORTS']), getReports);
  */
 export const requireAnyPermission = (permissions: Permission[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction): void => {
@@ -90,16 +85,11 @@ export const requireAnyPermission = (permissions: Permission[]) => {
       const userRole = req.user?.role;
 
       if (!userRole) {
-        res.status(401).json({
-          success: false,
-          message: 'Authentication required'
-        });
+        res.status(401).json({ success: false, message: 'Authentication required' });
         return;
       }
 
-      const hasAnyPermission = permissions.some(permission =>
-        hasPermission(userRole, permission)
-      );
+      const hasAnyPermission = permissions.some(permission => hasPermission(userRole, permission));
 
       if (!hasAnyPermission) {
         res.status(403).json({
@@ -120,12 +110,9 @@ export const requireAnyPermission = (permissions: Permission[]) => {
 
 /**
  * Middleware to check if user has a specific role
- * 
+ *
  * @param roles - Array of allowed roles
  * @returns Express middleware function
- * 
- * @example
- * router.delete('/users/:id', requireRole(['SUPER_ADMIN', 'ADMIN']), deleteUser);
  */
 export const requireRole = (roles: Role[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction): void => {
@@ -133,14 +120,10 @@ export const requireRole = (roles: Role[]) => {
       const userRole = req.user?.role?.toUpperCase();
 
       if (!userRole) {
-        res.status(401).json({
-          success: false,
-          message: 'Authentication required'
-        });
+        res.status(401).json({ success: false, message: 'Authentication required' });
         return;
       }
 
-      // Normalize allowed roles to uppercase for safe matching
       const normalizedAllowedRoles = roles.map(r => r.toUpperCase());
 
       if (!normalizedAllowedRoles.includes(userRole)) {
@@ -163,7 +146,6 @@ export const requireRole = (roles: Role[]) => {
 
 /**
  * Middleware factory for resource-level access control
- * Can be extended for specific resource checks (learners, assessments, etc.)
  */
 export class ResourceAccessControl {
   /**
@@ -179,49 +161,31 @@ export class ResourceAccessControl {
         const userId = req.user?.userId;
 
         if (!userRole || !userId) {
-          return res.status(401).json({
-            success: false,
-            message: 'Authentication required'
-          });
+          return res.status(401).json({ success: false, message: 'Authentication required' });
         }
 
-        // SUPER_ADMIN, ADMIN, HEAD_TEACHER can access all learners
         if (['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER'].includes(userRole)) {
           return next();
         }
 
-        // ACCOUNTANT and RECEPTIONIST can view but not modify
         if (['ACCOUNTANT', 'RECEPTIONIST'].includes(userRole)) {
-          if (req.method === 'GET') {
-            return next();
-          }
-          return res.status(403).json({
-            success: false,
-            message: 'You can only view learner information'
-          });
+          if (req.method === 'GET') return next();
+          return res.status(403).json({ success: false, message: 'You can only view learner information' });
         }
 
-        // TEACHER - check if learner is in their class
-        // TEACHER - can view all, but only edit/delete if assigned to class or created record
         if (userRole === 'TEACHER') {
-          // Allow all viewing
-          if (req.method === 'GET') {
-            return next();
-          }
+          if (req.method === 'GET') return next();
 
           const learnerId = req.params.learnerId || req.params.id || req.body.learnerId || req.query.learnerId;
           if (!learnerId) return next();
 
-          // Check if teacher is the creator of the learner OR assigned to the class
           const learner = await prisma.learner.findUnique({
             where: { id: learnerId as string },
-            select: { 
-              createdBy: true, 
+            select: {
+              createdBy: true,
               enrollments: {
                 where: { active: true },
-                select: {
-                  class: { select: { teacherId: true } }
-                }
+                select: { class: { select: { teacherId: true } } }
               }
             }
           });
@@ -239,7 +203,6 @@ export class ResourceAccessControl {
           });
         }
 
-        // PARENT - check if learner is their child
         if (userRole === 'PARENT') {
           const learnerId = req.params.learnerId || req.body.learnerId || req.query.learnerId;
           if (!learnerId) return next();
@@ -252,14 +215,11 @@ export class ResourceAccessControl {
           if (learner && learner.parentId === userId) return next();
           return res.status(403).json({
             success: false,
-            message: 'You can only access your own children\'s information'
+            message: "You can only access your own children's information"
           });
         }
 
-        return res.status(403).json({
-          success: false,
-          message: 'Cannot access this learner'
-        });
+        return res.status(403).json({ success: false, message: 'Cannot access this learner' });
       } catch (error) {
         next(error);
       }
@@ -276,38 +236,28 @@ export class ResourceAccessControl {
         const userId = req.user?.userId;
 
         if (!userRole || !userId) {
-          return res.status(401).json({
-            success: false,
-            message: 'Authentication required'
-          });
+          return res.status(401).json({ success: false, message: 'Authentication required' });
         }
 
-        // SUPER_ADMIN, ADMIN, HEAD_TEACHER can access all assessments
         if (['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER'].includes(userRole)) {
           return next();
         }
 
-        // TEACHER - can access assessments for their classes
-        // TEACHER - can view all results/tests, but only edit/delete if owner
         if (userRole === 'TEACHER') {
-          // Allow all viewing
-          if (req.method === 'GET') {
-            return next();
-          }
+          if (req.method === 'GET') return next();
 
           const id = req.params.id || req.body.id || req.body.assessmentId || req.body.testId;
           if (!id) return next();
 
-          // Check if modifying a SummativeResult, SummativeTest, or FormativeAssessment
           const [result, test, formative] = await Promise.all([
             prisma.summativeResult.findUnique({ where: { id: id as string }, select: { recordedBy: true } }),
             prisma.summativeTest.findUnique({ where: { id: id as string }, select: { createdBy: true } }),
             prisma.formativeAssessment.findUnique({ where: { id: id as string }, select: { teacherId: true } })
           ]);
 
-          const isOwner = 
-            (result?.recordedBy === userId) || 
-            (test?.createdBy === userId) || 
+          const isOwner =
+            (result?.recordedBy === userId) ||
+            (test?.createdBy === userId) ||
             (formative?.teacherId === userId);
 
           if (isOwner) return next();
@@ -318,7 +268,6 @@ export class ResourceAccessControl {
           });
         }
 
-        // PARENT - can view assessments for their children
         if (userRole === 'PARENT') {
           if (req.method === 'GET') {
             const learnerId = req.query.learnerId || req.body.learnerId;
@@ -335,16 +284,10 @@ export class ResourceAccessControl {
               message: 'You can only view assessments for your own children'
             });
           }
-          return res.status(403).json({
-            success: false,
-            message: 'Parents can only view assessments'
-          });
+          return res.status(403).json({ success: false, message: 'Parents can only view assessments' });
         }
 
-        return res.status(403).json({
-          success: false,
-          message: 'Cannot access this assessment'
-        });
+        return res.status(403).json({ success: false, message: 'Cannot access this assessment' });
       } catch (error) {
         next(error);
       }
@@ -354,8 +297,7 @@ export class ResourceAccessControl {
 
 /**
  * Audit log middleware — persists sensitive operations to the database.
- * Falls back to console.error (never silently swallows the failure) if the
- * write itself fails, so the request is never blocked by an audit error.
+ * Failures are logged but never block the request.
  */
 export const auditLog = (action: string) => {
   return async (req: AuthRequest, _res: Response, next: NextFunction) => {
@@ -373,7 +315,6 @@ export const auditLog = (action: string) => {
         }
       });
     } catch (e) {
-      // Audit failure must never block the request, but must be visible in logs
       console.error('[AUDIT] Failed to write audit log:', e);
     }
     next();

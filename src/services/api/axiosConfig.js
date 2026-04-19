@@ -30,9 +30,10 @@ const getApiBaseUrl = () => {
 
 export const API_BASE_URL = getApiBaseUrl();
 
-const axiosInstance = axios.create({
+export const axiosInstance = axios.create({
     baseURL: API_BASE_URL,
     headers: {},
+    withCredentials: true,
     // Fail fast instead of hanging indefinitely
     timeout: 60_000,
     // Keep-Alive so the TCP connection is reused across requests (major win)
@@ -42,8 +43,12 @@ const axiosInstance = axios.create({
 // ── Request interceptor ───────────────────────────────────────────────────────
 axiosInstance.interceptors.request.use(
     (config) => {
+        // Preference for cookies (withCredentials: true), 
+        // but allow Bearer fallback for mobile/capacitor clients
         const token = localStorage.getItem('token');
-        if (token) config.headers['Authorization'] = `Bearer ${token}`;
+        if (token && token !== '__cookie__') {
+            config.headers['Authorization'] = `Bearer ${token}`;
+        }
         return config;
     },
     (error) => Promise.reject(error)
@@ -71,8 +76,8 @@ axiosInstance.interceptors.response.use(
         const originalRequest = error.config;
 
         if (error.response?.status === 401 && !originalRequest._retry) {
-            // If the failure was on the refresh endpoint itself, just clear auth
-            if (originalRequest.url.includes('/auth/refresh')) {
+            // If the failure was on the refresh or login endpoint itself, don't attempt refresh
+            if (originalRequest.url.includes('/auth/refresh') || originalRequest.url.includes('/auth/login')) {
                 _clearAuth();
                 return Promise.reject(error);
             }
@@ -91,28 +96,27 @@ axiosInstance.interceptors.response.use(
             originalRequest._retry = true;
             isRefreshing = true;
 
+            // When using cookies, the browser handles sending the refreshToken automatically 
+            // the withCredentials: true ensures it is sent. 
+            // We still pass it as a body if available for compatibility.
             const refreshToken = localStorage.getItem('refreshToken');
 
-            if (refreshToken) {
-                try {
-                    const response = await axios.post(`${API_BASE_URL}/auth/refresh`, { refreshToken });
-                    if (response.status === 200) {
-                        const { token, refreshToken: newRefreshToken } = response.data;
-                        localStorage.setItem('token', token);
-                        localStorage.setItem('refreshToken', newRefreshToken);
-                        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-                        originalRequest.headers['Authorization'] = `Bearer ${token}`;
-                        
-                        processQueue(null, token);
-                        isRefreshing = false;
-                        return axiosInstance(originalRequest);
-                    }
-                } catch (_refreshError) {
-                    processQueue(_refreshError, null);
+            try {
+                // withCredentials is inherited from axiosInstance settings
+                const response = await axiosInstance.post(`/auth/refresh`, { refreshToken });
+                if (response.status === 200) {
+                    // If the server rotated cookies, the browser already has them.
+                    // If the server also returned body tokens (legacy/mobile), update them.
+                    const { token, refreshToken: newRefreshToken } = response.data || {};
+                    if (token) localStorage.setItem('token', token);
+                    if (newRefreshToken) localStorage.setItem('refreshToken', newRefreshToken);
+                    
+                    processQueue(null, token);
                     isRefreshing = false;
-                    _clearAuth();
+                    return axiosInstance(originalRequest);
                 }
-            } else {
+            } catch (_refreshError) {
+                processQueue(_refreshError, null);
                 isRefreshing = false;
                 _clearAuth();
             }

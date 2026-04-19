@@ -27,6 +27,12 @@ const RecordPaymentPage = ({ invoice, initialMode }) => {
     referenceNumber: '',
     notes: ''
   });
+  
+  const hasTransport = Number(invoice?.transportBalance || 0) > 0;
+  const [allocationMode, setAllocationMode] = useState('AUTO');
+  const [allocatedTuition, setAllocatedTuition] = useState('');
+  const [allocatedTransport, setAllocatedTransport] = useState('');
+
   // After success we show an inline confirmation panel before navigating
   const [successResult, setSuccessResult] = useState(null);
   const [showA5Preview, setShowA5Preview] = useState(false);
@@ -77,12 +83,26 @@ const RecordPaymentPage = ({ invoice, initialMode }) => {
 
     try {
       setLoading(true);
+
+      let finalAllocation = {};
+      
+      if (hasTransport && allocationMode === 'CUSTOM') {
+        const tuit = parseFloat(allocatedTuition) || 0;
+        const trans = parseFloat(allocatedTransport) || 0;
+        if (Math.abs(tuit + trans - parseFloat(paymentData.amount)) > 0.01) {
+           showError('The allocated tuition and transport amounts must equal the total payment amount.');
+           return;
+        }
+        finalAllocation = { allocatedTuition: tuit, allocatedTransport: trans };
+      }
+
       const result = await api.fees.recordPayment({
         invoiceId: invoice.id,
         amount: parseFloat(paymentData.amount),
         paymentMethod: paymentData.paymentMethod,
         referenceNumber: paymentData.referenceNumber || null,
-        notes: paymentData.notes?.trim() || null   // ← send null when empty, never crash
+        notes: paymentData.notes?.trim() || null,
+        ...finalAllocation
       });
 
       setSuccessResult({ data: result.data, noteSaved });
@@ -227,18 +247,40 @@ const RecordPaymentPage = ({ invoice, initialMode }) => {
             <span className="ml-2 font-semibold">{invoice.invoiceNumber}</span>
           </div>
           <div>
-            <span className="text-gray-500">Total Amount:</span>
+            <span className="text-gray-500">Total Billed:</span>
             <span className="ml-2 font-semibold">KES {Number(invoice.totalAmount).toLocaleString()}</span>
           </div>
           <div>
             <span className="text-gray-500">Amount Paid:</span>
             <span className="ml-2 font-semibold text-green-600">KES {Number(invoice.paidAmount).toLocaleString()}</span>
           </div>
-          <div className="col-span-2 pt-1 border-t border-gray-100">
-            <span className="text-gray-500">Outstanding Balance:</span>
-            <span className="ml-2 font-bold text-red-600 text-xl">
-              KES {Number(invoice.balance).toLocaleString()}
-            </span>
+          {hasTransport && (
+            <>
+              <div className="pt-2 border-t border-gray-100">
+                <span className="text-gray-500">Transport:</span>
+                <span className="ml-2 font-semibold">KES {Number(invoice.transportBilled || 0).toLocaleString()}</span>
+              </div>
+              <div className="pt-2 border-t border-gray-100 items-center">
+                <span className="text-gray-500">Transport Paid:</span>
+                <span className="ml-2 font-semibold text-green-600">KES {Number(invoice.transportPaid || 0).toLocaleString()}</span>
+              </div>
+            </>
+          )}
+          <div className={`col-span-2 pt-2 border-t border-gray-100 flex items-center justify-between`}>
+            <div>
+              <span className="text-gray-500">Tuition Balance:</span>
+              <span className="ml-2 font-bold text-red-600 text-xl">
+                KES {Number(invoice.balance).toLocaleString()}
+              </span>
+            </div>
+            {hasTransport && (
+              <div>
+                <span className="text-gray-500">Transport Bal:</span>
+                <span className="ml-2 font-bold text-orange-600 text-xl">
+                  KES {Number(invoice.transportBalance).toLocaleString()}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -252,12 +294,75 @@ const RecordPaymentPage = ({ invoice, initialMode }) => {
           <input
             type="number"
             value={paymentData.amount}
-            onChange={(e) => setPaymentData({ ...paymentData, amount: e.target.value })}
+            onChange={(e) => {
+              setPaymentData({ ...paymentData, amount: e.target.value });
+              if (allocationMode === 'AUTO') {
+                const amt = parseFloat(e.target.value) || 0;
+                const tuitBal = Number(invoice.balance || 0);
+                if (amt <= tuitBal) {
+                   setAllocatedTuition(amt.toString());
+                   setAllocatedTransport('0');
+                } else {
+                   setAllocatedTuition(tuitBal.toString());
+                   setAllocatedTransport((amt - tuitBal).toString());
+                }
+              }
+            }}
             className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition text-lg font-semibold"
             placeholder="Enter amount"
             step="0.01"
           />
         </div>
+
+        {hasTransport && paymentData.amount && (
+            <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 mt-2 space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-bold text-orange-900">Payment Allocation</label>
+                <div className="flex bg-white rounded-lg p-0.5 border border-orange-200">
+                  <button 
+                    className={`px-3 py-1 text-xs font-bold rounded-md transition ${allocationMode === 'AUTO' ? 'bg-orange-500 text-white shadow-sm' : 'text-orange-600 hover:bg-orange-100'}`}
+                    onClick={() => {
+                        setAllocationMode('AUTO');
+                        const amt = parseFloat(paymentData.amount) || 0;
+                        const tuitBal = Number(invoice.balance || 0);
+                        if (amt <= tuitBal) {
+                           setAllocatedTuition(amt.toString());
+                           setAllocatedTransport('0');
+                        } else {
+                           setAllocatedTuition(tuitBal.toString());
+                           setAllocatedTransport((amt - tuitBal).toString());
+                        }
+                    }}
+                  >
+                    Auto
+                  </button>
+                  <button 
+                    className={`px-3 py-1 text-xs font-bold rounded-md transition ${allocationMode === 'CUSTOM' ? 'bg-orange-500 text-white shadow-sm' : 'text-orange-600 hover:bg-orange-100'}`}
+                    onClick={() => setAllocationMode('CUSTOM')}
+                  >
+                    Custom Split
+                  </button>
+                </div>
+              </div>
+
+              {allocationMode === 'AUTO' ? (
+                 <p className="text-xs text-orange-700">
+                   Automatically pays off general tuition first <span className="font-bold border-b border-orange-400">({allocatedTuition})</span>, and puts the remainder towards transport <span className="font-bold border-b border-orange-400">({allocatedTransport})</span>.
+                 </p>
+              ) : (
+                 <div className="grid grid-cols-2 gap-3 pb-1">
+                   <div>
+                     <label className="block text-xs font-bold text-orange-800 mb-1">To Tuition</label>
+                     <input type="number" value={allocatedTuition} onChange={e => setAllocatedTuition(e.target.value)} className="w-full px-3 py-2 text-sm border border-orange-200 rounded-lg focus:ring-orange-500 focus:border-orange-500" placeholder="0.00" />
+                   </div>
+                   <div>
+                     <label className="block text-xs font-bold text-orange-800 mb-1">To Transport</label>
+                     <input type="number" value={allocatedTransport} onChange={e => setAllocatedTransport(e.target.value)} className="w-full px-3 py-2 text-sm border border-orange-200 rounded-lg focus:ring-orange-500 focus:border-orange-500" placeholder="0.00" />
+                   </div>
+                 </div>
+              )}
+            </div>
+        )}
 
         <div className="space-y-2">
           <label className="block text-sm font-semibold text-gray-700">Payment Method *</label>

@@ -35,12 +35,10 @@ export const AuthProvider = ({ children }) => {
         const token = localStorage.getItem('token');
         const storedUser = localStorage.getItem('user');
 
-        if (token && storedUser) {
+        // Support both real tokens and cookie-based placeholders
+        if (storedUser && (token || document.cookie.includes('accessToken'))) {
           const parsedUser = normalizeUser(JSON.parse(storedUser));
           localStorage.setItem('user', JSON.stringify(parsedUser));
-          setUser(parsedUser);
-          setIsAuthenticated(true);
-
           setUser(parsedUser);
           setIsAuthenticated(true);
         }

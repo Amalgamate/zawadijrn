@@ -80,20 +80,27 @@ const TabButton = ({ active, label, icon: Icon, onClick }) => (
 
 const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavigate }) => {
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState('overview'); // overview, financials, performance, operations
+  const [activeTab, setActiveTab] = useState('overview');
   const [showUnAssessedSheet, setShowUnAssessedSheet] = useState(false);
   const [timeFilter, setTimeFilter] = useState('term');
   const [metrics, setMetrics] = useState(null);
+  const [apiError, setApiError] = useState(null);
+  // Stable user id — prevents re-fetch every time the user object reference changes
+  const userId = user?.id || user?.userId;
 
   const loadMetrics = async (filter) => {
     try {
       setRefreshing(true);
+      setApiError(null);
       const response = await dashboardAPI.getAdminMetrics(filter || timeFilter);
       if (response.success) {
         setMetrics(response.data);
+      } else {
+        setApiError(response.message || 'Failed to load dashboard data');
       }
     } catch (error) {
       console.error('Failed to load dashboard metrics:', error);
+      setApiError(error.message || 'Could not reach the server. It may be waking up — please retry in a moment.');
     } finally {
       setRefreshing(false);
     }
@@ -101,7 +108,45 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
 
   useEffect(() => {
     loadMetrics(timeFilter);
-  }, [user, timeFilter]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, timeFilter]);
+
+  // ── Loading state: show skeleton while first fetch is in progress ─────────────
+  if (refreshing && !metrics) {
+    return (
+      <div className="space-y-6 animate-pulse">
+        <div className="grid grid-cols-3 md:grid-cols-6 gap-2 lg:gap-4">
+          {[...Array(6)].map((_, i) => <div key={i} className="h-16 bg-gray-200 rounded-xl" />)}
+        </div>
+        <div className="h-10 w-96 bg-gray-200 rounded-lg" />
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          <div className="h-64 bg-gray-200 rounded-xl" />
+          <div className="h-64 bg-gray-200 rounded-xl" />
+          <div className="h-64 bg-gray-200 rounded-xl" />
+        </div>
+        <div className="h-72 bg-gray-200 rounded-xl" />
+      </div>
+    );
+  }
+
+  // ── Error state: server unreachable (cold start / network) ─────────────────
+  if (apiError && !metrics) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl max-w-md">
+          <div className="text-3xl mb-3">⚡</div>
+          <h3 className="text-base font-black text-amber-900 mb-1">Dashboard is warming up</h3>
+          <p className="text-xs text-amber-700 mb-4">{apiError}</p>
+          <button
+            onClick={() => loadMetrics(timeFilter)}
+            className="px-6 py-2 bg-brand-purple text-white text-xs font-black uppercase tracking-widest rounded-lg hover:bg-brand-purple/90 transition"
+          >
+            Retry Now
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const stats = {
     totalStudents: metrics?.stats?.totalStudents || pagination?.total || learners.length || 0,

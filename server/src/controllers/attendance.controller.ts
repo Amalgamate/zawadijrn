@@ -222,26 +222,28 @@ export class AttendanceController {
       errors: [] as any[],
     };
 
+    // Eliminate N+1 read bug by pre-fetching all existing attendance records for the given date
+    const submittedLearnerIds = records.map((r: any) => r.learnerId).filter(Boolean);
+    const existingRecords = await prisma.attendance.findMany({
+      where: {
+        date: attendanceDate,
+        learnerId: { in: submittedLearnerIds }
+      }
+    });
+    const existingMap = new Map(existingRecords.map(r => [r.learnerId, r]));
+
     // Process each attendance record
-    for (const record of records) {
+    const promises = records.map(async (record: any) => {
+      const { learnerId, status, remarks } = record;
+
+      if (!learnerId || !status) {
+        results.failed++;
+        results.errors.push({ learnerId, error: 'Missing learnerId or status' });
+        return;
+      }
+
       try {
-        const { learnerId, status, remarks } = record;
-
-        if (!learnerId || !status) {
-          results.failed++;
-          results.errors.push({ learnerId, error: 'Missing learnerId or status' });
-          continue;
-        }
-
-        // Check if already exists
-        const existing = await prisma.attendance.findUnique({
-          where: {
-            learnerId_date: {
-              learnerId,
-              date: attendanceDate,
-            },
-          },
-        });
+        const existing = existingMap.get(learnerId);
 
         if (existing) {
           // Update
@@ -272,9 +274,11 @@ export class AttendanceController {
         }
       } catch (error: any) {
         results.failed++;
-        results.errors.push({ learnerId: record.learnerId, error: error.message });
+        results.errors.push({ learnerId, error: error.message });
       }
-    }
+    });
+
+    await Promise.all(promises);
 
     res.json({
       success: true,

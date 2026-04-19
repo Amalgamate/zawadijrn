@@ -2,47 +2,85 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import svgr from 'vite-plugin-svgr';
 
-// https://vitejs.dev/config/
 export default defineConfig({
-  // base: '/' generates absolute asset paths (/assets/index-abc.js)
-  // which always resolve correctly on Vercel regardless of navigation depth.
-  // NOTE: Do NOT change to './' — relative paths break modulepreload on Vercel
-  // because the SPA catch-all rewrite returns index.html for all paths,
-  // causing the browser to receive text/html instead of JavaScript.
   base: '/',
 
   plugins: [
     react(),
     svgr(),
   ],
+
   resolve: {
-    alias: {
-      '@': '/src',
-    },
+    alias: { '@': '/src' },
   },
+
   server: {
     port: 3000,
     open: true,
     strictPort: true,
-    // Explicit HMR WebSocket endpoint — avoids failed ws:// connections on some Windows / IPv6 setups
-    hmr: {
-      protocol: 'ws',
-      port: 3000,
-      clientPort: 3000,
-    },
+    hmr: { protocol: 'ws', port: 3000, clientPort: 3000 },
   },
+
   build: {
     outDir: 'build',
-    sourcemap: true,
-    // Explicitly set assetsDir to ensure absolute paths in HTML output
+    // Source maps bloat the build by 2× and serve no purpose in production.
+    // Enable only when debugging a prod issue, then redeploy without.
+    sourcemap: false,
     assetsDir: 'assets',
+    // Raise the chunk warning threshold — we are intentionally splitting
+    chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
-        // Ensure asset file names use absolute base path
         assetFileNames: 'assets/[name]-[hash][extname]',
         chunkFileNames: 'assets/[name]-[hash].js',
         entryFileNames: 'assets/[name]-[hash].js',
-      }
-    }
+        /**
+         * Manual chunk splitting strategy
+         * Goal: keep the initial JS that must load on every page < 200 KB.
+         * Heavy libraries are split into their own named chunks so they:
+         *   (a) load lazily only when first needed
+         *   (b) are cached by the browser independently of app code changes
+         */
+        manualChunks(id) {
+          // ── Charting — recharts + d3 helpers (~350 KB) ─────────────────────
+          if (id.includes('node_modules/recharts') ||
+              id.includes('node_modules/d3-') ||
+              id.includes('node_modules/victory-')) {
+            return 'vendor-charts';
+          }
+          // ── PDF generation (~800 KB) ─────────────────────────────────────
+          if (id.includes('node_modules/jspdf') ||
+              id.includes('node_modules/html2canvas')) {
+            return 'vendor-pdf';
+          }
+          // ── Spreadsheet export (~1.5 MB) ─────────────────────────────────
+          if (id.includes('node_modules/exceljs')) {
+            return 'vendor-excel';
+          }
+          // ── Calendar (~300 KB) ───────────────────────────────────────────
+          if (id.includes('node_modules/react-big-calendar') ||
+              id.includes('node_modules/react-day-picker') ||
+              id.includes('node_modules/date-fns')) {
+            return 'vendor-calendar';
+          }
+          // ── Socket.io client (~200 KB) ───────────────────────────────────
+          if (id.includes('node_modules/socket.io-client') ||
+              id.includes('node_modules/engine.io-client')) {
+            return 'vendor-socket';
+          }
+          // ── Radix UI primitives (~300 KB combined) ───────────────────────
+          if (id.includes('node_modules/@radix-ui')) {
+            return 'vendor-radix';
+          }
+          // ── React core — always cached separately ────────────────────────
+          if (id.includes('node_modules/react') ||
+              id.includes('node_modules/react-dom') ||
+              id.includes('node_modules/react-router-dom') ||
+              id.includes('node_modules/scheduler')) {
+            return 'vendor-react';
+          }
+        },
+      },
+    },
   },
 });

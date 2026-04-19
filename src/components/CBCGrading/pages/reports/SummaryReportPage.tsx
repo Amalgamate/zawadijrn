@@ -54,7 +54,6 @@ const LEARNING_AREA_ABBREVIATIONS = {
   'ENGLISH LANGUAGE ACTIVITIES': 'LANG',
   'KISWAHILI LANGUAGE ACTIVITIES': 'KISW',
   'SCIENCE & TECHNOLOGY': 'SCI',
-  'AGRICULTURE': 'AGRI',
   'PRE-TECHNICAL STUDIES': 'P-TECH',
   'INTEGRATED SCIENCE': 'I-SCI',
   'SOCIAL STUDIES & LIFE SKILLS': 'SOC',
@@ -153,7 +152,7 @@ const SummaryReportPage = () => {
         const types = [...new Set(tests.map((t: any) => t.testType).filter(Boolean))].sort() as string[];
         setAvailableTestTypes(types);
         // Reset selection only if the current value can't match anything in the new list
-        setStagedTestType(prev => {
+        setStagedTestType((prev: string) => {
           if (prev === 'all') return prev;
           // Accept if the exact value OR a case-insensitive normalized match exists
           const prevNorm = prev.toUpperCase().replace(/[\s-]+/g, '_');
@@ -196,7 +195,7 @@ const SummaryReportPage = () => {
     setNoStudentsFound(false);
 
     try {
-      const apiParams = {
+      const apiParams: Record<string, any> = {
         grade: stagedGrade,
         academicYear: stagedYear,
         term: stagedTerm
@@ -211,7 +210,7 @@ const SummaryReportPage = () => {
       // 1. Fetch Students & Results concurrently
       // Use getAll() — it carries institutionType scoping and proper pagination,
       // unlike getByGrade() which hits a separate route that can 500 on some grades.
-      const studentsParams = {
+      const studentsParams: Record<string, any> = {
         grade: stagedGrade,
         status: 'ACTIVE',
         limit: 1000,
@@ -424,8 +423,8 @@ const SummaryReportPage = () => {
     if (vals.length === 0) return 0;
     
     // Grand totals for overall class mean percentage
-    const grandTotalScored = vals.reduce((acc, v) => acc + parseFloat(v.totalSum), 0);
-    const grandTotalPossible = vals.reduce((acc, v) => acc + parseFloat(v.totalMaxSum), 0);
+    const grandTotalScored: number = (vals as any[]).reduce((acc: number, v: any) => acc + parseFloat(v.totalSum), 0);
+    const grandTotalPossible: number = (vals as any[]).reduce((acc: number, v: any) => acc + parseFloat(v.totalMaxSum), 0);
     
     return grandTotalPossible > 0 ? (grandTotalScored / grandTotalPossible) * 100 : 0;
   }, [subjectMeans]);

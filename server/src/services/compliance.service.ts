@@ -113,7 +113,7 @@ export class ComplianceService {
     if (records.length === 0) return null;
 
     // Header for KRA iTax P10 Template
-    let csv = 'PIN,Name,GrossPay,allowances,NSSF_Contribution,NHIF_Contribution,PAY_Tax\n';
+    let csv = 'PIN,Name,GrossPay,allowances,NSSF_Contribution,SHIF_Contribution,PAY_Tax\n';
 
     for (const record of records) {
       const tax = (record.deductions as any) || {};

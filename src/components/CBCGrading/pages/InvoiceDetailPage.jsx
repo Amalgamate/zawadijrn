@@ -322,6 +322,35 @@ const InvoiceDetailPage = ({ invoice }) => {
         ))}
       </div>
 
+      {/* Transport sub-ledger card */}
+      {invoice.learner?.isTransportStudent && Number(invoice.transportBilled || 0) > 0 && (
+        <div className="bg-orange-50 border border-orange-200 rounded-xl px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-orange-600 text-lg">🚌</span>
+            <div>
+              <p className="text-xs font-black text-orange-800 uppercase tracking-wider">Transport Sub-Ledger</p>
+              <p className="text-[10px] text-orange-600">Billed separately from tuition</p>
+            </div>
+          </div>
+          <div className="flex gap-6 text-center">
+            <div>
+              <p className="text-[10px] font-bold text-orange-600 uppercase">Billed</p>
+              <p className="text-base font-black text-orange-900">KES {Number(invoice.transportBilled || 0).toLocaleString()}</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-orange-600 uppercase">Paid</p>
+              <p className="text-base font-black text-green-700">KES {Number(invoice.transportPaid || 0).toLocaleString()}</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-orange-600 uppercase">Balance</p>
+              <p className={`text-base font-black ${Number(invoice.transportBalance || 0) <= 0 ? 'text-green-700' : 'text-red-600'}`}>
+                KES {Number(invoice.transportBalance || 0).toLocaleString()}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Student & parent */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm space-y-3">
@@ -375,7 +404,10 @@ const InvoiceDetailPage = ({ invoice }) => {
                 <th className="px-6 py-3 font-bold text-gray-400 uppercase tracking-widest text-[9px]">Receipt #</th>
                 <th className="px-6 py-3 font-bold text-gray-400 uppercase tracking-widest text-[9px]">Method</th>
                 <th className="px-6 py-3 font-bold text-gray-400 uppercase tracking-widest text-[9px]">Reference</th>
-                <th className="px-6 py-3 font-bold text-gray-400 uppercase tracking-widest text-[9px] text-right">Amount</th>
+                <th className="px-6 py-3 font-bold text-gray-400 uppercase tracking-widest text-[9px] text-right">Total</th>
+                {invoice.learner?.isTransportStudent && (
+                  <th className="px-6 py-3 font-bold text-orange-400 uppercase tracking-widest text-[9px] text-right">Transport</th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -404,6 +436,11 @@ const InvoiceDetailPage = ({ invoice }) => {
                       <td className="px-6 py-3 text-right font-black text-emerald-600">
                         {Number(p.amount).toLocaleString()}
                       </td>
+                      {invoice.learner?.isTransportStudent && (
+                        <td className="px-6 py-3 text-right font-bold text-orange-600">
+                          {Number(p.transportAmount || 0) > 0 ? Number(p.transportAmount).toLocaleString() : '-'}
+                        </td>
+                      )}
                     </tr>
                   ))}
                   <tr className="bg-emerald-50/30">

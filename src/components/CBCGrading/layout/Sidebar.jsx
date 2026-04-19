@@ -65,6 +65,39 @@ const getCollapsedIconColor = (id, isActive) => {
   }
 };
 
+// ─── Route → chunk prefetch map ──────────────────────────────────────────────
+// Each entry maps a page key to its lazy import. Hovering a sidebar link
+// triggers the import() so the chunk is already in the browser cache by
+// the time the user clicks. Vite deduplicates the network request if the
+// same chunk is already loading or loaded.
+const PREFETCH_MAP = {
+  'learners-list':            () => import('../pages/LearnersList'),
+  'teachers-list':            () => import('../pages/TeachersList'),
+  'parents-list':             () => import('../pages/ParentsList'),
+  'attendance-daily':         () => import('../pages/DailyAttendanceAPI'),
+  'attendance-reports':       () => import('../pages/AttendanceReports'),
+  'assess-formative':         () => import('../pages/FormativeAssessment'),
+  'assess-summative-tests':   () => import('../pages/SummativeTestsRouter'),
+  'fees-collection':          () => import('../pages/FeeCollectionPage'),
+  'fees-structure':           () => import('../pages/FeeStructurePage'),
+  'fees-reports':             () => import('../pages/FeeReportsPage'),
+  'comm-notices':             () => import('../pages/NoticesPage'),
+  'hr-portal':                () => import('../pages/hr/HRManager'),
+  'hr-payroll':               () => import('../pages/hr/PayrollManager'),
+  'accounting-dashboard':     () => import('../pages/accounting/AccountingManager'),
+  'inventory-items':          () => import('../pages/inventory/InventoryItems'),
+  'library-catalog':          () => import('../pages/library/LibraryManager'),
+  'transport-routes':         () => import('../pages/transport/TransportManager'),
+  'settings-school':          () => import('../pages/settings/SchoolSettings'),
+  'settings-users':           () => import('../pages/settings/UserManagement'),
+};
+
+const prefetch = (path) => {
+  if (!path || !PREFETCH_MAP[path]) return;
+  // Fire-and-forget — we don't care about the result, just want the browser to cache it
+  PREFETCH_MAP[path]().catch(() => {});
+};
+
 // ─── Sidebar (root) ───────────────────────────────────────────────────────────
 const Sidebar = React.memo(({
   sidebarOpen,
@@ -242,6 +275,7 @@ const SingleItem = ({ section, currentPage, onNavigate, sidebarOpen }) => {
   return (
     <button
       onClick={() => !section.greyedOut && onNavigate(section.id)}
+      onMouseEnter={() => prefetch(section.id)}
       disabled={!!section.greyedOut}
       title={!sidebarOpen ? section.label : undefined}
       className={`
@@ -429,6 +463,7 @@ const LeafItem = ({ item, currentPage, onNavigate }) => {
   return (
     <button
       onClick={() => !item.greyedOut && !item.comingSoon && onNavigate(item.path)}
+      onMouseEnter={() => prefetch(item.path)}
       disabled={!!(item.greyedOut || item.comingSoon)}
       className={`
         w-full text-left flex items-center justify-between px-2 py-1.5 rounded-md text-xs transition-all duration-150

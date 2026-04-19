@@ -45,6 +45,9 @@ import schemeOfWorkRoutes from './schemeOfWork.routes';
 import pathwayRoutes from './pathway.routes';
 import pathwayRecommendationRoutes from './pathwayRecommendation.routes';
 import userNotificationRoutes from './userNotification.routes';
+import changelogRoutes from './changelog.routes';
+import tertiaryRoutes from './tertiary.routes';
+import mpesaRoutes from './mpesa.routes';
 import { issueCsrfToken } from '../middleware/csrf.middleware';
 import { authenticate } from '../middleware/auth.middleware';
 
@@ -63,6 +66,7 @@ router.use('/library', libraryRoutes);
 router.use('/schools', schoolRoutes);
 router.use('/biometric', biometricRoutes);
 router.use('/ai', aiRoutes);
+router.use('/mpesa', mpesaRoutes);
 router.get('/auth/csrf', issueCsrfToken);
 
 // ============================================
@@ -105,6 +109,8 @@ router.use('/pdf', pdfRoutes);
 router.use('/id-templates', idTemplateRoutes);
 router.use('/transport', transportRoutes);
 router.use('/user-notifications', userNotificationRoutes);
+router.use('/changelogs', changelogRoutes);
 router.use('/lms', lmsRoutes);
+router.use('/tertiary', tertiaryRoutes);
 
 export default router;

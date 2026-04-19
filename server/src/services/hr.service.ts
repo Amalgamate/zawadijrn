@@ -2,6 +2,7 @@ import prisma from '../config/database';
 import { accountingService } from './accounting.service';
 import { TaxCalculator } from '../utils/tax.calculator';
 import { SmsService } from './sms.service';
+import { whatsappService } from './whatsapp.service';
 
 export class HRService {
     private toDateOnly(dateValue: Date) {
@@ -290,6 +291,11 @@ export class HRService {
             SmsService.sendSms(updated.user.phone, message).catch(err =>
                 console.error('[HR] Leave approval SMS failed:', err)
             );
+
+            // Add WhatsApp Alerting (redundant delivery)
+            whatsappService.sendMessage({ to: updated.user.phone, message }).catch(err =>
+                console.error('[HR] Leave approval WhatsApp failed:', err)
+            );
         }
 
         return updated;
@@ -331,15 +337,27 @@ export class HRService {
                 archived: false,
                 status: 'ACTIVE',
                 basicSalary: { gt: 0 }
+            },
+            select: {
+                id: true,
+                basicSalary: true,
+                housingLevyExempt: true
             }
         });
+
+        const existingRecords = await prisma.payrollRecord.findMany({
+            where: {
+                month,
+                year,
+                userId: { in: staff.map(s => s.id) }
+            }
+        });
+        const existingMap = new Map(existingRecords.map(r => [r.userId, r]));
 
         const payrollRecords = [];
 
         for (const member of staff) {
-            const existing = await prisma.payrollRecord.findUnique({
-                where: { userId_month_year: { userId: member.id, month, year } }
-            });
+            const existing = existingMap.get(member.id);
             if (existing) {
                 payrollRecords.push(existing);
                 continue;
@@ -457,6 +475,11 @@ export class HRService {
             SmsService.sendSms(record.user.phone, message).catch(err =>
                 console.error('[HR] Payroll paid SMS failed:', err)
             );
+
+            // Add WhatsApp Alerting (redundant delivery)
+            whatsappService.sendMessage({ to: record.user.phone, message }).catch(err =>
+                console.error('[HR] Payroll paid WhatsApp failed:', err)
+            );
         }
 
         return updated;
@@ -487,6 +510,11 @@ export class HRService {
             const message  = `Dear ${rec.user.firstName}, your salary for ${monthName} of KES ${net} has been disbursed${bankNote}.${refNote} Contact HR for any queries.`;
             SmsService.sendSms(rec.user.phone, message).catch(err =>
                 console.error('[HR] Bulk payroll paid SMS failed:', err)
+            );
+
+            // Add WhatsApp Alerting (redundant delivery)
+            whatsappService.sendMessage({ to: rec.user.phone, message }).catch(err =>
+                console.error('[HR] Bulk payroll paid WhatsApp failed:', err)
             );
         }
 

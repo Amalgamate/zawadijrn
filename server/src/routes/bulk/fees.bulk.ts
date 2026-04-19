@@ -196,15 +196,22 @@ router.post(
           const billedRaw = row['Billed'] ?? row['Total Amount'];
           const paidRaw = row['Paid'] ?? row['Paid Amount'];
           const balanceRaw = row['Balance'] ?? row['Balances'] ?? row['Outstanding'];
+          
+          const tBilledRaw = row['Transport Billed'];
+          const tPaidRaw = row['Transport Paid'];
 
-          if (billedRaw == null && paidRaw == null && balanceRaw == null) {
+          if (billedRaw == null && paidRaw == null && balanceRaw == null && tBilledRaw == null && tPaidRaw == null) {
             sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
             continue;
           }
 
-          const billed = parseFloat(String(billedRaw).replace(/,/g, '')) || 0;
-          const paid = parseFloat(String(paidRaw).replace(/,/g, '')) || 0;
-          const balance = parseFloat(String(balanceRaw).replace(/,/g, '')) || 0;
+          const billed = parseFloat(String(billedRaw || 0).replace(/,/g, '')) || 0;
+          const paid = parseFloat(String(paidRaw || 0).replace(/,/g, '')) || 0;
+          const balance = parseFloat(String(balanceRaw || 0).replace(/,/g, '')) || 0;
+
+          const tBilled = parseFloat(String(tBilledRaw || 0).replace(/,/g, '')) || 0;
+          const tPaid = parseFloat(String(tPaidRaw || 0).replace(/,/g, '')) || 0;
+          const tBalance = tBilled - tPaid;
 
           const learner = learnerMap.get(admNo);
           if (!learner) {
@@ -245,6 +252,9 @@ router.post(
                 totalAmount: billed,
                 paidAmount: paid,
                 balance: balance,
+                transportBilled: tBilled,
+                transportPaid: tPaid,
+                transportBalance: tBalance,
                 status: balance < 0 ? 'OVERPAID' : balance === 0 ? 'PAID' : paid > 0 ? 'PARTIAL' : 'PENDING',
                 issuedBy: req.user!.userId
               }
@@ -257,6 +267,9 @@ router.post(
                 totalAmount: billed,
                 paidAmount: paid,
                 balance: balance,
+                transportBilled: tBilled,
+                transportPaid: tPaid,
+                transportBalance: tBalance,
                 status: balance < 0 ? 'OVERPAID' : balance === 0 ? 'PAID' : paid > 0 ? 'PARTIAL' : 'PENDING'
               }
             });
@@ -283,7 +296,8 @@ router.post(
                 data: {
                   receiptNumber: `REC-${admNo}-OB-${Date.now().toString().slice(-4)}`,
                   invoiceId: invoice.id,
-                  amount: paid,
+                  amount: paid + tPaid,
+                  transportAmount: tPaid,
                   paymentMethod: 'OTHER',
                   notes: 'Opening Balance Import',
                   paymentDate: new Date(),
@@ -398,7 +412,9 @@ router.post(
           const amountRaw = row['Amount'] ?? row['Paid'];
           const dateRaw = row['Date'] ?? row['Payment Date'];
           const refRaw = row['Reference'] ?? row['Ref No'];
-          
+          const modeRaw = row['Mode'] ?? row['Payment Method'] ?? row['Method'];
+          const allocationRaw = row['Allocation'] ?? row['Allocate To'];
+
           if (!amountRaw) {
              sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
              continue;
@@ -408,6 +424,16 @@ router.post(
           if (isNaN(amount) || amount <= 0) {
              sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
              continue;
+          }
+
+          let parsedPaymentMethod: any = 'CASH'; // Default to cash
+          if (modeRaw) {
+             const m = String(modeRaw).toUpperCase().trim();
+             if (m.includes('MPESA') || m.includes('M-PESA') || m.includes('M PESA')) parsedPaymentMethod = 'MPESA';
+             else if (m.includes('BANK')) parsedPaymentMethod = 'BANK';
+             else if (m.includes('CHEQUE')) parsedPaymentMethod = 'CHEQUE';
+             else if (m.includes('CARD') || m.includes('DEBIT') || m.includes('CREDIT')) parsedPaymentMethod = 'CARD';
+             else parsedPaymentMethod = 'OTHER';
           }
 
           const learner = await prisma.learner.findUnique({ where: { admissionNumber: admNo } });
@@ -436,6 +462,29 @@ router.post(
           const randStr = Math.random().toString(36).substring(2, 6).toUpperCase();
           const receiptNumber = `RCP-${Date.now().toString().slice(-4)}${randStr}`;
 
+          // Calculate explicit vs intelligent allocation
+          const currentTuitionBal = Number(invoice.balance || 0);
+          const currentTransportBal = Number(invoice.transportBalance || 0);
+          
+          let tuitionChunk = 0;
+          let transportChunk = 0;
+
+          const passedAllocation = String(allocationRaw || '').toUpperCase().trim();
+
+          if (passedAllocation === 'TRANSPORT') {
+            transportChunk = amount;
+          } else if (passedAllocation === 'TUITION') {
+            tuitionChunk = amount;
+          } else {
+             // AUTO
+             if (amount <= currentTuitionBal) {
+                 tuitionChunk = amount;
+             } else {
+                 tuitionChunk = currentTuitionBal;
+                 transportChunk = amount - currentTuitionBal;
+             }
+          }
+
           // Create payment
           const payment = await prisma.$transaction(async (tx) => {
             const createdPayment = await tx.feePayment.create({
@@ -443,7 +492,8 @@ router.post(
                 receiptNumber,
                 invoiceId: invoice.id,
                 amount: amount,
-                paymentMethod: 'CASH', // default to cash if mapping isn't precise
+                transportAmount: transportChunk,
+                paymentMethod: parsedPaymentMethod,
                 referenceNumber: refRaw ? String(refRaw) : undefined,
                 paymentDate: dateRaw ? new Date(dateRaw) : new Date(),
                 notes: 'Bulk imported payment',
@@ -451,17 +501,26 @@ router.post(
               }
             });
 
-            const newPaid = Number(invoice.paidAmount) + amount;
-            const newBalance = Number(invoice.totalAmount) - newPaid;
-
             await tx.feeInvoice.update({
               where: { id: invoice.id },
               data: {
-                paidAmount: newPaid,
-                balance: newBalance,
-                status: newBalance <= 0 ? 'PAID' : 'PARTIAL'
+                paidAmount: { increment: tuitionChunk },
+                balance: { decrement: tuitionChunk },
+                transportPaid: { increment: transportChunk },
+                transportBalance: { decrement: transportChunk }
               }
             });
+
+            // Need to pull fresh balance to determine enum Status
+            const freshInvoice = await tx.feeInvoice.findUnique({ where: { id: invoice.id } });
+            if (freshInvoice) {
+               await tx.feeInvoice.update({
+                  where: { id: invoice.id },
+                  data: {
+                     status: Number(freshInvoice.balance) <= 0 ? 'PAID' : 'PARTIAL'
+                  }
+               });
+            }
 
             return createdPayment;
           });
@@ -689,6 +748,155 @@ router.post(
       console.error('Upload Waivers Error:', error);
       if (!res.writableEnded) {
         res.write(JSON.stringify({ type: 'error', error: 'Failed to process waivers', details: error.message }) + '\n');
+        res.end();
+      }
+    }
+  }
+);
+
+/**
+ * POST /api/bulk/fees/upload-transport
+ * Append Transport Fees to existing invoices by Admission Number.
+ * Only updates students who are marked as isTransportStudent.
+ * Columns: Adm No, Transport Billed
+ */
+router.post(
+  '/upload-transport',
+  upload.single('file'),
+  rateLimit({ windowMs: 60_000, maxRequests: 5 }),
+  auditLog('BULK_UPLOAD_TRANSPORT_FEES'),
+  async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ success: false, error: 'No file uploaded' });
+      }
+
+      const { academicYear, term } = req.body;
+      if (!academicYear || !term) {
+        return res.status(400).json({ success: false, error: 'academicYear and term are required' });
+      }
+
+      const data = await parseWorkbook(req.file.buffer);
+
+      res.setHeader('Content-Type', 'application/x-ndjson');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+
+      const results = { updated: 0, skipped: 0, failed: 0, errors: [] as any[] };
+
+      let isAborted = false;
+      req.on('close', () => {
+        if (!res.writableEnded) {
+          isAborted = true;
+        }
+      });
+
+      const sendStatus = (type: string, payload: any) => {
+        res.write(JSON.stringify({ type, ...payload }) + '\n');
+      };
+
+      const filteredData = data.filter(row => {
+        const adm = String(row['Adm No'] ?? row['Admission Number'] ?? '').trim();
+        return adm && adm !== 'undefined';
+      });
+
+      const totalRows = filteredData.length;
+      sendStatus('start', { total: totalRows });
+
+      for (const [index, row] of filteredData.entries()) {
+        if (isAborted) break;
+
+        let currentAdmNo = '';
+        try {
+          const admNo = String(row['Adm No'] ?? row['Admission Number'] ?? '').trim();
+          currentAdmNo = admNo;
+
+          const tBilledRaw = row['Transport Billed'] ?? row['TransportBilled'] ?? row['Charges'] ?? row['Billed'];
+          const tPaidRaw = row['Transport Paid'] ?? row['TransportPaid'] ?? row['Paid'];
+          const tBalRaw = row['Transport Balance'] ?? row['Bal'] ?? row['Balance'];
+          if (!tBilledRaw) {
+            results.skipped++;
+            sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
+            continue;
+          }
+
+          const tBilled = parseFloat(String(tBilledRaw).replace(/,/g, '')) || 0;
+          const tPaid = tPaidRaw ? (parseFloat(String(tPaidRaw).replace(/,/g, '')) || 0) : 0;
+          const tBalDerived = tBalRaw ? (parseFloat(String(tBalRaw).replace(/,/g, '')) || 0) : Math.max(0, tBilled - tPaid);
+          if (tBilled <= 0) {
+            results.skipped++;
+            sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
+            continue;
+          }
+
+          // Find learner — must be a transport student
+          const learner = await prisma.learner.findUnique({
+            where: { admissionNumber: admNo },
+            select: { id: true, isTransportStudent: true, firstName: true, lastName: true }
+          });
+
+          if (!learner) {
+            results.failed++;
+            results.errors.push({ row: index + 2, admNo, error: 'Student not found' });
+            sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
+            continue;
+          }
+
+          if (!learner.isTransportStudent) {
+            // Auto-enroll them as transport students when transport fees are being imported
+            await prisma.learner.update({
+              where: { id: learner.id },
+              data: { isTransportStudent: true }
+            });
+          }
+
+          // Find the active invoice for this term
+          const invoice = await prisma.feeInvoice.findFirst({
+            where: {
+              learnerId: learner.id,
+              term: term as Term,
+              academicYear: parseInt(academicYear),
+              archived: false
+            },
+            orderBy: { createdAt: 'desc' }
+          });
+
+          if (!invoice) {
+            results.failed++;
+            results.errors.push({ row: index + 2, admNo, error: `No active invoice for ${term} ${academicYear}` });
+            sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
+            continue;
+          }
+
+          // Append/overwrite transport billed on the invoice
+          await prisma.feeInvoice.update({
+            where: { id: invoice.id },
+            data: {
+              transportBilled: tBilled,
+              transportPaid: tPaid,
+              transportBalance: tBalDerived
+            }
+          });
+
+          results.updated++;
+          sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
+
+        } catch (err: any) {
+          results.failed++;
+          results.errors.push({ row: index + 2, admNo: currentAdmNo, error: err.message });
+          sendStatus('progress', { current: index + 1, total: totalRows, percent: Math.round(((index + 1) / totalRows) * 100) });
+        }
+      }
+
+      sendStatus('complete', {
+        summary: { totalRows: filteredData.length, ...results },
+        errors: results.errors.slice(0, 50)
+      });
+      res.end();
+    } catch (error: any) {
+      console.error('Upload Transport Error:', error);
+      if (!res.writableEnded) {
+        res.write(JSON.stringify({ type: 'error', error: 'Failed to process transport import', details: error.message }) + '\n');
         res.end();
       }
     }

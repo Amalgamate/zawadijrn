@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     User, Calendar, MapPin, Users, Heart,
     GraduationCap, Receipt, FileText, Activity,
-    Download, AlertCircle, Camera, Plus
+    Download, AlertCircle, Camera, Plus, Bus
 } from 'lucide-react';
 import api from '../../../../services/api';
 import StatusBadge from '../../shared/StatusBadge';
@@ -18,6 +18,7 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
     const [loading, setLoading] = useState(false);
     const [invoices, setInvoices] = useState([]);
     const [assessments, setAssessments] = useState([]);
+    const [transportAssignments, setTransportAssignments] = useState([]);
 
     const [showPhotoModal, setShowPhotoModal] = useState(false);
 
@@ -64,6 +65,9 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
             } else if (targetTab === 'academic') {
                 const data = await api.assessments.getSummativeByLearner(currentLearner.id);
                 setAssessments(data?.success ? data.data : (Array.isArray(data) ? data : (data?.data || [])));
+            } else if (targetTab === 'transport') {
+                const res = await api.transport.getLearnerAssignments(currentLearner.id);
+                setTransportAssignments(res.success ? (res.data || []) : []);
             }
         } catch (error) {
             console.error('Error fetching tab data:', error);
@@ -104,11 +108,12 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
     const feeBalance = invoices.reduce((sum, inv) => sum + Number(inv.balance || 0), 0);
 
     const tabs = [
-        { id: 'overview', label: 'Overview', icon: User },
-        { id: 'financials', label: 'Financials', icon: Receipt },
-        { id: 'academic', label: 'Academic', icon: GraduationCap },
-        { id: 'medical', label: 'Medical', icon: Heart },
-        { id: 'documents', label: 'Documents', icon: FileText },
+        { id: 'overview',   label: 'Overview',   icon: User         },
+        { id: 'financials', label: 'Financials', icon: Receipt       },
+        { id: 'academic',   label: 'Academic',   icon: GraduationCap },
+        { id: 'transport',  label: 'Transport',  icon: Bus           },
+        { id: 'medical',    label: 'Medical',    icon: Heart         },
+        { id: 'documents',  label: 'Documents',  icon: FileText      },
     ];
 
     if (!currentLearner) return null;
@@ -129,7 +134,7 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                 avatarFallback={`${currentLearner.firstName?.[0]}${currentLearner.lastName?.[0]}`}
                 status={currentLearner.status}
                 bannerColor="brand-purple"
-                compact={true} // Use compact mode for header
+                compact={true}
                 badges={[
                     { text: currentLearner.admissionNumber || currentLearner.admNo, icon: GraduationCap, className: "bg-gray-100 border border-gray-200 px-2.5 py-0.5 rounded-md" },
                     { text: `${currentLearner.grade} ${currentLearner.stream || ''}`, className: "font-medium text-gray-700" }
@@ -194,7 +199,6 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                                         <h3 className="text-base font-bold text-gray-800">Contacts</h3>
                                     </div>
                                     <div className="space-y-4">
-                                        {/* Father Section */}
                                         <div className="pb-3 border-b border-dashed border-gray-100 last:border-0 last:pb-0">
                                             <p className="text-[10px] font-black uppercase text-blue-500 mb-1 tracking-wider">👨 Father</p>
                                             <div className="space-y-1">
@@ -206,8 +210,6 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                                                 )}
                                             </div>
                                         </div>
-
-                                        {/* Mother Section */}
                                         <div className="pb-3 border-b border-dashed border-gray-100 last:border-0 last:pb-0">
                                             <p className="text-[10px] font-black uppercase text-amber-500 mb-1 tracking-wider">👩 Mother</p>
                                             <div className="space-y-1">
@@ -219,7 +221,6 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                                                 )}
                                             </div>
                                         </div>
-
                                         <div>
                                             <p className="text-[10px] font-black uppercase text-rose-500 mb-1 tracking-wider">👤 Parent/Guardian</p>
                                             <div className="space-y-1">
@@ -234,7 +235,6 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                                     </div>
                                 </div>
 
-                                {/* Additional Info - Spanning Full Width if needed, currently reusing Location card style */}
                                 <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
                                         <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
@@ -306,8 +306,7 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                                                                 <div className="text-[10px] text-red-500 font-bold">Bal: {Number(inv.balance).toLocaleString()}</div>
                                                             </td>
                                                             <td className="px-6 py-4 text-center">
-                                                                <span className={`px-2 py-1 rounded-full text-[10px] font-black uppercase ${inv.status === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                                                                    }`}>
+                                                                <span className={`px-2 py-1 rounded-full text-[10px] font-black uppercase ${inv.status === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                                                     {inv.status}
                                                                 </span>
                                                             </td>
@@ -363,6 +362,101 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                             </div>
                         )}
 
+                        {/* TRANSPORT TAB */}
+                        {activeTab === 'transport' && (
+                            <div className="animate-fade-in">
+                                {/* status badge */}
+                                <div className="mb-4 flex items-center gap-3">
+                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase ${
+                                        currentLearner.isTransportStudent
+                                            ? 'bg-emerald-100 text-emerald-700'
+                                            : 'bg-gray-100 text-gray-500'
+                                    }`}>
+                                        <Bus size={12} />
+                                        {currentLearner.isTransportStudent ? 'Transport Student' : 'Not a Transport Student'}
+                                    </span>
+                                    {onNavigate && (
+                                        <button
+                                            onClick={() => onNavigate('transport-routes')}
+                                            className="text-xs text-blue-600 font-bold hover:underline"
+                                        >
+                                            Manage in Transport module →
+                                        </button>
+                                    )}
+                                </div>
+
+                                {transportAssignments.length > 0 ? (
+                                    <div className="space-y-4">
+                                        {transportAssignments.map(a => (
+                                            <div key={a.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+                                                <div className="flex items-start gap-4">
+                                                    <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                                                        <Bus size={18} />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="font-black text-gray-900 text-base">{a.route?.name || 'Unknown Route'}</p>
+                                                        {a.route?.description && (
+                                                            <p className="text-xs text-gray-400 mt-0.5">{a.route.description}</p>
+                                                        )}
+                                                        <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3">
+                                                            <div>
+                                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Route Fee</p>
+                                                                <p className="text-sm font-black text-emerald-600">
+                                                                    KES {Number(a.route?.amount || 0).toLocaleString()}
+                                                                </p>
+                                                            </div>
+                                                            {a.route?.vehicle && (
+                                                                <div>
+                                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Vehicle</p>
+                                                                    <p className="text-sm font-bold text-gray-700">{a.route.vehicle.registrationNumber}</p>
+                                                                </div>
+                                                            )}
+                                                            {a.route?.vehicle?.driverName && (
+                                                                <div>
+                                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Driver</p>
+                                                                    <p className="text-sm font-bold text-gray-700">{a.route.vehicle.driverName}</p>
+                                                                    {a.route.vehicle.driverPhone && (
+                                                                        <p className="text-[11px] text-gray-400">{a.route.vehicle.driverPhone}</p>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                            {(a.pickupPoint || a.dropoffPoint) && (
+                                                                <div>
+                                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Stop</p>
+                                                                    {a.pickupPoint  && <p className="text-[11px] font-bold text-gray-700">📍 {a.pickupPoint}</p>}
+                                                                    {a.dropoffPoint && <p className="text-[11px] font-bold text-gray-700">🏁 {a.dropoffPoint}</p>}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <span className={`flex-shrink-0 text-[10px] font-black px-2 py-0.5 rounded-full uppercase ${
+                                                        a.status === 'ACTIVE'
+                                                            ? 'bg-emerald-100 text-emerald-700'
+                                                            : 'bg-gray-100 text-gray-500'
+                                                    }`}>
+                                                        {a.status}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center flex flex-col items-center">
+                                        <Bus size={48} className="mb-4 text-gray-200" />
+                                        <p className="font-bold text-gray-500">Not assigned to any transport route</p>
+                                        {onNavigate && (
+                                            <button
+                                                onClick={() => onNavigate('transport-routes')}
+                                                className="mt-4 text-sm text-blue-600 font-bold hover:underline"
+                                            >
+                                                Go to Transport module to assign →
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         {/* MEDICAL TAB */}
                         {activeTab === 'medical' && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
@@ -407,9 +501,7 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden animate-fade-in">
                                 <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                                     <h3 className="text-lg font-bold text-gray-800">Attached Documents</h3>
-                                    <button className="text-sm text-brand-purple font-medium hover:underline">
-                                        Upload New
-                                    </button>
+                                    <button className="text-sm text-brand-purple font-medium hover:underline">Upload New</button>
                                 </div>
                                 <div className="p-12 text-center text-gray-400 flex flex-col items-center">
                                     <FileText size={48} className="mb-4 text-gray-200" />
@@ -440,5 +532,3 @@ const InfoRow = ({ label, value }) => (
 );
 
 export default LearnerProfile;
-
-

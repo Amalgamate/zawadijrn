@@ -18,20 +18,42 @@ import { redisCacheService } from '../services/redis-cache.service';
  */
 const revokedTokenKey = (token: string) => `revoked_rt:${token}`;
 
-/** Mark a refresh token as revoked in Redis. */
 const revokeRefreshToken = async (token: string): Promise<void> => {
-  // 7 days in seconds — matches JWT_REFRESH_EXPIRES_IN default
   const ttl = 7 * 24 * 60 * 60;
   await redisCacheService.set(revokedTokenKey(token), '1', ttl);
 };
 
-/** Return true if the refresh token has been revoked. */
 const isRefreshTokenRevoked = async (token: string): Promise<boolean> => {
   const val = await redisCacheService.get<string>(revokedTokenKey(token));
   return val !== null;
 };
 
 export class AuthController {
+  private setTokenCookies(res: Response, accessToken: string, refreshToken: string) {
+    const isProd = process.env.NODE_ENV === 'production';
+    const commonOptions: any = {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: isProd ? 'strict' : 'lax',
+      path: '/'
+    };
+
+    res.cookie('accessToken', accessToken, {
+      ...commonOptions,
+      maxAge: 15 * 60 * 1000 // 15 mins (matching JWT_EXPIRES_IN default)
+    });
+
+    res.cookie('refreshToken', refreshToken, {
+      ...commonOptions,
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days (matching JWT_REFRESH_EXPIRES_IN default)
+    });
+  }
+
+  private clearTokenCookies(res: Response) {
+    res.clearCookie('accessToken', { path: '/' });
+    res.clearCookie('refreshToken', { path: '/' });
+  }
+
   async register(req: AuthRequest, res: Response) {
     const { email, password, firstName, lastName, role, phone } = req.body;
 
@@ -63,28 +85,16 @@ export class AuthController {
     const passwordValidation = validatePassword(password, passwordPolicy);
     if (!passwordValidation.valid) throw new ApiError(400, passwordValidation.errors.join(', '));
 
-    // Reduced bcrypt cost from 12 to 11 for better performance under load
-    // Cost 10-11: ~50-100ms per operation, Cost 12: ~100-200ms per operation
     const hashedPassword = await bcrypt.hash(password, 11);
 
     const user = await prisma.user.create({
       data: {
-        email,
-        password: hashedPassword,
-        firstName,
-        lastName,
-        role: requestedRole,
-        phone: phone || null,
-        status: 'ACTIVE'
+        email, password: hashedPassword, firstName, lastName,
+        role: requestedRole, phone: phone || null, status: 'ACTIVE'
       },
       select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        phone: true,
-        createdAt: true
+        id: true, email: true, firstName: true, lastName: true,
+        role: true, phone: true, createdAt: true
       }
     });
 
@@ -99,11 +109,13 @@ export class AuthController {
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
 
+    this.setTokenCookies(res, accessToken, refreshToken);
+
     res.status(201).json({
-      success: true,
-      user,
-      token: accessToken,
-      refreshToken,
+      success: true, 
+      user, 
+      token: '__cookie__', // placeholder for frontend state compatibility
+      refreshToken: '__cookie__', // placeholder for frontend state compatibility
       message: 'User registered successfully'
     });
   }
@@ -111,45 +123,28 @@ export class AuthController {
   async login(req: Request, res: Response) {
     const { email, password } = req.body;
 
-    if (!email || !password) {
-      throw new ApiError(400, 'Email and password are required');
-    }
+    if (!email || !password) throw new ApiError(400, 'Email and password are required');
 
-    // Security: Validate password field doesn't contain XSS patterns
     const xssPatterns = [/<script/gi, /javascript:/gi, /on\w+\s*=/gi, /<iframe/gi];
     if (xssPatterns.some(pattern => pattern.test(password))) {
       throw new ApiError(400, 'Invalid password format');
     }
 
-    // Phase 2 Optimization: Check Redis/Memory cache first (5-minute TTL)
     const cacheKey = `auth:user:${email}`;
     let user = await redisCacheService.get<any>(cacheKey);
 
-    // If not in cache, query database with optimized selection
     if (!user) {
       user = await prisma.user.findUnique({
         where: { email },
         select: {
-          id: true,
-          password: true,
-          status: true,
-          loginAttempts: true,
-          lockedUntil: true,
-          role: true,
-          institutionType: true,
-          // Only load these fields if needed for auth flow
-          email: true,
-          firstName: true,
-          lastName: true,
-          phone: true,
-          lastLogin: true
+          id: true, password: true, status: true, loginAttempts: true, lockedUntil: true,
+          role: true, institutionType: true, email: true, firstName: true, lastName: true,
+          phone: true, lastLogin: true,
+          // mustChangePassword indicator — set on auto-created parent/student accounts
+          passwordResetToken: true,
         }
       });
-
-      // Cache the result for 5 minutes
-      if (user) {
-        await redisCacheService.set(cacheKey, user, 5 * 60); // 5 minutes
-      }
+      if (user) await redisCacheService.set(cacheKey, user, 5 * 60);
     }
 
     if (!user) throw new ApiError(401, 'Invalid credentials');
@@ -163,10 +158,7 @@ export class AuthController {
     if (!isValidPassword) {
       const newAttempts = (user.loginAttempts || 0) + 1;
       const lockAccount = newAttempts >= 5;
-      
-      // Invalidate cache on failed login
       await redisCacheService.delete(cacheKey);
-      
       await prisma.user.update({
         where: { id: user.id },
         data: {
@@ -180,32 +172,37 @@ export class AuthController {
 
     if (user.status !== 'ACTIVE') throw new ApiError(403, 'Account is not active');
 
+    // ── C1 fix: detect auto-created accounts that must change their password ──
+    // passwordResetToken is set on parent/student accounts created via learner admission.
+    // We surface this as mustChangePassword so the frontend can intercept and redirect.
+    const mustChangePassword = !!user.passwordResetToken;
+
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
 
-    // Invalidate cache after successful login (data updated)
-    await redisCacheService.delete(cacheKey);
+    this.setTokenCookies(res, accessToken, refreshToken);
 
+    await redisCacheService.delete(cacheKey);
     await prisma.user.update({
       where: { id: user.id },
       data: { lastLogin: new Date(), loginAttempts: 0, lockedUntil: null }
     });
 
-    const { password: _, ...userWithoutPassword } = user;
+    const { password: _, passwordResetToken: __, ...userWithoutSensitive } = user;
 
     res.json({
       success: true,
-      user: userWithoutPassword,
-      token: accessToken,
-      refreshToken,
-      message: 'Login successful'
+      user: userWithoutSensitive,
+      token: '__cookie__', // placeholder for frontend state compatibility
+      refreshToken: '__cookie__', // placeholder for frontend state compatibility
+      mustChangePassword,
+      message: mustChangePassword ? 'Login successful — please set a new password' : 'Login successful'
     });
   }
 
   async checkAvailability(req: Request, res: Response) {
     const { email } = req.body;
     if (!email) throw new ApiError(400, 'Email required');
-
     const user = await prisma.user.findUnique({ where: { email } });
     res.json({ success: true, available: !user });
   }
@@ -215,52 +212,42 @@ export class AuthController {
     if (!phone) throw new ApiError(400, 'Phone number required');
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-    // In real app, store OTP in DB/Cache with expiry
     const result = await whatsappService.sendMessage({
       to: phone,
       message: `Your Zawadi SMS verification code is: ${otp}`
     });
-
-    if (!result.success) {
-      throw new ApiError(500, result.message || 'Failed to send WhatsApp verification');
-    }
-
+    if (!result.success) throw new ApiError(500, result.message || 'Failed to send WhatsApp verification');
     res.json({ success: true, message: 'Verification code sent via WhatsApp' });
   }
 
   /**
-   * Refresh token endpoint with rotation:
-   * - Verify the incoming refresh token is valid and not revoked.
-   * - Revoke it immediately (one-time use).
-   * - Issue a fresh access token + fresh refresh token.
-   *
-   * This means a stolen refresh token can only be used once. If an attacker
-   * uses it first, the legitimate user's next refresh will fail (revoked), and
-   * the attacker's new token is unknown to the legitimate user — both parties
-   * can no longer silently reuse the same long-lived token.
+   * Refresh token endpoint with rotation.
+   * Verify → revoke consumed token → issue new pair.
    */
   async refresh(req: Request, res: Response) {
-    const { refreshToken } = req.body;
+    const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
     if (!refreshToken) throw new ApiError(400, 'Refresh token required');
 
-    // Check revocation list before verifying signature — fast-fail on already-used tokens
     const revoked = await isRefreshTokenRevoked(refreshToken);
     if (revoked) throw new ApiError(401, 'Refresh token has already been used');
 
     try {
       const decoded = verifyRefreshToken(refreshToken);
       const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
-
       if (!user || user.status !== 'ACTIVE') throw new ApiError(401, 'Invalid user or account inactive');
 
-      // Revoke the consumed token before issuing new ones (atomic enough for this use case)
       await revokeRefreshToken(refreshToken);
 
       const newAccessToken = generateAccessToken(user);
       const newRefreshToken = generateRefreshToken(user);
 
-      res.json({ success: true, token: newAccessToken, refreshToken: newRefreshToken });
+      this.setTokenCookies(res, newAccessToken, newRefreshToken);
+
+      res.json({ 
+        success: true,
+        token: '__cookie__',
+        refreshToken: '__cookie__'
+      }); // tokens rotated in cookies, placeholder returned for body check
     } catch (error) {
       if (error instanceof ApiError) throw error;
       throw new ApiError(401, 'Invalid refresh token');
@@ -307,28 +294,29 @@ export class AuthController {
     const user = await prisma.user.findFirst({
       where: { passwordResetToken: token, passwordResetExpiry: { gt: new Date() } }
     });
-
     if (!user) throw new ApiError(400, 'Invalid or expired token');
 
-    const hashedPassword = await bcrypt.hash(newPassword, 12);
+    const hashedPassword = await bcrypt.hash(newPassword, 11);
     await prisma.user.update({
       where: { id: user.id },
-      data: { password: hashedPassword, passwordResetToken: null, passwordResetExpiry: null, loginAttempts: 0, lockedUntil: null }
+      data: {
+        password: hashedPassword,
+        passwordResetToken: null,   // Clears the mustChangePassword flag
+        passwordResetExpiry: null,
+        loginAttempts: 0,
+        lockedUntil: null
+      }
     });
 
     res.json({ success: true, message: 'Password reset successful' });
   }
 
   async logout(req: AuthRequest, res: Response) {
-    // Revoke the refresh token supplied at logout so it cannot be replayed
-    const { refreshToken } = req.body;
+    const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
     if (refreshToken) {
-      try {
-        await revokeRefreshToken(refreshToken);
-      } catch {
-        // Non-blocking — logout should always succeed
-      }
+      try { await revokeRefreshToken(refreshToken); } catch { /* non-blocking */ }
     }
+    this.clearTokenCookies(res);
     res.json({ success: true, message: 'Logged out' });
   }
 
@@ -336,32 +324,32 @@ export class AuthController {
     const user = await prisma.user.findUnique({
       where: { id: req.user!.userId },
       select: {
-        id: true, email: true, firstName: true, lastName: true, phone: true, role: true, status: true, institutionType: true, createdAt: true
+        id: true, email: true, firstName: true, lastName: true, phone: true,
+        role: true, status: true, institutionType: true, createdAt: true,
+        passwordResetToken: true,
       }
     });
 
     if (!user) throw new ApiError(404, 'User not found');
-    res.json({ success: true, data: user });
+
+    const { passwordResetToken, ...userPublic } = user;
+    res.json({
+      success: true,
+      data: {
+        ...userPublic,
+        mustChangePassword: !!passwordResetToken,
+      }
+    });
   }
 
   async getSeededUsers(_req: Request, res: Response) {
     if (process.env.NODE_ENV !== 'development') {
       throw new ApiError(403, 'This route is only available in development environment');
     }
-
     const users = await prisma.user.findMany({
-      take: 20,
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        status: true
-      }
+      take: 20, orderBy: { createdAt: 'desc' },
+      select: { id: true, email: true, firstName: true, lastName: true, role: true, status: true }
     });
-
     res.json({ success: true, count: users.length, data: users });
   }
 }

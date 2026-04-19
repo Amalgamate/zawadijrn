@@ -5,6 +5,7 @@
 import { Response } from 'express';
 import prisma from '../config/database';
 import bcrypt from 'bcrypt';
+import { randomBytes } from 'crypto';
 import { ApiError } from '../utils/error.util';
 import { AuthRequest } from '../middleware/permissions.middleware';
 import { LearnerStatus, Gender } from '@prisma/client';
@@ -15,6 +16,20 @@ import { EmailService } from '../services/email.service';
 import { v2 as cloudinary } from 'cloudinary';
 
 const SKIP_PARENT_PORTAL_NOTIFICATIONS = process.env.SKIP_PARENT_PORTAL_NOTIFICATIONS === 'true' || process.env.NODE_ENV === 'test';
+
+/**
+ * Generate a secure random password for auto-created accounts.
+ * Format: 3 uppercase + 3 digits + 2 lowercase = 8 chars, always valid.
+ * A passwordResetToken is also set on the account so the user is forced
+ * to change this password on first login (mustChangePassword flow).
+ */
+function generateTemporaryPassword(): string {
+    const upper  = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const digits = '23456789';
+    const lower  = 'abcdefghjkmnpqrstuvwxyz';
+    const rand   = (charset: string) => charset[randomBytes(1)[0] % charset.length];
+    return [rand(upper), rand(upper), rand(upper), rand(digits), rand(digits), rand(digits), rand(lower), rand(lower)].join('');
+}
 
 export class LearnerController {
   async getAllLearners(req: AuthRequest, res: Response) {
@@ -64,9 +79,9 @@ export class LearnerController {
         prisma.learner.count({ where: whereClause }),
       ]);
 
-      console.log('📚 [LEARNER] Query results:', { 
-        learnersCount: learners.length, 
-        total, 
+      console.log('📚 [LEARNER] Query results:', {
+        learnersCount: learners.length,
+        total,
         whereClause,
         uniqueStreams: Array.from(new Set(learners.map(l => l.stream))),
         sampleLearners: learners.slice(0, 3).map(l => ({ id: l.id, name: `${l.firstName} ${l.lastName}`, stream: l.stream }))
@@ -151,19 +166,16 @@ export class LearnerController {
     if (existing) throw new ApiError(400, `Admission number ${admissionNumber} already exists`);
 
     try {
-      // Automatic Parent Account Registration
+      // ── Automatic Parent Account Registration ────────────────────────────────
       if (!parentId) {
-        // Support fallback chain: guardian details -> primary contact details
         const pPhone = guardianPhone || primaryContactPhone;
         const pName  = guardianName  || primaryContactName || 'Parent';
-        const pEmail = (guardianEmail || primaryContactEmail)?.includes('@') 
-          ? (guardianEmail || primaryContactEmail) 
+        const pEmail = (guardianEmail || primaryContactEmail)?.includes('@')
+          ? (guardianEmail || primaryContactEmail)
           : `${pPhone?.replace(/\D/g, '')}@zawadisms.com`;
 
         if (pPhone) {
-          let parent = await prisma.user.findFirst({ 
-            where: { phone: pPhone, role: 'PARENT' } 
-          });
+          let parent = await prisma.user.findFirst({ where: { phone: pPhone, role: 'PARENT' } });
 
           if (!parent) {
             const nameParts = pName.split(' ');
@@ -171,8 +183,12 @@ export class LearnerController {
             const pLastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Guardian';
             const existingEmail = await prisma.user.findUnique({ where: { email: pEmail } });
             const finalEmail = existingEmail ? `${pPhone.replace(/\D/g, '')}-${Date.now()}@zawadisms.com` : pEmail;
-            const parentPassword = 'Parent123!';
-            
+
+            // ── C1 fix: random password + force-reset token ──────────────────
+            const parentPassword = generateTemporaryPassword();
+            const forceResetToken = randomBytes(32).toString('hex');
+            const forceResetExpiry = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000); // 90 days to reset
+
             parent = await prisma.user.create({
               data: {
                 username: finalEmail,
@@ -180,20 +196,21 @@ export class LearnerController {
                 lastName: pLastName,
                 email: finalEmail,
                 phone: pPhone,
-                password: await bcrypt.hash(parentPassword, 12),
+                password: await bcrypt.hash(parentPassword, 11),
                 role: 'PARENT',
-                status: 'ACTIVE'
+                status: 'ACTIVE',
+                // Flag: user must change password on first login
+                passwordResetToken: forceResetToken,
+                passwordResetExpiry: forceResetExpiry,
               }
             });
 
             if (!SKIP_PARENT_PORTAL_NOTIFICATIONS) {
               const portalUrl = process.env.PARENT_PORTAL_URL || process.env.APP_URL || 'https://parents.zawadisms.com';
               const credentialsMessage =
-                `Hello ${pFirstName}, your Parent Portal account is ready. Login at ${portalUrl} with email ${finalEmail} and password ${parentPassword}. Please change your password after first login.`;
+                `Hello ${pFirstName}, your Parent Portal account is ready. Login at ${portalUrl} with email: ${finalEmail} and temporary password: ${parentPassword}. You will be prompted to set a new password on first login.`;
 
-              try {
-                await SmsService.sendSms(pPhone, credentialsMessage);
-              } catch (smsError: any) {
+              try { await SmsService.sendSms(pPhone, credentialsMessage); } catch (smsError: any) {
                 console.warn('[createLearner] Parent portal SMS failed:', smsError?.message || smsError);
               }
 
@@ -201,7 +218,7 @@ export class LearnerController {
                 try {
                   await EmailService.sendNotificationEmail({
                     to: pEmail,
-                    subject: 'Parent Portal Login Credentials',
+                    subject: 'Your Parent Portal Login Credentials',
                     text: credentialsMessage,
                     html: `<p>${credentialsMessage}</p>`
                   });
@@ -226,7 +243,6 @@ export class LearnerController {
             console.warn('Cloudinary upload failed, skipping photo:', uploadErr.message);
           }
         } else {
-          // Cloudinary not configured — skip storing the base64 to avoid DB bloat
           console.warn('[createLearner] Cloudinary not configured, photo skipped.');
         }
       }
@@ -238,8 +254,10 @@ export class LearnerController {
           institutionType,
           stream: stream || 'A', parentId, guardianName, guardianPhone, guardianEmail,
           medicalConditions, allergies, emergencyContact, emergencyPhone, bloodGroup,
-          address, county, subCounty, previousSchool, religion, specialNeeds, isTransportStudent: isTransportStudent === true || isTransportStudent === 'true',
-          photoUrl: finalPhotoUrl, fatherName, fatherPhone, fatherEmail, fatherDeceased: fatherDeceased || false,
+          address, county, subCounty, previousSchool, religion, specialNeeds,
+          isTransportStudent: isTransportStudent === true || isTransportStudent === 'true',
+          photoUrl: finalPhotoUrl,
+          fatherName, fatherPhone, fatherEmail, fatherDeceased: fatherDeceased || false,
           motherName, motherPhone, motherEmail, motherDeceased: motherDeceased || false,
           guardianRelation, primaryContactType, primaryContactName, primaryContactPhone, primaryContactEmail,
           status: 'ACTIVE', createdBy: currentUserId,
@@ -247,17 +265,27 @@ export class LearnerController {
         include: { parent: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } } },
       });
 
-      // Create student system user
+      // ── Create student system user ────────────────────────────────────────────
       try {
         const studentUsername = admissionNumber.replace(/\//g, '-').toUpperCase();
-        const existingUser = await prisma.user.findFirst({ where: { OR: [{ username: studentUsername }, { email: `${studentUsername}@zawadisms.com` }] } });
+        const existingUser = await prisma.user.findFirst({
+          where: { OR: [{ username: studentUsername }, { email: `${studentUsername}@zawadisms.com` }] }
+        });
         if (!existingUser) {
+          // ── C1 fix: random password + force-reset token ──────────────────────
+          const studentPassword = generateTemporaryPassword();
+          const forceResetToken = randomBytes(32).toString('hex');
+          const forceResetExpiry = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
+
           await prisma.user.create({
             data: {
-              username: studentUsername, email: `${studentUsername}@zawadisms.com`,
-              password: await bcrypt.hash('Student123!', 12),
+              username: studentUsername,
+              email: `${studentUsername}@zawadisms.com`,
+              password: await bcrypt.hash(studentPassword, 11),
               firstName, lastName, middleName, phone: guardianPhone || null,
               role: 'STUDENT', status: 'ACTIVE',
+              passwordResetToken: forceResetToken,
+              passwordResetExpiry: forceResetExpiry,
             },
           });
         }
@@ -265,7 +293,7 @@ export class LearnerController {
         console.error('Failed to create student system user:', userError);
       }
 
-      // Generate Initial Fee Invoice
+      // ── Generate Initial Fee Invoice ──────────────────────────────────────────
       let invoiceMessage = '';
       try {
         const invResult = await feeService.generateInvoiceForLearner(learner.id);
@@ -283,10 +311,10 @@ export class LearnerController {
         invoiceMessage = ` (⚠️ Error: Automated invoice failed: ${e.message})`;
       }
 
-      res.status(201).json({ 
-        success: true, 
-        data: learner, 
-        message: `Learner created successfully.${invoiceMessage}` 
+      res.status(201).json({
+        success: true,
+        data: learner,
+        message: `Learner created successfully.${invoiceMessage}`
       });
     } catch (createError: any) {
       console.error('[createLearner] Full error:', createError);
@@ -301,7 +329,6 @@ export class LearnerController {
       const learner = await prisma.learner.findUnique({ where: { id } });
       if (!learner) throw new ApiError(404, 'Learner not found');
 
-      // Whitelist of fields the frontend is allowed to update
       const allowedFields = [
         'firstName', 'lastName', 'middleName',
         'dateOfBirth', 'gender', 'grade', 'stream',
@@ -323,37 +350,24 @@ export class LearnerController {
         const val = req.body[field];
         if (val === undefined) continue;
 
-        // Never persist empty-string enums — keep the existing DB value instead
-        if (field === 'gender') {
-          if (val && val !== '') updateData.gender = val as Gender;
-          continue;
-        }
-        if (field === 'grade') {
-          if (val && val !== '') updateData.grade = String(val);
-          continue;
-        }
-        if (field === 'status') {
-          if (val && val !== '') updateData.status = val as LearnerStatus;
-          continue;
-        }
+        if (field === 'gender') { if (val && val !== '') updateData.gender = val as Gender; continue; }
+        if (field === 'grade')  { if (val && val !== '') updateData.grade = String(val); continue; }
+        if (field === 'status') { if (val && val !== '') updateData.status = val as LearnerStatus; continue; }
 
-        // Coerce boolean fields so "false" string doesn't become truthy
         if (field === 'fatherDeceased' || field === 'motherDeceased' || field === 'isTransportStudent') {
-          updateData[field] = val === true || val === 'true';
-          continue;
+          updateData[field] = val === true || val === 'true'; continue;
         }
 
-        // Null out genuinely empty strings for optional text fields
         updateData[field] = val === '' ? null : val;
       }
 
-      // Automatic Parent Account Registration on update if still missing
+      // ── Auto-create parent account on update if still missing ─────────────────
       let parentId = updateData.parentId || learner.parentId;
       if (!parentId) {
         const pPhone = req.body.guardianPhone || req.body.primaryContactPhone;
-        const pName  = req.body.guardianName  || req.body.primaryContactName || (req.body.firstName ? "Parent" : null);
-        const pEmail = (req.body.guardianEmail || req.body.primaryContactEmail)?.includes('@') 
-          ? (req.body.guardianEmail || req.body.primaryContactEmail) 
+        const pName  = req.body.guardianName  || req.body.primaryContactName || (req.body.firstName ? 'Parent' : null);
+        const pEmail = (req.body.guardianEmail || req.body.primaryContactEmail)?.includes('@')
+          ? (req.body.guardianEmail || req.body.primaryContactEmail)
           : (pPhone ? `${pPhone.replace(/\D/g, '')}@zawadisms.com` : null);
 
         if (pPhone) {
@@ -364,24 +378,29 @@ export class LearnerController {
             const pLastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Guardian';
             const existingEmail = await prisma.user.findUnique({ where: { email: pEmail } });
             const finalEmail = existingEmail ? `${pPhone.replace(/\D/g, '')}-${Date.now()}@zawadisms.com` : pEmail;
-            const parentPassword = 'Parent123!';
-            
+
+            // ── C1 fix: random password + force-reset token ──────────────────
+            const parentPassword = generateTemporaryPassword();
+            const forceResetToken = randomBytes(32).toString('hex');
+            const forceResetExpiry = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
+
             parent = await prisma.user.create({
               data: {
-                username: finalEmail,
-                firstName: pFirstName, lastName: pLastName,
+                username: finalEmail, firstName: pFirstName, lastName: pLastName,
                 email: finalEmail, phone: pPhone,
-                password: await bcrypt.hash(parentPassword, 12),
-                role: 'PARENT', status: 'ACTIVE'
+                password: await bcrypt.hash(parentPassword, 11),
+                role: 'PARENT', status: 'ACTIVE',
+                passwordResetToken: forceResetToken,
+                passwordResetExpiry: forceResetExpiry,
               }
             });
 
             if (!SKIP_PARENT_PORTAL_NOTIFICATIONS) {
               const portalUrl = process.env.PARENT_PORTAL_URL || process.env.APP_URL || 'https://parents.zawadisms.com';
-              const credentialsMessage = `Hello ${pFirstName}, your Parent Portal account is ready. Login at ${portalUrl} with email ${finalEmail} and password ${parentPassword}.`;
+              const credentialsMessage = `Hello ${pFirstName}, your Parent Portal account is ready. Login at ${portalUrl} with email: ${finalEmail} and temporary password: ${parentPassword}. You will be prompted to set a new password on first login.`;
               try { await SmsService.sendSms(pPhone, credentialsMessage); } catch {}
               if (pEmail?.includes('@')) {
-                try { await EmailService.sendNotificationEmail({ to: pEmail, subject: 'Parent Portal Login Credentials', text: credentialsMessage, html: `<p>${credentialsMessage}</p>` }); } catch {}
+                try { await EmailService.sendNotificationEmail({ to: pEmail, subject: 'Your Parent Portal Login Credentials', text: credentialsMessage, html: `<p>${credentialsMessage}</p>` }); } catch {}
               }
             }
           }
@@ -389,18 +408,10 @@ export class LearnerController {
         }
       }
 
-      // Date fields — parse only when provided and non-empty
-      if (req.body.dateOfBirth && req.body.dateOfBirth !== '') {
-        updateData.dateOfBirth = new Date(req.body.dateOfBirth);
-      }
-      if (req.body.dateOfAdmission && req.body.dateOfAdmission !== '') {
-        updateData.admissionDate = new Date(req.body.dateOfAdmission);
-      }
-      if (req.body.exitDate && req.body.exitDate !== '') {
-        updateData.exitDate = new Date(req.body.exitDate);
-      }
+      if (req.body.dateOfBirth && req.body.dateOfBirth !== '') updateData.dateOfBirth = new Date(req.body.dateOfBirth);
+      if (req.body.dateOfAdmission && req.body.dateOfAdmission !== '') updateData.admissionDate = new Date(req.body.dateOfAdmission);
+      if (req.body.exitDate && req.body.exitDate !== '') updateData.exitDate = new Date(req.body.exitDate);
 
-      // Photo
       if (req.body.photo && req.body.photo !== '') {
         let finalPhotoUrl = req.body.photo;
         if (req.body.photo.startsWith('data:image')) {
@@ -413,7 +424,6 @@ export class LearnerController {
               console.warn('Cloudinary upload failed, keeping base64:', uploadErr.message);
             }
           }
-          // If Cloudinary not configured, finalPhotoUrl stays as base64
         }
         updateData.photoUrl = finalPhotoUrl;
       }
@@ -427,15 +437,8 @@ export class LearnerController {
       res.json({ success: true, data: updated });
     } catch (error: any) {
       console.error('[updateLearner] error:', error?.message || error);
-
-      // Propagate known API errors (404, 403) with their status codes
       if (error instanceof ApiError) throw error;
-
-      // Prisma unique constraint (shouldn't happen on update, but guard anyway)
-      if (error?.code === 'P2002') {
-        throw new ApiError(409, 'A learner with that admission number already exists.');
-      }
-
+      if (error?.code === 'P2002') throw new ApiError(409, 'A learner with that admission number already exists.');
       throw new ApiError(500, error?.message || 'Failed to update learner');
     }
   }

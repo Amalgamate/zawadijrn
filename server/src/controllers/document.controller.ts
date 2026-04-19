@@ -25,7 +25,7 @@ export class DocumentController {
             // Determine folder based on category
             const folder = `schools/global/${category || 'general'}`;
 
-            // Upload to Cloudinary
+            // Upload to Cloudinary (actually Supabase)
             const uploadResult = await documentService.uploadFile(req.file, {
                 folder,
                 resourceType: 'auto',

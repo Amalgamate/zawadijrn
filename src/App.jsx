@@ -4,6 +4,7 @@ import { useAuth } from './hooks/useAuth';
 import Auth from './pages/Auth';
 import CBCGradingSystem from './components/CBCGrading/CBCGradingSystem';
 import SplashScreen from './components/mobile/SplashScreen';
+import { Toaster } from 'react-hot-toast';
 import { SchoolDataProvider } from './contexts/SchoolDataContext';
 import { FeeActionsProvider } from './contexts/FeeActionsContext';
 import { UserNotificationProvider } from './contexts/UserNotificationContext';
@@ -219,6 +220,7 @@ export default function App() {
   return (
     <HashRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <AppContent />
+      <Toaster position="top-right" reverseOrder={false} />
       <SpeedInsights />
     </HashRouter>
   );

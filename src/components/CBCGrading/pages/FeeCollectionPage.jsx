@@ -29,7 +29,7 @@ import { useFeeActions } from '../../../contexts/FeeActionsContext';
 import usePageNavigation from '../../../hooks/usePageNavigation';
 import { downloadFeeTemplate } from '../../../utils/feeTemplateGenerator';
 
-const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
+const FeeCollectionPage = ({ learnerId, grade: gradeParam, initialTransportFilter = 'all' }) => {
   const navigateTo = usePageNavigation();
   const [invoices, setInvoices] = useState([]);
   const [statsInvoices, setStatsInvoices] = useState([]); // unfiltered — drives the metric cards
@@ -53,7 +53,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
   const [paymentMethodFilter, setPaymentMethodFilter] = useState('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [transportFilter, setTransportFilter] = useState('all');
+  const [transportFilter, setTransportFilter] = useState(initialTransportFilter);
   const [minBalance, setMinBalance] = useState('');
   const [maxBalance, setMaxBalance] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -73,6 +73,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
     paid: true,
     waived: true,
     balance: true,
+    transport: true,
     overpaid: true,
     status: true,
     paymentMode: true,
@@ -1394,6 +1395,13 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                     Overpaid
                   </th>
                 )}
+                {visibleColumns.transport && (
+                  <th 
+                    className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100"
+                  >
+                    Transport
+                  </th>
+                )}
                 {visibleColumns.status && (
                 <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Status</th>
                 )}
@@ -1495,6 +1503,18 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                     {Number(invoice.paidAmount) > Number(invoice.totalAmount) 
                       ? (Number(invoice.paidAmount) - Number(invoice.totalAmount)).toLocaleString() 
                       : '0'}
+                  </td>
+                  )}
+                  {visibleColumns.transport && (
+                  <td className="px-3 py-1.5 border-r border-gray-100">
+                    {invoice.learner?.isTransportStudent ? (
+                      <div className="flex flex-col">
+                        <span className="text-[11px] font-bold text-gray-800">Bal: {Number(invoice.transportBalance || 0).toLocaleString()}</span>
+                        <span className="text-[10px] text-gray-500">Billed: {Number(invoice.transportBilled || 0).toLocaleString()}</span>
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-gray-400 italic">N/A</span>
+                    )}
                   </td>
                   )}
                   {visibleColumns.status && (
@@ -1649,6 +1669,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                     {Number(listTotals.totalOverpaid || 0).toLocaleString()}
                   </td>
                 )}
+                {visibleColumns.transport && <td className="px-3 py-3 border-r border-gray-100"></td>}
                 
                 {visibleColumns.status && <td className="px-3 py-3 border-r border-gray-100"></td>}
                 {visibleColumns.paymentMode && <td className="px-3 py-3 border-r border-gray-100"></td>}

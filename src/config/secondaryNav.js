@@ -147,7 +147,6 @@ export const secondaryNavSections = [
         permission: 'FEE_MANAGEMENT',
         items: [
           { id: 'fees-collection', label: 'Fee Collection',     path: 'fees-collection', permission: 'FEE_MANAGEMENT' },
-          { id: 'fees-reports',    label: 'Fee Reports',        path: 'fees-reports',    permission: 'FEE_MANAGEMENT' },
           { id: 'fees-statements', label: 'Student Statements', path: 'fees-statements', permission: 'FEE_MANAGEMENT' },
           { id: 'fees-structure',  label: 'Fee Structure',      path: 'fees-structure',  permission: 'FEE_MANAGEMENT' },
         ],
@@ -190,7 +189,7 @@ export const secondaryNavSections = [
     items: [
       { id: 'transport-routes',  label: 'Bus Routes',         path: 'transport-routes',   permission: 'TRANSPORT_MANAGEMENT' },
       { id: 'hostel-allocation', label: 'Hostel Allocation',  path: 'hostel-allocation',  permission: 'TRANSPORT_MANAGEMENT' },
-      { id: 'hostel-fees',       label: 'Transport Fees',     path: 'hostel-fees',        permission: 'TRANSPORT_MANAGEMENT' },
+      { id: 'hostel-fees',       label: 'Transport Fee Manager',     path: 'hostel-fees',        permission: 'TRANSPORT_MANAGEMENT' },
     ],
   },
   {

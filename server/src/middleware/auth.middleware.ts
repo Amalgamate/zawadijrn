@@ -13,12 +13,17 @@ export const authenticate = async (
 ) => {
   try {
     const authHeader = req.headers.authorization;
+    let token = '';
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new ApiError(401, 'Authentication required');
+    if (authHeader && authHeader.startsWith('Bearer ') && !authHeader.includes('__cookie__')) {
+      token = authHeader.split(' ')[1];
+    } else if (req.cookies && req.cookies.accessToken) {
+      token = req.cookies.accessToken;
     }
 
-    const token = authHeader.split(' ')[1];
+    if (!token) {
+      throw new ApiError(401, 'Authentication required');
+    }
 
     const decoded = verifyAccessToken(token);
     req.user = decoded;

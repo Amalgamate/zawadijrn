@@ -6,6 +6,7 @@ export const useDocuments = () => {
     const [documents, setDocuments] = useState([]);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
     const [pagination, setPagination] = useState({
         page: 1,
         limit: 20,
@@ -49,8 +50,12 @@ export const useDocuments = () => {
 
     const uploadDocument = useCallback(async (formData, refreshParams = {}) => {
         setLoading(true);
+        setUploadProgress(0);
         try {
-            const response = await api.documents.upload(formData);
+            const response = await api.documents.upload(formData, (progressEvent) => {
+                const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                setUploadProgress(percentCompleted);
+            });
             if (response.success) {
                 showSuccess('Document uploaded successfully');
                 await fetchDocuments(refreshParams);
@@ -62,13 +67,18 @@ export const useDocuments = () => {
             return { success: false, error: error.message };
         } finally {
             setLoading(false);
+            setTimeout(() => setUploadProgress(0), 1000);
         }
     }, [fetchDocuments, showError, showSuccess]);
 
     const uploadMultipleDocuments = useCallback(async (formData, refreshParams = {}) => {
         setLoading(true);
+        setUploadProgress(0);
         try {
-            const response = await api.documents.uploadMultiple(formData);
+            const response = await api.documents.uploadMultiple(formData, (progressEvent) => {
+                const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                setUploadProgress(percentCompleted);
+            });
             if (response.success) {
                 const n = Array.isArray(response.data) ? response.data.length : 0;
                 showSuccess(n ? `${n} documents uploaded successfully` : 'Documents uploaded successfully');
@@ -118,6 +128,7 @@ export const useDocuments = () => {
         documents,
         categories,
         loading,
+        uploadProgress,
         pagination,
         fetchDocuments,
         fetchCategories,

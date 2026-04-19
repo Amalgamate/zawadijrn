@@ -79,13 +79,17 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
   const birthdayNotificationItemsRaw = birthdays.map((b) => ({
     ...b,
     type: 'birthday',
-    key: `birthday-${b.id}-${b.turningAge}-${b.daysUntil}-${b.isToday ? 'today' : 'upcoming'}`
+    // Key must NOT include daysUntil — it changes daily and would make already-read
+    // notifications reappear as new ones every day.
+    key: `birthday-${b.id}-${b.turningAge}`
   }));
 
   const noticeNotificationItemsRaw = latestNotices.map((n) => ({
     ...n,
     type: 'notice',
-    key: `notice-${n.id}-${n.publishedAt || n.createdAt || ''}`
+    // Key must use only the stable id — publishedAt/createdAt can vary in format
+    // between API calls and cause already-read notices to reappear.
+    key: `notice-${n.id}`
   }));
 
   const birthdayNotificationItems = birthdayNotificationItemsRaw.filter(item => !readNotificationKeys.has(item.key));

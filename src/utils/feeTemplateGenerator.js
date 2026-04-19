@@ -22,6 +22,8 @@ export const downloadFeeTemplate = async () => {
     { header: 'Amount', key: 'amount', width: 15 },
     { header: 'Date', key: 'date', width: 15 },
     { header: 'Reference', key: 'reference', width: 25 },
+    { header: 'Mode', key: 'mode', width: 15 },
+    { header: 'Allocation', key: 'allocation', width: 15 },
     { header: 'Notes', key: 'notes', width: 30 }
   ];
 
@@ -52,9 +54,9 @@ export const downloadFeeTemplate = async () => {
 
   // Add Sample Data for Guidance
   const sampleData = [
-    { admNo: '1001', amount: 15000, date: '2026-01-15', reference: 'TRX892348923', notes: 'First Term Initial Payment' },
-    { admNo: '1002', amount: 5000, date: '2026-02-01', reference: 'BANK-X-901', notes: 'Book Fund' },
-    { admNo: '1005', amount: 12400, date: '2026-01-20', reference: 'MPESA-REF-772', notes: 'Transport Deposit' }
+    { admNo: '1001', amount: 15000, date: '2026-01-15', reference: 'TRX892348923', mode: 'BANK', allocation: 'TUITION', notes: 'First Term Initial Payment' },
+    { admNo: '1002', amount: 5000, date: '2026-02-01', reference: 'BANK-X-901', mode: 'CHEQUE', allocation: 'AUTO', notes: 'Book Fund' },
+    { admNo: '1005', amount: 12400, date: '2026-01-20', reference: 'MPESA-REF-772', mode: 'MPESA', allocation: 'TRANSPORT', notes: 'Transport Deposit' }
   ];
 
   sampleData.forEach(data => {
@@ -101,7 +103,9 @@ export const downloadBalanceTemplate = async () => {
     { header: 'Adm No', key: 'admNo', width: 15 },
     { header: 'Billed', key: 'billed', width: 15 },
     { header: 'Paid', key: 'paid', width: 15 },
-    { header: 'Balance', key: 'balance', width: 15 }
+    { header: 'Balance', key: 'balance', width: 15 },
+    { header: 'Transport Billed', key: 'transportBilled', width: 18 },
+    { header: 'Transport Paid', key: 'transportPaid', width: 18 }
   ];
 
   // Professional Styling for Header
@@ -131,9 +135,9 @@ export const downloadBalanceTemplate = async () => {
 
   // Add Sample Data for Guidance
   const sampleData = [
-    { admNo: '1291', billed: 8800, paid: 7000, balance: 1800 },
-    { admNo: '1064', billed: 10300, paid: 10300, balance: 0 },
-    { admNo: '1176', billed: 21100, paid: 0, balance: 21100 }
+    { admNo: '1291', billed: 8800, paid: 7000, balance: 1800, transportBilled: 0, transportPaid: 0 },
+    { admNo: '1064', billed: 10300, paid: 10300, balance: 0, transportBilled: 5000, transportPaid: 2000 },
+    { admNo: '1176', billed: 21100, paid: 0, balance: 21100, transportBilled: 0, transportPaid: 0 }
   ];
 
   sampleData.forEach(data => {
@@ -222,6 +226,62 @@ export const downloadWaiverTemplate = async () => {
   const anchor = document.createElement('a');
   anchor.href = url;
   anchor.download = `Zawadi_Fee_Waivers_Template_${new Date().getFullYear()}.xlsx`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(anchor);
+};
+
+/**
+ * Generates a minimal template for Transport Fee bulk import.
+ * Only needs: Adm No, Transport Billed
+ */
+export const downloadTransportTemplate = async () => {
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'Zawadi SMS';
+  workbook.lastModifiedBy = 'Zawadi SMS';
+  workbook.created = new Date();
+  workbook.modified = new Date();
+
+  const sheet = workbook.addWorksheet('Transport Fees Template', {
+    views: [{ state: 'frozen', ySplit: 1 }]
+  });
+
+  sheet.columns = [
+    { header: 'Adm No', key: 'admNo', width: 15 },
+    { header: 'Charges', key: 'transportBilled', width: 15 },
+    { header: 'Paid', key: 'transportPaid', width: 15 },
+    { header: 'Bal', key: 'transportBalance', width: 15 }
+  ];
+
+  const headerRow = sheet.getRow(1);
+  headerRow.height = 30;
+  headerRow.eachCell((cell) => {
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD97706' } }; // Amber
+    cell.font = { name: 'Arial', family: 2, size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+    cell.alignment = { vertical: 'middle', horizontal: 'center' };
+    cell.border = {
+      top: { style: 'thin' }, bottom: { style: 'medium' },
+      left: { style: 'thin' }, right: { style: 'thin' }
+    };
+  });
+
+  const sampleData = [
+    { admNo: '1001', transportBilled: 5000, transportPaid: 5000, transportBalance: 0 },
+    { admNo: '1002', transportBilled: 5000, transportPaid: 3000, transportBalance: 2000 },
+    { admNo: '1005', transportBilled: 7500, transportPaid: 0, transportBalance: 7500 }
+  ];
+  sampleData.forEach(data => {
+    const row = sheet.addRow(data);
+    row.font = { italic: true, color: { argb: 'FF64748B' } };
+  });
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = window.URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `Zawadi_Transport_Fees_Template_${new Date().getFullYear()}.xlsx`;
   document.body.appendChild(anchor);
   anchor.click();
   window.URL.revokeObjectURL(url);

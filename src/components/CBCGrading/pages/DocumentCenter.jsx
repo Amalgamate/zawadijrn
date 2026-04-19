@@ -24,6 +24,7 @@ const DocumentCenter = () => {
         documents,
         categories,
         loading,
+        uploadProgress,
         fetchDocuments,
         fetchCategories,
         uploadDocument,
@@ -245,6 +246,25 @@ const DocumentCenter = () => {
                             </button>
                         </div>
                     </div>
+
+                    {/* Progress Bar */}
+                    {uploadProgress > 0 && (
+                        <div className="px-6 py-2 bg-gray-50 border-b border-gray-100 animate-in fade-in slide-in-from-top-2 duration-300">
+                            <div className="flex items-center justify-between mb-1.5">
+                                <span className="text-xs font-bold text-gray-500 flex items-center gap-2">
+                                    <RefreshCw className="animate-spin" size={12} />
+                                    Uploading document...
+                                </span>
+                                <span className="text-xs font-black text-brand-teal">{uploadProgress}%</span>
+                            </div>
+                            <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                <div 
+                                    className="h-full bg-brand-teal transition-all duration-300 ease-out" 
+                                    style={{ width: `${uploadProgress}%` }}
+                                />
+                            </div>
+                        </div>
+                    )}
 
                     {/* Files Display */}
                     <div className="flex-1 overflow-y-auto p-6 scroll-smooth">

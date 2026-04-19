@@ -3,6 +3,7 @@ import prisma from '../config/database';
 import { ApiError } from '../utils/error.util';
 import { AuthRequest } from '../middleware/permissions.middleware';
 import { redisCacheService } from '../services/redis-cache.service';
+import { configService } from '../services/config.service';
 
 // ─── TTL constants ────────────────────────────────────────────────────────────
 const ADMIN_CACHE_TTL  = 120; // 2 minutes — stats don't need real-time precision
@@ -15,6 +16,7 @@ export class DashboardController {
      * GET /api/dashboard/admin
      */
     async getAdminMetrics(req: AuthRequest, res: Response) {
+        console.time('🚀 [DASHBOARD] getAdminMetrics');
         try {
             const { filter = 'today' } = req.query;
             const cacheKey = `dashboard:admin:${filter}`;
@@ -25,28 +27,16 @@ export class DashboardController {
                 return res.json({ success: true, data: cached, _cached: true });
             }
 
+            // ── Resolve active term dynamically (C4 fix — was hardcoded 2026) ──
+            const activeTermConfig = await configService.getActiveTermConfig();
+            const activeAcademicYear = activeTermConfig?.academicYear ?? new Date().getFullYear();
+            const activeTerm        = activeTermConfig?.term ?? 'TERM_1';
+
             const dateFilter = this.getDateFilter(filter as string);
             const prevDateFilter = this.getPreviousDateFilter(filter as string);
 
-            // ── 1. All cheap count queries in one Promise.all ─────────────────
-            const [
-                studentCount,
-                teacherCount,
-                classCount,
-                prevStudentCount,
-                prevTeacherCount,
-                activeStudents,
-                activeTeachers,
-                attendanceSummary,
-                studentsByGradeData,
-                staffByRole,
-                latestAdmissions,
-                latestFormative,
-                latestSummative,
-                upcomingEventsData,
-                pendingDraftCount,
-                genderDistribution,
-            ] = await Promise.all([
+            // ── 1. Stage 1: All independent queries in parallel ──────────────
+            const resultStage1 = await Promise.all([
                 prisma.learner.count({ where: { archived: false } }),
                 prisma.user.count({ where: { role: 'TEACHER', archived: false } }),
                 prisma.class.count({ where: { archived: false } }),
@@ -76,7 +66,6 @@ export class DashboardController {
                             include: { creator: { select: { role: true } } }
                         });
                     } catch (error: any) {
-                        // Temporary safety for live DBs still on legacy events column naming.
                         if (error?.code === 'P2022' && String(error?.message || '').includes('events.allDay')) {
                             console.warn('[Dashboard] events.allDay missing in DB, returning empty upcoming events until migration applies.');
                             return [];
@@ -86,136 +75,145 @@ export class DashboardController {
                 })(),
                 prisma.formativeAssessment.count({ where: { status: 'DRAFT', archived: false } }),
                 prisma.learner.groupBy({ by: ['gender'], where: { archived: false }, _count: true }),
-            ]);
-
-            // ── 1.5 Calculate Assessed Classes & Missed Exams ──────────────
-            const latestTest = await prisma.summativeTest.findFirst({
-                where: { archived: false, academicYear: 2026, term: 'TERM_1' }, // Hardcoded for current context per requirements
-                orderBy: { createdAt: 'desc' },
-                select: { testType: true, term: true, academicYear: true }
-            });
-
-            let totalMissedExams = 0;
-            let currentTestSeries = 'CURRENT SERIES';
-            let unAssessedBreakdown: any[] = [];
-
-            if (latestTest && latestTest.testType) {
-                currentTestSeries = `${latestTest.testType} ${latestTest.term}`.replace('_', ' ');
-                const testsInSeries = await prisma.summativeTest.findMany({
-                    where: { 
-                        testType: latestTest.testType, 
-                        term: latestTest.term, 
-                        academicYear: latestTest.academicYear, 
-                        archived: false 
-                    },
-                    select: { id: true, grade: true }
-                });
-
-                if (testsInSeries.length > 0) {
-                    const testIds = testsInSeries.map(t => t.id);
-                    const grades = [...new Set(testsInSeries.map(t => t.grade))];
-                    
-                    // Find students in these grades who have NO results for ANY test in this series
-                    const studentsAffected = await prisma.learner.findMany({
-                        where: {
-                            status: 'ACTIVE',
-                            archived: false,
-                            grade: { in: grades as any }
-                        },
-                        select: { id: true, grade: true }
-                    });
-
-                    const studentsWithSomeResults = await prisma.summativeResult.findMany({
-                        where: {
-                            testId: { in: testIds },
-                            archived: false
-                        },
-                        select: { learnerId: true },
-                        distinct: ['learnerId']
-                    });
-
-                    const resultsSet = new Set(studentsWithSomeResults.map(r => r.learnerId));
-                    totalMissedExams = studentsAffected.filter(s => !resultsSet.has(s.id)).length;
-
-                    // Group by grade for the detailed view
-                    unAssessedBreakdown = grades.map(grade => {
-                        const studentsInGrade = studentsAffected.filter(s => s.grade === grade);
-                        const unAssessedInGrade = studentsInGrade.filter(s => !resultsSet.has(s.id)).length;
-                        return {
-                            grade: (grade as string).replace('_', ' '),
-                            total: studentsInGrade.length,
-                            unAssessed: unAssessedInGrade,
-                            assessed: studentsInGrade.length - unAssessedInGrade
-                        };
-                    }).filter(b => b.total > 0);
-                }
-            }
-
-            const assessedGradesStreams = await prisma.learner.findMany({
-                where: {
-                    archived: false,
-                    OR: [
-                        { summativeResults: { some: { archived: false } } },
-                        { formativeAssessments: { some: { archived: false } } }
-                    ]
-                },
-                select: { grade: true, stream: true },
-                distinct: ['grade', 'stream']
-            });
-
-            const assessedClassCount = assessedGradesStreams.length > 0
-                ? await prisma.class.count({
-                    where: {
-                        archived: false,
-                        OR: assessedGradesStreams.map(gs => ({
-                            grade: gs.grade,
-                            stream: gs.stream
-                        }))
-                    }
-                })
-                : 0;
-
-            // Combine both formative and summative for "latest assessments" activity
-            const latestAssessments = [...latestFormative.map(f => ({ ...f, type: 'FORMATIVE' })), ...latestSummative.map(s => ({ title: s.test.title, learningArea: s.test.learningArea, learner: s.learner, createdAt: s.createdAt, type: 'SUMMATIVE' }))]
-                .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                .slice(0, 5);
-
-            // ── 2. Financial summary — use aggregates, NOT a full table scan ──
-            const [feeAgg, feeByGrade, summativeByGrade, subjectRatings] = await Promise.all([
-                // Total collected + balance using DB aggregates (no row fetch)
+                // ── 1.2 Parallel Metadata & Metrics ─────────────────────────────
+                prisma.summativeTest.findFirst({
+                    where: { archived: false, academicYear: activeAcademicYear, term: activeTerm as any },
+                    orderBy: { createdAt: 'desc' },
+                    select: { testType: true, term: true, academicYear: true }
+                }),
                 prisma.feeInvoice.aggregate({
                     where: { archived: false },
                     _sum: { paidAmount: true, balance: true },
                 }),
-                // Per-feeStructure breakdown — only what we need
                 prisma.feeInvoice.groupBy({
                     by: ['feeStructureId'],
                     where: { archived: false },
                     _sum: { totalAmount: true, paidAmount: true, balance: true },
                 }),
-                // Summative averages per grade
                 prisma.summativeResult.groupBy({
                     by: ['testId'],
                     where: { archived: false },
                     _avg: { percentage: true },
                     _count: true,
                 }),
-                // Formative rating distribution
                 prisma.formativeAssessment.groupBy({
                     by: ['learningArea', 'overallRating'],
                     where: { archived: false },
                     _count: true,
                 }),
+                // ── 1.3 Assessed Classes (formerly a sequential hang) ───────────
+                prisma.class.count({
+                    where: { archived: false, active: true }
+                }),
             ]);
 
-            // ── Resolve feeStructureId → name for stream breakdown ─────────────
-            const feeStructureIds = feeByGrade.map(r => r.feeStructureId);
-            const feeStructures = feeStructureIds.length
-                ? await prisma.feeStructure.findMany({
-                    where: { id: { in: feeStructureIds } },
+            // Assign results from Stage 1
+            const latestTest = resultStage1[16];
+            const feeAgg = resultStage1[17];
+            const feeByGrade = resultStage1[18];
+            const summativeByGrade = resultStage1[19];
+            const subjectRatings = resultStage1[20];
+            const assessedClassCount = resultStage1[21];
+
+
+            const [
+                studentCount, teacherCount, classCount, prevStudentCount, prevTeacherCount,
+                activeStudents, activeTeachers, attendanceSummary, studentsByGradeData,
+                staffByRole, latestAdmissions, latestFormative, latestSummative,
+                upcomingEventsData, pendingDraftCount, genderDistribution
+            ] = resultStage1;
+
+            let totalMissedExams = 0;
+            let currentTestSeries = 'CURRENT SERIES';
+            let unAssessedBreakdown: any[] = [];
+
+            console.time('🚀 [DASHBOARD] Stage 2: Assessment Details');
+            if (latestTest && latestTest.testType) {
+                    currentTestSeries = `${latestTest.testType} ${latestTest.term}`.replace(/_/g, ' ');
+                    
+                    // Get all test IDs for this series in one go
+                    const testsInSeries = await prisma.summativeTest.findMany({
+                        where: {
+                            testType: latestTest.testType,
+                            term: latestTest.term,
+                            academicYear: latestTest.academicYear,
+                            archived: false
+                        },
+                        select: { id: true, grade: true }
+                    });
+
+                    if (testsInSeries.length > 0) {
+                        const testIds = testsInSeries.map(t => t.id);
+                        const grades = [...new Set(testsInSeries.map(t => t.grade))];
+
+                        // ── Single query: total learners per grade ──────────────────
+                        const totalPerGrade = await prisma.learner.groupBy({
+                            by: ['grade'],
+                            where: { status: 'ACTIVE', archived: false, grade: { in: grades as any } },
+                            _count: true,
+                        });
+
+                        // ── Single query: assessed learners per grade ───────────────
+                        const assessedPerGrade = await prisma.learner.groupBy({
+                            by: ['grade'],
+                            where: {
+                                status: 'ACTIVE',
+                                archived: false,
+                                grade: { in: grades as any },
+                                summativeResults: { some: { testId: { in: testIds }, archived: false } },
+                            },
+                            _count: true,
+                        });
+
+                        const totalMap   = new Map(totalPerGrade.map(r => [r.grade, r._count]));
+                        const assessedMap = new Map(assessedPerGrade.map(r => [r.grade, r._count]));
+
+                        totalMissedExams = 0;
+                        unAssessedBreakdown = grades
+                            .map(grade => {
+                                const total      = totalMap.get(grade as any)    || 0;
+                                const assessed   = assessedMap.get(grade as any) || 0;
+                                const unAssessed = total - assessed;
+                                totalMissedExams += unAssessed;
+                                return {
+                                    grade: (grade as string).replace(/_/g, ' '),
+                                    total,
+                                    assessed,
+                                    unAssessed,
+                                };
+                            });
+                          unAssessedBreakdown = unAssessedBreakdown.filter(b => b.total > 0);
+                    }
+                }
+            console.timeEnd('🚀 [DASHBOARD] Stage 2: Assessment Details');
+
+
+            // ── Stage 3: Dynamic Data for recent assessments ────────────────
+            const latestAssessments = [
+                ...latestFormative.map(f => ({ ...f, type: 'FORMATIVE' })),
+                ...latestSummative.map(s => ({
+                    title: s.test.title,
+                    learningArea: s.test.learningArea,
+                    learner: s.learner,
+                    createdAt: s.createdAt,
+                    type: 'SUMMATIVE'
+                }))
+            ]
+                .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                .slice(0, 5);
+
+            // ── 3. Processing Results ──────────────────────────────────────────
+            const [feeStructures, testGrades] = await Promise.all([
+                prisma.feeStructure.findMany({
+                    where: { id: { in: feeByGrade.map(r => r.feeStructureId) } },
                     select: { id: true, name: true, grade: true },
-                  })
-                : [];
+                }),
+                prisma.summativeTest.findMany({
+                    where: { id: { in: summativeByGrade.map(r => r.testId) } },
+                    select: { id: true, grade: true },
+                }),
+            ]);
+
             const feeStructureMap = new Map(feeStructures.map(fs => [fs.id, fs]));
 
             const streamBreakdown = feeByGrade
@@ -225,24 +223,11 @@ export class DashboardController {
                     const target    = Number(row._sum.totalAmount || 0);
                     const collected = Number(row._sum.paidAmount  || 0);
                     const bal       = Number(row._sum.balance     || 0);
-                    return {
-                        name:      fs.name || fs.grade?.replace('_', ' ') || 'General',
-                        target,
-                        collected,
-                        bal,
-                    };
+                    return { name: fs.name || fs.grade?.replace('_', ' ') || 'General', target, collected, bal };
                 })
                 .filter(Boolean)
-                .sort((a: any, b: any) => b.bal - a.bal); // highest risk first
+                .sort((a: any, b: any) => b.bal - a.bal);
 
-            // ── Derive top performing classes (from groupBy, no full scan) ────
-            const testIds = summativeByGrade.map(r => r.testId);
-            const testGrades = testIds.length
-                ? await prisma.summativeTest.findMany({
-                    where: { id: { in: testIds } },
-                    select: { id: true, grade: true },
-                  })
-                : [];
             const gradeMap = new Map(testGrades.map(t => [t.id, t.grade]));
 
             const classPerfMap: Record<string, { total: number; count: number }> = {};
@@ -256,12 +241,15 @@ export class DashboardController {
             const topPerformingClasses = Object.entries(classPerfMap)
                 .map(([grade, d]) => {
                     const avg = d.count > 0 ? d.total / d.count : 0;
-                    return { grade: grade.replace('_', ' '), avg: parseFloat(avg.toFixed(1)), label: avg > 80 ? 'Exceeding' : avg > 60 ? 'Meeting' : 'Approaching' };
+                    return {
+                        grade: grade.replace('_', ' '),
+                        avg: parseFloat(avg.toFixed(1)),
+                        label: avg > 80 ? 'Exceeding' : avg > 60 ? 'Meeting' : 'Approaching'
+                    };
                 })
                 .sort((a, b) => b.avg - a.avg)
                 .slice(0, 5);
 
-            // ── Subject proficiency from groupBy ──────────────────────────────
             const subjPerfMap: Record<string, { ee: number; me: number; be: number; total: number }> = {};
             subjectRatings.forEach(r => {
                 const area = r.learningArea;
@@ -280,12 +268,10 @@ export class DashboardController {
                 }))
                 .slice(0, 4);
 
-            // ── Attendance map ────────────────────────────────────────────────
             const attendanceMap: Record<string, number> = { PRESENT: 0, ABSENT: 0, LATE: 0 };
             attendanceSummary.forEach(item => { attendanceMap[item.status] = item._count; });
             const avgAttendance = studentCount > 0 ? (attendanceMap.PRESENT / studentCount) * 100 : 0;
 
-            // ── Distributions ─────────────────────────────────────────────────
             const gradeDistribution = studentsByGradeData.map(item => ({
                 label: item.grade.replace('_', ' '), value: item._count, color: this.getGradeColor(item.grade),
             }));
@@ -293,7 +279,6 @@ export class DashboardController {
                 label: item.role.replace('_', ' '), value: item._count, color: this.getRoleColor(item.role),
             }));
 
-            // ── Financials ────────────────────────────────────────────────────
             const feeCollected = Number(feeAgg._sum.paidAmount || 0);
             const feePending   = Number(feeAgg._sum.balance   || 0);
 
@@ -329,9 +314,11 @@ export class DashboardController {
             };
 
             await redisCacheService.set(cacheKey, payload, ADMIN_CACHE_TTL);
+            console.timeEnd('🚀 [DASHBOARD] getAdminMetrics');
             res.json({ success: true, data: payload });
 
         } catch (error: any) {
+            console.timeEnd('🚀 [DASHBOARD] getAdminMetrics');
             console.error('Admin Dashboard Error:', error);
             throw new ApiError(500, error.message || 'Failed to fetch dashboard metrics');
         }
@@ -377,6 +364,7 @@ export class DashboardController {
                     myStudents: totalMyStudents, myClasses: myClasses.length,
                     pendingTasks: pendingAssessments, messages: 0,
                     analytics: {
+                        // NOTE: attendance is a placeholder — see Phase 3 (L1 fix)
                         attendance: 94,
                         graded: pendingAssessments === 0 ? 100 : Math.round(((totalMyStudents - pendingAssessments) / totalMyStudents) * 100),
                         completion: 75, engagement: 90,

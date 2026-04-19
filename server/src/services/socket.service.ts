@@ -11,17 +11,42 @@ let io: SocketIOServer;
 export const initializeSocket = (httpServer: any) => {
     io = new SocketIOServer(httpServer, {
         cors: {
-            origin: "*", // Adjust for production
-            methods: ["GET", "POST"]
+            origin: (origin, callback) => {
+                const allowedOrigins = [
+                    'http://localhost:3000',
+                    'http://localhost:5173',
+                    'https://zawadijrn.vercel.app',
+                    process.env.FRONTEND_URL
+                ].filter(Boolean);
+                
+                if (!origin || allowedOrigins.includes(origin)) {
+                    callback(null, true);
+                } else {
+                    callback(null, false);
+                }
+            },
+            methods: ["GET", "POST"],
+            credentials: true
         }
     });
 
     io.use(async (socket: AuthenticatedSocket, next) => {
         try {
-            const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.split(' ')[1];
+            let token = socket.handshake.auth.token || socket.handshake.headers.authorization?.split(' ')[1];
 
-            if (!token) {
-                return next(new Error('Authentication error: No token provided'));
+            // If token is missing or the special "__cookie__" placeholder, try to get it from cookies
+            if (!token || token === '__cookie__') {
+                const cookieHeader = socket.handshake.headers.cookie;
+                if (cookieHeader) {
+                    const match = cookieHeader.match(/accessToken=([^;]+)/);
+                    if (match) {
+                        token = match[1];
+                    }
+                }
+            }
+
+            if (!token || token === '__cookie__') {
+                return next(new Error('Authentication error: No valid token or cookie provided'));
             }
 
             const secret = process.env.JWT_SECRET || 'fallback_secret_should_be_changed';

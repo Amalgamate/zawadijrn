@@ -7,6 +7,7 @@ import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 import { sanitizeResponse, hideSensitiveHeaders, securityHeaders } from './middleware/response-sanitization.middleware';
 import { ipRateLimit } from './middleware/enhanced-rateLimit.middleware';
 import pinoHttp from 'pino-http';
+import cookieParser from 'cookie-parser';
 import logger from './utils/logger';
 
 const app: Application = express();
@@ -76,6 +77,7 @@ app.use(sanitizeResponse);
 // Body parsers
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(cookieParser());
 
 // API Routes
 app.use('/api', routes);

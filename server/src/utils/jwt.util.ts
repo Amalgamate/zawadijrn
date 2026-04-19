@@ -2,18 +2,20 @@ import * as jwt from 'jsonwebtoken';
 import { UserRole } from '@prisma/client';
 import { Role } from '../config/permissions';
 
+type InstitutionType = 'PRIMARY_CBC' | 'SECONDARY' | 'TERTIARY';
+
 interface JWTPayload {
   userId: string;
   email: string;
   role: Role;
-  institutionType: 'PRIMARY_CBC' | 'SECONDARY';
+  institutionType: InstitutionType;
 }
 
 interface User {
   id: string;
   email: string;
   role: UserRole;
-  institutionType?: 'PRIMARY_CBC' | 'SECONDARY' | null;
+  institutionType?: InstitutionType | null;
 }
 
 export const generateAccessToken = (user: User): string => {
@@ -21,7 +23,7 @@ export const generateAccessToken = (user: User): string => {
     userId: user.id,
     email: user.email,
     role: user.role as Role,
-    institutionType: (user.institutionType || 'PRIMARY_CBC') as any,
+    institutionType: (user.institutionType || 'PRIMARY_CBC') as InstitutionType,
   };
 
   return jwt.sign(

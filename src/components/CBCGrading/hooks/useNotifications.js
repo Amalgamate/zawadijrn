@@ -4,6 +4,7 @@
  */
 
 import { useState, useCallback } from 'react';
+import { toast } from 'react-hot-toast';
 
 export const useNotifications = () => {
   const [showToast, setShowToast] = useState(false);
@@ -17,11 +18,30 @@ export const useNotifications = () => {
    * @param {number} duration - Duration in milliseconds (default: 3000)
    */
   const showNotification = useCallback((message, type = 'success', duration = 3000) => {
+    // Standard toast notification using react-hot-toast
+    const toastConfig = { duration };
+    
+    switch (type) {
+      case 'success':
+        toast.success(message, toastConfig);
+        break;
+      case 'error':
+        toast.error(message, toastConfig);
+        break;
+      case 'warning':
+        toast(message, { ...toastConfig, icon: '⚠️' });
+        break;
+      case 'info':
+      default:
+        toast(message, { ...toastConfig, icon: 'ℹ️' });
+        break;
+    }
+
     setToastMessage(message);
     setToastType(type);
     setShowToast(true);
 
-    // Auto-hide after duration
+    // Auto-hide local state after duration (kept for backward compatibility)
     setTimeout(() => {
       setShowToast(false);
     }, duration);

@@ -29,6 +29,16 @@ class RedisCacheService {
   }
 
   private async initialize() {
+    // Skip Redis entirely if no connection details are provided.
+    // The memory fallback is fully functional and avoids the 3×retry timeout
+    // delay that occurs when REDIS_HOST/REDIS_URL are blank.
+    const hasRedisConfig = !!(process.env.REDIS_URL || process.env.REDIS_HOST);
+    if (!hasRedisConfig) {
+      console.log('[Cache] No Redis config detected — using in-memory cache.');
+      this.useRedis = false;
+      return;
+    }
+
     try {
       // Try to connect to Redis
       let redisConfig: any;

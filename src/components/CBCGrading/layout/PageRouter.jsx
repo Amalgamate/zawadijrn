@@ -3,8 +3,11 @@ import ErrorBoundary from '../shared/ErrorBoundary';
 import EmptyState from '../shared/EmptyState';
 import ComingSoon from '../shared/ComingSoon';
 
-// Lazy load page components
-const RoleDashboard = lazy(() => import('../pages/dashboard/RoleDashboard'));
+// ── Dashboard — EAGERLY imported: it's the first page every user sees after login.
+// Never lazy-load the default landing page — it forces a Suspense stall on every cold open.
+import RoleDashboard from '../pages/dashboard/RoleDashboard';
+// Student dashboard also eager — it's the default page for STUDENT role
+import StudentDashboardView from '../pages/student/StudentDashboard';
 const LearnersList = lazy(() => import('../pages/LearnersList'));
 const TeachersList = lazy(() => import('../pages/TeachersList'));
 const AddEditTeacherPage = lazy(() => import('../pages/AddEditTeacherPage'));
@@ -98,8 +101,14 @@ const StockTransfers = lazy(() => import('../pages/inventory/StockTransfers'));
 const StockAdjustments = lazy(() => import('../pages/inventory/StockAdjustments'));
 const AssetRegister = lazy(() => import('../pages/inventory/AssetRegister'));
 const AssetAssignments = lazy(() => import('../pages/inventory/AssetAssignments'));
-// Transport and Biometrics Modules
-const TransportManager = lazy(() => import('../pages/transport/TransportManager'));
+
+// Transport, Library and Biometrics Modules
+const TransportManager    = lazy(() => import('../pages/transport/TransportManager'));
+const TransportReports    = lazy(() => import('../pages/transport/TransportReports'));
+const GPSTracking         = lazy(() => import('../pages/transport/GPSTracking'));
+const DriverManagement    = lazy(() => import('../pages/transport/DriverManagement'));
+const TransportFeeManager = lazy(() => import('../pages/transport/TransportFeeManager'));
+const HostelAllocation    = lazy(() => import('../pages/transport/HostelAllocation'));
 const LibraryManager = lazy(() => import('../pages/library/LibraryManager'));
 const BiometricManager = lazy(() => import('../pages/biometric/BiometricManager'));
 
@@ -107,17 +116,38 @@ const BiometricManager = lazy(() => import('../pages/biometric/BiometricManager'
 const LMSManager = lazy(() => import('../pages/LMSManager'));
 const LMSAssignments = lazy(() => import('../pages/lms/LMSAssignments'));
 
+// Tertiary Modules
+const TertiaryDepartments = lazy(() => import('../../Tertiary/pages/DepartmentManagement'));
+const TertiaryPrograms    = lazy(() => import('../../Tertiary/pages/ProgramManagement'));
+const TertiaryUnits       = lazy(() => import('../../Tertiary/pages/UnitManagement'));
+
 // Student Portal
-const StudentDashboard = lazy(() => import('../pages/student/StudentDashboard'));
 const MyCourses = lazy(() => import('../pages/student/MyCourses'));
 const CourseViewer = lazy(() => import('../pages/student/CourseViewer'));
 const MyAssignments = lazy(() => import('../pages/student/MyAssignments'));
 const MyProgress = lazy(() => import('../pages/student/MyProgress'));
 
 const LoadingOverlay = () => (
-  <div className="flex-1 flex flex-col items-center justify-center bg-gray-50/50 backdrop-blur-sm">
-    <div className="w-16 h-16 border-4 border-[var(--brand-purple)]/20 border-t-[var(--brand-purple)] rounded-full animate-spin"></div>
-    <p className="mt-4 text-sm font-medium text-gray-500 animate-pulse tracking-wide uppercase">Optimizing Experience...</p>
+  <div className="flex-1 flex flex-col gap-4 p-6 animate-pulse">
+    {/* Page title skeleton */}
+    <div className="h-8 w-48 bg-gray-200 rounded-lg" />
+    {/* Metric cards row */}
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {[...Array(4)].map((_, i) => (
+        <div key={i} className="h-24 bg-gray-200 rounded-xl" />
+      ))}
+    </div>
+    {/* Content block */}
+    <div className="flex gap-4 flex-1">
+      <div className="flex-1 bg-gray-200 rounded-xl min-h-[200px]" />
+      <div className="w-64 bg-gray-200 rounded-xl hidden lg:block" />
+    </div>
+    {/* Table skeleton */}
+    <div className="space-y-2">
+      {[...Array(5)].map((_, i) => (
+        <div key={i} className="h-10 bg-gray-100 rounded-lg" />
+      ))}
+    </div>
   </div>
 );
 
@@ -174,7 +204,7 @@ const PageRouter = ({
         switch (currentPage) {
           case 'dashboard':
             return user?.role === 'STUDENT'
-              ? <StudentDashboard user={user} onNavigate={handleNavigate} />
+              ? <StudentDashboardView user={user} onNavigate={handleNavigate} />
               : <RoleDashboard learners={learners} pagination={pagination} teachers={teachers} user={user} onNavigate={handleNavigate} />;
 
           // Planner Module
@@ -309,13 +339,14 @@ const PageRouter = ({
           case 'accounting-reports': return <FinancialReports />;
 
           case 'facilities-classes': return <FacilityManager />;
+          case 'hostel-allocation':   return <HostelAllocation />;
           case 'learning-hub-materials':
           case 'learning-hub-lesson-plans':
           case 'learning-hub-library':
             return <LearningHubPage />;
           case 'learning-hub-assignments':
             return <LMSAssignments />;
-          
+
           // LMS Module
           case 'lms-courses': return <LMSManager currentPage={currentPage} />;
           case 'lms-content': return <LMSManager currentPage={currentPage} />;
@@ -329,19 +360,23 @@ const PageRouter = ({
           case 'student-progress': return <ErrorBoundary><MyProgress onNavigate={handleNavigate} /></ErrorBoundary>;
           case 'student-course-view': return <ErrorBoundary><CourseViewer courseId={pageParams.courseId} onNavigate={handleNavigate} /></ErrorBoundary>;
 
+          // Library Module
           case 'library-catalog':
           case 'library-circulation':
           case 'library-fees':
           case 'library-inventory':
           case 'library-members':
             return <LibraryManager currentPage={currentPage} />;
-          case 'transport-routes':
-          case 'transport-tracking':
-          case 'transport-drivers':
-          case 'hostel-allocation':
-          case 'hostel-fees':
-          case 'transport-reports':
-            return <TransportManager />;
+
+          // ── Transport Module ───────────────────────────────────────────────
+          case 'transport-routes':    return <TransportManager />;
+          case 'transport-tracking':  return <GPSTracking />;
+          case 'transport-drivers':   return <DriverManagement />;
+          case 'transport-students':  return <TransportManager />; // opens TransportManager on students tab via deep-link
+          case 'hostel-fees':         return <TransportFeeManager onEditLearner={handleEditLearner} onViewLearner={handleViewLearner} />;
+          case 'transport-reports':   return <TransportReports />;
+
+          // Biometric Module
           case 'biometric-devices':
           case 'biometric-enrollment':
           case 'biometric-logs':
@@ -394,7 +429,7 @@ const PageRouter = ({
 
           case 'system-maintenance': return <SystemMaintenancePage />;
 
-          // ── Secondary School modules (placeholders) ───────────────────────────
+          // ── Secondary School modules ──────────────────────────────────────
           case 'sec-pathways':        return <PathwaysHub />;
           case 'sec-subjects':        return <SubjectManagement />;
           case 'sec-form-groups':     return <FormGroups />;
@@ -410,22 +445,22 @@ const PageRouter = ({
           case 'sec-report-cards':    return <ReportsHub onNavigate={handleNavigate} />;
           case 'sec-kcse-prediction': return <ResultsWorkbench variant="forecast" onNavigate={handleNavigate} />;
 
-          // ── Tertiary Institution modules (placeholders) ───────────────────────
-          case 'tert-departments':    return <ComingSoon badge="Tertiary" title="Departments"            description="Create and manage academic departments and their heads." />;
-          case 'tert-programs':       return <ComingSoon badge="Tertiary" title="Programs"               description="Define degree, diploma and certificate programmes offered." />;
-          case 'tert-units':          return <ComingSoon badge="Tertiary" title="Unit Management"         description="Manage academic units (courses), credit hours and prerequisites." />;
-          case 'tert-enrollment':     return <ComingSoon badge="Tertiary" title="Unit Enrollment"         description="Enroll students into units for the current semester." />;
-          case 'tert-cats':           return <ComingSoon badge="Tertiary" title="CATs (30%)"              description="Record Continuous Assessment Test scores — 30% of the final grade." />;
-          case 'tert-exams':          return <ComingSoon badge="Tertiary" title="Exams (70%)"             description="Record end-of-semester examination scores — 70% of the final grade." />;
-          case 'tert-mark-entry':     return <ComingSoon badge="Tertiary" title="Mark Entry"             description="Enter and review unit marks for both CATs and final examinations." />;
-          case 'tert-grade-sheet':    return <ComingSoon badge="Tertiary" title="Grade Sheets"            description="Generate official grade sheets per unit and per semester." />;
-          case 'tert-unit-results':   return <ComingSoon badge="Tertiary" title="Unit Results"            description="View and publish results per unit for the current semester." />;
-          case 'tert-gpa':            return <ComingSoon badge="Tertiary" title="GPA Calculator"          description="Compute semester GPA and cumulative GPA for all enrolled students." />;
-          case 'tert-semester-report':return <ComingSoon badge="Tertiary" title="Semester Reports"        description="Generate and distribute end-of-semester academic progress reports." />;
-          case 'tert-transcripts':    return <ComingSoon badge="Tertiary" title="Transcripts"             description="Generate official academic transcripts for students." />;
-          case 'tert-classifications':return <ComingSoon badge="Tertiary" title="Degree Classification"   description="Compute degree classifications — First Class, Second Upper, Second Lower, Pass." />;
-          case 'tert-clubs':          return <ComingSoon badge="Tertiary" title="Clubs & Societies"       description="Manage student clubs, societies and extra-curricular activities." />;
-          case 'tert-clearance':      return <ComingSoon badge="Tertiary" title="Student Clearance"       description="Process student clearance before graduation or withdrawal." />;
+          // ── Tertiary Institution modules ──────────────────────────────────
+          case 'tert-departments':    return <TertiaryDepartments />;
+          case 'tert-programs':       return <TertiaryPrograms />;
+          case 'tert-units':          return <TertiaryUnits />;
+          case 'tert-enrollment':     return <ComingSoon badge="Tertiary" title="Unit Enrollment"        description="Enroll students into units for the current semester." />;
+          case 'tert-cats':           return <ComingSoon badge="Tertiary" title="CATs (30%)"             description="Record Continuous Assessment Test scores — 30% of the final grade." />;
+          case 'tert-exams':          return <ComingSoon badge="Tertiary" title="Exams (70%)"            description="Record end-of-semester examination scores — 70% of the final grade." />;
+          case 'tert-mark-entry':     return <ComingSoon badge="Tertiary" title="Mark Entry"            description="Enter and review unit marks for both CATs and final examinations." />;
+          case 'tert-grade-sheet':    return <ComingSoon badge="Tertiary" title="Grade Sheets"           description="Generate official grade sheets per unit and per semester." />;
+          case 'tert-unit-results':   return <ComingSoon badge="Tertiary" title="Unit Results"           description="View and publish results per unit for the current semester." />;
+          case 'tert-gpa':            return <ComingSoon badge="Tertiary" title="GPA Calculator"         description="Compute semester GPA and cumulative GPA for all enrolled students." />;
+          case 'tert-semester-report':return <ComingSoon badge="Tertiary" title="Semester Reports"       description="Generate and distribute end-of-semester academic progress reports." />;
+          case 'tert-transcripts':    return <ComingSoon badge="Tertiary" title="Transcripts"            description="Generate official academic transcripts for students." />;
+          case 'tert-classifications':return <ComingSoon badge="Tertiary" title="Degree Classification"  description="Compute degree classifications — First Class, Second Upper, Second Lower, Pass." />;
+          case 'tert-clubs':          return <ComingSoon badge="Tertiary" title="Clubs & Societies"      description="Manage student clubs, societies and extra-curricular activities." />;
+          case 'tert-clearance':      return <ComingSoon badge="Tertiary" title="Student Clearance"      description="Process student clearance before graduation or withdrawal." />;
 
           default:
             return (

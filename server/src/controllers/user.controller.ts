@@ -23,6 +23,7 @@ export class UserController {
   async getAllUsers(req: AuthRequest, res: Response) {
     const currentUserRole = req.user!.role;
     const includeArchived = req.query.includeArchived === 'true';
+    const { search } = req.query;
 
     let whereClause: any = {};
     if (!includeArchived) {
@@ -31,6 +32,15 @@ export class UserController {
 
     if (currentUserRole === 'HEAD_TEACHER' || currentUserRole === 'HEAD_OF_CURRICULUM') {
       whereClause.role = { in: ['TEACHER', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM'] };
+    }
+
+    if (search) {
+      whereClause.OR = [
+        { firstName: { contains: search as string, mode: 'insensitive' } },
+        { lastName: { contains: search as string, mode: 'insensitive' } },
+        { email: { contains: search as string, mode: 'insensitive' } },
+        { staffId: { contains: search as string, mode: 'insensitive' } }
+      ];
     }
 
     const users = await prisma.user.findMany({

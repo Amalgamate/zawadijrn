@@ -211,16 +211,15 @@ export const allNavSections = [
     },
     {
         id: 'transport',
-        label: 'Transport & Hostel',
+        label: 'Transport',
         icon: Truck,
         permission: null,
         items: [
-            { id: 'transport-routes',   label: 'Bus Routes & Roster',    path: 'transport-routes',   permission: 'TRANSPORT_MANAGEMENT' },
-            { id: 'transport-tracking', label: 'GPS Tracking',           path: 'transport-tracking', permission: 'TRANSPORT_MANAGEMENT' },
-            { id: 'transport-drivers',  label: 'Driver Management',      path: 'transport-drivers',  permission: 'TRANSPORT_MANAGEMENT' },
-            { id: 'hostel-allocation',  label: 'Hostel Room Allocation', path: 'hostel-allocation',  permission: 'TRANSPORT_MANAGEMENT' },
-            { id: 'hostel-fees',        label: 'Transport/Hostel Fees',  path: 'hostel-fees',        permission: 'TRANSPORT_MANAGEMENT' },
-            { id: 'transport-reports',  label: 'Transport Reports',      path: 'transport-reports',  permission: 'TRANSPORT_MANAGEMENT' }
+            { id: 'transport-routes',   label: 'Bus Routes & Roster',  path: 'transport-routes',   permission: 'TRANSPORT_MANAGEMENT' },
+            { id: 'transport-tracking', label: 'GPS Tracking',         path: 'transport-tracking', permission: 'TRANSPORT_MANAGEMENT' },
+            { id: 'transport-drivers',  label: 'Driver Management',    path: 'transport-drivers',  permission: 'TRANSPORT_MANAGEMENT' },
+            { id: 'hostel-fees',        label: 'Transport Fee Manager',path: 'hostel-fees',        permission: 'TRANSPORT_MANAGEMENT' },
+            { id: 'transport-reports',  label: 'Transport Reports',    path: 'transport-reports',  permission: 'TRANSPORT_MANAGEMENT' }
         ]
     },
     {
@@ -238,7 +237,6 @@ export const allNavSections = [
                 items: [
                     { id: 'fees-collection',  label: 'Fee Collection',     path: 'fees-collection',  permission: 'FEE_MANAGEMENT' },
                     { id: 'fees-waivers',     label: 'Fee Waivers',        path: 'fees-waivers',     permission: 'FEE_MANAGEMENT', icon: Gift },
-                    { id: 'fees-reports',     label: 'Fee Reports',        path: 'fees-reports',     permission: 'FEE_MANAGEMENT' },
                     { id: 'fees-statements',  label: 'Student Statements', path: 'fees-statements',  permission: 'FEE_MANAGEMENT' },
                     { id: 'fees-structure',   label: 'Fee Structure',      path: 'fees-structure',   permission: 'FEE_MANAGEMENT' }
                 ]
@@ -304,7 +302,8 @@ export const allNavSections = [
         icon: Building2,
         permission: 'MANAGE_FACILITIES',
         items: [
-            { id: 'facilities-classes', label: 'Classes & Streams', path: 'facilities-classes', permission: 'MANAGE_FACILITIES' }
+            { id: 'facilities-classes',  label: 'Classes & Streams',      path: 'facilities-classes',  permission: 'MANAGE_FACILITIES' },
+            { id: 'hostel-allocation',   label: 'Hostel Room Allocation', path: 'hostel-allocation',   permission: 'MANAGE_FACILITIES' }
         ]
     },
     {
@@ -568,4 +567,86 @@ export const useNavigation = () => {
         docsCenterSection,
         systemAdminSections
     };
+};
+
+/**
+ * Returns a flat array of all navigation items for search indexing
+ */
+export const getFlattenedNav = (nav) => {
+    const flat = [];
+    
+    const processItems = (items, parentLabel = '') => {
+        if (!items || !Array.isArray(items)) return;
+        
+        items.forEach(item => {
+            // If it's a category/group of items, recurse
+            if (item.type === 'group' || (item.items && item.items.length > 0)) {
+                processItems(item.items, item.label || parentLabel);
+            } 
+            
+            // If it's a leaf node with a path, it's searchable
+            if (item.path) {
+                flat.push({
+                    id: item.id,
+                    label: item.label,
+                    path: item.path,
+                    icon: item.icon,
+                    category: parentLabel || 'Navigation',
+                    type: 'nav'
+                });
+            }
+        });
+    };
+
+    if (nav.dashboardSection) {
+        flat.push({
+            id: 'dashboard',
+            label: 'Dashboard Overview',
+            path: 'dashboard',
+            icon: nav.dashboardSection.icon,
+            category: 'General',
+            type: 'nav'
+        });
+    }
+
+    if (nav.communicationSection) {
+        processItems(nav.communicationSection.items, 'Communications');
+    }
+
+    nav.schoolSections?.forEach(s => {
+        if (s.path) {
+            flat.push({ ...s, category: 'School', type: 'nav' });
+        }
+        processItems(s.items, s.label || 'School');
+    });
+
+    if (nav.lmsSection) processItems(nav.lmsSection.items, 'LMS');
+    if (nav.studentLmsSection) processItems(nav.studentLmsSection.items, 'Portal');
+    
+    nav.backOfficeSections?.forEach(s => {
+        if (s.path) {
+            flat.push({ ...s, category: 'Back Office', type: 'nav' });
+        }
+        processItems(s.items, s.label || 'Back Office');
+    });
+
+    if (nav.docsCenterSection) {
+        flat.push({
+            id: 'docs-center',
+            label: 'Document Center',
+            path: 'docs-center',
+            icon: nav.docsCenterSection.icon,
+            category: 'Documents',
+            type: 'nav'
+        });
+    }
+
+    nav.systemAdminSections?.forEach(s => {
+        if (s.path) {
+            flat.push({ ...s, category: 'System', type: 'nav' });
+        }
+        processItems(s.items, s.label || 'System');
+    });
+
+    return flat;
 };

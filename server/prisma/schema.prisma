@@ -103,6 +103,8 @@ model User {
   tickets                   SupportTicket[]          @relation("UserTickets")
   createdTermConfigs        TermConfig[]
   assessedValues            ValuesAssessment[]       @relation("AssessorValues")
+  pushSubscriptions         PushSubscription[]       @relation("UserPushSubscriptions")
+
 
   @@map("users")
 }
@@ -216,7 +218,7 @@ model Notice {
   archived       Boolean   @default(false)
   archivedAt     DateTime?
   archivedBy     String?
-  createdBy      User?     @relation("NoticeAuthor", fields: [createdById], references: [id])
+  createdBy      User?     @relation("NoticeAuthor", fields: [createdById], references: [id], onDelete: Cascade)
 
   @@index([status, publishedAt])
   @@index([archived])
@@ -876,7 +878,7 @@ model FeeStructure {
   archivedBy   String?
   invoices     FeeInvoice[]
   feeItems     FeeStructureItem[]
-  creator      User?              @relation("CreatedFeeStructures", fields: [createdBy], references: [id])
+  creator      User?              @relation("CreatedFeeStructures", fields: [createdBy], references: [id], onDelete: SetNull)
 
   @@unique([grade, term, academicYear])
   @@index([academicYear])
@@ -1459,7 +1461,7 @@ model Event {
   googleEventId String?
   meetingLink   String?
   type          EventType @default(GENERAL)
-  creator       User      @relation("EventCreator", fields: [creatorId], references: [id])
+  creator       User      @relation("EventCreator", fields: [creatorId], references: [id], onDelete: Cascade)
 
   @@map("events")
 }
@@ -1472,7 +1474,7 @@ model ContactGroup {
   recipients  Json
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  createdBy   User     @relation("CreatedContactGroups", fields: [createdById], references: [id])
+  createdBy   User     @relation("CreatedContactGroups", fields: [createdById], references: [id], onDelete: Cascade)
 
   @@index([createdById])
   @@map("contact_groups")
@@ -1504,9 +1506,9 @@ model LeaveRequest {
   rejectionReason String?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
-  approvedBy      User?       @relation("ApprovedLeaves", fields: [approvedById], references: [id])
-  leaveType       LeaveType   @relation(fields: [leaveTypeId], references: [id])
-  user            User        @relation("UserLeaves", fields: [userId], references: [id])
+  approvedBy      User?       @relation("ApprovedLeaves", fields: [approvedById], references: [id], onDelete: SetNull)
+  leaveType       LeaveType   @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+  user            User        @relation("UserLeaves", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([leaveTypeId])
@@ -1535,7 +1537,7 @@ model PayrollRecord {
   notes            String?
   workedDays       Int           @default(0)
   workedMinutes    Int           @default(0)
-  user             User          @relation(fields: [userId], references: [id])
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, month, year])
   @@index([userId])
@@ -2435,6 +2437,29 @@ enum FeeCategory {
   OTHER
 }
 
+enum FeePaymentStatus {
+  PENDING
+  PARTIAL
+  PAID
+  OVERPAID
+  VOID
+}
+
+model PushSubscription {
+  id         String   @id @default(uuid())
+  userId     String
+  endpoint   String   @unique
+  p256dh     String
+  auth       String
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation("UserPushSubscriptions", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_subscriptions")
+}
+
 enum PaymentStatus {
   PENDING
   PARTIAL
@@ -2716,4 +2741,123 @@ model UserNotification {
 
   @@index([userId, isRead])
   @@map("user_notifications")
+}
+
+
+// ============================================================================
+// TERTIARY MODULE ENUMS & MODELS
+// ============================================================================
+
+enum TertiaryLevel {
+  CERTIFICATE
+  DIPLOMA
+  DEGREE
+  POSTGRADUATE
+}
+
+model TertiaryDepartment {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  name        String
+  headOfDept  String?
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  programs    TertiaryProgram[]
+  units       TertiaryUnit[]
+}
+
+model TertiaryProgram {
+  id           String             @id @default(uuid())
+  code         String             @unique
+  name         String
+  level        TertiaryLevel
+  departmentId String
+  department   TertiaryDepartment @relation(fields: [departmentId], references: [id])
+  durationYears Int               @default(4)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+}
+
+model TertiaryUnit {
+  id          String   @id @default(uuid())
+  code        String   @unique  // e.g. BIT 101
+  name        String
+  creditHours Int      @default(3)
+  year        Int
+  semester    Int
+  departmentId String
+  department   TertiaryDepartment @relation(fields: [departmentId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  enrollments  UnitEnrollment[]
+  results      UnitResult[]
+}
+
+model UnitEnrollment {
+  id        String   @id @default(uuid())
+  studentId String
+  unitId    String
+  semester  Int
+  year      Int
+  createdAt DateTime @default(now())
+  
+  unit      TertiaryUnit @relation(fields: [unitId], references: [id])
+}
+
+model UnitResult {
+  id          String   @id @default(uuid())
+  studentId   String
+  unitId      String
+  cats        Float  // Continuous Assessment Tests (30%)
+  exam        Float  // Final Exam (70%)
+  total       Float
+  grade       String // A, B+, B, C+, C, D+, D, E
+  gradePoints Float  // GPA points
+  semester    Int
+  year        Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  unit        TertiaryUnit @relation(fields: [unitId], references: [id])
+}
+
+// ============================================================================
+// M-PESA DARAJA API ENUMS & MODELS
+// ============================================================================
+
+enum MpesaStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+model MpesaTransaction {
+  id                String       @id @default(uuid())
+  merchantRequestId String       @unique
+  checkoutRequestId String       @unique
+  amount            Decimal      @db.Decimal(10, 2)
+  phoneNumber       String
+  status            MpesaStatus  @default(PENDING)
+  resultCode        Int?
+  resultDesc        String?
+  transactionId     String?      @unique // M-Pesa Receipt Number from Callback
+  metadata          Json?
+  studentId         String?
+  invoiceId         String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  callbacks         MpesaCallback[]
+}
+
+model MpesaCallback {
+  id              String           @id @default(uuid())
+  transactionId   String
+  rawBody         Json
+  createdAt       DateTime         @default(now())
+
+  transaction     MpesaTransaction @relation(fields: [transactionId], references: [id])
 }

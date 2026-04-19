@@ -445,9 +445,9 @@ export class FeeController {
 
     // FIX: use canonical resolveTransportAmount instead of inline filter
     let totalAmount = baseTotal;
+    let transportBilled = 0;
     if (shouldIncludeTransport) {
-      const transportAmt = await resolveTransportAmount(learnerId, allItems);
-      totalAmount += transportAmt;
+      transportBilled = await resolveTransportAmount(learnerId, allItems);
     }
 
     const existing = await prisma.feeInvoice.findFirst({
@@ -466,6 +466,9 @@ export class FeeController {
         totalAmount,
         paidAmount: 0,
         balance: totalAmount,
+        transportBilled,
+        transportPaid: 0,
+        transportBalance: transportBilled,
         status: 'PENDING',
         issuedBy: userId
       },
@@ -587,7 +590,7 @@ export class FeeController {
    * html2canvas / jsPDF with this data.
    */
   async recordPayment(req: AuthRequest, res: Response) {
-    const { invoiceId, learnerId, amount: rawAmount, paymentMethod, referenceNumber, notes } = req.body;
+    const { invoiceId, learnerId, amount: rawAmount, paymentMethod, referenceNumber, notes, allocatedTuition, allocatedTransport } = req.body;
     const userId = req.user!.userId;
 
     if ((!invoiceId && !learnerId) || rawAmount === undefined || rawAmount === null || !paymentMethod) {
@@ -638,13 +641,53 @@ export class FeeController {
           })();
           const receiptNumber = `RCP-${new Date().getFullYear()}-${String(lastSeq + 1).padStart(6, '0')}`;
 
+          // Calculate Explicit Allocation. Default: Tuition First
+          let tuitionChunk = 0;
+          let transportChunk = 0;
+
+          if (allocatedTuition !== undefined || allocatedTransport !== undefined) {
+             tuitionChunk = Number(allocatedTuition || 0);
+             transportChunk = Number(allocatedTransport || 0);
+             // Safety check: ensure manually allocated chunks do not exceed total payment
+             if (tuitionChunk + transportChunk > amount) {
+                 throw new ApiError(400, "Allocated amounts exceed total payment amount");
+             }
+          } else {
+             // Default Intelligent Allocation: Tuition first, then Transport
+             const invoiceDetails = await tx.feeInvoice.findUnique({ where: { id: actualInvoiceId }});
+             const currentTuitionBal = Number(invoiceDetails?.balance || 0);
+             const currentTransportBal = Number(invoiceDetails?.transportBalance || 0);
+
+             if (amount <= currentTuitionBal) {
+                 tuitionChunk = amount;
+             } else {
+                 tuitionChunk = currentTuitionBal;
+                 const remainder = amount - currentTuitionBal;
+                 transportChunk = remainder; // Pay transport with the rest, or just let it overpay transport
+             }
+          }
+
           const payment = await tx.feePayment.create({
-            data: { receiptNumber, invoiceId: actualInvoiceId, amount, paymentMethod, referenceNumber, notes, recordedBy: userId }
+            data: { 
+               receiptNumber, 
+               invoiceId: actualInvoiceId, 
+               amount, 
+               transportAmount: transportChunk,
+               paymentMethod, 
+               referenceNumber, 
+               notes, 
+               recordedBy: userId 
+            }
           });
 
           const updatedInvoice = await tx.feeInvoice.update({
             where: { id: actualInvoiceId },
-            data: { paidAmount: { increment: amount }, balance: { decrement: amount } },
+            data: { 
+               paidAmount: { increment: tuitionChunk }, 
+               balance: { decrement: tuitionChunk },
+               transportPaid: { increment: transportChunk },
+               transportBalance: { decrement: transportChunk }
+            },
             include: { waivers: { where: { archived: false } } }
           });
 
@@ -918,7 +961,7 @@ export class FeeController {
         by: ['status'],
         where: invoiceWhere,
         _count: true,
-        _sum: { totalAmount: true, paidAmount: true, balance: true }
+        _sum: { totalAmount: true, paidAmount: true, balance: true, transportBilled: true, transportPaid: true, transportBalance: true }
       })
     ]);
 
@@ -926,6 +969,10 @@ export class FeeController {
     const totalCollected = invoicesByStatus.reduce((acc, curr) => acc + Number(curr._sum.paidAmount  || 0), 0);
     const totalOutstanding = invoicesByStatus.reduce((acc, curr) => acc + Number(curr._sum.balance   || 0), 0);
     const collectionRate = totalExpected > 0 ? Math.round((totalCollected / totalExpected) * 100) : 0;
+
+    const transportExpected  = invoicesByStatus.reduce((acc, curr) => acc + Number(curr._sum.transportBilled || 0), 0);
+    const transportCollected = invoicesByStatus.reduce((acc, curr) => acc + Number(curr._sum.transportPaid   || 0), 0);
+    const transportOutstanding = invoicesByStatus.reduce((acc, curr) => acc + Number(curr._sum.transportBalance || 0), 0);
 
     const paidInvoices    = invoicesByStatus.find(i => i.status === 'PAID')?._count    || 0;
     const partialInvoices = invoicesByStatus.find(i => i.status === 'PARTIAL')?._count || 0;
@@ -996,32 +1043,7 @@ export class FeeController {
           select: { id: true }
         })
       : [];
-    const transportLearnerIdSet = new Set(transportLearnerIds.map((l: any) => l.id));
-    const transportStudentCount = transportLearnerIdSet.size;
-
-    const transportFeeItems = await prisma.feeStructureItem.findMany({
-      where: { feeType: { code: 'TRANSPORT' } },
-      select: { feeStructureId: true, amount: true }
-    });
-    const transportAmountByStructure = new Map(
-      transportFeeItems.map((i: any) => [i.feeStructureId, Number(i.amount)])
-    );
-
-    const transportInvoices = await prisma.feeInvoice.findMany({
-      where: { ...invoiceWhere, learnerId: { in: Array.from(transportLearnerIdSet) } },
-      select: { feeStructureId: true, paidAmount: true, balance: true, totalAmount: true }
-    });
-
-    let transportExpected = 0, transportCollected = 0, transportOutstanding = 0;
-    for (const inv of transportInvoices) {
-      const tAmt = transportAmountByStructure.get(inv.feeStructureId) ?? 0;
-      transportExpected += tAmt;
-      const total = Number(inv.totalAmount);
-      const paid  = Number(inv.paidAmount);
-      const collectRatio = total > 0 ? Math.min(paid / total, 1) : 0;
-      transportCollected   += Math.round(tAmt * collectRatio);
-      transportOutstanding += Math.round(tAmt * (1 - collectRatio));
-    }
+    const transportStudentCount = transportLearnerIds.length;
 
     res.json({
       success: true,
@@ -1113,8 +1135,6 @@ export class FeeController {
             const invoiceNumber = `INV-${academicYear}-${String(nextSequence).padStart(6, '0')}`;
             nextSequence++;
 
-            const studentTotal = baseTotal + transportAmounts[idx];
-
             const invoice = await tx.feeInvoice.create({
               data: {
                 invoiceNumber,
@@ -1123,9 +1143,12 @@ export class FeeController {
                 term,
                 academicYear,
                 dueDate: new Date(dueDate),
-                totalAmount: studentTotal,
+                totalAmount: baseTotal,
                 paidAmount: 0,
-                balance: studentTotal,
+                balance: baseTotal,
+                transportBilled: transportAmounts[idx],
+                transportPaid: 0,
+                transportBalance: transportAmounts[idx],
                 status: 'PENDING',
                 issuedBy: userId
               }
@@ -1365,6 +1388,10 @@ export class FeeController {
     const { confirmToken } = req.body;
     if (confirmToken !== 'RESET_TOTAL_ACCOUNTING') {
       throw new ApiError(400, 'Invalid confirmation token for total reset');
+    }
+
+    if (process.env.NODE_ENV === 'production') {
+      throw new ApiError(403, 'Total financial reset is strictly disabled in the production environment.');
     }
 
     console.log('[SystemMaintenance] Starting Total Financial Reset...');

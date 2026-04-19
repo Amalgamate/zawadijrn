@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, X, Eye, Gift, Bell, Megaphone, RefreshCw, Send, Save, CheckCircle, Loader, User, Smartphone, MessageCircle, Archive, Share2 } from 'lucide-react';
+import { Plus, Edit, Trash2, X, Eye, Gift, Bell, Megaphone, RefreshCw, Send, Save, CheckCircle, Loader, User, Smartphone, MessageCircle, Archive, Share2, Rocket, Wrench, Zap, Shield, Tag, ChevronDown, ChevronUp } from 'lucide-react';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription, Button, Input, Label, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, Tabs, TabsList, TabsTrigger, TabsContent, Badge } from '../../../components/ui';
 import { useNotifications } from '../hooks/useNotifications';
 import api, { communicationAPI } from '../../../services/api';
@@ -17,18 +17,18 @@ const NoticesPage = ({ initialTab }) => {
   // Get initial tab from prop, localStorage or URL, default to 'notices'
   const getInitialTab = () => {
     // 0. Check prop first
-    if (initialTab && ['notices', 'birthdays', 'alerts'].includes(initialTab)) {
+    if (initialTab && ['notices', 'birthdays', 'alerts', 'changelog'].includes(initialTab)) {
       return initialTab;
     }
     // 1. Check URL params
     const params = new URLSearchParams(window.location.search);
     const urlTab = params.get('tab');
-    if (urlTab && ['notices', 'birthdays', 'alerts'].includes(urlTab)) {
+    if (urlTab && ['notices', 'birthdays', 'alerts', 'changelog'].includes(urlTab)) {
       return urlTab;
     }
     // 2. Check localStorage
     const savedTab = localStorage.getItem('noticesPage_activeTab');
-    if (savedTab && ['notices', 'birthdays', 'alerts'].includes(savedTab)) {
+    if (savedTab && ['notices', 'birthdays', 'alerts', 'changelog'].includes(savedTab)) {
       return savedTab;
     }
     return 'notices';
@@ -43,6 +43,16 @@ const NoticesPage = ({ initialTab }) => {
   const [systemAlerts, setSystemAlerts] = useState([]);
   const [loadingAlerts, setLoadingAlerts] = useState(false);
   const [unreadAlertsCount, setUnreadAlertsCount] = useState(0);
+
+  // Changelog state
+  const [changelogs, setChangelogs] = useState([]);
+  const [loadingChangelogs, setLoadingChangelogs] = useState(false);
+  const [expandedChangelogId, setExpandedChangelogId] = useState(null);
+  const [showChangelogModal, setShowChangelogModal] = useState(false);
+  const [editingChangelogId, setEditingChangelogId] = useState(null);
+  const [changelogForm, setChangelogForm] = useState({
+    version: '', title: '', description: '', type: 'FEATURE', tags: '', publish: false
+  });
   const [focusedNoticeId, setFocusedNoticeId] = useState(null);
   const [selectedNotice, setSelectedNotice] = useState(null);
   const [sharingNotice, setSharingNotice] = useState(null);
@@ -103,6 +113,8 @@ const NoticesPage = ({ initialTab }) => {
       fetchBirthdays();
     } else if (activeTab === 'alerts') {
       fetchSystemAlerts();
+    } else if (activeTab === 'changelog') {
+      fetchChangelogs();
     }
     showSuccess('Page refreshed!');
   };
@@ -127,6 +139,8 @@ const NoticesPage = ({ initialTab }) => {
       if (sid) fetchBirthdaysToday(sid);
     } else if (activeTab === 'alerts') {
       fetchSystemAlerts();
+    } else if (activeTab === 'changelog') {
+      fetchChangelogs();
     }
   }, [activeTab]);
 
@@ -192,6 +206,82 @@ const NoticesPage = ({ initialTab }) => {
     } finally {
       setLoadingNotices(false);
     }
+  };
+
+  const fetchChangelogs = async () => {
+    setLoadingChangelogs(true);
+    try {
+      const fn = isSystemAdmin ? api.changelog.getAllAdmin : api.changelog.getAll;
+      const resp = await fn();
+      setChangelogs(resp.data || []);
+    } catch (err) {
+      console.error('Failed to fetch changelogs:', err);
+      showError('Failed to load changelog');
+    } finally {
+      setLoadingChangelogs(false);
+    }
+  };
+
+  const handleSaveChangelog = async () => {
+    const { version, title, description, type, tags, publish } = changelogForm;
+    if (!version.trim() || !title.trim() || !description.trim()) {
+      showError('Version, title, and description are required');
+      return;
+    }
+    try {
+      const payload = {
+        version: version.trim(),
+        title: title.trim(),
+        description: description.trim(),
+        type,
+        tags: tags.split(',').map(t => t.trim()).filter(Boolean),
+        publish,
+      };
+      if (editingChangelogId) {
+        await api.changelog.update(editingChangelogId, payload);
+        showSuccess('Changelog updated' + (publish ? ' and published!' : '!'));
+      } else {
+        await api.changelog.create(payload);
+        showSuccess('Changelog created' + (publish ? ' and published — users notified!' : '!'));
+      }
+      setShowChangelogModal(false);
+      setEditingChangelogId(null);
+      setChangelogForm({ version: '', title: '', description: '', type: 'FEATURE', tags: '', publish: false });
+      fetchChangelogs();
+    } catch (err) {
+      showError(err.message || 'Failed to save changelog');
+    }
+  };
+
+  const handleEditChangelog = (entry) => {
+    setEditingChangelogId(entry.id);
+    setChangelogForm({
+      version: entry.version,
+      title: entry.title,
+      description: entry.description,
+      type: entry.type,
+      tags: (entry.tags || []).join(', '),
+      publish: entry.isPublished,
+    });
+    setShowChangelogModal(true);
+  };
+
+  const handleDeleteChangelog = async (id) => {
+    if (!window.confirm('Delete this changelog entry permanently?')) return;
+    try {
+      await api.changelog.delete(id);
+      showSuccess('Changelog entry deleted');
+      fetchChangelogs();
+    } catch (err) {
+      showError('Failed to delete entry');
+    }
+  };
+
+  const changelogTypeConfig = {
+    FEATURE:     { label: 'New Feature',  icon: Rocket,  color: 'bg-brand-purple text-white' },
+    FIX:         { label: 'Bug Fix',      icon: Wrench,  color: 'bg-rose-500 text-white' },
+    IMPROVEMENT: { label: 'Improvement',  icon: Zap,     color: 'bg-amber-500 text-white' },
+    SECURITY:    { label: 'Security',     icon: Shield,  color: 'bg-emerald-600 text-white' },
   };
 
   const fetchSystemAlerts = async () => {
@@ -551,6 +641,13 @@ const NoticesPage = ({ initialTab }) => {
                   {unreadAlertsCount}
                 </Badge>
               )}
+            </TabsTrigger>
+            <TabsTrigger
+              value="changelog"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-brand-purple data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-4 flex items-center gap-2"
+            >
+              <Rocket size={16} />
+              <span className="font-bold">What's New</span>
             </TabsTrigger>
           </TabsList>
 
@@ -996,8 +1093,267 @@ const NoticesPage = ({ initialTab }) => {
               </div>
             )}
           </TabsContent>
+          {/* ---------------------------------------------------------------- */}
+          {/* Changelog Tab                                                      */}
+          {/* ---------------------------------------------------------------- */}
+          <TabsContent value="changelog" className="flex-1 overflow-auto p-6">
+            {/* Header row */}
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                  <Rocket className="text-brand-purple" size={22} />
+                  System Updates & Changelog
+                </h2>
+                <p className="text-sm text-gray-400 mt-0.5">Every improvement, fix, and new feature — in one place.</p>
+              </div>
+              {isSystemAdmin && (
+                <Button
+                  onClick={() => {
+                    setEditingChangelogId(null);
+                    setChangelogForm({ version: '', title: '', description: '', type: 'FEATURE', tags: '', publish: false });
+                    setShowChangelogModal(true);
+                  }}
+                  className="bg-brand-purple hover:bg-brand-purple/90 text-white font-bold gap-2"
+                >
+                  <Plus size={16} /> New Entry
+                </Button>
+              )}
+            </div>
+
+            {loadingChangelogs ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="text-center">
+                  <Loader className="mx-auto mb-4 animate-spin text-brand-purple" size={32} />
+                  <p className="text-gray-500 font-medium">Loading changelog...</p>
+                </div>
+              </div>
+            ) : changelogs.length === 0 ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="text-center">
+                  <Rocket size={48} className="mx-auto text-gray-200 mb-4" />
+                  <h3 className="text-lg font-bold text-gray-500 mb-1">No updates yet</h3>
+                  <p className="text-sm text-gray-400">
+                    {isSystemAdmin ? 'Create your first changelog entry above.' : 'Check back soon for the latest updates.'}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {changelogs.map((entry) => {
+                  const cfg = changelogTypeConfig[entry.type] || changelogTypeConfig.FEATURE;
+                  const Icon = cfg.icon;
+                  const isExpanded = expandedChangelogId === entry.id;
+
+                  return (
+                    <Card
+                      key={entry.id}
+                      className={`border border-gray-100 hover:shadow-md transition-shadow ${
+                        !entry.isPublished ? 'opacity-60 border-dashed' : ''
+                      }`}
+                    >
+                      <CardContent className="p-0">
+                        {/* Card header row */}
+                        <button
+                          onClick={() => setExpandedChangelogId(isExpanded ? null : entry.id)}
+                          className="w-full text-left p-5 flex items-start gap-4"
+                        >
+                          {/* Type pill */}
+                          <div className={`mt-0.5 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shrink-0 ${cfg.color}`}>
+                            <Icon size={11} />
+                            {cfg.label}
+                          </div>
+
+                          <div className="flex-1 min-w-0 text-left">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-black text-gray-800 text-sm">{entry.title}</span>
+                              <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{entry.version}</span>
+                              {!entry.isPublished && (
+                                <span className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">DRAFT</span>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-400 mt-0.5">
+                              {entry.publishedAt
+                                ? new Date(entry.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+                                : new Date(entry.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                            </p>
+                            {/* Tags */}
+                            {(entry.tags || []).length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-2">
+                                {entry.tags.map(tag => (
+                                  <span key={tag} className="text-[9px] font-bold px-2 py-0.5 bg-brand-purple/10 text-brand-purple rounded-full uppercase tracking-wide">
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="shrink-0 text-gray-400">
+                            {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                          </div>
+                        </button>
+
+                        {/* Expanded description */}
+                        {isExpanded && (
+                          <div className="px-5 pb-5 border-t border-gray-50">
+                            <p className="text-sm text-gray-700 whitespace-pre-wrap pt-4 leading-relaxed">
+                              {entry.description}
+                            </p>
+
+                            {/* SUPER_ADMIN actions */}
+                            {isSystemAdmin && (
+                              <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
+                                {!entry.isPublished && (
+                                  <Button
+                                    size="sm"
+                                    onClick={async () => {
+                                      await api.changelog.update(entry.id, { publish: true });
+                                      showSuccess('Published! All users notified.');
+                                      fetchChangelogs();
+                                    }}
+                                    className="bg-brand-purple hover:bg-brand-purple/90 text-white font-bold gap-2 text-xs"
+                                  >
+                                    <Send size={13} /> Publish & Notify
+                                  </Button>
+                                )}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEditChangelog(entry)}
+                                  className="text-indigo-600 hover:bg-indigo-50 font-bold gap-1 text-xs"
+                                >
+                                  <Edit size={13} /> Edit
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeleteChangelog(entry.id)}
+                                  className="text-red-500 hover:bg-red-50 font-bold gap-1 text-xs"
+                                >
+                                  <Trash2 size={13} /> Delete
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
+
         </Tabs>
       </div>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Changelog Create / Edit Modal                                        */}
+      {/* ------------------------------------------------------------------ */}
+      <Dialog open={showChangelogModal} onOpenChange={(open) => {
+        if (!open) {
+          setShowChangelogModal(false);
+          setEditingChangelogId(null);
+          setChangelogForm({ version: '', title: '', description: '', type: 'FEATURE', tags: '', publish: false });
+        }
+      }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              <Rocket size={20} className="text-brand-purple" />
+              {editingChangelogId ? 'Edit Changelog Entry' : 'New Changelog Entry'}
+            </DialogTitle>
+            <DialogDescription>
+              {editingChangelogId
+                ? 'Update this system update entry. Toggle publish to notify all users.'
+                : 'Document a system update. Publish immediately to notify all users via push notification.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="font-bold">Version <span className="text-red-500">*</span></Label>
+                <Input
+                  placeholder="e.g. v2.4.1"
+                  value={changelogForm.version}
+                  onChange={e => setChangelogForm(f => ({ ...f, version: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-bold">Type</Label>
+                <select
+                  value={changelogForm.type}
+                  onChange={e => setChangelogForm(f => ({ ...f, type: e.target.value }))}
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-purple"
+                >
+                  <option value="FEATURE">🚀 New Feature</option>
+                  <option value="FIX">🔧 Bug Fix</option>
+                  <option value="IMPROVEMENT">⚡ Improvement</option>
+                  <option value="SECURITY">🛡️ Security</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="font-bold">Title <span className="text-red-500">*</span></Label>
+              <Input
+                placeholder="Short summary of this update..."
+                value={changelogForm.title}
+                onChange={e => setChangelogForm(f => ({ ...f, title: e.target.value }))}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="font-bold">Description <span className="text-red-500">*</span></Label>
+              <textarea
+                rows={5}
+                placeholder="Describe what changed, was fixed, or improved. Markdown-friendly."
+                value={changelogForm.description}
+                onChange={e => setChangelogForm(f => ({ ...f, description: e.target.value }))}
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-purple resize-none"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="font-bold flex items-center gap-1"><Tag size={14} /> Tags <span className="text-gray-400 font-normal text-xs">(comma-separated)</span></Label>
+              <Input
+                placeholder="e.g. Fees, Reports, CBC Grading"
+                value={changelogForm.tags}
+                onChange={e => setChangelogForm(f => ({ ...f, tags: e.target.value }))}
+              />
+            </div>
+
+            <div className="flex items-center justify-between p-4 bg-brand-purple/5 border border-brand-purple/20 rounded-lg">
+              <div>
+                <p className="font-bold text-gray-800 text-sm">Publish & Notify Users</p>
+                <p className="text-xs text-gray-500">Sends an in-app + push notification to every active user instantly</p>
+              </div>
+              <button
+                onClick={() => setChangelogForm(f => ({ ...f, publish: !f.publish }))}
+                className={`w-12 h-6 rounded-full transition-colors relative ${
+                  changelogForm.publish ? 'bg-brand-purple' : 'bg-gray-300'
+                }`}
+              >
+                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${
+                  changelogForm.publish ? 'right-1' : 'left-1'
+                }`} />
+              </button>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowChangelogModal(false)}>Cancel</Button>
+            <Button
+              onClick={handleSaveChangelog}
+              className="bg-brand-purple hover:bg-brand-purple/90 text-white font-bold gap-2"
+            >
+              <Save size={16} />
+              {editingChangelogId ? 'Update' : changelogForm.publish ? 'Publish & Notify' : 'Save Draft'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Birthday Settings Modal */}
       <Dialog open={editingPhone?.type === 'settings'} onOpenChange={(open) => !open && setEditingPhone(null)}>

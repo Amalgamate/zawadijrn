@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { X, Upload, FileSpreadsheet, Loader2, RefreshCw, CreditCard, Download, Info, Gift } from 'lucide-react';
+import { X, Upload, FileSpreadsheet, Loader2, RefreshCw, CreditCard, Download, Info, Gift, Bus } from 'lucide-react';
 import axiosInstance from '../../../services/api/index';
-import { downloadFeeTemplate, downloadBalanceTemplate, downloadWaiverTemplate } from '../../../utils/feeTemplateGenerator';
+import { downloadFeeTemplate, downloadBalanceTemplate, downloadWaiverTemplate, downloadTransportTemplate } from '../../../utils/feeTemplateGenerator';
 
 const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
   const [importMode, setImportMode] = useState('balances'); // 'balances', 'payments', or 'waivers'
@@ -71,6 +71,8 @@ const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
         endpoint = '/bulk/fees/upload-payments';
       } else if (importMode === 'waivers') {
         endpoint = '/bulk/fees/upload-waivers';
+      } else if (importMode === 'transport') {
+        endpoint = '/bulk/fees/upload-transport';
       }
 
       // Initialize AbortController
@@ -181,6 +183,14 @@ const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
                 >
                   <Gift size={14} /> Waivers
                 </button>
+                <button
+                  onClick={() => setImportMode('transport')}
+                  className={`flex-1 py-1.5 text-[13px] font-bold rounded-md flex items-center justify-center gap-1.5 transition-all ${
+                    importMode === 'transport' ? 'bg-white shadow-sm text-orange-700' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <Bus size={14} /> Transport
+                </button>
               </div>
 
               {/* Term & Year Selection */}
@@ -227,6 +237,7 @@ const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
                           e.preventDefault();
                           if (importMode === 'balances') downloadBalanceTemplate();
                           else if (importMode === 'waivers') downloadWaiverTemplate();
+                          else if (importMode === 'transport') downloadTransportTemplate();
                           else downloadFeeTemplate(); 
                         }}
                       >
@@ -245,15 +256,30 @@ const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {(importMode === 'balances' 
-                    ? ['Adm No', 'Billed', 'Paid', 'Balance'] 
+                    ? ['Adm No', 'Billed', 'Paid', 'Balance', 'Transport Billed', 'Transport Paid'] 
                     : importMode === 'waivers'
                     ? ['Adm No', 'Waiver', 'Date', 'Reason']
-                    : ['Adm No', 'Amount', 'Date', 'Reference']
+                    : importMode === 'transport'
+                    ? ['Adm No', 'Charges', 'Paid', 'Bal']
+                    : ['Adm No', 'Amount', 'Date', 'Reference', 'Allocation']
                   ).map(col => (
                     <span key={col} className="px-1.5 py-0.5 bg-white border border-gray-200 rounded text-[10px] font-bold text-gray-600 shadow-sm">{col}</span>
                   ))}
                 </div>
               </div>
+
+              {importMode === 'transport' && (
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 flex gap-2">
+                  <Bus size={16} className="text-orange-500 flex-shrink-0 mt-0.5" />
+                  <div className="text-xs text-orange-800">
+                    <p className="font-bold mb-0.5">Transport Append Mode</p>
+                    <p className="font-medium text-orange-700">
+                      Appends transport fees onto existing invoices. Students must already have an invoice for the selected term.
+                      Only students marked as <span className="font-black">Transport Students</span> will be updated.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {error && (
                 <div className="bg-red-50 text-red-600 text-xs font-bold p-2.5 rounded-lg flex items-center gap-2 border border-red-100">
@@ -312,6 +338,17 @@ const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
                     <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-100 text-center">
                       <p className="text-[10px] font-bold text-emerald-500 uppercase">Updated</p>
                       <p className="text-lg font-black text-emerald-700">{results.summary?.updated || 0}</p>
+                    </div>
+                  </>
+                ) : importMode === 'transport' ? (
+                  <>
+                    <div className="p-3 bg-orange-50 rounded-lg border border-orange-100 text-center">
+                      <p className="text-[10px] font-bold text-orange-500 uppercase">Updated</p>
+                      <p className="text-lg font-black text-orange-700">{results.summary?.updated || 0}</p>
+                    </div>
+                    <div className="p-3 bg-gray-50 rounded-lg border border-gray-100 text-center">
+                      <p className="text-[10px] font-bold text-gray-500 uppercase">Skipped</p>
+                      <p className="text-lg font-black text-gray-700">{results.summary?.skipped || 0}</p>
                     </div>
                   </>
                 ) : (

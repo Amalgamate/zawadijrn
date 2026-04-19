@@ -6,6 +6,7 @@ import MobileAppShell from './layout/MobileAppShell';
 import PageRouter from './layout/PageRouter';
 import GlobalModals from './layout/GlobalModals';
 import ErrorBoundary from './shared/ErrorBoundary';
+import CommandPalette from './layout/CommandPalette';
 
 // Hooks
 import { useLearners } from './hooks/useLearners';
@@ -46,14 +47,32 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
   const [editingLearner, setEditingLearner] = useState(null);
 
   // Domain Hooks
-  const learnerData = useLearners({ enabled: !parentPortal });
-  const teacherData = useTeachers({ enabled: !parentPortal });
-  const parentData = useParents({ enabled: !parentPortal });
+  // enabled only when the user actually navigates to a page that needs that data.
+  // This prevents 3 heavy API calls firing on every cold app load regardless
+  // of which page the user actually opens first.
+  const learnersNeeded = [
+    'learners-list','learners-admissions','learners-promotion','learners-transfer-out',
+    'attendance-daily','attendance-reports','assess-formative','assess-formative-report',
+    'assess-summative-assessment','assess-summative-report','assess-termly-report',
+    'assess-values','assess-cocurricular','assess-core-competencies','assess-summary-report',
+    'assess-mobile-dashboard','learner-profile','dashboard',
+  ];
+  const teachersNeeded = [
+    'teachers-list','add-teacher','teacher-profile','dashboard',
+  ];
+  const parentsNeeded = [
+    'parents-list','parent-profile','dashboard',
+  ];
+
+  const learnerData = useLearners({ enabled: !parentPortal && learnersNeeded.includes(currentPage) });
+  const teacherData = useTeachers({ enabled: !parentPortal && teachersNeeded.includes(currentPage) });
+  const parentData  = useParents({  enabled: !parentPortal && parentsNeeded.includes(currentPage)  });
   const notify = useNotifications();
 
   // Navigation with History & Params
   const handleNavigate = useCallback((page, params = {}) => {
     if (params.learner) setEditingLearner(params.learner);
+    if (params.teacher) setEditingTeacher(params.teacher);
     setCurrentPage(page, params); // Updates zustand
 
     // Push real browser history. We prefix the URL with a tiny harmless hash so the browser 
@@ -236,7 +255,8 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
   }
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden font-inter">
+    <div className="flex h-screen bg-gray-50 overflow-hidden font-inter border-t-2 border-[var(--brand-teal)]">
+      <CommandPalette onNavigate={handleNavigate} />
       <Sidebar 
         user={user} 
         brandingSettings={brandingSettings} 
