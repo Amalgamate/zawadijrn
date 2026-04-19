@@ -1,9 +1,11 @@
 import React, { lazy } from 'react';
 
-const BookCatalog     = lazy(() => import('./BookCatalog'));
-const CirculationDesk = lazy(() => import('./CirculationDesk'));
+const BookCatalog       = lazy(() => import('./BookCatalog'));
+const CirculationDesk   = lazy(() => import('./CirculationDesk'));
+const LateFeeAutomation = lazy(() => import('./LateFeeAutomation'));
+const InventoryReports  = lazy(() => import('./InventoryReports'));
+const MemberManagement  = lazy(() => import('./MemberManagement'));
 
-// Remaining tabs will be replaced as they are built — placeholder for now
 const Placeholder = ({ title, description }) => (
   <div className="p-6 space-y-6">
     <div className="bg-white rounded-2xl shadow-sm p-8">
@@ -23,11 +25,11 @@ const LibraryManager = ({ currentPage }) => {
     case 'library-circulation':
       return <CirculationDesk />;
     case 'library-fees':
-      return <Placeholder title="Late Fee Automation" description="Process library fines, payments, and fee balances." />;
+      return <LateFeeAutomation />;
     case 'library-inventory':
-      return <Placeholder title="Inventory Reports" description="View inventory summaries for books and library resources." />;
+      return <InventoryReports />;
     case 'library-members':
-      return <Placeholder title="Member Management" description="Manage library memberships, roles, and access." />;
+      return <MemberManagement />;
     default:
       return <Placeholder title="Library Management" description="Select a section from the menu above." />;
   }
