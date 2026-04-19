@@ -45,7 +45,8 @@ class RedisCacheService {
 
       if (process.env.REDIS_URL) {
         // Prefer connection string (URL) if provided
-        console.log('[Cache] Using REDIS_URL connection string');
+        const isTls = process.env.REDIS_URL.startsWith('rediss://');
+        console.log(`[Cache] Using REDIS_URL connection string (TLS: ${isTls})`);
         this.redis = new Redis(process.env.REDIS_URL, {
           retryStrategy: (times: number) => {
             if (times > 3) {
@@ -59,6 +60,8 @@ class RedisCacheService {
           enableReadyCheck: false,
           enableOfflineQueue: false,
           maxRetriesPerRequest: 3,
+          // Upstash requires TLS — explicitly enable when scheme is rediss://
+          ...(isTls ? { tls: {} } : {}),
         });
       } else {
         // Fallback to individual components
