@@ -16,6 +16,7 @@ const createCategorySchema = z.object({
 
 const createStoreSchema = z.object({
   name: z.string().min(2).max(100),
+  code: z.string().max(50).optional(),
   location: z.string().max(200).optional()
 });
 
@@ -42,9 +43,18 @@ const createRequisitionSchema = z.object({
 
 const registerAssetSchema = z.object({
   name: z.string().min(2).max(200),
-  category: z.string().max(100),
-  value: z.number().min(0),
-  serialNumber: z.string().max(50).optional()
+  assetCode: z.string().min(2).max(50),
+  itemId: z.string().uuid().optional(),
+  description: z.string().max(500).optional(),
+  serialNumber: z.string().max(100).optional(),
+  model: z.string().max(100).optional(),
+  manufacturer: z.string().max(100).optional(),
+  purchaseDate: z.coerce.date().optional(),
+  purchaseCost: z.number().min(0).optional(),
+  warrantyExpiry: z.coerce.date().optional(),
+  condition: z.enum(['NEW', 'GOOD', 'FAIR', 'POOR', 'BROKEN', 'REJECTED']).optional().default('NEW'),
+  location: z.string().max(200).optional(),
+  currentStoreId: z.string().uuid().optional()
 });
 
 // ============================================
