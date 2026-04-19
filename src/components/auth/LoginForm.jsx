@@ -11,6 +11,19 @@ import { cn } from "../../utils/cn";
 
 // Helper: School fetching removed for single-tenant mode
 
+const DEMO_ACCOUNTS = [
+  { id: 'admin',      label: 'Admin',       email: 'admin@local.test',                password: 'Admin123!',  color: 'bg-purple-100 text-purple-700 border-purple-300 hover:bg-purple-600 hover:text-white hover:border-purple-600' },
+  { id: 'teacher',    label: 'Teacher',     email: 'teacher@local.test',              password: 'Teacher123!', color: 'bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-600 hover:text-white hover:border-emerald-600' },
+  { id: 'admin_ss',   label: 'SS Admin',    email: 'admin.ss@local.test',             password: 'Admin123!',  color: 'bg-indigo-100 text-indigo-700 border-indigo-300 hover:bg-indigo-600 hover:text-white hover:border-indigo-600' },
+  { id: 'teacher_ss', label: 'SS Teacher',  email: 'teacher.ss@local.test',           password: 'Teacher123!', color: 'bg-cyan-100 text-cyan-700 border-cyan-300 hover:bg-cyan-600 hover:text-white hover:border-cyan-600' },
+];
+
+// Senior School (SS) one-click accounts (seeded by `server/prisma/seed.ts`)
+const SS_DEMO_ACCOUNTS = [
+  { id: 'ss-admin',   label: 'SS Admin',   email: 'admin.ss@local.test',   password: 'Admin123!',   color: 'bg-sky-100 text-sky-700 border-sky-300 hover:bg-sky-600 hover:text-white hover:border-sky-600' },
+  { id: 'ss-teacher', label: 'SS Teacher', email: 'teacher.ss@local.test', password: 'Teacher123!', color: 'bg-indigo-100 text-indigo-700 border-indigo-300 hover:bg-indigo-600 hover:text-white hover:border-indigo-600' },
+];
+
 export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword, onLoginSuccess, brandingSettings }) {
   const [formData, setFormData] = useState({ email: '', password: '', rememberMe: false });
   const [showPassword, setShowPassword] = useState(false);
@@ -18,6 +31,30 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
   const [isLoading, setIsLoading] = useState(false);
   const [showOTPVerification, setShowOTPVerification] = useState(false);
   const [pendingUserData, setPendingUserData] = useState(null);
+  const skipOtp = import.meta.env.VITE_SKIP_OTP === 'true';
+
+  const resolveInstitutionType = (email, apiUser) => {
+    // Junior remains default. Only force SECONDARY for SS demo accounts.
+    const normalized = String(email || apiUser?.email || '').toLowerCase();
+    const isSsDemo = normalized === 'admin.ss@local.test' || normalized === 'teacher.ss@local.test';
+    return apiUser?.institutionType || (isSsDemo ? 'SECONDARY' : 'PRIMARY_CBC');
+  };
+
+  // Show a banner if the user was redirected here because their session expired.
+  const [sessionExpired] = useState(() => {
+    const flag = sessionStorage.getItem('session_expired');
+    if (flag) sessionStorage.removeItem('session_expired');
+    return !!flag;
+  });
+
+  const handleDemoClick = (account) => {
+    setFormData(prev => ({
+      ...prev,
+      email: account.email,
+      password: account.password,
+    }));
+    setErrors({});
+  };
 
   const validateForm = () => {
     const newErrors = {};
@@ -48,6 +85,33 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
         password: formData.password,
       });
 
+      if (skipOtp) {
+        const { token, refreshToken, user } = credentialsData;
+        if (token) localStorage.setItem('token', token);
+        if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+        if (formData.rememberMe) localStorage.setItem('authToken', token);
+
+        const loginUserData = {
+          email: user.email,
+          name: `${user.firstName} ${user.lastName}`,
+          role: user.role,
+          id: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          institutionType: resolveInstitutionType(formData.email, user),
+          schoolId: null,
+          branchId: user.branchId || user.branch?.id || null,
+          school: user.school || null,
+          branch: user.branch || null
+        };
+
+        const bid = user.branchId || user.branch?.id || '';
+        if (bid) setBranchId(bid);
+
+        onLoginSuccess(loginUserData, token, refreshToken);
+        return;
+      }
+
       // Trigger OTP flow
 
       try {
@@ -57,7 +121,8 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
           phone: credentialsData.user?.phone || credentialsData.user?.school?.phone || '+254XXXXXXXX',
           user: credentialsData.user,
           token: credentialsData.token,
-          refreshToken: credentialsData.refreshToken
+          refreshToken: credentialsData.refreshToken,
+          institutionType: resolveInstitutionType(formData.email, credentialsData.user),
         });
         setShowOTPVerification(true);
       } catch (otpError) {
@@ -88,6 +153,7 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
       id: pendingUserData.user.id,
       firstName: pendingUserData.user.firstName,
       lastName: pendingUserData.user.lastName,
+      institutionType: pendingUserData.institutionType || resolveInstitutionType(pendingUserData.email, pendingUserData.user),
       schoolId: null,
       branchId: pendingUserData.user.branchId || pendingUserData.user.branch?.id || null,
       school: school,
@@ -111,11 +177,18 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
 
   return (
     <div
-      className="w-full min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
+      className="w-full min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden"
       style={{
         backgroundColor: brandColor
       }}
     >
+
+      {sessionExpired && (
+        <div className="w-full max-w-sm mb-3 flex items-start gap-2 px-4 py-3 bg-amber-50 border border-amber-300 rounded-xl text-amber-800 text-sm font-medium relative z-10">
+          <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
+          Your session has expired. Please sign in again.
+        </div>
+      )}
 
       <Card className="w-full max-w-sm border-white/20 bg-white/95 backdrop-blur-xl shadow-2xl relative z-10 animate-fade-up">
         <CardHeader className="pt-6 pb-2">
@@ -149,7 +222,46 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
               brandingSettings={brandingSettings}
             />
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <>
+              <div className="text-center mb-6">
+                <h1 className="text-2xl font-black text-gray-900 leading-tight">
+                  {brandingSettings?.welcomeTitle || 'Welcome Back!'}
+                </h1>
+                {brandingSettings?.welcomeMessage && (
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-2 px-4">
+                    {brandingSettings.welcomeMessage}
+                  </p>
+                )}
+              </div>
+              <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Demo pills commented out as requested 
+              <div className="flex flex-wrap gap-2 justify-center mb-2 pb-4 border-b border-gray-100">
+                {DEMO_ACCOUNTS.map(acc => (
+                  <button
+                    key={acc.id}
+                    type="button"
+                    onClick={() => handleDemoClick(acc)}
+                    className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full border transition-all duration-150 transform active:scale-95 ${acc.color}`}
+                  >
+                    {acc.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex flex-wrap gap-2 justify-center mb-2 pb-4 border-b border-gray-100">
+                {SS_DEMO_ACCOUNTS.map(acc => (
+                  <button
+                    key={acc.id}
+                    type="button"
+                    onClick={() => handleDemoClick(acc)}
+                    className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full border transition-all duration-150 transform active:scale-95 ${acc.color}`}
+                  >
+                    {acc.label}
+                  </button>
+                ))}
+              </div>
+              */}
+
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-gray-700 font-bold ml-1">Email</Label>
                 <Input
@@ -245,6 +357,7 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
                 </p>
               </div>
             </form>
+            </>
           )}
         </CardContent>
       </Card>
