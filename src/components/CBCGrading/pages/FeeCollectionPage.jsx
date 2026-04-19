@@ -773,14 +773,13 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
       )}
 
       {/* Main Invoices Tab — wrap everything else */}
-      {activeTab === 'invoices' && <>
+      {activeTab === 'invoices' && (
+        <div className="space-y-6">
 
-      {/* Collapsible Metrics Section */}
-      <div 
-        className={`grid transition-all duration-500 ease-in-out ${
-          showMetrics ? 'grid-rows-[1fr] opacity-100 mb-6' : 'grid-rows-[0fr] opacity-0 mb-0'
-        }`}
-      >
+        {/* Collapsible Metrics Section */}
+        <div 
+          className={`grid transition-all duration-500 ease-in-out ${showMetrics ? 'grid-rows-[1fr] opacity-100 mb-6' : 'grid-rows-[0fr] opacity-0 mb-0'}`}
+        >
         <div className="overflow-hidden space-y-6">
           {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -2043,7 +2042,8 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
         type={toastType}
         onClose={hideNotification}
       />
-      </> {/* end invoices tab */}
+      </div>
+      )}
     </div>
   );
 };
