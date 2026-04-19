@@ -1188,6 +1188,8 @@ model CommunicationConfig {
   mpesaPublicKey          String?
   mpesaSecretKey          String?
   mpesaBusinessNo         String?
+  mpesaSandbox            Boolean  @default(false)
+  mpesaApiKey             String?
   mpesaEnabled            Boolean  @default(false)
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
@@ -2856,23 +2858,33 @@ enum MpesaStatus {
   PENDING
   SUCCESS
   FAILED
+  CANCELLED
+}
+
+enum MpesaTransactionType {
+  COLLECTION
+  PAYOUT
 }
 
 model MpesaTransaction {
-  id                String       @id @default(uuid())
-  merchantRequestId String       @unique
-  checkoutRequestId String       @unique
-  amount            Decimal      @db.Decimal(10, 2)
-  phoneNumber       String
-  status            MpesaStatus  @default(PENDING)
+  id                String               @id @default(uuid())
+  type              MpesaTransactionType @default(COLLECTION)
+  merchantRequestId String?              @unique
+  checkoutRequestId String?              @unique
+  amount            Decimal              @db.Decimal(10, 2)
+  phoneNumber       String?              // Source for Collection, Destination for Payout
+  status            MpesaStatus          @default(PENDING)
   resultCode        Int?
   resultDesc        String?
-  transactionId     String?      @unique // M-Pesa Receipt Number from Callback
+  transactionId     String?              @unique // M-Pesa Receipt Number from Callback
   metadata          Json?
-  studentId         String?
-  invoiceId         String?
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
+  studentId         String?              // Linked to collection
+  invoiceId         String?              // Linked to collection
+  staffId           String?              // Linked to payout (payroll)
+  payrollRecordId   String?              // Linked to payout (payroll)
+  externalId        String?              @unique // Kopo Kopo ID or custom reference
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
 
   callbacks         MpesaCallback[]
 }
@@ -2907,4 +2919,38 @@ enum ChangelogType {
   FIX
   IMPROVEMENT
   SECURITY
+}
+
+// ============================================================================
+// M-PESA UNMATCHED PAYMENTS — Buy Goods Till organic payments awaiting assignment
+// ============================================================================
+
+enum UnmatchedPaymentStatus {
+  PENDING
+  RESOLVED
+  DISMISSED
+}
+
+model UnmatchedPayment {
+  id              String                 @id @default(uuid())
+  phone           String                 // Normalized 254XXXXXXXXX format
+  amount          Decimal                @db.Decimal(10, 2)
+  receiptNo       String                 @unique // M-Pesa receipt / Kopo reference
+  transactionDate DateTime               @default(now())
+  status          UnmatchedPaymentStatus @default(PENDING)
+  note            String?                // Admin note on DISMISSED reason
+  rawPayload      Json                   // Full webhook body for audit
+
+  // Resolution fields — set when admin assigns
+  resolvedLearnerId String?
+  resolvedInvoiceId String?
+  resolvedBy        String?
+  resolvedAt        DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([phone])
+  @@map("unmatched_payments")
 }

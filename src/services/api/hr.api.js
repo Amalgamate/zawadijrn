@@ -69,6 +69,10 @@ export const hrAPI = {
     voidPayroll: async (id, reason) =>
         fetchWithAuth(`/hr/payroll/void/${id}`, { method: 'PUT', body: JSON.stringify({ reason }) }),
 
+    // ── M-Pesa Payouts ────────────────────────────────────────────────────────
+    bulkDisburseMpesa: async (payrollRecordIds) =>
+        fetchWithAuth('/mpesa/payout/bulk', { method: 'POST', body: JSON.stringify({ payrollRecordIds }) }),
+
     // ── Performance ───────────────────────────────────────────────────────────
     getPerformanceReviews: async (userId) => {
         const url = userId ? `/hr/performance?userId=${userId}` : '/hr/performance';

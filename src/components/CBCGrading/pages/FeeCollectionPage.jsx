@@ -8,7 +8,7 @@ import {
   Plus, Eye, CheckCircle, AlertCircle, Clock, FileText, Download,
   X, Loader2, MessageSquare, Phone, Info, User, ShieldCheck, Mail, Upload,
   Trash2, Gift, ThumbsUp, ArrowUpDown, ArrowUp, ArrowDown,
-  Filter, Search, DollarSign, Wallet, Banknote, Coins, Building2
+  Filter, Search, DollarSign, Wallet, Banknote, Coins, Building2, AlertTriangle
 } from 'lucide-react';
 import { generateDocument } from '../../../utils/simplePdfGenerator';
 import EmptyState from '../shared/EmptyState';
@@ -28,6 +28,7 @@ import FeePledgeModal from '../shared/FeePledgeModal';
 import { useFeeActions } from '../../../contexts/FeeActionsContext';
 import usePageNavigation from '../../../hooks/usePageNavigation';
 import { downloadFeeTemplate } from '../../../utils/feeTemplateGenerator';
+import UnmatchedPaymentsPanel from './fees/UnmatchedPaymentsPanel';
 
 const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
   const navigateTo = usePageNavigation();
@@ -44,6 +45,8 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
   const [downloadingId, setDownloadingId] = useState(null);
   const [selectedInvoiceIds, setSelectedInvoiceIds] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('invoices'); // 'invoices' | 'unmatched'
+  const [unmatchedCount, setUnmatchedCount] = useState(0);
   const [whatsappStatus, setWhatsappStatus] = useState({ status: 'fetching', qrCode: null });
   const [allLearners, setAllLearners] = useState([]);
   const [searchLearnerId, setSearchLearnerId] = useState(learnerId || null);
@@ -180,6 +183,8 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
     fetchStatsInvoices();
     fetchLearners();
     fetchBranding();
+    // Fetch unmatched payment badge count
+    api.mpesa?.getUnmatchedCount?.().then(res => setUnmatchedCount(res?.count || 0)).catch(() => {});
   }, [fetchInvoices, fetchStatsInvoices, fetchLearners, fetchBranding]);
 
 
@@ -731,6 +736,44 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
 
   return (
     <div className="space-y-6">
+
+      {/* Page Tabs */}
+      <div className="flex items-center gap-1 border-b border-gray-200 -mb-2">
+        <button
+          onClick={() => setActiveTab('invoices')}
+          className={`px-5 py-3 text-sm font-bold transition-colors border-b-2 -mb-px ${
+            activeTab === 'invoices'
+              ? 'border-brand-teal text-brand-teal'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          Fee Invoices
+        </button>
+        <button
+          onClick={() => setActiveTab('unmatched')}
+          className={`px-5 py-3 text-sm font-bold transition-colors border-b-2 -mb-px flex items-center gap-2 ${
+            activeTab === 'unmatched'
+              ? 'border-amber-500 text-amber-700'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <AlertTriangle size={14} />
+          Unmatched Payments
+          {unmatchedCount > 0 && (
+            <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-amber-500 text-white text-[10px] font-black">
+              {unmatchedCount}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* Unmatched Payments Tab */}
+      {activeTab === 'unmatched' && (
+        <UnmatchedPaymentsPanel onCountChange={setUnmatchedCount} />
+      )}
+
+      {/* Main Invoices Tab — wrap everything else */}
+      {activeTab === 'invoices' && <>
 
       {/* Collapsible Metrics Section */}
       <div 
@@ -2000,6 +2043,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
         type={toastType}
         onClose={hideNotification}
       />
+      </> {/* end invoices tab */}
     </div>
   );
 };

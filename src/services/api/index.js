@@ -39,6 +39,7 @@ import { plannerAPI } from './planner.api';
 import { idTemplateAPI } from './idTemplate.api';
 import { transportAPI } from './transport.api';
 import { changelogAPI } from './changelog.api';
+import { mpesaAPI } from './mpesa.api';
 
 export { API_BASE_URL, clearApiCache };
 
@@ -79,6 +80,7 @@ export { schemeOfWorkAPI };
 export { lmsAPI };
 export { plannerAPI as planner };
 export { idTemplateAPI };
+export { mpesaAPI };
 
 const api = {
   // ── Core Axios-like Methods ───────────────────────────────────────────
@@ -154,6 +156,7 @@ const api = {
   idTemplates: idTemplateAPI,
   transport: transportAPI,
   changelog: changelogAPI,
+  mpesa: mpesaAPI,
 };
 
 export default api;

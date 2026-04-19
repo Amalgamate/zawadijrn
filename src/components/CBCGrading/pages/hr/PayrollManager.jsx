@@ -5,7 +5,7 @@ import {
     CheckCheck, Banknote, RefreshCw, ChevronRight,
     Layers, Info, Ban
 } from 'lucide-react';
-import { hrAPI } from '../../../../services/api';
+import { hrAPI, communicationAPI } from '../../../../services/api';
 import { printWindow, captureSingleReport } from '../../../../utils/simplePdfGenerator';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -363,6 +363,49 @@ const BulkPayModal = ({ month, year, count, onClose, onConfirm, loading }) => {
     );
 };
 
+// ─── Bulk Disburse Modal (M-Pesa) ───────────────────────────────────────────
+const BulkDisburseModal = ({ month, year, records, onClose, onConfirm, loading }) => {
+    const totalNet = records.reduce((acc, r) => acc + Number(r.netSalary), 0);
+    return (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 space-y-6" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg">
+                            <CreditCard size={24}/>
+                        </div>
+                        <h2 className="text-xl font-bold text-gray-900">M-Pesa Payout</h2>
+                    </div>
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full text-gray-400"><X size={18}/></button>
+                </div>
+                
+                <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl">
+                    <p className="text-sm text-amber-800 leading-relaxed font-medium">
+                        You are about to disburse salaries for <strong>{records.length} staff members</strong> via M-Pesa.
+                    </p>
+                </div>
+
+                <div className="flex justify-between items-end border-b border-gray-100 pb-4">
+                    <span className="text-gray-500 text-sm font-medium">Total Disbursement</span>
+                    <span className="text-2xl font-black text-gray-900">KES {fmt(totalNet)}</span>
+                </div>
+
+                <div className="space-y-3">
+                    <p className="text-[10px] text-gray-400 uppercase tracking-widest font-black text-center">Security Verification Required</p>
+                    <button onClick={onConfirm} disabled={loading}
+                        className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black text-base flex items-center justify-center gap-3 hover:bg-emerald-700 active:scale-[0.98] transition-all shadow-xl shadow-emerald-100 disabled:opacity-50 disabled:active:scale-100">
+                        {loading ? <div className="animate-spin rounded-full h-5 w-5 border-2 border-white/50 border-t-white"/> : <CheckCheck size={20}/>}
+                        Authorize Disburse
+                    </button>
+                    <button onClick={onClose} className="w-full py-3 text-gray-400 font-bold text-sm hover:text-gray-600 transition-all">
+                        Cancel & Review
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // ─── Main PayrollManager ──────────────────────────────────────────────────────
 const PayrollManager = () => {
     const [month, setMonth] = useState(new Date().getMonth() + 1);
@@ -379,6 +422,9 @@ const PayrollManager = () => {
     const [bulkPaying, setBulkPaying] = useState(false);
     const [voidRecord, setVoidRecord] = useState(null);
     const [voiding, setVoiding] = useState(false);
+    const [isKopoKopo, setIsKopoKopo] = useState(false);
+    const [showBulkDisburse, setShowBulkDisburse] = useState(false);
+    const [disbursing, setDisbursing] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [toast, setToast] = useState(null);
 
@@ -402,7 +448,20 @@ const PayrollManager = () => {
         }
     }, [month, year]);
 
-    useEffect(() => { fetchPayroll(); }, [fetchPayroll]);
+    useEffect(() => { 
+        fetchPayroll(); 
+        checkGateway();
+    }, [fetchPayroll]);
+
+    const checkGateway = async () => {
+        try {
+            const config = await communicationAPI.getConfig();
+            const provider = config?.data?.mpesa?.provider || config?.mpesa?.provider;
+            setIsKopoKopo(provider === 'kopokopo');
+        } catch (err) {
+            console.error('Failed to check gateway:', err);
+        }
+    };
 
     const handleGenerate = async () => {
         try {
@@ -488,6 +547,28 @@ const PayrollManager = () => {
         }
     };
 
+    const handleBulkDisburse = async () => {
+        const confirmedRecords = records.filter(r => r.status === 'GENERATED');
+        if (confirmedRecords.length === 0) return;
+
+        try {
+            setDisbursing(true);
+            const ids = confirmedRecords.map(r => r.id);
+            const res = await hrAPI.bulkDisburseMpesa(ids);
+            
+            const successCount = res.results?.filter(r => r.success).length || 0;
+            const failCount = (res.results?.length || 0) - successCount;
+            
+            showToast(`Batch processed: ${successCount} successful, ${failCount} failed.`);
+            fetchPayroll();
+            setShowBulkDisburse(false);
+        } catch (error) {
+            showToast('Disbursement failed: ' + error.message, 'error');
+        } finally {
+            setDisbursing(false);
+        }
+    };
+
     const handlePrintAll = async () => {
         setPrinting(true);
         await printWindow('payslip-bulk-content');
@@ -535,6 +616,13 @@ const PayrollManager = () => {
                 />
             )}
             <VoidModal record={voidRecord} onClose={() => setVoidRecord(null)} onConfirm={handleVoid} loading={voiding}/>
+            {showBulkDisburse && (
+                <BulkDisburseModal
+                    month={month} year={year} records={records.filter(r => r.status === 'GENERATED')}
+                    onClose={() => setShowBulkDisburse(false)}
+                    onConfirm={handleBulkDisburse} loading={disbursing}
+                />
+            )}
 
             {/* Toast */}
             {toast && (
@@ -623,13 +711,23 @@ const PayrollManager = () => {
                                 </button>
                             )}
 
-                            {/* Bulk mark paid */}
+                            {/* Bulk mark paid / Disburse */}
                             {confirmedCount > 0 && (
-                                <button onClick={() => setShowBulkPay(true)}
-                                    className="px-4 py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 transition-all flex items-center gap-2">
-                                    <CheckCheck size={15}/>
-                                    Mark All Paid ({confirmedCount})
-                                </button>
+                                <>
+                                    {isKopoKopo ? (
+                                        <button onClick={() => setShowBulkDisburse(true)}
+                                            className="px-4 py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 transition-all flex items-center gap-2 shadow-lg shadow-emerald-50">
+                                            <CreditCard size={15}/>
+                                            Batch Payout ({confirmedCount})
+                                        </button>
+                                    ) : (
+                                        <button onClick={() => setShowBulkPay(true)}
+                                            className="px-4 py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 transition-all flex items-center gap-2">
+                                            <CheckCheck size={15}/>
+                                            Mark All Paid ({confirmedCount})
+                                        </button>
+                                    )}
+                                </>
                             )}
 
                             <button onClick={handlePrintAll} disabled={printing}

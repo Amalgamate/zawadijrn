@@ -79,7 +79,9 @@ export const getCommunicationConfig = async (req: AuthRequest, res: Response) =>
                 provider: config.mpesaProvider,
                 publicKey: config.mpesaPublicKey,
                 businessNumber: config.mpesaBusinessNo,
-                hasSecretKey: !!config.mpesaSecretKey
+                hasSecretKey: !!config.mpesaSecretKey,
+                hasApiKey: !!config.mpesaApiKey,
+                sandbox: config.mpesaSandbox
             },
             birthdays: {
                 enabled: config.birthdayEnabled,
@@ -150,7 +152,10 @@ export const saveCommunicationConfig = async (req: AuthRequest, res: Response) =
         data.mpesaPublicKey = mpesa.publicKey || null;
         data.mpesaBusinessNo = mpesa.businessNumber || null;
         data.mpesaEnabled = mpesa.enabled !== undefined ? mpesa.enabled : false;
+        data.mpesaSandbox = mpesa.sandbox !== undefined ? mpesa.sandbox : false;
+        
         if (mpesa.secretKey) data.mpesaSecretKey = encrypt(mpesa.secretKey);
+        if (mpesa.apiKey) data.mpesaApiKey = encrypt(mpesa.apiKey);
     }
 
     if (birthdays) {
