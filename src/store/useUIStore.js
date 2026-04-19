@@ -4,7 +4,20 @@ import { persist } from 'zustand/middleware';
 /**
  * useUIStore
  * Manages global UI state: navigation, sidebar, layout preferences, and in-app history.
+ *
+ * PERF NOTE: currentPage is persisted so users land on their last page after
+ * a refresh. However we guard against loading a persisted page when there is
+ * no valid auth token — that causes an immediate 401, a token-refresh round-
+ * trip, and then a second API call, all before any data renders. The
+ * sanitisePersistedPage helper resets to 'dashboard' when no token exists.
  */
+
+function sanitisePersistedPage(page) {
+    const hasToken = !!(localStorage.getItem('token') || document.cookie.includes('accessToken'));
+    if (!hasToken) return 'dashboard';
+    return page || 'dashboard';
+}
+
 export const useUIStore = create(
   persist(
     (set, get) => ({
@@ -17,43 +30,27 @@ export const useUIStore = create(
       historyIndex: 0,
 
       // Sidebar
-      // Desktop: expanded by default; user can collapse.
       sidebarOpen: true,
 
       // Actions
       setCurrentPage: (page, params = {}) => set((state) => {
-        // Trim forward entries if we navigated after going back
         const baseStack = state.historyStack.slice(0, state.historyIndex + 1);
-        // Avoid duplicate consecutive entries
-        const lastPage = baseStack[baseStack.length - 1];
-        const newStack = lastPage === page ? baseStack : [...baseStack, page];
-        const newIndex = newStack.length - 1;
-        return {
-          currentPage: page,
-          pageParams: params,
-          historyStack: newStack,
-          historyIndex: newIndex,
-        };
+        const lastPage  = baseStack[baseStack.length - 1];
+        const newStack  = lastPage === page ? baseStack : [...baseStack, page];
+        const newIndex  = newStack.length - 1;
+        return { currentPage: page, pageParams: params, historyStack: newStack, historyIndex: newIndex };
       }),
 
       goBack: () => set((state) => {
-        if (state.historyIndex <= 0) return state; // Already at root — do nothing
+        if (state.historyIndex <= 0) return state;
         const newIndex = state.historyIndex - 1;
-        return {
-          currentPage: state.historyStack[newIndex],
-          pageParams: {},
-          historyIndex: newIndex,
-        };
+        return { currentPage: state.historyStack[newIndex], pageParams: {}, historyIndex: newIndex };
       }),
 
       goForward: () => set((state) => {
         if (state.historyIndex >= state.historyStack.length - 1) return state;
         const newIndex = state.historyIndex + 1;
-        return {
-          currentPage: state.historyStack[newIndex],
-          pageParams: {},
-          historyIndex: newIndex,
-        };
+        return { currentPage: state.historyStack[newIndex], pageParams: {}, historyIndex: newIndex };
       }),
 
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
@@ -69,10 +66,20 @@ export const useUIStore = create(
     {
       name: 'cbc_ui_state',
       partialize: (state) => ({
-        // Persist visual prefs only — never persist the history stack
         currentPage: state.currentPage,
-        pageParams: state.pageParams,
+        pageParams:  state.pageParams,
         sidebarOpen: state.sidebarOpen,
+      }),
+      // Guard: if there’s no auth token when the store rehydrates (e.g. the
+      // user cleared cookies), reset to dashboard so no page-level API call
+      // fires before authentication is confirmed.
+      merge: (persisted, current) => ({
+        ...current,
+        ...persisted,
+        currentPage: sanitisePersistedPage(persisted?.currentPage || 'dashboard'),
+        // Never restore history stack from storage — it’s rebuilt each session
+        historyStack: [sanitisePersistedPage(persisted?.currentPage || 'dashboard')],
+        historyIndex: 0,
       }),
     }
   )

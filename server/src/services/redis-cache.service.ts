@@ -29,9 +29,6 @@ class RedisCacheService {
   }
 
   private async initialize() {
-    // Skip Redis entirely if no connection details are provided.
-    // The memory fallback is fully functional and avoids the 3×retry timeout
-    // delay that occurs when REDIS_HOST/REDIS_URL are blank.
     const hasRedisConfig = !!(process.env.REDIS_URL || process.env.REDIS_HOST);
     if (!hasRedisConfig) {
       console.log('[Cache] No Redis config detected — using in-memory cache.');
@@ -40,50 +37,49 @@ class RedisCacheService {
     }
 
     try {
-      // Try to connect to Redis
-      let redisConfig: any;
-
       if (process.env.REDIS_URL) {
-        // Prefer connection string (URL) if provided
         const isTls = process.env.REDIS_URL.startsWith('rediss://');
-        console.log(`[Cache] Using REDIS_URL connection string (TLS: ${isTls})`);
+        console.log(`[Cache] Connecting to Upstash Redis (TLS: ${isTls})…`);
         this.redis = new Redis(process.env.REDIS_URL, {
+          // ── Upstash-safe settings ────────────────────────────────────────
+          // lazyConnect: true means we don't start a TCP handshake until the
+          // first actual command, avoiding a useless timeout on dyno startup.
+          lazyConnect: true,
+          // Hard cap: 3 retries with exponential backoff, then give up and fall
+          // through to the memory cache. Without this cap, a bad Upstash URL
+          // retries forever and blocks the whole process for minutes.
           retryStrategy: (times: number) => {
             if (times > 3) {
-              console.log('[Cache] Redis connection failed, using memory fallback');
-              return null;
+              console.warn('[Cache] Upstash Redis unreachable after 3 retries — using memory fallback');
+              this.useRedis = false;
+              return null; // stop retrying
             }
-            return Math.min(times * 50, 2000);
+            return Math.min(times * 200, 2000);
           },
-          connectTimeout: 5000,
-          commandTimeout: 5000,
-          enableReadyCheck: false,
-          enableOfflineQueue: false,
-          maxRetriesPerRequest: 3,
-          // Upstash requires TLS — explicitly enable when scheme is rediss://
+          connectTimeout:       8_000,  // 8 s — Upstash cold-connect can take ~3-5 s
+          commandTimeout:       5_000,  // 5 s per command max
+          enableReadyCheck:     false,  // skip PING on connect (saves 1 RTT)
+          enableOfflineQueue:   false,  // drop commands that arrive while disconnected
+          maxRetriesPerRequest: 2,
           ...(isTls ? { tls: {} } : {}),
         });
       } else {
-        // Fallback to individual components
-        redisConfig = {
-          host: process.env.REDIS_HOST || 'localhost',
-          port: parseInt(process.env.REDIS_PORT || '6379', 10),
+        this.redis = new Redis({
+          host:     process.env.REDIS_HOST || 'localhost',
+          port:     parseInt(process.env.REDIS_PORT || '6379', 10),
           password: process.env.REDIS_PASSWORD || undefined,
-          db: parseInt(process.env.REDIS_DB || '0', 10),
+          db:       parseInt(process.env.REDIS_DB || '0', 10),
+          lazyConnect: true,
           retryStrategy: (times: number) => {
-            if (times > 3) {
-              console.log('[Cache] Redis connection failed, using memory fallback');
-              return null;
-            }
-            return Math.min(times * 50, 2000);
+            if (times > 3) { this.useRedis = false; return null; }
+            return Math.min(times * 200, 2000);
           },
-          connectTimeout: 5000,
-          commandTimeout: 5000,
-          enableReadyCheck: false,
-          enableOfflineQueue: false,
-          maxRetriesPerRequest: 3,
-        };
-        this.redis = new Redis(redisConfig);
+          connectTimeout:       5_000,
+          commandTimeout:       5_000,
+          enableReadyCheck:     false,
+          enableOfflineQueue:   false,
+          maxRetriesPerRequest: 2,
+        });
       }
 
       this.redis.on('connect', () => {
@@ -91,24 +87,32 @@ class RedisCacheService {
         console.log('[Cache] Connected to Redis ✅');
       });
 
+      this.redis.on('ready', () => {
+        this.useRedis = true;
+      });
+
       this.redis.on('error', (err) => {
-        console.log(`[Cache] Redis error: ${err.message}, using memory fallback`);
+        // Only log once per error burst to avoid flooding the logs
+        if (this.useRedis) {
+          console.warn(`[Cache] Redis error: ${err.message} — falling back to memory cache`);
+        }
         this.useRedis = false;
       });
 
       this.redis.on('close', () => {
         this.useRedis = false;
-        console.log('[Cache] Redis connection closed');
       });
 
-      // Don't ping() here — it races against the TCP handshake when
-      // enableOfflineQueue is false, causing a spurious failure that nulls
-      // the client before the 'connect' event fires.
-      // State is managed entirely by the event listeners above.
+      // Eagerly connect so the first request is not delayed by the handshake.
+      // Errors are handled by the event listeners above; we don’t await so
+      // the server boot is not blocked by a slow Redis connect.
+      this.redis.connect().catch(() => {
+        // swallow — the error event handler above already sets useRedis=false
+      });
+
     } catch (error) {
-      console.log(`[Cache] Redis init error: ${error}, using memory fallback`);
+      console.warn(`[Cache] Redis init error: ${error} — using memory fallback`);
       this.useRedis = false;
-      // Do NOT null this.redis — the client may still connect via event listener
     }
   }
 

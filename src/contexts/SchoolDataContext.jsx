@@ -1,122 +1,125 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
-import api, { configAPI } from '../services/api';
 import { GRADES } from '../constants/grades';
 import { useRefreshListener } from '../utils/refreshBus';
 import { useAuth } from '../hooks/useAuth';
+import { useBootstrapStore } from '../store/useBootstrapStore';
+import axiosInstance from '../services/api/axiosConfig';
 
 const SchoolDataContext = createContext();
 
-// Helper to sort grades based on the constants definition if available
 const sortGrades = (gradeArray) => {
-    if (!gradeArray || gradeArray.length === 0) return [];
-
-    // Map constant GRADES array to order indices
-    const gradeOrderMap = new Map(GRADES?.map((g, index) => [g.value || g, index]) || []);
-
-    return [...gradeArray].sort((a, b) => {
-        const indexA = gradeOrderMap.has(a) ? gradeOrderMap.get(a) : 999;
-        const indexB = gradeOrderMap.has(b) ? gradeOrderMap.get(b) : 999;
-
-        if (indexA !== indexB) {
-            return indexA - indexB;
-        }
-        return a.localeCompare(b); // Fallback to alphabetical
-    });
+  if (!gradeArray || gradeArray.length === 0) return [];
+  const gradeOrderMap = new Map(GRADES?.map((g, index) => [g.value || g, index]) || []);
+  return [...gradeArray].sort((a, b) => {
+    const ia = gradeOrderMap.has(a) ? gradeOrderMap.get(a) : 999;
+    const ib = gradeOrderMap.has(b) ? gradeOrderMap.get(b) : 999;
+    return ia !== ib ? ia - ib : a.localeCompare(b);
+  });
 };
 
 export const SchoolDataProvider = ({ children }) => {
-    const { user } = useAuth();
-    const [classes, setClasses] = useState([]);
-    const [grades, setGrades] = useState([]);
-    const [streams, setStreams] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+  const { user } = useAuth();
 
+  // Read pre-loaded classes + streams from the bootstrap store
+  const bootstrapClasses = useBootstrapStore(s => s.classes);
+  const bootstrapStreams  = useBootstrapStore(s => s.streams);
+  const bootstrapReady   = useBootstrapStore(s => s.ready);
 
-    const fetchSchoolData = useCallback(async () => {
-        try {
-            setLoading(true);
-            setError(null);
+  const [classes, setClasses] = useState(bootstrapClasses ?? []);
+  const [streams, setStreams]  = useState(bootstrapStreams  ?? []);
+  const [grades,  setGrades]  = useState([]);
+  const [loading, setLoading] = useState(!bootstrapReady);
+  const [error,   setError]   = useState(null);
 
-            // Fetch classes and streams in parallel
-            const [classesResponse, streamsResponse] = await Promise.all([
-                api.classes.getAll(),
-                configAPI.getStreamConfigs().catch(() => [])
-            ]);
+  // Derive grades whenever classes change
+  useEffect(() => {
+    const institutionType = user?.institutionType || 'PRIMARY_CBC';
+    const isSenior = institutionType === 'SECONDARY';
 
-            const fetchedClasses = classesResponse.data || [];
-            setClasses(fetchedClasses);
+    const fallback = isSenior
+      ? ['GRADE_10', 'GRADE_11', 'GRADE_12']
+      : ['PLAYGROUP','PP1','PP2','GRADE_1','GRADE_2','GRADE_3','GRADE_4',
+         'GRADE_5','GRADE_6','GRADE_7','GRADE_8','GRADE_9'];
 
-            // ─── Refined Global Grades Logic ───
-            // 1. Get the current institution level from user context
-            const institutionType = user?.institutionType || 'PRIMARY_CBC';
-            const isSenior = institutionType === 'SECONDARY';
+    const activeGrades = classes.map(c => c.grade);
+    const combined = [...new Set([...fallback, ...activeGrades])].filter(Boolean);
+    setGrades(sortGrades(combined));
+  }, [classes, user?.institutionType]);
 
-            // 2. Fetch full curriculum grades based on level (PP1-G9 or G10-G12)
-            const fallbackGrades = isSenior 
-                ? ['GRADE_10', 'GRADE_11', 'GRADE_12']
-                : ['PLAYGROUP', 'PP1', 'PP2', 'GRADE_1', 'GRADE_2', 'GRADE_3', 'GRADE_4', 'GRADE_5', 'GRADE_6', 'GRADE_7', 'GRADE_8', 'GRADE_9'];
+  // When the bootstrap store delivers data, sync it here
+  useEffect(() => {
+    if (bootstrapClasses !== null) {
+      setClasses(bootstrapClasses);
+      setLoading(false);
+    }
+  }, [bootstrapClasses]);
 
-            // 3. Merge with active classes to ensure all "active" grades are also present
-            const activeGrades = fetchedClasses.map(c => c.grade);
-            const combinedUniqueGrades = [...new Set([...fallbackGrades, ...activeGrades])].filter(Boolean);
+  useEffect(() => {
+    if (bootstrapStreams !== null) {
+      setStreams(bootstrapStreams.filter(s => !s.archived && s.active !== false));
+    }
+  }, [bootstrapStreams]);
 
-            setGrades(sortGrades(combinedUniqueGrades));
+  // Fallback: if bootstrap never ran (e.g. user landed here without splashscreen),
+  // fetch classes + streams directly. No artificial delay needed on local.
+  const fetchSchoolData = useCallback(async () => {
+    if (user?.role === 'PARENT') {
+      setClasses([]); setGrades([]); setStreams([]);
+      setLoading(false); return;
+    }
+    if (!user) return;
 
-            // Process streams from configAPI response
-            const rawStreams = Array.isArray(streamsResponse)
-                ? streamsResponse
-                : (streamsResponse?.data || []);
-            setStreams(rawStreams.filter(s => !s.archived && s.active !== false));
+    try {
+      setLoading(true); setError(null);
+      const [classesRes, streamsRes] = await Promise.all([
+        axiosInstance.get('/classes'),
+        axiosInstance.get('/facility/streams').catch(() => ({ data: { data: [] } })),
+      ]);
+      const fetchedClasses = classesRes.data?.data ?? [];
+      const rawStreams = Array.isArray(streamsRes.data)
+        ? streamsRes.data
+        : (streamsRes.data?.data ?? []);
 
-        } catch (err) {
-            console.error('Error fetching school data:', err);
-            setError(err.message || 'Failed to fetch school data');
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+      setClasses(fetchedClasses);
+      setStreams(rawStreams.filter(s => !s.archived && s.active !== false));
+    } catch (err) {
+      console.error('SchoolDataContext fetch error:', err);
+      setError(err.message || 'Failed to fetch school data');
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
 
-    useEffect(() => {
-        if (user?.role === 'PARENT') {
-            setClasses([]);
-            setGrades([]);
-            setStreams([]);
-            setError(null);
-            setLoading(false);
-            return;
-        }
-        fetchSchoolData();
-    }, [fetchSchoolData, user?.role]);
+  // Only run the fallback fetch if bootstrap data never arrived
+  useEffect(() => {
+    if (bootstrapReady) return;           // bootstrap has the data — do nothing
+    if (!user) return;
+    if (user.role === 'PARENT') {
+      setClasses([]); setGrades([]); setStreams([]);
+      setLoading(false); return;
+    }
+    fetchSchoolData();
+  }, [bootstrapReady, user, fetchSchoolData]);
 
-    const refreshForRole = useCallback(() => {
-        if (user?.role === 'PARENT') return;
-        fetchSchoolData();
-    }, [fetchSchoolData, user?.role]);
+  useRefreshListener('classes', fetchSchoolData);
+  useRefreshListener('streams', fetchSchoolData);
 
-    useRefreshListener('classes', refreshForRole);
-    useRefreshListener('streams', refreshForRole);
+  const value = useMemo(() => ({
+    classes, grades, streams, loading, error,
+    refreshSchoolData: fetchSchoolData,
+  }), [classes, grades, streams, loading, error, fetchSchoolData]);
 
-    const value = useMemo(() => ({
-        classes,
-        grades,
-        streams,
-        loading,
-        error,
-        refreshSchoolData: refreshForRole
-    }), [classes, grades, streams, loading, error, refreshForRole]);
-
-    return (
-        <SchoolDataContext.Provider value={value}>
-            {children}
-        </SchoolDataContext.Provider>
-    );
+  return (
+    <SchoolDataContext.Provider value={value}>
+      {children}
+    </SchoolDataContext.Provider>
+  );
 };
 
 export const useSchoolData = () => {
-    const context = useContext(SchoolDataContext);
-    if (context === undefined) {
-        throw new Error('useSchoolData must be used within a SchoolDataProvider');
-    }
-    return context;
+  const context = useContext(SchoolDataContext);
+  if (context === undefined) {
+    throw new Error('useSchoolData must be used within a SchoolDataProvider');
+  }
+  return context;
 };

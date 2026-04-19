@@ -107,6 +107,10 @@ model User {
 
 
   @@map("users")
+  // ── Performance indexes ─────────────────────────────────────────────────────────────────
+  @@index([role, archived, status])
+  @@index([archived])
+  @@index([status, archived])
 }
 
 model School {
@@ -411,8 +415,9 @@ model Learner {
   @@index([institutionType, pathwayId])
   @@index([grade, stream])
   @@index([status])
-  @@index([lastName, firstName])
   @@index([grade, status, archived])
+  @@index([archived])
+
   @@map("learners")
 }
 
@@ -538,7 +543,10 @@ model FormativeAssessment {
   @@index([term, academicYear])
   @@index([learningArea])
   @@index([learningAreaId])
-  @@index([learnerId, learningArea, term, academicYear])
+  // Dashboard: count({ status:'DRAFT', archived:false })
+  @@index([status, archived])
+  @@index([archived])
+
   @@map("formative_assessments")
 }
 
@@ -682,6 +690,8 @@ model SummativeResult {
   @@index([grade])
   @@index([status])
   @@index([testId, grade, marksObtained])
+  // Dashboard groupBy({ testId }) filters archived:false
+  @@index([archived, testId])
   @@map("summative_results")
 }
 
@@ -938,6 +948,9 @@ model FeeInvoice {
   @@index([term, academicYear])
   @@index([status])
   @@index([dueDate])
+  // Composite indexes for dashboard & fee collection hot paths
+  @@index([archived, status])
+  @@index([archived, transportBilled])
   @@map("fee_invoices")
 }
 
@@ -1473,6 +1486,8 @@ model Event {
   creator       User      @relation("EventCreator", fields: [creatorId], references: [id], onDelete: Cascade)
 
   @@map("events")
+  // Dashboard: findMany({ startDate:{ gte:now } })
+  @@index([startDate])
 }
 
 model ContactGroup {

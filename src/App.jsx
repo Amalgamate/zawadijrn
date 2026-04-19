@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { HashRouter, Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import Auth from './pages/Auth';
@@ -9,8 +9,8 @@ import { SchoolDataProvider } from './contexts/SchoolDataContext';
 import { FeeActionsProvider } from './contexts/FeeActionsContext';
 import { UserNotificationProvider } from './contexts/UserNotificationContext';
 import { SpeedInsights } from '@vercel/speed-insights/react';
-import api from './services/api';
 import axiosInstance from './services/api/axiosConfig';
+import { useBootstrapStore } from './store/useBootstrapStore';
 
 import useSubjectStore from './store/useSubjectStore';
 
@@ -31,56 +31,41 @@ const DEFAULT_BRANDING = {
 function AppContent() {
   const { isAuthenticated, user, loading, login, logout } = useAuth();
   const fetchSubjects = useSubjectStore(state => state.fetchSubjects);
+  const clearBootstrap = useBootstrapStore(state => state.clear);
   const navigate = useNavigate();
   const location = useLocation();
   const pathname = location.pathname;
-  const [appReady, setAppReady] = useState(false);
+
+  // splashDone: true once the splash screen calls onReady (data pre-loaded)
+  const [splashDone, setSplashDone] = useState(false);
   const [brandingSettings, setBrandingSettings] = useState(DEFAULT_BRANDING);
 
-  // Mark app as ready
-  useEffect(() => {
-    const timer = setTimeout(() => setAppReady(true), 300);
-    return () => clearTimeout(timer);
-  }, []);
+  const handleSplashReady = useCallback(() => setSplashDone(true), []);
 
-  // Fetch school subjects
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchSubjects();
-    }
-  }, [isAuthenticated, fetchSubjects]);
-
-  // Fetch school branding
+  // Fetch school branding (runs immediately, unauthenticated endpoint)
   useEffect(() => {
     let cancelled = false;
-
     const fetchBranding = async () => {
       try {
-        // Fetch public branding - works for unauthenticated users too
         const resp = await axiosInstance.get('/schools/public/branding');
         if (cancelled) return;
-
         const branding = resp?.data?.data || resp?.data || resp;
         if (branding) {
-          // Map `name` to `schoolName` to match frontend expectations
-          const mappedBranding = {
+          setBrandingSettings(prev => ({
+            ...prev,
             ...branding,
-            schoolName: branding.name || branding.schoolName || 'Zawadi Junior Academy'
-          };
-          setBrandingSettings(prev => ({ ...prev, ...mappedBranding }));
-
-          // School ID storage removed for single-tenant mode
+            schoolName: branding.name || branding.schoolName || 'Zawadi Junior Academy',
+          }));
         }
       } catch (err) {
         console.warn('Failed to fetch branding, using defaults:', err);
       }
     };
-
     fetchBranding();
     return () => { cancelled = true; };
   }, [isAuthenticated]);
 
-  // Update favicon
+  // Favicon
   useEffect(() => {
     let link = document.querySelector("link[rel*='icon']");
     if (!link) {
@@ -93,64 +78,42 @@ function AppContent() {
     link.href = url.startsWith('data:') ? url : `${url}${url.includes('?') ? '&' : '?'}v=${Date.now()}`;
   }, [brandingSettings.faviconUrl]);
 
-  // Update CSS variables for branding
+  // CSS variables
   useEffect(() => {
     const root = document.documentElement;
     const color = brandingSettings?.primaryColor || brandingSettings?.brandColor || '#520050';
     root.style.setProperty('--brand-purple', color);
-    
-    if (brandingSettings?.secondaryColor) {
+    if (brandingSettings?.secondaryColor)
       root.style.setProperty('--brand-teal', brandingSettings.secondaryColor);
-    }
-    if (brandingSettings?.accentColor1) {
+    if (brandingSettings?.accentColor1)
       root.style.setProperty('--brand-accent-1', brandingSettings.accentColor1);
-    }
-    if (brandingSettings?.accentColor2) {
+    if (brandingSettings?.accentColor2)
       root.style.setProperty('--brand-accent-2', brandingSettings.accentColor2);
-    }
-    
-    // Generate a darker version for logo/sidebar accents (roughly 15-20% darker)
-    // Simple hex darken if it's hex
     if (color.startsWith('#') && color.length === 7) {
       const r = parseInt(color.slice(1, 3), 16);
       const g = parseInt(color.slice(3, 5), 16);
       const b = parseInt(color.slice(5, 7), 16);
-      const darken = (val) => Math.max(0, Math.floor(val * 0.85)).toString(16).padStart(2, '0');
-      const darkColor = `#${darken(r)}${darken(g)}${darken(b)}`;
-      root.style.setProperty('--brand-purple-dark', darkColor);
-    } else {
-      root.style.setProperty('--brand-purple-dark', color);
+      const darken = (v) => Math.max(0, Math.floor(v * 0.85)).toString(16).padStart(2, '0');
+      root.style.setProperty('--brand-purple-dark', `#${darken(r)}${darken(g)}${darken(b)}`);
     }
-  }, [
-    brandingSettings.brandColor, 
-    brandingSettings.primaryColor, 
-    brandingSettings.secondaryColor, 
-    brandingSettings.accentColor1, 
-    brandingSettings.accentColor2
-  ]);
+  }, [brandingSettings]);
 
-  // Update page title
+  // Page title
   useEffect(() => {
-    if (isAuthenticated) {
-      document.title = user?.role === 'SUPER_ADMIN'
+    document.title = isAuthenticated
+      ? user?.role === 'SUPER_ADMIN'
         ? 'Admin Dashboard'
-        : `${brandingSettings.schoolName || 'School'} — Dashboard`;
-    } else {
-      document.title = brandingSettings.schoolName || 'School Management';
-    }
+        : `${brandingSettings.schoolName || 'School'} — Dashboard`
+      : brandingSettings.schoolName || 'School Management';
   }, [isAuthenticated, user, brandingSettings.schoolName]);
+
   // Navigation guards
   useEffect(() => {
-    if (loading) return; // Wait for initial auth check
-
+    if (loading) return;
     if (isAuthenticated) {
-      if (!pathname.startsWith('/app')) {
-        navigate('/app', { replace: true });
-      }
+      if (!pathname.startsWith('/app')) navigate('/app', { replace: true });
     } else {
-      if (pathname.startsWith('/app')) {
-        navigate('/auth/login', { replace: true });
-      }
+      if (pathname.startsWith('/app')) navigate('/auth/login', { replace: true });
     }
   }, [isAuthenticated, loading, pathname, navigate]);
 
@@ -158,61 +121,79 @@ function AppContent() {
     localStorage.removeItem('cbc_current_page');
     localStorage.removeItem('cbc_page_params');
     localStorage.removeItem('cbc_expanded_sections');
-    // For SS demo logins, always land in SS dashboard (don’t reuse Junior last-page state).
     if (userData?.institutionType === 'SECONDARY') {
       localStorage.removeItem('cbc_ui_state');
     }
-    // Unified single-tenant mode cleanup
     login(userData, token, refreshToken);
     navigate('/app', { replace: true });
   };
 
   const handleLogout = () => {
+    clearBootstrap();       // wipe pre-loaded data from sessionStorage
     logout();
     navigate('/auth/login', { replace: true });
   };
 
-  // Show splash while auth is initializing or app is warming up
-  if (loading || !appReady) {
-    return <SplashScreen isLoading={true} />;
-  }
-
-  if (isAuthenticated) {
-    return (
-      <Routes>
-        <Route
-          path="/app/*"
-          element={
-            <SchoolDataProvider>
-              <FeeActionsProvider>
-              <UserNotificationProvider>
-              <CBCGradingSystem
-                user={user}
-                onLogout={handleLogout}
-                brandingSettings={brandingSettings}
-                setBrandingSettings={setBrandingSettings}
-              />
-              </UserNotificationProvider>
-              </FeeActionsProvider>
-            </SchoolDataProvider>
-          }
-        />
-        <Route path="*" element={<Navigate to="/app" replace />} />
-      </Routes>
-    );
-  }
+  // ── Show splash while: auth is resolving OR data hasn't pre-loaded yet ──
+  // Once the user is authenticated AND splashDone, show the real app.
+  const showSplash = loading || !splashDone;
 
   return (
-    <Routes>
-      <Route path="/" element={<Navigate to="/auth/login" replace />} />
-      <Route path="/auth/login" element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} basePath="/auth" />} />
-      <Route path="/auth/register" element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} basePath="/auth" />} />
-      <Route path="/auth/forgot-password" element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} basePath="/auth" />} />
-      <Route path="/auth/reset-password" element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} />} />
-      <Route path="/auth/verify-email" element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} />} />
-      <Route path="/auth/welcome" element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} />} />
-      <Route path="*" element={<Navigate to="/auth/login" replace />} />
-    </Routes>
+    <>
+      {/* Splash always mounts until it calls onReady — it manages its own
+          visibility internally so it can do a smooth fade-out */}
+      {showSplash && (
+        <SplashScreen
+          isLoading={loading}
+          user={isAuthenticated ? user : null}
+          onReady={handleSplashReady}
+        />
+      )}
+
+      {/* App shell — rendered underneath once auth is confirmed.
+          It won't be visible while the splash is on top. */}
+      {!loading && (
+        isAuthenticated ? (
+          <Routes>
+            <Route
+              path="/app/*"
+              element={
+                <SchoolDataProvider>
+                  <FeeActionsProvider>
+                    <UserNotificationProvider>
+                      <CBCGradingSystem
+                        user={user}
+                        onLogout={handleLogout}
+                        brandingSettings={brandingSettings}
+                        setBrandingSettings={setBrandingSettings}
+                      />
+                    </UserNotificationProvider>
+                  </FeeActionsProvider>
+                </SchoolDataProvider>
+              }
+            />
+            <Route path="*" element={<Navigate to="/app" replace />} />
+          </Routes>
+        ) : (
+          <Routes>
+            <Route path="/" element={<Navigate to="/auth/login" replace />} />
+            <Route path="/auth/login"
+              element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} basePath="/auth" />} />
+            <Route path="/auth/register"
+              element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} basePath="/auth" />} />
+            <Route path="/auth/forgot-password"
+              element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} basePath="/auth" />} />
+            <Route path="/auth/reset-password"
+              element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} />} />
+            <Route path="/auth/verify-email"
+              element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} />} />
+            <Route path="/auth/welcome"
+              element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} />} />
+            <Route path="*" element={<Navigate to="/auth/login" replace />} />
+          </Routes>
+        )
+      )}
+    </>
   );
 }
 
