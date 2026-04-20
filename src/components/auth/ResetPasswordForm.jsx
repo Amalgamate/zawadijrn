@@ -51,16 +51,33 @@ export default function ResetPasswordForm({ onResetSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!validateForm()) return;
 
     setIsLoading(true);
+    setErrors({});
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const searchParams = new URLSearchParams(window.location.hash.split('?')[1]);
+      const token = searchParams.get('token');
+
+      if (!token) {
+        setErrors({ form: 'Missing reset token. Please check your link.' });
+        setIsLoading(false);
+        return;
+      }
+
+      const response = await authAPI.resetPassword(token, formData.password);
+
+      if (response.success) {
+        onResetSuccess();
+      } else {
+        setErrors({ form: response.message || 'Failed to reset password' });
+      }
+    } catch (err) {
+      setErrors({ form: err.message || 'Network error while resetting password' });
+    } finally {
       setIsLoading(false);
-      onResetSuccess();
-    }, 1500);
+    }
   };
 
   const handleChange = (e) => {

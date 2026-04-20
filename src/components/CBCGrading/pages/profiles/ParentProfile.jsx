@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
     User, Mail, Phone, Users, MapPin,
-    Briefcase, FileText, Printer, Download, GraduationCap, Camera
+    Briefcase, FileText, Printer, Download, GraduationCap, Camera, Key
 } from 'lucide-react';
 import api from '../../../../services/api';
 import ProfileHeader from '../../shared/ProfileHeader';
@@ -27,6 +27,28 @@ const ParentProfile = ({ parent, onBack }) => {
         }
     };
 
+    const handleSendCredentials = async () => {
+        if (!parent.phone && !parent.email) {
+            showError('Parent needs a phone or email to receive credentials.');
+            return;
+        }
+
+        if (!window.confirm(`Send login credentials to ${parent.name}? This will reset their password and notify them.`)) {
+            return;
+        }
+
+        try {
+            const response = await api.users.sendCredentials(parent.id);
+            if (response.success) {
+                showSuccess('Credentials dispatched via SMS and WhatsApp!');
+            } else {
+                showError(response.message || 'Failed to send credentials');
+            }
+        } catch (error) {
+            showError('Network error while sending credentials');
+        }
+    };
+
     const documents = [
         { id: 1, name: 'ID_Copy.jpg', date: '2020-03-15', size: '2.1 MB' },
         { id: 2, name: 'Communication_Consent.pdf', date: '2021-01-20', size: '150 KB' },
@@ -45,6 +67,12 @@ const ParentProfile = ({ parent, onBack }) => {
             title="Parent Profile"
             onBack={onBack}
             onPrint={() => window.print()}
+            secondaryAction={{
+                label: "Send Credentials",
+                icon: Key,
+                onClick: handleSendCredentials,
+                className: "text-orange-600 border-orange-100 hover:bg-orange-50"
+            }}
             primaryAction={{
                 label: "Edit Profile",
                 onClick: () => console.log('Edit Profile')

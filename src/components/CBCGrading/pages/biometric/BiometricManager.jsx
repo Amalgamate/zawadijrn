@@ -21,7 +21,7 @@ import EnrollmentDashboard from './EnrollmentDashboard';
 import LogViewer from './LogViewer';
 import BridgeConfig from './BridgeConfig';
 
-const BiometricManager = () => {
+const BiometricManager = ({ currentPage }) => {
   const [activeTab, setActiveTab] = useState('enrollment');
   const [stats, setStats] = useState({
     devices: 0,
@@ -30,6 +30,17 @@ const BiometricManager = () => {
     lastActivity: null
   });
   const [loading, setLoading] = useState(true);
+
+  // Sync tab with URL path/query params
+  useEffect(() => {
+    if (currentPage && currentPage.includes('?')) {
+      const params = new URLSearchParams(currentPage.split('?')[1]);
+      const tab = params.get('tab');
+      if (tab && ['enrollment', 'devices', 'logs', 'config'].includes(tab)) {
+        setActiveTab(tab);
+      }
+    }
+  }, [currentPage]);
 
   useEffect(() => {
     const fetchStats = async () => {

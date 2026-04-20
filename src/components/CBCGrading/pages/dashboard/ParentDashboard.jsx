@@ -328,19 +328,26 @@ const ParentDashboard = ({ user, onNavigate }) => {
             </div>
           </div>
 
-          <div className="space-y-2 pt-2">
+          <div className="space-y-3 pt-2">
             <h4 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-900">
-              <TrendingUp size={12} className="text-brand-purple" /> Subject highlights
+              <TrendingUp size={12} className="text-brand-purple" /> Academic performance
             </h4>
-            <div className="divide-y divide-gray-100">
-              {(child.subjects || []).slice(0, 5).map((sub, i) => (
-                <div key={i} className="flex items-center justify-between py-2">
-                  <span className="text-xs font-medium text-gray-600">{sub.name}</span>
-                  <span className="text-[10px] font-black uppercase text-brand-purple">
-                    {sub.grade} ({sub.score}%)
-                  </span>
+            <div className="divide-y divide-gray-100 max-h-[300px] overflow-y-auto px-1">
+              {(child.subjects || []).map((sub, i) => (
+                <div key={i} className="flex items-center justify-between py-2.5">
+                  <div>
+                    <p className="text-xs font-bold text-gray-800">{sub.name}</p>
+                    <p className="text-[9px] font-medium text-gray-400 uppercase tracking-tighter">Learning Area</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-black text-brand-purple">{sub.grade}</p>
+                    <p className="text-[9px] font-bold text-gray-400">{sub.score}%</p>
+                  </div>
                 </div>
               ))}
+              {(!child.subjects || child.subjects.length === 0) && (
+                <p className="py-4 text-center text-xs text-gray-400 italic">No assessment data yet</p>
+              )}
             </div>
           </div>
 
@@ -397,34 +404,76 @@ const ParentDashboard = ({ user, onNavigate }) => {
   );
 
   const renderFinance = () => (
-    <div className="grid gap-6 lg:grid-cols-2">
-      <div className="rounded-2xl border border-amber-200/80 bg-amber-50 p-6 shadow-sm">
-        <div className="mb-4 flex items-center gap-2 text-amber-900">
-          <DollarSign size={22} />
-          <h3 className="text-sm font-black uppercase tracking-widest">Household balance</h3>
+    <div className="space-y-6">
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="rounded-2xl border border-amber-200/80 bg-amber-50 p-6 shadow-sm">
+          <div className="mb-4 flex items-center gap-2 text-amber-900">
+            <DollarSign size={22} />
+            <h3 className="text-sm font-black uppercase tracking-widest">Household balance</h3>
+          </div>
+          <p className="text-4xl font-black text-gray-900">KES {Number(stats.totalBalance || 0).toLocaleString()}</p>
+          <p className="mt-2 text-sm text-gray-600">
+            {stats.totalBalance > 0
+              ? 'Combined outstanding amount. Pay at the office or via official mobile money channels.'
+              : 'Your account is fully paid. Thank you!'}
+          </p>
         </div>
-        <p className="text-4xl font-black text-gray-900">KES {Number(stats.totalBalance || 0).toLocaleString()}</p>
-        <p className="mt-2 text-sm text-gray-600">
-          {stats.totalBalance > 0
-            ? 'This is the combined outstanding amount on record. Pay at the office or via channels the school announces.'
-            : 'No outstanding balance on record.'}
-        </p>
+        <div className="rounded-2xl border border-blue-200/80 bg-blue-50 p-6 shadow-sm">
+          <div className="mb-4 flex items-center gap-2 text-blue-900">
+            <Megaphone size={22} />
+            <h3 className="text-sm font-black uppercase tracking-widest">Communication</h3>
+          </div>
+          <p className="text-2xl font-black text-gray-900">{stats.bulletins} Active Notices</p>
+          <button
+            type="button"
+            onClick={() => onNavigate?.('comm-notices')}
+            className="mt-4 flex items-center gap-2 text-xs font-black uppercase tracking-widest text-blue-600 hover:underline"
+          >
+            Go to notice board <Activity size={14} />
+          </button>
+        </div>
       </div>
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <div className="mb-3 flex items-center gap-2 text-brand-purple">
-          <Megaphone size={20} />
-          <h3 className="text-sm font-black uppercase tracking-widest">Notices & bulletins</h3>
+
+      <div className="rounded-2xl border border-gray-200 bg-white shadow-md overflow-hidden">
+        <div className="bg-slate-50 px-6 py-4 border-b border-gray-100">
+          <h4 className="text-xs font-black uppercase tracking-widest text-gray-900">Financial Ledger</h4>
         </div>
-        <p className="text-sm text-gray-600">
-          Fee reminders and school announcements appear in Notices. Open the inbox to read the latest updates.
-        </p>
-        <button
-          type="button"
-          onClick={() => onNavigate?.('comm-notices')}
-          className="mt-4 w-full rounded-xl bg-brand-purple px-4 py-3 text-xs font-black uppercase tracking-widest text-white shadow hover:bg-brand-purple/90"
-        >
-          Open notices
-        </button>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead className="bg-gray-50/50 text-[10px] font-black uppercase tracking-widest text-gray-400 border-b border-gray-100">
+              <tr>
+                <th className="px-6 py-3">Date</th>
+                <th className="px-6 py-3">Invoice #</th>
+                <th className="px-6 py-3">Term/Year</th>
+                <th className="px-6 py-3">Total</th>
+                <th className="px-6 py-3">Balance</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {children.flatMap(c => c.invoices || []).sort((a,b) => new Date(b.date) - new Date(a.date)).map((inv, i) => (
+                <tr key={i} className="hover:bg-gray-50/50">
+                  <td className="px-6 py-4 text-xs text-gray-600">{new Date(inv.date).toLocaleDateString()}</td>
+                  <td className="px-6 py-4 text-xs font-bold text-gray-900">{inv.number}</td>
+                  <td className="px-6 py-4 text-xs text-gray-500">{inv.term} {inv.year}</td>
+                  <td className="px-6 py-4 text-xs font-bold text-gray-900">KES {Number(inv.amount).toLocaleString()}</td>
+                  <td className="px-6 py-4">
+                    <span className={cn(
+                      "px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wider",
+                      Number(inv.balance) > 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"
+                    )}>
+                      {Number(inv.balance) > 0 ? `KES ${Number(inv.balance).toLocaleString()}` : 'PAID'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+              {children.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-400">No invoice records found.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

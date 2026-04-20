@@ -125,7 +125,12 @@ function AppContent() {
       localStorage.removeItem('cbc_ui_state');
     }
     login(userData, token, refreshToken);
-    navigate('/app', { replace: true });
+
+    if (userData.mustChangePassword) {
+      navigate('/auth/reset-password?token=INITIAL_SETUP_REQUIRED', { replace: true });
+    } else {
+      navigate('/app', { replace: true });
+    }
   };
 
   const handleLogout = () => {

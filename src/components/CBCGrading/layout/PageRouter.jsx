@@ -201,7 +201,7 @@ const PageRouter = ({
   return (
     <Suspense fallback={<LoadingOverlay />}>
       {(() => {
-        switch (currentPage) {
+        switch (currentPage?.split('?')[0]) {
           case 'dashboard':
             return user?.role === 'STUDENT'
               ? <StudentDashboardView user={user} onNavigate={handleNavigate} />
@@ -383,7 +383,7 @@ const PageRouter = ({
           case 'biometric-reports':
           case 'biometric-api':
           case 'biometric-dashboard':
-            return <BiometricManager />;
+            return <BiometricManager currentPage={currentPage} />;
 
           case 'comm-notices': return <NoticesPage initialTab={pageParams.activeTab} />;
           case 'comm-messages': return <MessagesPage />;

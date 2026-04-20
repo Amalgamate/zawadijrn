@@ -24,4 +24,6 @@ export const userAPI = {
     fetchWithAuth(`/users/${id}`, { method: 'DELETE' }),
   resetPassword: async (id, data) =>
     fetchWithAuth(`/users/${id}/reset-password`, { method: 'POST', body: JSON.stringify(data) }),
+  sendCredentials: async (id) =>
+    fetchWithAuth(`/users/${id}/credentials`, { method: 'POST' }),
 };

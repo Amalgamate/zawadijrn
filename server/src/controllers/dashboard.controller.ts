@@ -375,25 +375,82 @@ export class DashboardController {
             const cached = await redisCacheService.get<any>(cacheKey);
             if (cached) return res.json({ success: true, data: cached, _cached: true });
 
-            const children = await prisma.learner.findMany({
-                where: { parentId: userId, archived: false },
-                include: {
-                    feeInvoices:          { where: { archived: false }, select: { balance: true, totalAmount: true } },
-                    formativeAssessments: { where: { archived: false }, orderBy: { createdAt: 'desc' }, take: 5 },
-                    attendances:          { where: { archived: false }, orderBy: { date: 'desc' }, take: 30 },
-                },
-            });
+            const [children, noticesCount] = await Promise.all([
+                prisma.learner.findMany({
+                    where: { parentId: userId, archived: false },
+                    include: {
+                        feeInvoices: { 
+                            where: { archived: false }, 
+                            select: { balance: true, totalAmount: true, invoiceNumber: true, createdAt: true, term: true, academicYear: true, items: true },
+                            orderBy: { createdAt: 'desc' },
+                            take: 10
+                        },
+                        formativeAssessments: { where: { archived: false }, orderBy: { createdAt: 'desc' }, take: 10 },
+                        attendances: { where: { archived: false }, orderBy: { date: 'desc' }, take: 30 },
+                        summativeResults: { 
+                            where: { archived: false }, 
+                            include: { test: { select: { title: true, learningArea: true } } },
+                            orderBy: { createdAt: 'desc' },
+                            take: 20
+                        }
+                    },
+                }),
+                prisma.notice.count({
+                    where: { 
+                        status: 'PUBLISHED', 
+                        archived: false,
+                        OR: [
+                            { targetAudience: 'ALL' },
+                            { targetAudience: 'PARENTS' }
+                        ]
+                    }
+                })
+            ]);
 
             const processedChildren = children.map(child => {
                 const totalBalance   = child.feeInvoices.reduce((sum, inv) => sum + (Number(inv.balance) || 0), 0);
                 const attendanceRate = child.attendances.length > 0
                     ? (child.attendances.filter(a => a.status === 'PRESENT').length / child.attendances.length) * 100
                     : 100;
+
+                const avgPerformance = child.summativeResults.length > 0
+                    ? child.summativeResults.reduce((sum, r) => sum + (r.percentage || 0), 0) / child.summativeResults.length
+                    : 0;
+
+                const getPerformanceLevel = (avg: number) => {
+                    if (avg >= 80) return 'EE';
+                    if (avg >= 60) return 'ME';
+                    if (avg >= 40) return 'AE';
+                    return 'BE';
+                };
+
+                // Map results to standard subject list for the UI
+                const subjectStats = child.summativeResults.map(r => ({
+                    name: r.test.learningArea,
+                    score: r.percentage,
+                    grade: r.grade,
+                    title: r.test.title
+                }));
+
                 return {
-                    id: child.id, name: `${child.firstName} ${child.lastName}`,
-                    grade: child.grade.replace('_', ' '), admissionNumber: child.admissionNumber,
-                    performanceLevel: 'ME', overallPerformance: 'Good',
-                    attendanceRate: Math.round(attendanceRate), feeBalance: totalBalance,
+                    id: child.id, 
+                    name: `${child.firstName} ${child.lastName}`,
+                    grade: child.grade.replace('_', ' '), 
+                    admissionNumber: child.admissionNumber,
+                    performanceLevel: getPerformanceLevel(avgPerformance), 
+                    overallPerformance: avgPerformance > 0 ? `${Math.round(avgPerformance)}%` : 'No Data',
+                    attendanceRate: Math.round(attendanceRate), 
+                    feeBalance: totalBalance,
+                    invoices: child.feeInvoices.map(inv => ({
+                        id: (inv as any).id,
+                        number: inv.invoiceNumber,
+                        date: inv.createdAt,
+                        amount: inv.totalAmount,
+                        balance: inv.balance,
+                        term: inv.term,
+                        year: inv.academicYear
+                    })),
+                    subjects: subjectStats,
                     recentAssessments: child.formativeAssessments.map(a => ({
                         date: a.createdAt, subject: a.learningArea, type: a.type, grade: a.overallRating,
                     })),
@@ -407,7 +464,7 @@ export class DashboardController {
                     avgAttendance: processedChildren.length > 0
                         ? Math.round(processedChildren.reduce((sum, c) => sum + c.attendanceRate, 0) / processedChildren.length)
                         : 100,
-                    bulletins: 0,
+                    bulletins: noticesCount,
                 },
             };
 

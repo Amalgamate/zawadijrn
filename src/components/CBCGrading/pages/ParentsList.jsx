@@ -5,7 +5,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Users, Mail, Phone, Eye, MessageCircle, Archive, Search, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Edit, Trash2, Users, Mail, Phone, Eye, MessageCircle, Archive, Search, RefreshCw, ChevronLeft, ChevronRight, Key } from 'lucide-react';
+import { userAPI } from '../../../services/api/user.api';
 import StatusBadge from '../shared/StatusBadge';
 import EmptyState from '../shared/EmptyState';
 import { usePermissions } from '../../../hooks/usePermissions';
@@ -89,6 +90,28 @@ const ParentsList = ({ parents = [], pagination, onFetchParents, onAddParent, on
 
   const handleReset = () => {
     setSearchTerm('');
+  };
+
+  const handleSendCredentials = async (parent) => {
+    if (!parent.phone && !parent.email) {
+      alert('This parent does not have a phone or email on file.');
+      return;
+    }
+
+    if (!window.confirm(`Send login credentials to ${parent.firstName}? This will reset their password and notify them via SMS/WhatsApp.`)) {
+      return;
+    }
+
+    try {
+      const response = await userAPI.sendCredentials(parent.id);
+      if (response.success) {
+        alert('Credentials dispatched successfully!');
+      } else {
+        alert('Failed: ' + (response.message || 'Unknown error'));
+      }
+    } catch (err) {
+      alert('An error occurred while sending credentials.');
+    }
   };
 
   return (
@@ -229,6 +252,14 @@ const ParentsList = ({ parents = [], pagination, onFetchParents, onAddParent, on
                         title="View Details"
                       >
                         <Eye size={16} />
+                      </button>
+
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleSendCredentials(parent); }}
+                        className="p-1.5 text-orange-500 hover:bg-orange-50 rounded-lg transition"
+                        title="Send Login Credentials"
+                      >
+                        <Key size={16} />
                       </button>
 
                       {!currentUserIsTeacher && (

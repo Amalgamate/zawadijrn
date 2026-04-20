@@ -31,6 +31,36 @@ const MessagesPage = () => {
   const [inboxMessages, setInboxMessages] = useState([]);
   const [showComposeReport, setShowComposeReport] = useState(false);
 
+  // Staff Directory State
+  const [staffContacts, setStaffContacts] = useState([]);
+  const [loadingStaff, setLoadingStaff] = useState(false);
+  const [staffFilter, setStaffFilter] = useState('');
+
+  const filteredStaff = staffContacts.filter(staff => 
+    staff.name.toLowerCase().includes(staffFilter.toLowerCase()) ||
+    staff.role.toLowerCase().includes(staffFilter.toLowerCase())
+  );
+
+  const fetchStaffContacts = useCallback(async () => {
+    setLoadingStaff(true);
+    try {
+      const response = await api.communication.getStaffContacts();
+      if (response.success && Array.isArray(response.data)) {
+        setStaffContacts(response.data);
+      }
+    } catch (err) {
+      console.error('Failed to load staff contacts', err);
+    } finally {
+      setLoadingStaff(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (showCompose) {
+      fetchStaffContacts();
+    }
+  }, [showCompose, fetchStaffContacts]);
+
   // Broadcast State
   const [activeGrades, setActiveGrades] = useState([]);
   const [selectedGrade, setSelectedGrade] = useState('');
@@ -589,83 +619,128 @@ const MessagesPage = () => {
 
           <Tabs value={composeInputMode} onValueChange={setComposeInputMode} className="w-full">
             <TabsList className="w-full grid grid-cols-2 mb-4">
-              <TabsTrigger value="single" className="gap-2">
-                <Phone size={16} />
-                Single Message
-              </TabsTrigger>
-              <TabsTrigger value="bulk" className="gap-2">
-                <Upload size={16} />
-                Bulk (CSV/Excel)
-              </TabsTrigger>
-            </TabsList>
+            {/* Staff Directory Tab */}
+            <TabsTrigger value="staff" className="gap-2">
+              <Users size={16} />
+              Staff Directory
+            </TabsTrigger>
+          </TabsList>
 
-            {/* Single Message Tab */}
-            <TabsContent value="single" className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="composePhone" className="font-bold">Phone Number</Label>
-                <Input
-                  id="composePhone"
-                  type="tel"
-                  value={composePhone}
-                  onChange={(e) => setComposePhone(e.target.value)}
-                  placeholder="0712345678, +254712345678, or 254712345678"
-                  disabled={isSendingCompose}
-                />
-                {composePhone.trim() && (
-                  <div className="text-sm">
-                    {isValidPhoneNumber(composePhone) ? (
-                      <p className="text-green-600 font-semibold">
-                        ✓ Will send to: {getDisplayPhoneNumber(composePhone)}
-                      </p>
-                    ) : (
-                      <p className="text-red-600 font-semibold">
-                        ✗ Invalid phone format. Try: 0712345678 or +254712345678
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-
-            {/* Bulk Upload Tab */}
-            <TabsContent value="bulk" className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="csvFile" className="font-bold">Upload CSV or Excel File</Label>
-                <p className="text-xs text-gray-500">File should contain phone numbers (with or without header row)</p>
-                <input
-                  id="csvFile"
-                  type="file"
-                  accept=".csv,.xlsx,.xls"
-                  onChange={(e) => handleLoadCsvFile(e.target.files?.[0])}
-                  disabled={isSendingCompose}
-                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-brand-teal file:text-white file:font-bold hover:file:bg-brand-teal/90 cursor-pointer"
-                />
-              </div>
-
-              {composeCsvFile && composePhones.length > 0 && (
-                <Card className="bg-green-50 border-green-200">
-                  <CardContent className="p-4">
-                    <p className="text-sm font-bold text-green-700 mb-2">✓ File loaded successfully</p>
-                    <p className="text-sm text-green-600">{composeCsvFile.name}</p>
-                    <p className="text-lg font-bold text-green-700 mt-2">{composePhones.length} phone numbers</p>
-                    <div className="mt-3 max-h-32 overflow-y-auto">
-                      <p className="text-xs font-bold text-green-600 mb-1">First 10 numbers:</p>
-                      <div className="space-y-1">
-                        {composePhones.slice(0, 10).map((phone, idx) => (
-                          <p key={idx} className="text-xs text-green-600 font-mono">
-                            {getDisplayPhoneNumber(phone)}
-                          </p>
-                        ))}
-                        {composePhones.length > 10 && (
-                          <p className="text-xs text-green-600">+{composePhones.length - 10} more...</p>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+          {/* Single Message Tab */}
+          <TabsContent value="single" className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="composePhone" className="font-bold">Phone Number</Label>
+              <Input
+                id="composePhone"
+                type="tel"
+                value={composePhone}
+                onChange={(e) => setComposePhone(e.target.value)}
+                placeholder="0712345678, +254712345678, or 254712345678"
+                disabled={isSendingCompose}
+              />
+              {composePhone.trim() && (
+                <div className="text-sm">
+                  {isValidPhoneNumber(composePhone) ? (
+                    <p className="text-green-600 font-semibold">
+                      ✓ Will send to: {getDisplayPhoneNumber(composePhone)}
+                    </p>
+                  ) : (
+                    <p className="text-red-600 font-semibold">
+                      ✗ Invalid phone format. Try: 0712345678 or +254712345678
+                    </p>
+                  )}
+                </div>
               )}
-            </TabsContent>
-          </Tabs>
+            </div>
+          </TabsContent>
+
+          {/* Bulk Upload Tab */}
+          <TabsContent value="bulk" className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="csvFile" className="font-bold">Upload CSV or Excel File</Label>
+              <p className="text-xs text-gray-500">File should contain phone numbers (with or without header row)</p>
+              <input
+                id="csvFile"
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                onChange={(e) => handleLoadCsvFile(e.target.files?.[0])}
+                disabled={isSendingCompose}
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-brand-teal file:text-white file:font-bold hover:file:bg-brand-teal/90 cursor-pointer"
+              />
+            </div>
+
+            {composeCsvFile && composePhones.length > 0 && (
+              <Card className="bg-green-50 border-green-200">
+                <CardContent className="p-4">
+                  <p className="text-sm font-bold text-green-700 mb-2">✓ File loaded successfully</p>
+                  <p className="text-sm text-green-600">{composeCsvFile.name}</p>
+                  <p className="text-lg font-bold text-green-700 mt-2">{composePhones.length} phone numbers</p>
+                  <div className="mt-3 max-h-32 overflow-y-auto">
+                    <p className="text-xs font-bold text-green-600 mb-1">First 10 numbers:</p>
+                    <div className="space-y-1">
+                      {composePhones.slice(0, 10).map((phone, idx) => (
+                        <p key={idx} className="text-xs text-green-600 font-mono">
+                          {getDisplayPhoneNumber(phone)}
+                        </p>
+                      ))}
+                      {composePhones.length > 10 && (
+                        <p className="text-xs text-green-600">+{composePhones.length - 10} more...</p>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* Staff Directory Tab Content */}
+          <TabsContent value="staff" className="space-y-4">
+            <div className="relative">
+              <Input
+                placeholder="Search staff by name or role..."
+                value={staffFilter}
+                onChange={(e) => setStaffFilter(e.target.value)}
+                className="pl-10"
+              />
+              <Users className="absolute left-3 top-2.5 text-gray-400" size={18} />
+            </div>
+
+            <div className="max-h-[300px] overflow-y-auto border rounded-lg divide-y divide-gray-100">
+              {loadingStaff ? (
+                <div className="p-8 text-center">
+                  <Loader2 className="animate-spin mx-auto text-brand-teal mb-2" size={24} />
+                  <p className="text-sm text-gray-500 font-bold uppercase tracking-widest">Loading directory...</p>
+                </div>
+              ) : filteredStaff.length === 0 ? (
+                <div className="p-8 text-center">
+                  <p className="text-sm text-gray-400">No staff members found matching "{staffFilter}"</p>
+                </div>
+              ) : (
+                filteredStaff.map((staff) => (
+                  <button
+                    key={staff.id}
+                    onClick={() => {
+                      setComposePhone(staff.phone);
+                      setComposeInputMode('single');
+                      setStaffFilter('');
+                      showSuccess(`Selected ${staff.name}`);
+                    }}
+                    className="w-full flex items-center justify-between p-3 hover:bg-slate-50 transition-colors group"
+                  >
+                    <div className="text-left">
+                      <p className="font-bold text-gray-900 group-hover:text-brand-purple transition-colors">{staff.name}</p>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{staff.role.replace(/_/g, ' ')}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-mono text-gray-500">{getDisplayPhoneNumber(staff.phone)}</p>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+            <p className="text-[10px] italic text-gray-400 text-center font-medium">Click a staff member to select them as a recipient</p>
+          </TabsContent>
+        </Tabs>
 
           <div className="space-y-4">
             <Label htmlFor="composeSubject" className="font-bold">Subject (optional)</Label>

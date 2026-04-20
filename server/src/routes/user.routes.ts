@@ -149,18 +149,22 @@ router.post(
   asyncHandler(userController.uploadProfilePicture)
 );
 
-/**
- * @route   POST /api/users/:id/reset-password
- * @desc    Reset user password manually by admin
- * @access  SUPER_ADMIN, ADMIN
- */
-router.post(
-  '/:id/reset-password',
-  authenticate,
-  requirePermission('EDIT_USER'),
-  rateLimit({ windowMs: 15 * 60 * 1000, maxRequests: 5 }), // Very strict: 5 resets per 15 mins
   auditLog('RESET_PASSWORD'),
   asyncHandler(userController.resetPassword)
+);
+
+/**
+ * @route   POST /api/users/:id/credentials
+ * @desc    Send login credentials (SMS + WhatsApp) to parent/staff
+ * @access  ADMIN, TEACHER, HEAD_TEACHER
+ */
+router.post(
+  '/:id/credentials',
+  authenticate,
+  requireRole(['ADMIN', 'SUPER_ADMIN', 'TEACHER', 'HEAD_TEACHER']),
+  rateLimit({ windowMs: 15 * 60 * 1000, maxRequests: 5 }),
+  auditLog('SEND_CREDENTIALS'),
+  asyncHandler(userController.sendCredentials)
 );
 
 export default router;

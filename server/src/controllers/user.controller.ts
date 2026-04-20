@@ -382,6 +382,61 @@ export class UserController {
 
     res.json({ success: true, message: 'Password reset' });
   }
+
+  /**
+   * Send Login Credentials
+   * POST /api/users/:id/credentials
+   */
+  async sendCredentials(req: AuthRequest, res: Response) {
+    const { id } = req.params;
+    const currentUserRole = req.user!.role;
+
+    const targetUser = await prisma.user.findUnique({ where: { id } });
+    if (!targetUser) throw new ApiError(404, 'User not found');
+
+    if (!canManageRole(currentUserRole, targetUser.role as Role)) {
+      throw new ApiError(403, 'Permission denied to send credentials for this user');
+    }
+
+    const tempPassword = 'Zawadi2026!';
+    const hashedPassword = await bcrypt.hash(tempPassword, 12);
+    
+    // Set passwordResetToken to trigger the "must change password" flag on login
+    // set expiry to 24 hours from now
+    const expiry = new Date();
+    expiry.setHours(expiry.getHours() + 24);
+
+    await prisma.user.update({
+      where: { id },
+      data: { 
+        password: hashedPassword, 
+        passwordResetToken: 'INITIAL_SETUP_REQUIRED',
+        passwordResetExpiry: expiry,
+        loginAttempts: 0,
+        lockedUntil: null
+      }
+    });
+
+    const school = await prisma.school.findFirst({ select: { name: true } });
+    const schoolName = school?.name || 'Zawadi SMS';
+    const frontendUrl = process.env.FRONTEND_URL || 'https://app.zawadi.com';
+    
+    const message = `Welcome to ${schoolName}! Your parent portal account is ready.\n\nLogin URL: ${frontendUrl}\nUsername: ${targetUser.email}\nTemp Password: ${tempPassword}\n\nPlease change your password immediately after logging in.`;
+
+    const results: any = { sms: null, whatsapp: null };
+
+    if (targetUser.phone) {
+      results.sms = await SmsService.sendSms(targetUser.phone, message);
+      results.whatsapp = await whatsappService.sendMessage({ to: targetUser.phone, message });
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'Credentials dispatched successfully', 
+      recipient: targetUser.phone,
+      results 
+    });
+  }
 }
 
 export const userController = new UserController();
