@@ -30,7 +30,11 @@ export const authenticate = async (
 
     next();
   } catch (error: any) {
-    console.error('❌ Auth Error:', error.message);
+    const isProd = process.env.NODE_ENV === 'production';
+    if (isProd) {
+      console.error(`[Auth] Authentication failed: ${error.message} (Name: ${error.name})`);
+    }
+
     if (error.name === 'TokenExpiredError') {
       next(new ApiError(401, 'Token expired'));
     } else if (error.name === 'JsonWebTokenError') {

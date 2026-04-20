@@ -46,7 +46,8 @@ axiosInstance.interceptors.request.use(
         // Preference for cookies (withCredentials: true), 
         // but allow Bearer fallback for mobile/capacitor clients
         const token = localStorage.getItem('token');
-        if (token && token !== '__cookie__') {
+        // If we have a real JWT (starts with ey), send it as Header fallback
+        if (token && token.startsWith('ey')) {
             config.headers['Authorization'] = `Bearer ${token}`;
         }
         return config;

@@ -34,7 +34,7 @@ export class AuthController {
     const commonOptions: any = {
       httpOnly: true,
       secure: isProd,
-      sameSite: isProd ? 'lax' : 'lax', // Use 'lax' for better custom domain support
+      sameSite: isProd ? 'none' : 'lax', // Use 'none' for cross-domain production support
       path: '/'
     };
 
@@ -193,8 +193,8 @@ export class AuthController {
     res.json({
       success: true,
       user: userWithoutSensitive,
-      token: '__cookie__', // placeholder for frontend state compatibility
-      refreshToken: '__cookie__', // placeholder for frontend state compatibility
+      token: accessToken, // Return actual token for cross-domain headers fallback
+      refreshToken: refreshToken,
       mustChangePassword,
       message: mustChangePassword ? 'Login successful — please set a new password' : 'Login successful'
     });
@@ -245,9 +245,9 @@ export class AuthController {
 
       res.json({ 
         success: true,
-        token: '__cookie__',
-        refreshToken: '__cookie__'
-      }); // tokens rotated in cookies, placeholder returned for body check
+        token: newAccessToken,
+        refreshToken: newRefreshToken
+      }); // tokens rotated in cookies, actual tokens returned for headers fallback
     } catch (error) {
       if (error instanceof ApiError) throw error;
       throw new ApiError(401, 'Invalid refresh token');
