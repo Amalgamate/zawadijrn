@@ -58,7 +58,7 @@ export async function findLearnersByPhone(phone: string): Promise<string[]> {
  * Matches the logic used in fee.controller.ts::recordPayment().
  * Must be called inside a prisma.$transaction if atomicity is needed.
  */
-async function applyAmountToInvoiceFields(
+export async function applyAmountToInvoiceFields(
     tx: any,
     invoiceId: string,
     amount: number
@@ -95,7 +95,7 @@ async function applyAmountToInvoiceFields(
 /**
  * FIX (Bug 2): Correct 4-branch status logic, identical to fee.controller.ts.
  */
-function resolveInvoiceStatus(inv: { paidAmount: any; totalAmount: any; balance: any }): PaymentStatus {
+export function resolveInvoiceStatus(inv: { paidAmount: any; totalAmount: any; balance: any }): PaymentStatus {
     const paid  = Number(inv.paidAmount);
     const total = Number(inv.totalAmount);
     const bal   = Number(inv.balance);

@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { mpesaService } from '../services/mpesa.service';
 import prisma from '../config/database';
 import messageService from '../services/message.service';
-import { resolveOrganicPayment, applyToSpecificInvoice, normalizePhone } from '../services/payment-resolver.service';
+import { resolveOrganicPayment, applyToSpecificInvoice, normalizePhone, applyAmountToInvoiceFields, resolveInvoiceStatus } from '../services/payment-resolver.service';
 
 export const initiatePayment = async (req: Request, res: Response) => {
     const { phoneNumber, amount, studentId, invoiceId } = req.body;
@@ -177,29 +177,39 @@ export const handleCallback = async (req: Request, res: Response) => {
                 if (transaction.invoiceId) {
                     const systemUser = await prisma.user.findFirst({ where: { role: 'SUPER_ADMIN' } });
 
-                    await prisma.feePayment.create({
-                        data: {
-                            invoiceId: transaction.invoiceId,
-                            amount,
-                            paymentMethod: 'MPESA',
-                            receiptNumber: `MPESA-${receipt}`,
-                            referenceNumber: receipt,
-                            notes: `M-Pesa STK Push via ${phone}`,
-                            recordedBy: systemUser?.id || ''
-                        }
-                    });
+                    let updatedInvoice: any;
+                    try {
+                        await prisma.$transaction(async (tx) => {
+                            await tx.feePayment.create({
+                                data: {
+                                    invoiceId: transaction.invoiceId!,
+                                    amount,
+                                    paymentMethod: 'MPESA',
+                                    receiptNumber: `MPESA-${receipt}`,
+                                    referenceNumber: receipt,
+                                    notes: `M-Pesa STK Push via ${phone}`,
+                                    recordedBy: systemUser?.id || ''
+                                }
+                            });
 
-                    await prisma.feeInvoice.update({
-                        where: { id: transaction.invoiceId },
-                        data: {
-                            paidAmount: { increment: amount },
-                            balance: { decrement: amount }
-                        }
-                    });
+                            await applyAmountToInvoiceFields(tx, transaction.invoiceId!, amount);
 
-                    const updatedInvoice = await prisma.feeInvoice.findUnique({ where: { id: transaction.invoiceId } });
-                    if (updatedInvoice && Number(updatedInvoice.balance) <= 0) {
-                        await prisma.feeInvoice.update({ where: { id: transaction.invoiceId }, data: { status: 'PAID' } });
+                            const fresh = await tx.feeInvoice.findUnique({ where: { id: transaction.invoiceId! } });
+                            if (fresh) {
+                                const newStatus = resolveInvoiceStatus(fresh);
+                                updatedInvoice = await tx.feeInvoice.update({
+                                    where: { id: transaction.invoiceId! },
+                                    data: { status: newStatus }
+                                });
+                            }
+                        });
+                    } catch (err: any) {
+                        if (err?.code === 'P2002') {
+                            console.warn(`[MpesaCallback] Duplicate receipt ${receipt} — already recorded.`);
+                            updatedInvoice = await prisma.feeInvoice.findUnique({ where: { id: transaction.invoiceId! } });
+                        } else {
+                            throw err;
+                        }
                     }
 
                     // SMS receipt
@@ -309,32 +319,39 @@ export const resolveUnmatchedPayment = async (req: Request, res: Response) => {
 
         const systemUser = await prisma.user.findFirst({ where: { role: 'SUPER_ADMIN' } });
 
-        // Apply payment
-        await prisma.feePayment.create({
-            data: {
-                invoiceId,
-                amount: unmatched.amount,
-                paymentMethod: 'MPESA',
-                receiptNumber: `MPESA-${unmatched.receiptNo}`,
-                referenceNumber: unmatched.receiptNo,
-                notes: `Manually assigned from unmatched payment queue (phone: ${unmatched.phone})`,
-                recordedBy: systemUser?.id || userId || ''
-            }
-        });
+        let updated: any;
+        try {
+            await prisma.$transaction(async (tx) => {
+                await tx.feePayment.create({
+                    data: {
+                        invoiceId,
+                        amount: unmatched.amount,
+                        paymentMethod: 'MPESA',
+                        receiptNumber: `MPESA-${unmatched.receiptNo}`,
+                        referenceNumber: unmatched.receiptNo,
+                        notes: `Manually assigned from unmatched payment queue (phone: ${unmatched.phone})`,
+                        recordedBy: systemUser?.id || userId || ''
+                    }
+                });
 
-        await prisma.feeInvoice.update({
-            where: { id: invoiceId },
-            data: {
-                paidAmount: { increment: unmatched.amount },
-                balance: { decrement: unmatched.amount }
-            }
-        });
+                await applyAmountToInvoiceFields(tx, invoiceId, Number(unmatched.amount));
 
-        const updated = await prisma.feeInvoice.findUnique({ where: { id: invoiceId } });
-        if (updated && Number(updated.balance) <= 0) {
-            await prisma.feeInvoice.update({ where: { id: invoiceId }, data: { status: 'PAID' } });
-        } else if (updated && Number(updated.paidAmount) > 0) {
-            await prisma.feeInvoice.update({ where: { id: invoiceId }, data: { status: 'PARTIAL' } });
+                const fresh = await tx.feeInvoice.findUnique({ where: { id: invoiceId } });
+                if (fresh) {
+                    const newStatus = resolveInvoiceStatus(fresh);
+                    updated = await tx.feeInvoice.update({
+                        where: { id: invoiceId },
+                        data: { status: newStatus }
+                    });
+                }
+            });
+        } catch (err: any) {
+            if (err?.code === 'P2002') {
+                console.warn(`[ResolveUnmatched] Duplicate receipt ${unmatched.receiptNo} — already recorded.`);
+                updated = await prisma.feeInvoice.findUnique({ where: { id: invoiceId } });
+            } else {
+                throw err;
+            }
         }
 
         // Mark as resolved

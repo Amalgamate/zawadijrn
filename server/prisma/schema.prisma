@@ -931,7 +931,7 @@ model FeeInvoice {
   archived         Boolean       @default(false)
   archivedAt       DateTime?
   archivedBy       String?
-  complianceStatus PaymentStatus @default(PENDING)
+  complianceStatus ComplianceStatus @default(PENDING)
   etimsControlCode String?
   etimsQRCodeUrl   String?
 
@@ -3033,4 +3033,11 @@ model AppAuditLog {
   @@index([performedBy])
   @@index([createdAt])
   @@map("app_audit_logs")
+}
+
+enum ComplianceStatus {
+  PENDING
+  SYNCED
+  FAILED
+  EXEMPT
 }

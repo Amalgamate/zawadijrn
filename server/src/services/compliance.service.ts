@@ -1,19 +1,6 @@
 import prisma from '../config/database';
-import { FeeInvoice } from '@prisma/client';
+import { FeeInvoice, ComplianceStatus } from '@prisma/client';
 
-/**
- * Compliance status values for eTIMS sync.
- * These are string constants used in the `complianceStatus` field, which
- * currently maps to the `PaymentStatus` enum in Prisma as a workaround.
- * TODO: Create a dedicated `ComplianceStatus` enum in schema.prisma:
- *   enum ComplianceStatus { PENDING SYNCED FAILED }
- * and update the feeInvoice model to use it instead.
- */
-export const COMPLIANCE_STATUS = {
-  PENDING: 'PENDING' as const,
-  SYNCED:  'PAID'    as const, // 'PAID' maps to SYNCED in current schema workaround
-  FAILED:  'PARTIAL' as const  // 'PARTIAL' maps to FAILED in current schema workaround
-} as const;
 
 export interface ETIMSPayload {
   invoiceNumber: string;
@@ -46,8 +33,8 @@ export class ComplianceService {
       });
 
       if (!invoice) throw new Error('Invoice not found');
-      // Already synced check — use COMPLIANCE_STATUS constant, not a raw 'PAID' literal
-      if (invoice.complianceStatus === COMPLIANCE_STATUS.SYNCED) {
+      // Already synced check
+      if (invoice.complianceStatus === ComplianceStatus.SYNCED) {
         console.log(`[Compliance] Invoice ${invoice.invoiceNumber} already synced. Skipping.`);
         return true;
       }
@@ -78,7 +65,7 @@ export class ComplianceService {
       await prisma.feeInvoice.update({
         where: { id: invoiceId },
         data: {
-          complianceStatus: COMPLIANCE_STATUS.SYNCED,
+          complianceStatus: ComplianceStatus.SYNCED,
           etimsControlCode: mockResult.controlCode,
           etimsQRCodeUrl: mockResult.qrCode
         }
@@ -92,7 +79,7 @@ export class ComplianceService {
       try {
         await prisma.feeInvoice.update({
           where: { id: invoiceId },
-          data: { complianceStatus: COMPLIANCE_STATUS.FAILED }
+          data: { complianceStatus: ComplianceStatus.FAILED }
         });
       } catch (updateErr) {
         console.error(`[Compliance] Could not mark invoice ${invoiceId} as FAILED:`, updateErr);
