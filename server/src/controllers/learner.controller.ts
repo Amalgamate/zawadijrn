@@ -13,23 +13,14 @@ import { generateAdmissionNumber } from '../services/admissionNumber.service';
 import { feeService } from '../services/fee.service';
 import { SmsService } from '../services/sms.service';
 import { EmailService } from '../services/email.service';
+import { parentService } from '../services/parent.service';
 import { v2 as cloudinary } from 'cloudinary';
 
 const SKIP_PARENT_PORTAL_NOTIFICATIONS = process.env.SKIP_PARENT_PORTAL_NOTIFICATIONS === 'true' || process.env.NODE_ENV === 'test';
 
 /**
- * Generate a secure random password for auto-created accounts.
- * Format: 3 uppercase + 3 digits + 2 lowercase = 8 chars, always valid.
- * A passwordResetToken is also set on the account so the user is forced
- * to change this password on first login (mustChangePassword flow).
+ * LearnerController handles learner operations in Zawadi SMS.
  */
-function generateTemporaryPassword(): string {
-    const upper  = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
-    const digits = '23456789';
-    const lower  = 'abcdefghjkmnpqrstuvwxyz';
-    const rand   = (charset: string) => charset[randomBytes(1)[0] % charset.length];
-    return [rand(upper), rand(upper), rand(upper), rand(digits), rand(digits), rand(digits), rand(lower), rand(lower)].join('');
-}
 
 export class LearnerController {
   async getAllLearners(req: AuthRequest, res: Response) {
@@ -170,65 +161,15 @@ export class LearnerController {
       if (!parentId) {
         const pPhone = guardianPhone || primaryContactPhone;
         const pName  = guardianName  || primaryContactName || 'Parent';
-        const pEmail = (guardianEmail || primaryContactEmail)?.includes('@')
-          ? (guardianEmail || primaryContactEmail)
-          : `${pPhone?.replace(/\D/g, '')}@zawadisms.com`;
+        const pEmail = (guardianEmail || primaryContactEmail)?.includes('@') ? (guardianEmail || primaryContactEmail) : undefined;
 
-        if (pPhone) {
-          let parent = await prisma.user.findFirst({ where: { phone: pPhone, role: 'PARENT' } });
-
-          if (!parent) {
-            const nameParts = pName.split(' ');
-            const pFirstName = nameParts[0] || 'Parent';
-            const pLastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Guardian';
-            const existingEmail = await prisma.user.findUnique({ where: { email: pEmail } });
-            const finalEmail = existingEmail ? `${pPhone.replace(/\D/g, '')}-${Date.now()}@zawadisms.com` : pEmail;
-
-            // ── C1 fix: random password + force-reset token ──────────────────
-            const parentPassword = generateTemporaryPassword();
-            const forceResetToken = randomBytes(32).toString('hex');
-            const forceResetExpiry = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000); // 90 days to reset
-
-            parent = await prisma.user.create({
-              data: {
-                username: finalEmail,
-                firstName: pFirstName,
-                lastName: pLastName,
-                email: finalEmail,
-                phone: pPhone,
-                password: await bcrypt.hash(parentPassword, 11),
-                role: 'PARENT',
-                status: 'ACTIVE',
-                // Flag: user must change password on first login
-                passwordResetToken: forceResetToken,
-                passwordResetExpiry: forceResetExpiry,
-              }
-            });
-
-            if (!SKIP_PARENT_PORTAL_NOTIFICATIONS) {
-              const portalUrl = process.env.PARENT_PORTAL_URL || process.env.APP_URL || 'https://parents.zawadisms.com';
-              const credentialsMessage =
-                `Hello ${pFirstName}, your Parent Portal account is ready. Login at ${portalUrl} with email: ${finalEmail} and temporary password: ${parentPassword}. You will be prompted to set a new password on first login.`;
-
-              try { await SmsService.sendSms(pPhone, credentialsMessage); } catch (smsError: any) {
-                console.warn('[createLearner] Parent portal SMS failed:', smsError?.message || smsError);
-              }
-
-              if (pEmail?.includes('@')) {
-                try {
-                  await EmailService.sendNotificationEmail({
-                    to: pEmail,
-                    subject: 'Your Parent Portal Login Credentials',
-                    text: credentialsMessage,
-                    html: `<p>${credentialsMessage}</p>`
-                  });
-                } catch (emailError: any) {
-                  console.warn('[createLearner] Parent portal email failed:', emailError?.message || emailError);
-                }
-              }
-            }
-          }
-          parentId = parent.id;
+        if (pPhone || pEmail) {
+          const parent = await parentService.getOrCreateParent({
+            phone: pPhone,
+            name: pName,
+            email: pEmail
+          });
+          if (parent) parentId = parent.id;
         }
       }
 
@@ -273,7 +214,7 @@ export class LearnerController {
         });
         if (!existingUser) {
           // ── C1 fix: random password + force-reset token ──────────────────────
-          const studentPassword = generateTemporaryPassword();
+          const studentPassword = parentService.generateTemporaryPassword();
           const forceResetToken = randomBytes(32).toString('hex');
           const forceResetExpiry = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
 
@@ -368,43 +309,15 @@ export class LearnerController {
         const pName  = req.body.guardianName  || req.body.primaryContactName || (req.body.firstName ? 'Parent' : null);
         const pEmail = (req.body.guardianEmail || req.body.primaryContactEmail)?.includes('@')
           ? (req.body.guardianEmail || req.body.primaryContactEmail)
-          : (pPhone ? `${pPhone.replace(/\D/g, '')}@zawadisms.com` : null);
+          : undefined;
 
-        if (pPhone) {
-          let parent = await prisma.user.findFirst({ where: { phone: pPhone, role: 'PARENT' } });
-          if (!parent) {
-            const nameParts = (pName || 'Parent').split(' ');
-            const pFirstName = nameParts[0] || 'Parent';
-            const pLastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Guardian';
-            const existingEmail = await prisma.user.findUnique({ where: { email: pEmail } });
-            const finalEmail = existingEmail ? `${pPhone.replace(/\D/g, '')}-${Date.now()}@zawadisms.com` : pEmail;
-
-            // ── C1 fix: random password + force-reset token ──────────────────
-            const parentPassword = generateTemporaryPassword();
-            const forceResetToken = randomBytes(32).toString('hex');
-            const forceResetExpiry = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
-
-            parent = await prisma.user.create({
-              data: {
-                username: finalEmail, firstName: pFirstName, lastName: pLastName,
-                email: finalEmail, phone: pPhone,
-                password: await bcrypt.hash(parentPassword, 11),
-                role: 'PARENT', status: 'ACTIVE',
-                passwordResetToken: forceResetToken,
-                passwordResetExpiry: forceResetExpiry,
-              }
-            });
-
-            if (!SKIP_PARENT_PORTAL_NOTIFICATIONS) {
-              const portalUrl = process.env.PARENT_PORTAL_URL || process.env.APP_URL || 'https://parents.zawadisms.com';
-              const credentialsMessage = `Hello ${pFirstName}, your Parent Portal account is ready. Login at ${portalUrl} with email: ${finalEmail} and temporary password: ${parentPassword}. You will be prompted to set a new password on first login.`;
-              try { await SmsService.sendSms(pPhone, credentialsMessage); } catch {}
-              if (pEmail?.includes('@')) {
-                try { await EmailService.sendNotificationEmail({ to: pEmail, subject: 'Your Parent Portal Login Credentials', text: credentialsMessage, html: `<p>${credentialsMessage}</p>` }); } catch {}
-              }
-            }
-          }
-          updateData.parentId = parent.id;
+        if (pPhone || pEmail) {
+          const parent = await parentService.getOrCreateParent({
+            phone: pPhone,
+            name: pName,
+            email: pEmail
+          });
+          if (parent) updateData.parentId = parent.id;
         }
       }
 

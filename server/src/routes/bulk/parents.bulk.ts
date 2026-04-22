@@ -10,7 +10,7 @@ import csvParser from 'csv-parser';
 import { Parser } from 'json2csv';
 import { Readable } from 'stream';
 import { z } from 'zod';
-import bcrypt from 'bcryptjs';
+import { parentService } from '../../services/parent.service';
 
 const router = Router();
 
@@ -97,19 +97,16 @@ router.post(
           continue;
         }
 
-        const hashedPassword = await bcrypt.hash('Parent@123', 10);
-
-        const parent = await prisma.user.create({
-          data: {
-            email: csvData['Email'],
-            password: hashedPassword,
-            firstName: csvData['First Name'],
-            lastName: csvData['Last Name'],
-            phone: csvData['Phone'],
-            role: 'PARENT',
-            status: (csvData['Status'] as UserStatus) || 'ACTIVE',
-          }
+        const parent = await parentService.getOrCreateParent({
+          email: csvData['Email'],
+          name: `${csvData['First Name']} ${csvData['Last Name']}`,
+          phone: csvData['Phone'],
+          status: (csvData['Status'] as UserStatus) || 'ACTIVE'
         });
+
+        if (!parent) {
+          throw new Error('Failed to create parent account');
+        }
 
         if (csvData['Student Admission Numbers']) {
           const admNos = csvData['Student Admission Numbers']

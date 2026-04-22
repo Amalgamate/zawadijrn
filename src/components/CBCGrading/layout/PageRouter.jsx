@@ -85,6 +85,7 @@ const PerformanceManager = lazy(() => import('../pages/hr/PerformanceManager'));
 
 // Accounting Module
 const AccountingManager = lazy(() => import('../pages/accounting/AccountingManager'));
+const AccountingConfiguration = lazy(() => import('../pages/accounting/AccountingConfiguration'));
 const ChartOfAccounts = lazy(() => import('../pages/accounting/ChartOfAccounts'));
 const JournalEntries = lazy(() => import('../pages/accounting/JournalEntries'));
 const ExpenseManager = lazy(() => import('../pages/accounting/ExpenseManager'));
@@ -338,6 +339,7 @@ const PageRouter = ({
           case 'accounting-vendors': return <VendorManager />;
           case 'accounting-reconciliation': return <BankReconciliation />;
           case 'accounting-reports': return <FinancialReports />;
+          case 'accounting-config': return <AccountingConfiguration />;
 
           case 'facilities-classes': return <FacilityManager />;
           case 'hostel-allocation':   return <HostelAllocation />;

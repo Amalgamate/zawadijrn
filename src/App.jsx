@@ -13,6 +13,7 @@ import axiosInstance from './services/api/axiosConfig';
 import { useBootstrapStore } from './store/useBootstrapStore';
 
 import useSubjectStore from './store/useSubjectStore';
+import ErrorBoundary from './components/common/ErrorBoundary';
 
 const DEFAULT_BRANDING = {
   logoUrl: '/logo-zawadi.png',
@@ -204,10 +205,12 @@ function AppContent() {
 
 export default function App() {
   return (
-    <HashRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <AppContent />
-      <Toaster position="top-right" reverseOrder={false} />
-      <SpeedInsights />
-    </HashRouter>
+    <ErrorBoundary>
+      <HashRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <AppContent />
+        <Toaster position="top-right" reverseOrder={false} />
+        <SpeedInsights />
+      </HashRouter>
+    </ErrorBoundary>
   );
 }

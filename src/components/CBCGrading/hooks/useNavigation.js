@@ -256,6 +256,16 @@ export const allNavSections = [
                     { id: 'accounting-reconciliation', label: 'Reconciliation',       path: 'accounting-reconciliation', permission: 'ACCOUNTING_MANAGEMENT' },
                     { id: 'accounting-reports',        label: 'Financial Reports',    path: 'accounting-reports',        permission: 'ACCOUNTING_MANAGEMENT' }
                 ]
+            },
+            {
+                id: 'group-accounting-config',
+                label: 'Configuration',
+                type: 'group',
+                icon: Settings,
+                permission: 'ACCOUNTING_MANAGEMENT',
+                items: [
+                    { id: 'accounting-config', label: 'Accounts & Categories', path: 'accounting-config', permission: 'ACCOUNTING_MANAGEMENT' }
+                ]
             }
         ]
     },
