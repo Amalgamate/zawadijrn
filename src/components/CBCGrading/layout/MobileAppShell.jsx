@@ -66,9 +66,10 @@ const MobileAppShell = ({ children, user, onLogout, onNavigate, currentPage, bra
   ];
 
   return (
-    <div className="flex flex-col h-screen bg-white overflow-hidden relative font-sans">
+    <div className="flex flex-col h-[100dvh] bg-white overflow-hidden relative font-sans">
       {/* Premium Mobile Top App Bar - Glassmorphism */}
-      <div className="h-[64px] bg-white/80 backdrop-blur-xl border-b border-gray-100 flex items-center justify-between px-5 z-50 shadow-sm sticky top-0">
+      <div className="bg-white/80 backdrop-blur-xl border-b border-gray-100 flex flex-col z-50 sticky top-0" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+      <div className="h-[64px] flex items-center justify-between px-5">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-[var(--brand-purple)] flex items-center justify-center p-2 shadow-lg shadow-purple-100 ring-4 ring-purple-50">
             {brandingSettings?.logoUrl ? (
@@ -107,17 +108,18 @@ const MobileAppShell = ({ children, user, onLogout, onNavigate, currentPage, bra
           </button>
         </div>
       </div>
+      </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-auto custom-scrollbar relative z-10 w-full mb-16 bg-white">
-        <div className="px-5 pt-7 pb-20">
-          <div className="mb-8 flex items-center justify-between">
-            <h2 className="text-3xl font-semibold text-gray-900 tracking-tighter">
+      <div className="flex-1 overflow-auto custom-scrollbar relative z-10 w-full bg-white">
+        <div className="px-5 pt-7" style={{ paddingBottom: 'calc(5.5rem + env(safe-area-inset-bottom))' }}>
+          <div className="mb-6 flex items-center justify-between">
+            <h2 className="text-2xl font-semibold text-gray-900 tracking-tight">
               {PAGE_TITLES[currentPage] || (currentPage?.includes('settings') ? 'Settings' : 'Portal')}
             </h2>
-            <div className="p-3 bg-gray-50 rounded-2xl text-gray-400 border border-gray-100 shadow-sm active:scale-95 transition-transform">
-              <Search size={20} strokeWidth={2.5} />
-            </div>
+            <button className="p-2.5 bg-gray-50 rounded-xl text-gray-400 border border-gray-100 active:scale-95 transition-transform">
+              <Search size={18} strokeWidth={2.5} />
+            </button>
           </div>
           {children}
         </div>
@@ -125,7 +127,7 @@ const MobileAppShell = ({ children, user, onLogout, onNavigate, currentPage, bra
 
       {/* Floating Action Button (FAB) - Staff Only */}
       {isStaff && (
-        <div className="fixed bottom-24 right-5 z-[110] flex flex-col items-end gap-3">
+        <div className="fixed z-[110] flex flex-col items-end gap-3" style={{ bottom: 'calc(5.5rem + env(safe-area-inset-bottom))', right: '1.25rem' }}>
           {showFabMenu && (
             <div className="flex flex-col gap-3 mb-2 animate-in slide-in-from-bottom-4 duration-300">
               {fabActions.map((action) => (
@@ -163,7 +165,8 @@ const MobileAppShell = ({ children, user, onLogout, onNavigate, currentPage, bra
       )}
 
       {/* Premium Bottom Navigation - Glassmorphism */}
-      <div className="fixed bottom-0 left-0 right-0 h-20 bg-white/80 backdrop-blur-2xl border-t border-gray-100 z-[100] flex items-center justify-around px-4 lg:hidden pb-safe">
+      <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-2xl border-t border-gray-100 z-[100] lg:hidden flex flex-col" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+      <div className="h-[68px] flex items-center justify-around px-4">
         {navItems.filter(item => item.show).map((item) => {
           const isActive = currentPage === item.id;
           
@@ -196,6 +199,7 @@ const MobileAppShell = ({ children, user, onLogout, onNavigate, currentPage, bra
             </button>
           );
         })}
+      </div>
       </div>
     </div>
   );

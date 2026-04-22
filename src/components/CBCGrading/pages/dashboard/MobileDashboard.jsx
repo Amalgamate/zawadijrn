@@ -145,7 +145,7 @@ const MobileDashboard = ({ onNavigate, brandingSettings, user }) => {
     };
 
     return (
-        <div className="pb-32 animate-in fade-in slide-in-from-bottom-5 duration-700 max-w-lg mx-auto px-1">
+        <div className="pb-8 animate-in fade-in slide-in-from-bottom-5 duration-700 max-w-lg mx-auto">
             {/* ── Premium Welcome Hero ────────────────────────────────────────── */}
             <div className="relative mb-8 p-8 rounded-[2.5rem] bg-[var(--brand-purple)] text-white shadow-2xl shadow-purple-200 overflow-hidden group">
                 <div className="absolute right-0 top-0 w-48 h-48 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl group-hover:bg-white/20 transition-all duration-700" />
