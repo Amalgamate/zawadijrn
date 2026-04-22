@@ -381,7 +381,7 @@ export class DashboardController {
                     include: {
                         feeInvoices: { 
                             where: { archived: false }, 
-                            select: { balance: true, totalAmount: true, invoiceNumber: true, createdAt: true, term: true, academicYear: true, items: true },
+                            select: { id: true, balance: true, totalAmount: true, invoiceNumber: true, createdAt: true, term: true, academicYear: true },
                             orderBy: { createdAt: 'desc' },
                             take: 10
                         },

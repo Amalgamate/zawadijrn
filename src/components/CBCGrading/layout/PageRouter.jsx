@@ -43,6 +43,7 @@ const CodingPlayground = lazy(() => import('../pages/CodingPlayground'));
 const ClassList = lazy(() => import('../pages/ClassList'));
 const CreateClassForm = lazy(() => import('../pages/CreateClassForm'));
 const ClassDetailPage = lazy(() => import('../pages/ClassDetailPage'));
+const AppsPage = lazy(() => import('../pages/settings/AppsPage'));
 const SchoolSettings = lazy(() => import('../pages/settings/SchoolSettings'));
 const AcademicSettings = lazy(() => import('../pages/settings/AcademicSettings'));
 const UserManagement = lazy(() => import('../pages/settings/UserManagement'));
@@ -418,6 +419,7 @@ const PageRouter = ({
           case 'hr-documents': return <StaffDocuments />;
           case 'hr-performance': return <PerformanceManager />;
 
+          case 'settings-apps': return <ErrorBoundary><AppsPage /></ErrorBoundary>;
           case 'settings-school': return <SchoolSettings brandingSettings={brandingSettings} setBrandingSettings={handlers.setBrandingSettings} />;
           case 'settings-academic': return <AcademicSettings />;
           case 'settings-users': return <UserManagement />;

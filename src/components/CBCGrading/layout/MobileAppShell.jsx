@@ -1,65 +1,107 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { usePermissions } from '../../../hooks/usePermissions';
 import { PAGE_TITLES } from '../utils/constants';
 import { usePWAInstall } from '../../../hooks/usePWAInstall';
 import { 
   Home, 
-  TrendingUp, 
-  FileText, 
-  Settings, 
+  Mail, 
+  Bell, 
+  User,
   LogOut, 
   Download,
   Search,
-  Bell,
-  Menu
+  Plus,
+  ClipboardCheck,
+  BookOpen,
+  Wallet,
+  Calendar,
+  LayoutGrid
 } from 'lucide-react';
 import { cn } from '../../../utils/cn';
 
 const MobileAppShell = ({ children, user, onLogout, onNavigate, currentPage, brandingSettings }) => {
-  const { role } = usePermissions();
+  const { role, isStaff } = usePermissions();
   const { isInstallable, installApp } = usePWAInstall();
+  const [showFabMenu, setShowFabMenu] = useState(false);
 
-  const navItems = [
-    { id: 'dashboard', label: 'Home', icon: Home, show: true },
-    { id: 'assess-mobile-dashboard', label: 'Assess', icon: TrendingUp, show: role !== 'ACCOUNTANT' },
-    { id: 'assess-summative-report', label: 'Reports', icon: FileText, show: role !== 'ACCOUNTANT' },
-    { id: 'settings-school', label: 'Settings', icon: Settings, show: role !== 'TEACHER' && role !== 'ACCOUNTANT' && role !== 'PARENT' },
+  // Dynamic Navigation Items based on User Role
+  const getNavItems = () => {
+    const base = [
+      { id: 'dashboard', label: 'Home', icon: Home, show: true },
+    ];
+
+    if (role === 'TEACHER') {
+      return [
+        ...base,
+        { id: 'attendance-daily', label: 'Attendance', icon: ClipboardCheck, show: true },
+        { id: 'assess-summative-assessment', label: 'Grades', icon: BookOpen, show: true },
+        { id: 'comm-messages', label: 'Inbox', icon: Mail, show: true },
+      ];
+    }
+
+    if (role === 'PARENT') {
+      return [
+        ...base,
+        { id: 'accounting-invoices', label: 'Fees', icon: Wallet, show: true },
+        { id: 'comm-notices', label: 'Notices', icon: Bell, show: true },
+        { id: 'settings-users', label: 'Account', icon: User, show: true },
+      ];
+    }
+
+    // Default / Admin / Other Staff
+    return [
+      ...base,
+      { id: 'comm-messages', label: 'Inbox', icon: Mail, show: true },
+      { id: 'comm-notices', label: 'Alerts', icon: Bell, show: true },
+      { id: 'settings-users', label: 'Account', icon: User, show: true },
+    ];
+  };
+
+  const navItems = getNavItems();
+
+  const fabActions = [
+    { label: 'Attendance', icon: ClipboardCheck, id: 'attendance-daily', color: 'bg-emerald-500' },
+    { label: 'Assess', icon: BookOpen, id: 'assess-summative-assessment', color: 'bg-[var(--brand-purple)]' },
+    { label: 'Timetable', icon: Calendar, id: 'facilities-classes', color: 'bg-blue-500' },
   ];
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50 overflow-hidden relative font-sans">
-      {/* Premium Mobile Top App Bar */}
-      <div className="h-[60px] bg-white border-b border-gray-100 flex items-center justify-between px-4 z-50">
+    <div className="flex flex-col h-screen bg-white overflow-hidden relative font-sans">
+      {/* Premium Mobile Top App Bar - Glassmorphism */}
+      <div className="h-[64px] bg-white/80 backdrop-blur-xl border-b border-gray-100 flex items-center justify-between px-5 z-50 shadow-sm sticky top-0">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-[var(--brand-purple)] flex items-center justify-center p-1.5 shadow-lg shadow-purple-200">
+          <div className="w-10 h-10 rounded-2xl bg-[var(--brand-purple)] flex items-center justify-center p-2 shadow-lg shadow-purple-100 ring-4 ring-purple-50">
             {brandingSettings?.logoUrl ? (
               <img src={brandingSettings.logoUrl} alt="Logo" className="w-full h-full object-contain brightness-0 invert" />
             ) : (
-              <img src="/logo.svg" alt="Logo" className="w-full h-full object-contain brightness-0 invert" />
+              <img src="/logo-zawadi.png" alt="Logo" className="w-full h-full object-contain brightness-0 invert" />
             )}
           </div>
           <div className="flex flex-col">
-            <span className="font-black text-sm text-gray-900 leading-none tracking-tight">
-              {brandingSettings?.schoolName || 'Zawadi SMS'}
+            <span className="font-extrabold text-sm text-gray-900 leading-tight tracking-tight">
+              {brandingSettings?.schoolName || 'ZAWADI JUNIOR ACADEMY'}
             </span>
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">
-              {role?.replace('_', ' ')} Portal
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                {role?.replace('_', ' ')}
+              </span>
+            </div>
           </div>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           {isInstallable && (
             <button
               onClick={installApp}
-              className="p-2 text-gray-400 hover:text-[var(--brand-purple)] transition-colors"
+              className="p-2.5 text-gray-400 hover:text-[var(--brand-purple)] transition-colors active:scale-90"
             >
               <Download size={20} />
             </button>
           )}
           <button
             onClick={onLogout}
-            className="w-9 h-9 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center transition-all hover:bg-rose-100 active:scale-90 border border-rose-100"
+            className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center transition-all hover:bg-rose-100 active:scale-90 border border-rose-100"
           >
             <LogOut size={18} strokeWidth={2.5} />
           </button>
@@ -67,24 +109,63 @@ const MobileAppShell = ({ children, user, onLogout, onNavigate, currentPage, bra
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-auto custom-scrollbar relative z-10 w-full mb-20">
-        <div className="p-4 pt-6">
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-2xl font-black text-gray-900 tracking-tight">
-              {PAGE_TITLES[currentPage] || (currentPage?.includes('settings') ? 'Settings' : 'Dashboard')}
+      <div className="flex-1 overflow-auto custom-scrollbar relative z-10 w-full mb-16 bg-white">
+        <div className="px-5 pt-7 pb-20">
+          <div className="mb-8 flex items-center justify-between">
+            <h2 className="text-3xl font-black text-gray-900 tracking-tighter">
+              {PAGE_TITLES[currentPage] || (currentPage?.includes('settings') ? 'Settings' : 'Portal')}
             </h2>
-            <div className="p-2 bg-gray-100 rounded-full text-gray-400">
-              <Search size={18} />
+            <div className="p-3 bg-gray-50 rounded-2xl text-gray-400 border border-gray-100 shadow-sm active:scale-95 transition-transform">
+              <Search size={20} strokeWidth={2.5} />
             </div>
           </div>
           {children}
         </div>
       </div>
 
-      {/* Premium Bottom Navigation - Floating Glassmorphism Style */}
-      <div className="fixed bottom-6 left-4 right-4 h-16 bg-white/90 backdrop-blur-xl border border-white/20 shadow-[0_10px_30px_-5px_rgba(0,0,0,0.1)] rounded-2xl z-[100] flex items-center justify-around px-2 lg:hidden">
+      {/* Floating Action Button (FAB) - Staff Only */}
+      {isStaff && (
+        <div className="fixed bottom-24 right-5 z-[110] flex flex-col items-end gap-3">
+          {showFabMenu && (
+            <div className="flex flex-col gap-3 mb-2 animate-in slide-in-from-bottom-4 duration-300">
+              {fabActions.map((action) => (
+                <button
+                  key={action.id}
+                  onClick={() => {
+                    onNavigate(action.id);
+                    setShowFabMenu(false);
+                  }}
+                  className="flex items-center gap-3 pr-2 group"
+                >
+                  <span className="bg-gray-900/80 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity">
+                    {action.label}
+                  </span>
+                  <div className={cn(
+                    "w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-gray-200 border-2 border-white transition-transform active:scale-90",
+                    action.color
+                  )}>
+                    <action.icon size={20} strokeWidth={3} />
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+          <button
+            onClick={() => setShowFabMenu(!showFabMenu)}
+            className={cn(
+              "w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-2xl transition-all duration-500 transform active:scale-90 border-4 border-white",
+              showFabMenu ? "bg-gray-900 rotate-45 shadow-none" : "bg-[var(--brand-purple)] shadow-purple-200"
+            )}
+          >
+            <Plus size={32} strokeWidth={3} />
+          </button>
+        </div>
+      )}
+
+      {/* Premium Bottom Navigation - Glassmorphism */}
+      <div className="fixed bottom-0 left-0 right-0 h-20 bg-white/80 backdrop-blur-2xl border-t border-gray-100 z-[100] flex items-center justify-around px-4 lg:hidden pb-safe">
         {navItems.filter(item => item.show).map((item) => {
-          const isActive = currentPage === item.id || (item.id === 'assess-mobile-dashboard' && currentPage?.includes('assess') && !currentPage?.includes('report'));
+          const isActive = currentPage === item.id;
           
           return (
             <button
@@ -92,26 +173,26 @@ const MobileAppShell = ({ children, user, onLogout, onNavigate, currentPage, bra
               onClick={() => onNavigate(item.id)}
               className="relative flex flex-col items-center justify-center w-full h-full transition-all duration-300"
             >
-              {isActive && (
-                <div className="absolute top-[-4px] w-8 h-1 bg-[var(--brand-purple)] rounded-full shadow-[0_0_10px_rgba(var(--brand-purple-rgb),0.5)]" />
-              )}
-              
               <div className={cn(
-                "p-2 rounded-xl transition-all duration-300 transform active:scale-90",
-                isActive ? "text-[var(--brand-purple)]" : "text-gray-400"
+                "p-2.5 rounded-2xl transition-all duration-500 transform active:scale-75",
+                isActive ? "text-[var(--brand-purple)] bg-purple-50 shadow-inner" : "text-gray-400"
               )}>
                 <item.icon 
                   size={24} 
-                  strokeWidth={isActive ? 2.5 : 2}
-                  className={cn(isActive && "drop-shadow-[0_0_8px_rgba(var(--brand-purple-rgb),0.3)]")}
+                  strokeWidth={isActive ? 3 : 2}
+                  className={isActive ? "drop-shadow-[0_0_8px_rgba(82,0,80,0.2)]" : ""}
                 />
               </div>
               <span className={cn(
-                "text-[9px] font-black uppercase tracking-widest mt-[-2px] transition-all duration-300",
-                isActive ? "text-[var(--brand-purple)]" : "text-gray-400"
+                "text-[9px] font-black uppercase tracking-[0.15em] mt-1.5 transition-all duration-300",
+                isActive ? "text-[var(--brand-purple)]" : "text-gray-500"
               )}>
                 {item.label}
               </span>
+
+              {isActive && (
+                <div className="absolute -top-1 w-12 h-1 bg-[var(--brand-purple)] rounded-full animate-in fade-in zoom-in duration-300" />
+              )}
             </button>
           );
         })}

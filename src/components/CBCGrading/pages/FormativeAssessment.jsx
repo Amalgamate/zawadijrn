@@ -1,10 +1,5 @@
-/**
- * Formative Assessment Page - UPDATED with 3-Step Wizard Flow & 8-level CBC Rubric
- * Optimized for User Experience: Setup -> Assess -> Review
- */
-
 import React, { useState } from 'react';
-import { CheckCircle, Check, Send, Save, ArrowRight, Edit3, FileText, Users, BarChart2, Sparkles, Loader2 } from 'lucide-react';
+import { CheckCircle, Check, Send, Save, ArrowRight, Edit3, FileText, Users, BarChart2, Sparkles, Loader2, Target, ChevronLeft, Search } from 'lucide-react';
 import RatingSelector from '../shared/RatingSelector';
 import { useNotifications } from '../hooks/useNotifications';
 import api, { aiAPI } from '../../../services/api';
@@ -13,40 +8,35 @@ import { useAssessmentSetup } from '../hooks/useAssessmentSetup';
 import { useLearnerSelection } from '../hooks/useLearnerSelection';
 import { useLearningAreas } from '../hooks/useLearningAreas';
 import { useTeacherWorkload } from '../hooks/useTeacherWorkload';
+import { useInstitutionLabels } from '../../../hooks/useInstitutionLabels';
+import { cn } from '../../../utils/cn';
 
 const FormativeAssessment = ({ learners }) => {
   const { showSuccess, showError } = useNotifications();
+  const labels = useInstitutionLabels();
 
-  // Use centralized hooks for assessment state management
   const setup = useAssessmentSetup({ defaultTerm: 'TERM_1' });
   const selection = useLearnerSelection(learners || [], { status: ['ACTIVE', 'Active'] });
   const learningAreas = useLearningAreas(setup.selectedGrade);
   const teacherWorkload = useTeacherWorkload();
 
-  // View State
   const [viewMode, setViewMode] = useState('setup'); // 'setup' | 'assess' | 'review'
-
-  // Context State (Step 1) - FormativeAssessment specific
   const [selectedArea, setSelectedArea] = useState('Mathematics');
   const [strand, setStrand] = useState('Numbers');
   const [subStrand, setSubStrand] = useState('Addition and Subtraction');
 
-  // New Fields for Assessment Metadata
   const [assessmentTitle, setAssessmentTitle] = useState('');
   const [assessmentType, setAssessmentType] = useState('QUIZ');
   const [assessmentWeight, setAssessmentWeight] = useState(1.0);
   const [maxScore, setMaxScore] = useState(null);
 
-  // Assessment State (Step 2)
   const [assessments, setAssessments] = useState({});
   const [savedAssessments, setSavedAssessments] = useState({});
   const [saving, setSaving] = useState(false);
   const [sendingWhatsApp, setSendingWhatsApp] = useState({});
   const [generatingAI, setGeneratingAI] = useState({});
 
-  // Use grades and selection from setup hook
   const grades = setup.grades || [];
-  const loadingGrades = false; // Grades are static in the hook
   const setSelectedGrade = setup.updateGrade;
   const selectedGrade = setup.selectedGrade;
   const setSelectedTerm = setup.updateTerm;
@@ -68,22 +58,15 @@ const FormativeAssessment = ({ learners }) => {
     const assignedSubjects = teacherWorkload.getAssignedSubjectsForGrade(selectedGrade);
     if (!assignedSubjects) return areas;
 
-    // Robust normalization for cross-matching (handles: case, spaces, special chars like '&' vs 'and')
-    const normalize = (val) => String(val || '')
-      .toLowerCase()
-      .replace(/&/g, 'and')
-      .replace(/\s+/g, '')
-      .trim();
+    const normalize = (val) => String(val || '').toLowerCase().replace(/&/g, 'and').replace(/\s+/g, '').trim();
 
     return areas.filter(area =>
       assignedSubjects.some(as => normalize(as) === normalize(area))
     );
   }, [learningAreas.flatLearningAreas, teacherWorkload.isTeacher, selectedGrade, teacherWorkload]);
 
-  // Reset selected area when grade changes or current selection is no longer valid
   React.useEffect(() => {
     if (selectedGrade && filteredLearningAreasByWorkload.length > 0) {
-      // If current selectedArea is not in the new list, clear it or pick first
       const isValid = filteredLearningAreasByWorkload.includes(selectedArea);
       if (!isValid) {
         setSelectedArea('');
@@ -95,13 +78,6 @@ const FormativeAssessment = ({ learners }) => {
     }
   }, [selectedGrade, filteredLearningAreasByWorkload]);
 
-  React.useEffect(() => {
-    if (!teacherWorkload.loading && teacherWorkload.isTeacher && !teacherWorkload.hasAnyAssignments) {
-      showError('You are not currently assigned to any classes or subjects. Please consult with the Head Teacher.');
-    }
-  }, [teacherWorkload.loading, teacherWorkload.isTeacher, teacherWorkload.hasAnyAssignments, showError]);
-
-  // Fetch existing assessments when entering 'assess' mode
   React.useEffect(() => {
     if (viewMode === 'assess' && selectedGrade && selectedTerm && selectedArea && strand) {
       const fetchData = async () => {
@@ -139,16 +115,12 @@ const FormativeAssessment = ({ learners }) => {
             setAssessments(prev => ({ ...prev, ...loadedAssessments }));
             setSavedAssessments(prev => ({ ...prev, ...loadedSaved }));
           }
-        } catch (err) {
-          console.error('Failed to load existing assessments:', err);
-        }
+        } catch (err) { }
       };
-
       fetchData();
     }
   }, [viewMode, selectedGrade, selectedTerm, selectedArea, strand, academicYear]);
 
-  // Filter learners by selected grade
   const classLearners = learners?.filter(l =>
     l.grade === selectedGrade && (l.status === 'ACTIVE' || l.status === 'Active')
   ) || [];
@@ -158,11 +130,10 @@ const FormativeAssessment = ({ learners }) => {
     return l.id === searchLearnerId;
   });
 
-  // Navigation Handlers
   const goToNextStep = () => {
     if (viewMode === 'setup') {
       if (!assessmentTitle) { showError('Please enter an Assessment Title'); return; }
-      if (!strand) { showError('Please enter a Strand to continue'); return; }
+      if (!strand) { showError(`Please enter a Strand to continue`); return; }
     }
     if (viewMode === 'setup') setViewMode('assess');
     else if (viewMode === 'assess') setViewMode('review');
@@ -175,19 +146,7 @@ const FormativeAssessment = ({ learners }) => {
     window.scrollTo(0, 0);
   };
 
-  const handleLearnerSelect = (id) => {
-    selection.selectLearner(id);
-    if (id) {
-      const learner = learners.find(l => l.id === id);
-      if (learner && learner.grade !== selectedGrade) {
-        if (viewMode === 'assess') {
-          showError(`Learner is in ${learner.grade}. Please switch grade in Setup step.`);
-        } else {
-          setSelectedGrade(learner.grade);
-        }
-      }
-    }
-  };
+  const handleLearnerSelect = (id) => selection.selectLearner(id);
 
   const handleRatingChange = (learnerId, code, points, percentage) => {
     setAssessments(prev => ({
@@ -214,7 +173,6 @@ const FormativeAssessment = ({ learners }) => {
   const handleSaveAll = async () => {
     try {
       setSaving(true);
-
       const resultsToSave = Object.entries(assessments)
         .filter(([, assessment]) => assessment.detailedRating)
         .map(([learnerId, assessment]) => ({
@@ -228,7 +186,7 @@ const FormativeAssessment = ({ learners }) => {
         }));
 
       if (resultsToSave.length === 0) {
-        showSuccess('No assessments to save — rate at least one learner first.');
+        showError('Select scores before saving');
         return;
       }
 
@@ -246,33 +204,19 @@ const FormativeAssessment = ({ learners }) => {
       });
 
       if (response.success) {
-        showSuccess(response.message || `Successfully saved ${resultsToSave.length} assessments!`);
-
+        showSuccess('Saved successfully!');
         const newSaved = {};
-        const savedMap = response.saved || [];
-        savedMap.forEach(item => {
-          newSaved[item.learnerId] = { id: item.id, learnerId: item.learnerId, status: item.status || 'DRAFT' };
-        });
-
-        if (savedMap.length === 0 && response.data?.length > 0) {
-          response.data.forEach(item => {
-            newSaved[item.learnerId] = { id: item.id, learnerId: item.learnerId, status: item.status || 'DRAFT' };
-          });
-        }
-
+        (response.saved || []).forEach(item => newSaved[item.learnerId] = { id: item.id, learnerId: item.learnerId, status: item.status || 'DRAFT' });
         setSavedAssessments(prev => ({ ...prev, ...newSaved }));
       } else {
-        showError(response.message || 'Failed to save assessments');
+        showError(response.message || 'Failed to save');
       }
     } catch (error) {
-      console.error('Error saving assessments:', error);
-      showError('Failed to save assessments');
+      showError('Internal Server Error');
     } finally {
       setSaving(false);
     }
   };
-
-  // handleSubmitForApproval removed — approval workflow disabled.
 
   const handleSendWhatsApp = async (learnerId) => {
     try {
@@ -284,14 +228,10 @@ const FormativeAssessment = ({ learners }) => {
         grade: selectedGrade,
         term: selectedTerm
       });
-      if (response.success) {
-        showSuccess('Assessment results sent to parent via WhatsApp!');
-      } else {
-        showError('Failed to send WhatsApp notification');
-      }
+      if (response.success) showSuccess('WhatsApp message sent!');
+      else showError('Failed to send notification');
     } catch (error) {
-      console.error('Error sending WhatsApp:', error);
-      showError(error.message || 'Failed to send WhatsApp notification');
+      showError('Notification Service Error');
     } finally {
       setSendingWhatsApp(prev => ({ ...prev, [learnerId]: false }));
     }
@@ -306,531 +246,265 @@ const FormativeAssessment = ({ learners }) => {
           ...prev,
           [learnerId]: { ...prev[learnerId], recommendations: response.data }
         }));
-        showSuccess('AI feedback generated based on learner history!');
+        showSuccess('AI feedback generated!');
       }
     } catch (error) {
-      console.error('AI Generation Error:', error);
-      showError(error.message || 'Failed to generate AI feedback. Check if AI_API_KEY is set.');
+      showError('AI Service currently unavailable');
     } finally {
       setGeneratingAI(prev => ({ ...prev, [learnerId]: false }));
     }
   };
 
-  // Statistics — full 8-level breakdown
   const stats = {
     total: classLearners.length,
     assessed: Object.keys(assessments).filter(id => assessments[id]?.detailedRating).length,
     saved: Object.keys(savedAssessments).filter(id => savedAssessments[id]).length,
-    ee1: Object.values(assessments).filter(a => a?.detailedRating === 'EE1').length,
-    ee2: Object.values(assessments).filter(a => a?.detailedRating === 'EE2').length,
-    me1: Object.values(assessments).filter(a => a?.detailedRating === 'ME1').length,
-    me2: Object.values(assessments).filter(a => a?.detailedRating === 'ME2').length,
-    ae1: Object.values(assessments).filter(a => a?.detailedRating === 'AE1').length,
-    ae2: Object.values(assessments).filter(a => a?.detailedRating === 'AE2').length,
-    be1: Object.values(assessments).filter(a => a?.detailedRating === 'BE1').length,
-    be2: Object.values(assessments).filter(a => a?.detailedRating === 'BE2').length
   };
 
-  // Step Indicator Component
-  const StepIndicator = () => (
-    <div className="flex items-center justify-center mb-8">
-      <div className="flex items-center">
-        <div className={`flex flex-col items-center relative z-10 ${viewMode !== 'setup' ? 'text-brand-purple' : 'text-brand-purple'}`}>
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${viewMode === 'setup' || viewMode === 'assess' || viewMode === 'review' ? 'bg-brand-purple border-brand-purple text-white' : 'bg-white border-gray-300'}`}>
-            {viewMode !== 'setup' ? <Check size={20} /> : <FileText size={20} />}
-          </div>
-          <span className="text-xs font-semibold mt-2">Setup</span>
+  return (
+    <div className="pb-24 font-sans">
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between mb-8 px-5 pt-4">
+        <div className="flex items-center gap-3">
+           <div className="w-10 h-10 rounded-2xl bg-purple-50 flex items-center justify-center text-[var(--brand-purple)]">
+              <Sparkles size={22} />
+           </div>
+           <div>
+              <h2 className="text-xl font-black text-gray-900 tracking-tight leading-none">Formative</h2>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Continuous Assessment</p>
+           </div>
         </div>
-        <div className={`w-24 h-1 -mt-6 mx-2 ${viewMode === 'assess' || viewMode === 'review' ? 'bg-brand-purple' : 'bg-gray-200'}`} />
-        <div className={`flex flex-col items-center relative z-10 ${viewMode === 'assess' || viewMode === 'review' ? 'text-brand-purple' : 'text-gray-400'}`}>
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${viewMode === 'assess' || viewMode === 'review' ? 'bg-brand-purple border-brand-purple text-white' : 'bg-white border-gray-300'}`}>
-            {viewMode === 'review' ? <Check size={20} /> : <Users size={20} />}
-          </div>
-          <span className="text-xs font-semibold mt-2">Assess</span>
-        </div>
-        <div className={`w-24 h-1 -mt-6 mx-2 ${viewMode === 'review' ? 'bg-brand-purple' : 'bg-gray-200'}`} />
-        <div className={`flex flex-col items-center relative z-10 ${viewMode === 'review' ? 'text-brand-purple' : 'text-gray-400'}`}>
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${viewMode === 'review' ? 'bg-brand-purple border-brand-purple text-white' : 'bg-white border-gray-300'}`}>
-            <BarChart2 size={20} />
-          </div>
-          <span className="text-xs font-semibold mt-2">Review</span>
+        <div className="flex items-center gap-1">
+           {[1,2,3].map(s => (
+              <div key={s} className={cn(
+                "h-1.5 rounded-full transition-all duration-300",
+                (viewMode === 'setup' && s === 1) || (viewMode === 'assess' && s === 2) || (viewMode === 'review' && s === 3)
+                   ? "w-8 bg-[var(--brand-purple)]" 
+                   : "w-2 bg-gray-100"
+              )} />
+           ))}
         </div>
       </div>
-    </div>
-  );
 
-  return (
-    <div className="space-y-6">
-
-      {/* Wizard Progress */}
-      <StepIndicator />
-
-      {/* STEP 1: SETUP */}
+      {/* ── STEP 1: SETUP ── */}
       {viewMode === 'setup' && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-bold text-gray-800">Assessment Configuration</h2>
-              <p className="text-xs text-gray-500">Configure the class, subject, and assessment details</p>
+        <div className="px-5 space-y-6 animate-in fade-in slide-in-from-bottom-4">
+          <div className="bg-white rounded-[2.5rem] border border-transparent shadow-xl shadow-purple-50 p-6 space-y-6">
+            <div className="space-y-1">
+               <span className="text-[10px] font-black text-[var(--brand-teal)] uppercase tracking-widest">Stage 01</span>
+               <h3 className="text-lg font-black text-gray-900">Configure Context</h3>
             </div>
-            <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-semibold">Step 1 of 3</span>
-          </div>
 
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Left Column: Academic Context */}
-              <div className="space-y-5">
-                <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
-                  <Users size={16} className="text-gray-400" />
-                  <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Academic Context</h3>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1.5">Grade / Class</label>
-                    <select
-                      value={selectedGrade}
-                      onChange={(e) => { setSelectedGrade(e.target.value); setAssessments({}); setSavedAssessments({}); }}
-                      disabled={loadingGrades}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-purple focus:border-brand-purple transition-all text-sm bg-white disabled:bg-gray-100 disabled:text-gray-400"
-                    >
-                      {loadingGrades ? (
-                        <option>Loading grades...</option>
-                      ) : (
-                        filteredGrades.map(g => (
-                          <option key={g.value} value={g.value}>{g.label}</option>
-                        ))
-                      )}
-                    </select>
-                    {teacherWorkload.isTeacher && filteredGrades.length === 0 && !teacherWorkload.loading && (
-                      <p className="text-[10px] text-red-500 mt-1 font-bold italic">No classes assigned to you.</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1.5">Term</label>
-                    <select
-                      value={selectedTerm}
-                      onChange={(e) => setSelectedTerm(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-purple focus:border-brand-purple transition-all text-sm bg-white"
-                    >
-                      {terms.map(t => (
-                        <option key={t.value} value={t.value}>{t.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5">Learning Area</label>
-                  <select
-                    value={selectedArea}
-                    onChange={(e) => { setSelectedArea(e.target.value); learningAreas.selectLearningArea(e.target.value); }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-purple focus:border-brand-purple transition-all text-sm bg-white"
-                    disabled={!setup.selectedGrade}
-                  >
-                    <option value="">Select a learning area</option>
-                    {filteredLearningAreasByWorkload.map(a => (
-                      <option key={a} value={a}>{a}</option>
-                    ))}
-                  </select>
-                  {teacherWorkload.isTeacher && selectedGrade && filteredLearningAreasByWorkload.length === 0 && (
-                    <p className="text-[10px] text-red-500 mt-1 font-bold italic">No subjects assigned for this grade.</p>
-                  )}
-                  {learningAreas.hasAreas && !teacherWorkload.isTeacher && (
-                    <p className="text-xs text-gray-500 mt-1">{learningAreas.areaCount} learning areas available</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5">Strand</label>
-                  <input
-                    type="text"
-                    value={strand}
-                    onChange={(e) => setStrand(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-purple focus:border-brand-purple transition-all text-sm"
-                    placeholder="e.g., Numbers"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5">Sub-Strand <span className="text-gray-400 font-normal">(Optional)</span></label>
-                  <input
-                    type="text"
-                    value={subStrand}
-                    onChange={(e) => setSubStrand(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-purple focus:border-brand-purple transition-all text-sm"
-                    placeholder="e.g., Addition and Subtraction"
-                  />
-                </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{labels.grade}</label>
+                <select
+                  value={selectedGrade}
+                  onChange={(e) => setSelectedGrade(e.target.value)}
+                  className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-purple-100 outline-none"
+                >
+                  {filteredGrades.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}
+                </select>
               </div>
 
-              {/* Right Column: Assessment Details */}
-              <div className="space-y-5">
-                <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
-                  <FileText size={16} className="text-gray-400" />
-                  <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Assessment Details</h3>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5">Assessment Title <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    value={assessmentTitle}
-                    onChange={(e) => setAssessmentTitle(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-purple focus:border-brand-purple transition-all text-sm"
-                    placeholder="e.g., Weekly Quiz 1"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5">Assessment Type</label>
-                  <select
-                    value={assessmentType}
-                    onChange={(e) => setAssessmentType(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-purple focus:border-brand-purple transition-all text-sm bg-white"
-                  >
-                    <option value="QUIZ">Quiz</option>
-                    <option value="ASSIGNMENT">Assignment</option>
-                    <option value="PROJECT">Project</option>
-                    <option value="EXAM">Exam</option>
-                    <option value="OBSERVATION">Observation</option>
-                    <option value="ORAL">Oral</option>
-                  </select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1.5">Weight</label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        value={assessmentWeight}
-                        onChange={(e) => setAssessmentWeight(Number(e.target.value))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-purple focus:border-brand-purple transition-all text-sm"
-                      />
-                      <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-gray-400">pts</span>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1.5">Max Score <span className="text-gray-400 font-normal">(Optional)</span></label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={maxScore || ''}
-                      onChange={(e) => setMaxScore(e.target.value ? Number(e.target.value) : null)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-purple focus:border-brand-purple transition-all text-sm"
-                      placeholder="e.g. 100"
-                    />
-                  </div>
-                </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{labels.term}</label>
+                <select
+                  value={selectedTerm}
+                  onChange={(e) => setSelectedTerm(e.target.value)}
+                  className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-purple-100 outline-none"
+                >
+                  {terms.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                </select>
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{labels.subject}</label>
+              <select
+                value={selectedArea}
+                onChange={(e) => { setSelectedArea(e.target.value); learningAreas.selectLearningArea(e.target.value); }}
+                className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-purple-100 outline-none"
+              >
+                <option value="">Select Area</option>
+                {filteredLearningAreasByWorkload.map(a => <option key={a} value={a}>{a}</option>)}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Test Title</label>
+               <input
+                 type="text"
+                 value={assessmentTitle}
+                 onChange={(e) => setAssessmentTitle(e.target.value)}
+                 className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-purple-100 outline-none"
+                 placeholder="e.g. Oral Addition Test"
+               />
+            </div>
+
+            <div className="space-y-2">
+               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Topic / Strand</label>
+               <input
+                 type="text"
+                 value={strand}
+                 onChange={(e) => setStrand(e.target.value)}
+                 className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-purple-100 outline-none"
+                 placeholder="e.g. Basic Operations"
+               />
             </div>
           </div>
 
-          <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end">
-            <button
-              onClick={goToNextStep}
-              className="flex items-center gap-2 px-6 py-2.5 bg-brand-teal text-white rounded-lg hover:bg-brand-teal/90 transition-all font-bold shadow-sm hover:shadow text-sm"
-            >
-              Start Assessment
-              <ArrowRight size={16} />
-            </button>
-          </div>
+          <button
+            onClick={goToNextStep}
+            className="w-full h-16 bg-[var(--brand-purple)] text-white rounded-[2rem] flex items-center justify-center gap-3 shadow-xl shadow-purple-200 active:scale-95 transition-all outline-none"
+          >
+            <span className="text-xs font-black uppercase tracking-[0.2em] ml-2">Begin Entry</span>
+            <ArrowRight size={20} strokeWidth={3} />
+          </button>
         </div>
       )}
 
-      {/* STEP 2: ASSESS */}
+      {/* ── STEP 2: ASSESS ── */}
       {viewMode === 'assess' && (
-        <div className="space-y-6">
-          {/* Context Header */}
-          <div className="bg-white rounded-xl shadow-sm p-4 border border-brand-purple/10 flex flex-col md:flex-row items-center justify-between gap-4 sticky top-4 z-20">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-brand-purple rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm">
-                <FileText size={20} />
-              </div>
-              <div>
-                <div className="flex items-center gap-2 text-sm text-gray-500 font-medium">
-                  <span>{grades.find(g => g.value === selectedGrade)?.label}</span>
-                  <span>•</span>
-                  <span>{terms.find(t => t.value === selectedTerm)?.label}</span>
-                </div>
-                <h3 className="font-bold text-gray-800 text-lg">
-                  {selectedArea} <span className="text-gray-400 mx-2">|</span> {strand}
-                </h3>
-                <p className="text-xs text-gray-500 mt-1">
-                  {assessmentTitle} ({assessmentType}) - Weight: {assessmentWeight}x
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 md:gap-3 mt-3 md:mt-0">
-              <button
-                onClick={() => setViewMode('setup')}
-                className="flex items-center gap-2 px-3 md:px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium"
-              >
-                <Edit3 size={16} />
-                <span className="hidden md:inline">Edit Context</span>
-                <span className="md:hidden">Edit</span>
-              </button>
-              <div className="h-8 w-px bg-gray-200 mx-2 hidden md:block"></div>
-              <button
-                onClick={handleSaveAll}
-                disabled={saving}
-                className="flex items-center gap-2 px-4 md:px-6 py-2 bg-brand-teal text-white rounded-lg hover:bg-brand-teal/90 transition shadow-sm font-bold disabled:opacity-70 text-sm md:text-base flex-1 md:flex-none justify-center"
-              >
-                {saving ? 'Saving...' : 'Save'}
-                <Save size={18} />
-              </button>
-              <button
-                onClick={goToNextStep}
-                className="flex items-center gap-2 px-4 md:px-6 py-2 bg-brand-purple text-white rounded-lg hover:bg-brand-purple/90 transition shadow-sm font-bold text-sm md:text-base flex-1 md:flex-none justify-center"
-              >
-                Review
-                <ArrowRight size={18} />
-              </button>
-            </div>
+        <div className="space-y-6 px-5 animate-in fade-in slide-in-from-bottom-4">
+          <div className="bg-white border-b border-gray-100 py-4 -mx-1 flex items-center justify-between sticky top-0 z-10">
+             <button onClick={goToPrevStep} className="p-3 border border-gray-100 rounded-2xl active:scale-90 transition-all">
+                <ChevronLeft size={20} className="text-gray-900" />
+             </button>
+             <div className="text-center flex-1">
+                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{selectedGrade} • {selectedArea}</h4>
+                <p className="text-xs font-black text-gray-900 truncate px-4">{strand}</p>
+             </div>
+             <button onClick={handleSaveAll} disabled={saving} className="w-11 h-11 flex items-center justify-center bg-[var(--brand-teal)] text-white rounded-2xl shadow-lg shadow-teal-50 active:scale-90 transition-all disabled:opacity-30">
+                {saving ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
+             </button>
           </div>
 
-          {/* Main Assessment Area */}
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-            <div className="p-6 border-b border-gray-100 bg-gray-50 flex flex-col md:flex-row justify-between items-center gap-4">
-              <h3 className="font-bold text-gray-700">
-                Learner List ({classLearners.length})
-              </h3>
-              <div className="w-full md:w-96">
+          <div className="space-y-4">
+             <div className="relative">
+                <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
                 <SmartLearnerSearch
                   learners={classLearners}
                   selectedLearnerId={searchLearnerId}
                   onSelect={handleLearnerSelect}
-                  placeholder="Find learner by name or adm no..."
+                  placeholder={`Search ${labels.learners}...`}
+                  className="w-full h-14 pl-12 pr-4 bg-gray-50 border-none rounded-[1.5rem] text-xs font-bold outline-none"
                 />
-              </div>
-            </div>
+             </div>
 
-            <div className="p-6">
-              {classLearners.length === 0 ? (
-                <div className="text-center py-12">
-                  <p className="text-gray-500">No learners found for selected grade</p>
-                </div>
-              ) : filteredLearners.length === 0 ? (
-                <div className="text-center py-12">
-                  <p className="text-gray-500">No learners match your search</p>
-                  <button
-                    onClick={() => setSearchLearnerId(null)}
-                    className="mt-2 text-brand-purple hover:text-brand-purple/80 text-sm font-bold"
-                  >
-                    Clear Search
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {filteredLearners.map(learner => {
-                    const assessment = assessments[learner.id];
-                    const isSaved = savedAssessments[learner.id];
-
-                    return (
-                      <div
-                        key={learner.id}
-                        className={`
-                          border-2 rounded-xl p-6 transition-all duration-200
-                          ${isSaved
-                            ? 'border-purple-200 bg-purple-50/50'
-                            : assessment?.detailedRating
-                              ? 'border-green-200 bg-green-50/50'
-                              : 'border-gray-100 hover:border-brand-purple/30 hover:shadow-md'
-                          }
-                        `}
-                      >
-                        {/* Learner Header */}
-                        <div className="flex flex-col md:flex-row md:items-center gap-6 mb-6">
-                          <div className="flex items-center gap-4 min-w-[200px]">
-                            <div className="w-14 h-14 bg-brand-purple rounded-full flex items-center justify-center text-white font-bold text-xl shadow-sm">
-                              {learner.firstName[0]}{learner.lastName[0]}
+             <div className="space-y-6 py-4">
+                {filteredLearners.map(learner => {
+                   const assessment = assessments[learner.id];
+                   const isSaved = savedAssessments[learner.id];
+                   return (
+                      <div key={learner.id} className="bg-white rounded-[2.5rem] border border-gray-50 p-6 shadow-sm space-y-6">
+                         <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                               <div className="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center text-xs font-black text-gray-600">
+                                  {learner.firstName[0]}{learner.lastName[0]}
+                               </div>
+                               <div>
+                                  <h5 className="text-sm font-black text-gray-900">{learner.firstName} {learner.lastName}</h5>
+                                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">ADM: {learner.admissionNumber}</p>
+                               </div>
                             </div>
-                            <div>
-                              <p className="font-bold text-gray-800 text-lg">
-                                {learner.firstName} {learner.lastName}
-                              </p>
-                              <p className="text-sm text-gray-500 font-medium">
-                                {learner.admissionNumber}
-                              </p>
-                            </div>
-                          </div>
+                            {isSaved && <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center"><Check size={18} strokeWidth={4} /></div>}
+                         </div>
 
-                          <div className="flex-1">
+                         <div className="transform scale-[0.9] origin-left -mx-1">
                             <RatingSelector
-                              value={assessment?.detailedRating || ''}
-                              onChange={(code, points, percentage) =>
-                                handleRatingChange(learner.id, code, points, percentage)
-                              }
-                              label="Rating"
-                              showDescription={false}
-                              required={false}
+                               value={assessment?.detailedRating || ''}
+                               onChange={(code, points, percentage) => handleRatingChange(learner.id, code, points, percentage)}
+                               showDescription={false}
                             />
-                          </div>
+                         </div>
 
-                          {assessment?.detailedRating && (
-                            <div className="flex items-center gap-3">
-                              {isSaved && <CheckCircle className="text-purple-600" size={24} />}
-                              {isSaved && (
+                         {assessment?.enhanced && (
+                            <div className="space-y-4 pt-4 border-t border-gray-50 animate-in fade-in zoom-in-95">
+                               <div className="relative">
+                                  <span className="absolute -top-2 left-4 px-2 bg-white text-[8px] font-black text-gray-300 uppercase tracking-widest">Observations</span>
+                                  <textarea
+                                     value={assessment.strengths || ''}
+                                     onChange={(e) => handleFeedbackChange(learner.id, 'strengths', e.target.value)}
+                                     className="w-full p-4 bg-gray-50 rounded-2xl border-none text-[11px] font-bold outline-none focus:ring-1 focus:ring-purple-100"
+                                     placeholder="Strong areas..."
+                                  />
+                               </div>
+                            </div>
+                         )}
+
+                         <div className="flex gap-2">
+                             <button 
+                                onClick={() => setAssessments(prev => ({...prev, [learner.id]: {...prev[learner.id], enhanced: !prev[learner.id]?.enhanced}}))}
+                                className="flex-1 py-3 bg-purple-50 text-[var(--brand-purple)] text-[9px] font-black uppercase tracking-widest rounded-2xl active:scale-95 transition-all"
+                             >
+                                {assessment?.enhanced ? 'Hide Details' : 'Add Remarks'}
+                             </button>
+                             {isSaved && (
                                 <button
                                   onClick={() => handleSendWhatsApp(learner.id)}
                                   disabled={sendingWhatsApp[learner.id]}
-                                  className="p-2 bg-green-100 text-green-700 rounded-full hover:bg-green-200 transition"
-                                  title="Send WhatsApp"
+                                  className="w-14 h-11 flex items-center justify-center bg-emerald-50 text-emerald-500 rounded-2xl active:scale-90 transition-all"
                                 >
-                                  {sendingWhatsApp[learner.id] ? (
-                                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-green-600 border-t-transparent" />
-                                  ) : (
-                                    <Send size={20} />
-                                  )}
+                                   {sendingWhatsApp[learner.id] ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                                 </button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Feedback Fields — 3 columns: Strengths | Areas for Improvement | Recommendations */}
-                        {assessment?.detailedRating && (
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-200/50 animate-in fade-in slide-in-from-top-2">
-                            <div>
-                              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                                Strengths
-                              </label>
-                              <textarea
-                                value={assessment.strengths || ''}
-                                onChange={(e) => handleFeedbackChange(learner.id, 'strengths', e.target.value)}
-                                rows="2"
-                                className="w-full px-4 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-purple focus:border-transparent text-sm"
-                                placeholder="Key strengths..."
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                                Areas for Improvement
-                              </label>
-                              <textarea
-                                value={assessment.areasImprovement || ''}
-                                onChange={(e) => handleFeedbackChange(learner.id, 'areasImprovement', e.target.value)}
-                                rows="2"
-                                className="w-full px-4 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-purple focus:border-transparent text-sm"
-                                placeholder="Areas that need more work..."
-                              />
-                            </div>
-                            <div>
-                              <div className="flex items-center justify-between mb-2">
-                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
-                                  Recommendations (AI Enhanced)
-                                </label>
-                                <button
-                                  onClick={() => handleGenerateAIFeedback(learner.id)}
-                                  disabled={generatingAI[learner.id]}
-                                  className="flex items-center gap-1.5 text-[10px] font-bold text-brand-purple hover:text-brand-purple/80 transition-all bg-purple-50 px-2 py-1 rounded border border-purple-200"
-                                >
-                                  {generatingAI[learner.id] ? (
-                                    <Loader2 size={12} className="animate-spin" />
-                                  ) : (
-                                    <Sparkles size={12} />
-                                  )}
-                                  AI Suggester
-                                </button>
-                              </div>
-                              <textarea
-                                value={assessment.recommendations || ''}
-                                onChange={(e) => handleFeedbackChange(learner.id, 'recommendations', e.target.value)}
-                                rows="2"
-                                className="w-full px-4 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-purple focus:border-transparent text-sm"
-                                placeholder="Final recommendations..."
-                              />
-                            </div>
-                          </div>
-                        )}
+                             )}
+                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+                   );
+                })}
+             </div>
           </div>
+
+          <button
+            onClick={goToNextStep}
+            className="w-full h-16 bg-[var(--brand-purple)] text-white rounded-[2rem] flex items-center justify-center gap-3 shadow-xl shadow-purple-200 active:scale-95 transition-all"
+          >
+            <span className="text-xs font-black uppercase tracking-[0.2em]">Summary Board</span>
+            <BarChart2 size={20} strokeWidth={3} />
+          </button>
         </div>
       )}
 
-      {/* STEP 3: REVIEW */}
+      {/* ── STEP 3: REVIEW ── */}
       {viewMode === 'review' && (
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-8">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-gray-800">Assessment Summary</h2>
-            <p className="text-gray-500">Review your progress for {grades.find(g => g.value === selectedGrade)?.label} - {selectedArea}</p>
+        <div className="px-5 space-y-8 animate-in fade-in slide-in-from-bottom-4">
+           <div className="flex items-center gap-4 bg-white py-4 sticky top-0 z-10 border-b border-gray-50 -mx-1 px-1">
+             <button onClick={goToPrevStep} className="p-3 border border-gray-100 rounded-2xl active:scale-90 transition-all">
+                <ChevronLeft size={20} className="text-gray-900" />
+             </button>
+             <h3 className="text-lg font-black text-gray-900">Final Summary</h3>
           </div>
 
-          {/* Top-level stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-brand-purple/10 rounded-xl p-4 text-center">
-              <p className="text-sm text-brand-purple font-bold uppercase">Total Learners</p>
-              <p className="text-3xl font-black text-brand-purple">{stats.total}</p>
-            </div>
-            <div className="bg-brand-teal/10 rounded-xl p-4 text-center">
-              <p className="text-sm text-brand-teal font-bold uppercase">Assessed</p>
-              <p className="text-3xl font-black text-brand-teal">{stats.assessed}</p>
-            </div>
-            <div className="bg-brand-purple/10 rounded-xl p-4 text-center">
-              <p className="text-sm text-brand-purple font-bold uppercase">Saved</p>
-              <p className="text-3xl font-black text-brand-purple">{stats.saved}</p>
-            </div>
-            <div className="bg-gray-50 rounded-xl p-4 text-center">
-              <p className="text-sm text-gray-600 font-semibold uppercase">Remaining</p>
-              <p className="text-3xl font-bold text-gray-900">{stats.total - stats.assessed}</p>
-            </div>
+          <div className="grid grid-cols-3 gap-3">
+             <div className="bg-purple-50 p-4 rounded-[2rem] text-center border border-purple-100">
+                <p className="text-[8px] font-black text-purple-400 uppercase tracking-widest mb-1">Total</p>
+                <p className="text-xl font-black text-[var(--brand-purple)]">{stats.total}</p>
+             </div>
+             <div className="bg-indigo-50 p-4 rounded-[2rem] text-center border border-indigo-100">
+                <p className="text-[8px] font-black text-indigo-400 uppercase tracking-widest mb-1">Entry</p>
+                <p className="text-xl font-black text-indigo-600">{stats.assessed}</p>
+             </div>
+             <div className="bg-emerald-50 p-4 rounded-[2rem] text-center border border-emerald-100">
+                <p className="text-[8px] font-black text-emerald-400 uppercase tracking-widest mb-1">Saved</p>
+                <p className="text-xl font-black text-[var(--brand-teal)]">{stats.saved}</p>
+             </div>
           </div>
 
-          {/* 8-level rubric breakdown */}
-          {stats.assessed > 0 && (
-            <div className="mb-8">
-              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Rubric Distribution</h3>
-              <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
-                {[
-                  { code: 'EE1', label: 'Outstanding', count: stats.ee1, color: 'bg-green-100 text-green-800 border-green-300' },
-                  { code: 'EE2', label: 'Very High',   count: stats.ee2, color: 'bg-green-50  text-green-700 border-green-200' },
-                  { code: 'ME1', label: 'High Avg',    count: stats.me1, color: 'bg-blue-100  text-blue-800  border-blue-300' },
-                  { code: 'ME2', label: 'Average',     count: stats.me2, color: 'bg-blue-50   text-blue-700  border-blue-200' },
-                  { code: 'AE1', label: 'Low Avg',     count: stats.ae1, color: 'bg-yellow-100 text-yellow-800 border-yellow-300' },
-                  { code: 'AE2', label: 'Below Avg',   count: stats.ae2, color: 'bg-orange-100 text-orange-800 border-orange-300' },
-                  { code: 'BE1', label: 'Low',         count: stats.be1, color: 'bg-red-100   text-red-800   border-red-300' },
-                  { code: 'BE2', label: 'Very Low',    count: stats.be2, color: 'bg-red-50    text-red-700   border-red-200' },
-                ].map(({ code, label, count, color }) => (
-                  <div key={code} className={`border rounded-xl p-3 text-center ${color}`}>
-                    <p className="text-xs font-black">{code}</p>
-                    <p className="text-2xl font-black mt-1">{count}</p>
-                    <p className="text-[10px] font-medium mt-1 leading-tight">{label}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="flex flex-col md:flex-row gap-4 justify-center mt-8">
-            <button
-              onClick={goToPrevStep}
-              className="px-6 py-3 border-2 border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 font-semibold transition"
-            >
-              Back to Assessment
-            </button>
-            <button
-              onClick={() => {
-                setAssessments({});
-                setSavedAssessments({});
-                setStrand('');
-                setSubStrand('');
-                setViewMode('setup');
-                window.scrollTo(0, 0);
-              }}
-              className="px-8 py-3 bg-brand-teal text-white rounded-xl hover:bg-brand-teal/90 font-bold shadow-lg hover:shadow-xl transition flex items-center gap-2"
-            >
-              <Check size={20} />
-              Start New Assessment
-            </button>
+          <div className="bg-white rounded-[2.5rem] p-8 text-center space-y-6 shadow-xl shadow-purple-50 border border-gray-50">
+             <div className="w-24 h-24 bg-purple-50 rounded-full flex items-center justify-center mx-auto text-[var(--brand-purple)]">
+                <CheckCircle size={48} strokeWidth={1} />
+             </div>
+             <div className="space-y-2">
+                <h4 className="text-xl font-black text-gray-900">Session Complete?</h4>
+                <p className="text-xs text-gray-400 font-bold leading-relaxed px-6">Review the summary above. If all {labels.learners} are marked, you can safely return to the dashboard.</p>
+             </div>
+             <button
+               onClick={() => window.history.back()}
+               className="w-full py-5 bg-[var(--brand-purple)] text-white text-xs font-black uppercase tracking-[0.2em] rounded-[2rem] shadow-xl shadow-purple-50 active:scale-95 transition-all"
+             >
+                Exit Session
+             </button>
           </div>
         </div>
       )}

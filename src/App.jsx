@@ -15,7 +15,7 @@ import { useBootstrapStore } from './store/useBootstrapStore';
 import useSubjectStore from './store/useSubjectStore';
 
 const DEFAULT_BRANDING = {
-  logoUrl: '/logo-new.png',
+  logoUrl: '/logo-zawadi.png',
   faviconUrl: '/favicon.png',
   stampUrl: '/ZawadiStamp.svg',
   brandColor: '#520050',

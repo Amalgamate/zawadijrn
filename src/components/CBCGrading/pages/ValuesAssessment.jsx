@@ -1,11 +1,5 @@
-/**
- * Values Assessment Form
- * Assess the 7 national values for CBC
- * Redesigned with Compact Context Header Pattern (Setup -> Assess)
- */
-
-import React, { useState, useEffect, useCallback } from 'react';
-import { Heart, Save, Edit3, ArrowRight } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Heart, Save, Edit3, ArrowRight, Sparkles, ChevronLeft, Target, ShieldCheck, CheckCircle, Flame, Star, StarHalf, Loader2 } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
 import api from '../../../services/api';
 import SmartLearnerSearch from '../shared/SmartLearnerSearch';
@@ -14,27 +8,16 @@ import { useAssessmentSetup } from '../hooks/useAssessmentSetup';
 import { useLearnerSelection } from '../hooks/useLearnerSelection';
 import { useRatings } from '../hooks/useRatings';
 import { useTeacherWorkload } from '../hooks/useTeacherWorkload';
-import { validateValuesAssessment, formatValidationErrors } from '../../../utils/validation/assessmentValidators';
-
-const DEFAULT_BULK_VALUE_RATINGS = {
-  love: 'ME1',
-  responsibility: 'ME1',
-  respect: 'ME1',
-  unity: 'ME1',
-  peace: 'ME1',
-  patriotism: 'ME1',
-  integrity: 'ME1'
-};
+import { useInstitutionLabels } from '../../../hooks/useInstitutionLabels';
+import { cn } from '../../../utils/cn';
 
 const ValuesAssessment = ({ learners }) => {
   const { showSuccess, showError } = useNotifications();
-
-  // Use centralized hooks for assessment state management
+  const labels = useInstitutionLabels();
   const setup = useAssessmentSetup({ defaultTerm: 'TERM_1' });
   const teacherWorkload = useTeacherWorkload();
 
-  // Filter learners by teacher's assigned grades if they are a teacher
-  const filteredLearnersByRole = React.useMemo(() => {
+  const filteredLearnersByRole = useMemo(() => {
     if (!teacherWorkload.isTeacher) return learners || [];
     return (learners || []).filter(l => teacherWorkload.assignedGrades.includes(l.grade));
   }, [learners, teacherWorkload.isTeacher, teacherWorkload.assignedGrades]);
@@ -52,95 +35,24 @@ const ValuesAssessment = ({ learners }) => {
 
   const [viewMode, setViewMode] = useState('setup'); // 'setup' | 'assess'
   const [saving, setSaving] = useState(false);
-  const [bulkEntries, setBulkEntries] = useState({});
 
-  const initializeBulkEntries = useCallback(() => {
-    const entries = {};
-    selection.filteredLearners.forEach(learner => {
-      entries[learner.id] = {
-        ...DEFAULT_BULK_VALUE_RATINGS,
-        comment: ''
-      };
-    });
-    setBulkEntries(entries);
-  }, [selection.filteredLearners]);
-
-  useEffect(() => {
-    if (viewMode === 'bulk') {
-      initializeBulkEntries();
-    }
-  }, [viewMode, initializeBulkEntries]);
-
-  const updateBulkEntry = (learnerId, field, value) => {
-    setBulkEntries(prev => ({
-      ...prev,
-      [learnerId]: {
-        ...prev[learnerId],
-        [field]: value
-      }
-    }));
-  };
-
-  const handleBulkSave = async () => {
-    if (selection.filteredLearners.length === 0) {
-      showError('No learners found for the selected grade and stream');
-      return;
-    }
-
-    const records = selection.filteredLearners.map(learner => {
-      const entry = bulkEntries[learner.id] || DEFAULT_BULK_VALUE_RATINGS;
-      return {
-        learnerId: learner.id,
-        term: setup.selectedTerm,
-        academicYear: setup.academicYear,
-        love: entry.love,
-        responsibility: entry.responsibility,
-        respect: entry.respect,
-        unity: entry.unity,
-        peace: entry.peace,
-        patriotism: entry.patriotism,
-        integrity: entry.integrity,
-        comment: entry.comment || ''
-      };
-    });
-
-    setSaving(true);
-    try {
-      const response = await api.cbc.saveValuesBulk({ records });
-      if (response.success) {
-        showSuccess('Bulk values records saved successfully');
-        setViewMode('setup');
-      } else {
-        throw new Error(response.message || 'Failed to save bulk values');
-      }
-    } catch (error) {
-      showError(error.message || 'Failed to save bulk values');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // National values definitions (component-specific)
   const valueDefinitions = {
-    love: { name: 'Love', description: 'Showing care, compassion and kindness to others', icon: '❤️' },
-    responsibility: { name: 'Responsibility', description: 'Being accountable and reliable in duties and actions', icon: '🎯' },
-    respect: { name: 'Respect', description: 'Valuing others, their rights and dignity', icon: '🙏' },
-    unity: { name: 'Unity', description: 'Working together harmoniously with others', icon: '🤲' },
-    peace: { name: 'Peace', description: 'Promoting harmony and resolving conflicts peacefully', icon: '☮️' },
-    patriotism: { name: 'Patriotism', description: 'Love and loyalty to one\'s country', icon: '🇰🇪' },
-    integrity: { name: 'Integrity', description: 'Being honest and having strong moral principles', icon: '⚖️' }
+    love: { name: 'Love', label: 'Care & Kindness', icon: Heart, color: 'text-rose-500', bg: 'bg-rose-50' },
+    responsibility: { name: 'Responsibility', label: 'Duty & Reliability', icon: Target, color: 'text-amber-500', bg: 'bg-amber-50' },
+    respect: { name: 'Respect', label: 'Dignity & Honor', icon: Star, color: 'text-indigo-500', bg: 'bg-indigo-50' },
+    unity: { name: 'Unity', label: 'Harmony & Team', icon: Flame, color: 'text-orange-500', bg: 'bg-orange-50' },
+    peace: { name: 'Peace', label: 'Resolving Conflict', icon: ShieldCheck, color: 'text-sky-500', bg: 'bg-sky-50' },
+    patriotism: { name: 'Patriotism', label: 'Loyalty & Love', icon: StarHalf, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+    integrity: { name: 'Integrity', label: 'Honesty & Ethics', icon: CheckCircle, color: 'text-slate-600', bg: 'bg-slate-50' }
   };
 
-  // Load existing values when learner/term changes
   const loadExistingValues = useCallback(async () => {
     if (!selection.selectedLearnerId || !setup.selectedTerm) return;
-
     try {
       const response = await api.cbc.getValues(selection.selectedLearnerId, {
         term: setup.selectedTerm,
         academicYear: setup.academicYear
       });
-
       if (response.success && response.data) {
         ratings.setRatings({
           love: response.data.love || 'ME1',
@@ -151,50 +63,17 @@ const ValuesAssessment = ({ learners }) => {
           patriotism: response.data.patriotism || 'ME1',
           integrity: response.data.integrity || 'ME1'
         });
-        if (response.data.comment) {
-          ratings.setComment('general', response.data.comment);
-        }
-        showSuccess('Loaded existing assessment');
+        if (response.data.comment) ratings.setComment('general', response.data.comment);
       }
-    } catch (error) {
-      console.log('No existing assessment found');
-      // Silently fail - use defaults
-    }
-  }, [selection.selectedLearnerId, setup.selectedTerm, setup.academicYear, ratings, showSuccess]);
+    } catch (e) {}
+  }, [selection.selectedLearnerId, setup.selectedTerm, setup.academicYear, ratings]);
 
   useEffect(() => {
-    if (viewMode === 'assess') {
-      loadExistingValues();
-    }
+    if (viewMode === 'assess') loadExistingValues();
   }, [viewMode, loadExistingValues]);
 
-  // Alert teacher if they have no assignments
-  useEffect(() => {
-    if (!teacherWorkload.loading && teacherWorkload.isTeacher && !teacherWorkload.hasAnyAssignments) {
-      showError('You are not currently assigned to any classes. Please consult with the Head Teacher.');
-    }
-  }, [teacherWorkload.loading, teacherWorkload.isTeacher, teacherWorkload.hasAnyAssignments, showError]);
-
-  // Save values assessment
   const handleSave = async () => {
-    if (!selection.selectedLearnerId) {
-      showError('Please select a learner');
-      return;
-    }
-
-    // Validate before saving
-    const validationError = validateValuesAssessment({
-      learnerId: selection.selectedLearnerId,
-      term: setup.selectedTerm,
-      academicYear: setup.academicYear,
-      ratings: ratings.ratings
-    });
-
-    if (validationError.length > 0) {
-      showError(formatValidationErrors(validationError)[0].message);
-      return;
-    }
-
+    if (!selection.selectedLearnerId) { showError('Select learner'); return; }
     setSaving(true);
     try {
       const response = await api.cbc.saveValues({
@@ -204,314 +83,164 @@ const ValuesAssessment = ({ learners }) => {
         ...ratings.ratings,
         comment: ratings.comments.general || ''
       });
-
-      if (response.success) {
-        showSuccess('Values assessment saved successfully!');
-      } else {
-        throw new Error(response.message || 'Failed to save');
-      }
-    } catch (error) {
-      showError(error.message || 'Failed to save values assessment');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // Start assessment after learner selection
-  const handleStartAssessment = () => {
-    if (!selection.selectedLearnerId) {
-      showError('Please select a learner first');
-      return;
-    }
-    setViewMode('assess');
-    window.scrollTo(0, 0);
-  };
-
-  // Get color for rating display
-  const getRatingColor = (rating) => {
-    if (rating.startsWith('EE')) return 'bg-green-100 border-green-300 text-green-800';
-    if (rating.startsWith('ME')) return 'bg-brand-purple/10 border-brand-purple/30 text-brand-purple';
-    if (rating.startsWith('AE')) return 'bg-yellow-100 border-yellow-300 text-yellow-800';
-    if (rating.startsWith('BE')) return 'bg-red-100 border-red-300 text-red-800';
-    return 'bg-gray-100 border-gray-300 text-gray-800';
+      if (response.success) showSuccess('Values saved!');
+      else throw new Error(response.message);
+    } catch (e) { showError(e.message || 'Save failed'); }
+    finally { setSaving(false); }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="pb-24 font-sans">
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between mb-8 px-5 pt-4">
+        <div className="flex items-center gap-3">
+           <div className="w-10 h-10 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-500">
+              <Heart size={22} fill="currentColor" />
+           </div>
+           <div>
+              <h2 className="text-xl font-black text-gray-900 tracking-tight leading-none">Global Values</h2>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Character Building</p>
+           </div>
+        </div>
+        {viewMode !== 'setup' && (
+           <button
+             onClick={handleSave}
+             disabled={saving}
+             className="w-11 h-11 flex items-center justify-center bg-[var(--brand-teal)] text-white rounded-2xl shadow-lg shadow-teal-50 active:scale-90 transition-all disabled:opacity-30"
+           >
+              {saving ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
+           </button>
+        )}
+      </div>
 
-      {/* SETUP MODE */}
       {viewMode === 'setup' && (
-        <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100 max-w-3xl mx-auto mt-8">
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-brand-purple/10 rounded-full flex items-center justify-center mx-auto mb-4 text-brand-purple">
-              <Heart size={32} />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-800">National Values Assessment</h2>
-            <p className="text-gray-500">Select a learner to begin assessing values</p>
-          </div>
-
-          <div className="space-y-6 mb-8">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Select Learner</label>
-              <SmartLearnerSearch
-                learners={selection.filteredLearners}
-                selectedLearnerId={selection.selectedLearnerId}
-                onSelect={selection.selectLearner}
-                placeholder="Search by name, adm no..."
-              />
+        <div className="px-5 space-y-6 animate-in fade-in slide-in-from-bottom-4">
+          <div className="bg-white rounded-[2.5rem] border border-transparent shadow-xl shadow-rose-50 p-6 space-y-6">
+            <div className="space-y-1">
+               <span className="text-[10px] font-black text-rose-500 uppercase tracking-widest">Entry Scope</span>
+               <h3 className="text-lg font-black text-gray-900">Learner Context</h3>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Term</label>
-                <select
-                  value={setup.selectedTerm}
-                  onChange={(e) => setup.updateTerm(e.target.value)}
-                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-purple focus:border-brand-purple"
-                >
-                  {setup.terms.map(t => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
-                  ))}
-                </select>
-              </div>
+            <div className="space-y-4">
+               <div>
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{labels.learners}</label>
+                  <SmartLearnerSearch
+                    learners={selection.filteredLearners}
+                    selectedLearnerId={selection.selectedLearnerId}
+                    onSelect={selection.selectLearner}
+                    placeholder={`Search ${labels.learners}...`}
+                    className="w-full h-14 pl-4 bg-gray-50 border-none rounded-2xl text-xs font-bold outline-none ring-offset-0 focus:ring-2 focus:ring-rose-100"
+                  />
+               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Year</label>
-                <input
-                  type="number"
-                  value={setup.academicYear}
-                  onChange={(e) => setup.updateAcademicYear(parseInt(e.target.value))}
-                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-purple"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col md:flex-row justify-between items-center gap-3 pt-6 border-t border-gray-100">
-            <div className="text-sm text-gray-500">
-              {selection.filteredLearners.length > 0
-                ? `${selection.filteredLearners.length} learner${selection.filteredLearners.length > 1 ? 's' : ''} available for bulk entry`
-                : 'Select grade and stream to enable bulk entry'}
-            </div>
-            <div className="flex flex-wrap justify-end gap-3">
-              <button
-                onClick={() => setViewMode('bulk')}
-                disabled={!setup.selectedGrade || !setup.selectedStream || selection.filteredLearners.length === 0}
-                className="flex items-center gap-2 px-6 py-3 border border-brand-purple text-brand-purple rounded-xl hover:bg-brand-purple/10 transition font-bold disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Bulk Entry
-              </button>
-              <button
-                onClick={handleStartAssessment}
-                disabled={!selection.selectedLearnerId}
-                className="flex items-center gap-2 px-8 py-3 bg-brand-purple text-white rounded-xl hover:opacity-90 transition-all font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-              >
-                Start Assessment
-                <ArrowRight size={20} />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {viewMode === 'bulk' && (
-        <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100 max-w-6xl mx-auto mt-8">
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-brand-purple/10 rounded-full flex items-center justify-center mx-auto mb-4 text-brand-purple">
-              <Heart size={32} />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-800">Bulk Values Entry</h2>
-            <p className="text-gray-500">Enter national values for all learners in the selected grade and stream without leaving the page.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="bg-gray-50 p-4 rounded-xl">
-              <p className="text-xs uppercase tracking-widest text-gray-500">Grade / Stream</p>
-              <p className="font-bold text-gray-800">{setup.selectedGrade || 'N/A'}{setup.selectedStream ? ` / ${setup.selectedStream}` : ''}</p>
-            </div>
-            <div className="bg-gray-50 p-4 rounded-xl">
-              <p className="text-xs uppercase tracking-widest text-gray-500">Term</p>
-              <p className="font-bold text-gray-800">{setup.terms.find(t => t.value === setup.selectedTerm)?.label || setup.selectedTerm}</p>
-            </div>
-            <div className="bg-gray-50 p-4 rounded-xl">
-              <p className="text-xs uppercase tracking-widest text-gray-500">Year</p>
-              <p className="font-bold text-gray-800">{setup.academicYear}</p>
-            </div>
-          </div>
-
-          {selection.filteredLearners.length === 0 ? (
-            <div className="text-center py-16 text-gray-500">No learners found for the selected grade and stream.</div>
-          ) : (
-            <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
-              {selection.filteredLearners.map((learner) => {
-                const entry = bulkEntries[learner.id] || DEFAULT_BULK_VALUE_RATINGS;
-                return (
-                  <div key={learner.id} className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-                      <div>
-                        <p className="text-sm text-gray-500">{learner.admissionNumber}</p>
-                        <h3 className="font-bold text-gray-800">{learner.firstName} {learner.lastName}</h3>
-                      </div>
-                      <div className="text-sm text-gray-500">Learner {selection.filteredLearners.indexOf(learner) + 1} of {selection.filteredLearners.length}</div>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-                      {Object.entries(valueDefinitions).map(([key, definition]) => (
-                        <div key={key} className="space-y-2">
-                          <label className="block text-xs font-semibold uppercase text-gray-500">{definition.name}</label>
-                          <select
-                            value={entry[key] || 'ME1'}
-                            onChange={(e) => updateBulkEntry(learner.id, key, e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-brand-purple focus:ring-brand-purple"
-                          >
-                            {CBC_RATINGS.map(r => (
-                              <option key={r.value} value={r.value}>{r.label}</option>
-                            ))}
-                          </select>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="mt-4">
-                      <label className="block text-xs font-semibold uppercase text-gray-500 mb-2">General comment</label>
-                      <textarea
-                        value={entry.comment || ''}
-                        onChange={(e) => updateBulkEntry(learner.id, 'comment', e.target.value)}
-                        rows={2}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-brand-purple focus:ring-brand-purple resize-none"
-                        placeholder="Optional comment for this learner"
-                      />
-                    </div>
+               <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{labels.term}</label>
+                    <select
+                      value={setup.selectedTerm}
+                      onChange={(e) => setup.updateTerm(e.target.value)}
+                      className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-rose-500/20"
+                    >
+                      {setup.terms.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                    </select>
                   </div>
-                );
-              })}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Year</label>
+                    <input
+                      type="number"
+                      value={setup.academicYear}
+                      onChange={(e) => setup.updateAcademicYear(parseInt(e.target.value))}
+                      className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-bold"
+                    />
+                  </div>
+               </div>
             </div>
-          )}
-
-          <div className="flex flex-col md:flex-row justify-between items-center gap-3 pt-6 border-t border-gray-100">
-            <button
-              onClick={() => setViewMode('setup')}
-              className="px-6 py-3 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition"
-            >
-              Back to Single Entry
-            </button>
-            <button
-              onClick={handleBulkSave}
-              disabled={saving || selection.filteredLearners.length === 0}
-              className="px-6 py-3 bg-brand-purple text-white rounded-xl hover:opacity-90 transition font-bold disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {saving ? 'Saving...' : 'Save Bulk Records'}
-            </button>
           </div>
+
+          <button
+            onClick={() => setViewMode('assess')}
+            disabled={!selection.selectedLearnerId}
+            className="w-full h-16 bg-rose-500 text-white rounded-[2rem] flex items-center justify-center gap-3 shadow-xl shadow-rose-100 active:scale-95 transition-all outline-none disabled:opacity-30"
+          >
+            <span className="text-xs font-black uppercase tracking-[0.2em] ml-2">Character Audit</span>
+            <ArrowRight size={20} strokeWidth={3} />
+          </button>
         </div>
       )}
 
-      {/* ASSESS MODE */}
       {viewMode === 'assess' && selection.selectedLearner && (
-        <>
-          {/* Compact Context Header */}
-          <div className="bg-white rounded-xl shadow-sm p-4 border border-brand-purple/10 flex flex-col md:flex-row items-center justify-between gap-4 sticky top-4 z-20">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-brand-purple rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm">
-                {selection.selectedLearner.firstName[0]}{selection.selectedLearner.lastName[0]}
-              </div>
-              <div>
-                <h3 className="font-bold text-gray-800 text-lg line-clamp-1">
-                  {selection.selectedLearner.firstName} {selection.selectedLearner.lastName}
-                </h3>
-                <div className="flex items-center gap-3 text-sm text-gray-500 font-medium">
-                  <span>{selection.selectedLearner.admissionNumber}</span>
-                  <span className="bg-brand-purple/10 text-brand-purple px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                    {setup.terms.find(t => t.value === setup.selectedTerm)?.label} {setup.academicYear}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setViewMode('setup')}
-                className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium"
-              >
-                <Edit3 size={16} />
-                Change Learner
-              </button>
-              <div className="h-8 w-px bg-gray-200 mx-2 hidden md:block"></div>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="flex items-center gap-2 px-6 py-2 bg-brand-teal text-white rounded-lg hover:bg-brand-teal/90 transition shadow-sm font-bold disabled:opacity-70"
-              >
-                {saving ? 'Saving...' : 'Save Assessment'}
-                <Save size={18} />
-              </button>
-            </div>
+        <div className="px-5 space-y-6 animate-in fade-in slide-in-from-bottom-4">
+          <div className="bg-white border-b border-gray-100 py-4 -mx-1 flex items-center justify-between sticky top-0 z-10 transition-all">
+             <button onClick={() => setViewMode('setup')} className="p-3 border border-gray-100 rounded-2xl active:scale-90 transition-all">
+                <ChevronLeft size={20} className="text-gray-900" />
+             </button>
+             <div className="text-center flex-1">
+                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Character Record</h4>
+                <p className="text-xs font-black text-gray-900 truncate px-4">{selection.selectedLearner.firstName} {selection.selectedLearner.lastName}</p>
+             </div>
+             <div className="w-10" />
           </div>
 
-          {/* Values Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {Object.entries(valueDefinitions).map(([key, definition]) => (
-              <div key={key} className="bg-white rounded-xl shadow-sm p-6 border-2 border-gray-100 hover:border-brand-purple/20 transition-all hover:shadow-md">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="text-3xl filter drop-shadow-sm">{definition.icon}</div>
-                  <div>
-                    <h4 className="font-bold text-lg text-gray-800">{definition.name}</h4>
-                    <p className="text-sm text-gray-500">{definition.description}</p>
+          <div className="space-y-6">
+            {Object.entries(valueDefinitions).map(([key, def]) => {
+               const Icon = def.icon;
+               return (
+                  <div key={key} className="bg-white rounded-[2.5rem] border border-gray-50 p-6 shadow-sm space-y-5">
+                     <div className="flex items-center gap-4">
+                        <div className={cn("w-14 h-14 rounded-[1.5rem] flex items-center justify-center text-2xl shadow-inner", def.bg, def.color)}>
+                           <Icon size={24} />
+                        </div>
+                        <div>
+                           <h5 className="text-sm font-black text-gray-900">{def.name}</h5>
+                           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">{def.label}</p>
+                        </div>
+                     </div>
+
+                     <div className="grid grid-cols-2 gap-2">
+                        {CBC_RATINGS.slice(0, 4).map(r => (
+                           <button
+                             key={r.value}
+                             onClick={() => ratings.setRating(key, r.value)}
+                             className={cn(
+                                "py-4 px-2 rounded-2xl text-[10px] font-black uppercase transition-all tracking-tighter border-2",
+                                ratings.ratings[key] === r.value 
+                                   ? "bg-teal-600 border-transparent text-white shadow-lg shadow-teal-50 scale-[1.02]" 
+                                   : "bg-white border-gray-50 text-gray-400 hover:border-teal-100"
+                             )}
+                           >
+                              {r.label}
+                           </button>
+                        ))}
+                     </div>
                   </div>
-                </div>
+               );
+            })}
 
-                <div>
-                  <select
-                    value={ratings.ratings[key] || 'ME1'}
-                    onChange={(e) => ratings.setRating(key, e.target.value)}
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-brand-purple focus:border-brand-purple font-bold text-sm transition-all cursor-pointer appearance-none ${getRatingColor(ratings.ratings[key] || 'ME1')}`}
-                  >
-                    {CBC_RATINGS.map(r => (
-                      <option key={r.value} value={r.value}>{r.label}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            ))}
+            <div className="bg-white rounded-[2.5rem] border border-gray-100 p-6 space-y-4">
+               <div className="flex items-center gap-2 ml-2">
+                  <Edit3 size={14} className="text-gray-400" />
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Growth Observations</span>
+               </div>
+               <textarea
+                  value={ratings.comments.general || ''}
+                  onChange={(e) => ratings.setComment('general', e.target.value)}
+                  className="w-full h-32 p-5 bg-gray-50 border-none rounded-[1.5rem] text-xs font-bold outline-none placeholder:text-gray-300 resize-none focus:ring-2 focus:ring-rose-100"
+                  placeholder="Summarize character development..."
+               />
+               <div className="flex justify-center p-2">
+                  <Sparkles size={20} className="text-rose-100" />
+               </div>
+            </div>
           </div>
 
-          {/* General Comment */}
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-            <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-              <Edit3 size={16} className="text-gray-400" />
-              General Observations
-            </label>
-            <textarea
-              value={ratings.comments.general || ''}
-              onChange={(e) => ratings.setComment('general', e.target.value)}
-              placeholder="Add overall observations about the learner's demonstration of values..."
-              rows={4}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-purple focus:border-brand-purple resize-none transition-all font-medium"
-            />
-          </div>
-
-          {/* Bottom Actions */}
-          <div className="flex justify-end gap-4 pb-12">
-            <button
-              onClick={handleSave}
-              className="px-8 py-3 bg-white border-2 border-brand-purple/20 text-brand-purple font-bold rounded-xl hover:bg-brand-purple/5 transition"
-            >
-              Save & Stay
-            </button>
-            <button
-              onClick={() => {
-                handleSave();
-                setViewMode('setup');
-                selection.clearSelection();
-                window.scrollTo(0, 0);
-              }}
-              className="px-8 py-3 bg-brand-purple text-white font-bold rounded-xl hover:opacity-90 transition flex items-center gap-2 shadow-lg"
-            >
-              Finish & Next Learner
-              <ArrowRight size={20} />
-            </button>
-          </div>
-        </>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="w-full py-6 bg-teal-600 text-white text-xs font-black uppercase tracking-[0.2em] rounded-[2rem] shadow-xl shadow-teal-50 active:scale-95 transition-all mb-10"
+          >
+             Finalize Character Record
+          </button>
+        </div>
       )}
     </div>
   );

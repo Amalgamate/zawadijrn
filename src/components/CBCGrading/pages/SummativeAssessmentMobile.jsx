@@ -1,15 +1,6 @@
-/**
- * SummativeAssessment Mobile Variant - Redesigned
- * Mobile App-like Experience optimized for score recording
- * - Smart filtering based on teacher's assigned classes/subjects
- * - Single-screen streamlined workflow
- * - Large touch targets and fast entry
- * - Auto-selects teacher's class/subject
- */
-
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
-  Save, Loader, ArrowLeft, Check, ChevronRight, AlertCircle, BookOpen
+  Save, Loader, ArrowLeft, Check, ChevronRight, AlertCircle, BookOpen, Search
 } from 'lucide-react';
 import { assessmentAPI, classAPI, learnerAPI } from '../../../services/api';
 import { useNotifications } from '../hooks/useNotifications';
@@ -19,9 +10,12 @@ import { useLearningAreas } from '../hooks/useLearningAreas';
 import EmptyState from '../shared/EmptyState';
 import { useSchoolData } from '../../../contexts/SchoolDataContext';
 import { getLearningAreasByGrade } from '../../../constants/learningAreas';
+import { useInstitutionLabels } from '../../../hooks/useInstitutionLabels';
+import { cn } from '../../../utils/cn';
 
 const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSettings, embedded }) => {
   const { showSuccess, showError } = useNotifications();
+  const labels = useInstitutionLabels();
   const setup = useAssessmentSetup({ defaultTerm: 'TERM_1' });
   const teacherWorkload = useTeacherWorkload();
   const learningAreasMgr = useLearningAreas(setup.selectedGrade);
@@ -57,16 +51,6 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
         return status === 'PUBLISHED' || t.published === true;
       });
 
-      // Debug: Log all test learning areas
-      console.log('📋 All Tests by Grade:',
-        activeTests.reduce((acc, t) => {
-          const gradeKey = t.grade || 'UNKNOWN';
-          if (!acc[gradeKey]) acc[gradeKey] = [];
-          acc[gradeKey].push({ title: t.title, learningArea: t.learningArea });
-          return acc;
-        }, {})
-      );
-
       setTests(activeTests);
     } catch (error) {
       console.error('Error loading tests:', error);
@@ -91,8 +75,6 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
     loadOptions();
   }, [fetchTests, loadOptions]);
 
-  // ===== FILTERED DATA BASED ON TEACHER WORKLOAD =====
-
   // Filter tests by grade and term
   const filteredTestsBySelection = useMemo(() =>
     tests.filter(t => {
@@ -115,40 +97,23 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
   const availableLearningAreas = useMemo(() => {
     const areas = new Set();
     filteredTestsBySelection.forEach(t => {
-      // Try to get learning area from field first
       let area = t.learningArea;
-
-      // If not available, try to extract from title (e.g., "Test Title (Learning Area)")
       if (!area && t.title) {
         const match = t.title.match(/\((.*?)\)$/);
-        if (match) {
-          area = match[1].trim();
-        }
+        if (match) area = match[1].trim();
       }
-
       if (area) areas.add(area);
     });
 
-    // Unified source: include canonical learning areas by selected grade
     if (setup.selectedGrade) {
       const officialAreas = getLearningAreasByGrade(setup.selectedGrade);
       officialAreas.forEach((area) => areas.add(area));
     }
 
-    const result = Array.from(areas).sort();
-    console.log(`🎓 Learning Areas for Grade ${setup.selectedGrade}:`, result);
-    return result;
+    return Array.from(areas).sort();
   }, [filteredTestsBySelection, setup.selectedGrade]);
 
-  // Show ALL available learning areas (not filtered by teacher workload)
-  // Teachers can grade any subject, not just assigned ones
   const filteredLearningAreasByWorkload = availableLearningAreas;
-
-  // Log available subjects for debugging
-  useEffect(() => {
-    console.log(`📋 Available Subjects for Grade ${setup.selectedGrade}:`, filteredLearningAreasByWorkload);
-    console.log(`   Currently Selected: "${selectedLearningArea}"`);
-  }, [filteredLearningAreasByWorkload, setup.selectedGrade, selectedLearningArea]);
 
   // Filter tests by learning area
   const finalTests = useMemo(() => {
@@ -157,44 +122,16 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
     const normalize = (val) => String(val || '').toLowerCase().replace(/&/g, 'and').replace(/\s+/g, '').trim();
     const normalizedSelected = normalize(selectedLearningArea);
 
-    const results = filteredTestsBySelection.filter(t => {
-      // Get learning area from field or extract from title
+    return filteredTestsBySelection.filter(t => {
       let area = t.learningArea;
       if (!area && t.title) {
         const match = t.title.match(/\((.*?)\)$/);
-        if (match) {
-          area = match[1].trim();
-        }
+        if (match) area = match[1].trim();
       }
-
-      const testArea = normalize(area);
-      return testArea === normalizedSelected;
+      return normalize(area) === normalizedSelected;
     });
-
-    const testList = filteredTestsBySelection.map(t => {
-      let area = t.learningArea;
-      if (!area && t.title) {
-        const match = t.title.match(/\((.*?)\)$/);
-        if (match) {
-          area = match[1].trim();
-        }
-      }
-      return {
-        title: t.title,
-        area: area,
-        normalized: normalize(area),
-        matches: normalize(area) === normalizedSelected
-      };
-    });
-
-    console.log(`🧪 Filter Tests by Area: "${selectedLearningArea}" (normalized: "${normalizedSelected}")`);
-    console.log('   Tests:', testList);
-    console.log(`   Matched ${results.length} tests`);
-
-    return results;
   }, [filteredTestsBySelection, selectedLearningArea]);
 
-  // Filter grades by teacher's assigned grades
   const filteredGrades = useMemo(() => {
     const gradesFromTests = [...new Set(
       tests
@@ -204,12 +141,9 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
     )];
 
     const mergedGrades = [...new Set([...(availableGrades || []), ...gradesFromTests])];
-
     if (!teacherWorkload.isTeacher) return mergedGrades;
     return mergedGrades.filter(g => teacherWorkload.assignedGrades.includes(g));
   }, [availableGrades, tests, teacherWorkload.isTeacher, teacherWorkload.assignedGrades]);
-
-  // ===== AUTO-SELECTION FOR TEACHERS =====
 
   // Auto-prefill Grade for teachers
   useEffect(() => {
@@ -234,65 +168,43 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
     }
   }, [teacherWorkload.isTeacher, finalTests, selectedTestId, step]);
 
-  // Get selected test
   const selectedTest = useMemo(() => tests.find(t => String(t.id) === String(selectedTestId)), [selectedTestId, tests]);
 
-  // Update selectedLearningArea to match the test's learning area
   useEffect(() => {
     if (selectedTest) {
       let testArea = selectedTest.learningArea;
-
-      // Fallback: extract from title if not in field
       if (!testArea && selectedTest.title) {
         const match = selectedTest.title.match(/\((.*?)\)$/);
-        if (match) {
-          testArea = match[1].trim();
-        }
+        if (match) testArea = match[1].trim();
       }
-
       if (testArea && testArea !== selectedLearningArea) {
-        console.log(`📝 Updated learning area to match test: "${testArea}"`);
         setSelectedLearningArea(testArea);
       }
     }
   }, [selectedTest?.id, selectedTest?.learningArea, selectedTest?.title, selectedLearningArea]);
 
-  // Load existing marks from database when entering step 2
+  // Load existing marks from database
   const loadExistingMarks = useCallback(async () => {
     if (!selectedTest?.id) return;
-
-    // Clear previous marks first when loading for a new test
     setMarks({});
     setSavedMarks(new Set());
 
     try {
-      console.log(`📥 Loading existing marks for test ${selectedTest.id}...`);
       const response = await assessmentAPI.getTestResults(selectedTest.id);
-      console.log('📤 Test Results Response:', response);
-
       const results = response?.data || response || [];
 
       if (Array.isArray(results) && results.length > 0) {
-        // Load marks into state
         const loadedMarks = {};
         const savedLearnerIds = new Set();
-
         results.forEach(result => {
           loadedMarks[result.learnerId] = result.marksObtained;
           savedLearnerIds.add(result.learnerId);
         });
-
         setMarks(loadedMarks);
         setSavedMarks(savedLearnerIds);
-        console.log(`✅ Loaded ${results.length} existing marks for this test`);
-      } else {
-        console.log(`ℹ️  No existing marks found for this test (fresh assessment)`);
       }
     } catch (error) {
       console.error('Error loading existing marks:', error);
-      // Reset to empty state on error
-      setMarks({});
-      setSavedMarks(new Set());
     }
   }, [selectedTest?.id]);
 
@@ -306,21 +218,16 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
     if (!selectedTest?.id || !selectedTest?.grade) return;
     setLoadingLearners(true);
     try {
-      // Fetch learners for the selected Grade and Stream (from the test)
       const params = {
         grade: selectedTest.grade,
         status: 'ACTIVE',
-        limit: 1000 // Get all for the class
+        limit: 1000
       };
-
-      if (setup.selectedStream) {
-        params.stream = setup.selectedStream;
-      }
+      if (setup.selectedStream) params.stream = setup.selectedStream;
 
       const response = await learnerAPI.getAll(params);
       const learnersData = response.data || response || [];
       setFetchedLearners(Array.isArray(learnersData) ? learnersData : []);
-      console.log(`✓ Loaded ${learnersData.length} learners for ${selectedTest.grade}`);
     } catch (error) {
       console.error('Error fetching learners:', error);
       showError('Failed to load learners');
@@ -336,7 +243,6 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
     }
   }, [step, selectedTest, fetchLearners]);
 
-  // Assessment Progress
   const assessmentProgress = useMemo(() => {
     const totalLearners = (fetchedLearners || []).length;
     const assessedCount = Object.keys(marks).filter(learnerId => {
@@ -348,10 +254,8 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
     return { assessed: assessedCount, total: totalLearners, percentage, isComplete };
   }, [marks, fetchedLearners]);
 
-  // Filter learners by search query
   const filteredLearners = useMemo(() => {
     let result = fetchedLearners;
-
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       result = result.filter(l =>
@@ -359,23 +263,16 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
         (l.admissionNumber || '').toLowerCase().includes(query)
       );
     }
-
     return result;
   }, [fetchedLearners, searchQuery]);
 
-  // Handle mark change
   const handleMarkChange = (learnerId, value) => {
-    setMarks(prev => ({
-      ...prev,
-      [learnerId]: value === '' ? '' : value
-    }));
+    setMarks(prev => ({ ...prev, [learnerId]: value === '' ? '' : value }));
   };
 
-  // Save marks
   const handleSaveMarks = async () => {
     setSaving(true);
     try {
-      // Collect all marks to save
       const resultsToSave = Object.entries(marks)
         .filter(([_, mark]) => mark !== null && mark !== undefined && mark !== '')
         .map(([learnerId, mark]) => ({
@@ -386,15 +283,11 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
         }));
 
       if (resultsToSave.length === 0) {
-        showError('No new marks to save. All entered marks already saved.');
+        showError('No marks to save');
         setSaving(false);
         return;
       }
 
-      console.log(`🔄 Saving ${resultsToSave.length} marks...`, resultsToSave);
-
-      // Save results using bulk API (always use bulk)
-      // Format: { testId, results: [{ learnerId, marksObtained }, ...] }
       const response = await assessmentAPI.recordBulkResults({
         testId: selectedTestId,
         results: resultsToSave.map(r => ({
@@ -403,361 +296,313 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
         }))
       });
 
-      console.log('📊 Save API Response:', response);
-
-      // Check if response indicates success (API may return different formats)
       const isSuccess = response && (response.success === true || response.data || response.message === 'saved' || !response.error);
 
       if (isSuccess) {
-        // Mark these learners as saved
         const newSavedMarks = new Set(savedMarks);
         resultsToSave.forEach(r => newSavedMarks.add(r.learnerId));
         setSavedMarks(newSavedMarks);
-
-        showSuccess(`✅ ${resultsToSave.length} mark(s) saved successfully!`);
-        console.log(`✅ Successfully saved ${resultsToSave.length} marks`);
-
-        // Don't clear marks - keep them visible with checkmarks
-        // User can continue entering more marks or navigate back voluntarily
+        showSuccess(`✅ ${resultsToSave.length} mark(s) synced!`);
       } else {
-        const errorMsg = response?.message || 'Failed to save marks. Please try again.';
-        showError(`❌ ${errorMsg}`);
-        console.error('Save failed:', response);
+        showError(`❌ ${response?.message || 'Sync failed.'}`);
       }
     } catch (error) {
-      console.error('Error saving marks:', error);
-      const errorMsg = error.message || 'Network error. Please check your connection.';
-      showError(`❌ Failed to save: ${errorMsg}`);
+      showError(`❌ Failed to save: ${error.message}`);
     } finally {
       setSaving(false);
     }
   };
 
-  // Handle back - navigate away from full-screen
   const handleBackToSidebar = () => {
-    // Clear marks when going back to start fresh
     setMarks({});
     setSavedMarks(new Set());
-
-    // This will trigger a page navigation back to dashboard in the parent system
-    if (onBack) {
-      onBack();
-    } else {
-      // Fallback: dispatch custom event or use window history
-      window.history.back();
-    }
+    if (onBack) onBack();
+    else window.history.back();
   };
 
-  // Loading state
   if (loading) {
     return (
-      <div className={`${embedded ? 'flex items-center justify-center min-h-full py-16' : 'fixed z-50 inset-0 flex items-center justify-center bg-gray-50'}`}>
-        <div className="flex flex-col items-center gap-3">
-          <Loader size={32} className="animate-spin text-teal-600" />
-          <p className="text-gray-600">Loading...</p>
+      <div className="fixed inset-0 flex items-center justify-center bg-white z-[100]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-[var(--brand-purple)]/20 border-t-[var(--brand-purple)] rounded-full animate-spin" />
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Initializing Assessment...</p>
         </div>
       </div>
     );
   }
 
-  // STEP 1: SETUP - Mobile App Style
+  // STEP 1: SETUP
   if (step === 1) {
     return (
-      <div className={`${embedded ? 'flex flex-col min-h-full bg-slate-50' : 'fixed z-50 inset-0 flex flex-col bg-slate-50'}`}>
-        {!embedded && (
-          <div className="bg-white border-b border-slate-200 px-4 pt-4 pb-3 shadow-sm">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handleBackToSidebar}
-                className="p-2 hover:bg-slate-100 rounded-full transition-colors"
-                title="Back"
-              >
-                <ArrowLeft size={20} />
-              </button>
-              <div>
-                <h1 className="text-xl font-black text-slate-900">Summative Assessment</h1>
-                <p className="text-xs text-slate-500 font-medium">Quick Setup</p>
-              </div>
+      <div className="fixed inset-0 flex flex-col bg-white z-[100] font-sans">
+        <div className="bg-white border-b border-gray-100 px-5 pt-6 pb-4 flex-shrink-0">
+          <div className="flex items-center gap-4">
+            <button
+               onClick={handleBackToSidebar}
+               className="p-2.5 hover:bg-gray-100 rounded-2xl active:scale-95 transition-all"
+            >
+              <ArrowLeft size={22} className="text-gray-900" />
+            </button>
+            <div>
+              <h1 className="text-xl font-black text-gray-900 tracking-tight leading-none">Record Marks</h1>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Assessment Setup</p>
             </div>
           </div>
-        )}
+        </div>
 
-        {/* Scrollable Content */}
-        <div className={`${embedded ? 'flex-1 p-4 space-y-3 pb-4' : 'flex-1 overflow-y-auto p-4 space-y-3 pb-32'}`}>
-          {/* Grade Card */}
-          <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
-            <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-3">
-              📚 Grade <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={setup.selectedGrade}
-              onChange={(e) => setup.setSelectedGrade(e.target.value)}
-              className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-base font-medium focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/20 focus:outline-none"
-            >
-              <option value="">Select your grade</option>
-              {filteredGrades.map(g => (
-                <option key={g} value={g}>{g.replace('_', ' ')}</option>
-              ))}
-            </select>
-            {filteredGrades.length === 1 && setup.selectedGrade === filteredGrades[0] && (
-              <p className="text-xs text-brand-teal mt-2">✓ Auto-selected based on your assignment</p>
-            )}
-          </div>
-
-          {/* Term Card */}
-          <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
-            <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-3">
-              📅 Term <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={setup.selectedTerm}
-              onChange={(e) => setup.setSelectedTerm(e.target.value)}
-              className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-base font-medium focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/20 focus:outline-none"
-            >
-              {availableTerms.map(t => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Learning Area Card */}
-          {filteredLearningAreasByWorkload.length > 0 && (
-            <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
-              <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-3">
-                <BookOpen size={14} className="inline mr-1" />
-                Subject <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={selectedLearningArea}
-                onChange={(e) => {
-                  console.log(`📝 Subject changed from "${selectedLearningArea}" to "${e.target.value}"`);
-                  setSelectedLearningArea(e.target.value);
-                }}
-                className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-base font-medium focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/20 focus:outline-none"
-              >
-                <option value="">Select subject</option>
-                {filteredLearningAreasByWorkload.map(area => (
-                  <option key={area} value={area}>{area}</option>
-                ))}
-              </select>
-              {filteredLearningAreasByWorkload.length === 1 && selectedLearningArea === filteredLearningAreasByWorkload[0] && (
-                <p className="text-xs text-brand-teal mt-2">✓ Only subject assigned to you</p>
-              )}
+        <div className="flex-1 overflow-y-auto p-5 space-y-6 pb-40">
+           {/* Term Select */}
+          <div className="space-y-4">
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Period & Timeline</label>
+            <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm space-y-5">
+               <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-700 ml-1">Academic {labels.term}</label>
+                  <select
+                    value={setup.selectedTerm}
+                    onChange={(e) => setup.setSelectedTerm(e.target.value)}
+                    className="w-full px-4 py-4 bg-gray-50 border-transparent rounded-2xl text-base font-extrabold focus:bg-white focus:border-[var(--brand-purple)] transition-all outline-none"
+                  >
+                    {availableTerms.map(t => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+               </div>
             </div>
-          )}
+          </div>
 
-          {/* Test Selection Card */}
+          {/* Target Select */}
+          <div className="space-y-4">
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Class & {labels.subject}</label>
+            <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm space-y-5">
+               <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-700 ml-1">Target {labels.grade}</label>
+                  <select
+                    value={setup.selectedGrade}
+                    onChange={(e) => setup.setSelectedGrade(e.target.value)}
+                    className="w-full px-4 py-4 bg-gray-50 border-transparent rounded-2xl text-base font-extrabold focus:bg-white focus:border-[var(--brand-purple)] transition-all outline-none"
+                  >
+                    <option value="">Select Classes</option>
+                    {filteredGrades.map(g => (
+                      <option key={g} value={g}>{g.replace('_', ' ')}</option>
+                    ))}
+                  </select>
+               </div>
+
+               {filteredLearningAreasByWorkload.length > 0 && (
+                <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-gray-700 ml-1">Active {labels.subject}</label>
+                    <select
+                      value={selectedLearningArea}
+                      onChange={(e) => setSelectedLearningArea(e.target.value)}
+                      className="w-full px-4 py-4 bg-gray-50 border-transparent rounded-2xl text-base font-extrabold focus:bg-white focus:border-[var(--brand-teal)] transition-all outline-none"
+                    >
+                      <option value="">Select subject</option>
+                      {filteredLearningAreasByWorkload.map(area => (
+                        <option key={area} value={area}>{area}</option>
+                      ))}
+                    </select>
+                 </div>
+               )}
+            </div>
+          </div>
+
+          {/* Test Select */}
           {selectedLearningArea && finalTests.length > 0 && (
-            <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
-              <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-3">
-                ✋ Select Test <span className="text-red-500">*</span>
-              </label>
-              <div className="space-y-2">
+            <div className="space-y-4">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Available Assessments</label>
+              <div className="space-y-3">
                 {finalTests.map(test => (
                   <button
                     key={test.id}
                     onClick={() => setSelectedTestId(test.id)}
-                    className={`w-full p-3 rounded-xl border-2 transition-all text-left ${selectedTestId === test.id
-                      ? 'border-brand-teal bg-brand-teal/5'
-                      : 'border-slate-200 hover:border-slate-300'
-                      }`}
+                    className={cn(
+                      "w-full p-5 rounded-3xl border-2 transition-all text-left flex items-center justify-between group",
+                      selectedTestId === test.id
+                        ? "border-[var(--brand-purple)] bg-purple-50/30 shadow-xl shadow-purple-50"
+                        : "border-gray-100 hover:border-gray-200"
+                    )}
                   >
-                    <p className="font-bold text-sm">{test.title}</p>
-                    <p className="text-xs text-slate-500">{test.totalMarks} marks</p>
+                    <div>
+                      <p className={cn(
+                        "font-black text-base leading-tight",
+                        selectedTestId === test.id ? "text-[var(--brand-purple)]" : "text-gray-900"
+                      )}>{test.title}</p>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.1em] mt-1">{test.totalMarks} Maximum Marks</p>
+                    </div>
+                    {selectedTestId === test.id ? (
+                       <div className="w-8 h-8 rounded-full bg-[var(--brand-purple)] text-white flex items-center justify-center shadow-lg shadow-purple-100">
+                          <Check size={18} strokeWidth={3} />
+                       </div>
+                    ) : (
+                       <ChevronRight size={20} className="text-gray-300 group-hover:text-gray-400" />
+                    )}
                   </button>
                 ))}
               </div>
-              {finalTests.length === 1 && selectedTestId === finalTests[0].id && (
-                <p className="text-xs text-brand-teal mt-2">✓ Only test available</p>
-              )}
             </div>
           )}
 
-          {/* No Tests Message */}
           {selectedLearningArea && finalTests.length === 0 && (
-            <EmptyState
-              icon={AlertCircle}
-              title="No Tests Available"
-              message={`No published tests found for ${selectedLearningArea} in ${setup.selectedGrade}`}
-            />
+            <div className="py-12 px-6 text-center bg-gray-50 rounded-3xl border border-dashed border-gray-200">
+               <AlertCircle size={40} className="mx-auto text-gray-300 mb-4" />
+               <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-1">No Tests Published</h3>
+               <p className="text-xs text-gray-400 font-medium leading-relaxed">We couldn\'t find any assessment tests for this subject in the system.</p>
+            </div>
           )}
         </div>
 
-        {/* Action Footer */}
-        <div className={`${embedded ? 'sticky bottom-0 bg-white border-t border-slate-200 p-4 space-y-2 shadow-lg' : 'fixed z-50 bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 space-y-2 shadow-lg'}`}>
+        <div className="fixed bottom-0 left-0 right-0 p-5 bg-white/80 backdrop-blur-xl border-t border-gray-100 z-50">
           <button
             onClick={() => {
               if (!selectedTestId || !setup.selectedGrade) {
-                showError('Please select Grade, Term, Subject, and Test');
+                showError('Review selection required');
                 return;
               }
               setStep(2);
             }}
             disabled={!selectedTestId || !setup.selectedGrade}
-            className="w-full py-3 bg-brand-teal text-white font-bold rounded-xl hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            className="w-full py-5 bg-[var(--brand-purple)] text-white font-black rounded-2xl hover:brightness-110 disabled:opacity-30 active:scale-95 transition-all text-xs uppercase tracking-[0.2em] shadow-xl shadow-purple-100"
           >
-            Start Grading →
-          </button>
-          <button
-            onClick={handleBackToSidebar}
-            className="w-full py-2 border-2 border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-50"
-          >
-            Cancel
+            Enter Scores Board
           </button>
         </div>
       </div>
     );
   }
 
-  // STEP 2: GRADING - Mobile App Optimized
+  // STEP 2: GRADING BOARD
   if (step === 2 && selectedTest) {
     return (
-      <div className={`${embedded ? 'flex flex-col min-h-full bg-slate-50' : 'fixed z-50 inset-0 flex flex-col bg-slate-50'}`}>
-        {/* Sticky Header - Score Progress */}
-        <div className="sticky top-0 z-20 bg-brand-teal text-white shadow-lg">
-          <div className="px-4 pt-4 pb-3">
-            <div className="flex items-center justify-between mb-3">
-              <button
-                onClick={() => {
+      <div className="fixed inset-0 flex flex-col bg-white z-[100] font-sans">
+        <div className="bg-[var(--brand-purple)] text-white flex-shrink-0 pt-8 pb-6 px-5 rounded-b-[2.5rem] shadow-2xl shadow-purple-100">
+          <div className="flex items-center justify-between mb-6">
+            <button
+               onClick={() => {
                   setMarks({});
                   setSavedMarks(new Set());
                   setStep(1);
-                }}
-                className="p-2 hover:bg-white/20 rounded-full transition-colors"
-              >
-                <ArrowLeft size={20} />
-              </button>
-              <div className="flex-1 min-w-0 mx-3">
-                <p className="font-black text-sm truncate">{selectedTest?.title}</p>
-                <p className="text-xs opacity-90">{setup.selectedGrade} • {selectedLearningArea}</p>
-              </div>
-              {assessmentProgress.isComplete && (
-                <div className="flex items-center gap-1 bg-white/20 px-2 py-1 rounded-full">
-                  <Check size={16} />
-                  <span className="text-xs font-bold">Done</span>
-                </div>
-              )}
+               }}
+               className="p-2.5 hover:bg-white/20 rounded-2xl active:scale-90 transition-all"
+            >
+              <ArrowLeft size={22} />
+            </button>
+            <div className="flex-1 min-w-0 mx-4">
+              <h1 className="font-black text-lg truncate leading-none">{selectedTest?.title}</h1>
+              <p className="text-[10px] font-bold opacity-70 uppercase tracking-widest mt-1.5">{setup.selectedGrade} • {selectedLearningArea}</p>
             </div>
+            <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center border border-white/10">
+               <span className="text-xs font-black">{selectedTest?.totalMarks}</span>
+            </div>
+          </div>
 
-            {/* Progress Circle */}
-            <div className="flex items-center justify-between">
-              <div className="text-xs font-bold opacity-90">Progress</div>
-              <div className="flex items-center gap-2">
-                <div className="w-16 h-1.5 bg-white/30 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-white rounded-full transition-all duration-300"
-                    style={{ width: `${assessmentProgress.percentage}%` }}
-                  />
-                </div>
-                <span className="text-xs font-bold min-w-fit">{assessmentProgress.assessed}/{assessmentProgress.total}</span>
-              </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest opacity-80 mb-1">
+               <span>Marking Progress</span>
+               <span>{assessmentProgress.assessed} of {assessmentProgress.total}</span>
+            </div>
+            <div className="h-2 bg-white/10 rounded-full overflow-hidden border border-white/5">
+              <div
+                className="h-full bg-white rounded-full transition-all duration-700 ease-out"
+                style={{ width: `${assessmentProgress.percentage}%` }}
+              />
             </div>
           </div>
         </div>
 
-        {/* Search Bar */}
-        {fetchedLearners.length > 5 && (
-          <div className="bg-white border-b border-slate-200 p-3 sticky top-24 z-10">
-            <input
-              type="text"
-              placeholder="🔍 Find learner..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-2 border-2 border-slate-200 rounded-lg text-sm placeholder-slate-400 focus:border-brand-teal focus:outline-none"
-            />
-          </div>
-        )}
+        <div className="bg-white pt-6 px-5 space-y-4 flex-1 overflow-y-auto pb-40">
+           {fetchedLearners.length > 5 && (
+            <div className="relative mb-6">
+               <input
+                type="text"
+                placeholder="Search scholar..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-12 pr-4 py-4 bg-gray-50 border-none rounded-2xl text-sm font-bold placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-purple-50 transition-all outline-none"
+              />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
+            </div>
+          )}
 
-        {/* Learner Score Cards - Streamlined */}
-        <div className={`${embedded ? 'px-3 pt-3 pb-4 space-y-2' : 'flex-1 overflow-y-auto px-3 pt-3 pb-32 space-y-2'}`}>
           {loadingLearners ? (
-            <div className="flex flex-col items-center justify-center py-12">
-              <Loader size={32} className="animate-spin text-brand-teal mb-2" />
-              <p className="text-sm text-slate-500">Loading learners...</p>
+            <div className="flex flex-col items-center justify-center py-20 gap-4">
+               <div className="w-10 h-10 border-4 border-purple-50 border-t-purple-500 rounded-full animate-spin" />
+               <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Loading Rosters...</p>
             </div>
           ) : (filteredLearners || []).length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 px-4">
-              <AlertCircle size={40} className="text-slate-300 mb-3" />
-              <p className="text-base font-bold text-slate-700">No Learners Found</p>
-              <p className="text-sm text-slate-500 text-center mt-2">
-                {fetchedLearners.length === 0
-                  ? 'No learners in this class. Check your class assignment.'
-                  : 'No results match your search.'}
-              </p>
+            <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">
+               <div className="w-16 h-16 rounded-3xl bg-gray-50 flex items-center justify-center">
+                  <AlertCircle size={32} className="text-gray-200" />
+               </div>
+               <div>
+                  <h3 className="text-sm font-black text-gray-900 uppercase">No Matches Found</h3>
+                  <p className="text-xs text-gray-400 mt-2 max-w-[200px] font-medium mx-auto">Try adjusting your filters or check the class list.</p>
+               </div>
             </div>
           ) : (
-            (filteredLearners || []).map((learner, idx) => {
-              const learnerId = learner.id || learner._id;
-              const marked = marks[learnerId];
-              const isMarked = marked !== null && marked !== undefined && marked !== '';
-              const isSaved = savedMarks.has(learnerId);
+            <div className="space-y-4">
+               {filteredLearners.map((learner, idx) => {
+                  const learnerId = learner.id || learner._id;
+                  const marked = marks[learnerId];
+                  const isMarked = marked !== null && marked !== undefined && marked !== '';
+                  const isSaved = savedMarks.has(learnerId);
 
-              return (
-                <div
-                  key={learnerId}
-                  className={`bg-white rounded-xl p-4 border-2 transition-all transform ${isSaved
-                    ? 'border-green-400 bg-green-50/30 shadow-sm'
-                    : isMarked
-                      ? 'border-brand-teal bg-brand-teal/3 shadow-sm'
-                      : 'border-slate-200 shadow-xs hover:shadow-sm'
-                    }`}
-                >
-                  {/* Learner Info */}
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-brand-teal/10 flex items-center justify-center text-xs font-bold text-brand-teal">
-                          {idx + 1}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="font-bold text-slate-900 text-sm">
-                            {learner.firstName} {learner.lastName || ''}
-                          </p>
-                          <p className="text-xs text-slate-500">{learner.admissionNumber || 'N/A'}</p>
-                        </div>
+                  return (
+                    <div
+                      key={learnerId}
+                      className={cn(
+                        "p-5 rounded-[2rem] border-2 transition-all flex items-center justify-between gap-4",
+                        isSaved ? "bg-emerald-50/30 border-emerald-100" :
+                        isMarked ? "bg-white border-[var(--brand-purple)] ring-4 ring-purple-50" :
+                        "bg-white border-gray-100"
+                      )}
+                    >
+                      <div className="flex-1 min-w-0 flex items-center gap-4">
+                         <div className={cn(
+                            "w-10 h-10 rounded-2xl flex items-center justify-center text-xs font-black shadow-inner",
+                            isSaved ? "bg-emerald-100 text-emerald-600" : "bg-gray-100 text-gray-400"
+                         )}>
+                            {idx + 1}
+                         </div>
+                         <div className="min-w-0 flex-1">
+                            <p className="font-black text-gray-900 text-sm leading-tight truncate">
+                              {learner.firstName} {learner.lastName || ''}
+                            </p>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+                               {isSaved ? "Verified Record" : learner.admissionNumber || "N/A"}
+                            </p>
+                         </div>
+                      </div>
+
+                      <div className="relative w-20">
+                         <input
+                            type="number"
+                            inputMode="decimal"
+                            value={marks[learnerId] ?? ''}
+                            onChange={(e) => handleMarkChange(learnerId, e.target.value)}
+                            disabled={isSaved}
+                            placeholder="--"
+                            className={cn(
+                               "w-full py-3 text-center text-lg font-black border-2 rounded-2xl transition-all focus:outline-none",
+                               isSaved ? "bg-white border-emerald-500 text-emerald-600" :
+                               isMarked ? "bg-white border-[var(--brand-purple)] text-[var(--brand-purple)]" :
+                               "bg-gray-50 border-transparent text-gray-400 focus:bg-white focus:border-purple-200"
+                            )}
+                         />
+                         {isSaved && (
+                            <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center border-2 border-white shadow-lg animate-in zoom-in duration-500">
+                               <Check size={14} strokeWidth={4} />
+                            </div>
+                         )}
                       </div>
                     </div>
-                    {isSaved ? (
-                      <div className="flex items-center gap-1 bg-green-600 text-white px-2 py-1 rounded-full shadow-sm">
-                        <Check size={16} className="fill-white" />
-                        <span className="text-xs font-black">SAVED</span>
-                      </div>
-                    ) : isMarked && (
-                      <div className="flex items-center gap-1 bg-amber-100 text-amber-700 px-2 py-1 rounded-full">
-                        <AlertCircle size={14} />
-                        <span className="text-xs font-bold">Unsaved</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Score Input - Large & Touch-Friendly */}
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    placeholder="Tap to enter mark"
-                    value={marks[learnerId] ?? ''}
-                    onChange={(e) => handleMarkChange(learnerId, e.target.value)}
-                    disabled={isSaved}
-                    className={`w-full px-4 py-3 text-center text-lg font-bold border-2 rounded-xl focus:outline-none transition-colors ${isSaved
-                      ? 'border-green-400 bg-green-100/50 text-green-700 cursor-not-allowed opacity-75'
-                      : isMarked
-                        ? 'border-brand-teal bg-white text-brand-teal'
-                        : 'border-slate-300 bg-slate-50 text-slate-900 focus:bg-white focus:border-brand-teal'
-                      }`}
-                    max={selectedTest?.totalMarks || 100}
-                    autoComplete="off"
-                  />
-                </div>
-              );
-            })
+                  );
+               })}
+            </div>
           )}
         </div>
 
-        {/* Bottom Action Bar */}
-        <div className={`${embedded ? 'sticky bottom-0 bg-white border-t-2 border-slate-200 p-4 pb-4 shadow-xl' : 'fixed z-50 bottom-0 left-0 right-0 bg-white border-t-2 border-slate-200 p-4 pb-6 shadow-xl'}`}>
-          <div className="space-y-2">
-            {/* Calculate unsaved marks */}
-            {(() => {
+        <div className="fixed bottom-0 left-0 right-0 p-5 bg-white/80 backdrop-blur-xl border-t border-gray-100 z-50 flex flex-col gap-3">
+           {(() => {
               const unsavedCount = Object.entries(marks)
                 .filter(([learnerId, mark]) => {
                   const isSaved = savedMarks.has(learnerId);
@@ -766,64 +611,48 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
 
               return (
                 <>
-                  {/* Main Save Button */}
                   <button
                     onClick={handleSaveMarks}
                     disabled={saving || unsavedCount === 0}
-                    className={`w-full py-4 font-black rounded-xl transition-all flex items-center justify-center gap-2 text-white text-sm ${unsavedCount === 0
-                      ? 'bg-gray-400 cursor-not-allowed opacity-50'
-                      : 'bg-brand-teal hover:shadow-lg active:scale-95'
-                      }`}
+                    className={cn(
+                        "w-full py-5 font-black rounded-2xl transition-all flex items-center justify-center gap-3 text-white text-xs uppercase tracking-[0.2em] shadow-xl shadow-teal-100",
+                        unsavedCount === 0 ? "bg-gray-200 shadow-none text-gray-400" : "bg-[var(--brand-teal)] hover:brightness-110 active:scale-95"
+                    )}
                   >
                     {saving ? (
                       <>
                         <Loader size={18} className="animate-spin" />
-                        Saving {unsavedCount} mark(s)...
+                        <span>Syncing Board...</span>
                       </>
                     ) : unsavedCount === 0 ? (
                       <>
-                        <Check size={18} />
-                        All Saved
+                        <Check size={18} strokeWidth={3} />
+                        <span>Work Finalized</span>
                       </>
                     ) : (
                       <>
                         <Save size={18} />
-                        Save {unsavedCount} Unsaved Mark{unsavedCount !== 1 ? 's' : ''}
+                        <span>Save Unsaved {unsavedCount} Marks</span>
                       </>
                     )}
                   </button>
 
-                  {/* Status Line */}
-                  {assessmentProgress.assessed > 0 && (
-                    <p className="text-xs text-center text-slate-500 font-medium">
-                      {savedMarks.size} saved • {unsavedCount} unsaved • {assessmentProgress.total - assessmentProgress.assessed} remaining
+                   {assessmentProgress.assessed > 0 && (
+                    <p className="text-[10px] text-center font-black uppercase tracking-[0.1em] text-gray-300">
+                      {assessmentProgress.percentage}% Global Accuracy Score
                     </p>
                   )}
-
-                  {/* Back Button */}
-                  <button
-                    onClick={() => {
-                      setMarks({});
-                      setSavedMarks(new Set());
-                      setStep(1);
-                    }}
-                    className="w-full py-3 border-2 border-slate-300 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition-colors"
-                  >
-                    Back to Setup
-                  </button>
                 </>
               );
             })()}
-          </div>
         </div>
       </div>
     );
   }
 
-  // Fallback
   return (
-    <div className={`${embedded ? 'flex items-center justify-center min-h-full py-16' : 'fixed z-50 inset-0 flex items-center justify-center bg-slate-50'}`}>
-      <EmptyState message="Invalid state" />
+    <div className="fixed inset-0 flex items-center justify-center bg-gray-50 z-[100]">
+      <EmptyState message="Invalid Assessment State" />
     </div>
   );
 };

@@ -104,6 +104,9 @@ model User {
   createdTermConfigs        TermConfig[]
   assessedValues            ValuesAssessment[]       @relation("AssessorValues")
   pushSubscriptions         PushSubscription[]       @relation("UserPushSubscriptions")
+  // ── Apps Module ─────────────────────────────────────────────────────────────
+  appConfigsUpdated         SchoolAppConfig[]        @relation("AppConfigUpdater")
+  appAuditLogs              AppAuditLog[]            @relation("AppAuditor")
 
 
   @@map("users")
@@ -2953,4 +2956,81 @@ model UnmatchedPayment {
   @@index([status])
   @@index([phone])
   @@map("unmatched_payments")
+}
+
+// ============================================================================
+// APPS MODULE — Settings > Apps
+// Controls which feature modules are enabled per school (Odoo-style toggling)
+// ============================================================================
+
+enum AppAuditAction {
+  ACTIVATED
+  DEACTIVATED
+  LOCKED
+  UNLOCKED
+  SHOWN
+  HIDDEN
+}
+
+/// Seed table — one row per feature module (e.g. "gradebook", "library")
+model App {
+  id           String   @id @default(uuid())
+  slug         String   @unique          // e.g. "gradebook"
+  name         String                    // e.g. "Gradebook"
+  description  String?
+  category     String                    // Core | Academics | Finance | Communication | HR | Reports
+  icon         String?                   // emoji or icon name
+  sortOrder    Int      @default(0)
+  dependencies String[] @default([])     // array of slugs this app requires
+  isSystem     Boolean  @default(false)  // hidden from all admins (internal-only apps)
+  createdAt    DateTime @default(now())
+
+  configs   SchoolAppConfig[]
+  auditLogs AppAuditLog[]
+
+  @@index([category])
+  @@index([slug])
+  @@map("apps")
+}
+
+/// Per-school state — one row per (school, app) pair
+model SchoolAppConfig {
+  id          String   @id @default(uuid())
+  schoolId    String
+  appId       String
+  isActive    Boolean  @default(false)
+  isMandatory Boolean  @default(false)  // only super admin can set; school admin sees lock icon
+  isVisible   Boolean  @default(true)   // only super admin can hide; false = not shown to school admin
+  updatedAt   DateTime @updatedAt
+  updatedById String?
+
+  app       App   @relation(fields: [appId],       references: [id], onDelete: Cascade)
+  updatedBy User? @relation("AppConfigUpdater",    fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@unique([schoolId, appId])
+  @@index([schoolId])
+  @@index([appId])
+  @@map("school_app_configs")
+}
+
+/// Append-only audit trail for app toggle actions (no UPDATE/DELETE allowed)
+model AppAuditLog {
+  id          String         @id @default(uuid())
+  schoolId    String
+  appId       String
+  action      AppAuditAction
+  performedBy String
+  roleAtTime  String
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime       @default(now())
+
+  app       App  @relation(fields: [appId],       references: [id], onDelete: Cascade)
+  performer User @relation("AppAuditor",           fields: [performedBy], references: [id], onDelete: Cascade)
+
+  @@index([schoolId])
+  @@index([appId])
+  @@index([performedBy])
+  @@index([createdAt])
+  @@map("app_audit_logs")
 }

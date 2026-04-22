@@ -312,6 +312,7 @@ export const allNavSections = [
         icon: Settings,
         permission: 'SCHOOL_SETTINGS',
         items: [
+            { id: 'settings-apps',           label: 'Apps',                    path: 'settings-apps',           permission: 'SCHOOL_SETTINGS'   },
             { id: 'settings-school',         label: 'School Settings',         path: 'settings-school',         permission: 'SCHOOL_SETTINGS'   },
             { id: 'settings-academic',       label: 'Academic Settings',       path: 'settings-academic',       permission: 'ACADEMIC_SETTINGS' },
             { id: 'settings-communication',  label: 'Communication Settings',  path: 'settings-communication',  permission: 'SCHOOL_SETTINGS'   },
@@ -353,8 +354,7 @@ function transformNavForParentRole(sections) {
 function parentSchoolSectionsFromNav(nav) {
   return nav.filter(
     (s) =>
-      s.id === 'docs-center' ||
-      (s.items?.length > 0 && !['dashboard', 'communications', 'help'].includes(s.id))
+      (s.items?.length > 0 && !['dashboard', 'communications', 'help', 'docs-center'].includes(s.id))
   );
 }
 

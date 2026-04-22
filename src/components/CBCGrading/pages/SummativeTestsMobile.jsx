@@ -1,10 +1,5 @@
-/**
- * SummativeTests Mobile
- * Card-based interface for managing tests on mobile
- */
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Plus, Trash2, Eye, Loader, Search, Edit, ArrowLeft, RefreshCw } from 'lucide-react';
+import { Plus, Trash2, Eye, Loader, Search, Edit, ArrowLeft, RefreshCw, ChevronRight, BookOpen } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
 import { useAuth } from '../../../hooks/useAuth';
 import { assessmentAPI } from '../../../services/api';
@@ -12,33 +7,13 @@ import SummativeTestForm from '../../../pages/assessments/SummativeTestForm';
 import ResetUtility from '../../../pages/assessments/ResetUtility';
 import EmptyState from '../shared/EmptyState';
 import ConfirmDialog from '../shared/ConfirmDialog';
-
-const SECONDARY_GRADES = ['GRADE10', 'GRADE11', 'GRADE12'];
-const JUNIOR_GRADE_ORDER = ['PLAYGROUP', 'PP1', 'PP2', 'GRADE_1', 'GRADE_2', 'GRADE_3', 'GRADE_4', 'GRADE_5', 'GRADE_6', 'GRADE_7', 'GRADE_8', 'GRADE_9'];
-const normalizeGradeCode = (grade) => String(grade || '').trim().replace(/\s+/g, '_').toUpperCase();
-const toCanonicalGrade = (grade) => {
-  const g = normalizeGradeCode(grade);
-  if (g === 'FORM_1' || g === 'GRADE_10') return 'GRADE10';
-  if (g === 'FORM_2' || g === 'GRADE_11') return 'GRADE11';
-  if (g === 'FORM_3' || g === 'GRADE_12') return 'GRADE12';
-  return g;
-};
-const isSecondaryGrade = (grade) => /^GRADE(10|11|12)$/.test(toCanonicalGrade(grade));
-const isJuniorGrade = (grade) => {
-  const g = toCanonicalGrade(grade);
-  return g === 'PLAYGROUP' || g === 'PP1' || g === 'PP2' || /^GRADE_[1-9]$/.test(g);
-};
-const formatGradeLabel = (grade) => {
-  const g = toCanonicalGrade(grade);
-  if (isSecondaryGrade(g)) return `Grade ${g.replace('GRADE', '')}`;
-  if (g.startsWith('GRADE_')) return `Grade ${g.replace('GRADE_', '')}`;
-  if (g === 'PLAYGROUP') return 'Playgroup';
-  return g.replace(/_/g, ' ');
-};
+import { useInstitutionLabels } from '../../../hooks/useInstitutionLabels';
+import { cn } from '../../../utils/cn';
 
 const SummativeTestsMobile = ({ onNavigate, onBack }) => {
   const { showSuccess, showError } = useNotifications();
   const { user } = useAuth();
+  const labels = useInstitutionLabels();
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('list'); // 'list' | 'create' | 'edit' | 'view'
   const [tests, setTests] = useState([]);
@@ -48,30 +23,19 @@ const SummativeTestsMobile = ({ onNavigate, onBack }) => {
   const [confirmConfig, setConfirmConfig] = useState({});
   const [deleting, setDeleting] = useState(false);
 
-  // Handle back - navigate away from full-screen
   const handleBackToSidebar = () => {
-    if (onBack) {
-      onBack();
-    } else {
-      window.history.back();
-    }
+    if (onBack) onBack();
+    else window.history.back();
   };
 
-  // Fetch Tests
   const fetchTests = useCallback(async () => {
     setLoading(true);
     try {
       const response = await assessmentAPI.getTests({});
       let testsData = Array.isArray(response?.data) ? response.data : Array.isArray(response) ? response : [];
-      const isSecondaryPortal = String(user?.institutionType || '').toUpperCase() === 'SECONDARY';
-      testsData = testsData.filter((t) => {
-        const g = toCanonicalGrade(t?.grade);
-        return isSecondaryPortal ? isSecondaryGrade(g) : isJuniorGrade(g);
-      });
       setTests(testsData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
     } catch (error) {
-      console.error('Error loading tests:', error);
-      showError('Failed to load tests');
+       showError('Failed to load tests');
     } finally {
       setLoading(false);
     }
@@ -81,58 +45,42 @@ const SummativeTestsMobile = ({ onNavigate, onBack }) => {
     fetchTests();
   }, [fetchTests]);
 
-  // Filter tests
   const filteredTests = useMemo(() => {
     return tests.filter(t =>
       (t.title || t.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (t.grade || '').toLowerCase().includes(searchQuery.toLowerCase())
+      (t.grade || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (t.learningArea || '').toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [tests, searchQuery]);
 
-  // Group by Grade then Series
   const groupedData = useMemo(() => {
     const grouped = {};
     filteredTests.forEach(test => {
       const gradeKey = test.grade || 'UNASSIGNED';
-      if (!grouped[gradeKey]) grouped[gradeKey] = {};
-
-      // Series Name is the first part before the " - "
-      const seriesName = test.title?.split(' - ')[0] || 'Individual Tests';
-
-      if (!grouped[gradeKey][seriesName]) {
-        grouped[gradeKey][seriesName] = {
-          name: seriesName,
-          type: test.testType || 'Assessment',
-          tests: []
-        };
-      }
-      grouped[gradeKey][seriesName].tests.push(test);
+      if (!grouped[gradeKey]) grouped[gradeKey] = [];
+      grouped[gradeKey].push(test);
     });
     return grouped;
   }, [filteredTests]);
 
-  // All tests are published — single badge style
-  const getStatusBadge = () => 'bg-green-100 text-green-800';
-
-  // Delete test
   const handleDeleteTest = (testId) => {
     const test = tests.find(t => t.id === testId);
     setConfirmConfig({
-      title: 'Delete Test',
-      message: `Delete "${test?.title || 'this test'}"?`,
+      title: 'Delete Assessment',
+      message: `Are you sure you want to delete "${test?.title}"? This cannot be undone.`,
       onConfirm: async () => {
         setShowConfirm(false);
         setDeleting(true);
         try {
           const response = await assessmentAPI.deleteTest(testId);
           if (response.success) {
-            showSuccess('Test deleted successfully');
+            showSuccess('Test removed successfully');
             setTests(prev => prev.filter(t => t.id !== testId));
           } else {
-            showError(response.message || 'Failed to delete test');
+            showError(response.message || 'Failed to delete');
           }
         } catch (error) {
-          showError('Failed to delete test');
+          showError('Internal Error Occurred');
         } finally {
           setDeleting(false);
         }
@@ -141,29 +89,31 @@ const SummativeTestsMobile = ({ onNavigate, onBack }) => {
     setShowConfirm(true);
   };
 
-  // RESET VIEW
   if (viewMode === 'reset') {
     return (
-      <div className="fixed inset-0 bg-gray-50 z-50 overflow-y-auto">
-        <div className="bg-white border-b border-gray-200 p-4 sticky top-0 z-10">
+      <div className="fixed inset-0 bg-white z-[120] overflow-y-auto font-sans">
+        <div className="bg-white border-b border-gray-100 p-5 sticky top-0 z-10 flex items-center gap-4">
           <button 
-            onClick={() => setViewMode('list')}
-            className="flex items-center gap-2 text-teal-600 font-bold uppercase tracking-widest text-[10px]"
+             onClick={() => setViewMode('list')}
+             className="p-2 border border-gray-100 rounded-xl active:scale-90 transition-all"
           >
-            ← Back to Tests
+            <ArrowLeft size={20} className="text-gray-900" />
           </button>
+          <div>
+            <h1 className="text-lg font-black text-gray-900">Database Tools</h1>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Assessment Cleanup</p>
+          </div>
         </div>
-        <div className="p-4">
+        <div className="p-5">
           <ResetUtility />
         </div>
       </div>
     );
   }
 
-  // CREATE/EDIT VIEW
   if (viewMode === 'create' || viewMode === 'edit') {
     return (
-      <div className="fixed inset-0 bg-gray-50 z-50">
+      <div className="fixed inset-0 bg-white z-[120]">
         <SummativeTestForm
           test={selectedTest}
           onBack={() => {
@@ -176,171 +126,139 @@ const SummativeTestsMobile = ({ onNavigate, onBack }) => {
     );
   }
 
-  // LIST VIEW
   return (
-    <div className="fixed inset-0 flex flex-col bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 p-4 sticky top-0 z-10 shadow-sm">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
+    <div className="fixed inset-0 flex flex-col bg-white z-[110] font-sans">
+      <div className="bg-white border-b border-gray-100 px-5 pt-8 pb-5 sticky top-0 z-10">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
             <button
-              onClick={handleBackToSidebar}
-              className="text-teal-600 hover:text-teal-700 flex-shrink-0 p-1 hover:bg-gray-100 rounded"
-              title="Back to Menu"
+               onClick={handleBackToSidebar}
+               className="p-2.5 hover:bg-gray-100 rounded-2x active:scale-95 transition-all outline-none"
             >
-              <ArrowLeft size={20} />
+              <ArrowLeft size={22} className="text-gray-900" />
             </button>
-            <h1 className="text-lg font-bold text-gray-900">Tests</h1>
+            <div>
+               <h1 className="text-xl font-black text-gray-900 tracking-tight leading-none">Manage Tests</h1>
+               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Master Repository</p>
+            </div>
           </div>
-          {user?.role !== 'TEACHER' && (
-            <button
-              onClick={() => setViewMode('reset')}
-              className="text-red-500 p-2 rounded-lg hover:bg-red-50 border border-red-100"
-              title="Reset Database"
-            >
-              <RefreshCw size={20} />
-            </button>
-          )}
-          {/* 
-          <button
-            onClick={() => {
-              setSelectedTest(null);
-              setViewMode('create');
-            }}
-            className="bg-teal-600 text-white p-2 rounded-lg hover:bg-teal-700"
-          >
-            <Plus size={20} />
-          </button>
-          */}
+          <div className="flex items-center gap-2">
+             {user?.role !== 'TEACHER' && (
+                <button
+                  onClick={() => setViewMode('reset')}
+                  className="w-10 h-10 flex items-center justify-center text-red-500 bg-red-50 rounded-2xl active:scale-90 transition-all border border-red-100"
+                >
+                  <RefreshCw size={20} />
+                </button>
+             )}
+              <button
+                onClick={() => {
+                   setSelectedTest(null);
+                   setViewMode('create');
+                }}
+                className="w-10 h-10 flex items-center justify-center bg-[var(--brand-purple)] text-white rounded-2xl shadow-lg shadow-purple-100 active:scale-90 transition-all"
+              >
+                <Plus size={22} strokeWidth={3} />
+              </button>
+          </div>
         </div>
 
-        {/* Search */}
-        <div className="relative pointer-events-auto">
-          <Search size={16} className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
+        <div className="relative">
+          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
           <input
             type="text"
-            placeholder="Search tests..."
+            placeholder={`Search by ${labels.grade} or ${labels.subject}...`}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent pointer-events-auto"
-            style={{ touchAction: 'manipulation' }}
+            className="w-full pl-12 pr-4 py-4 bg-gray-50 border-none rounded-2xl text-sm font-bold placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-purple-50 transition-all outline-none"
           />
         </div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-3 pb-20 space-y-6">
+      <div className="flex-1 overflow-y-auto p-5 pb-32 space-y-8">
         {loading ? (
-          <div className="flex justify-center py-12">
-            <Loader size={32} className="animate-spin text-teal-600" />
+          <div className="flex flex-col items-center justify-center py-20 gap-4">
+             <div className="w-10 h-10 border-4 border-purple-50 border-t-purple-500 rounded-full animate-spin" />
+             <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Loading Tests...</p>
           </div>
         ) : tests.length === 0 ? (
-          <EmptyState
-            icon={Plus}
-            title="No Tests Yet"
-            message="Create your first summative test"
-          />
+          <div className="py-20 px-10 text-center space-y-6">
+             <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto">
+                <BookOpen size={40} className="text-gray-200" />
+             </div>
+             <div className="space-y-1">
+                <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">No Tests Defined</h3>
+                <p className="text-xs text-gray-400 font-medium leading-relaxed">It seems you haven\'t created any assessments for this academic session yet.</p>
+             </div>
+             <button
+                 onClick={() => setViewMode('create')}
+                 className="px-6 py-3 bg-[var(--brand-purple)] text-white text-[10px] font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-purple-50"
+             >
+                Create Initial Test
+             </button>
+          </div>
         ) : Object.keys(groupedData).length === 0 ? (
-          <EmptyState
-            icon={Search}
-            title="No Results"
-            message="No tests match your search"
-          />
+          <div className="py-20 text-center">
+             <Search size={40} className="mx-auto text-gray-200 mb-4" />
+             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">No Search Results</p>
+          </div>
         ) : (
           Object.entries(groupedData)
-            .sort((a, b) => {
-              const isSecondaryPortal = String(user?.institutionType || '').toUpperCase() === 'SECONDARY';
-              const order = isSecondaryPortal ? SECONDARY_GRADES : JUNIOR_GRADE_ORDER;
-              return order.indexOf(toCanonicalGrade(a[0])) - order.indexOf(toCanonicalGrade(b[0]));
-            })
-            .map(([gradeKey, seriesGroups]) => (
+            .sort()
+            .map(([gradeKey, gradeTests]) => (
               <div key={gradeKey} className="space-y-4">
-                {/* Grade Header */}
-                <div className="flex items-center gap-2 px-3 py-1 mt-4">
-                  <div className="w-6 h-6 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center text-[10px] font-bold">
-                    {gradeKey.substring(0, 2).toUpperCase()}
-                  </div>
-                  <span className="text-xs font-black text-gray-400 uppercase tracking-widest">
-                    {formatGradeLabel(gradeKey)}
-                  </span>
+                <div className="flex items-center gap-3 ml-2">
+                   <div className="w-8 h-8 rounded-2xl bg-gray-50 flex items-center justify-center text-[10px] font-black text-gray-800 shadow-inner">
+                      {gradeKey.substring(0, 2).toUpperCase()}
+                   </div>
+                   <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                      {gradeKey.replace(/_/g, ' ')}
+                   </span>
                 </div>
 
-                {/* Series Groups */}
-                {Object.entries(seriesGroups).map(([seriesName, data]) => (
-                  <div key={seriesName} className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-                    <div className="p-4 border-b border-gray-50 bg-gray-50/30">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-bold text-gray-900 text-sm leading-tight">{seriesName}</h3>
-                          <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider mt-1">
-                            Type: {data.type.replace(/_/g, ' ')} • {data.tests[0]?.academicYear}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="divide-y divide-gray-50 grayscale-[0.5]">
-                      {data.tests.map(test => (
-                        <div key={test.id} className="p-4 active:bg-gray-50 transition-colors">
-                          <div className="flex items-center justify-between gap-4 mb-3">
-                            <div className="flex-1 min-w-0">
-                              <h4 className="text-xs font-bold text-gray-800 truncate">{test.learningArea}</h4>
-                              <div className="flex items-center gap-2 mt-1">
-                                <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tight ${getStatusBadge(test.status)}`}>
-                                  {test.status}
-                                </span>
-                                <span className="text-[9px] text-gray-400 font-bold">{test.totalMarks} Marks</span>
-                              </div>
-                            </div>
+                <div className="grid gap-4">
+                   {gradeTests.map(test => (
+                    <div key={test.id} className="bg-white rounded-[2rem] border border-gray-100 p-5 shadow-sm space-y-5">
+                       <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                             <h4 className="text-base font-black text-gray-900 leading-tight mb-1">{test.title}</h4>
+                             <div className="flex items-center gap-2">
+                                <span className="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-tight">Active</span>
+                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{test.totalMarks} Points Max</span>
+                             </div>
                           </div>
-
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => {
-                                setSelectedTest(test);
-                                setViewMode('view');
-                              }}
-                              className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors active:bg-blue-100"
-                            >
-                              <Eye size={14} />
-                              View
-                            </button>
-
-                            {(user?.role !== 'TEACHER' || test.createdBy === user?.id) && (
-                              <>
-                                <button
-                                  onClick={() => {
-                                    setSelectedTest(test);
-                                    setViewMode('edit');
-                                  }}
-                                  className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-gray-50 text-gray-600 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors active:bg-gray-100"
-                                >
-                                  <Edit size={14} />
-                                  Edit
-                                </button>
-
-                                <button
-                                  onClick={() => handleDeleteTest(test.id)}
-                                  disabled={deleting}
-                                  className="flex items-center justify-center py-2 px-3 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 disabled:opacity-50"
-                                >
-                                  <Trash2 size={14} />
-                                </button>
-                              </>
-                            )}
+                          <div className="w-10 h-10 rounded-2xl bg-purple-50 flex items-center justify-center flex-shrink-0">
+                             <BookOpen size={18} className="text-[var(--brand-purple)]" />
                           </div>
-                        </div>
-                      ))}
+                       </div>
+
+                       <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              setSelectedTest(test);
+                              setViewMode('edit');
+                            }}
+                            className="flex-1 py-3 bg-gray-50 border border-transparent text-gray-700 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white hover:border-gray-100 transition-all active:scale-95"
+                          >
+                             Configure
+                          </button>
+                          <button
+                            onClick={() => handleDeleteTest(test.id)}
+                            disabled={deleting}
+                            className="w-14 py-3 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center active:scale-95 transition-all disabled:opacity-30 border border-red-100"
+                          >
+                             <Trash2 size={16} />
+                          </button>
+                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             ))
         )}
       </div>
 
-      {/* Confirm Dialog */}
-      {showConfirm && (
+       {showConfirm && (
         <ConfirmDialog
           {...confirmConfig}
           isOpen={showConfirm}

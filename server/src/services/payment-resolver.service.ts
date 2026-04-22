@@ -135,6 +135,80 @@ export async function applyPaymentToInvoice(params: {
     return { success: true, invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber };
 }
 
+/**
+ * Applies a payment to a SPECIFIC invoice ID.
+ */
+export async function applyToSpecificInvoice(params: {
+    invoiceId: string;
+    amount: number;
+    receipt: string;
+    phone: string;
+    recordedBy?: string;
+}): Promise<{ success: boolean; invoiceNumber?: string }> {
+    const { invoiceId, amount, receipt, phone, recordedBy } = params;
+
+    const invoice = await prisma.feeInvoice.findUnique({
+        where: { id: invoiceId },
+        include: { learner: true }
+    });
+
+    if (!invoice) return { success: false };
+
+    // Create payment record
+    await prisma.feePayment.create({
+        data: {
+            invoiceId: invoice.id,
+            amount,
+            paymentMethod: 'MPESA',
+            receiptNumber: `MPESA-${receipt}`,
+            referenceNumber: receipt,
+            notes: `M-Pesa payment via ${phone}`,
+            recordedBy: recordedBy || ''
+        }
+    });
+
+    // Update balances
+    await prisma.feeInvoice.update({
+        where: { id: invoice.id },
+        data: {
+            paidAmount: { increment: amount },
+            balance: { decrement: amount }
+        }
+    });
+
+    // Refresh to check if fully paid
+    const updated = await prisma.feeInvoice.findUnique({ where: { id: invoice.id } });
+    if (updated && Number(updated.balance) <= 0) {
+        await prisma.feeInvoice.update({
+            where: { id: invoice.id },
+            data: { status: 'PAID' }
+        });
+    } else if (updated && Number(updated.paidAmount) > 0) {
+        await prisma.feeInvoice.update({
+            where: { id: invoice.id },
+            data: { status: 'PARTIAL' }
+        });
+    }
+
+    // SMS Receipt
+    try {
+        const school = await prisma.school.findFirst();
+        const msg = `Payment of KES ${amount.toLocaleString()} received for ${invoice.learner.firstName}. Receipt: ${receipt}. Balance: KES ${Math.max(0, Number(updated?.balance || 0)).toLocaleString()}. Thank you, ${school?.name || 'Zawadi SMS'}.`;
+        await messageService.createAndDispatchMessage({
+            senderId: 'system',
+            senderType: 'ADMIN',
+            recipientType: 'INDIVIDUAL',
+            recipients: [{ recipientPhone: phone }],
+            body: msg,
+            messageType: 'SMS'
+        });
+    } catch (e) {
+        console.error('[PaymentResolver] Direct SMS error:', e);
+    }
+
+    return { success: true, invoiceNumber: invoice.invoiceNumber };
+}
+
 // ─── Park unmatched ─────────────────────────────────────────────────────────
 export async function parkAsUnmatched(params: {
     phone: string;

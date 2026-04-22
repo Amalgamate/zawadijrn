@@ -1,18 +1,25 @@
 import React from 'react';
-import { Users, Save, CheckCircle, Clock, XCircle, AlertCircle, RefreshCw, ChevronRight, Search, Calendar as CalendarIcon, Filter } from 'lucide-react';
+import { Users, Save, CheckCircle, Clock, XCircle, AlertCircle, RefreshCw, ChevronRight, Search, Calendar as CalendarIcon, Filter, Target, ChevronLeft, Check } from 'lucide-react';
 import { useAttendance } from '../hooks/useAttendanceAPI';
 import { useNotifications } from '../hooks/useNotifications';
 import { toInputDate } from '../utils/dateHelpers';
 import LoadingSpinner from '../shared/LoadingSpinner';
 import { useAuth } from '../../../hooks/useAuth';
+import { useInstitutionLabels } from '../../../hooks/useInstitutionLabels';
+import { cn } from '../../../utils/cn';
 
 const DailyAttendance = () => {
-  // Staged Filter State (matches SummativeAssessment pattern)
+  const labels = useInstitutionLabels();
+  const { showSuccess, showError } = useNotifications();
+  const { user } = useAuth();
+  const isTeacher = user?.role === 'TEACHER';
+
+  // Staged Filter State
   const [stagedGrade, setStagedGrade] = React.useState(() => localStorage.getItem('cbc_attendance_stagedGrade') || '');
   const [stagedStream, setStagedStream] = React.useState(() => localStorage.getItem('cbc_attendance_stagedStream') || '');
   const [stagedDate, setStagedDate] = React.useState(() => toInputDate(localStorage.getItem('cbc_attendance_stagedDate')) || new Date().toISOString().split('T')[0]);
 
-  // Active Context State (what is currently loaded)
+  // Active Context State
   const [activeContext, setActiveContext] = React.useState(() => {
     const saved = localStorage.getItem('cbc_attendance_activeContext');
     try { return saved ? JSON.parse(saved) : null; } catch (e) { return null; }
@@ -21,23 +28,17 @@ const DailyAttendance = () => {
   const [pendingChanges, setPendingChanges] = React.useState({});
   const [searchTerm, setSearchTerm] = React.useState('');
   const [isSyncing, setIsSyncing] = React.useState(false);
-  const { user } = useAuth();
-  const isTeacher = user?.role === 'TEACHER';
 
-  // Persist staged filters
+  // Persistence
   React.useEffect(() => {
     localStorage.setItem('cbc_attendance_stagedGrade', stagedGrade);
     localStorage.setItem('cbc_attendance_stagedStream', stagedStream);
     localStorage.setItem('cbc_attendance_stagedDate', stagedDate);
   }, [stagedGrade, stagedStream, stagedDate]);
 
-  // Persist active context
   React.useEffect(() => {
-    if (activeContext) {
-      localStorage.setItem('cbc_attendance_activeContext', JSON.stringify(activeContext));
-    } else {
-      localStorage.removeItem('cbc_attendance_activeContext');
-    }
+    if (activeContext) localStorage.setItem('cbc_attendance_activeContext', JSON.stringify(activeContext));
+    else localStorage.removeItem('cbc_attendance_activeContext');
   }, [activeContext]);
 
   // Hooks
@@ -49,8 +50,6 @@ const DailyAttendance = () => {
     markBulkAttendance,
   } = useAttendance();
 
-  const { showSuccess, showError } = useNotifications();
-
   const assignedClass = React.useMemo(() => {
     if (!isTeacher || classes.length === 0) return null;
     return classes[0];
@@ -58,36 +57,19 @@ const DailyAttendance = () => {
 
   React.useEffect(() => {
     if (!isTeacher || !assignedClass) return;
-
     const assignedGrade = assignedClass.grade || '';
     const assignedStream = assignedClass.stream || '';
+    if (stagedGrade !== assignedGrade) setStagedGrade(assignedGrade);
+    if (stagedStream !== assignedStream) setStagedStream(assignedStream);
+  }, [isTeacher, assignedClass, stagedGrade, stagedStream]);
 
-    if (stagedGrade !== assignedGrade) {
-      setStagedGrade(assignedGrade);
-    }
-    if (stagedStream !== assignedStream) {
-      setStagedStream(assignedStream);
-    }
-
-    if (activeContext && activeContext.classId !== assignedClass.id) {
-      setActiveContext(null);
-      setDailyReport(null);
-      setPendingChanges({});
-    }
-  }, [isTeacher, assignedClass, stagedGrade, stagedStream, activeContext]);
-
-  // Load daily report when "Load Workspace" is clicked
   const handleLoadWorkspace = React.useCallback(async () => {
-    // Find the class that matches staged grade and stream
     const targetClass = isTeacher
       ? assignedClass
       : classes.find(c => c.grade === stagedGrade && (stagedStream ? c.stream === stagedStream : true));
 
     if (!targetClass) {
-      showError(isTeacher
-        ? 'No class assigned to your account. Please contact the Head Teacher.'
-        : `No active class found for ${stagedGrade} ${stagedStream || ''}`
-      );
+      showError(isTeacher ? `No ${labels.class.toLowerCase()} assigned to your account.` : `No active ${labels.class.toLowerCase()} found.`);
       return;
     }
 
@@ -104,7 +86,6 @@ const DailyAttendance = () => {
           stream: targetClass.stream || ''
         });
 
-        // Initialize pending changes
         const initialChanges = {};
         report.learners.forEach(learner => {
           if (learner.attendance) {
@@ -117,41 +98,30 @@ const DailyAttendance = () => {
         setPendingChanges(initialChanges);
       }
     } catch (err) {
-      showError('Failed to load attendance register');
+      showError('Failed to load register');
     } finally {
       setIsSyncing(false);
     }
-  }, [isTeacher, assignedClass, stagedGrade, stagedStream, stagedDate, classes, getDailyClassReport, showError]);
+  }, [isTeacher, assignedClass, stagedGrade, stagedStream, stagedDate, classes, getDailyClassReport, showError, labels]);
 
-  // Auto-restore workspace if activeContext exists
+  // Auto-restore
   React.useEffect(() => {
     if (classes.length > 0 && activeContext && !dailyReport && !loading && !isSyncing) {
       handleLoadWorkspace();
     }
   }, [classes, activeContext, dailyReport, loading, isSyncing, handleLoadWorkspace]);
 
-  React.useEffect(() => {
-    if (isTeacher && assignedClass && !activeContext && !dailyReport && !loading && !isSyncing) {
-      handleLoadWorkspace();
-    }
-  }, [isTeacher, assignedClass, activeContext, dailyReport, loading, isSyncing, handleLoadWorkspace]);
-
-
-  // Status configuration
   const statusConfig = {
-    PRESENT: { label: 'Present', color: 'bg-emerald-500', icon: CheckCircle, lightColor: 'bg-emerald-50 text-emerald-600', ring: 'ring-emerald-500/20' },
-    ABSENT: { label: 'Absent', color: 'bg-rose-500', icon: XCircle, lightColor: 'bg-rose-50 text-rose-600', ring: 'ring-rose-500/20' },
-    LATE: { label: 'Late', color: 'bg-amber-500', icon: Clock, lightColor: 'bg-amber-50 text-amber-600', ring: 'ring-amber-500/20' },
-    EXCUSED: { label: 'Excused', color: 'bg-sky-500', icon: AlertCircle, lightColor: 'bg-sky-50 text-sky-600', ring: 'ring-sky-500/20' },
+    PRESENT: { label: 'Present', color: 'bg-emerald-500', icon: CheckCircle, lightColor: 'bg-emerald-50 text-emerald-600' },
+    ABSENT: { label: 'Absent', color: 'bg-rose-500', icon: XCircle, lightColor: 'bg-rose-50 text-rose-600' },
+    LATE: { label: 'Late', color: 'bg-amber-500', icon: Clock, lightColor: 'bg-amber-50 text-amber-600' },
+    EXCUSED: { label: 'Excused', color: 'bg-sky-500', icon: AlertCircle, lightColor: 'bg-sky-50 text-sky-600' },
   };
 
   const handleStatusChange = (learnerId, status) => {
     setPendingChanges(prev => ({
       ...prev,
-      [learnerId]: {
-        status,
-        remarks: prev[learnerId]?.remarks || '',
-      },
+      [learnerId]: { status, remarks: prev[learnerId]?.remarks || '' }
     }));
   };
 
@@ -162,39 +132,35 @@ const DailyAttendance = () => {
       allPresent[learner.id] = { status: 'PRESENT', remarks: '' };
     });
     setPendingChanges(allPresent);
-    showSuccess('All learners marked as present');
+    showSuccess(`All ${labels.learners.toLowerCase()} marked present`);
   };
 
   const handleSaveAttendance = async () => {
     if (!activeContext) return;
-
     setIsSyncing(true);
-    const attendanceRecords = Object.entries(pendingChanges).map(([learnerId, data]) => ({
+    const records = Object.entries(pendingChanges).map(([learnerId, data]) => ({
       learnerId,
       status: data.status,
       remarks: data.remarks || undefined,
     }));
 
-    if (attendanceRecords.length === 0) {
-      showError('No attendance marked');
+    if (records.length === 0) {
+      showError('No records marked');
       setIsSyncing(false);
       return;
     }
 
-    const result = await markBulkAttendance(activeContext.date, activeContext.classId, attendanceRecords);
-
+    const result = await markBulkAttendance(activeContext.date, activeContext.classId, records);
     if (result.success) {
-      showSuccess(result.message || 'Attendance synchronized successfully');
-      // Refresh report
+      showSuccess('Register synchronized!');
       const report = await getDailyClassReport(activeContext.classId, activeContext.date);
       if (report) setDailyReport(report);
     } else {
-      showError(result.error || 'Synchronization failed');
+      showError(result.error || 'Sync failed');
     }
     setIsSyncing(false);
   };
 
-  // Derived Data
   const filteredLearners = React.useMemo(() => {
     if (!dailyReport?.learners) return [];
     return dailyReport.learners.filter(l =>
@@ -210,227 +176,193 @@ const DailyAttendance = () => {
     return { present, total, percentage };
   }, [pendingChanges, dailyReport]);
 
-  // Distinct Grades and Streams from classes
   const availableGrades = [...new Set(classes.map(c => c.grade))].sort();
   const availableStreams = [...new Set(classes.filter(c => c.grade === stagedGrade).map(c => c.stream))].filter(Boolean).sort();
 
   return (
-    <div className="min-h-screen bg-slate-50/50">
-      {/* Sticky Header Section */}
-      <div className="sticky top-0 z-40 bg-white shadow-sm border-b border-slate-200">
-        {/* Top Row: Title & Global Actions */}
-        <div className="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/80 backdrop-blur-md">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-600 rounded-xl text-white">
-              <Users size={24} />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-900 tracking-tight">Daily Attendance</h1>
-              <p className="text-xs text-gray-500 font-medium">Real-time Learner Monitoring</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {activeContext && (
-              <>
-                <div className="hidden lg:flex items-center gap-4 px-4 py-2 bg-slate-50 rounded-xl border border-slate-100 mr-2">
-                  <div className="text-center">
-                    <p className="text-[10px] font-black text-slate-400 uppercase leading-none mb-1">Present</p>
-                    <p className="text-sm font-bold text-emerald-600">{stats.present}/{stats.total}</p>
-                  </div>
-                  <div className="w-px h-6 bg-slate-200" />
-                  <div className="text-center">
-                    <p className="text-[10px] font-black text-slate-400 uppercase leading-none mb-1">Rate</p>
-                    <p className="text-sm font-bold text-indigo-600">{stats.percentage}%</p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={handleMarkAllPresent}
-                  className="px-4 py-2 text-sm font-bold text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors border border-emerald-100"
-                >
-                  Mark All Present
-                </button>
-
-                <button
-                  onClick={handleSaveAttendance}
-                  disabled={isSyncing || Object.keys(pendingChanges).length === 0}
-                  className="flex items-center gap-2 px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-indigo-600/20 transition-all disabled:opacity-50"
-                >
-                  <Save size={18} />
-                  {isSyncing ? 'Syncing...' : 'Sync Attendance'}
-                </button>
-              </>
-            )}
-          </div>
+    <div className="pb-24 font-sans">
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between mb-8 px-5 pt-4">
+        <div className="flex items-center gap-3">
+           <div className="w-10 h-10 rounded-2xl bg-teal-50 flex items-center justify-center text-teal-600">
+              <Users size={22} />
+           </div>
+           <div>
+              <h2 className="text-xl font-black text-gray-900 tracking-tight leading-none">Attendance</h2>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Daily Register</p>
+           </div>
         </div>
+        {activeContext && (
+           <button
+             onClick={handleSaveAttendance}
+             disabled={isSyncing}
+             className="w-11 h-11 flex items-center justify-center bg-[var(--brand-teal)] text-white rounded-2xl shadow-lg shadow-teal-50 active:scale-90 transition-all disabled:opacity-30"
+           >
+              {isSyncing ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
+           </button>
+        )}
+      </div>
 
-        {/* Bottom Row: Filter Bar (Aligned with SummativeAssessment) */}
-        <div className="px-6 py-3 border-t border-slate-100 flex flex-wrap items-center gap-3">
-          <select
-            value={stagedGrade}
-            onChange={(e) => {
-              setStagedGrade(e.target.value);
-              setStagedStream('');
-            }}
-            disabled={isTeacher}
-            className="h-9 px-3 border border-slate-300 rounded-lg text-xs font-semibold bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none w-32"
-          >
-            <option value="">Grade</option>
-            {availableGrades.map(g => (
-              <option key={g} value={g}>{g.replace(/_/g, ' ')}</option>
-            ))}
-          </select>
+      {!activeContext ? (
+        /* ── SETUP VIEW ── */
+        <div className="px-5 space-y-6 animate-in fade-in slide-in-from-bottom-4">
+          <div className="bg-white rounded-[2.5rem] border border-transparent shadow-xl shadow-teal-50 p-6 space-y-6">
+            <div className="space-y-1">
+               <span className="text-[10px] font-black text-[var(--brand-purple)] uppercase tracking-widest">Stage 01</span>
+               <h3 className="text-lg font-black text-gray-900">Select Register</h3>
+            </div>
 
-          <select
-            value={stagedStream}
-            onChange={(e) => setStagedStream(e.target.value)}
-            disabled={!stagedGrade || isTeacher}
-            className="h-9 px-3 border border-slate-300 rounded-lg text-xs font-semibold bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none w-24 disabled:opacity-50"
-          >
-            <option value="">Stream</option>
-            {availableStreams.map(s => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{labels.grade}</label>
+                <select
+                  value={stagedGrade}
+                  onChange={(e) => { setStagedGrade(e.target.value); setStagedStream(''); }}
+                  disabled={isTeacher}
+                  className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-teal-100 outline-none disabled:opacity-60"
+                >
+                  <option value="">Choose {labels.grade}</option>
+                  {availableGrades.map(g => <option key={g} value={g}>{g.replace(/_/g, ' ')}</option>)}
+                </select>
+              </div>
 
-          <input
-            type="date"
-            value={toInputDate(stagedDate)}
-            onChange={(e) => setStagedDate(e.target.value)}
-            max={new Date().toISOString().split('T')[0]}
-            className="h-9 px-3 border border-slate-300 rounded-lg text-xs font-semibold bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none w-36"
-          />
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Stream</label>
+                <select
+                  value={stagedStream}
+                  onChange={(e) => setStagedStream(e.target.value)}
+                  disabled={!stagedGrade || isTeacher}
+                  className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-teal-100 outline-none disabled:opacity-60"
+                >
+                  <option value="">All Streams</option>
+                  {availableStreams.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
 
-          <button
-            onClick={handleLoadWorkspace}
-            disabled={isTeacher ? (!assignedClass || loading || isSyncing) : (!stagedGrade || loading || isSyncing)}
-            className="h-9 px-4 bg-brand-teal hover:bg-brand-teal/90 text-white rounded-lg text-xs font-bold flex items-center gap-2 transition-all disabled:opacity-50"
-          >
-            {isSyncing ? <RefreshCw size={14} className="animate-spin" /> : <Filter size={14} />}
-            Load Register
-          </button>
-
-          {activeContext && (
-            <div className="flex-1 flex justify-end">
-              <div className="relative w-full max-w-xs">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Date</label>
                 <input
-                  type="text"
-                  placeholder="Search learners..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-4 h-9 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:bg-white focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                  type="date"
+                  value={stagedDate}
+                  onChange={(e) => setStagedDate(e.target.value)}
+                  max={new Date().toISOString().split('T')[0]}
+                  className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-teal-100 outline-none"
                 />
               </div>
             </div>
-          )}
+          </div>
+
+          <button
+            onClick={handleLoadWorkspace}
+            disabled={isSyncing || (!stagedGrade && !isTeacher)}
+            className="w-full h-16 bg-teal-600 text-white rounded-[2rem] flex items-center justify-center gap-3 shadow-xl shadow-teal-200 active:scale-95 transition-all outline-none disabled:opacity-30"
+          >
+            <span className="text-xs font-black uppercase tracking-[0.2em] ml-2">Load Register</span>
+            <RefreshCw size={20} className={cn(isSyncing && "animate-spin")} />
+          </button>
         </div>
-      </div>
-
-      {/* Main Content Area */}
-      <div className="p-6">
-        {!activeContext ? (
-          <div className="max-w-2xl mx-auto mt-20 text-center">
-            <div className="w-20 h-20 bg-indigo-50 text-indigo-200 rounded-3xl flex items-center justify-center mx-auto mb-6">
-              <Users size={40} />
-            </div>
-            <h2 className="text-2xl font-black text-slate-800 mb-2">Workspace Ready</h2>
-            <p className="text-slate-500 mb-8 font-medium">Select a grade and date above to load the attendance register. You can mark individual learners or use the "Mark All Present" shortcut.</p>
+      ) : (
+        /* ── REGISTRY VIEW ── */
+        <div className="space-y-6 px-5 animate-in fade-in slide-in-from-bottom-4">
+          {/* Context Header */}
+          <div className="bg-white border-b border-gray-100 py-4 -mx-1 flex items-center justify-between sticky top-0 z-10 transition-all">
+             <button onClick={() => setActiveContext(null)} className="p-3 border border-gray-100 rounded-2xl active:scale-90 transition-all">
+                <ChevronLeft size={20} className="text-gray-900" />
+             </button>
+             <div className="text-center flex-1">
+                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{activeContext.grade.replace(/_/g, ' ')} {activeContext.stream}</h4>
+                <p className="text-xs font-black text-gray-900">{new Date(activeContext.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+             </div>
+             <button onClick={handleMarkAllPresent} className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl active:scale-90 transition-all">
+                <Check size={20} strokeWidth={3} />
+             </button>
           </div>
-        ) : (
-          <div className="max-w-[1400px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* Header Mini-Summary */}
-            <div className="mb-6 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Active Register:</span>
-                <span className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-bold ring-1 ring-indigo-100">
-                  {activeContext.grade.replace(/_/g, ' ')} {activeContext.stream} — {new Date(activeContext.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
-                </span>
-              </div>
-            </div>
 
-            {/* List Table */}
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50/50 border-b border-slate-100">
-                      <th className="px-6 py-4 text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Learner</th>
-                      <th className="px-6 py-4 text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest text-center">Status Selection</th>
-                      <th className="px-6 py-4 text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Remarks</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50">
-                    {filteredLearners.length > 0 ? (
-                      filteredLearners.map((learner) => {
-                        const currentStatus = pendingChanges[learner.id]?.status;
-                        return (
-                          <tr key={learner.id} className="group hover:bg-slate-50/50 transition-colors">
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-3">
-                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${currentStatus ? statusConfig[currentStatus].lightColor : 'bg-slate-100 text-slate-400'}`}>
-                                  {learner.firstName[0]}{learner.lastName[0]}
-                                </div>
-                                <div>
-                                  <p className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{learner.firstName} {learner.lastName}</p>
-                                  <p className="text-[10px] font-medium text-slate-400 uppercase tracking-tighter">{learner.admissionNumber}</p>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="flex items-center justify-center gap-1.5">
-                                {Object.entries(statusConfig).map(([key, config]) => (
-                                  <button
-                                    key={key}
-                                    onClick={() => handleStatusChange(learner.id, key)}
-                                    title={config.label}
-                                    className={`p-2 rounded-lg transition-all duration-200 flex items-center gap-1.5 border ${currentStatus === key
-                                      ? `${config.color} text-white border-transparent shadow-md scale-105`
-                                      : 'bg-white text-slate-400 border-slate-200 hover:border-slate-300'
-                                      }`}
-                                  >
-                                    <config.icon size={14} />
-                                    <span className="text-[10px] font-bold uppercase tracking-wide hidden sm:inline">{config.label}</span>
-                                  </button>
-                                ))}
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <input
-                                type="text"
-                                placeholder="Add optional remarks..."
-                                value={pendingChanges[learner.id]?.remarks || ''}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  setPendingChanges(prev => ({
-                                    ...prev,
-                                    [learner.id]: {
-                                      status: prev[learner.id]?.status || 'PRESENT',
-                                      remarks: val
-                                    }
-                                  }));
-                                }}
-                                className="w-full bg-transparent text-xs font-medium text-slate-600 placeholder:text-slate-300 focus:outline-none focus:border-b focus:border-indigo-300"
-                              />
-                            </td>
-                          </tr>
-                        );
-                      })
-                    ) : (
-                      <tr>
-                        <td colSpan="3" className="px-6 py-12 text-center">
-                          <p className="text-slate-400 font-medium">No learners found matching your search.</p>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+          {/* Stats Bar */}
+          <div className="grid grid-cols-3 gap-3">
+             <div className="bg-gray-50 p-4 rounded-[2rem] text-center border border-gray-100">
+                <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Present</p>
+                <p className="text-xl font-black text-emerald-600">{stats.present}</p>
+             </div>
+             <div className="bg-gray-50 p-4 rounded-[2rem] text-center border border-gray-100">
+                <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Total</p>
+                <p className="text-xl font-black text-gray-900">{stats.total}</p>
+             </div>
+             <div className="bg-gray-50 p-4 rounded-[2rem] text-center border border-gray-100">
+                <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Rate</p>
+                <p className="text-xl font-black text-teal-600">{stats.percentage}%</p>
+             </div>
           </div>
-        )}
-      </div>
+
+          {/* Search */}
+          <div className="relative">
+             <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
+             <input
+               type="text"
+               placeholder={`Search ${labels.learners.toLowerCase()}...`}
+               value={searchTerm}
+               onChange={(e) => setSearchTerm(e.target.value)}
+               className="w-full h-14 pl-12 pr-4 bg-gray-50 border-none rounded-[1.5rem] text-xs font-bold outline-none focus:ring-2 focus:ring-teal-100"
+             />
+          </div>
+
+          {/* Learner List */}
+          <div className="space-y-4 py-2">
+             {filteredLearners.map(learner => {
+                const currentStatus = pendingChanges[learner.id]?.status;
+                return (
+                   <div key={learner.id} className="bg-white rounded-[2.5rem] border border-gray-50 p-6 shadow-sm space-y-5">
+                      <div className="flex items-center gap-4">
+                         <div className={cn(
+                            "w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xs transition-colors",
+                            currentStatus ? statusConfig[currentStatus].lightColor : "bg-gray-100 text-gray-400"
+                         )}>
+                            {learner.firstName[0]}{learner.lastName[0]}
+                         </div>
+                         <div>
+                            <h5 className="text-sm font-black text-gray-900 leading-tight">{learner.firstName} {learner.lastName}</h5>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter mt-0.5">{learner.admissionNumber}</p>
+                         </div>
+                      </div>
+
+                      <div className="grid grid-cols-4 gap-2">
+                         {Object.entries(statusConfig).map(([key, config]) => (
+                            <button
+                              key={key}
+                              onClick={() => handleStatusChange(learner.id, key)}
+                              className={cn(
+                                 "flex flex-col items-center gap-1.5 py-3 rounded-2xl border transition-all duration-300",
+                                 currentStatus === key 
+                                    ? `${config.color} text-white border-transparent shadow-lg shadow-${config.color.split('-')[1]}-100 scale-105` 
+                                    : "bg-white text-gray-400 border-gray-100 hover:border-gray-200"
+                              )}
+                            >
+                               <config.icon size={16} strokeWidth={currentStatus === key ? 3 : 2} />
+                               <span className="text-[8px] font-black uppercase tracking-widest">{config.label}</span>
+                            </button>
+                         ))}
+                      </div>
+
+                      {currentStatus && (
+                         <div className="pt-2 animate-in fade-in slide-in-from-top-1">
+                            <input
+                               type="text"
+                               placeholder="Add remark..."
+                               value={pendingChanges[learner.id]?.remarks || ''}
+                               onChange={(e) => setPendingChanges(prev => ({
+                                  ...prev,
+                                  [learner.id]: { ...prev[learner_id], remarks: e.target.value }
+                               }))}
+                               className="w-full bg-transparent text-[10px] font-bold text-gray-500 placeholder:text-gray-300 outline-none border-b border-gray-50 focus:border-teal-200 pb-1"
+                            />
+                         </div>
+                      )}
+                   </div>
+                );
+             })}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

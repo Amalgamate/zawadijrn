@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { mpesaService } from '../services/mpesa.service';
 import prisma from '../config/database';
 import messageService from '../services/message.service';
-import { resolveOrganicPayment, applyPaymentToInvoice, normalizePhone } from '../services/payment-resolver.service';
+import { resolveOrganicPayment, applyToSpecificInvoice, normalizePhone } from '../services/payment-resolver.service';
 
 export const initiatePayment = async (req: Request, res: Response) => {
     const { phoneNumber, amount, studentId, invoiceId } = req.body;
@@ -24,6 +24,66 @@ export const initiatePayment = async (req: Request, res: Response) => {
         } else {
             res.status(500).json(result);
         }
+    } catch (error: any) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+/**
+ * Query STK Status and Record Payment if COMPLETE
+ */
+export const queryStatus = async (req: Request, res: Response) => {
+    const { checkoutRequestId, invoiceId } = req.params;
+    const userId = (req as any).user?.userId;
+
+    try {
+        const result = await mpesaService.queryStatus(checkoutRequestId);
+        const { state, amount, receipt, phone } = result;
+
+        if (state === 'COMPLETE') {
+            // Check if already recorded
+            const existing = await prisma.mpesaTransaction.findFirst({
+                where: { checkoutRequestId }
+            });
+
+            if (existing?.status === 'SUCCESS') {
+                return res.json({ success: true, status: 'COMPLETE', message: 'Payment already recorded' });
+            }
+
+            // Record as MpesaTransaction if not exists
+            if (!existing) {
+                await prisma.mpesaTransaction.create({
+                    data: {
+                        checkoutRequestId,
+                        invoiceId,
+                        amount: Number(amount || 0),
+                        status: 'SUCCESS',
+                        resultCode: 0,
+                        resultDesc: 'Complete',
+                        transactionId: receipt || ''
+                    }
+                });
+            } else {
+                await prisma.mpesaTransaction.update({
+                    where: { id: existing.id },
+                    data: { status: 'SUCCESS', transactionId: receipt || '' }
+                });
+            }
+
+            // Apply to specific fee invoice
+            const systemUser = await prisma.user.findFirst({ where: { role: 'SUPER_ADMIN' } });
+            await applyToSpecificInvoice({
+                invoiceId,
+                amount: Number(amount || 0),
+                receipt: receipt || '',
+                phone: phone || '',
+                recordedBy: systemUser?.id || userId || ''
+            });
+
+            return res.json({ success: true, status: 'COMPLETE', message: 'Payment verified and recorded' });
+        }
+
+        res.json({ success: true, status: state });
     } catch (error: any) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -54,8 +114,8 @@ export const handleCallback = async (req: Request, res: Response) => {
         // ── 1. Try to find a pre-existing (STK-initiated) transaction ───────────
         const transaction = await prisma.mpesaTransaction.findFirst({
             where: provider === 'daraja'
-                ? { checkoutRequestId }
-                : { externalId }
+                ? { checkoutRequestId: checkoutRequestId as string }
+                : { externalId: externalId as string }
         });
 
         // ── 2. Parse payload ────────────────────────────────────────────────────

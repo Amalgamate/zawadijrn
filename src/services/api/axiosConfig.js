@@ -30,14 +30,18 @@ const getApiBaseUrl = () => {
 
 export const API_BASE_URL = getApiBaseUrl();
 
+// In a Capacitor/native shell, cookies are not shared cross-origin so
+// withCredentials would trigger a failed CORS pre-flight. Use Bearer tokens only.
+const isNativeApp =
+    typeof window !== 'undefined' &&
+    (window.location.protocol === 'capacitor:' ||
+     (window.location.hostname === 'localhost' && window.location.port === ''));
+
 export const axiosInstance = axios.create({
     baseURL: API_BASE_URL,
     headers: {},
-    withCredentials: true,
-    // Fail fast instead of hanging indefinitely
+    withCredentials: !isNativeApp, // cookies only work in browser, not native APK
     timeout: 60_000,
-    // Keep-Alive so the TCP connection is reused across requests (major win)
-    // Note: in browsers this is handled by the browser itself; this is for Node.js SSR use
 });
 
 // ── Request interceptor ───────────────────────────────────────────────────────

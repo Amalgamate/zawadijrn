@@ -6,17 +6,19 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   BookOpen, DollarSign, Bell,
   Download, TrendingUp, FileText, Users, Activity, ShieldCheck,
-  Wallet, Sparkles, LayoutGrid, Megaphone
+  Wallet, Sparkles, LayoutGrid, Megaphone,
+  CreditCard
 } from 'lucide-react';
+import MpesaPaymentModal from '../../shared/MpesaPaymentModal';
 import { generateDocument } from '../../../../utils/simplePdfGenerator';
 import { dashboardAPI } from '../../../../services/api';
 import { useNotifications } from '../../hooks/useNotifications';
 import { cn } from '../../../../utils/cn';
 
 const MATRIX_COLORS = [
-  'bg-cyan-500',
-  'bg-fuchsia-500',
   'bg-amber-500',
+  'bg-orange-500',
+  'bg-rose-500',
   'bg-emerald-500',
 ];
 
@@ -57,13 +59,13 @@ const TabButton = ({ active, label, icon: Icon, onClick }) => (
     className={cn(
       'flex items-center gap-2 px-6 py-3 text-xs font-black uppercase tracking-widest transition-all duration-300 border-b-2 relative',
       active
-        ? 'border-brand-purple text-brand-purple bg-brand-purple/10'
+        ? 'border-orange-600 text-orange-600 bg-orange-50'
         : 'border-transparent text-gray-400 hover:text-gray-600 hover:bg-white/50'
     )}
   >
     <Icon size={14} />
     {label}
-    {active && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-purple"></div>}
+    {active && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-600"></div>}
   </button>
 );
 
@@ -74,6 +76,10 @@ const ParentDashboard = ({ user, onNavigate }) => {
   const [dashboardData, setDashboardData] = useState({
     children: [],
     stats: { totalBalance: 0, avgAttendance: 0, bulletins: 0 },
+  });
+  const [paymentModal, setPaymentModal] = useState({
+    isOpen: false,
+    invoice: null
   });
 
   const loadData = useCallback(async () => {
@@ -198,7 +204,7 @@ const ParentDashboard = ({ user, onNavigate }) => {
       <div className="overflow-hidden rounded-2xl border border-gray-200/80 bg-white shadow-md">
         <div className="flex flex-col gap-1 border-b border-gray-100 bg-slate-50 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
-            <LayoutGrid className="h-4 w-4 text-brand-purple" />
+            <LayoutGrid className="h-4 w-4 text-orange-600" />
             <h3 className="text-xs font-black uppercase tracking-widest text-gray-900">Learner matrix</h3>
           </div>
           <p className="text-[11px] font-semibold text-gray-500">Snapshot across your children</p>
@@ -280,7 +286,7 @@ const ParentDashboard = ({ user, onNavigate }) => {
                       <button
                         type="button"
                         onClick={() => setActiveTab('children')}
-                        className="text-[10px] font-black uppercase tracking-widest text-brand-purple hover:underline"
+                        className="text-[10px] font-black uppercase tracking-widest text-orange-600 hover:underline"
                       >
                         Portfolio
                       </button>
@@ -314,23 +320,23 @@ const ParentDashboard = ({ user, onNavigate }) => {
           </div>
 
           <div className="grid grid-cols-3 gap-2">
-            <div className="rounded-xl bg-slate-50 p-3 text-center">
-              <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Attendance</p>
-              <p className="text-lg font-black text-gray-900">{child.attendanceRate}%</p>
+            <div className="rounded-xl bg-orange-50/50 p-3 text-center">
+              <p className="text-[9px] font-black uppercase tracking-widest text-orange-800/60">Attendance</p>
+              <p className="text-lg font-black text-orange-900">{child.attendanceRate}%</p>
             </div>
-            <div className="rounded-xl bg-violet-50 p-3 text-center">
-              <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Assessments</p>
-              <p className="text-lg font-black text-gray-900">{(child.recentAssessments || []).length}</p>
+            <div className="rounded-xl bg-amber-50/50 p-3 text-center">
+              <p className="text-[9px] font-black uppercase tracking-widest text-amber-800/60">Assessments</p>
+              <p className="text-lg font-black text-amber-900">{(child.recentAssessments || []).length}</p>
             </div>
-            <div className="rounded-xl bg-amber-50 p-3 text-center">
-              <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Level</p>
-              <p className="text-lg font-black text-gray-900">{child.performanceLevel}</p>
+            <div className="rounded-xl bg-rose-50/50 p-3 text-center">
+              <p className="text-[9px] font-black uppercase tracking-widest text-rose-800/60">Level</p>
+              <p className="text-lg font-black text-rose-900">{child.performanceLevel}</p>
             </div>
           </div>
 
           <div className="space-y-3 pt-2">
             <h4 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-900">
-              <TrendingUp size={12} className="text-brand-purple" /> Academic performance
+               <TrendingUp size={12} className="text-orange-600" /> Academic performance
             </h4>
             <div className="divide-y divide-gray-100 max-h-[300px] overflow-y-auto px-1">
               {(child.subjects || []).map((sub, i) => (
@@ -340,7 +346,7 @@ const ParentDashboard = ({ user, onNavigate }) => {
                     <p className="text-[9px] font-medium text-gray-400 uppercase tracking-tighter">Learning Area</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs font-black text-brand-purple">{sub.grade}</p>
+                    <p className="text-xs font-black text-orange-600">{sub.grade}</p>
                     <p className="text-[9px] font-bold text-gray-400">{sub.score}%</p>
                   </div>
                 </div>
@@ -354,7 +360,7 @@ const ParentDashboard = ({ user, onNavigate }) => {
           <button
             type="button"
             onClick={() => handleDownloadReportCard(child)}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-brand-purple/20 bg-brand-purple/5 py-2.5 text-[10px] font-black uppercase tracking-widest text-brand-purple transition hover:bg-brand-purple/10"
+            className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-orange-200 bg-orange-50 py-2.5 text-[10px] font-black uppercase tracking-widest text-orange-700 transition hover:bg-orange-100"
           >
             <Download size={14} />
             Download transcript
@@ -373,15 +379,15 @@ const ParentDashboard = ({ user, onNavigate }) => {
         {children.map((child, idx) => (
           <div
             key={child.id || idx}
-            className="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"
+            className="flex flex-col gap-3 rounded-2xl border border-amber-100 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"
           >
             <div className="flex items-center gap-3">
-              <div className="rounded-xl bg-indigo-50 p-2 text-indigo-600">
+              <div className="rounded-xl bg-orange-50 p-2 text-orange-600">
                 <FileText size={20} />
               </div>
               <div>
                 <p className="font-bold text-gray-900">{child.name}</p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-orange-500">
                   {child.grade} • {child.overallPerformance}% overall
                 </p>
               </div>
@@ -389,7 +395,7 @@ const ParentDashboard = ({ user, onNavigate }) => {
             <button
               type="button"
               onClick={() => handleDownloadReportCard(child)}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-gray-900 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-white hover:bg-gray-800"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-600 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-white hover:bg-orange-700"
             >
               <Download size={14} />
               PDF
@@ -406,20 +412,19 @@ const ParentDashboard = ({ user, onNavigate }) => {
   const renderFinance = () => (
     <div className="space-y-6">
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-2xl border border-amber-200/80 bg-amber-50 p-6 shadow-sm">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
           <div className="mb-4 flex items-center gap-2 text-amber-900">
             <DollarSign size={22} />
             <h3 className="text-sm font-black uppercase tracking-widest">Household balance</h3>
           </div>
-          <p className="text-4xl font-black text-gray-900">KES {Number(stats.totalBalance || 0).toLocaleString()}</p>
-          <p className="mt-2 text-sm text-gray-600">
-            {stats.totalBalance > 0
-              ? 'Combined outstanding amount. Pay at the office or via official mobile money channels.'
-              : 'Your account is fully paid. Thank you!'}
-          </p>
+          {stats.totalBalance > 0 && (
+            <p className="mt-2 text-[10px] font-bold text-amber-900/60 uppercase tracking-widest flex items-center gap-1">
+              <Sparkles size={10} /> Instant M-Pesa enabled
+            </p>
+          )}
         </div>
-        <div className="rounded-2xl border border-blue-200/80 bg-blue-50 p-6 shadow-sm">
-          <div className="mb-4 flex items-center gap-2 text-blue-900">
+        <div className="rounded-2xl border border-orange-200 bg-orange-50 p-6 shadow-sm">
+          <div className="mb-4 flex items-center gap-2 text-orange-900">
             <Megaphone size={22} />
             <h3 className="text-sm font-black uppercase tracking-widest">Communication</h3>
           </div>
@@ -427,20 +432,20 @@ const ParentDashboard = ({ user, onNavigate }) => {
           <button
             type="button"
             onClick={() => onNavigate?.('comm-notices')}
-            className="mt-4 flex items-center gap-2 text-xs font-black uppercase tracking-widest text-blue-600 hover:underline"
+            className="mt-4 flex items-center gap-2 text-xs font-black uppercase tracking-widest text-orange-600 hover:underline"
           >
             Go to notice board <Activity size={14} />
           </button>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-gray-200 bg-white shadow-md overflow-hidden">
-        <div className="bg-slate-50 px-6 py-4 border-b border-gray-100">
-          <h4 className="text-xs font-black uppercase tracking-widest text-gray-900">Financial Ledger</h4>
+      <div className="rounded-2xl border border-amber-100 bg-white shadow-sm overflow-hidden">
+        <div className="bg-amber-50/50 px-6 py-4 border-b border-amber-100">
+          <h4 className="text-xs font-black uppercase tracking-widest text-orange-900">Financial Ledger</h4>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
-            <thead className="bg-gray-50/50 text-[10px] font-black uppercase tracking-widest text-gray-400 border-b border-gray-100">
+            <thead className="bg-amber-50/30 text-[10px] font-black uppercase tracking-widest text-orange-900 border-b border-amber-100">
               <tr>
                 <th className="px-6 py-3">Date</th>
                 <th className="px-6 py-3">Invoice #</th>
@@ -449,9 +454,9 @@ const ParentDashboard = ({ user, onNavigate }) => {
                 <th className="px-6 py-3">Balance</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-amber-50">
               {children.flatMap(c => c.invoices || []).sort((a,b) => new Date(b.date) - new Date(a.date)).map((inv, i) => (
-                <tr key={i} className="hover:bg-gray-50/50">
+                <tr key={i} className="hover:bg-orange-50/30">
                   <td className="px-6 py-4 text-xs text-gray-600">{new Date(inv.date).toLocaleDateString()}</td>
                   <td className="px-6 py-4 text-xs font-bold text-gray-900">{inv.number}</td>
                   <td className="px-6 py-4 text-xs text-gray-500">{inv.term} {inv.year}</td>
@@ -459,7 +464,7 @@ const ParentDashboard = ({ user, onNavigate }) => {
                   <td className="px-6 py-4">
                     <span className={cn(
                       "px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wider",
-                      Number(inv.balance) > 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"
+                      Number(inv.balance) > 0 ? "bg-rose-50 text-rose-600" : "bg-emerald-50 text-emerald-600"
                     )}>
                       {Number(inv.balance) > 0 ? `KES ${Number(inv.balance).toLocaleString()}` : 'PAID'}
                     </span>
@@ -480,9 +485,9 @@ const ParentDashboard = ({ user, onNavigate }) => {
 
   return (
     <div className="space-y-6">
-      <div className="relative overflow-hidden rounded-2xl border border-violet-200/60 bg-[var(--brand-purple)] p-6 text-white shadow-xl">
-        <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-cyan-400/20 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-16 -left-16 h-56 w-56 rounded-full bg-fuchsia-400/15 blur-3xl" />
+      <div className="relative overflow-hidden rounded-2xl border border-amber-200 bg-gradient-to-br from-orange-500 via-amber-500 to-rose-400 p-6 text-white shadow-xl">
+        <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-16 -left-16 h-56 w-56 rounded-full bg-white/15 blur-3xl" />
         <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
             <div className="rounded-2xl bg-white/15 p-3 backdrop-blur-md">
@@ -497,16 +502,31 @@ const ParentDashboard = ({ user, onNavigate }) => {
           </div>
           <div className="flex flex-wrap gap-2">
             <button
+              onClick={() => {
+                const childWithBalance = children.find(c => (c.invoices || []).some(inv => Number(inv.balance) > 0));
+                const invoice = (childWithBalance?.invoices || []).find(inv => Number(inv.balance) > 0);
+                if (invoice) {
+                  setPaymentModal({ isOpen: true, invoice });
+                } else {
+                  showError('No active balance found.');
+                }
+              }}
+              className="rounded-xl bg-emerald-500 px-4 py-2 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-900/20 transition hover:bg-emerald-600 active:scale-95 flex items-center gap-2"
+            >
+              <CreditCard size={14} />
+              Pay Fees
+            </button>
+            <button
               type="button"
               onClick={() => onNavigate?.('planner-calendar')}
               className="rounded-xl bg-white/15 px-4 py-2 text-xs font-black uppercase tracking-widest backdrop-blur transition hover:bg-white/25"
             >
-              School calendar
+              Calendar
             </button>
             <button
               type="button"
               onClick={() => onNavigate?.('comm-messages')}
-              className="rounded-xl bg-white px-4 py-2 text-xs font-black uppercase tracking-widest text-violet-900 shadow hover:bg-white/90"
+              className="rounded-xl bg-white px-4 py-2 text-xs font-black uppercase tracking-widest text-orange-900 shadow hover:bg-white/90"
             >
               Messages
             </button>
@@ -527,6 +547,17 @@ const ParentDashboard = ({ user, onNavigate }) => {
         {activeTab === 'reports' && renderReports()}
         {activeTab === 'finance' && renderFinance()}
       </div>
+
+      <MpesaPaymentModal
+        isOpen={paymentModal.isOpen}
+        onClose={() => setPaymentModal({ isOpen: false, invoice: null })}
+        invoice={paymentModal.invoice}
+        parentPhone={user?.phone}
+        onPaymentSuccess={() => {
+          loadData();
+          setActiveTab('overview');
+        }}
+      />
     </div>
   );
 };

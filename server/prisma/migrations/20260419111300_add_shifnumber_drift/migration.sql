@@ -1,2 +1,2 @@
 -- AlterTable
-ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "shifNumber" TEXT;
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "shifNumber" TEXT;

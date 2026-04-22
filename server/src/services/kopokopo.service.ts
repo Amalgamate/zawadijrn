@@ -206,6 +206,29 @@ class KopoKopoService {
             };
         }
     }
+
+    /**
+     * Query STK Push Status
+     */
+    async queryStkStatus(externalId: string) {
+        const baseUrl = await this.getBaseUrl();
+        const token = await this.getAccessToken();
+
+        try {
+            const response = await axios.get(`${baseUrl}/api/v1/stk_push/${externalId}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    Accept: 'application/vnd.komatika.v1+json'
+                }
+            });
+
+            // Status can be: 'Ordered', 'Pending', 'Processing', 'Success', 'Failed'
+            return response.data;
+        } catch (error: any) {
+            console.error('[KopoKopo] Status Query Error:', error.response?.data || error.message);
+            throw new Error('Failed to query Kopo Kopo status');
+        }
+    }
 }
 
 export const kopokopoService = new KopoKopoService();

@@ -8,6 +8,9 @@ const router = Router();
 router.post('/callback', mpesaController.handleCallback);
 
 // ── Protected ──────────────────────────────────────────────────────────────
+router.post('/initiate', authenticate, mpesaController.initiatePayment);
+router.get('/status/:checkoutRequestId/:invoiceId', authenticate, mpesaController.queryStatus);
+
 router.post('/payout/bulk', authenticate, mpesaController.initiateBulkPayout);
 
 // Unmatched payments (Buy Goods Till organic payments)

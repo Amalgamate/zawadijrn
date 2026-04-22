@@ -149,6 +149,10 @@ router.post(
   asyncHandler(userController.uploadProfilePicture)
 );
 
+router.post(
+  '/:id/reset-password',
+  authenticate,
+  requireRole(['ADMIN', 'SUPER_ADMIN']),
   auditLog('RESET_PASSWORD'),
   asyncHandler(userController.resetPassword)
 );

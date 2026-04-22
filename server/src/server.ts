@@ -26,6 +26,9 @@ const allowedOrigins = [
   'https://zawadijrn.vercel.app',
   'http://localhost:3000',
   'http://localhost:5173',
+  'http://localhost',          // Capacitor Android WebView
+  'capacitor://localhost',      // Capacitor iOS / newer Android
+  'https://localhost',          // Capacitor HTTPS variant
   process.env.FRONTEND_URL
 ].filter(Boolean).map(o => o!.replace(/\/$/, '')) as string[];
 
