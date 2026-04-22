@@ -43,7 +43,7 @@ export const ContextHeader = ({
     <div className="bg-white rounded-lg shadow-md p-4 mb-4">
       <div className="flex items-center gap-2 mb-4">
         <Filter size={20} className="text-blue-600" />
-        <h3 className="text-lg font-bold text-gray-800">{title}</h3>
+        <h3 className="text-lg font-medium text-gray-800">{title}</h3>
       </div>
 
       <div className={`grid ${gridClass} gap-4`}>

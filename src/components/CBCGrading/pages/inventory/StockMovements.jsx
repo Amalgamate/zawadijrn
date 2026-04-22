@@ -68,7 +68,7 @@ const StockMovements = () => {
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                     <div>
-                        <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <h2 className="text-xl font-medium text-gray-800 flex items-center gap-2">
                             <Activity className="text-brand-purple" />
                             Stock Movements Ledger
                         </h2>
@@ -152,7 +152,7 @@ const StockMovements = () => {
                                         <td className="p-4 font-medium text-gray-800 truncate max-w-[200px]" title={movement.item?.name}>
                                             {movement.item?.name || 'Unknown Item'}
                                         </td>
-                                        <td className="p-4 font-bold text-gray-700">
+                                        <td className="p-4 font-medium text-gray-700">
                                             {Number(movement.quantity)}
                                         </td>
                                         <td className="p-4 text-gray-600">

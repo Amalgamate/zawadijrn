@@ -220,7 +220,7 @@ const PhotoUploadComponent = ({ currentPhoto, onPhotoChange, learnerName }) => {
         <div className="fixed inset-0 bg-black bg-opacity-95 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden">
             <div className="bg-blue-600 px-6 py-4 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-white">Take Student Photo</h3>
+              <h3 className="text-xl font-medium text-white">Take Student Photo</h3>
               <button
                 onClick={stopCamera}
                 className="text-white hover:bg-white/20 p-2 rounded-lg transition"

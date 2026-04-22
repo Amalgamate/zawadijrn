@@ -133,7 +133,7 @@ const TermlyReport = ({ learners, brandingSettings, user }) => {
             <div className="w-16 h-16 bg-brand-purple/10 rounded-full flex items-center justify-center mx-auto mb-4 text-brand-purple">
               <FileText size={32} />
             </div>
-            <h2 className="text-2xl font-bold text-gray-800">Termly Report</h2>
+            <h2 className="text-2xl font-medium text-gray-800">Termly Report</h2>
             <p className="text-gray-500">Select a learner to generate their end of term report</p>
           </div>
 
@@ -153,7 +153,7 @@ const TermlyReport = ({ learners, brandingSettings, user }) => {
                       setSelectedGrade(grade.value);
                       setSelectedLearnerId(''); // Clear selection on filter change
                     }}
-                    className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-bold transition-all ${selectedGrade === grade.value
+                    className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium transition-all ${selectedGrade === grade.value
                       ? 'bg-brand-purple text-white shadow-md ring-2 ring-brand-purple/20'
                       : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700'
                       }`}
@@ -210,7 +210,7 @@ const TermlyReport = ({ learners, brandingSettings, user }) => {
                 <User size={24} />
               </div>
               <div>
-                <h3 className="font-bold text-gray-800 text-lg line-clamp-1">
+                <h3 className="font-medium text-gray-800 text-lg line-clamp-1">
                   {reportData.learner.firstName} {reportData.learner.lastName}
                 </h3>
                 <div className="flex items-center gap-3 text-sm text-gray-500 font-medium">
@@ -261,7 +261,7 @@ const TermlyReport = ({ learners, brandingSettings, user }) => {
 
             {/* On-Screen Header (Hidden in Print/PDF as Letterhead is added) */}
             <div className="text-white p-4 text-center print:hidden" style={{ backgroundColor: brandingSettings?.brandColor || '#4a0404' }}>
-              <h2 className="text-xl font-bold">{brandingSettings?.schoolName || 'ACADEMIC SCHOOL'}</h2>
+              <h2 className="text-xl font-medium">{brandingSettings?.schoolName || 'ACADEMIC SCHOOL'}</h2>
               <p className="opacity-80 text-sm">Excellence in Competency Based Curriculum</p>
             </div>
 

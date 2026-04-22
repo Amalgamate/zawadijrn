@@ -29,7 +29,7 @@ const MemberStatusBadge = ({ status }) => {
     INACTIVE:  'bg-slate-100 text-slate-500',
   };
   return (
-    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${map[status] || map.INACTIVE}`}>
+    <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${map[status] || map.INACTIVE}`}>
       {status}
     </span>
   );
@@ -64,7 +64,7 @@ const RegisterModal = ({ onClose, onSaved }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-          <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+          <h2 className="text-lg font-medium text-slate-900 flex items-center gap-2">
             <UserPlus size={18} className="text-violet-500" /> Register Member
           </h2>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors"><X size={20} /></button>
@@ -146,7 +146,7 @@ const EditModal = ({ member, onClose, onSaved }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-          <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+          <h2 className="text-lg font-medium text-slate-900 flex items-center gap-2">
             <Edit2 size={17} className="text-violet-500" />
             Edit — {member.user?.name || member.userId}
           </h2>
@@ -216,7 +216,7 @@ const HistoryDrawer = ({ member, onClose }) => {
       <div className="h-full w-full max-w-md bg-white shadow-2xl flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
           <div>
-            <h2 className="text-base font-bold text-slate-900">{member.user?.name || member.userId}</h2>
+            <h2 className="text-base font-medium text-slate-900">{member.user?.name || member.userId}</h2>
             <p className="text-xs text-slate-500 mt-0.5">Loan History · {member.membershipType}</p>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors"><X size={20} /></button>
@@ -311,7 +311,7 @@ const MemberManagement = () => {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Member Management</h1>
+          <h1 className="text-2xl font-medium text-slate-900">Member Management</h1>
           <p className="text-sm text-slate-500 mt-0.5">{members.length} member{members.length !== 1 ? 's' : ''} registered</p>
         </div>
         <button onClick={() => setShowRegister(true)}
@@ -352,11 +352,11 @@ const MemberManagement = () => {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/60">
-                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Member</th>
-                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide hidden md:table-cell">Type</th>
-                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Status</th>
-                <th className="text-center px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide hidden md:table-cell">Loans</th>
-                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide hidden md:table-cell">Joined</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Member</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide hidden md:table-cell">Type</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Status</th>
+                <th className="text-center px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide hidden md:table-cell">Loans</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide hidden md:table-cell">Joined</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -368,7 +368,7 @@ const MemberManagement = () => {
                     <p className="text-xs text-slate-400 mt-0.5">{member.user?.email || member.userId}</p>
                   </td>
                   <td className="px-4 py-3 hidden md:table-cell">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${typeColor[member.membershipType] || typeColor.GUEST}`}>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${typeColor[member.membershipType] || typeColor.GUEST}`}>
                       {member.membershipType}
                     </span>
                   </td>

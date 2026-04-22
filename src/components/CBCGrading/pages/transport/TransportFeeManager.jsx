@@ -38,7 +38,7 @@ function StatusBadge({ status }) {
     OVERDUE: 'bg-red-100 text-red-700',
   };
   return (
-    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${map[status] || map.PENDING}`}>
+    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${map[status] || map.PENDING}`}>
       {status}
     </span>
   );
@@ -98,7 +98,7 @@ function PaymentModal({ invoice, learner, onClose, onSaved }) {
         <div className="p-5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-black text-base">{learner?.firstName} {learner?.lastName}</p>
+              <p className="font-semibold text-base">{learner?.firstName} {learner?.lastName}</p>
               <p className="text-blue-100 text-xs mt-0.5">{learner?.admissionNumber} · Transport Payment</p>
             </div>
             <button onClick={onClose} className="w-8 h-8 bg-white/10 hover:bg-white/20 rounded-xl flex items-center justify-center transition">
@@ -110,27 +110,27 @@ function PaymentModal({ invoice, learner, onClose, onSaved }) {
           {/* Balance info */}
           <div className="flex items-center justify-between p-3 bg-amber-50 rounded-xl border border-amber-100">
             <div>
-              <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Transport Balance</p>
-              <p className="text-xl font-black text-amber-700 mt-0.5">{fmt(balance)}</p>
+              <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-widest">Transport Balance</p>
+              <p className="text-xl font-semibold text-amber-700 mt-0.5">{fmt(balance)}</p>
             </div>
             <AlertCircle size={20} className="text-amber-400" />
           </div>
 
           {/* Amount */}
           <div>
-            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Amount (KES) <span className="text-red-400">*</span></label>
+            <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Amount (KES) <span className="text-red-400">*</span></label>
             <input className={inputCls} type="number" min="1" step="0.01" max={balance}
               value={amount} onChange={e => setAmount(e.target.value)}
               placeholder={`Max ${Number(balance).toLocaleString()}`} />
             <button onClick={() => setAmount(String(balance))}
-              className="mt-1.5 text-[11px] text-blue-600 font-bold hover:underline">
+              className="mt-1.5 text-[11px] text-blue-600 font-medium hover:underline">
               Pay full balance ({fmt(balance)})
             </button>
           </div>
 
           {/* Method */}
           <div>
-            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Payment Method</label>
+            <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Payment Method</label>
             <select className={inputCls} value={method} onChange={e => setMethod(e.target.value)}>
               {['MPESA', 'CASH', 'BANK_TRANSFER', 'CHEQUE'].map(m => (
                 <option key={m} value={m}>{m.replace('_', ' ')}</option>
@@ -140,18 +140,18 @@ function PaymentModal({ invoice, learner, onClose, onSaved }) {
 
           {/* Reference */}
           <div>
-            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Reference / Transaction ID</label>
+            <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Reference / Transaction ID</label>
             <input className={inputCls} value={ref} onChange={e => setRef(e.target.value)}
               placeholder="Optional — M-Pesa code, cheque number…" />
           </div>
 
           <div className="flex gap-2 pt-2">
             <button onClick={onClose}
-              className="flex-1 py-2.5 text-gray-500 hover:bg-gray-100 rounded-xl font-black text-sm transition">
+              className="flex-1 py-2.5 text-gray-500 hover:bg-gray-100 rounded-xl font-semibold text-sm transition">
               Cancel
             </button>
             <button onClick={handleSave} disabled={saving}
-              className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-sm shadow-lg shadow-blue-600/20 transition disabled:opacity-60 flex items-center justify-center gap-2">
+              className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm shadow-lg shadow-blue-600/20 transition disabled:opacity-60 flex items-center justify-center gap-2">
               {saving && <Loader2 size={14} className="animate-spin" />}
               Record Payment
             </button>
@@ -276,9 +276,9 @@ const TransportFeeManager = ({ onEditLearner, onViewLearner }) => {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">Transport</span>
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">Transport</span>
           </div>
-          <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+          <h1 className="text-2xl md:text-3xl font-semibold text-gray-900 tracking-tight flex items-center gap-3">
             <CreditCard className="text-blue-600" size={28} />
             Transport Fee Manager
           </h1>
@@ -288,18 +288,18 @@ const TransportFeeManager = ({ onEditLearner, onViewLearner }) => {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <button onClick={load} disabled={loading}
-            className="flex items-center gap-2 px-3.5 py-2 text-sm font-bold text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition disabled:opacity-50">
+            className="flex items-center gap-2 px-3.5 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition disabled:opacity-50">
             {loading ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
             Refresh
           </button>
           <button onClick={handleExport} disabled={exporting}
-            className="flex items-center gap-2 px-3.5 py-2 text-sm font-bold text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition disabled:opacity-50">
+            className="flex items-center gap-2 px-3.5 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition disabled:opacity-50">
             {exporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
             Export CSV
           </button>
           <button
             onClick={() => navigateTo('transport-routes')}
-            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl font-black text-sm hover:bg-blue-700 transition shadow-lg shadow-blue-600/20">
+            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl font-semibold text-sm hover:bg-blue-700 transition shadow-lg shadow-blue-600/20">
             <Bus size={15} />
             Manage Routes
           </button>
@@ -313,8 +313,8 @@ const TransportFeeManager = ({ onEditLearner, onViewLearner }) => {
         <div className="relative overflow-hidden rounded-2xl bg-indigo-600 p-5 shadow-lg shadow-indigo-500/20 text-white transition-all duration-200 hover:scale-[1.03]">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-indigo-200 mb-1">Expected Income</p>
-              <p className="text-2xl font-bold">{fmt(totalBilled)}</p>
+              <p className="text-xs font-medium uppercase tracking-widest text-indigo-200 mb-1">Expected Income</p>
+              <p className="text-2xl font-medium">{fmt(totalBilled)}</p>
               <p className="text-sm font-semibold text-indigo-300 mt-1">{summary?.transportStudentCount ?? invoices.length} Students</p>
             </div>
             <div className="p-2.5 bg-white/15 rounded-xl">
@@ -329,8 +329,8 @@ const TransportFeeManager = ({ onEditLearner, onViewLearner }) => {
         <div className="relative overflow-hidden rounded-2xl bg-red-600 p-5 shadow-lg shadow-red-500/20 text-white transition-all duration-200 hover:scale-[1.03]">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-red-100 mb-1">Total Outstanding</p>
-              <p className="text-2xl font-bold">{fmt(totalOutstanding)}</p>
+              <p className="text-xs font-medium uppercase tracking-widest text-red-100 mb-1">Total Outstanding</p>
+              <p className="text-2xl font-medium">{fmt(totalOutstanding)}</p>
               <p className="text-sm font-semibold text-red-200 mt-1">Pending Collection</p>
             </div>
             <div className="p-2.5 bg-white/15 rounded-xl">
@@ -345,8 +345,8 @@ const TransportFeeManager = ({ onEditLearner, onViewLearner }) => {
         <div className="relative overflow-hidden rounded-2xl bg-emerald-600 p-5 shadow-lg shadow-emerald-500/20 text-white transition-all duration-200 hover:scale-[1.03]">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-emerald-100 mb-1">Total Collected</p>
-              <p className="text-2xl font-bold">{fmt(totalCollected)}</p>
+              <p className="text-xs font-medium uppercase tracking-widest text-emerald-100 mb-1">Total Collected</p>
+              <p className="text-2xl font-medium">{fmt(totalCollected)}</p>
               <p className="text-sm font-semibold text-emerald-200 mt-1">Payments Received</p>
             </div>
             <div className="p-2.5 bg-white/15 rounded-xl">
@@ -361,8 +361,8 @@ const TransportFeeManager = ({ onEditLearner, onViewLearner }) => {
         <div className="relative overflow-hidden rounded-2xl bg-purple-600 p-5 shadow-lg shadow-purple-500/20 text-white transition-all duration-200 hover:scale-[1.03]">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-purple-100 mb-1">Collection Progress</p>
-              <p className="text-2xl font-bold">{collectionRate}%</p>
+              <p className="text-xs font-medium uppercase tracking-widest text-purple-100 mb-1">Collection Progress</p>
+              <p className="text-2xl font-medium">{collectionRate}%</p>
               <p className="text-sm font-semibold text-purple-200 mt-1">Efficiency Rate</p>
             </div>
             <div className="p-2.5 bg-white/15 rounded-xl">
@@ -376,7 +376,7 @@ const TransportFeeManager = ({ onEditLearner, onViewLearner }) => {
 
       {/* Collection rate bar */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-        <div className="flex items-center justify-between text-sm font-black text-gray-600 mb-2">
+        <div className="flex items-center justify-between text-sm font-semibold text-gray-600 mb-2">
           <div className="flex items-center gap-2">
             <TrendingUp size={14} className="text-blue-500" />
             Collection Rate
@@ -391,7 +391,7 @@ const TransportFeeManager = ({ onEditLearner, onViewLearner }) => {
             style={{ width: `${collectionRate}%` }}
           />
         </div>
-        <div className="flex justify-between text-[11px] text-gray-400 font-bold mt-1.5">
+        <div className="flex justify-between text-[11px] text-gray-400 font-medium mt-1.5">
           <span>Collected: {fmt(totalCollected)}</span>
           <span>Target: {fmt(totalBilled)}</span>
         </div>
@@ -409,10 +409,10 @@ const TransportFeeManager = ({ onEditLearner, onViewLearner }) => {
         </div>
 
         {/* Route filter */}
-        <div className="flex items-center gap-1.5 text-xs font-bold text-gray-500">
+        <div className="flex items-center gap-1.5 text-xs font-medium text-gray-500">
           <Filter size={12} />
           <select value={filterRoute} onChange={e => setFilterRoute(e.target.value)}
-            className="border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/30">
+            className="border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/30">
             <option value="all">All Routes</option>
             {routes.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
           </select>
@@ -422,7 +422,7 @@ const TransportFeeManager = ({ onEditLearner, onViewLearner }) => {
         <div className="flex gap-1.5">
           {[['all', 'All'], ['PAID', 'Paid'], ['PARTIAL', 'Partial'], ['PENDING', 'Pending'], ['OVERDUE', 'Overdue']].map(([v, l]) => (
             <button key={v} onClick={() => setFilterStatus(v)}
-              className={`px-3 py-2 rounded-xl text-xs font-black transition ${filterStatus === v ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-gray-500 hover:bg-gray-100 border border-gray-200'}`}>
+              className={`px-3 py-2 rounded-xl text-xs font-semibold transition ${filterStatus === v ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-gray-500 hover:bg-gray-100 border border-gray-200'}`}>
               {l}
             </button>
           ))}
@@ -434,12 +434,12 @@ const TransportFeeManager = ({ onEditLearner, onViewLearner }) => {
         {loading ? (
           <div className="p-16 text-center">
             <Loader2 size={28} className="animate-spin text-blue-400 mx-auto mb-3" />
-            <p className="text-gray-400 font-bold text-sm">Loading transport fee data…</p>
+            <p className="text-gray-400 font-medium text-sm">Loading transport fee data…</p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="p-16 text-center">
             <Bus size={40} className="mx-auto text-gray-200 mb-3" />
-            <p className="font-black text-gray-500 text-base">
+            <p className="font-semibold text-gray-500 text-base">
               {query || filterStatus !== 'all' || filterRoute !== 'all'
                 ? 'No students match your filters'
                 : 'No transport invoices found'}
@@ -453,7 +453,7 @@ const TransportFeeManager = ({ onEditLearner, onViewLearner }) => {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-[10px] uppercase font-black tracking-widest text-gray-400 border-b border-gray-100">
+              <thead className="bg-gray-50 text-[10px] uppercase font-semibold tracking-widest text-gray-400 border-b border-gray-100">
                 <tr>
                   <th className="px-5 py-3 text-left">Student</th>
                   <th className="px-5 py-3 text-left">Route & Pickup</th>
@@ -490,38 +490,38 @@ const TransportFeeManager = ({ onEditLearner, onViewLearner }) => {
                     >
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-black text-xs flex-shrink-0">
+                          <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-semibold text-xs flex-shrink-0">
                             {learner?.firstName?.[0]}{learner?.lastName?.[0]}
                           </div>
                           <div>
-                            <p className="font-black text-gray-900 text-sm">{learner?.firstName} {learner?.lastName}</p>
-                            <p className="text-[11px] text-gray-400 font-bold">{learner?.admissionNumber}</p>
+                            <p className="font-semibold text-gray-900 text-sm">{learner?.firstName} {learner?.lastName}</p>
+                            <p className="text-[11px] text-gray-400 font-medium">{learner?.admissionNumber}</p>
                           </div>
                         </div>
                       </td>
                       <td className="px-5 py-3.5">
                         {learner?.transportAssignments?.[0] ? (
                           <div className="space-y-0.5">
-                            <p className="text-xs font-black text-indigo-600">{learner.transportAssignments[0].route?.name || 'Assigned'}</p>
-                            <p className="text-[10px] text-gray-400 font-bold">{learner.transportAssignments[0].pickupPoint?.name || 'N/A'}</p>
+                            <p className="text-xs font-semibold text-indigo-600">{learner.transportAssignments[0].route?.name || 'Assigned'}</p>
+                            <p className="text-[10px] text-gray-400 font-medium">{learner.transportAssignments[0].pickupPoint?.name || 'N/A'}</p>
                           </div>
                         ) : (
                           <span className="text-[10px] text-gray-300 italic">Not Assigned</span>
                         )}
                       </td>
-                      <td className="px-5 py-3.5 text-xs font-bold text-gray-600">
+                      <td className="px-5 py-3.5 text-xs font-medium text-gray-600">
                         {learner?.grade?.replace(/_/g, ' ')} {learner?.stream || ''}
                       </td>
-                      <td className="px-5 py-3.5 text-xs text-gray-500 font-bold">
+                      <td className="px-5 py-3.5 text-xs text-gray-500 font-medium">
                         {inv.term?.replace(/_/g, ' ')} {inv.academicYear}
                       </td>
-                      <td className="px-5 py-3.5 text-right font-bold text-gray-700 text-xs">{fmt(billed)}</td>
-                      <td className="px-5 py-3.5 text-right font-black text-emerald-600 text-xs">{fmt(paid)}</td>
-                      <td className={`px-5 py-3.5 text-right font-black text-xs ${balance > 0 ? 'text-red-500' : 'text-emerald-600'}`}>
+                      <td className="px-5 py-3.5 text-right font-medium text-gray-700 text-xs">{fmt(billed)}</td>
+                      <td className="px-5 py-3.5 text-right font-semibold text-emerald-600 text-xs">{fmt(paid)}</td>
+                      <td className={`px-5 py-3.5 text-right font-semibold text-xs ${balance > 0 ? 'text-red-500' : 'text-emerald-600'}`}>
                         {fmt(balance)}
                       </td>
                       <td className="px-5 py-3.5 min-w-[100px]">
-                        <div className="text-[10px] text-center text-gray-500 font-bold mb-0.5">{pct(paid, billed)}%</div>
+                        <div className="text-[10px] text-center text-gray-500 font-medium mb-0.5">{pct(paid, billed)}%</div>
                         <MiniBar paid={paid} billed={billed} />
                       </td>
                       <td className="px-5 py-3.5 text-center">
@@ -571,12 +571,12 @@ const TransportFeeManager = ({ onEditLearner, onViewLearner }) => {
               {/* Totals footer */}
               <tfoot className="border-t-2 border-gray-200 bg-gray-50">
                 <tr>
-                  <td colSpan={3} className="px-5 py-3 text-xs font-black text-gray-500 uppercase tracking-widest">
+                  <td colSpan={3} className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-widest">
                     {filtered.length} students
                   </td>
-                  <td className="px-5 py-3 text-right text-xs font-black text-gray-700">{fmt(filtered.reduce((s, i) => s + Number(i.transportBilled || 0), 0))}</td>
-                  <td className="px-5 py-3 text-right text-xs font-black text-emerald-700">{fmt(filtered.reduce((s, i) => s + Number(i.transportPaid   || 0), 0))}</td>
-                  <td className="px-5 py-3 text-right text-xs font-black text-red-600">{fmt(filtered.reduce((s, i) => s + Number(i.transportBalance || 0), 0))}</td>
+                  <td className="px-5 py-3 text-right text-xs font-semibold text-gray-700">{fmt(filtered.reduce((s, i) => s + Number(i.transportBilled || 0), 0))}</td>
+                  <td className="px-5 py-3 text-right text-xs font-semibold text-emerald-700">{fmt(filtered.reduce((s, i) => s + Number(i.transportPaid   || 0), 0))}</td>
+                  <td className="px-5 py-3 text-right text-xs font-semibold text-red-600">{fmt(filtered.reduce((s, i) => s + Number(i.transportBalance || 0), 0))}</td>
                   <td colSpan={3} />
                 </tr>
               </tfoot>

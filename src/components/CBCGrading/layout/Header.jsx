@@ -351,12 +351,12 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
         </div>
         <div className="hidden sm:block">
           <div className="flex items-center gap-2">
-            <h1 className="text-base lg:text-lg font-black text-gray-900 leading-none tracking-tight uppercase">
+            <h1 className="text-base lg:text-lg font-semibold text-gray-900 leading-none tracking-tight uppercase">
               {title || brandingSettings?.schoolName || 'ZAWADI SMS'}
             </h1>
             <span
               className={cn(
-                "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-black uppercase tracking-widest leading-none shadow-sm",
+                "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest leading-none shadow-sm",
                 (user?.institutionType === 'SECONDARY')
                   ? "bg-indigo-50 text-indigo-800 border-indigo-200"
                   : "bg-emerald-50 text-emerald-800 border-emerald-200"
@@ -367,7 +367,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
             </span>
             <span
               className={cn(
-                "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-black uppercase tracking-widest leading-none shadow-sm",
+                "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest leading-none shadow-sm",
                 portalPillClass(user?.role)
               )}
               title="Portal type"
@@ -375,7 +375,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
               {portalLabel(user?.role)}
             </span>
           </div>
-          <p className="text-[9px] text-gray-400 font-bold uppercase tracking-[0.2em] mt-1">
+          <p className="text-[9px] text-gray-400 font-medium uppercase tracking-[0.2em] mt-1">
             {title ? (brandingSettings?.schoolName || 'Zawadi SMS') : 'School Management System'}
           </p>
         </div>
@@ -386,7 +386,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
         {(role === 'SUPER_ADMIN' || role === 'ADMIN' || role === 'HEAD_TEACHER') && smsBalance && (
           <div className="hidden md:flex items-center gap-2 bg-brand-purple/5 border border-brand-purple/20 px-3 py-1.5 rounded-full mr-2 hover:bg-brand-purple/10 transition-colors shadow-sm cursor-default">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="text-[10px] font-black text-brand-purple uppercase tracking-widest leading-none">
+            <span className="text-[10px] font-semibold text-brand-purple uppercase tracking-widest leading-none">
               AT AIRTIME: {smsBalance}
             </span>
           </div>
@@ -412,7 +412,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
               {totalUnreadCount > 0 && (
                 <Badge
                   variant="destructive"
-                  className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 flex items-center justify-center font-black text-[10px] border-2 border-white animate-in zoom-in-50 duration-300"
+                  className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 flex items-center justify-center font-semibold text-[10px] border-2 border-white animate-in zoom-in-50 duration-300"
                 >
                   {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
                 </Badge>
@@ -421,8 +421,8 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
           </PopoverTrigger>
           <PopoverContent className="w-96 p-0 overflow-hidden" align="end">
             <div className="p-4 border-b border-gray-50 bg-gray-50/50 flex justify-between items-center">
-              <h3 className="text-sm font-black text-gray-900 uppercase tracking-tight">Notifications</h3>
-              <Badge variant="purple" className="font-black">UPDATES</Badge>
+              <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-tight">Notifications</h3>
+              <Badge variant="purple" className="font-semibold">UPDATES</Badge>
             </div>
 
             <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
@@ -430,7 +430,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
                 <div className="p-2 space-y-1">
                   {birthdayNotificationItems.length > 0 && (
                     <div className="space-y-1">
-                      <div className="px-3 py-2 text-[10px] font-black text-pink-500 uppercase tracking-widest flex items-center gap-2">
+                      <div className="px-3 py-2 text-[10px] font-semibold text-pink-500 uppercase tracking-widest flex items-center gap-2">
                         <Gift size={14} /> Birthdays
                       </div>
                       {birthdayNotificationItems.map((b) => (
@@ -440,19 +440,19 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
                           className="w-full text-left p-3 hover:bg-gray-50 rounded-lg transition-all flex items-start gap-3 group"
                         >
                           <div className={cn(
-                            "w-10 h-10 rounded-full flex items-center justify-center font-black text-xs shrink-0 shadow-sm border-2 transition-transform group-hover:scale-105",
+                            "w-10 h-10 rounded-full flex items-center justify-center font-semibold text-xs shrink-0 shadow-sm border-2 transition-transform group-hover:scale-105",
                             b.isToday ? "bg-pink-600 text-white border-pink-200" : "bg-gray-100 text-gray-600 border-gray-200"
                           )}>
                             {b.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-bold text-gray-900 line-clamp-1">
+                            <p className="text-sm font-medium text-gray-900 line-clamp-1">
                               {b.isToday ? '🎂 ' : ''}{b.name}
                             </p>
-                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-tight">
+                            <p className="text-[10px] text-gray-500 font-medium uppercase tracking-tight">
                               Turns {b.turningAge} • {b.grade.replace('_', ' ')}
                             </p>
-                            <Badge variant={b.isToday ? "destructive" : "secondary"} className="mt-1.5 h-4 text-[8px] font-black px-1.5">
+                            <Badge variant={b.isToday ? "destructive" : "secondary"} className="mt-1.5 h-4 text-[8px] font-semibold px-1.5">
                               {b.isToday ? "TODAY" : `IN ${b.daysUntil} DAYS`}
                             </Badge>
                           </div>
@@ -463,7 +463,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
 
                   {noticeNotificationItems.length > 0 && (
                     <div className="space-y-1 pt-2 border-t border-gray-50 mt-2">
-                      <div className="px-3 py-2 text-[10px] font-black text-brand-purple uppercase tracking-widest flex items-center gap-2">
+                      <div className="px-3 py-2 text-[10px] font-semibold text-brand-purple uppercase tracking-widest flex items-center gap-2">
                         <Bell size={14} /> New Notices
                       </div>
                       {noticeNotificationItems.map((n) => (
@@ -472,7 +472,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
                           onClick={() => handleNotificationClick('comm-notices', { activeTab: 'notices', noticeId: n.id })}
                           className="w-full text-left p-3 hover:bg-gray-50 rounded-lg transition-all group"
                         >
-                          <p className="text-sm font-bold text-gray-900 group-hover:text-brand-purple transition-colors line-clamp-1">{n.title}</p>
+                          <p className="text-sm font-medium text-gray-900 group-hover:text-brand-purple transition-colors line-clamp-1">{n.title}</p>
                           <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{n.content}</p>
                         </button>
                       ))}
@@ -481,7 +481,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
 
                   {systemNotifications.length > 0 && (
                     <div className="space-y-1 pt-2 border-t border-gray-50 mt-2">
-                      <div className="px-3 py-2 text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-2">
+                      <div className="px-3 py-2 text-[10px] font-semibold text-amber-600 uppercase tracking-widest flex items-center gap-2">
                         <Zap size={14} /> Priority Alerts
                       </div>
                       {systemNotifications.map((n) => (
@@ -499,7 +499,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
                             n.type === 'SUCCESS' ? "bg-emerald-500" : n.type === 'ERROR' ? "bg-rose-500" : "bg-amber-500"
                           )} />
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-bold text-gray-900 line-clamp-1">{n.title}</p>
+                            <p className="text-sm font-medium text-gray-900 line-clamp-1">{n.title}</p>
                             <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{n.message}</p>
                           </div>
                         </button>
@@ -510,7 +510,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
               ) : (
                 <div className="py-12 text-center text-gray-400">
                   <Bell size={32} className="mx-auto mb-3 opacity-20" />
-                  <p className="text-xs font-bold uppercase tracking-widest">No unread alerts</p>
+                  <p className="text-xs font-medium uppercase tracking-widest">No unread alerts</p>
                 </div>
               )}
             </div>
@@ -518,7 +518,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
             <Button
               variant="ghost"
               onClick={() => setShowNotifications(false)}
-              className="w-full h-12 border-t border-gray-50 rounded-none text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 hover:text-brand-purple hover:bg-brand-purple/5"
+              className="w-full h-12 border-t border-gray-50 rounded-none text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-500 hover:text-brand-purple hover:bg-brand-purple/5"
             >
               Close
             </Button>
@@ -531,7 +531,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
             onClick={clockInState.clockedIn ? handleClockOut : handleClockIn}
             variant={clockInState.clockedIn ? "secondary" : "outline"}
             className={cn(
-              "hidden sm:flex h-10 px-4 font-black text-[10px] uppercase tracking-widest transition-all",
+              "hidden sm:flex h-10 px-4 font-semibold text-[10px] uppercase tracking-widest transition-all",
               clockInState.clockedIn ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100" : "border-brand-purple/20 text-brand-purple hover:bg-brand-purple/5"
             )}
           >
@@ -541,13 +541,13 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
 
         <div className="flex items-center gap-3 pl-4 border-l border-gray-100 ml-2">
           <div className="hidden lg:block text-right pr-1">
-            <p className="text-sm font-black text-gray-900 leading-none">{user?.name || 'User'}</p>
-            <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mt-1">
+            <p className="text-sm font-semibold text-gray-900 leading-none">{user?.name || 'User'}</p>
+            <p className="text-[9px] text-gray-400 font-medium uppercase tracking-wider mt-1">
               {user?.role || 'Guest'}
             </p>
           </div>
           <div className="relative group">
-            <div className="w-10 h-10 bg-brand-purple rounded-full flex items-center justify-center text-white font-black text-sm border-2 border-white shadow-md transition-transform group-hover:scale-105">
+            <div className="w-10 h-10 bg-brand-purple rounded-full flex items-center justify-center text-white font-semibold text-sm border-2 border-white shadow-md transition-transform group-hover:scale-105">
               {(user?.name || 'U').substring(0, 2).toUpperCase()}
             </div>
           </div>
@@ -571,18 +571,18 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
               <Bell size={20} className="animate-wiggle" />
             </div>
             <div className="flex-1">
-              <p className="text-sm font-black text-gray-900 uppercase tracking-tight">Gentle Reminder</p>
+              <p className="text-sm font-semibold text-gray-900 uppercase tracking-tight">Gentle Reminder</p>
               <p className="text-xs text-gray-500 mt-1 font-medium leading-relaxed">
-                You have <span className="text-brand-purple font-black">{totalUnreadCount}</span> unread notification{totalUnreadCount === 1 ? '' : 's'}. Review them when convenient.
+                You have <span className="text-brand-purple font-semibold">{totalUnreadCount}</span> unread notification{totalUnreadCount === 1 ? '' : 's'}. Review them when convenient.
               </p>
               <div className="mt-5 flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" onClick={() => setShowUnreadReminder(false)} className="h-8 text-[9px] font-black uppercase flex-1 border-gray-200">
+                <Button variant="outline" size="sm" onClick={() => setShowUnreadReminder(false)} className="h-8 text-[9px] font-semibold uppercase flex-1 border-gray-200">
                   Later
                 </Button>
-                <Button variant="outline" size="sm" onClick={snoozeReminder} className="h-8 text-[9px] font-black uppercase flex-1 border-gray-200">
+                <Button variant="outline" size="sm" onClick={snoozeReminder} className="h-8 text-[9px] font-semibold uppercase flex-1 border-gray-200">
                   Snooze
                 </Button>
-                <Button size="sm" onClick={() => { setShowUnreadReminder(false); setShowNotifications(true); markAllNotificationsAsRead(); }} className="h-8 text-[9px] font-black uppercase w-full bg-brand-purple hover:bg-brand-purple/90 shadow-lg">
+                <Button size="sm" onClick={() => { setShowUnreadReminder(false); setShowNotifications(true); markAllNotificationsAsRead(); }} className="h-8 text-[9px] font-semibold uppercase w-full bg-brand-purple hover:bg-brand-purple/90 shadow-lg">
                   Review Now
                 </Button>
               </div>

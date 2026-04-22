@@ -46,7 +46,7 @@ const CoreCompetenciesFormMobile = ({ onBack, onSuccess }) => {
     error ? "border-rose-500 bg-rose-50/10 text-rose-600" : "border-gray-200 text-gray-900"
   );
 
-  const labelClass = "block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1";
+  const labelClass = "block text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5 ml-1";
 
   return (
     <div className="fixed inset-0 bg-white flex flex-col z-[100] w-screen h-screen font-sans">
@@ -65,8 +65,8 @@ const CoreCompetenciesFormMobile = ({ onBack, onSuccess }) => {
               </button>
             )}
             <div>
-               <h1 className="text-xl font-black text-gray-900 tracking-tight leading-none">Values & Skills</h1>
-               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Core Competencies</p>
+               <h1 className="text-xl font-semibold text-gray-900 tracking-tight leading-none">Values & Skills</h1>
+               <p className="text-[10px] font-medium text-gray-400 uppercase tracking-widest mt-1">Core Competencies</p>
             </div>
           </div>
           {saveStatus === 'success' && (
@@ -86,7 +86,7 @@ const CoreCompetenciesFormMobile = ({ onBack, onSuccess }) => {
               <div className="flex items-start gap-3">
                 <AlertCircle size={20} className="text-rose-500 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-black text-rose-900 uppercase tracking-tight">Save Failed</p>
+                  <p className="text-sm font-semibold text-rose-900 uppercase tracking-tight">Save Failed</p>
                   <p className="text-xs text-rose-700 font-medium">{errors.submit || 'Please check all required fields'}</p>
                 </div>
               </div>
@@ -96,7 +96,7 @@ const CoreCompetenciesFormMobile = ({ onBack, onSuccess }) => {
           {/* Student Info Section */}
           <div className="space-y-6">
             <div className="flex items-center gap-4 mb-2">
-               <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] whitespace-nowrap">{labels.student} Info</h2>
+               <h2 className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.2em] whitespace-nowrap">{labels.student} Info</h2>
                <div className="h-[1px] flex-1 bg-gray-100" />
             </div>
 
@@ -179,7 +179,7 @@ const CoreCompetenciesFormMobile = ({ onBack, onSuccess }) => {
           {/* Competencies Section */}
           <div className="space-y-4">
             <div className="flex items-center gap-4 mb-2">
-               <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] whitespace-nowrap">Core {labels.subjects}</h2>
+               <h2 className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.2em] whitespace-nowrap">Core {labels.subjects}</h2>
                <div className="h-[1px] flex-1 bg-gray-100" />
             </div>
 
@@ -191,12 +191,12 @@ const CoreCompetenciesFormMobile = ({ onBack, onSuccess }) => {
                   className="w-full px-5 py-5 flex items-start justify-between hover:bg-gray-50 transition-all active:scale-[0.98] text-left"
                 >
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-extrabold text-gray-900 group-hover:text-[var(--brand-purple)] transition-colors">{field.label}</h3>
+                    <h3 className="text-sm font-semibold text-gray-900 group-hover:text-[var(--brand-purple)] transition-colors">{field.label}</h3>
 
                     {formData[field.key] && (
                       <div className="mt-2.5">
                         <span className={cn(
-                          "text-[10px] font-black px-3 py-1 rounded-full inline-block uppercase tracking-wider",
+                          "text-[10px] font-semibold px-3 py-1 rounded-full inline-block uppercase tracking-wider",
                           formData[field.key].startsWith('EE') ? 'bg-emerald-50 text-emerald-600 shadow-sm shadow-emerald-100 border border-emerald-100' :
                           formData[field.key].startsWith('ME') ? 'bg-blue-50 text-blue-600 shadow-sm shadow-blue-100 border border-blue-100' :
                           formData[field.key].startsWith('AE') ? 'bg-amber-50 text-amber-600 shadow-sm shadow-amber-100 border border-amber-100' :
@@ -235,10 +235,10 @@ const CoreCompetenciesFormMobile = ({ onBack, onSuccess }) => {
                             )}
                           >
                             <div className={cn(
-                                "text-sm font-black mb-0.5",
+                                "text-sm font-semibold mb-0.5",
                                 formData[field.key] === rating.value ? "text-[var(--brand-purple)]" : "text-gray-900"
                             )}>{rating.value}</div>
-                            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{rating.label.split(' ')[0]}</div>
+                            <div className="text-[10px] font-medium text-gray-500 uppercase tracking-widest">{rating.label.split(' ')[0]}</div>
                           </button>
                         ))}
                       </div>
@@ -262,7 +262,7 @@ const CoreCompetenciesFormMobile = ({ onBack, onSuccess }) => {
           {/* Overall Comments */}
           <div className="space-y-6 mb-12">
              <div className="flex items-center gap-4 mb-2">
-               <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] whitespace-nowrap">Overall Performance</h2>
+               <h2 className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.2em] whitespace-nowrap">Overall Performance</h2>
                <div className="h-[1px] flex-1 bg-gray-100" />
             </div>
 
@@ -294,7 +294,7 @@ const CoreCompetenciesFormMobile = ({ onBack, onSuccess }) => {
         <button
           type="button"
           onClick={onBack}
-          className="flex-1 px-4 py-4 border border-gray-100 bg-gray-50 text-gray-600 font-bold rounded-2xl active:scale-95 transition-all text-xs uppercase tracking-widest"
+          className="flex-1 px-4 py-4 border border-gray-100 bg-gray-50 text-gray-600 font-medium rounded-2xl active:scale-95 transition-all text-xs uppercase tracking-widest"
           disabled={loading}
         >
           Cancel
@@ -303,7 +303,7 @@ const CoreCompetenciesFormMobile = ({ onBack, onSuccess }) => {
           onClick={handleSubmit}
           disabled={loading || saveStatus === 'saving'}
           className={cn(
-            "flex-[2] px-4 py-4 text-white font-black rounded-2xl transition-all flex items-center justify-center gap-3 text-xs uppercase tracking-[0.2em] shadow-xl",
+            "flex-[2] px-4 py-4 text-white font-semibold rounded-2xl transition-all flex items-center justify-center gap-3 text-xs uppercase tracking-[0.2em] shadow-xl",
             loading || saveStatus === 'saving' ? "bg-gray-400" : "bg-[var(--brand-teal)] hover:brightness-110 active:scale-95 shadow-teal-100"
           )}
         >

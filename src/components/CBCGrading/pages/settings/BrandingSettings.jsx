@@ -77,7 +77,7 @@ const BrandingSettings = ({ brandingSettings, setBrandingSettings }) => {
     <div className="max-w-5xl mx-auto space-y-6">
       <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 flex justify-between items-center">
         <div>
-          <h2 className="text-xl font-bold text-gray-800">Public Portal Messaging</h2>
+          <h2 className="text-xl font-medium text-gray-800">Public Portal Messaging</h2>
           <p className="text-sm text-gray-500">Customize the messages shown on your login and registration pages.</p>
         </div>
         <div className="flex gap-3">
@@ -91,7 +91,7 @@ const BrandingSettings = ({ brandingSettings, setBrandingSettings }) => {
           <button
             onClick={handleSave}
             disabled={saving}
-            className={`flex items-center gap-2 px-6 py-2 rounded-lg font-bold transition shadow-sm ${saving ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'
+            className={`flex items-center gap-2 px-6 py-2 rounded-lg font-medium transition shadow-sm ${saving ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'
               }`}
           >
             {saving ? <RefreshCw size={18} className="animate-spin" /> : <Save size={18} />}
@@ -106,12 +106,12 @@ const BrandingSettings = ({ brandingSettings, setBrandingSettings }) => {
           <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
             <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex items-center gap-2">
               <MessageSquare className="text-blue-600" size={18} />
-              <h3 className="font-bold text-gray-700">Auth Portal Content</h3>
+              <h3 className="font-medium text-gray-700">Auth Portal Content</h3>
             </div>
             <div className="p-6 space-y-8">
               {/* Login Page */}
               <div className="space-y-4">
-                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Login Page</h4>
+                <h4 className="text-xs font-medium text-gray-400 uppercase tracking-widest">Login Page</h4>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">Welcome Title</label>
                   <input
@@ -136,7 +136,7 @@ const BrandingSettings = ({ brandingSettings, setBrandingSettings }) => {
 
               {/* Registration Page */}
               <div className="space-y-4 pt-4 border-t border-gray-50">
-                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Registration Page</h4>
+                <h4 className="text-xs font-medium text-gray-400 uppercase tracking-widest">Registration Page</h4>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">Onboarding Title</label>
                   <input
@@ -165,7 +165,7 @@ const BrandingSettings = ({ brandingSettings, setBrandingSettings }) => {
             <Layout className="text-blue-500 mt-0.5" size={20} />
             <p className="text-sm text-blue-800">
               <strong>Note:</strong> Identity settings like School Name and Colors have been moved to
-              <span className="font-bold"> School Settings</span> for unified management.
+              <span className="font-medium"> School Settings</span> for unified management.
             </p>
           </div>
         </div>
@@ -174,7 +174,7 @@ const BrandingSettings = ({ brandingSettings, setBrandingSettings }) => {
         <div className="space-y-6">
           {/* Login Preview */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 flex justify-between items-center text-[10px] uppercase font-bold text-gray-400">
+            <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 flex justify-between items-center text-[10px] uppercase font-medium text-gray-400">
               <span>Portal Preview (Login)</span>
               <span>Visual Check</span>
             </div>
@@ -189,14 +189,14 @@ const BrandingSettings = ({ brandingSettings, setBrandingSettings }) => {
                 className="w-20 h-20 object-contain mb-6 drop-shadow-lg"
                 onError={(e) => e.target.src = '/logo-new.png'}
               />
-              <h3 className="text-xl font-black mb-2 tracking-tight">{localSettings.welcomeTitle || 'Welcome'}</h3>
+              <h3 className="text-xl font-semibold mb-2 tracking-tight">{localSettings.welcomeTitle || 'Welcome'}</h3>
               <p className="text-sm text-blue-50/80 leading-relaxed max-w-xs">{localSettings.welcomeMessage}</p>
             </div>
           </div>
 
           {/* Registration Preview */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 flex justify-between items-center text-[10px] uppercase font-bold text-gray-400">
+            <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 flex justify-between items-center text-[10px] uppercase font-medium text-gray-400">
               <span>Portal Preview (Onboarding)</span>
               <span>Visual Check</span>
             </div>
@@ -211,7 +211,7 @@ const BrandingSettings = ({ brandingSettings, setBrandingSettings }) => {
                 className="w-20 h-20 object-contain mb-6 drop-shadow-lg"
                 onError={(e) => e.target.src = '/logo-new.png'}
               />
-              <h3 className="text-xl font-black mb-2 tracking-tight">{localSettings.onboardingTitle || 'Get Started'}</h3>
+              <h3 className="text-xl font-semibold mb-2 tracking-tight">{localSettings.onboardingTitle || 'Get Started'}</h3>
               <p className="text-sm text-blue-50/80 leading-relaxed max-w-xs">{localSettings.onboardingMessage}</p>
             </div>
           </div>

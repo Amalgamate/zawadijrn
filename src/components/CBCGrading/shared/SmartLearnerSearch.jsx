@@ -258,13 +258,13 @@ const SmartLearnerSearch = ({
                       `}
                     >
                       <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-medium
                           ${isSelected ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}
                         `}>
                           {learner.firstName.charAt(0)}{learner.lastName.charAt(0)}
                         </div>
                         <div>
-                          <div className={`text-xs font-bold ${isSelected ? 'text-blue-900' : 'text-gray-900'}`}>
+                          <div className={`text-xs font-medium ${isSelected ? 'text-blue-900' : 'text-gray-900'}`}>
                             {learner.firstName} {learner.lastName}
                           </div>
                           <div className="flex items-center gap-3 text-[10px] text-gray-500">

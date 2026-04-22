@@ -155,20 +155,20 @@ const BackupSettings = () => {
 
       {/* Info panel */}
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-        <h3 className="font-bold text-blue-900 mb-2">About Backups</h3>
+        <h3 className="font-medium text-blue-900 mb-2">About Backups</h3>
         <p className="text-blue-800 mb-4 max-w-3xl">
           Regular backups ensure your data is safe. Backups include all learner records, assessments, and system settings.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-3xl mx-auto">
           <div className="bg-white rounded-lg p-4 border border-blue-100/80 flex flex-col justify-center min-h-[5.5rem]">
             <p className="text-sm font-semibold text-gray-600">Last Backup</p>
-            <p className="text-lg font-bold text-gray-900 mt-1">
+            <p className="text-lg font-medium text-gray-900 mt-1">
               {loading ? '—' : summary.lastBackupFormatted}
             </p>
           </div>
           <div className="bg-white rounded-lg p-4 border border-blue-100/80 flex flex-col justify-center min-h-[5.5rem]">
             <p className="text-sm font-semibold text-gray-600">Total Backups</p>
-            <p className="text-lg font-bold text-gray-900 mt-1">
+            <p className="text-lg font-medium text-gray-900 mt-1">
               {loading ? '—' : `${summary.total} Backup${summary.total !== 1 ? 's' : ''}`}
             </p>
           </div>
@@ -177,7 +177,7 @@ const BackupSettings = () => {
 
       {/* Restore Section */}
       <div className="bg-white rounded-xl shadow-md p-6">
-        <h3 className="text-lg font-bold mb-4">Restore from Backup</h3>
+        <h3 className="text-lg font-medium mb-4">Restore from Backup</h3>
         <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4 flex items-start gap-3">
           <AlertCircle size={22} className="text-orange-500 mt-0.5 shrink-0" />
           <p className="text-orange-800 text-sm">
@@ -212,7 +212,7 @@ const BackupSettings = () => {
       {/* Backup History */}
       <div className="bg-white rounded-xl shadow-md overflow-hidden">
         <div className="px-6 py-4 bg-gray-50 border-b">
-          <h3 className="text-lg font-bold">Backup History</h3>
+          <h3 className="text-lg font-medium">Backup History</h3>
         </div>
 
         {loading ? (
@@ -281,7 +281,7 @@ const BackupSettings = () => {
 
       {/* Auto Backup Info */}
       <div className="bg-white rounded-xl shadow-md p-6">
-        <h3 className="text-lg font-bold mb-2">Automatic Backup Schedule</h3>
+        <h3 className="text-lg font-medium mb-2">Automatic Backup Schedule</h3>
         <p className="text-sm text-gray-600 mb-4">
           Automatic backups run every 24 hours via a cron job on the server.
           Backups older than 14 days are automatically deleted.

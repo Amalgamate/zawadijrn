@@ -61,7 +61,7 @@ const NavItem = ({ item, currentPage, onNavigate, idx }) => {
       type="button"
       onClick={() => !item.comingSoon && onNavigate(item.path)}
       disabled={!!item.comingSoon}
-      className={`text-xs font-bold px-2.5 py-1.5 rounded-md transition-all ${
+      className={`text-xs font-medium px-2.5 py-1.5 rounded-md transition-all ${
         isActive
           ? `${fg} ${bg}`
           : item.comingSoon
@@ -135,7 +135,7 @@ const GroupDropdown = ({ group, currentPage, onNavigate, color }) => {
             disabled={!!item.comingSoon}
             className={`w-full text-left px-4 py-2 text-xs font-semibold transition-colors flex items-center gap-2.5 ${
               isActive
-                ? `${color.trigger} bg-gray-50 font-bold`
+                ? `${color.trigger} bg-gray-50 font-medium`
                 : item.comingSoon
                   ? 'text-gray-300 cursor-not-allowed'
                   : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
@@ -155,7 +155,7 @@ const GroupDropdown = ({ group, currentPage, onNavigate, color }) => {
         ref={btnRef}
         type="button"
         onClick={handleToggle}
-        className={`flex items-center gap-1.5 text-xs font-bold px-2.5 py-1.5 rounded-md border transition-all ${
+        className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md border transition-all ${
           isAnyActive
             ? `${color.trigger} ${color.activeBg} border-current`
             : `text-gray-600 hover:text-gray-900 border-transparent ${color.hover}`
@@ -210,7 +210,7 @@ const HorizontalSubmenu = ({ currentPage, onNavigate }) => {
   return (
     <div className="border-b border-gray-200 bg-gray-100/95 backdrop-blur-md px-6">
       <div className="max-w-screen-2xl mx-auto flex items-center gap-1 overflow-x-auto custom-scrollbar whitespace-nowrap py-2">
-        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mr-2">
+        <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mr-2">
           {activeSection.label}
         </span>
         <span className="h-4 w-px bg-gray-200 mr-2" />
@@ -255,7 +255,7 @@ const HorizontalSubmenu = ({ currentPage, onNavigate }) => {
             {feeActions.metricsProps && (
               <button
                 onClick={feeActions.metricsProps.toggle}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
                   feeActions.metricsProps.show 
                   ? 'bg-blue-600 text-white border-blue-600 shadow-sm' 
                   : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'

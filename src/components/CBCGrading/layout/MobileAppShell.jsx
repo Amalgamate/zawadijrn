@@ -78,12 +78,12 @@ const MobileAppShell = ({ children, user, onLogout, onNavigate, currentPage, bra
             )}
           </div>
           <div className="flex flex-col">
-            <span className="font-extrabold text-sm text-gray-900 leading-tight tracking-tight">
+            <span className="font-semibold text-sm text-gray-900 leading-tight tracking-tight">
               {brandingSettings?.schoolName || 'ZAWADI JUNIOR ACADEMY'}
             </span>
             <div className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+              <span className="text-[10px] font-medium text-gray-400 uppercase tracking-widest">
                 {role?.replace('_', ' ')}
               </span>
             </div>
@@ -112,7 +112,7 @@ const MobileAppShell = ({ children, user, onLogout, onNavigate, currentPage, bra
       <div className="flex-1 overflow-auto custom-scrollbar relative z-10 w-full mb-16 bg-white">
         <div className="px-5 pt-7 pb-20">
           <div className="mb-8 flex items-center justify-between">
-            <h2 className="text-3xl font-black text-gray-900 tracking-tighter">
+            <h2 className="text-3xl font-semibold text-gray-900 tracking-tighter">
               {PAGE_TITLES[currentPage] || (currentPage?.includes('settings') ? 'Settings' : 'Portal')}
             </h2>
             <div className="p-3 bg-gray-50 rounded-2xl text-gray-400 border border-gray-100 shadow-sm active:scale-95 transition-transform">
@@ -137,7 +137,7 @@ const MobileAppShell = ({ children, user, onLogout, onNavigate, currentPage, bra
                   }}
                   className="flex items-center gap-3 pr-2 group"
                 >
-                  <span className="bg-gray-900/80 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="bg-gray-900/80 backdrop-blur-md text-white text-[10px] font-semibold uppercase tracking-widest px-3 py-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity">
                     {action.label}
                   </span>
                   <div className={cn(
@@ -184,7 +184,7 @@ const MobileAppShell = ({ children, user, onLogout, onNavigate, currentPage, bra
                 />
               </div>
               <span className={cn(
-                "text-[9px] font-black uppercase tracking-[0.15em] mt-1.5 transition-all duration-300",
+                "text-[9px] font-semibold uppercase tracking-[0.15em] mt-1.5 transition-all duration-300",
                 isActive ? "text-[var(--brand-purple)]" : "text-gray-500"
               )}>
                 {item.label}

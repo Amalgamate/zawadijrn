@@ -502,14 +502,14 @@ const BroadcastMessagesPage = () => {
               <Send size={24} className="text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white">Broadcast Messages</h1>
+              <h1 className="text-2xl font-medium text-white">Broadcast Messages</h1>
               <p className="text-white/80 text-sm">Send messages to multiple recipients</p>
             </div>
           </div>
           {messageHistory.length > 0 && (
             <Button
               onClick={handleOpenHistory}
-              className="bg-white/20 hover:bg-white/30 text-white font-bold gap-2"
+              className="bg-white/20 hover:bg-white/30 text-white font-medium gap-2"
             >
               <Download size={16} />
               History ({messageHistory.length})
@@ -534,7 +534,7 @@ const BroadcastMessagesPage = () => {
             </React.Fragment>
           ))}
         </div>
-        <div className="flex justify-between text-xs font-bold text-gray-600 mt-3 max-w-2xl">
+        <div className="flex justify-between text-xs font-medium text-gray-600 mt-3 max-w-2xl">
           <span>Recipients</span>
           <span>Compose</span>
           <span>Review</span>
@@ -546,7 +546,7 @@ const BroadcastMessagesPage = () => {
       <div className="flex-1 overflow-auto p-6">
         {step === 'recipients' && (
           <div className="max-w-3xl space-y-6">
-            <h2 className="text-2xl font-bold text-gray-800">Step 1: Select Recipients</h2>
+            <h2 className="text-2xl font-medium text-gray-800">Step 1: Select Recipients</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Manual Numbers */}
@@ -556,7 +556,7 @@ const BroadcastMessagesPage = () => {
               >
                 <CardContent className="p-6 text-center">
                   <Phone size={32} className="mx-auto mb-2 text-brand-teal" />
-                  <h3 className="font-bold text-gray-800">Manual Entry</h3>
+                  <h3 className="font-medium text-gray-800">Manual Entry</h3>
                   <p className="text-sm text-gray-500 mt-1">Enter phone numbers directly</p>
                 </CardContent>
               </Card>
@@ -568,7 +568,7 @@ const BroadcastMessagesPage = () => {
               >
                 <CardContent className="p-6 text-center">
                   <FileUp size={32} className="mx-auto mb-2 text-brand-teal" />
-                  <h3 className="font-bold text-gray-800">CSV/Excel</h3>
+                  <h3 className="font-medium text-gray-800">CSV/Excel</h3>
                   <p className="text-sm text-gray-500 mt-1">Upload a file with phone numbers</p>
                 </CardContent>
               </Card>
@@ -580,7 +580,7 @@ const BroadcastMessagesPage = () => {
               >
                 <CardContent className="p-6 text-center">
                   <Users size={32} className="mx-auto mb-2 text-brand-teal" />
-                  <h3 className="font-bold text-gray-800">Grade/Group</h3>
+                  <h3 className="font-medium text-gray-800">Grade/Group</h3>
                   <p className="text-sm text-gray-500 mt-1">Select a grade or group</p>
                 </CardContent>
               </Card>
@@ -592,7 +592,7 @@ const BroadcastMessagesPage = () => {
               >
                 <CardContent className="p-6 text-center">
                   <Users size={32} className="mx-auto mb-2 text-brand-teal" />
-                  <h3 className="font-bold text-gray-800">All Parents</h3>
+                  <h3 className="font-medium text-gray-800">All Parents</h3>
                   <p className="text-sm text-gray-500 mt-1">Send to entire school</p>
                 </CardContent>
               </Card>
@@ -617,7 +617,7 @@ const BroadcastMessagesPage = () => {
                   />
                   {manualNumbers.trim() && (
                     <div className="bg-blue-50 border border-blue-200 rounded p-3 text-sm">
-                      <p className="font-bold text-blue-900">
+                      <p className="font-medium text-blue-900">
                         Preview: {manualNumbers.split(/[,\n]/).filter(n => n.trim()).length} total entries
                       </p>
                       <p className="text-blue-700 mt-1">
@@ -640,9 +640,9 @@ const BroadcastMessagesPage = () => {
                     type="file"
                     accept=".csv,.xlsx,.xls"
                     onChange={(e) => setCsvFile(e.target.files?.[0])}
-                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-brand-teal file:text-white file:font-bold hover:file:bg-brand-teal/90"
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-brand-teal file:text-white file:font-medium hover:file:bg-brand-teal/90"
                   />
-                  {csvFile && <p className="text-sm text-green-600 font-bold">✓ {csvFile.name}</p>}
+                  {csvFile && <p className="text-sm text-green-600 font-medium">✓ {csvFile.name}</p>}
                 </CardContent>
               </Card>
             )}
@@ -661,7 +661,7 @@ const BroadcastMessagesPage = () => {
                         onClick={() => setSelectedGroups(prev =>
                           prev.includes(group.id) ? prev.filter(g => g !== group.id) : [...prev, group.id]
                         )}
-                        className={`px-3 py-2 rounded-lg font-bold text-sm transition ${selectedGroups.includes(group.id)
+                        className={`px-3 py-2 rounded-lg font-medium text-sm transition ${selectedGroups.includes(group.id)
                           ? 'bg-brand-purple text-white'
                           : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                           }`}
@@ -677,7 +677,7 @@ const BroadcastMessagesPage = () => {
             <Button
               onClick={handleLoadRecipients}
               disabled={loadingRecipients || !recipientSource || (recipientSource === 'manual' && !manualNumbers) || (recipientSource === 'csv' && !csvFile) || (recipientSource === 'group' && selectedGroups.length === 0)}
-              className="w-full bg-brand-purple hover:bg-brand-purple/90 text-white font-bold gap-2 py-6 text-lg"
+              className="w-full bg-brand-purple hover:bg-brand-purple/90 text-white font-medium gap-2 py-6 text-lg"
             >
               {loadingRecipients ? <Loader2 size={20} className="animate-spin" /> : <ChevronRight size={20} />}
               Load Recipients
@@ -687,14 +687,14 @@ const BroadcastMessagesPage = () => {
 
         {step === 'compose' && (
           <div className="max-w-3xl space-y-6">
-            <h2 className="text-2xl font-bold text-gray-800">Step 2: Compose Message</h2>
+            <h2 className="text-2xl font-medium text-gray-800">Step 2: Compose Message</h2>
 
             <Card>
               <CardHeader>
                 <CardTitle>Recipients Loaded</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold text-brand-purple">{recipients.length}</p>
+                <p className="text-3xl font-medium text-brand-purple">{recipients.length}</p>
                 <p className="text-gray-600 text-sm mt-1">Recipients ready to receive message</p>
               </CardContent>
             </Card>
@@ -716,7 +716,7 @@ const BroadcastMessagesPage = () => {
                   <div className="text-gray-500 font-medium">
                     Standard SMS: 160 chars
                   </div>
-                  <div className={`font-bold ${messageTemplate.length > 160 ? 'text-orange-600' : 'text-brand-purple'}`}>
+                  <div className={`font-medium ${messageTemplate.length > 160 ? 'text-orange-600' : 'text-brand-purple'}`}>
                     {messageTemplate.length} characters | {messageTemplate.length > 160 ? Math.ceil(messageTemplate.length / 153) : (messageTemplate.length > 0 ? 1 : 0)} SMS
                   </div>
                 </div>
@@ -748,7 +748,7 @@ const BroadcastMessagesPage = () => {
             <Button
               onClick={() => setShowTestDialog(true)}
               variant="outline"
-              className="w-full border-brand-teal text-brand-teal hover:bg-brand-teal/10 font-bold gap-2"
+              className="w-full border-brand-teal text-brand-teal hover:bg-brand-teal/10 font-medium gap-2"
             >
               <Phone size={18} />
               Send Test Message
@@ -767,7 +767,7 @@ const BroadcastMessagesPage = () => {
                 onClick={() => setStep('review')}
                 disabled={!messageTemplate.trim()}
                 title={!messageTemplate.trim() ? "Please enter a message first" : ""}
-                className="flex-1 bg-brand-purple hover:bg-brand-purple/90 text-white font-bold gap-2"
+                className="flex-1 bg-brand-purple hover:bg-brand-purple/90 text-white font-medium gap-2"
               >
                 Next
                 <ChevronRight size={18} />
@@ -778,19 +778,19 @@ const BroadcastMessagesPage = () => {
 
         {step === 'review' && (
           <div className="max-w-3xl space-y-6">
-            <h2 className="text-2xl font-bold text-gray-800">Step 3: Review & Confirm</h2>
+            <h2 className="text-2xl font-medium text-gray-800">Step 3: Review & Confirm</h2>
 
             <div className="grid grid-cols-2 gap-4">
               <Card>
                 <CardContent className="p-4">
                   <p className="text-gray-600 text-sm">Recipients</p>
-                  <p className="text-3xl font-bold text-brand-purple">{recipients.length}</p>
+                  <p className="text-3xl font-medium text-brand-purple">{recipients.length}</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4">
                   <p className="text-gray-600 text-sm">Message Length</p>
-                  <p className="text-3xl font-bold text-brand-teal">
+                  <p className="text-3xl font-medium text-brand-teal">
                     {messageTemplate.length}
                     <span className="text-sm font-normal text-gray-500 ml-2">
                       ({messageTemplate.length > 160 ? Math.ceil(messageTemplate.length / 153) : (messageTemplate.length > 0 ? 1 : 0)} SMS)
@@ -846,7 +846,7 @@ const BroadcastMessagesPage = () => {
                 onClick={() => setStep('send')}
                 disabled={sending || !messageTemplate.trim()}
                 title={!messageTemplate.trim() ? "Message cannot be empty" : ""}
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold gap-2"
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium gap-2"
               >
                 {sending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
                 Send Broadcast
@@ -857,13 +857,13 @@ const BroadcastMessagesPage = () => {
 
         {step === 'send' && (
           <div className="max-w-3xl space-y-6">
-            <h2 className="text-2xl font-bold text-gray-800">Step 4: Sending & Results</h2>
+            <h2 className="text-2xl font-medium text-gray-800">Step 4: Sending & Results</h2>
 
             {!sending && deliveryReport.length === 0 ? (
               <div className="text-center py-12">
                 <Button
                   onClick={handleSendBroadcast}
-                  className="bg-green-600 hover:bg-green-700 text-white font-bold gap-2 px-6 py-3 text-lg"
+                  className="bg-green-600 hover:bg-green-700 text-white font-medium gap-2 px-6 py-3 text-lg"
                 >
                   <Send size={20} />
                   Start Sending
@@ -876,7 +876,7 @@ const BroadcastMessagesPage = () => {
                   <Card className="bg-blue-50 border-blue-200">
                     <CardContent className="p-6">
                       <div className="space-y-4">
-                        <div className="flex justify-between font-bold">
+                        <div className="flex justify-between font-medium">
                           <span>Sending Progress</span>
                           <span>{progress}%</span>
                         </div>
@@ -899,17 +899,17 @@ const BroadcastMessagesPage = () => {
                         <div className="grid grid-cols-3 gap-4">
                           <div className="text-center">
                             <p className="text-gray-600 text-sm">Total</p>
-                            <p className="text-3xl font-bold text-gray-800">{deliveryReport.length}</p>
+                            <p className="text-3xl font-medium text-gray-800">{deliveryReport.length}</p>
                           </div>
                           <div className="text-center">
                             <p className="text-gray-600 text-sm">Sent</p>
-                            <p className="text-3xl font-bold text-green-600">
+                            <p className="text-3xl font-medium text-green-600">
                               {deliveryReport.filter(r => r.status === 'Sent').length}
                             </p>
                           </div>
                           <div className="text-center">
                             <p className="text-gray-600 text-sm">Failed</p>
-                            <p className="text-3xl font-bold text-red-600">
+                            <p className="text-3xl font-medium text-red-600">
                               {deliveryReport.filter(r => r.status === 'Failed').length}
                             </p>
                           </div>
@@ -929,7 +929,7 @@ const BroadcastMessagesPage = () => {
                             <Button
                               onClick={handleRetryFailed}
                               disabled={retryingFailed}
-                              className="bg-orange-600 hover:bg-orange-700 text-white font-bold gap-2 text-sm"
+                              className="bg-orange-600 hover:bg-orange-700 text-white font-medium gap-2 text-sm"
                             >
                               {retryingFailed ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
                               Retry {failedRecipients.length} Failed
@@ -986,7 +986,7 @@ const BroadcastMessagesPage = () => {
                     setDeliveryReport([]);
                     setProgress(0);
                   }}
-                  className="w-full bg-brand-purple hover:bg-brand-purple/90 text-white font-bold gap-2"
+                  className="w-full bg-brand-purple hover:bg-brand-purple/90 text-white font-medium gap-2"
                 >
                   <Plus size={18} />
                   Send Another Broadcast
@@ -1023,7 +1023,7 @@ const BroadcastMessagesPage = () => {
                   <CardContent className="p-4">
                     <div className="grid grid-cols-4 gap-3 items-start">
                       <div className="col-span-2">
-                        <p className="font-bold text-gray-800 text-sm line-clamp-2">{item.messagePreview}</p>
+                        <p className="font-medium text-gray-800 text-sm line-clamp-2">{item.messagePreview}</p>
                         <p className="text-xs text-gray-500 mt-1">Sent: {item.timestamp}</p>
                         <p className="text-xs text-gray-400 mt-1 font-mono">{item.id}</p>
                       </div>
@@ -1038,7 +1038,7 @@ const BroadcastMessagesPage = () => {
                       </div>
                       <div className="text-right">
                         <p className="text-xs text-gray-600 mb-1">Total</p>
-                        <p className="text-lg font-bold text-gray-800">{item.totalRecipients}</p>
+                        <p className="text-lg font-medium text-gray-800">{item.totalRecipients}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -1081,7 +1081,7 @@ const BroadcastMessagesPage = () => {
                   .replace(/{grade}/gi, previewData.grade)
                   .replace(/{schoolName}/gi, previewData.schoolName) || '(Message preview)'}
               </CardContent>
-              <div className="px-4 pb-2 text-right text-[10px] text-gray-500 font-bold">
+              <div className="px-4 pb-2 text-right text-[10px] text-gray-500 font-medium">
                 {messageTemplate.length} chars | {messageTemplate.length > 160 ? Math.ceil(messageTemplate.length / 153) : (messageTemplate.length > 0 ? 1 : 0)} SMS
               </div>
             </Card>
@@ -1100,7 +1100,7 @@ const BroadcastMessagesPage = () => {
             <Button
               onClick={handleSendTest}
               disabled={isSendingTest || !testPhone}
-              className="bg-brand-teal hover:bg-brand-teal/90 text-white font-bold gap-2"
+              className="bg-brand-teal hover:bg-brand-teal/90 text-white font-medium gap-2"
             >
               {isSendingTest ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
               Send Test

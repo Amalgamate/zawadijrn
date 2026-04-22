@@ -25,7 +25,7 @@ const ConfirmDialog = ({
           <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
             <AlertCircle className="text-orange-600" size={24} />
           </div>
-          <h3 className="text-xl font-bold text-gray-900">{title}</h3>
+          <h3 className="text-xl font-medium text-gray-900">{title}</h3>
         </div>
         
         <p className="text-gray-600 mb-6">{message}</p>

@@ -158,12 +158,12 @@ const Sidebar = React.memo(({
               className={`object-contain transition-all duration-300 ${sidebarOpen ? 'h-11 max-w-full' : 'h-9 w-9'}`}
             />
           ) : sidebarOpen ? (
-            <span className="text-base font-black text-white tracking-wider truncate text-center leading-tight px-1">
+            <span className="text-base font-semibold text-white tracking-wider truncate text-center leading-tight px-1">
               {brandingSettings?.schoolName || 'ZAWADI'}
             </span>
           ) : (
             <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center border border-white/20 shadow-inner">
-              <span className="text-sm font-black text-white">
+              <span className="text-sm font-semibold text-white">
                 {(brandingSettings?.schoolName || 'ZA').substring(0, 2).toUpperCase()}
               </span>
             </div>
@@ -217,7 +217,7 @@ const Sidebar = React.memo(({
           {systemAdminSections.length > 0 && (
             <>
               {sidebarOpen && (
-                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mt-1 px-3">
+                <p className="text-[9px] text-gray-400 font-medium uppercase tracking-wider mt-1 px-3">
                   {role === 'TEACHER' ? labels.teacher : 
                    role === 'PARENT' ? 'Parent' : 
                    role === 'ADMIN' ? 'Administrator' : 
@@ -260,7 +260,7 @@ const CategoryGroup = ({ label, icon: Icon, sidebarOpen, children }) => (
         style={{ height: 34 }}
       >
         <Icon size={13} className="flex-shrink-0" />
-        <span className="text-[9px] font-black uppercase tracking-[0.18em] text-brand-teal">{label}</span>
+        <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-brand-teal">{label}</span>
       </div>
     )}
     <div className="space-y-0.5 pt-0.5">
@@ -365,7 +365,7 @@ const NavSection = React.memo(({
         if (item.type === 'group') {
           return (
             <div key={item.id} className="mb-2 last:mb-0">
-              <div className="flex items-center gap-1.5 px-2 py-1 text-[9px] font-black uppercase tracking-wide text-white/45">
+              <div className="flex items-center gap-1.5 px-2 py-1 text-[9px] font-semibold uppercase tracking-wide text-white/45">
                 {item.icon && <item.icon size={11} className="opacity-70 flex-shrink-0" />}
                 <span>{item.label}</span>
               </div>
@@ -476,7 +476,7 @@ const LeafItem = ({ item, currentPage, onNavigate }) => {
     >
       <span className="truncate flex-1">{item.label}</span>
       {item.comingSoon && (
-        <span className="ml-2 flex-shrink-0 text-[8px] bg-amber-400/15 text-amber-400 px-1.5 py-0.5 rounded font-black uppercase border border-amber-400/25 tracking-wide">
+        <span className="ml-2 flex-shrink-0 text-[8px] bg-amber-400/15 text-amber-400 px-1.5 py-0.5 rounded font-semibold uppercase border border-amber-400/25 tracking-wide">
           Soon
         </span>
       )}

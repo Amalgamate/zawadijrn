@@ -70,7 +70,7 @@ const KnowledgeBase = () => {
                 <div className="bg-[#2e1d2b] rounded-3xl p-10 text-white relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
                     <div className="relative z-10 max-w-2xl">
-                        <h2 className="text-3xl font-bold mb-4">How can we help you today?</h2>
+                        <h2 className="text-3xl font-medium mb-4">How can we help you today?</h2>
                         <div className="relative">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                             <input
@@ -89,7 +89,7 @@ const KnowledgeBase = () => {
                             <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform text-brand-teal">
                                 <cat.icon size={24} />
                             </div>
-                            <h3 className="font-bold text-gray-900 mb-2">{cat.title}</h3>
+                            <h3 className="font-medium text-gray-900 mb-2">{cat.title}</h3>
                             <p className="text-sm text-gray-500 mb-4">{cat.description}</p>
                             <ul className="space-y-2">
                                 {cat.articles.map((art, aIdx) => (
@@ -106,7 +106,7 @@ const KnowledgeBase = () => {
                 {/* Video / News Section */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2 space-y-6">
-                        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                        <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
                             <Video size={20} className="text-brand-teal" />
                             Featured Video Tutorials
                         </h3>
@@ -118,7 +118,7 @@ const KnowledgeBase = () => {
                                             <PlayCircle size={32} className="text-brand-teal ml-1" />
                                         </div>
                                     </div>
-                                    <div className="absolute bottom-0 inset-x-0 p-4 bg-black/60                                        <p className="text-white text-sm font-bold">Video Tutorial {i}: System Basics</p>
+                                    <div className="absolute bottom-0 inset-x-0 p-4 bg-black/60                                        <p className="text-white text-sm font-medium">Video Tutorial {i}: System Basics</p>
                                     </div>
                                 </div>
                             ))}
@@ -126,14 +126,14 @@ const KnowledgeBase = () => {
                     </div>
 
                     <div className="space-y-6">
-                        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                        <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
                             <Star size={20} className="text-yellow-500" />
                             Highlights & Tips
                         </h3>
                         <div className="space-y-4">
                             {highlights.map((h, i) => (
                                 <div key={i} className="p-4 rounded-2xl bg-brand-teal/5 border border-brand-teal/10">
-                                    <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${h.type === 'update' ? 'bg-blue-100 text-blue-600' : 'bg-yellow-100 text-yellow-700'}`}>
+                                    <span className={`text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full ${h.type === 'update' ? 'bg-blue-100 text-blue-600' : 'bg-yellow-100 text-yellow-700'}`}>
                                         {h.title}
                                     </span>
                                     <p className="text-sm font-medium text-gray-700 mt-2">{h.desc}</p>

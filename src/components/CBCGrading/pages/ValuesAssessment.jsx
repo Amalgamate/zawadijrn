@@ -98,8 +98,8 @@ const ValuesAssessment = ({ learners }) => {
               <Heart size={22} fill="currentColor" />
            </div>
            <div>
-              <h2 className="text-xl font-black text-gray-900 tracking-tight leading-none">Global Values</h2>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Character Building</p>
+              <h2 className="text-xl font-semibold text-gray-900 tracking-tight leading-none">Global Values</h2>
+              <p className="text-[10px] font-medium text-gray-400 uppercase tracking-widest mt-1">Character Building</p>
            </div>
         </div>
         {viewMode !== 'setup' && (
@@ -117,40 +117,40 @@ const ValuesAssessment = ({ learners }) => {
         <div className="px-5 space-y-6 animate-in fade-in slide-in-from-bottom-4">
           <div className="bg-white rounded-[2.5rem] border border-transparent shadow-xl shadow-rose-50 p-6 space-y-6">
             <div className="space-y-1">
-               <span className="text-[10px] font-black text-rose-500 uppercase tracking-widest">Entry Scope</span>
-               <h3 className="text-lg font-black text-gray-900">Learner Context</h3>
+               <span className="text-[10px] font-semibold text-rose-500 uppercase tracking-widest">Entry Scope</span>
+               <h3 className="text-lg font-semibold text-gray-900">Learner Context</h3>
             </div>
 
             <div className="space-y-4">
                <div>
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{labels.learners}</label>
+                  <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest ml-1">{labels.learners}</label>
                   <SmartLearnerSearch
                     learners={selection.filteredLearners}
                     selectedLearnerId={selection.selectedLearnerId}
                     onSelect={selection.selectLearner}
                     placeholder={`Search ${labels.learners}...`}
-                    className="w-full h-14 pl-4 bg-gray-50 border-none rounded-2xl text-xs font-bold outline-none ring-offset-0 focus:ring-2 focus:ring-rose-100"
+                    className="w-full h-14 pl-4 bg-gray-50 border-none rounded-2xl text-xs font-medium outline-none ring-offset-0 focus:ring-2 focus:ring-rose-100"
                   />
                </div>
 
                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{labels.term}</label>
+                    <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest ml-1">{labels.term}</label>
                     <select
                       value={setup.selectedTerm}
                       onChange={(e) => setup.updateTerm(e.target.value)}
-                      className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-rose-500/20"
+                      className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-medium focus:ring-2 focus:ring-rose-500/20"
                     >
                       {setup.terms.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                     </select>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Year</label>
+                    <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest ml-1">Year</label>
                     <input
                       type="number"
                       value={setup.academicYear}
                       onChange={(e) => setup.updateAcademicYear(parseInt(e.target.value))}
-                      className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-bold"
+                      className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-medium"
                     />
                   </div>
                </div>
@@ -162,7 +162,7 @@ const ValuesAssessment = ({ learners }) => {
             disabled={!selection.selectedLearnerId}
             className="w-full h-16 bg-rose-500 text-white rounded-[2rem] flex items-center justify-center gap-3 shadow-xl shadow-rose-100 active:scale-95 transition-all outline-none disabled:opacity-30"
           >
-            <span className="text-xs font-black uppercase tracking-[0.2em] ml-2">Character Audit</span>
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] ml-2">Character Audit</span>
             <ArrowRight size={20} strokeWidth={3} />
           </button>
         </div>
@@ -175,8 +175,8 @@ const ValuesAssessment = ({ learners }) => {
                 <ChevronLeft size={20} className="text-gray-900" />
              </button>
              <div className="text-center flex-1">
-                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Character Record</h4>
-                <p className="text-xs font-black text-gray-900 truncate px-4">{selection.selectedLearner.firstName} {selection.selectedLearner.lastName}</p>
+                <h4 className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest leading-none mb-1">Character Record</h4>
+                <p className="text-xs font-semibold text-gray-900 truncate px-4">{selection.selectedLearner.firstName} {selection.selectedLearner.lastName}</p>
              </div>
              <div className="w-10" />
           </div>
@@ -191,8 +191,8 @@ const ValuesAssessment = ({ learners }) => {
                            <Icon size={24} />
                         </div>
                         <div>
-                           <h5 className="text-sm font-black text-gray-900">{def.name}</h5>
-                           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">{def.label}</p>
+                           <h5 className="text-sm font-semibold text-gray-900">{def.name}</h5>
+                           <p className="text-[10px] font-medium text-gray-400 uppercase tracking-tight">{def.label}</p>
                         </div>
                      </div>
 
@@ -202,7 +202,7 @@ const ValuesAssessment = ({ learners }) => {
                              key={r.value}
                              onClick={() => ratings.setRating(key, r.value)}
                              className={cn(
-                                "py-4 px-2 rounded-2xl text-[10px] font-black uppercase transition-all tracking-tighter border-2",
+                                "py-4 px-2 rounded-2xl text-[10px] font-semibold uppercase transition-all tracking-tighter border-2",
                                 ratings.ratings[key] === r.value 
                                    ? "bg-teal-600 border-transparent text-white shadow-lg shadow-teal-50 scale-[1.02]" 
                                    : "bg-white border-gray-50 text-gray-400 hover:border-teal-100"
@@ -219,12 +219,12 @@ const ValuesAssessment = ({ learners }) => {
             <div className="bg-white rounded-[2.5rem] border border-gray-100 p-6 space-y-4">
                <div className="flex items-center gap-2 ml-2">
                   <Edit3 size={14} className="text-gray-400" />
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Growth Observations</span>
+                  <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Growth Observations</span>
                </div>
                <textarea
                   value={ratings.comments.general || ''}
                   onChange={(e) => ratings.setComment('general', e.target.value)}
-                  className="w-full h-32 p-5 bg-gray-50 border-none rounded-[1.5rem] text-xs font-bold outline-none placeholder:text-gray-300 resize-none focus:ring-2 focus:ring-rose-100"
+                  className="w-full h-32 p-5 bg-gray-50 border-none rounded-[1.5rem] text-xs font-medium outline-none placeholder:text-gray-300 resize-none focus:ring-2 focus:ring-rose-100"
                   placeholder="Summarize character development..."
                />
                <div className="flex justify-center p-2">
@@ -236,7 +236,7 @@ const ValuesAssessment = ({ learners }) => {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="w-full py-6 bg-teal-600 text-white text-xs font-black uppercase tracking-[0.2em] rounded-[2rem] shadow-xl shadow-teal-50 active:scale-95 transition-all mb-10"
+            className="w-full py-6 bg-teal-600 text-white text-xs font-semibold uppercase tracking-[0.2em] rounded-[2rem] shadow-xl shadow-teal-50 active:scale-95 transition-all mb-10"
           >
              Finalize Character Record
           </button>

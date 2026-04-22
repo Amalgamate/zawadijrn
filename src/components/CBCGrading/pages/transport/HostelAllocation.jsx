@@ -57,7 +57,7 @@ const inputCls = 'w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm f
 function FormField({ label, required, children }) {
   return (
     <div>
-      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">
+      <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">
         {label} {required && <span className="text-red-400">*</span>}
       </label>
       {children}
@@ -85,7 +85,7 @@ function OccupancyBar({ occupied, capacity }) {
 
 function GenderPill({ gender }) {
   const map = { MALE: 'bg-blue-50 text-blue-700', FEMALE: 'bg-pink-50 text-pink-700', MIXED: 'bg-purple-50 text-purple-700' };
-  return <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${map[gender] || map.MIXED}`}>{gender}</span>;
+  return <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${map[gender] || map.MIXED}`}>{gender}</span>;
 }
 
 function RoomTypePill({ type }) {
@@ -95,7 +95,7 @@ function RoomTypePill({ type }) {
     SEMI_PRIVATE: 'bg-teal-50 text-teal-700',
     SUITE:        'bg-purple-50 text-purple-700',
   };
-  return <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${map[type] || 'bg-gray-100 text-gray-600'}`}>{ROOM_TYPE_LABEL[type] || type}</span>;
+  return <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${map[type] || 'bg-gray-100 text-gray-600'}`}>{ROOM_TYPE_LABEL[type] || type}</span>;
 }
 
 // ─── block summary card ────────────────────────────────────────────────────────
@@ -118,10 +118,10 @@ function BlockCard({ block, onAddRoom, onEditBlock, onDeleteBlock, expanded, onT
             <Building2 size={18} />
           </div>
           <div>
-            <p className="font-black text-gray-900 text-sm">{block.name}</p>
+            <p className="font-semibold text-gray-900 text-sm">{block.name}</p>
             <div className="flex items-center gap-2 mt-0.5">
               <GenderPill gender={block.gender} />
-              <span className="text-[11px] text-gray-400 font-bold">{block.rooms.length} room{block.rooms.length !== 1 ? 's' : ''}</span>
+              <span className="text-[11px] text-gray-400 font-medium">{block.rooms.length} room{block.rooms.length !== 1 ? 's' : ''}</span>
             </div>
           </div>
         </div>
@@ -129,15 +129,15 @@ function BlockCard({ block, onAddRoom, onEditBlock, onDeleteBlock, expanded, onT
         <div className="flex items-center gap-4">
           {/* Occupancy summary */}
           <div className="hidden sm:block text-right">
-            <p className="text-sm font-black text-gray-900">{totalOccupied}/{totalCapacity}</p>
-            <p className="text-[11px] text-gray-400 font-bold">{available} bed{available !== 1 ? 's' : ''} free</p>
+            <p className="text-sm font-semibold text-gray-900">{totalOccupied}/{totalCapacity}</p>
+            <p className="text-[11px] text-gray-400 font-medium">{available} bed{available !== 1 ? 's' : ''} free</p>
           </div>
           {/* Mini occupancy bar */}
           <div className="hidden md:block w-24">
             <OccupancyBar occupied={totalOccupied} capacity={totalCapacity} />
           </div>
           {fullRooms > 0 && (
-            <span className="text-[10px] font-black bg-red-50 text-red-600 px-2 py-0.5 rounded-full border border-red-100">
+            <span className="text-[10px] font-semibold bg-red-50 text-red-600 px-2 py-0.5 rounded-full border border-red-100">
               {fullRooms} full
             </span>
           )}
@@ -163,7 +163,7 @@ function BlockCard({ block, onAddRoom, onEditBlock, onDeleteBlock, expanded, onT
           {block.rooms.length > 0 && (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 text-[10px] uppercase font-black tracking-widest text-gray-400">
+                <thead className="bg-gray-50 text-[10px] uppercase font-semibold tracking-widest text-gray-400">
                   <tr>
                     <th className="px-5 py-2.5 text-left">Room</th>
                     <th className="px-5 py-2.5 text-left">Type</th>
@@ -182,14 +182,14 @@ function BlockCard({ block, onAddRoom, onEditBlock, onDeleteBlock, expanded, onT
                         <td className="px-5 py-3">
                           <div className="flex items-center gap-2">
                             <Hash size={12} className="text-gray-300" />
-                            <span className="font-black text-gray-800">{room.number}</span>
+                            <span className="font-semibold text-gray-800">{room.number}</span>
                           </div>
                         </td>
                         <td className="px-5 py-3"><RoomTypePill type={room.type} /></td>
-                        <td className="px-5 py-3 text-xs text-gray-500 font-bold">Floor {room.floor}</td>
+                        <td className="px-5 py-3 text-xs text-gray-500 font-medium">Floor {room.floor}</td>
                         <td className="px-5 py-3 min-w-[140px]">
                           <div className="flex items-center gap-2">
-                            <span className={`text-xs font-black ${isFull ? 'text-red-600' : 'text-gray-700'}`}>
+                            <span className={`text-xs font-semibold ${isFull ? 'text-red-600' : 'text-gray-700'}`}>
                               {room.occupied}/{room.capacity}
                             </span>
                             <span className="text-[10px] text-gray-400">({pct}%)</span>
@@ -198,9 +198,9 @@ function BlockCard({ block, onAddRoom, onEditBlock, onDeleteBlock, expanded, onT
                         </td>
                         <td className="px-5 py-3">
                           {isFull ? (
-                            <span className="text-[10px] font-black bg-red-100 text-red-700 px-2 py-0.5 rounded-full">Full</span>
+                            <span className="text-[10px] font-semibold bg-red-100 text-red-700 px-2 py-0.5 rounded-full">Full</span>
                           ) : (
-                            <span className="text-[10px] font-black bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+                            <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
                               {room.capacity - room.occupied} free
                             </span>
                           )}
@@ -229,7 +229,7 @@ function BlockCard({ block, onAddRoom, onEditBlock, onDeleteBlock, expanded, onT
           {/* Add room button */}
           <div className="px-5 py-3.5 border-t border-gray-50">
             <button onClick={() => onAddRoom(block)}
-              className="flex items-center gap-2 text-xs font-black text-blue-600 hover:text-blue-700 transition">
+              className="flex items-center gap-2 text-xs font-semibold text-blue-600 hover:text-blue-700 transition">
               <Plus size={13} />
               Add Room to {block.name}
             </button>
@@ -258,7 +258,7 @@ function BlockModal({ block, onClose, onSave, saving }) {
             <div className="w-8 h-8 bg-blue-50 rounded-xl flex items-center justify-center">
               <Building2 size={15} className="text-blue-600" />
             </div>
-            <h2 className="font-black text-gray-900">{isNew ? 'Add Hostel Block' : 'Edit Block'}</h2>
+            <h2 className="font-semibold text-gray-900">{isNew ? 'Add Hostel Block' : 'Edit Block'}</h2>
           </div>
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:bg-gray-100 rounded-full transition"><X size={15} /></button>
         </div>
@@ -274,9 +274,9 @@ function BlockModal({ block, onClose, onSave, saving }) {
           </FormField>
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose}
-              className="px-4 py-2.5 text-gray-500 hover:bg-gray-100 rounded-xl font-black text-sm transition">Cancel</button>
+              className="px-4 py-2.5 text-gray-500 hover:bg-gray-100 rounded-xl font-semibold text-sm transition">Cancel</button>
             <button onClick={() => onSave(form)} disabled={saving || !form.name.trim()}
-              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-sm shadow-lg shadow-blue-600/20 transition disabled:opacity-60 flex items-center gap-2">
+              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm shadow-lg shadow-blue-600/20 transition disabled:opacity-60 flex items-center gap-2">
               {saving && <Loader2 size={14} className="animate-spin" />}
               {isNew ? 'Add Block' : 'Save Changes'}
             </button>
@@ -302,7 +302,7 @@ function RoomModal({ block, onClose, onSave, saving }) {
               <BedDouble size={15} className="text-indigo-600" />
             </div>
             <div>
-              <h2 className="font-black text-gray-900 text-sm">Add Room</h2>
+              <h2 className="font-semibold text-gray-900 text-sm">Add Room</h2>
               <p className="text-[11px] text-gray-400">{block?.name}</p>
             </div>
           </div>
@@ -337,9 +337,9 @@ function RoomModal({ block, onClose, onSave, saving }) {
           </FormField>
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose}
-              className="px-4 py-2.5 text-gray-500 hover:bg-gray-100 rounded-xl font-black text-sm transition">Cancel</button>
+              className="px-4 py-2.5 text-gray-500 hover:bg-gray-100 rounded-xl font-semibold text-sm transition">Cancel</button>
             <button onClick={() => onSave(form)} disabled={saving || !form.number.trim() || !form.capacity}
-              className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-sm shadow-lg shadow-indigo-600/20 transition disabled:opacity-60 flex items-center gap-2">
+              className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold text-sm shadow-lg shadow-indigo-600/20 transition disabled:opacity-60 flex items-center gap-2">
               {saving && <Loader2 size={14} className="animate-spin" />}
               Add Room
             </button>
@@ -472,9 +472,9 @@ const HostelAllocation = () => {
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">Hostel</span>
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">Hostel</span>
           </div>
-          <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+          <h1 className="text-2xl md:text-3xl font-semibold text-gray-900 tracking-tight flex items-center gap-3">
             <BedDouble className="text-blue-600" size={28} />
             Hostel Room Allocation
           </h1>
@@ -484,12 +484,12 @@ const HostelAllocation = () => {
         </div>
         <div className="flex items-center gap-2">
           <button onClick={load} disabled={loading}
-            className="flex items-center gap-2 px-3.5 py-2 text-sm font-bold text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition disabled:opacity-50">
+            className="flex items-center gap-2 px-3.5 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition disabled:opacity-50">
             {loading ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
             Refresh
           </button>
           <button onClick={() => setBlockModal({ block: null })}
-            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl font-black text-sm hover:bg-blue-700 transition shadow-lg shadow-blue-600/20">
+            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl font-semibold text-sm hover:bg-blue-700 transition shadow-lg shadow-blue-600/20">
             <Plus size={16} />
             Add Block
           </button>
@@ -501,7 +501,7 @@ const HostelAllocation = () => {
         <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-2xl">
           <ShieldAlert size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
           <div>
-            <p className="font-black text-blue-800 text-sm">Preview Mode — Hostel API not yet configured</p>
+            <p className="font-semibold text-blue-800 text-sm">Preview Mode — Hostel API not yet configured</p>
             <p className="text-blue-600 text-xs mt-0.5 font-medium">
               You're seeing sample data. To persist hostel data, implement <code className="bg-blue-100 px-1 rounded text-[11px]">/api/hostel/*</code> endpoints
               in <strong>server/src/controllers/</strong> and register them in <strong>transport.routes.ts</strong>.
@@ -525,8 +525,8 @@ const HostelAllocation = () => {
               <Icon size={16} />
             </div>
             <div>
-              <p className="text-xl font-black text-gray-900 leading-none">{value}</p>
-              <p className="text-[10px] font-bold text-gray-400 mt-0.5">{label}</p>
+              <p className="text-xl font-semibold text-gray-900 leading-none">{value}</p>
+              <p className="text-[10px] font-medium text-gray-400 mt-0.5">{label}</p>
             </div>
           </div>
         ))}
@@ -534,7 +534,7 @@ const HostelAllocation = () => {
 
       {/* Occupancy progress */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-        <div className="flex items-center justify-between mb-2 text-xs font-black text-gray-500">
+        <div className="flex items-center justify-between mb-2 text-xs font-semibold text-gray-500">
           <span>Overall Occupancy</span>
           <span>{occupiedBeds} / {totalBeds} beds · {occupancyRate}%</span>
         </div>
@@ -545,7 +545,7 @@ const HostelAllocation = () => {
           />
         </div>
         {fullRooms > 0 && (
-          <p className="text-[11px] text-red-600 font-bold mt-2 flex items-center gap-1">
+          <p className="text-[11px] text-red-600 font-medium mt-2 flex items-center gap-1">
             <AlertCircle size={11} /> {fullRooms} room{fullRooms > 1 ? 's' : ''} at full capacity
           </p>
         )}
@@ -567,7 +567,7 @@ const HostelAllocation = () => {
         <div className="flex gap-1.5">
           {[['all', 'All'], ['MALE', 'Boys'], ['FEMALE', 'Girls'], ['MIXED', 'Mixed']].map(([v, l]) => (
             <button key={v} onClick={() => setFilterGender(v)}
-              className={`px-3 py-2 rounded-xl text-xs font-black transition ${filterGender === v ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-gray-500 hover:bg-gray-100 border border-gray-200'}`}>
+              className={`px-3 py-2 rounded-xl text-xs font-semibold transition ${filterGender === v ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-gray-500 hover:bg-gray-100 border border-gray-200'}`}>
               {l}
             </button>
           ))}
@@ -582,10 +582,10 @@ const HostelAllocation = () => {
       ) : filtered.length === 0 ? (
         <div className="bg-white rounded-2xl border-2 border-dashed border-gray-200 p-16 text-center">
           <Building2 size={40} className="mx-auto text-gray-200 mb-3" />
-          <p className="font-black text-gray-500 text-base">{query ? 'No blocks match your search' : 'No hostel blocks configured'}</p>
+          <p className="font-semibold text-gray-500 text-base">{query ? 'No blocks match your search' : 'No hostel blocks configured'}</p>
           {!query && (
             <button onClick={() => setBlockModal({ block: null })}
-              className="mt-4 px-5 py-2.5 bg-blue-600 text-white rounded-xl font-black text-sm hover:bg-blue-700 transition shadow-lg shadow-blue-600/20 inline-flex items-center gap-2">
+              className="mt-4 px-5 py-2.5 bg-blue-600 text-white rounded-xl font-semibold text-sm hover:bg-blue-700 transition shadow-lg shadow-blue-600/20 inline-flex items-center gap-2">
               <Plus size={15} /> Add First Block
             </button>
           )}

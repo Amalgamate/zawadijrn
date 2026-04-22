@@ -56,7 +56,7 @@ const SystemMaintenancePage = () => {
           <ArrowLeft className="w-6 h-6 text-slate-600" />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">System Maintenance</h1>
+          <h1 className="text-2xl font-medium text-slate-900">System Maintenance</h1>
           <p className="text-slate-500 text-sm">Administrative tools for data management and recovery</p>
         </div>
       </div>
@@ -85,14 +85,14 @@ const SystemMaintenancePage = () => {
                   <Eraser className="w-6 h-6" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-slate-900 text-lg">Total Financial Reset</h4>
+                  <h4 className="font-medium text-slate-900 text-lg">Total Financial Reset</h4>
                   <p className="text-slate-500 text-sm">Wipe all invoices, payments, and ledger entries for a fresh start.</p>
                 </div>
               </div>
             </div>
 
             <div className="bg-slate-50 rounded-lg p-4 mb-6 border border-slate-100">
-              <h5 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-2">
+              <h5 className="text-xs font-medium text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-2">
                 <Info className="w-3 h-3" /> What will be deleted:
               </h5>
               <ul className="text-sm text-slate-600 grid grid-cols-2 gap-x-4 gap-y-1 ml-5 list-disc">
@@ -127,7 +127,7 @@ const SystemMaintenancePage = () => {
               <Database className="w-6 h-6" />
             </div>
             <div>
-              <h4 className="font-bold text-slate-900">Automated Bulk Generation</h4>
+              <h4 className="font-medium text-slate-900">Automated Bulk Generation</h4>
               <p className="text-slate-500 text-sm">Massively generate invoices for all students based on assigned structures.</p>
               <div className="mt-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-800">
                 Coming Soon
@@ -145,7 +145,7 @@ const SystemMaintenancePage = () => {
               <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-full mb-4">
                 <AlertTriangle className="w-8 h-8 text-white" />
               </div>
-              <h2 className="text-xl font-bold">Catastrophic Action Required</h2>
+              <h2 className="text-xl font-medium">Catastrophic Action Required</h2>
               <p className="text-red-100 text-sm mt-1 opacity-90">
                 This action is irreversible and will wipe all your financial balances.
               </p>
@@ -157,7 +157,7 @@ const SystemMaintenancePage = () => {
                   <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
                     <CheckCircle2 className="w-8 h-8" />
                   </div>
-                  <h3 className="text-lg font-bold text-slate-900">System Reset Successful!</h3>
+                  <h3 className="text-lg font-medium text-slate-900">System Reset Successful!</h3>
                   <p className="text-slate-600 text-sm mb-6">All accounting records have been cleared. You are back to zero.</p>
                   <button 
                     onClick={() => {
@@ -165,7 +165,7 @@ const SystemMaintenancePage = () => {
                         setResetStatus('idle');
                         navigateTo('FINANCE_DASHBOARD');
                     }}
-                    className="w-full py-3 bg-slate-900 text-white font-bold rounded-xl"
+                    className="w-full py-3 bg-slate-900 text-white font-medium rounded-xl"
                   >
                     Done
                   </button>
@@ -196,14 +196,14 @@ const SystemMaintenancePage = () => {
                               setConfirmText('');
                             }
                           }}
-                          className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors"
+                          className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl transition-colors"
                         >
                           Abort
                         </button>
                         <button 
                           disabled={confirmText !== REQUIRED_CONFIRM_TEXT || loading}
                           onClick={handleTotalReset}
-                          className={`flex-1 py-3 text-white font-bold rounded-xl shadow-lg shadow-red-200 flex items-center justify-center gap-2 transition-all ${
+                          className={`flex-1 py-3 text-white font-medium rounded-xl shadow-lg shadow-red-200 flex items-center justify-center gap-2 transition-all ${
                             confirmText === REQUIRED_CONFIRM_TEXT && !loading 
                             ? 'bg-red-600 hover:bg-red-700' 
                             : 'bg-slate-300 cursor-not-allowed shadow-none'

@@ -73,7 +73,7 @@ const DeviceList = () => {
         </div>
         <button 
           onClick={() => setIsAdding(true)}
-          className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 transition-all"
+          className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-semibold uppercase tracking-widest shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 transition-all"
         >
           <Plus size={16} />
           Register Terminal
@@ -84,36 +84,36 @@ const DeviceList = () => {
         <div className="bg-white p-6 rounded-3xl border-2 border-indigo-100 animate-in zoom-in-95 duration-300 shadow-xl shadow-indigo-500/5">
           <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Terminal Name</label>
+              <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest ml-1">Terminal Name</label>
               <input 
                 required
                 value={newDevice.name}
                 onChange={(e) => setNewDevice({...newDevice, name: e.target.value})}
                 placeholder="e.g. Main Entrance North"
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-indigo-500"
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium outline-none focus:border-indigo-500"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Physical Location</label>
+              <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest ml-1">Physical Location</label>
               <input 
                 required
                 value={newDevice.location}
                 onChange={(e) => setNewDevice({...newDevice, location: e.target.value})}
                 placeholder="e.g. Block A, Ground Floor"
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-indigo-500"
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium outline-none focus:border-indigo-500"
               />
             </div>
             <div className="flex gap-3">
               <button 
                 type="submit"
-                className="flex-1 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-600/20"
+                className="flex-1 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-semibold uppercase tracking-widest shadow-lg shadow-indigo-600/20"
               >
                 Confirm Registration
               </button>
               <button 
                 type="button"
                 onClick={() => setIsAdding(false)}
-                className="px-4 py-3 bg-slate-100 text-slate-500 rounded-xl text-[10px] font-black uppercase tracking-widest"
+                className="px-4 py-3 bg-slate-100 text-slate-500 rounded-xl text-[10px] font-semibold uppercase tracking-widest"
               >
                 Cancel
               </button>
@@ -136,7 +136,7 @@ const DeviceList = () => {
                   <Cpu size={28} />
                 </div>
                 <div className="flex flex-col items-end gap-2">
-                  <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 ${
+                  <span className={`px-3 py-1 rounded-full text-[9px] font-semibold uppercase tracking-widest flex items-center gap-1.5 ${
                     device.isActive ? 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-500/20' : 'bg-slate-50 text-slate-400 ring-1 ring-slate-400/20'
                   }`}>
                     {device.isActive ? <Signal size={12} /> : <WifiOff size={12} />}
@@ -153,17 +153,17 @@ const DeviceList = () => {
                 </div>
               </div>
 
-              <h4 className="text-lg font-black text-slate-900 tracking-tight leading-none mb-1">{device.name}</h4>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 italic">{device.location}</p>
+              <h4 className="text-lg font-semibold text-slate-900 tracking-tight leading-none mb-1">{device.name}</h4>
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-6 italic">{device.location}</p>
 
               <div className="flex items-center justify-between pt-6 border-t border-slate-50">
                 <div className="flex items-center gap-1.5 grayscale opacity-50">
                   <div className="w-1.5 h-1.5 rounded-full bg-indigo-600" />
-                  <p className="text-[9px] font-black text-slate-900 font-mono tracking-tighter">
+                  <p className="text-[9px] font-semibold text-slate-900 font-mono tracking-tighter">
                     {device.deviceToken.split('-')[0].toUpperCase()}••••
                   </p>
                 </div>
-                <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">
+                <p className="text-[9px] font-semibold text-slate-300 uppercase tracking-widest">
                   Last Sync: {device.lastSeen ? new Date(device.lastSeen).toLocaleTimeString() : 'Never'}
                 </p>
               </div>
@@ -172,8 +172,8 @@ const DeviceList = () => {
         ) : (
           <div className="col-span-full py-20 bg-white rounded-3xl border border-slate-200 flex flex-col items-center">
             <Cpu size={48} className="text-slate-100 mb-4" />
-            <h4 className="text-slate-400 font-black uppercase tracking-widest">No Terminals Registered</h4>
-            <p className="text-[10px] text-slate-300 font-black uppercase tracking-widest mt-2 italic">Register a device to begin biometric acquisition</p>
+            <h4 className="text-slate-400 font-semibold uppercase tracking-widest">No Terminals Registered</h4>
+            <p className="text-[10px] text-slate-300 font-semibold uppercase tracking-widest mt-2 italic">Register a device to begin biometric acquisition</p>
           </div>
         )}
       </div>

@@ -47,7 +47,7 @@ const LearningHubPage = () => {
             <Sparkles size={28} />
           </div>
           <div>
-            <h2 className="text-2xl font-bold">Coming Soon</h2>
+            <h2 className="text-2xl font-medium">Coming Soon</h2>
             <p className="text-blue-100">We're building your complete teaching toolkit</p>
           </div>
         </div>
@@ -73,7 +73,7 @@ const LearningHubPage = () => {
                 <feature.icon size={24} className="text-blue-600" />
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-bold text-gray-800 mb-1">{feature.title}</h3>
+                <h3 className="text-lg font-medium text-gray-800 mb-1">{feature.title}</h3>
                 <p className="text-sm text-gray-600">{feature.description}</p>
               </div>
             </div>
@@ -110,7 +110,7 @@ const LearningHubPage = () => {
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
           <div>
-            <h2 className="text-2xl font-bold mb-2">🚀 Coding & Robotics Playground</h2>
+            <h2 className="text-2xl font-medium mb-2">🚀 Coding & Robotics Playground</h2>
             <p className="text-indigo-200 max-w-xl">
               Access the virtual lab to practice Python, Web Development, and Robotics.
               Complete your practical assessments and submit them directly to your teachers.
@@ -118,7 +118,7 @@ const LearningHubPage = () => {
           </div>
           <a
             href="/coding-playground"
-            className="px-6 py-3 bg-white text-indigo-900 font-bold rounded-lg hover:bg-indigo-50 transition shadow-lg flex items-center gap-2"
+            className="px-6 py-3 bg-white text-indigo-900 font-medium rounded-lg hover:bg-indigo-50 transition shadow-lg flex items-center gap-2"
           >
             Launch Playground <ArrowRight size={18} />
           </a>
@@ -132,7 +132,7 @@ const LearningHubPage = () => {
             <CheckCircle size={20} className="text-green-600" />
           </div>
           <div>
-            <h3 className="font-bold text-gray-800 mb-2">🇰🇪 CBC-Aligned Design</h3>
+            <h3 className="font-medium text-gray-800 mb-2">🇰🇪 CBC-Aligned Design</h3>
             <p className="text-sm text-gray-700">
               Designed specifically for Kenya's Competency-Based Curriculum with strand mapping,
               competency tracking, and curriculum coverage reports.

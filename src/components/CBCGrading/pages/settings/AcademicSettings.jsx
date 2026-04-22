@@ -658,7 +658,7 @@ const AcademicSettings = () => {
           <div className="flex">
             <button
               onClick={() => setActiveTab('terms')}
-              className={`flex items-center gap-2 px-6 py-4 font-bold transition-all border-b-2 ${activeTab === 'terms'
+              className={`flex items-center gap-2 px-6 py-4 font-medium transition-all border-b-2 ${activeTab === 'terms'
                 ? 'border-blue-600 text-blue-600 bg-blue-50/50'
                 : 'border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-50'
                 }`}
@@ -726,7 +726,7 @@ const AcademicSettings = () => {
         <div className="bg-white rounded-xl shadow-md p-6">
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-bold mb-4">Academic Year</h3>
+              <h3 className="text-lg font-medium mb-4">Academic Year</h3>
               <div className="max-w-md">
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Select Year</label>
                 <select
@@ -742,7 +742,7 @@ const AcademicSettings = () => {
             </div>
 
             <div className="border-t pt-6">
-              <h3 className="text-lg font-bold mb-4">Term Configuration</h3>
+              <h3 className="text-lg font-medium mb-4">Term Configuration</h3>
               {loading ? <p>Loading settings...</p> : (
                 <div className="space-y-6">
                   {['TERM_1', 'TERM_2', 'TERM_3'].map((termName, index) => {
@@ -758,7 +758,7 @@ const AcademicSettings = () => {
                       <div key={termName} className={`border rounded-lg p-4 ${draft.isActive ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'}`}>
                         <div className="flex justify-between items-center mb-4">
                           <div className="flex items-center gap-3">
-                            <h4 className="font-bold text-gray-800">Term {index + 1}</h4>
+                            <h4 className="font-medium text-gray-800">Term {index + 1}</h4>
                             {isDirty && (
                               <span className="text-xs bg-amber-100 text-amber-700 font-semibold px-2 py-0.5 rounded-full">Unsaved changes</span>
                             )}
@@ -814,7 +814,7 @@ const AcademicSettings = () => {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 bg-white p-3 rounded border border-gray-100">
                           <div>
-                            <label className="block text-xs font-bold text-blue-700 mb-1">Formative Weight (%)</label>
+                            <label className="block text-xs font-medium text-blue-700 mb-1">Formative Weight (%)</label>
                             <input
                               type="number"
                               min="0"
@@ -830,7 +830,7 @@ const AcademicSettings = () => {
                             <p className="text-[10px] text-gray-400 mt-1">Weight for continuous assessments</p>
                           </div>
                           <div>
-                            <label className="block text-xs font-bold text-indigo-700 mb-1">Summative Weight (%)</label>
+                            <label className="block text-xs font-medium text-indigo-700 mb-1">Summative Weight (%)</label>
                             <input
                               type="number"
                               min="0"
@@ -868,7 +868,7 @@ const AcademicSettings = () => {
         <div className="bg-white rounded-xl shadow-md p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-lg font-bold">Manage Learning Areas & Strands</h3>
+              <h3 className="text-lg font-medium">Manage Learning Areas & Strands</h3>
               <p className="text-sm text-gray-600 mt-1">Organized by grade level with curriculum strands</p>
             </div>
             <div className="flex gap-2">
@@ -969,7 +969,7 @@ const AcademicSettings = () => {
       {activeTab === 'classes' && (
         <div className="bg-white rounded-xl shadow-md p-6">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-bold">Manage Classes</h3>
+            <h3 className="text-lg font-medium">Manage Classes</h3>
             <div className="flex gap-2">
               {/* Hiding seeding buttons for now
                <button
@@ -1034,7 +1034,7 @@ const AcademicSettings = () => {
                         <td className="p-4 text-sm">{teacher ? `${teacher.firstName} ${teacher.lastName}` : '-'}</td>
                         <td className="p-4">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-gray-800 w-14 shrink-0">{enrolled}/{capacity}</span>
+                            <span className="text-sm font-medium text-gray-800 w-14 shrink-0">{enrolled}/{capacity}</span>
                             <div className="flex-1 bg-gray-100 rounded-full h-1.5 overflow-hidden min-w-[60px]">
                               <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
                             </div>
@@ -1065,7 +1065,7 @@ const AcademicSettings = () => {
         <div className="bg-white rounded-xl shadow-md p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-lg font-bold">Manage Streams</h3>
+              <h3 className="text-lg font-medium">Manage Streams</h3>
             </div>
             <div className="flex gap-2">
               {/* Hiding seeding buttons for now
@@ -1146,7 +1146,7 @@ const AcademicSettings = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
             <div className="bg-blue-600 px-6 py-4 rounded-t-2xl">
-              <h3 className="text-xl font-bold text-white">
+              <h3 className="text-xl font-medium text-white">
                 {editingStream ? 'Edit Stream' : 'Add Stream'}
               </h3>
             </div>
@@ -1210,7 +1210,7 @@ const AcademicSettings = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="bg-blue-600 px-6 py-4 rounded-t-2xl sticky top-0">
-              <h3 className="text-xl font-bold text-white">
+              <h3 className="text-xl font-medium text-white">
                 {editingClass ? 'Edit Class' : 'Add Class'}
               </h3>
             </div>
@@ -1391,7 +1391,7 @@ const AcademicSettings = () => {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="px-6 py-4 bg-gray-50 border-b flex items-center justify-between">
-              <h3 className="text-xl font-bold text-gray-800">
+              <h3 className="text-xl font-medium text-gray-800">
                 {editingArea ? 'Edit Learning Area' : 'New Learning Area'}
               </h3>
               <button
@@ -1409,7 +1409,7 @@ const AcademicSettings = () => {
             <form onSubmit={(e) => { e.preventDefault(); handleAddEdit(); }} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Learning Area Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Learning Area Name</label>
                   <input
                     type="text"
                     value={formData.name}
@@ -1421,7 +1421,7 @@ const AcademicSettings = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Short Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Short Name</label>
                   <input
                     type="text"
                     value={formData.shortName}
@@ -1432,7 +1432,7 @@ const AcademicSettings = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Grade Level</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Grade Level</label>
                   <select
                     value={formData.gradeLevel}
                     onChange={(e) => setFormData({ ...formData, gradeLevel: e.target.value })}
@@ -1445,7 +1445,7 @@ const AcademicSettings = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Display Icon</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Display Icon</label>
                   <select
                     value={formData.icon}
                     onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
@@ -1464,7 +1464,7 @@ const AcademicSettings = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Theme Color</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Theme Color</label>
                   <input
                     type="color"
                     value={formData.color}
@@ -1475,7 +1475,7 @@ const AcademicSettings = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Description (Optional)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description (Optional)</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -1487,7 +1487,7 @@ const AcademicSettings = () => {
 
               {/* Preview */}
               <div className="p-4 bg-gray-50 border border-gray-100 rounded-2xl">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Preview</p>
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3 text-center">Preview</p>
                 <div className="flex items-center gap-4">
                   <div
                     className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shadow-sm"
@@ -1496,7 +1496,7 @@ const AcademicSettings = () => {
                     {formData.icon}
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-bold text-gray-900 leading-tight">{formData.name || 'Subject Name'}</h4>
+                    <h4 className="font-medium text-gray-900 leading-tight">{formData.name || 'Subject Name'}</h4>
                     <p className="text-xs text-gray-500 font-medium">
                       <span className="text-blue-600">{formData.shortName || 'CODE'}</span> • {formData.gradeLevel?.replace(/_/g, ' ')}
                     </p>
@@ -1512,14 +1512,14 @@ const AcademicSettings = () => {
                     setEditingArea(null);
                     setFormData({ name: '', shortName: '', gradeLevel: dynamicGrades.length > 0 ? dynamicGrades[0] : 'GRADE_1', color: '#3b82f6', icon: '📚', description: '' });
                   }}
-                  className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition"
+                  className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:from-blue-700 hover:to-indigo-700 transition shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-indigo-700 transition shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {submitting ? (
                     <div className="flex items-center justify-center gap-2">

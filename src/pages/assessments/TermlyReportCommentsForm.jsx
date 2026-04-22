@@ -80,7 +80,7 @@ const TermlyReportCommentsForm = ({ onBack, onSuccess, prefill }) => {
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex items-center gap-3 mb-2">
             <FileText size={24} className="text-blue-600" />
-            <h1 className="text-2xl font-bold text-gray-900">Termly Report Comments</h1>
+            <h1 className="text-2xl font-medium text-gray-900">Termly Report Comments</h1>
           </div>
           <div className="flex items-center justify-between">
             {onBack && (

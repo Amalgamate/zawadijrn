@@ -96,7 +96,7 @@ const AddEditParentModal = ({ show, onClose, onSave, parent = null, learners = [
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="bg-purple-600 px-6 py-4 flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-white">
+          <h2 className="text-2xl font-medium text-white">
             {isEdit ? 'Edit Parent/Guardian' : 'Add Parent/Guardian'}
           </h2>
           <button
@@ -114,7 +114,7 @@ const AddEditParentModal = ({ show, onClose, onSave, parent = null, learners = [
             <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-4">
                 <User className="text-purple-600" size={20} />
-                <h3 className="text-lg font-bold text-purple-900">Personal Information</h3>
+                <h3 className="text-lg font-medium text-purple-900">Personal Information</h3>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -156,7 +156,7 @@ const AddEditParentModal = ({ show, onClose, onSave, parent = null, learners = [
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-4">
                 <Phone className="text-blue-600" size={20} />
-                <h3 className="text-lg font-bold text-blue-900">Contact Information</h3>
+                <h3 className="text-lg font-medium text-blue-900">Contact Information</h3>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -200,7 +200,7 @@ const AddEditParentModal = ({ show, onClose, onSave, parent = null, learners = [
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-4">
                 <Briefcase className="text-green-600" size={20} />
-                <h3 className="text-lg font-bold text-green-900">Account Security</h3>
+                <h3 className="text-lg font-medium text-green-900">Account Security</h3>
               </div>
 
               <div>

@@ -88,7 +88,7 @@ const ClassList = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-black text-gray-900">Classes</h1>
+          <h1 className="text-3xl font-semibold text-gray-900">Classes</h1>
           <p className="text-sm text-gray-500 mt-1">Manage and view detailed class information</p>
         </div>
         <Button
@@ -155,7 +155,7 @@ const ClassList = () => {
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                     {/* Class Info */}
                     <div>
-                      <h3 className="text-xl font-black text-gray-900">{classItem.name}</h3>
+                      <h3 className="text-xl font-semibold text-gray-900">{classItem.name}</h3>
                       <p className="text-sm text-gray-500 mt-1">Stream: {classItem.stream || 'A'}</p>
                       <p className="text-xs text-gray-400 mt-1">Academic Year: {classItem.academicYear}</p>
                     </div>
@@ -163,8 +163,8 @@ const ClassList = () => {
                     {/* Teacher Info */}
                     <div className="bg-amber-50 rounded-lg p-4 border border-amber-100 flex flex-col justify-between group/teacher relative">
                       <div>
-                        <p className="text-xs font-bold text-amber-900 uppercase tracking-tight mb-2">Teacher</p>
-                        <p className="text-sm font-bold text-gray-900">{teacherName}</p>
+                        <p className="text-xs font-medium text-amber-900 uppercase tracking-tight mb-2">Teacher</p>
+                        <p className="text-sm font-medium text-gray-900">{teacherName}</p>
                         {classItem.teacher?.phone && (
                           <p className="text-xs text-gray-600 mt-2">{classItem.teacher.phone}</p>
                         )}
@@ -185,9 +185,9 @@ const ClassList = () => {
                     {/* Student Stats */}
                     <div className="space-y-3">
                       <div className="bg-blue-50 rounded-lg p-3 border border-blue-100 text-center">
-                        <p className="text-xs font-bold text-blue-900 uppercase tracking-tight mb-1">Enrollment</p>
-                        <p className="text-2xl font-black text-blue-600">{studentCount}/{classItem.capacity}</p>
-                        <div className="flex justify-center gap-2 mt-2 text-xs font-bold">
+                        <p className="text-xs font-medium text-blue-900 uppercase tracking-tight mb-1">Enrollment</p>
+                        <p className="text-2xl font-semibold text-blue-600">{studentCount}/{classItem.capacity}</p>
+                        <div className="flex justify-center gap-2 mt-2 text-xs font-medium">
                           <span className="text-blue-700">♂ {male}</span>
                           <span className="text-pink-600">♀ {female}</span>
                         </div>
@@ -197,8 +197,8 @@ const ClassList = () => {
                     {/* Utilization & Room */}
                     <div className="space-y-3">
                       <div className={`rounded-lg p-3 border text-center ${getUtilizationColor(utilization)}`}>
-                        <p className="text-xs font-bold uppercase tracking-tight mb-1">Utilization</p>
-                        <p className="text-2xl font-black">{Math.round(utilization)}%</p>
+                        <p className="text-xs font-medium uppercase tracking-tight mb-1">Utilization</p>
+                        <p className="text-2xl font-semibold">{Math.round(utilization)}%</p>
                         <div className="w-full bg-current bg-opacity-20 rounded-full h-1.5 mt-2">
                           <div
                             className="bg-current h-1.5 rounded-full transition-all"
@@ -208,8 +208,8 @@ const ClassList = () => {
                       </div>
 
                       <div className="bg-purple-50 rounded-lg p-3 border border-purple-100 text-center">
-                        <p className="text-xs font-bold text-purple-900 uppercase tracking-tight">Room</p>
-                        <p className="text-sm font-black text-purple-900 mt-1">{classItem.room || 'TBD'}</p>
+                        <p className="text-xs font-medium text-purple-900 uppercase tracking-tight">Room</p>
+                        <p className="text-sm font-semibold text-purple-900 mt-1">{classItem.room || 'TBD'}</p>
                       </div>
                     </div>
                   </div>

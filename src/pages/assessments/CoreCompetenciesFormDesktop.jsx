@@ -44,7 +44,7 @@ const CoreCompetenciesFormDesktop = ({ onBack, onSuccess }) => {
               ← Back
             </button>
           )}
-          <h1 className="text-3xl font-bold text-gray-900">Core Competencies Assessment</h1>
+          <h1 className="text-3xl font-medium text-gray-900">Core Competencies Assessment</h1>
           {saveStatus === 'success' && (
             <div className="text-green-600 text-sm font-medium">✓ Saved</div>
           )}

@@ -177,7 +177,7 @@ const FormativeReport = ({ learners, brandingSettings, user }) => {
             <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600">
               <FileText size={32} />
             </div>
-            <h2 className="text-2xl font-bold text-gray-800">Generate Formative Report</h2>
+            <h2 className="text-2xl font-medium text-gray-800">Generate Formative Report</h2>
             <p className="text-gray-500">Select a learner and term to view their assessment report</p>
           </div>
 
@@ -226,7 +226,7 @@ const FormativeReport = ({ learners, brandingSettings, user }) => {
                 <User size={24} />
               </div>
               <div>
-                <h3 className="font-bold text-gray-800 text-lg line-clamp-1">
+                <h3 className="font-medium text-gray-800 text-lg line-clamp-1">
                   {reportData.learner.firstName} {reportData.learner.lastName}
                 </h3>
                 <div className="flex items-center gap-3 text-sm text-gray-500 font-medium">
@@ -282,25 +282,25 @@ const FormativeReport = ({ learners, brandingSettings, user }) => {
           <div id="formative-report-content" className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Learner Information */}
             <div className="bg-white rounded-xl shadow-md p-4 print:shadow-none print:border print:border-gray-200">
-              <h3 className="text-xs font-bold mb-3 uppercase text-gray-500 tracking-wider border-b border-gray-100 pb-2">Learner Details</h3>
+              <h3 className="text-xs font-medium mb-3 uppercase text-gray-500 tracking-wider border-b border-gray-100 pb-2">Learner Details</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                  <p className="text-[10px] font-bold text-gray-500 uppercase">Name</p>
-                  <p className="text-gray-900 text-sm font-bold">
+                  <p className="text-[10px] font-medium text-gray-500 uppercase">Name</p>
+                  <p className="text-gray-900 text-sm font-medium">
                     {reportData.learner.firstName} {reportData.learner.middleName || ''} {reportData.learner.lastName}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-gray-500 uppercase">Admission No</p>
-                  <p className="text-gray-900 text-sm font-bold">{reportData.learner.admissionNumber}</p>
+                  <p className="text-[10px] font-medium text-gray-500 uppercase">Admission No</p>
+                  <p className="text-gray-900 text-sm font-medium">{reportData.learner.admissionNumber}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-gray-500 uppercase">Class</p>
-                  <p className="text-gray-900 text-sm font-bold">{reportData.learner.grade} {reportData.learner.stream ? `- ${reportData.learner.stream}` : ''}</p>
+                  <p className="text-[10px] font-medium text-gray-500 uppercase">Class</p>
+                  <p className="text-gray-900 text-sm font-medium">{reportData.learner.grade} {reportData.learner.stream ? `- ${reportData.learner.stream}` : ''}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-gray-500 uppercase">Term</p>
-                  <p className="text-gray-900 text-sm font-bold">{setup.terms.find(t => t.value === setup.selectedTerm)?.label} 2026</p>
+                  <p className="text-[10px] font-medium text-gray-500 uppercase">Term</p>
+                  <p className="text-gray-900 text-sm font-medium">{setup.terms.find(t => t.value === setup.selectedTerm)?.label} 2026</p>
                 </div>
               </div>
             </div>
@@ -308,33 +308,33 @@ const FormativeReport = ({ learners, brandingSettings, user }) => {
             {/* Summary Statistics */}
             <div className="bg-white rounded-xl shadow-md overflow-hidden print:shadow-none print:border print:border-gray-200">
               <div className="bg-blue-50 px-4 py-2 border-b border-blue-100">
-                <h4 className="font-bold text-blue-800 text-xs uppercase tracking-wider">Performance Summary</h4>
+                <h4 className="font-medium text-blue-800 text-xs uppercase tracking-wider">Performance Summary</h4>
               </div>
               <div className="p-4">
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                   <div className="bg-gray-50 rounded-lg p-3 text-center border border-gray-100">
-                    <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Total Assessments</p>
-                    <p className="text-2xl font-bold text-gray-800">{reportData.totalAssessments}</p>
+                    <p className="text-[10px] text-gray-500 font-medium uppercase mb-1">Total Assessments</p>
+                    <p className="text-2xl font-medium text-gray-800">{reportData.totalAssessments}</p>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-3 text-center border border-gray-100">
-                    <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Average %</p>
-                    <p className="text-2xl font-bold text-purple-600">{averagePercentage}%</p>
+                    <p className="text-[10px] text-gray-500 font-medium uppercase mb-1">Average %</p>
+                    <p className="text-2xl font-medium text-purple-600">{averagePercentage}%</p>
                   </div>
                   <div className="bg-green-50 rounded-lg p-3 text-center border border-green-100">
-                    <p className="text-[10px] text-green-600 font-bold uppercase mb-1">Exceeding</p>
-                    <p className="text-2xl font-bold text-green-700">
+                    <p className="text-[10px] text-green-600 font-medium uppercase mb-1">Exceeding</p>
+                    <p className="text-2xl font-medium text-green-700">
                       {(detailedDist.EE1 || 0) + (detailedDist.EE2 || 0)}
                     </p>
                   </div>
                   <div className="bg-blue-50 rounded-lg p-3 text-center border border-blue-100">
-                    <p className="text-[10px] text-blue-600 font-bold uppercase mb-1">Meeting</p>
-                    <p className="text-2xl font-bold text-blue-700">
+                    <p className="text-[10px] text-blue-600 font-medium uppercase mb-1">Meeting</p>
+                    <p className="text-2xl font-medium text-blue-700">
                       {(detailedDist.ME1 || 0) + (detailedDist.ME2 || 0)}
                     </p>
                   </div>
                   <div className="bg-yellow-50 rounded-lg p-3 text-center border border-yellow-100">
-                    <p className="text-[10px] text-yellow-600 font-bold uppercase mb-1">Approaching</p>
-                    <p className="text-2xl font-bold text-yellow-700">
+                    <p className="text-[10px] text-yellow-600 font-medium uppercase mb-1">Approaching</p>
+                    <p className="text-2xl font-medium text-yellow-700">
                       {(detailedDist.AE1 || 0) + (detailedDist.AE2 || 0)}
                     </p>
                   </div>
@@ -345,7 +345,7 @@ const FormativeReport = ({ learners, brandingSettings, user }) => {
             {/* Printable Report Content */}
             <div className="bg-white rounded-xl shadow-md p-6 print:shadow-none print:p-0">
               <div className="flex items-center justify-between mb-6 print:hidden">
-                <h3 className="text-lg font-bold text-gray-800">Detailed Assessment Report</h3>
+                <h3 className="text-lg font-medium text-gray-800">Detailed Assessment Report</h3>
                 <span className="text-sm text-gray-500">{filteredAssessments.length} records found</span>
               </div>
 
@@ -361,7 +361,7 @@ const FormativeReport = ({ learners, brandingSettings, user }) => {
                     <div key={index} className="border border-gray-200 rounded-xl p-4 hover:border-blue-200 transition-colors break-inside-avoid">
                       <div className="flex flex-col md:flex-row md:justify-between items-start mb-3 gap-2 md:gap-0">
                         <div>
-                          <h4 className="font-bold text-sm text-gray-900">{assessment.learningArea}</h4>
+                          <h4 className="font-medium text-sm text-gray-900">{assessment.learningArea}</h4>
                           {assessment.strand && (
                             <p className="text-xs text-gray-600 mt-0.5">
                               <span className="font-semibold">Strand:</span> {assessment.strand}
@@ -370,7 +370,7 @@ const FormativeReport = ({ learners, brandingSettings, user }) => {
                           )}
                         </div>
                         <div className="text-left md:text-right w-full md:w-auto">
-                          <span className={`inline-flex max-w-max px-3 py-1 rounded-full text-xs font-bold ${getRatingColor(assessment.detailedRating)}`}>
+                          <span className={`inline-flex max-w-max px-3 py-1 rounded-full text-xs font-medium ${getRatingColor(assessment.detailedRating)}`}>
                             {assessment.detailedRating} - {assessment.percentage}%
                           </span>
                           <p className="text-[10px] text-gray-500 mt-1 font-medium uppercase">{getRatingLabel(assessment.detailedRating)}</p>
@@ -381,21 +381,21 @@ const FormativeReport = ({ learners, brandingSettings, user }) => {
                         {/* Feedback Sections */}
                         {assessment.strengths && (
                           <div className="flex gap-2">
-                            <span className="font-bold text-green-700 min-w-[80px]">✓ Strengths:</span>
+                            <span className="font-medium text-green-700 min-w-[80px]">✓ Strengths:</span>
                             <span className="text-gray-700">{assessment.strengths}</span>
                           </div>
                         )}
 
                         {assessment.areasImprovement && (
                           <div className="flex gap-2">
-                            <span className="font-bold text-orange-700 min-w-[80px]">→ Improve:</span>
+                            <span className="font-medium text-orange-700 min-w-[80px]">→ Improve:</span>
                             <span className="text-gray-700">{assessment.areasImprovement}</span>
                           </div>
                         )}
 
                         {assessment.recommendations && (
                           <div className="flex gap-2">
-                            <span className="font-bold text-blue-700 min-w-[80px]">💡 Advice:</span>
+                            <span className="font-medium text-blue-700 min-w-[80px]">💡 Advice:</span>
                             <span className="text-gray-700">{assessment.recommendations}</span>
                           </div>
                         )}
@@ -419,7 +419,7 @@ const FormativeReport = ({ learners, brandingSettings, user }) => {
                       <Edit3 size={16} />
                     </div>
                     <div className="flex-1">
-                      <p className="font-bold text-blue-900 text-sm mb-1">Class Teacher's Comment</p>
+                      <p className="font-medium text-blue-900 text-sm mb-1">Class Teacher's Comment</p>
                       <p className="text-gray-700 text-sm leading-relaxed">{reportData.teacherComment.classTeacherComment}</p>
 
                       <div className="mt-3 flex justify-between items-center border-t border-blue-200 pt-2">

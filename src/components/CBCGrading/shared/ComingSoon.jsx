@@ -30,7 +30,7 @@ const ComingSoon = ({
           </span>
         )}
 
-        <h2 className="text-2xl font-bold text-gray-800 mb-3">{title}</h2>
+        <h2 className="text-2xl font-medium text-gray-800 mb-3">{title}</h2>
 
         <p className="text-gray-500 text-sm leading-relaxed mb-8">{description}</p>
 

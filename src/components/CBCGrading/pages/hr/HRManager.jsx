@@ -15,7 +15,7 @@ const StatCard = ({ title, value, icon: Icon, color, sub }) => (
             <div className={`p-3 rounded-xl bg-${color}-50 text-${color}-600`}><Icon size={24} /></div>
         </div>
         <h3 className="text-gray-500 text-sm font-medium mb-1">{title}</h3>
-        <p className="text-2xl font-bold text-gray-900">{value}</p>
+        <p className="text-2xl font-medium text-gray-900">{value}</p>
         {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
     </div>
 );
@@ -76,7 +76,7 @@ const HRManager = ({ onNavigate }) => {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">HR Management</h1>
+                    <h1 className="text-2xl font-medium text-gray-900">HR Management</h1>
                     <p className="text-gray-500">Manage your school's most valuable asset: your staff.</p>
                 </div>
                 <button
@@ -98,7 +98,7 @@ const HRManager = ({ onNavigate }) => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Quick Access */}
                 <div className="lg:col-span-2 space-y-4">
-                    <h2 className="text-lg font-bold text-gray-900">Quick Access</h2>
+                    <h2 className="text-lg font-medium text-gray-900">Quick Access</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {quickLinks.map((link) => (
                             <button
@@ -110,7 +110,7 @@ const HRManager = ({ onNavigate }) => {
                                     <link.icon size={22} />
                                 </div>
                                 <div className="flex-1">
-                                    <h3 className="font-bold text-gray-900 group-hover:text-brand-teal transition-colors">{link.label}</h3>
+                                    <h3 className="font-medium text-gray-900 group-hover:text-brand-teal transition-colors">{link.label}</h3>
                                     <p className="text-sm text-gray-500 mt-1">{link.desc}</p>
                                 </div>
                                 <ArrowRight size={18} className="text-gray-300 group-hover:text-brand-teal group-hover:translate-x-1 transition-all" />
@@ -122,23 +122,23 @@ const HRManager = ({ onNavigate }) => {
                 {/* Sidebar: Pending Leave */}
                 <div className="space-y-6">
                     <div className="flex items-center justify-between">
-                        <h2 className="text-lg font-bold text-gray-900">Pending Requests</h2>
-                        <button onClick={() => onNavigate('hr-leave')} className="text-brand-teal text-sm font-bold hover:underline">View All</button>
+                        <h2 className="text-lg font-medium text-gray-900">Pending Requests</h2>
+                        <button onClick={() => onNavigate('hr-leave')} className="text-brand-teal text-sm font-medium hover:underline">View All</button>
                     </div>
 
                     <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-50 shadow-sm overflow-hidden">
                         {stats?.recentRequests?.length > 0 ? (
                             stats.recentRequests.map((req) => (
                                 <div key={req.id} className="p-4 hover:bg-gray-50 transition-colors flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center font-bold text-brand-purple text-sm">
+                                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center font-medium text-brand-purple text-sm">
                                         {req.user.firstName[0]}{req.user.lastName[0]}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <h4 className="text-sm font-bold text-gray-900 truncate">{req.user.firstName} {req.user.lastName}</h4>
+                                        <h4 className="text-sm font-medium text-gray-900 truncate">{req.user.firstName} {req.user.lastName}</h4>
                                         <p className="text-xs text-gray-500">{req.leaveType?.name}</p>
                                     </div>
                                     <div className="flex flex-col items-end gap-1">
-                                        <span className="px-2 py-0.5 bg-yellow-50 text-yellow-700 text-[10px] font-bold rounded-full uppercase">Pending</span>
+                                        <span className="px-2 py-0.5 bg-yellow-50 text-yellow-700 text-[10px] font-medium rounded-full uppercase">Pending</span>
                                         <span className="text-[10px] text-gray-400">{new Date(req.createdAt).toLocaleDateString()}</span>
                                     </div>
                                 </div>
@@ -152,7 +152,7 @@ const HRManager = ({ onNavigate }) => {
                     </div>
 
                     <div className="p-5 bg-emerald-50 rounded-2xl border border-emerald-100">
-                        <h3 className="font-bold text-emerald-900 mb-1.5">HR Tip</h3>
+                        <h3 className="font-medium text-emerald-900 mb-1.5">HR Tip</h3>
                         <p className="text-sm text-emerald-700 leading-relaxed">
                             Ensure all staff have their KRA PIN, NSSF and SHIF numbers updated before generating payroll to avoid statutory filing errors.
                         </p>

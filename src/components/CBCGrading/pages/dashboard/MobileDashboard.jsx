@@ -9,11 +9,10 @@ import {
     Users, 
     BookOpen, 
     Wallet, 
-    Activity, 
     ClipboardCheck,
     AlertCircle,
     TrendingUp,
-    Search
+    LayoutGrid
 } from 'lucide-react';
 
 const PulseStatCard = ({ label, value, icon: Icon, color, loading }) => (
@@ -25,9 +24,9 @@ const PulseStatCard = ({ label, value, icon: Icon, color, loading }) => (
             {loading ? (
                 <div className="h-5 w-16 bg-gray-100 animate-pulse rounded-md mb-1" />
             ) : (
-                <p className="text-lg font-black text-gray-900 leading-none">{value}</p>
+                <p className="text-lg font-semibold text-gray-900 leading-none">{value}</p>
             )}
-            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-1">{label}</p>
+            <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-widest mt-1">{label}</p>
         </div>
     </div>
 );
@@ -138,7 +137,7 @@ const MobileDashboard = ({ onNavigate, brandingSettings, user }) => {
                 )}>
                     <section.icon size={28} strokeWidth={2.2} />
                 </div>
-                <span className="text-[11px] font-black text-gray-800 text-center leading-tight">
+                <span className="text-[11px] font-semibold text-gray-800 text-center leading-tight">
                     {section.label}
                 </span>
             </button>
@@ -154,15 +153,15 @@ const MobileDashboard = ({ onNavigate, brandingSettings, user }) => {
                 
                 <div className="relative z-10">
                     <div className="flex items-center gap-2 mb-4">
-                        <span className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[9px] font-black uppercase tracking-[0.2em] border border-white/20">
+                        <span className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[9px] font-semibold uppercase tracking-[0.2em] border border-white/20">
                             {user?.role?.replace('_', ' ')}
                         </span>
                         <div className="h-[2px] w-8 bg-brand-teal rounded-full" />
                     </div>
-                    <h2 className="text-4xl font-black tracking-tighter leading-[0.9] mb-3">
+                    <h2 className="text-4xl font-semibold tracking-tighter leading-[0.9] mb-3">
                         {user?.name?.split(' ')[0] || 'Member'}
                     </h2>
-                    <p className="text-sm font-bold text-white/70 tracking-tight">
+                    <p className="text-sm font-medium text-white/70 tracking-tight">
                         <span className="text-white">{brandingSettings?.schoolName || 'ZAWADI JUNIOR ACADEMY'}</span> Performance Hub
                     </p>
                 </div>
@@ -175,7 +174,7 @@ const MobileDashboard = ({ onNavigate, brandingSettings, user }) => {
                         <div className="p-1.5 bg-amber-50 text-amber-500 rounded-lg">
                             <Zap size={14} fill="currentColor" />
                         </div>
-                        <h3 className="text-[10px] font-black text-gray-900 uppercase tracking-[0.2em]">Daily Pulse</h3>
+                        <h3 className="text-[10px] font-semibold text-gray-900 uppercase tracking-[0.2em]">Daily Pulse</h3>
                     </div>
                     {loadingStats && <div className="h-1 w-12 bg-gray-100 animate-pulse rounded-full" />}
                 </div>
@@ -192,7 +191,7 @@ const MobileDashboard = ({ onNavigate, brandingSettings, user }) => {
                 <section>
                     <div className="flex items-center gap-4 mb-6">
                         <div className="h-px flex-1 bg-gray-100" />
-                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Instructional</h4>
+                        <h4 className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.2em]">Instructional</h4>
                         <div className="h-px flex-1 bg-gray-100" />
                     </div>
                     <div className="grid grid-cols-3 gap-y-10 gap-x-2">
@@ -205,7 +204,7 @@ const MobileDashboard = ({ onNavigate, brandingSettings, user }) => {
                     <section>
                         <div className="flex items-center gap-4 mb-6">
                             <div className="h-px flex-1 bg-gray-100" />
-                            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Management</h4>
+                            <h4 className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.2em]">Management</h4>
                             <div className="h-px flex-1 bg-gray-100" />
                         </div>
                         <div className="grid grid-cols-3 gap-y-10 gap-x-2">
@@ -217,7 +216,7 @@ const MobileDashboard = ({ onNavigate, brandingSettings, user }) => {
                 <section>
                     <div className="flex items-center gap-4 mb-6">
                         <div className="h-px flex-1 bg-gray-100" />
-                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Utilities</h4>
+                        <h4 className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.2em]">Utilities</h4>
                         <div className="h-px flex-1 bg-gray-100" />
                     </div>
                     <div className="grid grid-cols-3 gap-y-10 gap-x-2">
@@ -239,8 +238,8 @@ const MobileDashboard = ({ onNavigate, brandingSettings, user }) => {
                             <LayoutGrid size={22} />
                         </div>
                         <div className="text-left">
-                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1.5">Switch View</p>
-                            <p className="text-sm font-black text-gray-900 tracking-tight">Desktop-Grade Analytics</p>
+                            <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-widest leading-none mb-1.5">Switch View</p>
+                            <p className="text-sm font-semibold text-gray-900 tracking-tight">Desktop-Grade Analytics</p>
                         </div>
                     </div>
                     <ChevronRight size={20} className="text-gray-300 group-hover:text-[var(--brand-purple)] group-hover:translate-x-1 transition-all" />

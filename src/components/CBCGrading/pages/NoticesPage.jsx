@@ -594,7 +594,7 @@ const NoticesPage = ({ initialTab }) => {
             <Bell size={24} className="text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">Notices & Announcements</h1>
+            <h1 className="text-2xl font-medium text-white">Notices & Announcements</h1>
             <p className="text-white/80 text-sm">Manage school communications and announcements</p>
           </div>
         </div>
@@ -616,14 +616,14 @@ const NoticesPage = ({ initialTab }) => {
               className="rounded-none border-b-2 border-transparent data-[state=active]:border-brand-teal data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-4 flex items-center gap-2"
             >
               <Megaphone size={16} />
-              <span className="font-bold">School Notices</span>
+              <span className="font-medium">School Notices</span>
             </TabsTrigger>
             <TabsTrigger
               value="birthdays"
               className="rounded-none border-b-2 border-transparent data-[state=active]:border-brand-purple data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-4 flex items-center gap-2"
             >
               <Gift size={16} />
-              <span className="font-bold">This Week's Birthdays</span>
+              <span className="font-medium">This Week's Birthdays</span>
               {birthdays.length > 0 && (
                 <Badge variant="purple" className="ml-2">
                   {birthdays.length}
@@ -635,7 +635,7 @@ const NoticesPage = ({ initialTab }) => {
               className="rounded-none border-b-2 border-transparent data-[state=active]:border-brand-teal data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-4 flex items-center gap-2"
             >
               <Bell size={16} />
-              <span className="font-bold">System Alerts</span>
+              <span className="font-medium">System Alerts</span>
               {unreadAlertsCount > 0 && (
                 <Badge variant="destructive" className="ml-2">
                   {unreadAlertsCount}
@@ -647,7 +647,7 @@ const NoticesPage = ({ initialTab }) => {
               className="rounded-none border-b-2 border-transparent data-[state=active]:border-brand-purple data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-4 flex items-center gap-2"
             >
               <Rocket size={16} />
-              <span className="font-bold">What's New</span>
+              <span className="font-medium">What's New</span>
             </TabsTrigger>
           </TabsList>
 
@@ -660,7 +660,7 @@ const NoticesPage = ({ initialTab }) => {
                   setFormData({ title: '', content: '', category: 'Academic', priority: 'Medium' });
                   setShowModal(true);
                 }}
-                className="bg-brand-teal hover:bg-brand-teal/90 text-white font-bold gap-2"
+                className="bg-brand-teal hover:bg-brand-teal/90 text-white font-medium gap-2"
               >
                 <Plus size={20} />
                 Create Notice
@@ -692,7 +692,7 @@ const NoticesPage = ({ initialTab }) => {
                           <div className="flex items-start justify-between gap-4">
                             <div className="flex-1">
                               <div className="flex items-center gap-3 mb-3">
-                                <h3 className="text-lg font-bold text-gray-800">{notice.title}</h3>
+                                <h3 className="text-lg font-medium text-gray-800">{notice.title}</h3>
                                 <Badge variant={notice.priority === 'High' ? 'destructive' : 'secondary'}>
                                   {notice.priority}
                                 </Badge>
@@ -788,7 +788,7 @@ const NoticesPage = ({ initialTab }) => {
               <div className="flex items-center justify-center py-20">
                 <div className="text-center">
                   <Bell size={48} className="mx-auto text-gray-300 mb-4" />
-                  <h3 className="text-lg font-bold text-gray-600 mb-2">No Notices Yet</h3>
+                  <h3 className="text-lg font-medium text-gray-600 mb-2">No Notices Yet</h3>
                   <p className="text-gray-400 max-w-sm">Create your first notice to communicate important updates to the school community.</p>
                 </div>
               </div>
@@ -804,7 +804,7 @@ const NoticesPage = ({ initialTab }) => {
                     <Gift size={24} className="text-brand-purple" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-gray-800">Birthday Celebrations</h2>
+                    <h2 className="text-xl font-medium text-gray-800">Birthday Celebrations</h2>
                     <p className="text-gray-500 text-sm">Upcoming birthdays for this week</p>
                   </div>
                 </div>
@@ -813,7 +813,7 @@ const NoticesPage = ({ initialTab }) => {
                 <Card className="w-full md:w-auto">
                   <CardContent className="p-4 flex flex-col gap-3">
                     <div className="flex items-center justify-between gap-8">
-                      <span className="text-sm font-bold text-gray-700">Automation</span>
+                      <span className="text-sm font-medium text-gray-700">Automation</span>
                       <button
                         onClick={() => setBirthdaySettings(prev => ({ ...prev, enabled: !prev.enabled }))}
                         className={`w-10 h-5 rounded-full transition-colors relative ${birthdaySettings.enabled ? 'bg-brand-teal' : 'bg-gray-300'}`}
@@ -827,7 +827,7 @@ const NoticesPage = ({ initialTab }) => {
                       variant="ghost"
                       size="sm"
                       onClick={() => setEditingPhone({ type: 'settings' })}
-                      className="text-brand-teal hover:bg-brand-teal/10 justify-start gap-2 font-bold"
+                      className="text-brand-teal hover:bg-brand-teal/10 justify-start gap-2 font-medium"
                     >
                       <Edit size={14} />
                       Edit Template
@@ -845,14 +845,14 @@ const NoticesPage = ({ initialTab }) => {
                         <Gift size={18} />
                       </div>
                       <div>
-                        <p className="font-bold text-brand-purple">{birthdaysToday.length} Celebrations Today!</p>
+                        <p className="font-medium text-brand-purple">{birthdaysToday.length} Celebrations Today!</p>
                         <p className="text-xs text-brand-purple/70">Send wishes to celebrate with parents</p>
                       </div>
                     </div>
                     <Button
                       onClick={() => handleSendWish(null, true)}
                       disabled={isBulkSending}
-                      className="bg-brand-purple hover:bg-brand-purple/90 text-white font-bold gap-2 whitespace-nowrap"
+                      className="bg-brand-purple hover:bg-brand-purple/90 text-white font-medium gap-2 whitespace-nowrap"
                     >
                       {isBulkSending ? (
                         <Loader size={18} className="animate-spin" />
@@ -910,18 +910,18 @@ const NoticesPage = ({ initialTab }) => {
                             </td>
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 bg-brand-purple/10 rounded-full flex items-center justify-center text-brand-purple font-bold text-xs">
+                                <div className="w-8 h-8 bg-brand-purple/10 rounded-full flex items-center justify-center text-brand-purple font-medium text-xs">
                                   {b.name?.charAt(0) || 'L'}
                                 </div>
                                 <div>
-                                  <p className="font-bold text-gray-800 text-sm">{b.name}</p>
+                                  <p className="font-medium text-gray-800 text-sm">{b.name}</p>
                                   <p className="text-[10px] text-gray-500">{b.admissionNumber}</p>
                                 </div>
                               </div>
                             </td>
                             <td className="px-4 py-3">
                               <div>
-                                <p className="text-xs font-bold text-gray-700">{b.grade?.replace('GRADE_', 'Grade ') || 'N/A'}</p>
+                                <p className="text-xs font-medium text-gray-700">{b.grade?.replace('GRADE_', 'Grade ') || 'N/A'}</p>
                                 <p className="text-[10px] text-gray-500">Stream {b.stream || 'N/A'}</p>
                               </div>
                             </td>
@@ -995,7 +995,7 @@ const NoticesPage = ({ initialTab }) => {
                 <div className="flex items-center justify-center py-20">
                   <div className="text-center">
                     <Gift size={48} className="mx-auto text-gray-300 mb-4" />
-                    <h3 className="text-lg font-bold text-gray-600 mb-2">No Birthdays This Week</h3>
+                    <h3 className="text-lg font-medium text-gray-600 mb-2">No Birthdays This Week</h3>
                     <p className="text-gray-400 max-w-sm">Check back next week for upcoming celebrations</p>
                   </div>
                 </div>
@@ -1006,7 +1006,7 @@ const NoticesPage = ({ initialTab }) => {
           {/* System Alerts Tab */}
           <TabsContent value="alerts" className="flex-1 overflow-auto p-6 space-y-4">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+              <h2 className="text-xl font-medium text-gray-800 flex items-center gap-2">
                 <Bell className="text-brand-teal" size={24} />
                 System & Financial Alerts
               </h2>
@@ -1015,7 +1015,7 @@ const NoticesPage = ({ initialTab }) => {
                   variant="outline"
                   size="sm"
                   onClick={markAllAlertsRead}
-                  className="text-brand-teal border-brand-teal hover:bg-brand-teal/10 font-bold"
+                  className="text-brand-teal border-brand-teal hover:bg-brand-teal/10 font-medium"
                 >
                   <CheckCircle size={16} className="mr-2" />
                   Mark all as read
@@ -1046,7 +1046,7 @@ const NoticesPage = ({ initialTab }) => {
                             ) : (
                               <Badge variant="secondary">{alert.type}</Badge>
                             )}
-                            <h3 className={`font-bold ${alert.isRead ? 'text-gray-600' : 'text-gray-800'}`}>
+                            <h3 className={`font-medium ${alert.isRead ? 'text-gray-600' : 'text-gray-800'}`}>
                               {alert.title}
                             </h3>
                             {!alert.isRead && (
@@ -1059,7 +1059,7 @@ const NoticesPage = ({ initialTab }) => {
                             {alert.link && (
                               <a
                                 href={alert.link}
-                                className="text-brand-teal hover:underline font-bold flex items-center gap-1"
+                                className="text-brand-teal hover:underline font-medium flex items-center gap-1"
                               >
                                 View Details
                                 <Eye size={12} />
@@ -1087,7 +1087,7 @@ const NoticesPage = ({ initialTab }) => {
               <div className="flex items-center justify-center py-20">
                 <div className="text-center">
                   <Bell size={48} className="mx-auto text-gray-300 mb-4" />
-                  <h3 className="text-lg font-bold text-gray-600 mb-2">Internal Peace</h3>
+                  <h3 className="text-lg font-medium text-gray-600 mb-2">Internal Peace</h3>
                   <p className="text-gray-400 max-w-sm">No system alerts or waiver requests at the moment.</p>
                 </div>
               </div>
@@ -1100,7 +1100,7 @@ const NoticesPage = ({ initialTab }) => {
             {/* Header row */}
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                <h2 className="text-xl font-medium text-gray-800 flex items-center gap-2">
                   <Rocket className="text-brand-purple" size={22} />
                   System Updates & Changelog
                 </h2>
@@ -1113,7 +1113,7 @@ const NoticesPage = ({ initialTab }) => {
                     setChangelogForm({ version: '', title: '', description: '', type: 'FEATURE', tags: '', publish: false });
                     setShowChangelogModal(true);
                   }}
-                  className="bg-brand-purple hover:bg-brand-purple/90 text-white font-bold gap-2"
+                  className="bg-brand-purple hover:bg-brand-purple/90 text-white font-medium gap-2"
                 >
                   <Plus size={16} /> New Entry
                 </Button>
@@ -1131,7 +1131,7 @@ const NoticesPage = ({ initialTab }) => {
               <div className="flex items-center justify-center py-20">
                 <div className="text-center">
                   <Rocket size={48} className="mx-auto text-gray-200 mb-4" />
-                  <h3 className="text-lg font-bold text-gray-500 mb-1">No updates yet</h3>
+                  <h3 className="text-lg font-medium text-gray-500 mb-1">No updates yet</h3>
                   <p className="text-sm text-gray-400">
                     {isSystemAdmin ? 'Create your first changelog entry above.' : 'Check back soon for the latest updates.'}
                   </p>
@@ -1158,17 +1158,17 @@ const NoticesPage = ({ initialTab }) => {
                           className="w-full text-left p-5 flex items-start gap-4"
                         >
                           {/* Type pill */}
-                          <div className={`mt-0.5 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shrink-0 ${cfg.color}`}>
+                          <div className={`mt-0.5 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-widest shrink-0 ${cfg.color}`}>
                             <Icon size={11} />
                             {cfg.label}
                           </div>
 
                           <div className="flex-1 min-w-0 text-left">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-black text-gray-800 text-sm">{entry.title}</span>
-                              <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{entry.version}</span>
+                              <span className="font-semibold text-gray-800 text-sm">{entry.title}</span>
+                              <span className="text-[10px] font-medium text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{entry.version}</span>
                               {!entry.isPublished && (
-                                <span className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">DRAFT</span>
+                                <span className="text-[10px] font-medium text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">DRAFT</span>
                               )}
                             </div>
                             <p className="text-xs text-gray-400 mt-0.5">
@@ -1180,7 +1180,7 @@ const NoticesPage = ({ initialTab }) => {
                             {(entry.tags || []).length > 0 && (
                               <div className="flex flex-wrap gap-1 mt-2">
                                 {entry.tags.map(tag => (
-                                  <span key={tag} className="text-[9px] font-bold px-2 py-0.5 bg-brand-purple/10 text-brand-purple rounded-full uppercase tracking-wide">
+                                  <span key={tag} className="text-[9px] font-medium px-2 py-0.5 bg-brand-purple/10 text-brand-purple rounded-full uppercase tracking-wide">
                                     {tag}
                                   </span>
                                 ))}
@@ -1211,7 +1211,7 @@ const NoticesPage = ({ initialTab }) => {
                                       showSuccess('Published! All users notified.');
                                       fetchChangelogs();
                                     }}
-                                    className="bg-brand-purple hover:bg-brand-purple/90 text-white font-bold gap-2 text-xs"
+                                    className="bg-brand-purple hover:bg-brand-purple/90 text-white font-medium gap-2 text-xs"
                                   >
                                     <Send size={13} /> Publish & Notify
                                   </Button>
@@ -1220,7 +1220,7 @@ const NoticesPage = ({ initialTab }) => {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => handleEditChangelog(entry)}
-                                  className="text-indigo-600 hover:bg-indigo-50 font-bold gap-1 text-xs"
+                                  className="text-indigo-600 hover:bg-indigo-50 font-medium gap-1 text-xs"
                                 >
                                   <Edit size={13} /> Edit
                                 </Button>
@@ -1228,7 +1228,7 @@ const NoticesPage = ({ initialTab }) => {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => handleDeleteChangelog(entry.id)}
-                                  className="text-red-500 hover:bg-red-50 font-bold gap-1 text-xs"
+                                  className="text-red-500 hover:bg-red-50 font-medium gap-1 text-xs"
                                 >
                                   <Trash2 size={13} /> Delete
                                 </Button>
@@ -1259,7 +1259,7 @@ const NoticesPage = ({ initialTab }) => {
       }}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+            <DialogTitle className="text-xl font-medium flex items-center gap-2">
               <Rocket size={20} className="text-brand-purple" />
               {editingChangelogId ? 'Edit Changelog Entry' : 'New Changelog Entry'}
             </DialogTitle>
@@ -1273,7 +1273,7 @@ const NoticesPage = ({ initialTab }) => {
           <div className="space-y-4 py-2">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="font-bold">Version <span className="text-red-500">*</span></Label>
+                <Label className="font-medium">Version <span className="text-red-500">*</span></Label>
                 <Input
                   placeholder="e.g. v2.4.1"
                   value={changelogForm.version}
@@ -1281,7 +1281,7 @@ const NoticesPage = ({ initialTab }) => {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="font-bold">Type</Label>
+                <Label className="font-medium">Type</Label>
                 <select
                   value={changelogForm.type}
                   onChange={e => setChangelogForm(f => ({ ...f, type: e.target.value }))}
@@ -1296,7 +1296,7 @@ const NoticesPage = ({ initialTab }) => {
             </div>
 
             <div className="space-y-2">
-              <Label className="font-bold">Title <span className="text-red-500">*</span></Label>
+              <Label className="font-medium">Title <span className="text-red-500">*</span></Label>
               <Input
                 placeholder="Short summary of this update..."
                 value={changelogForm.title}
@@ -1305,7 +1305,7 @@ const NoticesPage = ({ initialTab }) => {
             </div>
 
             <div className="space-y-2">
-              <Label className="font-bold">Description <span className="text-red-500">*</span></Label>
+              <Label className="font-medium">Description <span className="text-red-500">*</span></Label>
               <textarea
                 rows={5}
                 placeholder="Describe what changed, was fixed, or improved. Markdown-friendly."
@@ -1316,7 +1316,7 @@ const NoticesPage = ({ initialTab }) => {
             </div>
 
             <div className="space-y-2">
-              <Label className="font-bold flex items-center gap-1"><Tag size={14} /> Tags <span className="text-gray-400 font-normal text-xs">(comma-separated)</span></Label>
+              <Label className="font-medium flex items-center gap-1"><Tag size={14} /> Tags <span className="text-gray-400 font-normal text-xs">(comma-separated)</span></Label>
               <Input
                 placeholder="e.g. Fees, Reports, CBC Grading"
                 value={changelogForm.tags}
@@ -1326,7 +1326,7 @@ const NoticesPage = ({ initialTab }) => {
 
             <div className="flex items-center justify-between p-4 bg-brand-purple/5 border border-brand-purple/20 rounded-lg">
               <div>
-                <p className="font-bold text-gray-800 text-sm">Publish & Notify Users</p>
+                <p className="font-medium text-gray-800 text-sm">Publish & Notify Users</p>
                 <p className="text-xs text-gray-500">Sends an in-app + push notification to every active user instantly</p>
               </div>
               <button
@@ -1346,7 +1346,7 @@ const NoticesPage = ({ initialTab }) => {
             <Button variant="outline" onClick={() => setShowChangelogModal(false)}>Cancel</Button>
             <Button
               onClick={handleSaveChangelog}
-              className="bg-brand-purple hover:bg-brand-purple/90 text-white font-bold gap-2"
+              className="bg-brand-purple hover:bg-brand-purple/90 text-white font-medium gap-2"
             >
               <Save size={16} />
               {editingChangelogId ? 'Update' : changelogForm.publish ? 'Publish & Notify' : 'Save Draft'}
@@ -1359,7 +1359,7 @@ const NoticesPage = ({ initialTab }) => {
       <Dialog open={editingPhone?.type === 'settings'} onOpenChange={(open) => !open && setEditingPhone(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader className="bg-pink-600 text-white px-6 py-4 -m-6 mb-4 rounded-t-lg">
-            <DialogTitle className="text-lg font-bold flex items-center gap-2 text-white">
+            <DialogTitle className="text-lg font-medium flex items-center gap-2 text-white">
               <Gift size={20} />
               Birthday Settings
             </DialogTitle>
@@ -1368,7 +1368,7 @@ const NoticesPage = ({ initialTab }) => {
           <div className="space-y-6 px-6 py-4">
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
               <div>
-                <p className="font-bold text-gray-800">Automated Wishes</p>
+                <p className="font-medium text-gray-800">Automated Wishes</p>
                 <p className="text-xs text-gray-500">Send SMS automatically on birthdays</p>
               </div>
               <button
@@ -1381,12 +1381,12 @@ const NoticesPage = ({ initialTab }) => {
 
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <Label className="font-bold">Message Template</Label>
+                <Label className="font-medium">Message Template</Label>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setBirthdaySettings(prev => ({ ...prev, template: defaultBirthdayTemplate }))}
-                  className="text-pink-600 hover:bg-pink-50 text-xs font-bold"
+                  className="text-pink-600 hover:bg-pink-50 text-xs font-medium"
                 >
                   Reset
                 </Button>
@@ -1398,7 +1398,7 @@ const NoticesPage = ({ initialTab }) => {
                 placeholder="Enter message template..."
               />
               <div className="flex flex-wrap gap-2 text-[10px]">
-                <span className="text-gray-500 font-bold uppercase">Placeholders:</span>
+                <span className="text-gray-500 font-medium uppercase">Placeholders:</span>
                 {['{learnerName}', '{firstName}', '{lastName}', '{schoolName}', '{grade}', '{age}', '{ageOrdinal}', '{birthdayDate}'].map(p => (
                   <Button
                     key={p}
@@ -1427,7 +1427,7 @@ const NoticesPage = ({ initialTab }) => {
                 setEditingPhone(null);
               }}
               disabled={savingSettings}
-              className="bg-pink-600 hover:bg-pink-700 text-white font-bold gap-2"
+              className="bg-pink-600 hover:bg-pink-700 text-white font-medium gap-2"
             >
               {savingSettings ? <Loader size={18} className="animate-spin" /> : <Save size={18} />}
               Save
@@ -1440,7 +1440,7 @@ const NoticesPage = ({ initialTab }) => {
       <Dialog open={showModal} onOpenChange={setShowModal}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+            <DialogTitle className="text-xl font-medium flex items-center gap-2">
               <Plus size={20} className="text-brand-teal" />
               {editingNoticeId ? 'Edit Notice' : 'Create New Notice'}
             </DialogTitle>
@@ -1451,7 +1451,7 @@ const NoticesPage = ({ initialTab }) => {
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="title" className="font-bold">Title</Label>
+              <Label htmlFor="title" className="font-medium">Title</Label>
               <Input
                 id="title"
                 value={formData.title}
@@ -1461,7 +1461,7 @@ const NoticesPage = ({ initialTab }) => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="content" className="font-bold">Content</Label>
+              <Label htmlFor="content" className="font-medium">Content</Label>
               <textarea
                 id="content"
                 value={formData.content}
@@ -1474,7 +1474,7 @@ const NoticesPage = ({ initialTab }) => {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="category" className="font-bold">Category</Label>
+                <Label htmlFor="category" className="font-medium">Category</Label>
                 <select
                   id="category"
                   value={formData.category}
@@ -1490,7 +1490,7 @@ const NoticesPage = ({ initialTab }) => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="priority" className="font-bold">Priority</Label>
+                <Label htmlFor="priority" className="font-medium">Priority</Label>
                 <select
                   id="priority"
                   value={formData.priority}
@@ -1513,7 +1513,7 @@ const NoticesPage = ({ initialTab }) => {
             </Button>
             <Button
               onClick={handleSave}
-              className="bg-brand-teal hover:bg-brand-teal/90 text-white font-bold gap-2"
+              className="bg-brand-teal hover:bg-brand-teal/90 text-white font-medium gap-2"
             >
               <Save size={18} />
               {editingNoticeId ? 'Update Notice' : 'Publish Notice'}
@@ -1526,7 +1526,7 @@ const NoticesPage = ({ initialTab }) => {
       <Dialog open={!!selectedNotice} onOpenChange={(open) => !open && setSelectedNotice(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold">{selectedNotice?.title}</DialogTitle>
+            <DialogTitle className="text-xl font-medium">{selectedNotice?.title}</DialogTitle>
             <DialogDescription>
               {selectedNotice?.category} • {selectedNotice?.priority} priority
             </DialogDescription>
@@ -1547,7 +1547,7 @@ const NoticesPage = ({ initialTab }) => {
       <Dialog open={!!sharingNotice} onOpenChange={(open) => !open && setSharingNotice(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold">Share Notice</DialogTitle>
+            <DialogTitle className="text-lg font-medium">Share Notice</DialogTitle>
             <DialogDescription>
               Choose how you want to share this notice.
             </DialogDescription>
@@ -1555,14 +1555,14 @@ const NoticesPage = ({ initialTab }) => {
           <div className="grid grid-cols-2 gap-3 py-2">
             <Button
               onClick={() => handleShareWhatsApp(sharingNotice)}
-              className="bg-green-600 hover:bg-green-700 text-white font-bold gap-2"
+              className="bg-green-600 hover:bg-green-700 text-white font-medium gap-2"
             >
               <MessageCircle size={16} />
               WhatsApp
             </Button>
             <Button
               onClick={() => handleShareSms(sharingNotice)}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold gap-2"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-medium gap-2"
             >
               <Send size={16} />
               SMS

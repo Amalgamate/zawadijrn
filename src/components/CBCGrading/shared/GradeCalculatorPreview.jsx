@@ -66,7 +66,7 @@ const GradeCalculatorPreview = ({ ranges, totalMarks = 100 }) => {
       <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
         <div className="flex items-center gap-2 mb-4">
           <Calculator className="text-blue-600" size={24} />
-          <h3 className="text-lg font-bold text-gray-900">Grade Calculator</h3>
+          <h3 className="text-lg font-medium text-gray-900">Grade Calculator</h3>
         </div>
         
         <div className="bg-white rounded-lg p-4 shadow-sm">
@@ -90,13 +90,13 @@ const GradeCalculatorPreview = ({ ranges, totalMarks = 100 }) => {
                   <p className="text-sm font-semibold text-gray-600">Result</p>
                   <div className="flex items-center gap-3 mt-1">
                     <div 
-                      className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg"
+                      className="w-12 h-12 rounded-full flex items-center justify-center text-white font-medium text-xl shadow-lg"
                       style={{ backgroundColor: currentGrade.color || '#6b7280' }}
                     >
                       {currentGrade.label?.replace('Level ', '')}
                     </div>
                     <div>
-                      <p className="text-xl font-bold text-gray-900">{currentGrade.label}</p>
+                      <p className="text-xl font-medium text-gray-900">{currentGrade.label}</p>
                       <p className="text-sm text-gray-600">
                         {currentGrade.percentage}% • Score: {currentGrade.points}
                       </p>
@@ -120,7 +120,7 @@ const GradeCalculatorPreview = ({ ranges, totalMarks = 100 }) => {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <TrendingUp className="text-gray-600" size={20} />
-            <h3 className="text-lg font-bold text-gray-900">Grade Distribution</h3>
+            <h3 className="text-lg font-medium text-gray-900">Grade Distribution</h3>
           </div>
           <button
             onClick={() => setShowExamples(!showExamples)}
@@ -140,14 +140,14 @@ const GradeCalculatorPreview = ({ ranges, totalMarks = 100 }) => {
               <div key={index} className="space-y-2">
                 <div className="flex items-center gap-3">
                   <div 
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shadow-md flex-shrink-0"
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-white font-medium shadow-md flex-shrink-0"
                     style={{ backgroundColor: range.color || '#6b7280' }}
                   >
                     {range.label?.replace('Level ', '')}
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="font-bold text-gray-900">{range.label}</span>
+                      <span className="font-medium text-gray-900">{range.label}</span>
                       <span className="text-sm text-gray-600">
                         {range.minPercentage}% - {range.maxPercentage}% 
                         <span className="text-gray-400 ml-2">
@@ -171,9 +171,9 @@ const GradeCalculatorPreview = ({ ranges, totalMarks = 100 }) => {
                   <div className="ml-13 bg-gray-50 border-l-4 rounded-r-lg p-2 pl-3" style={{ borderColor: range.color }}>
                     <p className="text-xs text-gray-600">
                       <span className="font-semibold">Example:</span> A mark of{' '}
-                      <span className="font-bold">{exampleForRange.mark}/{totalMarks}</span>{' '}
+                      <span className="font-medium">{exampleForRange.mark}/{totalMarks}</span>{' '}
                       ({exampleForRange.grade?.percentage}%) would receive{' '}
-                      <span className="font-bold">{range.label}</span>
+                      <span className="font-medium">{range.label}</span>
                     </p>
                   </div>
                 )}
@@ -192,7 +192,7 @@ const GradeCalculatorPreview = ({ ranges, totalMarks = 100 }) => {
               return (
                 <div key={index} className="flex items-center gap-2">
                   <div 
-                    className="w-6 h-6 rounded flex items-center justify-center text-white text-xs font-bold"
+                    className="w-6 h-6 rounded flex items-center justify-center text-white text-xs font-medium"
                     style={{ backgroundColor: range.color || '#6b7280' }}
                   >
                     {range.points}

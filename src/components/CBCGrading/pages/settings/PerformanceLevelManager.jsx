@@ -290,7 +290,7 @@ const PerformanceLevelManager = () => {
               <Plus className="rotate-45" size={18} />
             </Button>
             <div>
-              <h3 className="text-xl font-bold">Configure Scale Group</h3>
+              <h3 className="text-xl font-medium">Configure Scale Group</h3>
               <p className="text-sm text-gray-500">Define standardized performance levels</p>
             </div>
           </div>
@@ -307,7 +307,7 @@ const PerformanceLevelManager = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
            <div className="space-y-6">
               <section className="space-y-3">
-                <Label className="font-bold text-gray-700">1. Scale Name</Label>
+                <Label className="font-medium text-gray-700">1. Scale Name</Label>
                 <Input 
                   placeholder="e.g., Standard 8-Point Rubric" 
                   value={scaleName} 
@@ -318,7 +318,7 @@ const PerformanceLevelManager = () => {
 
               <section className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <Label className="font-bold text-gray-700">2. Target Grades</Label>
+                  <Label className="font-medium text-gray-700">2. Target Grades</Label>
                   <Button variant="ghost" size="sm" onClick={handleSelectAllGrades} className="text-xs text-indigo-600">
                     {selectedGrades.length === GRADES_FLAT.length ? 'Deselect All' : 'Select All'}
                   </Button>
@@ -326,7 +326,7 @@ const PerformanceLevelManager = () => {
                 <div className="bg-gray-50 p-4 rounded-xl space-y-4">
                    {GRADE_GROUPS.map(group => (
                      <div key={group.id} className="space-y-2">
-                        <div className="flex items-center justify-between text-[10px] uppercase font-bold text-gray-400">
+                        <div className="flex items-center justify-between text-[10px] uppercase font-medium text-gray-400">
                           <span>{group.name}</span>
                           <button onClick={() => handleSelectGroup(group.grades)} className="text-indigo-500 hover:underline">Group</button>
                         </div>
@@ -335,7 +335,7 @@ const PerformanceLevelManager = () => {
                             <button
                               key={grade}
                               onClick={() => handleGradeToggle(grade)}
-                              className={`px-3 py-1.5 rounded-lg text-xs font-bold border-2 transition-all ${
+                              className={`px-3 py-1.5 rounded-lg text-xs font-medium border-2 transition-all ${
                                 selectedGrades.includes(grade) ? 'bg-indigo-600 border-indigo-600 text-white shadow-md' : 'bg-white border-gray-100 text-gray-400'
                               }`}
                             >
@@ -350,7 +350,7 @@ const PerformanceLevelManager = () => {
            </div>
 
            <div className="space-y-6">
-              <Label className="font-bold text-gray-700">3. Level Calibration</Label>
+              <Label className="font-medium text-gray-700">3. Level Calibration</Label>
               <div className="border rounded-2xl overflow-hidden shadow-sm bg-white">
                 <table className="w-full text-left">
                   <thead className="border-b border-[color:var(--table-border)] text-[10px] uppercase">
@@ -366,10 +366,10 @@ const PerformanceLevelManager = () => {
                         <td className="p-2"><Input type="number" value={range.mark} onChange={(e) => {
                           const n = [...ranges]; n[idx].mark = e.target.value; setRanges(n);
                         }} className="h-8 text-center text-xs w-16" /></td>
-                        <td className="p-2 text-center text-xs font-black text-indigo-600">{range.score}</td>
+                        <td className="p-2 text-center text-xs font-semibold text-indigo-600">{range.score}</td>
                         <td className="p-2"><Input value={range.title} onChange={(e) => {
                           const n = [...ranges]; n[idx].title = e.target.value; setRanges(n);
-                        }} className="h-8 text-xs font-bold" /></td>
+                        }} className="h-8 text-xs font-medium" /></td>
                       </tr>
                     ))}
                   </tbody>
@@ -389,7 +389,7 @@ const PerformanceLevelManager = () => {
     <div className="space-y-6 animate-in fade-in duration-300">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h3 className="text-xl font-bold">Standardized Performance Levels</h3>
+          <h3 className="text-xl font-medium">Standardized Performance Levels</h3>
           <p className="text-sm text-gray-500">Manage the grading protocols for all learning areas.</p>
         </div>
         <div className="flex gap-3">
@@ -422,7 +422,7 @@ const PerformanceLevelManager = () => {
       {loading ? (
         <div className="py-20 flex flex-col items-center">
           <Loader className="animate-spin text-indigo-600 mb-4" size={32} />
-          <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Loading Scale Systems...</p>
+          <p className="text-sm font-medium text-gray-400 uppercase tracking-widest">Loading Scale Systems...</p>
         </div>
       ) : Object.keys(groupedData).length === 0 ? (
         <EmptyState
@@ -435,7 +435,7 @@ const PerformanceLevelManager = () => {
         <div className="bg-white border rounded-2xl overflow-hidden shadow-sm">
           <table className="w-full text-left">
             <thead>
-              <tr className="bg-gray-50 border-b text-[10px] uppercase text-gray-400 font-black tracking-widest">
+              <tr className="bg-gray-50 border-b text-[10px] uppercase text-gray-400 font-semibold tracking-widest">
                 <th className="px-6 py-4">Grade / Level</th>
                 <th className="px-6 py-4 text-right">Actions</th>
               </tr>
@@ -454,7 +454,7 @@ const PerformanceLevelManager = () => {
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <GraduationCap className={isExpanded ? 'text-indigo-600' : 'text-gray-400'} size={18} />
-                            <span className="font-bold text-gray-900">{formatGradeDisplay(grade)}</span>
+                            <span className="font-medium text-gray-900">{formatGradeDisplay(grade)}</span>
                             <Badge variant="outline" className="text-[10px] bg-white">{Object.keys(groups).length} Logics</Badge>
                           </div>
                         </td>

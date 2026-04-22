@@ -40,7 +40,7 @@ const IssuedItemsPopover = ({ alloc, onClose }) => {
         onClick={e => e.stopPropagation()}
       >
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h3 className="font-black text-gray-900 text-base">Issued Items</h3>
+          <h3 className="font-semibold text-gray-900 text-base">Issued Items</h3>
           <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg">
             <X size={18} className="text-gray-500" />
           </button>
@@ -62,11 +62,11 @@ const IssuedItemsPopover = ({ alloc, onClose }) => {
                   </div>
                   <div className="flex items-center gap-3 text-xs text-gray-500 font-medium">
                     {d.size && (
-                      <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded font-bold">
+                      <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded font-medium">
                         Size {d.size}
                       </span>
                     )}
-                    <span className="bg-brand-teal/10 text-brand-teal px-2 py-0.5 rounded font-bold">
+                    <span className="bg-brand-teal/10 text-brand-teal px-2 py-0.5 rounded font-medium">
                       Qty {d.qty || 1}
                     </span>
                   </div>
@@ -148,7 +148,7 @@ const AllocationModal = ({ learner, onClose, onSave }) => {
         {/* Header */}
         <div className="bg-brand-purple/10 px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">
           <div>
-            <h2 className="text-lg font-black text-gray-900">Uniform Allocation</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Uniform Allocation</h2>
             <p className="text-sm text-gray-500 mt-0.5">
               {learner.firstName} {learner.lastName}
               &nbsp;&bull;&nbsp;{learner.admNo || learner.admissionNumber}
@@ -163,7 +163,7 @@ const AllocationModal = ({ learner, onClose, onSave }) => {
         {/* Sub-header: date + select-all + counter */}
         <div className="px-6 pt-4 pb-2 flex items-center gap-4 shrink-0 border-b border-gray-100">
           <div>
-            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Issue Date</label>
+            <label className="block text-[10px] font-medium text-gray-500 uppercase mb-1">Issue Date</label>
             <input
               type="date"
               value={form.issueDate}
@@ -181,12 +181,12 @@ const AllocationModal = ({ learner, onClose, onSave }) => {
                 onChange={handleSelectAll}
                 className="w-4 h-4 rounded text-brand-teal border-gray-300 focus:ring-brand-teal"
               />
-              <span className="text-xs font-bold text-gray-600">Select All</span>
+              <span className="text-xs font-medium text-gray-600">Select All</span>
             </label>
 
             <div className="text-right">
-              <p className="text-[10px] font-bold text-gray-400 uppercase">Selected</p>
-              <p className="text-xl font-black text-brand-teal leading-none">
+              <p className="text-[10px] font-medium text-gray-400 uppercase">Selected</p>
+              <p className="text-xl font-semibold text-brand-teal leading-none">
                 {selectedCount}
                 <span className="text-sm font-medium text-gray-400 ml-1">/ {UNIFORM_ITEMS.length}</span>
               </p>
@@ -218,7 +218,7 @@ const AllocationModal = ({ learner, onClose, onSave }) => {
                 {/* Icon + label */}
                 <span className="text-2xl shrink-0">{item.icon}</span>
                 <div className="flex-1 min-w-0">
-                  <p className={`font-bold text-sm ${data.selected ? 'text-brand-teal' : 'text-gray-700'}`}>
+                  <p className={`font-medium text-sm ${data.selected ? 'text-brand-teal' : 'text-gray-700'}`}>
                     {item.label}
                   </p>
                   {!data.selected && (
@@ -233,7 +233,7 @@ const AllocationModal = ({ learner, onClose, onSave }) => {
                     onClick={e => e.preventDefault()} // prevent label re-toggle when clicking inputs
                   >
                     <div>
-                      <p className="text-[10px] font-bold text-gray-500 uppercase mb-1">Size</p>
+                      <p className="text-[10px] font-medium text-gray-500 uppercase mb-1">Size</p>
                       <select
                         value={data.size}
                         onChange={e => setField(item.key, 'size', e.target.value)}
@@ -244,7 +244,7 @@ const AllocationModal = ({ learner, onClose, onSave }) => {
                       </select>
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold text-gray-500 uppercase mb-1">Qty</p>
+                      <p className="text-[10px] font-medium text-gray-500 uppercase mb-1">Qty</p>
                       <input
                         type="number"
                         min={1}
@@ -262,7 +262,7 @@ const AllocationModal = ({ learner, onClose, onSave }) => {
 
           {/* Notes */}
           <div className="pt-2">
-            <label className="block text-xs font-bold text-gray-600 uppercase mb-1">Notes</label>
+            <label className="block text-xs font-medium text-gray-600 uppercase mb-1">Notes</label>
             <textarea
               value={form.notes}
               onChange={e => setForm(prev => ({ ...prev, notes: e.target.value }))}
@@ -277,14 +277,14 @@ const AllocationModal = ({ learner, onClose, onSave }) => {
         <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex gap-3 justify-end shrink-0">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-bold text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100 transition"
+            className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100 transition"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={saving || selectedCount === 0}
-            className="flex items-center gap-2 px-5 py-2 bg-brand-teal text-white text-sm font-bold rounded-lg hover:bg-brand-teal/90 disabled:opacity-40 transition shadow-sm"
+            className="flex items-center gap-2 px-5 py-2 bg-brand-teal text-white text-sm font-medium rounded-lg hover:bg-brand-teal/90 disabled:opacity-40 transition shadow-sm"
           >
             {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
             Save Allocation
@@ -493,12 +493,12 @@ const UniformAllocationPage = () => {
           {/* Stats + export */}
           <div className="flex items-center gap-3">
             <div className="hidden md:block text-right border-r pr-4 border-gray-200">
-              <p className="text-[10px] font-bold text-gray-400 uppercase">Total</p>
-              <p className="text-xl font-black text-gray-800">{pagination.total}</p>
+              <p className="text-[10px] font-medium text-gray-400 uppercase">Total</p>
+              <p className="text-xl font-semibold text-gray-800">{pagination.total}</p>
             </div>
             <div className="hidden md:block text-right border-r pr-4 border-gray-200">
-              <p className="text-[10px] font-bold text-gray-400 uppercase">Allocated</p>
-              <p className="text-xl font-black text-brand-teal">{totalAllocated}</p>
+              <p className="text-[10px] font-medium text-gray-400 uppercase">Allocated</p>
+              <p className="text-xl font-semibold text-brand-teal">{totalAllocated}</p>
             </div>
             <button
               onClick={handleExportCSV}
@@ -556,7 +556,7 @@ const UniformAllocationPage = () => {
                             {learner.avatar && (learner.avatar.startsWith('http') || learner.avatar.startsWith('/') || learner.avatar.startsWith('data:image')) ? (
                               <img src={learner.avatar} alt="" className="w-8 h-8 rounded-full object-cover border border-gray-200" />
                             ) : (
-                              <div className="w-8 h-8 rounded-full bg-brand-purple/10 text-brand-purple flex justify-center items-center font-bold text-xs border border-brand-purple/20 flex-shrink-0">
+                              <div className="w-8 h-8 rounded-full bg-brand-purple/10 text-brand-purple flex justify-center items-center font-medium text-xs border border-brand-purple/20 flex-shrink-0">
                                 {`${learner.firstName?.charAt(0) || ''}${learner.lastName?.charAt(0) || ''}`}
                               </div>
                             )}
@@ -576,7 +576,7 @@ const UniformAllocationPage = () => {
 
                         {/* Status badge */}
                         <td className="px-4 py-3">
-                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border ${STATUS_CHIP[status]}`}>
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${STATUS_CHIP[status]}`}>
                             {STATUS_TEXT[status]}
                           </span>
                         </td>
@@ -590,7 +590,7 @@ const UniformAllocationPage = () => {
                               {issuedItems.map(item => (
                                 <span
                                   key={item.key}
-                                  className="inline-flex items-center gap-1 px-2 py-0.5 bg-brand-teal/10 text-brand-teal text-[11px] font-bold rounded-full"
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 bg-brand-teal/10 text-brand-teal text-[11px] font-medium rounded-full"
                                   title={`${item.label} — Size ${alloc[item.key]?.size || '?'}, Qty ${alloc[item.key]?.qty || 1}`}
                                 >
                                   <span>{item.icon}</span>
@@ -613,7 +613,7 @@ const UniformAllocationPage = () => {
                             {issuedItems.length > 0 && (
                               <button
                                 onClick={() => setViewTarget({ learner, alloc })}
-                                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-100 transition"
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-100 transition"
                                 title="View issued items"
                               >
                                 <Eye size={13} /> View
@@ -621,7 +621,7 @@ const UniformAllocationPage = () => {
                             )}
                             <button
                               onClick={() => setEditTarget({ ...learner, uniformAllocation: alloc })}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold text-white bg-brand-teal rounded-lg hover:bg-brand-teal/90 transition shadow-sm"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-white bg-brand-teal rounded-lg hover:bg-brand-teal/90 transition shadow-sm"
                             >
                               <Shirt size={13} />
                               {count > 0 ? 'Update' : 'Allocate'}
@@ -646,7 +646,7 @@ const UniformAllocationPage = () => {
                   <button
                     onClick={() => fetchLearners({ page: pagination.page - 1 })}
                     disabled={pagination.page === 1}
-                    className="flex items-center gap-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-bold text-brand-purple disabled:opacity-40 hover:bg-gray-100 transition"
+                    className="flex items-center gap-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-medium text-brand-purple disabled:opacity-40 hover:bg-gray-100 transition"
                   >
                     <ChevronLeft size={15} /> Prev
                   </button>
@@ -656,7 +656,7 @@ const UniformAllocationPage = () => {
                   <button
                     onClick={() => fetchLearners({ page: pagination.page + 1 })}
                     disabled={pagination.page === pagination.pages}
-                    className="flex items-center gap-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-bold text-brand-purple disabled:opacity-40 hover:bg-gray-100 transition"
+                    className="flex items-center gap-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-medium text-brand-purple disabled:opacity-40 hover:bg-gray-100 transition"
                   >
                     Next <ChevronRight size={15} />
                   </button>

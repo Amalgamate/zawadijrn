@@ -45,7 +45,7 @@ const StatCard = ({ icon: Icon, label, value, sub, color = 'violet' }) => {
       </div>
       <div className="min-w-0">
         <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{label}</p>
-        <p className={`text-2xl font-bold mt-0.5 ${text[color]}`}>{value ?? '—'}</p>
+        <p className={`text-2xl font-medium mt-0.5 ${text[color]}`}>{value ?? '—'}</p>
         {sub && <p className="text-xs text-slate-400 mt-0.5">{sub}</p>}
       </div>
     </div>
@@ -77,17 +77,17 @@ const PopularBooksTab = () => {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-slate-100 bg-slate-50/60">
-            <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">#</th>
-            <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Title</th>
-            <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide hidden md:table-cell">Author</th>
-            <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide hidden md:table-cell">Category</th>
-            <th className="text-right px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Total Loans</th>
+            <th className="text-left px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">#</th>
+            <th className="text-left px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Title</th>
+            <th className="text-left px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide hidden md:table-cell">Author</th>
+            <th className="text-left px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide hidden md:table-cell">Category</th>
+            <th className="text-right px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Total Loans</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-50">
           {books.map((b, i) => (
             <tr key={b.id || i} className="hover:bg-slate-50/50 transition-colors">
-              <td className="px-4 py-3 text-slate-400 font-bold text-sm w-10">{i + 1}</td>
+              <td className="px-4 py-3 text-slate-400 font-medium text-sm w-10">{i + 1}</td>
               <td className="px-4 py-3">
                 <p className="font-semibold text-slate-900">{b.title}</p>
               </td>
@@ -100,7 +100,7 @@ const PopularBooksTab = () => {
                 )}
               </td>
               <td className="px-4 py-3 text-right">
-                <span className="font-bold text-violet-700">{b.totalLoans ?? b._count?.loans ?? '—'}</span>
+                <span className="font-medium text-violet-700">{b.totalLoans ?? b._count?.loans ?? '—'}</span>
               </td>
             </tr>
           ))}
@@ -140,10 +140,10 @@ const OverdueLoansTab = () => {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-slate-100 bg-slate-50/60">
-            <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Book / Copy</th>
-            <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide hidden md:table-cell">Member</th>
-            <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Due Date</th>
-            <th className="text-right px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Days Overdue</th>
+            <th className="text-left px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Book / Copy</th>
+            <th className="text-left px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide hidden md:table-cell">Member</th>
+            <th className="text-left px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Due Date</th>
+            <th className="text-right px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Days Overdue</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-50">
@@ -159,7 +159,7 @@ const OverdueLoansTab = () => {
               </td>
               <td className="px-4 py-3 text-red-500 font-semibold">{fmt(loan.dueDate)}</td>
               <td className="px-4 py-3 text-right">
-                <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full bg-red-100 text-red-700 text-xs font-bold">
+                <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full bg-red-100 text-red-700 text-xs font-medium">
                   {daysOverdue(loan.dueDate)}d
                 </span>
               </td>
@@ -203,7 +203,7 @@ const SummaryTab = ({ stats }) => {
           {rows.map(row => (
             <tr key={row.label} className="hover:bg-slate-50/50 transition-colors">
               <td className="px-5 py-3.5 text-slate-600">{row.label}</td>
-              <td className="px-5 py-3.5 text-right font-bold text-slate-900">{row.value}</td>
+              <td className="px-5 py-3.5 text-right font-medium text-slate-900">{row.value}</td>
             </tr>
           ))}
         </tbody>
@@ -244,7 +244,7 @@ const InventoryReports = () => {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Inventory Reports</h1>
+          <h1 className="text-2xl font-medium text-slate-900">Inventory Reports</h1>
           <p className="text-sm text-slate-500 mt-0.5">Library analytics and resource overview</p>
         </div>
         <button onClick={() => setRefreshKey(k => k + 1)} disabled={loading}

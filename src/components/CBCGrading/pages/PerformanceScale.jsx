@@ -23,7 +23,7 @@ const PerformanceScale = () => {
                     <div className="mx-auto w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center mb-4 transition-transform hover:scale-110">
                         <Gauge className="text-indigo-600" size={32} />
                     </div>
-                    <CardTitle className="text-2xl font-bold text-slate-900">Module Relocated</CardTitle>
+                    <CardTitle className="text-2xl font-medium text-slate-900">Module Relocated</CardTitle>
                     <CardDescription className="text-slate-500">
                         Performance Scale management has been moved to Academic Settings.
                     </CardDescription>
@@ -31,7 +31,7 @@ const PerformanceScale = () => {
                 <CardContent className="text-center pt-4 space-y-6">
                     <p className="text-sm text-slate-600 leading-relaxed">
                         To centralize administrative controls, all grading rubrics and performance levels are now managed under the 
-                        <span className="font-bold text-slate-900"> Academic Settings</span> tab.
+                        <span className="font-medium text-slate-900"> Academic Settings</span> tab.
                     </p>
                     
                     <Button 

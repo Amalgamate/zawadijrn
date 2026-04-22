@@ -325,7 +325,7 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
       <div className="fixed inset-0 flex items-center justify-center bg-white z-[100]">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-[var(--brand-purple)]/20 border-t-[var(--brand-purple)] rounded-full animate-spin" />
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Initializing Assessment...</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-400">Initializing Assessment...</p>
         </div>
       </div>
     );
@@ -344,8 +344,8 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
               <ArrowLeft size={22} className="text-gray-900" />
             </button>
             <div>
-              <h1 className="text-xl font-black text-gray-900 tracking-tight leading-none">Record Marks</h1>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Assessment Setup</p>
+              <h1 className="text-xl font-semibold text-gray-900 tracking-tight leading-none">Record Marks</h1>
+              <p className="text-[10px] font-medium text-gray-400 uppercase tracking-widest mt-1">Assessment Setup</p>
             </div>
           </div>
         </div>
@@ -353,14 +353,14 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
         <div className="flex-1 overflow-y-auto p-5 space-y-6 pb-40">
            {/* Term Select */}
           <div className="space-y-4">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Period & Timeline</label>
+            <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.2em] ml-1">Period & Timeline</label>
             <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm space-y-5">
                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-700 ml-1">Academic {labels.term}</label>
+                  <label className="text-xs font-medium text-gray-700 ml-1">Academic {labels.term}</label>
                   <select
                     value={setup.selectedTerm}
                     onChange={(e) => setup.setSelectedTerm(e.target.value)}
-                    className="w-full px-4 py-4 bg-gray-50 border-transparent rounded-2xl text-base font-extrabold focus:bg-white focus:border-[var(--brand-purple)] transition-all outline-none"
+                    className="w-full px-4 py-4 bg-gray-50 border-transparent rounded-2xl text-base font-semibold focus:bg-white focus:border-[var(--brand-purple)] transition-all outline-none"
                   >
                     {availableTerms.map(t => (
                       <option key={t} value={t}>{t}</option>
@@ -372,14 +372,14 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
 
           {/* Target Select */}
           <div className="space-y-4">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Class & {labels.subject}</label>
+            <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.2em] ml-1">Class & {labels.subject}</label>
             <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm space-y-5">
                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-700 ml-1">Target {labels.grade}</label>
+                  <label className="text-xs font-medium text-gray-700 ml-1">Target {labels.grade}</label>
                   <select
                     value={setup.selectedGrade}
                     onChange={(e) => setup.setSelectedGrade(e.target.value)}
-                    className="w-full px-4 py-4 bg-gray-50 border-transparent rounded-2xl text-base font-extrabold focus:bg-white focus:border-[var(--brand-purple)] transition-all outline-none"
+                    className="w-full px-4 py-4 bg-gray-50 border-transparent rounded-2xl text-base font-semibold focus:bg-white focus:border-[var(--brand-purple)] transition-all outline-none"
                   >
                     <option value="">Select Classes</option>
                     {filteredGrades.map(g => (
@@ -390,11 +390,11 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
 
                {filteredLearningAreasByWorkload.length > 0 && (
                 <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-700 ml-1">Active {labels.subject}</label>
+                    <label className="text-xs font-medium text-gray-700 ml-1">Active {labels.subject}</label>
                     <select
                       value={selectedLearningArea}
                       onChange={(e) => setSelectedLearningArea(e.target.value)}
-                      className="w-full px-4 py-4 bg-gray-50 border-transparent rounded-2xl text-base font-extrabold focus:bg-white focus:border-[var(--brand-teal)] transition-all outline-none"
+                      className="w-full px-4 py-4 bg-gray-50 border-transparent rounded-2xl text-base font-semibold focus:bg-white focus:border-[var(--brand-teal)] transition-all outline-none"
                     >
                       <option value="">Select subject</option>
                       {filteredLearningAreasByWorkload.map(area => (
@@ -409,7 +409,7 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
           {/* Test Select */}
           {selectedLearningArea && finalTests.length > 0 && (
             <div className="space-y-4">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Available Assessments</label>
+              <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.2em] ml-1">Available Assessments</label>
               <div className="space-y-3">
                 {finalTests.map(test => (
                   <button
@@ -424,10 +424,10 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
                   >
                     <div>
                       <p className={cn(
-                        "font-black text-base leading-tight",
+                        "font-semibold text-base leading-tight",
                         selectedTestId === test.id ? "text-[var(--brand-purple)]" : "text-gray-900"
                       )}>{test.title}</p>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.1em] mt-1">{test.totalMarks} Maximum Marks</p>
+                      <p className="text-[10px] font-medium text-gray-400 uppercase tracking-[0.1em] mt-1">{test.totalMarks} Maximum Marks</p>
                     </div>
                     {selectedTestId === test.id ? (
                        <div className="w-8 h-8 rounded-full bg-[var(--brand-purple)] text-white flex items-center justify-center shadow-lg shadow-purple-100">
@@ -445,7 +445,7 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
           {selectedLearningArea && finalTests.length === 0 && (
             <div className="py-12 px-6 text-center bg-gray-50 rounded-3xl border border-dashed border-gray-200">
                <AlertCircle size={40} className="mx-auto text-gray-300 mb-4" />
-               <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-1">No Tests Published</h3>
+               <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-widest mb-1">No Tests Published</h3>
                <p className="text-xs text-gray-400 font-medium leading-relaxed">We couldn\'t find any assessment tests for this subject in the system.</p>
             </div>
           )}
@@ -461,7 +461,7 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
               setStep(2);
             }}
             disabled={!selectedTestId || !setup.selectedGrade}
-            className="w-full py-5 bg-[var(--brand-purple)] text-white font-black rounded-2xl hover:brightness-110 disabled:opacity-30 active:scale-95 transition-all text-xs uppercase tracking-[0.2em] shadow-xl shadow-purple-100"
+            className="w-full py-5 bg-[var(--brand-purple)] text-white font-semibold rounded-2xl hover:brightness-110 disabled:opacity-30 active:scale-95 transition-all text-xs uppercase tracking-[0.2em] shadow-xl shadow-purple-100"
           >
             Enter Scores Board
           </button>
@@ -487,16 +487,16 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
               <ArrowLeft size={22} />
             </button>
             <div className="flex-1 min-w-0 mx-4">
-              <h1 className="font-black text-lg truncate leading-none">{selectedTest?.title}</h1>
-              <p className="text-[10px] font-bold opacity-70 uppercase tracking-widest mt-1.5">{setup.selectedGrade} • {selectedLearningArea}</p>
+              <h1 className="font-semibold text-lg truncate leading-none">{selectedTest?.title}</h1>
+              <p className="text-[10px] font-medium opacity-70 uppercase tracking-widest mt-1.5">{setup.selectedGrade} • {selectedLearningArea}</p>
             </div>
             <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center border border-white/10">
-               <span className="text-xs font-black">{selectedTest?.totalMarks}</span>
+               <span className="text-xs font-semibold">{selectedTest?.totalMarks}</span>
             </div>
           </div>
 
           <div className="space-y-2">
-            <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest opacity-80 mb-1">
+            <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-widest opacity-80 mb-1">
                <span>Marking Progress</span>
                <span>{assessmentProgress.assessed} of {assessmentProgress.total}</span>
             </div>
@@ -517,7 +517,7 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
                 placeholder="Search scholar..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 bg-gray-50 border-none rounded-2xl text-sm font-bold placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-purple-50 transition-all outline-none"
+                className="w-full pl-12 pr-4 py-4 bg-gray-50 border-none rounded-2xl text-sm font-medium placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-purple-50 transition-all outline-none"
               />
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
             </div>
@@ -526,7 +526,7 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
           {loadingLearners ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
                <div className="w-10 h-10 border-4 border-purple-50 border-t-purple-500 rounded-full animate-spin" />
-               <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Loading Rosters...</p>
+               <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">Loading Rosters...</p>
             </div>
           ) : (filteredLearners || []).length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">
@@ -534,7 +534,7 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
                   <AlertCircle size={32} className="text-gray-200" />
                </div>
                <div>
-                  <h3 className="text-sm font-black text-gray-900 uppercase">No Matches Found</h3>
+                  <h3 className="text-sm font-semibold text-gray-900 uppercase">No Matches Found</h3>
                   <p className="text-xs text-gray-400 mt-2 max-w-[200px] font-medium mx-auto">Try adjusting your filters or check the class list.</p>
                </div>
             </div>
@@ -558,16 +558,16 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
                     >
                       <div className="flex-1 min-w-0 flex items-center gap-4">
                          <div className={cn(
-                            "w-10 h-10 rounded-2xl flex items-center justify-center text-xs font-black shadow-inner",
+                            "w-10 h-10 rounded-2xl flex items-center justify-center text-xs font-semibold shadow-inner",
                             isSaved ? "bg-emerald-100 text-emerald-600" : "bg-gray-100 text-gray-400"
                          )}>
                             {idx + 1}
                          </div>
                          <div className="min-w-0 flex-1">
-                            <p className="font-black text-gray-900 text-sm leading-tight truncate">
+                            <p className="font-semibold text-gray-900 text-sm leading-tight truncate">
                               {learner.firstName} {learner.lastName || ''}
                             </p>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+                            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-widest mt-1">
                                {isSaved ? "Verified Record" : learner.admissionNumber || "N/A"}
                             </p>
                          </div>
@@ -582,7 +582,7 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
                             disabled={isSaved}
                             placeholder="--"
                             className={cn(
-                               "w-full py-3 text-center text-lg font-black border-2 rounded-2xl transition-all focus:outline-none",
+                               "w-full py-3 text-center text-lg font-semibold border-2 rounded-2xl transition-all focus:outline-none",
                                isSaved ? "bg-white border-emerald-500 text-emerald-600" :
                                isMarked ? "bg-white border-[var(--brand-purple)] text-[var(--brand-purple)]" :
                                "bg-gray-50 border-transparent text-gray-400 focus:bg-white focus:border-purple-200"
@@ -615,7 +615,7 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
                     onClick={handleSaveMarks}
                     disabled={saving || unsavedCount === 0}
                     className={cn(
-                        "w-full py-5 font-black rounded-2xl transition-all flex items-center justify-center gap-3 text-white text-xs uppercase tracking-[0.2em] shadow-xl shadow-teal-100",
+                        "w-full py-5 font-semibold rounded-2xl transition-all flex items-center justify-center gap-3 text-white text-xs uppercase tracking-[0.2em] shadow-xl shadow-teal-100",
                         unsavedCount === 0 ? "bg-gray-200 shadow-none text-gray-400" : "bg-[var(--brand-teal)] hover:brightness-110 active:scale-95"
                     )}
                   >
@@ -638,7 +638,7 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
                   </button>
 
                    {assessmentProgress.assessed > 0 && (
-                    <p className="text-[10px] text-center font-black uppercase tracking-[0.1em] text-gray-300">
+                    <p className="text-[10px] text-center font-semibold uppercase tracking-[0.1em] text-gray-300">
                       {assessmentProgress.percentage}% Global Accuracy Score
                     </p>
                   )}

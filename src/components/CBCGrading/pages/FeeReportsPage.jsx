@@ -229,7 +229,7 @@ const FeeReportsPage = () => {
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <p className="text-xs font-semibold text-gray-600 mb-0.5">{title}</p>
-          <p className={`text-xl font-bold ${color}`}>{value}</p>
+          <p className={`text-xl font-medium ${color}`}>{value}</p>
           {subtitle && <p className="text-[10px] text-gray-400 mt-0.5">{subtitle}</p>}
           {trend && (
             <div className={`flex items-center gap-1 mt-1 text-xs ${trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
@@ -285,7 +285,7 @@ const FeeReportsPage = () => {
             <button
               key={tab.id}
               onClick={() => setReportType(tab.id)}
-              className={`flex-1 min-w-[100px] text-xs font-bold py-2 px-3 rounded-lg transition-all ${
+              className={`flex-1 min-w-[100px] text-xs font-medium py-2 px-3 rounded-lg transition-all ${
                 reportType === tab.id
                   ? 'bg-blue-600 text-white shadow-sm'
                   : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
@@ -300,7 +300,7 @@ const FeeReportsPage = () => {
         <div className="relative">
           <button
             onClick={() => setShowGlobalFilters(!showGlobalFilters)}
-            className={`px-5 py-2.5 border rounded-xl font-bold flex items-center gap-2 transition-all ${activeFilterCount > 0 ? 'bg-blue-50 border-blue-200 text-blue-700' : 'hover:bg-gray-50 text-gray-700 bg-white shadow-sm'}`}
+            className={`px-5 py-2.5 border rounded-xl font-medium flex items-center gap-2 transition-all ${activeFilterCount > 0 ? 'bg-blue-50 border-blue-200 text-blue-700' : 'hover:bg-gray-50 text-gray-700 bg-white shadow-sm'}`}
           >
             <Filter size={18} className={activeFilterCount > 0 ? "text-blue-600" : "text-gray-500"} />
             Filters
@@ -315,11 +315,11 @@ const FeeReportsPage = () => {
           {showGlobalFilters && (
             <div className="absolute right-0 top-full mt-2 w-[400px] bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden animate-fade-in origin-top-right">
               <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-                <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                <h3 className="font-medium text-gray-800 flex items-center gap-2">
                   <Filter size={16} className="text-blue-600" /> Report Filters
                 </h3>
                 {activeFilterCount > 0 && (
-                  <button onClick={clearAllFilters} className="text-[11px] font-bold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-md transition-colors">
+                  <button onClick={clearAllFilters} className="text-[11px] font-medium text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-md transition-colors">
                     Clear All
                   </button>
                 )}
@@ -328,7 +328,7 @@ const FeeReportsPage = () => {
               <div className="p-5 space-y-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
                 {/* Academic Context */}
                 <div>
-                  <h4 className="text-[11px] font-extrabold text-blue-500 uppercase tracking-widest mb-3">Academic Term</h4>
+                  <h4 className="text-[11px] font-semibold text-blue-500 uppercase tracking-widest mb-3">Academic Term</h4>
                   <div className="flex gap-3">
                     <div className="flex-1 flex flex-col gap-1.5">
                       <label className="text-xs font-semibold text-gray-600">Grade Level</label>
@@ -349,7 +349,7 @@ const FeeReportsPage = () => {
 
                 {/* Date Range */}
                 <div>
-                  <h4 className="text-[11px] font-extrabold text-blue-500 uppercase tracking-widest mb-3">Date Range</h4>
+                  <h4 className="text-[11px] font-semibold text-blue-500 uppercase tracking-widest mb-3">Date Range</h4>
                   <div className="flex gap-3">
                     <div className="flex-1 flex flex-col gap-1.5">
                       <label className="text-xs font-semibold text-gray-600">Start</label>
@@ -364,8 +364,8 @@ const FeeReportsPage = () => {
               </div>
 
               <div className="p-4 bg-gray-50 border-t border-gray-100 flex gap-2 justify-end">
-                <button onClick={() => setShowGlobalFilters(false)} className="px-4 py-2 text-xs font-bold text-gray-600 hover:bg-gray-200 rounded-lg">Close</button>
-                <button onClick={() => { setShowGlobalFilters(false); fetchStats(); }} className="px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm flex items-center gap-2">
+                <button onClick={() => setShowGlobalFilters(false)} className="px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-200 rounded-lg">Close</button>
+                <button onClick={() => { setShowGlobalFilters(false); fetchStats(); }} className="px-5 py-2 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm flex items-center gap-2">
                   <RefreshCw size={14} /> Apply & Refresh
                 </button>
               </div>
@@ -423,7 +423,7 @@ const FeeReportsPage = () => {
       <div className="bg-white rounded-lg shadow p-3">
         <div className="flex items-center gap-2 mb-3">
           <Bus size={16} className="text-indigo-600" />
-          <h3 className="text-sm font-bold text-gray-800">Transport Fee Metrics</h3>
+          <h3 className="text-sm font-medium text-gray-800">Transport Fee Metrics</h3>
           <span className="ml-auto text-[10px] text-gray-400 italic">Transport students only</span>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -431,24 +431,24 @@ const FeeReportsPage = () => {
             <p className="text-[10px] text-gray-500 font-semibold mb-0.5">Students</p>
             <div className="flex items-center justify-center gap-1">
               <Users size={12} className="text-indigo-500" />
-              <p className="text-lg font-bold text-indigo-700">{transport.studentCount ?? 0}</p>
+              <p className="text-lg font-medium text-indigo-700">{transport.studentCount ?? 0}</p>
             </div>
           </div>
           <div className="bg-blue-50 rounded-lg p-2 text-center">
             <p className="text-[10px] text-gray-500 font-semibold mb-0.5">Expected</p>
-            <p className="text-sm font-bold text-blue-700">{fmtKES(transport.expected)}</p>
+            <p className="text-sm font-medium text-blue-700">{fmtKES(transport.expected)}</p>
           </div>
           <div className="bg-green-50 rounded-lg p-2 text-center">
             <p className="text-[10px] text-gray-500 font-semibold mb-0.5">Collected</p>
-            <p className="text-sm font-bold text-green-700">{fmtKES(transport.collected)}</p>
+            <p className="text-sm font-medium text-green-700">{fmtKES(transport.collected)}</p>
           </div>
           <div className="bg-red-50 rounded-lg p-2 text-center">
             <p className="text-[10px] text-gray-500 font-semibold mb-0.5">Outstanding</p>
-            <p className="text-sm font-bold text-red-700">{fmtKES(transport.outstanding)}</p>
+            <p className="text-sm font-medium text-red-700">{fmtKES(transport.outstanding)}</p>
           </div>
           <div className="bg-gray-50 rounded-lg p-2 text-center col-span-2 md:col-span-1">
             <p className="text-[10px] text-gray-500 font-semibold mb-0.5">Collection Rate</p>
-            <p className="text-lg font-bold text-indigo-700">{transport.collectionRate ?? 0}%</p>
+            <p className="text-lg font-medium text-indigo-700">{transport.collectionRate ?? 0}%</p>
             <div className="mt-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
               <div
                 className="h-full bg-indigo-500 rounded-full transition-all"
@@ -462,8 +462,8 @@ const FeeReportsPage = () => {
       {/* Collection Rate Chart */}
       <div className="bg-white rounded-lg shadow p-3">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-bold text-gray-800">Overall Collection Rate</h3>
-          <span className="text-xl font-bold text-blue-600">{stats?.collectionRate || 0}%</span>
+          <h3 className="text-sm font-medium text-gray-800">Overall Collection Rate</h3>
+          <span className="text-xl font-medium text-blue-600">{stats?.collectionRate || 0}%</span>
         </div>
         <div className="relative pt-1">
           <div className="flex mb-1 items-center justify-between">
@@ -486,7 +486,7 @@ const FeeReportsPage = () => {
       {/* Payment Methods & Invoice Status */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div className="bg-white rounded-lg shadow p-3">
-          <h3 className="text-sm font-bold text-gray-800 mb-2">Payment Methods</h3>
+          <h3 className="text-sm font-medium text-gray-800 mb-2">Payment Methods</h3>
           <div className="space-y-2">
             {stats?.paymentMethods?.length > 0 ? stats.paymentMethods.map((method, index) => (
               <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
@@ -497,7 +497,7 @@ const FeeReportsPage = () => {
                   <span className="font-medium text-xs">{method.method}</span>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-gray-800 text-xs">{fmtKES(method.amount)}</p>
+                  <p className="font-medium text-gray-800 text-xs">{fmtKES(method.amount)}</p>
                   <p className="text-[10px] text-gray-500">{method.count} txns</p>
                 </div>
               </div>
@@ -508,7 +508,7 @@ const FeeReportsPage = () => {
         </div>
 
         <div className="bg-white rounded-lg shadow p-3">
-          <h3 className="text-sm font-bold text-gray-800 mb-2">Invoice Status</h3>
+          <h3 className="text-sm font-medium text-gray-800 mb-2">Invoice Status</h3>
           <div className="space-y-2">
             {[
               { status: 'Paid',    count: stats?.paidInvoices    || 0, color: 'green' },
@@ -523,7 +523,7 @@ const FeeReportsPage = () => {
                   </div>
                   <span className="font-medium text-xs">{item.status} Invoices</span>
                 </div>
-                <span className="font-bold text-gray-800 text-xs">{item.count}</span>
+                <span className="font-medium text-gray-800 text-xs">{item.count}</span>
               </div>
             ))}
           </div>
@@ -533,7 +533,7 @@ const FeeReportsPage = () => {
       {/* Grade-wise Collection — rows are clickable */}
       <div className="bg-white rounded-lg shadow p-3">
         <div className="flex items-center gap-2 mb-2">
-          <h3 className="text-sm font-bold text-gray-800">Collection by Grade</h3>
+          <h3 className="text-sm font-medium text-gray-800">Collection by Grade</h3>
           <span className="ml-auto text-[10px] text-gray-400 italic flex items-center gap-1">
             <ArrowRight size={10} /> Click a row to view class records
           </span>
@@ -542,12 +542,12 @@ const FeeReportsPage = () => {
           <table className="w-full border-collapse">
             <thead className="border-b border-[color:var(--table-border)]">
               <tr>
-                <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Grade</th>
-                <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Students</th>
-                <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Expected</th>
-                <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Collected</th>
-                <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Outstanding</th>
-                <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Rate</th>
+                <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Grade</th>
+                <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Students</th>
+                <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Expected</th>
+                <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Collected</th>
+                <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Outstanding</th>
+                <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Rate</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -616,12 +616,12 @@ const FeeReportsPage = () => {
               return (
                 <tfoot className="border-t-2 border-gray-300 bg-gray-50">
                   <tr>
-                    <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-bold text-gray-700">TOTAL</td>
-                    <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-bold text-gray-700">{totals.students}</td>
-                    <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-bold text-gray-900">{fmtKES(totals.expected)}</td>
-                    <td className={`px-3 py-2 text-xs font-bold ${collectedClass(totals.collected)}`}>{fmtKES(totals.collected)}</td>
-                    <td className={`px-3 py-2 text-xs font-bold ${outstandingClass(totals.outstanding)}`}>{fmtKES(totals.outstanding)}</td>
-                    <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-bold text-gray-700">{totalRate}%</td>
+                    <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-medium text-gray-700">TOTAL</td>
+                    <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-medium text-gray-700">{totals.students}</td>
+                    <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-medium text-gray-900">{fmtKES(totals.expected)}</td>
+                    <td className={`px-3 py-2 text-xs font-medium ${collectedClass(totals.collected)}`}>{fmtKES(totals.collected)}</td>
+                    <td className={`px-3 py-2 text-xs font-medium ${outstandingClass(totals.outstanding)}`}>{fmtKES(totals.outstanding)}</td>
+                    <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-medium text-gray-700">{totalRate}%</td>
                   </tr>
                 </tfoot>
               );
@@ -635,7 +635,7 @@ const FeeReportsPage = () => {
       {/* DETAILED TAB */}
       {reportType === 'detailed' && (
         <div className="bg-white rounded-lg shadow p-3">
-          <h3 className="text-sm font-bold text-gray-800 mb-2">All Invoices — Detailed</h3>
+          <h3 className="text-sm font-medium text-gray-800 mb-2">All Invoices — Detailed</h3>
           {detailedLoading ? (
             <div className="flex items-center justify-center py-8"><Loader2 size={20} className="animate-spin text-blue-500" /></div>
           ) : detailedInvoices.length === 0 ? (
@@ -645,15 +645,15 @@ const FeeReportsPage = () => {
               <table className="w-full text-xs border-collapse">
                 <thead className="border-b">
                   <tr className="text-left text-[10px] uppercase text-gray-500 font-semibold">
-                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Invoice #</th>
-                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Learner</th>
-                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Grade</th>
-                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Term</th>
-                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Total</th>
-                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Paid</th>
-                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Balance</th>
-                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Status</th>
-                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Due</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Invoice #</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Learner</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Grade</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Term</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Total</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Paid</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Balance</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Status</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Due</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -696,7 +696,7 @@ const FeeReportsPage = () => {
         <div className="bg-white rounded-lg shadow p-3">
           <div className="flex items-center gap-2 mb-2">
             <AlertCircle size={16} className="text-red-500" />
-            <h3 className="text-sm font-bold text-gray-800">Defaulters — Overdue Unpaid Invoices</h3>
+            <h3 className="text-sm font-medium text-gray-800">Defaulters — Overdue Unpaid Invoices</h3>
             {!defaultersLoading && <span className="ml-auto text-xs text-red-600 font-semibold">{defaulters.length} overdue</span>}
           </div>
           {defaultersLoading ? (
@@ -711,14 +711,14 @@ const FeeReportsPage = () => {
               <table className="w-full text-xs border-collapse">
                 <thead className="border-b">
                   <tr className="text-left text-[10px] uppercase text-gray-500 font-semibold">
-                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Learner</th>
-                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Grade</th>
-                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Invoice #</th>
-                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Total</th>
-                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Paid</th>
-                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Balance</th>
-                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Due Date</th>
-                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Days Overdue</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Learner</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Grade</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Invoice #</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Total</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Paid</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Balance</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Due Date</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Days Overdue</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -738,13 +738,13 @@ const FeeReportsPage = () => {
                         <td className="px-3 py-1.5 border-r border-gray-100 font-mono text-blue-700">{inv.invoiceNumber}</td>
                         <td className="px-3 py-1.5 border-r border-gray-100 font-semibold">{fmtKES(total)}</td>
                         <td className={`px-3 py-1.5 ${collectedClass(paid)}`}>{fmtKES(paid)}</td>
-                        <td className="px-3 py-1.5 border-r border-gray-100 text-red-600 font-bold">{fmtKES(balance)}</td>
+                        <td className="px-3 py-1.5 border-r border-gray-100 text-red-600 font-medium">{fmtKES(balance)}</td>
                         <td className="px-3 py-1.5 border-r border-gray-100 text-red-500 font-semibold">
                           {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : '—'}
                         </td>
                         <td className="px-3 py-1.5 border-r border-gray-100">
                           {daysOverdue !== null ? (
-                            <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                            <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${
                               daysOverdue > 30 ? 'bg-red-200 text-red-800' : 'bg-orange-100 text-orange-700'
                             }`}>{daysOverdue}d</span>
                           ) : '—'}
@@ -755,8 +755,8 @@ const FeeReportsPage = () => {
                 </tbody>
                 <tfoot className="border-t-2 border-gray-300 bg-red-50">
                   <tr>
-                    <td colSpan={5} className="px-3 py-1.5 border-r border-gray-100 text-xs font-bold text-gray-700">TOTAL OUTSTANDING</td>
-                    <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-bold text-red-700">
+                    <td colSpan={5} className="px-3 py-1.5 border-r border-gray-100 text-xs font-medium text-gray-700">TOTAL OUTSTANDING</td>
+                    <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-medium text-red-700">
                       {fmtKES(defaulters.reduce((s, inv) => s + Number(inv.totalAmount || 0) - Number(inv.amountPaid || 0), 0))}
                     </td>
                     <td colSpan={2} />
@@ -773,7 +773,7 @@ const FeeReportsPage = () => {
         <div className="bg-white rounded-lg shadow p-3">
           <div className="flex items-center gap-2 mb-2">
             <CheckCircle size={16} className="text-green-500" />
-            <h3 className="text-sm font-bold text-gray-800">Collection Report — Paid & Partial Invoices</h3>
+            <h3 className="text-sm font-medium text-gray-800">Collection Report — Paid & Partial Invoices</h3>
             {!collectionLoading && <span className="ml-auto text-xs text-green-600 font-semibold">{collectionEntries.length} entries</span>}
           </div>
           {collectionLoading ? (
@@ -785,14 +785,14 @@ const FeeReportsPage = () => {
               <table className="w-full text-xs border-collapse">
                 <thead className="border-b">
                   <tr className="text-left text-[10px] uppercase text-gray-500 font-semibold">
-                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Invoice #</th>
-                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Learner</th>
-                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Grade</th>
-                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Term</th>
-                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Total</th>
-                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Collected</th>
-                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Balance</th>
-                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Status</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Invoice #</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Learner</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Grade</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Term</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Total</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Collected</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Balance</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -820,10 +820,10 @@ const FeeReportsPage = () => {
                 </tbody>
                 <tfoot className="border-t-2 border-gray-300 bg-green-50">
                   <tr>
-                    <td colSpan={4} className="px-3 py-1.5 border-r border-gray-100 text-xs font-bold text-gray-700">TOTALS</td>
-                    <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-bold text-gray-900">{fmtKES(collectionEntries.reduce((s, i) => s + Number(i.totalAmount || 0), 0))}</td>
-                    <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-bold text-green-700">{fmtKES(collectionEntries.reduce((s, i) => s + Number(i.amountPaid || 0), 0))}</td>
-                    <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-bold text-gray-700">{fmtKES(collectionEntries.reduce((s, i) => s + (Number(i.totalAmount || 0) - Number(i.amountPaid || 0)), 0))}</td>
+                    <td colSpan={4} className="px-3 py-1.5 border-r border-gray-100 text-xs font-medium text-gray-700">TOTALS</td>
+                    <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-medium text-gray-900">{fmtKES(collectionEntries.reduce((s, i) => s + Number(i.totalAmount || 0), 0))}</td>
+                    <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-medium text-green-700">{fmtKES(collectionEntries.reduce((s, i) => s + Number(i.amountPaid || 0), 0))}</td>
+                    <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-medium text-gray-700">{fmtKES(collectionEntries.reduce((s, i) => s + (Number(i.totalAmount || 0) - Number(i.amountPaid || 0)), 0))}</td>
                     <td />
                   </tr>
                 </tfoot>
@@ -838,7 +838,7 @@ const FeeReportsPage = () => {
         <div className="bg-white rounded-lg shadow p-3">
           <div className="flex items-center gap-2 mb-2">
             <Users size={16} className="text-purple-500" />
-            <h3 className="text-sm font-bold text-gray-800">Individual Learner Invoice History</h3>
+            <h3 className="text-sm font-medium text-gray-800">Individual Learner Invoice History</h3>
             {!learnerLoading && learnerInvoices.length > 0 && (
               <span className="ml-auto text-xs text-purple-600 font-semibold">{learnerInvoices.length} invoice{learnerInvoices.length !== 1 ? 's' : ''}</span>
             )}
@@ -852,14 +852,14 @@ const FeeReportsPage = () => {
               <table className="w-full text-xs border-collapse">
                 <thead className="border-b">
                   <tr className="text-left text-[10px] uppercase text-gray-500 font-semibold">
-                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Invoice #</th>
-                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Term</th>
-                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Year</th>
-                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Total</th>
-                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Paid</th>
-                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Balance</th>
-                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Status</th>
-                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Due Date</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Invoice #</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Term</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Year</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Total</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Paid</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Balance</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Status</th>
+                    <th className="px-3 py-1.5 border-r border-gray-100 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Due Date</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -892,10 +892,10 @@ const FeeReportsPage = () => {
                 </tbody>
                 <tfoot className="border-t-2 border-gray-300 bg-purple-50">
                   <tr>
-                    <td colSpan={3} className="px-3 py-1.5 border-r border-gray-100 text-xs font-bold text-gray-700">TOTALS</td>
-                    <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-bold text-gray-900">{fmtKES(learnerInvoices.reduce((s, i) => s + Number(i.totalAmount || 0), 0))}</td>
-                    <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-bold text-green-700">{fmtKES(learnerInvoices.reduce((s, i) => s + Number(i.amountPaid || 0), 0))}</td>
-                    <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-bold text-gray-700">{fmtKES(learnerInvoices.reduce((s, i) => s + (Number(i.totalAmount || 0) - Number(i.amountPaid || 0)), 0))}</td>
+                    <td colSpan={3} className="px-3 py-1.5 border-r border-gray-100 text-xs font-medium text-gray-700">TOTALS</td>
+                    <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-medium text-gray-900">{fmtKES(learnerInvoices.reduce((s, i) => s + Number(i.totalAmount || 0), 0))}</td>
+                    <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-medium text-green-700">{fmtKES(learnerInvoices.reduce((s, i) => s + Number(i.amountPaid || 0), 0))}</td>
+                    <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-medium text-gray-700">{fmtKES(learnerInvoices.reduce((s, i) => s + (Number(i.totalAmount || 0) - Number(i.amountPaid || 0)), 0))}</td>
                     <td colSpan={2} />
                   </tr>
                 </tfoot>
@@ -907,7 +907,7 @@ const FeeReportsPage = () => {
 
       {/* Export Options */}
       <div className="bg-white rounded-lg shadow p-3">
-        <h3 className="text-sm font-bold text-gray-800 mb-2">Export Options</h3>
+        <h3 className="text-sm font-medium text-gray-800 mb-2">Export Options</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <button
             onClick={handleExport}

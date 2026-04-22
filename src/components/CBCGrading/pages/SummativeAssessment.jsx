@@ -1271,10 +1271,10 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
                   {selectedTest && (selectedTest._count?.results ?? 0) > 0 && (
                     <CheckCircle2 size={18} className="text-green-500 flex-shrink-0" title="Assessment has saved results" />
                   )}
-                  <h2 className="text-lg font-bold text-gray-800 leading-none">
+                  <h2 className="text-lg font-medium text-gray-800 leading-none">
                     {selectedTest?.title || selectedTest?.name}
                   </h2>
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wide border ${assessmentProgress.percentage === 100
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-medium tracking-wide border ${assessmentProgress.percentage === 100
                     ? 'bg-green-50 text-green-700 border-green-200'
                     : 'bg-blue-50 text-blue-700 border-blue-200'
                     }`}>
@@ -1282,7 +1282,7 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
                   </span>
 
                   {selectedTest?.weight !== undefined && (
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wide border bg-amber-50 text-amber-700 border-amber-200">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-medium tracking-wide border bg-amber-50 text-amber-700 border-amber-200">
                       Weight: {selectedTest.weight}
                     </span>
                   )}
@@ -1352,7 +1352,7 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
                   <button
                     onClick={() => handleSave()}
                     disabled={isSaving}
-                    className="flex items-center gap-1.5 text-sm font-bold text-[#0D9488] hover:text-[#0f766e] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-1.5 text-sm font-medium text-[#0D9488] hover:text-[#0f766e] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isSaving ? (
                       <>
@@ -1473,7 +1473,7 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
 
             {/* No tests hint */}
             {stagedGrade && stagedTerm && stagedLearningArea && stagedFinalTests.length === 0 && (
-              <span className="text-[10px] text-amber-600 font-bold bg-amber-50 border border-amber-200 rounded px-2 py-1 whitespace-nowrap">
+              <span className="text-[10px] text-amber-600 font-medium bg-amber-50 border border-amber-200 rounded px-2 py-1 whitespace-nowrap">
                 No tests found for selection
               </span>
             )}
@@ -1551,10 +1551,10 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
 
                       {/* Text Content Column - Right, Right-Aligned */}
                       <div className="flex-1 text-right">
-                        <h1 className="text-2xl font-bold text-[#1e3a8a] uppercase tracking-wider leading-tight">
+                        <h1 className="text-2xl font-medium text-[#1e3a8a] uppercase tracking-wider leading-tight">
                           {user?.school?.name || user?.schoolName || 'SCHOOL NAME'}
                         </h1>
-                        <h2 className="text-base font-bold text-gray-800 leading-tight mt-1">
+                        <h2 className="text-base font-medium text-gray-800 leading-tight mt-1">
                           Summative Assessment Results
                         </h2>
                         <p className="text-sm text-gray-700 font-semibold leading-tight mt-0.5">
@@ -1596,11 +1596,11 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
                           <tr key={learner.id} className={`${index % 2 === 1 ? 'bg-[#f8fafc]' : 'bg-white'}`} style={{ pageBreakInside: 'avoid' }}>
                             <td className="px-2 py-1.5 text-xs text-center font-semibold text-gray-700 border-r border-gray-200">{globalIndex + 1}</td>
                             <td className="px-2 py-1.5 text-xs text-center font-semibold text-gray-900 border-r border-gray-200">{learner.admissionNumber}</td>
-                            <td className="px-2 py-1.5 text-xs font-bold text-[#1e293b] border-r border-gray-200">
+                            <td className="px-2 py-1.5 text-xs font-medium text-[#1e293b] border-r border-gray-200">
                               {learner.firstName?.toUpperCase()} {learner.lastName?.toUpperCase()}
                             </td>
                             <td className="px-2 py-1.5 text-center border-r border-gray-200">
-                              <span className="inline-block font-bold text-sm text-gray-900">
+                              <span className="inline-block font-medium text-sm text-gray-900">
                                 {score?.mark ?? '-'}
                               </span>
                             </td>
@@ -1616,18 +1616,18 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
                     {pageIndex === chunkedLearners.length - 1 && (
                       <tfoot className="bg-gray-100 border-t-2 border-gray-400">
                         <tr>
-                          <td colSpan="3" className="px-2 py-2 text-xs font-bold text-gray-800 text-right">
+                          <td colSpan="3" className="px-2 py-2 text-xs font-medium text-gray-800 text-right">
                             Summary:
                           </td>
                           <td className="px-2 py-2 text-center border-r border-gray-300">
-                            <div className="text-[10px] font-bold text-gray-900">
+                            <div className="text-[10px] font-medium text-gray-900">
                               Avg: {statistics.average}
                             </div>
                           </td>
                           <td className="px-2 py-2 text-[10px] text-gray-700">
-                            Total: <span className="font-bold">{statistics.count}</span> |
-                            Sum: <span className="font-bold">{statistics.sum.toFixed(2)}</span> |
-                            Range: <span className="font-bold">{statistics.min}-{statistics.max}</span>
+                            Total: <span className="font-medium">{statistics.count}</span> |
+                            Sum: <span className="font-medium">{statistics.sum.toFixed(2)}</span> |
+                            Range: <span className="font-medium">{statistics.min}-{statistics.max}</span>
                           </td>
                         </tr>
                       </tfoot>
@@ -1688,7 +1688,7 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
                     <tr key={learner.id} className={`${index % 2 === 1 ? 'bg-[#f8fafc]' : 'bg-white'} hover:bg-[#f1f5f9] transition`}>
                       <td className="px-3 py-1.5 text-xs text-center font-semibold text-gray-700 border-r border-gray-200">{index + 1}</td>
                       <td className="px-3 py-1.5 text-xs text-center font-semibold text-gray-900 border-r border-gray-200">{learner.admissionNumber}</td>
-                      <td className="px-3 py-1.5 text-xs font-bold text-[#1e293b] border-r border-gray-200">
+                      <td className="px-3 py-1.5 text-xs font-medium text-[#1e293b] border-r border-gray-200">
                         {learner.firstName?.toUpperCase()} {learner.lastName?.toUpperCase()}
                       </td>
                       <td className="px-3 py-1.5 text-center border-r border-gray-200">

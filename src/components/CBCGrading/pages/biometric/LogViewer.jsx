@@ -72,7 +72,7 @@ const LogViewer = () => {
             <button
               key={s}
               onClick={() => setFilters({...filters, status: s, page: 1})}
-              className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+              className={`px-4 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-widest transition-all ${
                 filters.status === s ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'
               }`}
             >
@@ -118,10 +118,10 @@ const LogViewer = () => {
                       <div className="flex items-center gap-3">
                         <Clock size={14} className="text-slate-300" />
                         <div>
-                          <p className="text-xs font-black text-slate-900 font-mono">
+                          <p className="text-xs font-semibold text-slate-900 font-mono">
                             {new Date(log.timestamp).toLocaleDateString('en-GB')}
                           </p>
-                          <p className="text-[10px] font-bold text-slate-400 tracking-tighter">
+                          <p className="text-[10px] font-medium text-slate-400 tracking-tighter">
                             {new Date(log.timestamp).toLocaleTimeString()}
                           </p>
                         </div>
@@ -129,24 +129,24 @@ const LogViewer = () => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-[10px]">
+                        <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-semibold text-[10px]">
                           {log.learnerId ? 'LN' : 'ST'}
                         </div>
                         <div>
-                          <p className="text-xs font-bold text-slate-900">
+                          <p className="text-xs font-medium text-slate-900">
                             {log.learner?.firstName || log.user?.firstName || 'Unknown'} {log.learner?.lastName || log.user?.lastName || ''}
                           </p>
-                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                          <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest">
                             Ref: {log.externalId}
                           </p>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <p className="text-[10px] font-bold text-slate-600">{log.device?.name || 'Manual Upload'}</p>
+                      <p className="text-[10px] font-medium text-slate-600">{log.device?.name || 'Manual Upload'}</p>
                     </td>
                     <td className="px-6 py-4 text-center">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${getStatusStyle(log.status)}`}>
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-[9px] font-semibold uppercase tracking-widest ${getStatusStyle(log.status)}`}>
                         {log.status}
                       </span>
                     </td>
@@ -175,8 +175,8 @@ const LogViewer = () => {
                 <tr>
                   <td colSpan="5" className="py-20 text-center">
                     <Database size={40} className="text-slate-100 mx-auto mb-4" />
-                    <h4 className="text-slate-400 font-black uppercase tracking-widest leading-none">No Log Synchronization</h4>
-                    <p className="text-[10px] text-slate-300 font-black uppercase tracking-widest mt-2">Observatory is clear. All packets addressed.</p>
+                    <h4 className="text-slate-400 font-semibold uppercase tracking-widest leading-none">No Log Synchronization</h4>
+                    <p className="text-[10px] text-slate-300 font-semibold uppercase tracking-widest mt-2">Observatory is clear. All packets addressed.</p>
                   </td>
                 </tr>
               )}
@@ -193,14 +193,14 @@ const LogViewer = () => {
             <button 
               disabled={filters.page === 1}
               onClick={() => setFilters({...filters, page: filters.page - 1})}
-              className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 disabled:opacity-30"
+              className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-[9px] font-semibold uppercase tracking-widest hover:bg-slate-50 disabled:opacity-30"
             >
               Previous
             </button>
             <button 
               disabled={logs.length < filters.limit}
               onClick={() => setFilters({...filters, page: filters.page + 1})}
-              className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 disabled:opacity-30"
+              className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-[9px] font-semibold uppercase tracking-widest hover:bg-slate-50 disabled:opacity-30"
             >
               Next
             </button>

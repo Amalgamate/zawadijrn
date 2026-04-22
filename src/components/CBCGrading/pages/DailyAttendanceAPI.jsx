@@ -188,8 +188,8 @@ const DailyAttendance = () => {
               <Users size={22} />
            </div>
            <div>
-              <h2 className="text-xl font-black text-gray-900 tracking-tight leading-none">Attendance</h2>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Daily Register</p>
+              <h2 className="text-xl font-semibold text-gray-900 tracking-tight leading-none">Attendance</h2>
+              <p className="text-[10px] font-medium text-gray-400 uppercase tracking-widest mt-1">Daily Register</p>
            </div>
         </div>
         {activeContext && (
@@ -208,18 +208,18 @@ const DailyAttendance = () => {
         <div className="px-5 space-y-6 animate-in fade-in slide-in-from-bottom-4">
           <div className="bg-white rounded-[2.5rem] border border-transparent shadow-xl shadow-teal-50 p-6 space-y-6">
             <div className="space-y-1">
-               <span className="text-[10px] font-black text-[var(--brand-purple)] uppercase tracking-widest">Stage 01</span>
-               <h3 className="text-lg font-black text-gray-900">Select Register</h3>
+               <span className="text-[10px] font-semibold text-[var(--brand-purple)] uppercase tracking-widest">Stage 01</span>
+               <h3 className="text-lg font-semibold text-gray-900">Select Register</h3>
             </div>
 
             <div className="space-y-4">
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{labels.grade}</label>
+                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest ml-1">{labels.grade}</label>
                 <select
                   value={stagedGrade}
                   onChange={(e) => { setStagedGrade(e.target.value); setStagedStream(''); }}
                   disabled={isTeacher}
-                  className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-teal-100 outline-none disabled:opacity-60"
+                  className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-medium focus:ring-2 focus:ring-teal-100 outline-none disabled:opacity-60"
                 >
                   <option value="">Choose {labels.grade}</option>
                   {availableGrades.map(g => <option key={g} value={g}>{g.replace(/_/g, ' ')}</option>)}
@@ -227,12 +227,12 @@ const DailyAttendance = () => {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Stream</label>
+                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest ml-1">Stream</label>
                 <select
                   value={stagedStream}
                   onChange={(e) => setStagedStream(e.target.value)}
                   disabled={!stagedGrade || isTeacher}
-                  className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-teal-100 outline-none disabled:opacity-60"
+                  className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-medium focus:ring-2 focus:ring-teal-100 outline-none disabled:opacity-60"
                 >
                   <option value="">All Streams</option>
                   {availableStreams.map(s => <option key={s} value={s}>{s}</option>)}
@@ -240,13 +240,13 @@ const DailyAttendance = () => {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Date</label>
+                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest ml-1">Date</label>
                 <input
                   type="date"
                   value={stagedDate}
                   onChange={(e) => setStagedDate(e.target.value)}
                   max={new Date().toISOString().split('T')[0]}
-                  className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-teal-100 outline-none"
+                  className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-medium focus:ring-2 focus:ring-teal-100 outline-none"
                 />
               </div>
             </div>
@@ -257,7 +257,7 @@ const DailyAttendance = () => {
             disabled={isSyncing || (!stagedGrade && !isTeacher)}
             className="w-full h-16 bg-teal-600 text-white rounded-[2rem] flex items-center justify-center gap-3 shadow-xl shadow-teal-200 active:scale-95 transition-all outline-none disabled:opacity-30"
           >
-            <span className="text-xs font-black uppercase tracking-[0.2em] ml-2">Load Register</span>
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] ml-2">Load Register</span>
             <RefreshCw size={20} className={cn(isSyncing && "animate-spin")} />
           </button>
         </div>
@@ -270,8 +270,8 @@ const DailyAttendance = () => {
                 <ChevronLeft size={20} className="text-gray-900" />
              </button>
              <div className="text-center flex-1">
-                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{activeContext.grade.replace(/_/g, ' ')} {activeContext.stream}</h4>
-                <p className="text-xs font-black text-gray-900">{new Date(activeContext.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                <h4 className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">{activeContext.grade.replace(/_/g, ' ')} {activeContext.stream}</h4>
+                <p className="text-xs font-semibold text-gray-900">{new Date(activeContext.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</p>
              </div>
              <button onClick={handleMarkAllPresent} className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl active:scale-90 transition-all">
                 <Check size={20} strokeWidth={3} />
@@ -281,16 +281,16 @@ const DailyAttendance = () => {
           {/* Stats Bar */}
           <div className="grid grid-cols-3 gap-3">
              <div className="bg-gray-50 p-4 rounded-[2rem] text-center border border-gray-100">
-                <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Present</p>
-                <p className="text-xl font-black text-emerald-600">{stats.present}</p>
+                <p className="text-[8px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Present</p>
+                <p className="text-xl font-semibold text-emerald-600">{stats.present}</p>
              </div>
              <div className="bg-gray-50 p-4 rounded-[2rem] text-center border border-gray-100">
-                <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Total</p>
-                <p className="text-xl font-black text-gray-900">{stats.total}</p>
+                <p className="text-[8px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Total</p>
+                <p className="text-xl font-semibold text-gray-900">{stats.total}</p>
              </div>
              <div className="bg-gray-50 p-4 rounded-[2rem] text-center border border-gray-100">
-                <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Rate</p>
-                <p className="text-xl font-black text-teal-600">{stats.percentage}%</p>
+                <p className="text-[8px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Rate</p>
+                <p className="text-xl font-semibold text-teal-600">{stats.percentage}%</p>
              </div>
           </div>
 
@@ -302,7 +302,7 @@ const DailyAttendance = () => {
                placeholder={`Search ${labels.learners.toLowerCase()}...`}
                value={searchTerm}
                onChange={(e) => setSearchTerm(e.target.value)}
-               className="w-full h-14 pl-12 pr-4 bg-gray-50 border-none rounded-[1.5rem] text-xs font-bold outline-none focus:ring-2 focus:ring-teal-100"
+               className="w-full h-14 pl-12 pr-4 bg-gray-50 border-none rounded-[1.5rem] text-xs font-medium outline-none focus:ring-2 focus:ring-teal-100"
              />
           </div>
 
@@ -314,14 +314,14 @@ const DailyAttendance = () => {
                    <div key={learner.id} className="bg-white rounded-[2.5rem] border border-gray-50 p-6 shadow-sm space-y-5">
                       <div className="flex items-center gap-4">
                          <div className={cn(
-                            "w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xs transition-colors",
+                            "w-12 h-12 rounded-2xl flex items-center justify-center font-semibold text-xs transition-colors",
                             currentStatus ? statusConfig[currentStatus].lightColor : "bg-gray-100 text-gray-400"
                          )}>
                             {learner.firstName[0]}{learner.lastName[0]}
                          </div>
                          <div>
-                            <h5 className="text-sm font-black text-gray-900 leading-tight">{learner.firstName} {learner.lastName}</h5>
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter mt-0.5">{learner.admissionNumber}</p>
+                            <h5 className="text-sm font-semibold text-gray-900 leading-tight">{learner.firstName} {learner.lastName}</h5>
+                            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-tighter mt-0.5">{learner.admissionNumber}</p>
                          </div>
                       </div>
 
@@ -338,7 +338,7 @@ const DailyAttendance = () => {
                               )}
                             >
                                <config.icon size={16} strokeWidth={currentStatus === key ? 3 : 2} />
-                               <span className="text-[8px] font-black uppercase tracking-widest">{config.label}</span>
+                               <span className="text-[8px] font-semibold uppercase tracking-widest">{config.label}</span>
                             </button>
                          ))}
                       </div>
@@ -353,7 +353,7 @@ const DailyAttendance = () => {
                                   ...prev,
                                   [learner.id]: { ...prev[learner_id], remarks: e.target.value }
                                }))}
-                               className="w-full bg-transparent text-[10px] font-bold text-gray-500 placeholder:text-gray-300 outline-none border-b border-gray-50 focus:border-teal-200 pb-1"
+                               className="w-full bg-transparent text-[10px] font-medium text-gray-500 placeholder:text-gray-300 outline-none border-b border-gray-50 focus:border-teal-200 pb-1"
                             />
                          </div>
                       )}

@@ -146,7 +146,7 @@ const SupportWidget = () => {
                         </button>
                     )}
                     <div>
-                        <h3 className="font-bold text-xl">{isGuest ? 'Zawadi SMS Support' : 'Support Details'}</h3>
+                        <h3 className="font-medium text-xl">{isGuest ? 'Zawadi SMS Support' : 'Support Details'}</h3>
                         <p className="text-teal-50 text-xs opacity-80">Typically replies in minutes</p>
                     </div>
                 </div>
@@ -167,7 +167,7 @@ const SupportWidget = () => {
                         <div className="space-y-4">
                             <button
                                 onClick={() => setView('create')}
-                                className="w-full bg-[#14B8A6] text-white py-4 px-6 rounded-2xl shadow-lg shadow-teal-100 hover:bg-[#0F9A8A] transition-all flex items-center justify-center gap-3 font-bold group"
+                                className="w-full bg-[#14B8A6] text-white py-4 px-6 rounded-2xl shadow-lg shadow-teal-100 hover:bg-[#0F9A8A] transition-all flex items-center justify-center gap-3 font-medium group"
                             >
                                 <Plus size={20} className="group-hover:rotate-90 transition-transform" /> Start New Conversation
                             </button>
@@ -187,7 +187,7 @@ const SupportWidget = () => {
                                         tickets.map(ticket => (
                                             <div key={ticket.id} onClick={() => openChat(ticket.id)} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group">
                                                 <div className="flex justify-between items-start mb-2">
-                                                    <span className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-wider ${ticket.status === 'OPEN' ? 'bg-teal-50 text-teal-600' :
+                                                    <span className={`text-[10px] px-2 py-1 rounded-full font-medium uppercase tracking-wider ${ticket.status === 'OPEN' ? 'bg-teal-50 text-teal-600' :
                                                         ticket.status === 'RESOLVED' ? 'bg-blue-50 text-blue-600' :
                                                             'bg-gray-50 text-gray-600'
                                                         }`}>
@@ -197,7 +197,7 @@ const SupportWidget = () => {
                                                         {new Date(ticket.updatedAt).toLocaleDateString()}
                                                     </span>
                                                 </div>
-                                                <h4 className="font-bold text-gray-800 truncate group-hover:text-[#14B8A6] transition-colors">{ticket.subject}</h4>
+                                                <h4 className="font-medium text-gray-800 truncate group-hover:text-[#14B8A6] transition-colors">{ticket.subject}</h4>
                                                 <p className="text-xs text-gray-500 truncate mt-1">
                                                     {ticket._count?.messages || 0} messages • Click to open
                                                 </p>
@@ -215,7 +215,7 @@ const SupportWidget = () => {
                             {isGuest && (
                                 <div className="grid grid-cols-1 gap-4">
                                     <div className="space-y-1">
-                                        <label className="text-xs font-bold text-gray-500 ml-1">YOUR NAME</label>
+                                        <label className="text-xs font-medium text-gray-500 ml-1">YOUR NAME</label>
                                         <input
                                             type="text"
                                             value={guestName}
@@ -226,7 +226,7 @@ const SupportWidget = () => {
                                         />
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-xs font-bold text-gray-500 ml-1">EMAIL ADDRESS</label>
+                                        <label className="text-xs font-medium text-gray-500 ml-1">EMAIL ADDRESS</label>
                                         <input
                                             type="email"
                                             value={guestEmail}
@@ -239,7 +239,7 @@ const SupportWidget = () => {
                                 </div>
                             )}
                             <div className="space-y-1">
-                                <label className="text-xs font-bold text-gray-500 ml-1">SUBJECT</label>
+                                <label className="text-xs font-medium text-gray-500 ml-1">SUBJECT</label>
                                 <input
                                     type="text"
                                     value={subject}
@@ -252,7 +252,7 @@ const SupportWidget = () => {
 
                             {!isGuest && (
                                 <div className="space-y-1">
-                                    <label className="text-xs font-bold text-gray-500 ml-1">PRIORITY</label>
+                                    <label className="text-xs font-medium text-gray-500 ml-1">PRIORITY</label>
                                     <select
                                         value={priority}
                                         onChange={e => setPriority(e.target.value)}
@@ -266,7 +266,7 @@ const SupportWidget = () => {
                                 </div>
                             )}
                             <div className="space-y-1">
-                                <label className="text-xs font-bold text-gray-500 ml-1">MESSAGE</label>
+                                <label className="text-xs font-medium text-gray-500 ml-1">MESSAGE</label>
                                 <textarea
                                     value={initialMessage}
                                     onChange={e => setInitialMessage(e.target.value)}
@@ -278,7 +278,7 @@ const SupportWidget = () => {
                             <button
                                 disabled={loading}
                                 type="submit"
-                                className="w-full bg-[#14B8A6] text-white py-4 rounded-2xl shadow-lg shadow-teal-50 hover:bg-[#0F9A8A] transition-all flex items-center justify-center gap-2 font-bold mt-2"
+                                className="w-full bg-[#14B8A6] text-white py-4 rounded-2xl shadow-lg shadow-teal-50 hover:bg-[#0F9A8A] transition-all flex items-center justify-center gap-2 font-medium mt-2"
                             >
                                 {loading ? <Loader2 className="animate-spin" size={20} /> : (isGuest ? 'Send Message' : 'Submit Ticket')}
                             </button>
@@ -298,7 +298,7 @@ const SupportWidget = () => {
                                                 : 'bg-white text-gray-800 border border-gray-100 rounded-bl-none'
                                                 }`}>
                                                 <p className="text-sm leading-relaxed">{msg.message}</p>
-                                                <span className={`text-[9px] font-bold block mt-2 uppercase tracking-tighter ${isMe ? 'text-teal-100' : 'text-gray-400'}`}>
+                                                <span className={`text-[9px] font-medium block mt-2 uppercase tracking-tighter ${isMe ? 'text-teal-100' : 'text-gray-400'}`}>
                                                     {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                 </span>
                                             </div>

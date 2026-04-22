@@ -104,7 +104,7 @@ const StaffDocuments = () => {
 
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Staff Document Center</h1>
+                    <h1 className="text-2xl font-medium text-gray-900">Staff Document Center</h1>
                     <p className="text-gray-500">Secure storage for employee contracts, IDs and certifications.</p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -114,7 +114,7 @@ const StaffDocuments = () => {
                     <button
                         onClick={() => fileInputRef.current?.click()}
                         disabled={uploading}
-                        className="flex items-center gap-2 px-6 py-2.5 bg-brand-teal text-white rounded-xl font-bold text-sm shadow-lg shadow-teal-100 hover:bg-brand-teal/90 transition-all disabled:opacity-60"
+                        className="flex items-center gap-2 px-6 py-2.5 bg-brand-teal text-white rounded-xl font-medium text-sm shadow-lg shadow-teal-100 hover:bg-brand-teal/90 transition-all disabled:opacity-60"
                     >
                         {uploading ? <Loader2 size={18} className="animate-spin" /> : <Upload size={18} />}
                         {uploading ? 'Uploading…' : 'Upload Document'}
@@ -139,7 +139,7 @@ const StaffDocuments = () => {
                                 <FolderOpen size={20} />
                             </div>
                             <div>
-                                <h3 className="text-sm font-bold text-gray-700">{type.replace('_', ' ')}</h3>
+                                <h3 className="text-sm font-medium text-gray-700">{type.replace('_', ' ')}</h3>
                                 <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">{countByType(type)} files</p>
                             </div>
                         </div>
@@ -161,7 +161,7 @@ const StaffDocuments = () => {
                         />
                     </div>
                     {typeFilter !== 'ALL' && (
-                        <button onClick={() => setTypeFilter('ALL')} className="flex items-center gap-2 px-3 py-1.5 bg-brand-teal/10 text-brand-teal rounded-xl text-xs font-bold hover:bg-brand-teal/20 transition-colors">
+                        <button onClick={() => setTypeFilter('ALL')} className="flex items-center gap-2 px-3 py-1.5 bg-brand-teal/10 text-brand-teal rounded-xl text-xs font-medium hover:bg-brand-teal/20 transition-colors">
                             <Filter size={14} /> {typeFilter} <span className="ml-1 text-brand-teal/60">×</span>
                         </button>
                     )}
@@ -192,13 +192,13 @@ const StaffDocuments = () => {
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="p-2 bg-red-50 text-red-600 rounded-lg"><FileText size={18} /></div>
-                                                <span className="text-sm font-bold text-gray-900 group-hover:text-brand-teal transition-colors">
+                                                <span className="text-sm font-medium text-gray-900 group-hover:text-brand-teal transition-colors">
                                                     {doc.name || doc.originalName || 'Untitled'}
                                                 </span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] font-bold rounded-full uppercase">
+                                            <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] font-medium rounded-full uppercase">
                                                 {doc.type || doc.documentType || 'OTHER'}
                                             </span>
                                         </td>
@@ -236,11 +236,11 @@ const StaffDocuments = () => {
                                     <td colSpan={6} className="px-6 py-16 text-center">
                                         <div className="flex flex-col items-center gap-3">
                                             <div className="p-4 bg-gray-50 rounded-full text-gray-300"><FileText size={40} /></div>
-                                            <p className="text-sm font-bold text-gray-500">
+                                            <p className="text-sm font-medium text-gray-500">
                                                 {searchTerm || typeFilter !== 'ALL' ? 'No documents match your filters' : 'No documents uploaded yet'}
                                             </p>
                                             {!searchTerm && typeFilter === 'ALL' && (
-                                                <button onClick={() => fileInputRef.current?.click()} className="text-brand-teal text-sm font-bold hover:underline">Upload your first document</button>
+                                                <button onClick={() => fileInputRef.current?.click()} className="text-brand-teal text-sm font-medium hover:underline">Upload your first document</button>
                                             )}
                                         </div>
                                     </td>
@@ -256,7 +256,7 @@ const StaffDocuments = () => {
                 <div className="flex items-center gap-4">
                     <div className="p-3 bg-white rounded-xl text-emerald-600 shadow-sm"><CheckCircle size={24} /></div>
                     <div>
-                        <h3 className="font-bold text-emerald-900">Secure Storage</h3>
+                        <h3 className="font-medium text-emerald-900">Secure Storage</h3>
                         <p className="text-sm text-emerald-700">{documents.length} document{documents.length !== 1 ? 's' : ''} on record. All files are encrypted and backed up automatically.</p>
                     </div>
                 </div>

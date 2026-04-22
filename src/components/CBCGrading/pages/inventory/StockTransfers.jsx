@@ -103,7 +103,7 @@ const StockTransfers = () => {
         return (
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 max-w-2xl mx-auto">
                 <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-100">
-                    <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <h2 className="text-xl font-medium text-gray-800 flex items-center gap-2">
                         <ArrowLeftRight className="text-brand-purple" />
                         New Stock Transfer
                     </h2>
@@ -159,7 +159,7 @@ const StockTransfers = () => {
                     </div>
 
                     <div className="flex justify-end pt-4">
-                        <button type="submit" className="px-6 py-2 bg-brand-purple text-white rounded-lg hover:bg-brand-purple/90 font-bold shadow-sm">
+                        <button type="submit" className="px-6 py-2 bg-brand-purple text-white rounded-lg hover:bg-brand-purple/90 font-medium shadow-sm">
                             Execute Transfer
                         </button>
                     </div>
@@ -173,7 +173,7 @@ const StockTransfers = () => {
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                     <div>
-                        <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <h2 className="text-xl font-medium text-gray-800 flex items-center gap-2">
                             <ArrowLeftRight className="text-brand-purple" />
                             Store Transfers
                         </h2>
@@ -191,7 +191,7 @@ const StockTransfers = () => {
                         </button>
                         <button
                             onClick={() => setShowForm(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-brand-purple text-white rounded-lg hover:bg-brand-purple/90 transition shadow-sm font-bold text-sm"
+                            className="flex items-center gap-2 px-4 py-2 bg-brand-purple text-white rounded-lg hover:bg-brand-purple/90 transition shadow-sm font-medium text-sm"
                         >
                             <Plus size={18} />
                             New Transfer
@@ -246,7 +246,7 @@ const StockTransfers = () => {
                                             <Box size={16} className="text-gray-400" />
                                             {transfer.item?.name || 'Unknown Item'}
                                         </td>
-                                        <td className="p-4 font-bold text-gray-700">
+                                        <td className="p-4 font-medium text-gray-700">
                                             {Number(transfer.quantity)}
                                         </td>
                                         <td className="p-4">

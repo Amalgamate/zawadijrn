@@ -68,7 +68,7 @@ const MyProgress = ({ onNavigate }) => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-black text-gray-900 flex items-center gap-2">
+          <h1 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
             <TrendingUp size={22} className="text-purple-600" /> My Progress
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">Track your completion across all enrolled courses</p>
@@ -80,8 +80,8 @@ const MyProgress = ({ onNavigate }) => {
         <div className="bg-[#520050] rounded-xl p-6 text-white flex items-center gap-6">
           <ProgressRing percent={overallProgress} size={90} stroke={9} />
           <div>
-            <p className="text-purple-200 text-xs font-bold uppercase tracking-widest">Overall Progress</p>
-            <p className="text-2xl font-black mt-1">{overallProgress}% Complete</p>
+            <p className="text-purple-200 text-xs font-medium uppercase tracking-widest">Overall Progress</p>
+            <p className="text-2xl font-semibold mt-1">{overallProgress}% Complete</p>
             <p className="text-purple-100 text-sm mt-1">
               {courses.reduce((s, c) => s + (c.completedItems || 0), 0)} of {courses.reduce((s, c) => s + (c.totalItems || 0), 0)} items done across {courses.length} course{courses.length !== 1 ? 's' : ''}
             </p>
@@ -97,7 +97,7 @@ const MyProgress = ({ onNavigate }) => {
       ) : courses.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
           <BookOpen size={40} className="mx-auto text-gray-300 mb-3" />
-          <p className="text-sm font-bold text-gray-500">No courses enrolled yet.</p>
+          <p className="text-sm font-medium text-gray-500">No courses enrolled yet.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -115,7 +115,7 @@ const MyProgress = ({ onNavigate }) => {
                 >
                   <ProgressRing percent={pct} size={56} stroke={6} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-black text-gray-900 truncate">{course.title}</p>
+                    <p className="text-sm font-semibold text-gray-900 truncate">{course.title}</p>
                     <p className="text-xs text-gray-400">{course.subject}{course.grade ? ` • ${course.grade}` : ''}</p>
                     <div className="mt-2 h-1.5 bg-gray-100 rounded-full overflow-hidden w-full">
                       <div
@@ -125,11 +125,11 @@ const MyProgress = ({ onNavigate }) => {
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className="text-xs font-black text-gray-500">{course.completedItems}/{course.totalItems}</p>
+                    <p className="text-xs font-semibold text-gray-500">{course.completedItems}/{course.totalItems}</p>
                     <p className="text-[10px] text-gray-400">items done</p>
                     <button
                       onClick={e => { e.stopPropagation(); onNavigate?.('student-course-view', { courseId: course.courseId }); }}
-                      className="mt-1 text-[10px] font-black text-purple-600 uppercase tracking-wider hover:underline"
+                      className="mt-1 text-[10px] font-semibold text-purple-600 uppercase tracking-wider hover:underline"
                     >
                       Open Course
                     </button>
@@ -160,17 +160,17 @@ const MyProgress = ({ onNavigate }) => {
                                   {idx + 1}. {item.title}
                                 </td>
                                 <td className="px-5 py-2.5">
-                                  <span className={`flex items-center gap-1 text-[10px] font-black uppercase ${meta.color}`}>
+                                  <span className={`flex items-center gap-1 text-[10px] font-semibold uppercase ${meta.color}`}>
                                     <Icon size={11} /> {item.contentType}
                                   </span>
                                 </td>
                                 <td className="px-5 py-2.5">
                                   {item.completed ? (
-                                    <span className="flex items-center gap-1 text-[10px] font-black text-emerald-600">
+                                    <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600">
                                       <CheckCircle size={12} /> Done
                                     </span>
                                   ) : (
-                                    <span className="flex items-center gap-1 text-[10px] font-black text-gray-400">
+                                    <span className="flex items-center gap-1 text-[10px] font-semibold text-gray-400">
                                       <Circle size={12} /> Not started
                                     </span>
                                   )}

@@ -95,12 +95,12 @@ export default function ResetPasswordForm({ onResetSuccess }) {
     <div className="w-full max-w-md">
       <div className="text-center mb-8">
         <div className="inline-flex items-center justify-center p-3 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 shadow-xl mb-4 transform hover:scale-105 transition-transform duration-500">
-          <span className="text-3xl font-black tracking-tighter flex items-center gap-1">
+          <span className="text-3xl font-semibold tracking-tighter flex items-center gap-1">
             <span className="text-[var(--brand-purple)]">Elim</span>
             <span className="text-teal-600 font-light">crown</span>
           </span>
         </div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Reset Password</h1>
+        <h1 className="text-3xl font-medium text-gray-900 mb-2">Reset Password</h1>
         <p className="text-gray-600">Create a new strong password for your account</p>
       </div>
 

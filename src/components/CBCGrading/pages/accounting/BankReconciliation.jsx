@@ -123,9 +123,9 @@ const BankReconciliation = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800 tracking-tight flex items-center gap-2">
+                    <h1 className="text-2xl font-medium text-gray-800 tracking-tight flex items-center gap-2">
                         Bank Reconciliation
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-brand-purple/10 text-brand-purple uppercase tracking-tighter">Live Beta</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-brand-purple/10 text-brand-purple uppercase tracking-tighter">Live Beta</span>
                     </h1>
                     <p className="text-gray-500 text-sm">Match bank statement lines with ledger entries</p>
                 </div>
@@ -146,7 +146,7 @@ const BankReconciliation = () => {
                     <div className="p-2 bg-gray-50 rounded-lg text-gray-400">
                         <Banknote size={20} />
                     </div>
-                    <Label className="text-xs font-bold uppercase text-gray-400 tracking-widest">Selected Bank Account</Label>
+                    <Label className="text-xs font-medium uppercase text-gray-400 tracking-widest">Selected Bank Account</Label>
                 </div>
                 <select 
                     className="flex-1 w-full flex h-10 rounded-md border border-gray-200 bg-gray-50/50 px-3 py-2 text-sm font-medium"
@@ -163,8 +163,8 @@ const BankReconciliation = () => {
                 </select>
                 <div className="flex items-center gap-6 px-4 py-2 bg-gray-50/50 rounded-lg border border-gray-100">
                     <div className="text-right">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">System Balance</p>
-                        <p className="text-xs font-bold text-gray-800 font-mono">
+                        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-tighter">System Balance</p>
+                        <p className="text-xs font-medium text-gray-800 font-mono">
                             {formatCurrency(bankAccounts.find(a => a.id === selectedBankId)?.balance || 0)}
                         </p>
                     </div>
@@ -176,8 +176,8 @@ const BankReconciliation = () => {
                 {/* Left: Statement Lines */}
                 <div className="lg:col-span-7 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden h-full flex flex-col">
                     <div className="p-4 bg-gray-50/50 border-b border-gray-100 flex items-center justify-between">
-                        <h2 className="text-xs font-black text-gray-500 uppercase tracking-widest">Statement Lines</h2>
-                        <span className="text-[10px] font-bold text-brand-purple">{statements.length} total entries</span>
+                        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Statement Lines</h2>
+                        <span className="text-[10px] font-medium text-brand-purple">{statements.length} total entries</span>
                     </div>
                     <div className="flex-1 overflow-y-auto max-h-[600px] divide-y divide-gray-50">
                         {loading ? (
@@ -197,22 +197,22 @@ const BankReconciliation = () => {
                                     <div className="flex justify-between items-start">
                                         <div className="flex flex-col gap-1">
                                             <div className="flex items-center gap-2">
-                                                <span className="text-sm font-bold text-gray-800 line-clamp-1">{line.description}</span>
+                                                <span className="text-sm font-medium text-gray-800 line-clamp-1">{line.description}</span>
                                                 {line.isReconciled && (
                                                     <CheckCircle2 size={14} className="text-emerald-500" />
                                                 )}
                                             </div>
-                                            <span className="text-[10px] font-bold text-gray-400 font-mono flex items-center gap-2">
+                                            <span className="text-[10px] font-medium text-gray-400 font-mono flex items-center gap-2">
                                                 <Calendar size={12} /> {new Date(line.date).toLocaleDateString()}
                                                 <span className="text-gray-200">|</span>
                                                 {line.reference || 'NO REF'}
                                             </span>
                                         </div>
                                         <div className="text-right">
-                                            <span className={`text-sm font-black ${line.amount < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                            <span className={`text-sm font-semibold ${line.amount < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
                                                 {formatCurrency(line.amount)}
                                             </span>
-                                            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">
+                                            <p className="text-[9px] font-medium text-gray-400 uppercase tracking-tighter">
                                                 {line.isReconciled ? 'Reconciled' : 'Unmatched'}
                                             </p>
                                         </div>
@@ -231,7 +231,7 @@ const BankReconciliation = () => {
                 {/* Right: Matching Area */}
                 <div className="lg:col-span-5 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden h-full flex flex-col">
                     <div className="p-4 bg-gray-50/50 border-b border-gray-100 flex items-center justify-between">
-                        <h2 className="text-xs font-black text-gray-500 uppercase tracking-widest">Match Ledger Entry</h2>
+                        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Match Ledger Entry</h2>
                     </div>
                     <div className="p-6 h-full flex flex-col">
                         {!activeLine ? (
@@ -240,7 +240,7 @@ const BankReconciliation = () => {
                                     <ArrowRightLeft className="text-gray-300" size={32} />
                                 </div>
                                 <div>
-                                    <p className="text-sm font-bold text-gray-800">Select an entry</p>
+                                    <p className="text-sm font-medium text-gray-800">Select an entry</p>
                                     <p className="text-xs text-gray-400 max-w-[200px]">Click on a statement line to find matching ledger entries</p>
                                 </div>
                             </div>
@@ -248,13 +248,13 @@ const BankReconciliation = () => {
                             <div className="space-y-6 flex flex-col h-full animate-in fade-in slide-in-from-right-4 duration-300">
                                 <div className="p-4 bg-brand-purple/5 rounded-xl border border-brand-purple/10">
                                     <div className="flex justify-between items-start mb-2">
-                                        <p className="text-[10px] font-black text-brand-purple uppercase tracking-widest">Active Search</p>
+                                        <p className="text-[10px] font-semibold text-brand-purple uppercase tracking-widest">Active Search</p>
                                         <button onClick={() => setActiveLine(null)}><X size={14} className="text-gray-400" /></button>
                                     </div>
-                                    <h3 className="text-sm font-bold text-gray-900">{activeLine.description}</h3>
+                                    <h3 className="text-sm font-medium text-gray-900">{activeLine.description}</h3>
                                     <div className="flex justify-between items-end mt-4 text-[10px] font-mono">
                                         <span className="text-gray-500">{new Date(activeLine.date).toDateString()}</span>
-                                        <span className={`text-sm font-black ${activeLine.amount < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                        <span className={`text-sm font-semibold ${activeLine.amount < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
                                             {formatCurrency(Math.abs(activeLine.amount))}
                                         </span>
                                     </div>
@@ -262,7 +262,7 @@ const BankReconciliation = () => {
 
                                 <div className="flex-1 overflow-y-auto space-y-3">
                                     <div className="flex items-center justify-between">
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Potential Matches</p>
+                                        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Potential Matches</p>
                                         {matchingLoading && <Loader2 className="animate-spin text-brand-purple" size={14} />}
                                     </div>
 
@@ -274,10 +274,10 @@ const BankReconciliation = () => {
                                             >
                                                 <div className="flex justify-between items-start mb-2">
                                                     <div className="flex flex-col">
-                                                        <span className="text-[10px] font-bold text-brand-purple uppercase">{match.journalEntry.reference}</span>
-                                                        <span className="text-xs font-bold text-gray-800">{match.account.name}</span>
+                                                        <span className="text-[10px] font-medium text-brand-purple uppercase">{match.journalEntry.reference}</span>
+                                                        <span className="text-xs font-medium text-gray-800">{match.account.name}</span>
                                                     </div>
-                                                    <span className="text-[11px] font-black text-gray-900 font-mono">
+                                                    <span className="text-[11px] font-semibold text-gray-900 font-mono">
                                                         {formatCurrency(Number(match.debit) || Number(match.credit))}
                                                     </span>
                                                 </div>
@@ -285,7 +285,7 @@ const BankReconciliation = () => {
                                                     <span>{new Date(match.journalEntry.date).toLocaleDateString()}</span>
                                                     <button 
                                                         onClick={() => handleReconcile(match.id)}
-                                                        className="px-2 py-1 bg-emerald-50 text-emerald-600 rounded-md hover:bg-emerald-600 hover:text-white transition-all font-bold uppercase tracking-tighter"
+                                                        className="px-2 py-1 bg-emerald-50 text-emerald-600 rounded-md hover:bg-emerald-600 hover:text-white transition-all font-medium uppercase tracking-tighter"
                                                     >
                                                         Match
                                                     </button>
@@ -295,9 +295,9 @@ const BankReconciliation = () => {
                                     ) : !matchingLoading ? (
                                         <div className="p-8 text-center space-y-2 border-2 border-dashed border-gray-100 rounded-2xl">
                                             <AlertCircle className="mx-auto text-amber-400" size={24} />
-                                            <p className="text-xs font-bold text-gray-600">No exact matches found</p>
+                                            <p className="text-xs font-medium text-gray-600">No exact matches found</p>
                                             <p className="text-[10px] text-gray-400">Try manual adjustment or create a missing entry</p>
-                                            <button className="text-[10px] font-black text-brand-purple font-mono underline uppercase mt-2">
+                                            <button className="text-[10px] font-semibold text-brand-purple font-mono underline uppercase mt-2">
                                                 Manual Journal
                                             </button>
                                         </div>
@@ -321,7 +321,7 @@ const BankReconciliation = () => {
                                 <Upload size={24} />
                             </div>
                             <div className="space-y-1">
-                                <p className="text-sm font-bold text-gray-800">Drop bank CSV here</p>
+                                <p className="text-sm font-medium text-gray-800">Drop bank CSV here</p>
                                 <p className="text-xs text-gray-400">Supports Equity, KCB, and M-Pesa statements</p>
                             </div>
                             <Button size="sm" variant="outline">Browse Files</Button>

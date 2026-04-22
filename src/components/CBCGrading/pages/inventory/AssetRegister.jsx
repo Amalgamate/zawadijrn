@@ -130,7 +130,7 @@ const AssetRegister = () => {
         <div className="p-6">
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800">Fixed Asset Register</h1>
+                    <h1 className="text-2xl font-medium text-gray-800">Fixed Asset Register</h1>
                     <p className="text-gray-500 text-sm">Tracking long-term school assets and equipment</p>
                 </div>
                 <button 
@@ -167,11 +167,11 @@ const AssetRegister = () => {
                 ) : assets.length === 0 ? (
                     <div className="col-span-full py-20 text-center bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
                         <Shield size={48} className="mx-auto mb-4 text-indigo-200" />
-                        <h3 className="text-lg font-bold text-gray-700">Empty Asset Register</h3>
+                        <h3 className="text-lg font-medium text-gray-700">Empty Asset Register</h3>
                         <p className="text-gray-500 max-w-sm mx-auto">Log your school assets to track location, custody and maintenance over time.</p>
                         <button 
                             onClick={() => setShowModal(true)}
-                            className="mt-6 text-indigo-600 font-bold hover:underline"
+                            className="mt-6 text-indigo-600 font-medium hover:underline"
                         >
                             Register your first asset
                         </button>
@@ -182,10 +182,10 @@ const AssetRegister = () => {
                             <div className="p-5 flex-1">
                                 <div className="flex justify-between items-start mb-4">
                                     <div>
-                                        <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">{asset.assetCode}</span>
-                                        <h3 className="text-lg font-bold text-gray-800 uppercase group-hover:text-indigo-600 transition-colors">{asset.name}</h3>
+                                        <span className="text-[10px] font-medium text-indigo-500 uppercase tracking-widest">{asset.assetCode}</span>
+                                        <h3 className="text-lg font-medium text-gray-800 uppercase group-hover:text-indigo-600 transition-colors">{asset.name}</h3>
                                     </div>
-                                    <span className={`px-2.5 py-1 rounded text-[10px] font-bold ${getConditionColor(asset.condition)}`}>
+                                    <span className={`px-2.5 py-1 rounded text-[10px] font-medium ${getConditionColor(asset.condition)}`}>
                                         {asset.condition}
                                     </span>
                                 </div>
@@ -207,11 +207,11 @@ const AssetRegister = () => {
                             </div>
 
                             <div className="p-4 bg-gray-50/50 border-t border-gray-100 flex gap-2">
-                                <button className="flex-1 bg-white border border-gray-200 py-2.5 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-100 transition-colors flex items-center justify-center gap-2">
+                                <button className="flex-1 bg-white border border-gray-200 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors flex items-center justify-center gap-2">
                                     <History size={16} />
                                     History
                                 </button>
-                                <button className="flex-1 bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 shadow-sm">
+                                <button className="flex-1 bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 shadow-sm">
                                     Assign
                                 </button>
                             </div>
@@ -230,7 +230,7 @@ const AssetRegister = () => {
                                     <Shield size={24} />
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-bold text-gray-800">Register Fixed Asset</h2>
+                                    <h2 className="text-xl font-medium text-gray-800">Register Fixed Asset</h2>
                                     <p className="text-sm text-gray-500">Track a new long-term high-value asset</p>
                                 </div>
                             </div>
@@ -241,7 +241,7 @@ const AssetRegister = () => {
                         <form onSubmit={handleRegisterAsset} className="p-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
                             <div className="grid grid-cols-2 gap-6 mb-8">
                                 <div className="space-y-2 col-span-2">
-                                    <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                                    <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                                         <Tag size={14} />
                                         Asset Name *
                                     </label>
@@ -255,7 +255,7 @@ const AssetRegister = () => {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                                    <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                                         <Bookmark size={14} />
                                         Asset Code / ID *
                                     </label>
@@ -269,7 +269,7 @@ const AssetRegister = () => {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                                    <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                                         <Info size={14} />
                                         Serial Number
                                     </label>
@@ -282,7 +282,7 @@ const AssetRegister = () => {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                                    <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                                         <Settings size={14} />
                                         Item Reference (Optional)
                                     </label>
@@ -298,7 +298,7 @@ const AssetRegister = () => {
                                     </select>
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                                    <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                                         <MapPin size={14} />
                                         Initial Store
                                     </label>
@@ -314,7 +314,7 @@ const AssetRegister = () => {
                                     </select>
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                                    <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                                         <Calendar size={14} />
                                         Purchase Date
                                     </label>
@@ -326,7 +326,7 @@ const AssetRegister = () => {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                                    <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                                         <DollarSign size={14} />
                                         Purchase Cost
                                     </label>
@@ -339,7 +339,7 @@ const AssetRegister = () => {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                                    <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                                         <Shield size={14} />
                                         Condition
                                     </label>
@@ -360,14 +360,14 @@ const AssetRegister = () => {
                                 <button 
                                     type="button" 
                                     onClick={() => setShowModal(false)} 
-                                    className="px-6 py-3 rounded-2xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition-all"
+                                    className="px-6 py-3 rounded-2xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 transition-all"
                                 >
                                     Cancel
                                 </button>
                                 <button 
                                     type="submit" 
                                     disabled={submitting} 
-                                    className="px-8 py-3 rounded-2xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 disabled:opacity-50 flex items-center gap-2"
+                                    className="px-8 py-3 rounded-2xl bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 disabled:opacity-50 flex items-center gap-2"
                                 >
                                     {submitting ? 'Registering...' : 'Complete Registration'}
                                 </button>

@@ -4,7 +4,7 @@ import { fetchWithAuth } from '../../../../services/api/core';
 import EmptyState from '../../shared/EmptyState';
 
 const Pill = ({ children, className = '' }) => (
-  <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-black uppercase tracking-widest ${className}`}>
+  <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest ${className}`}>
     {children}
   </span>
 );
@@ -60,7 +60,7 @@ const PathwaysHub = () => {
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-black text-gray-900">CBC Senior Secondary Pathways</h1>
+            <h1 className="text-2xl font-semibold text-gray-900">CBC Senior Secondary Pathways</h1>
             <Pill className="bg-indigo-50 text-indigo-800 border-indigo-200">Secondary</Pill>
           </div>
           <p className="mt-1 text-sm font-medium text-gray-600">
@@ -70,7 +70,7 @@ const PathwaysHub = () => {
         <button
           type="button"
           onClick={load}
-          className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border bg-white text-xs font-black text-gray-700 hover:bg-gray-50"
+          className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border bg-white text-xs font-semibold text-gray-700 hover:bg-gray-50"
         >
           <RefreshCw size={16} />
           Refresh
@@ -82,7 +82,7 @@ const PathwaysHub = () => {
           Loading pathways…
         </div>
       ) : error ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm font-bold text-red-700">
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm font-medium text-red-700">
           {error}
         </div>
       ) : visiblePathways.length === 0 ? (
@@ -94,7 +94,7 @@ const PathwaysHub = () => {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="rounded-2xl border bg-white p-4">
-            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-gray-500">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gray-500">
               <Layers size={16} />
               Pathways
             </div>
@@ -113,7 +113,7 @@ const PathwaysHub = () => {
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <div className="font-black">{p.name || p.code}</div>
+                      <div className="font-semibold">{p.name || p.code}</div>
                       <Pill className={active ? 'bg-white/70 border-indigo-200 text-indigo-800' : 'bg-gray-50 border-gray-200 text-gray-700'}>
                         {p.code}
                       </Pill>
@@ -130,8 +130,8 @@ const PathwaysHub = () => {
           <div className="lg:col-span-2 rounded-2xl border bg-white p-4">
             <div className="flex items-center justify-between gap-2">
               <div>
-                <div className="text-xs font-black uppercase tracking-widest text-gray-500">Category constraints</div>
-                <div className="mt-1 text-lg font-black text-gray-900">{selected?.name || selected?.code}</div>
+                <div className="text-xs font-semibold uppercase tracking-widest text-gray-500">Category constraints</div>
+                <div className="mt-1 text-lg font-semibold text-gray-900">{selected?.name || selected?.code}</div>
               </div>
               <Pill className="bg-slate-50 text-slate-700 border-slate-200">min/max rules</Pill>
             </div>
@@ -140,13 +140,13 @@ const PathwaysHub = () => {
               {(categories || []).map((c) => (
                 <div key={c.id || c.code} className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
                   <div className="flex items-center justify-between gap-2">
-                    <div className="font-black text-gray-900">{c.name}</div>
+                    <div className="font-semibold text-gray-900">{c.name}</div>
                     <Pill className="bg-white border-gray-200 text-gray-700">{c.code}</Pill>
                   </div>
-                  <div className="mt-2 text-xs font-bold text-gray-700">
-                    Min: <span className="font-black">{c.minSelect}</span>
+                  <div className="mt-2 text-xs font-medium text-gray-700">
+                    Min: <span className="font-semibold">{c.minSelect}</span>
                     {' • '}
-                    Max: <span className="font-black">{c.maxSelect == null ? '∞' : c.maxSelect}</span>
+                    Max: <span className="font-semibold">{c.maxSelect == null ? '∞' : c.maxSelect}</span>
                   </div>
                   {c.description && <div className="mt-2 text-xs text-gray-600">{c.description}</div>}
                 </div>
@@ -159,7 +159,7 @@ const PathwaysHub = () => {
             </div>
 
             <div className="mt-6 rounded-2xl border border-indigo-200 bg-indigo-50 p-4">
-              <div className="text-xs font-black uppercase tracking-widest text-indigo-700">Next UI steps</div>
+              <div className="text-xs font-semibold uppercase tracking-widest text-indigo-700">Next UI steps</div>
               <ul className="mt-2 text-sm font-medium text-indigo-900/90 list-disc pl-5 space-y-1">
                 <li>Assign each SS learner a pathway (one selection required)</li>
                 <li>Select subjects and show live validation errors per category</li>

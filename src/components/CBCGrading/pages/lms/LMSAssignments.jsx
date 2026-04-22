@@ -78,7 +78,7 @@ const LMSAssignments = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
+          <h1 className="text-3xl font-medium text-gray-800 flex items-center gap-3">
             <ClipboardList className="text-brand-purple" size={32} />
             Assignments Manager
           </h1>
@@ -99,28 +99,28 @@ const LMSAssignments = () => {
             <div className="p-3 bg-blue-50 text-blue-600 rounded-lg"><Clock size={24} /></div>
             <div>
                 <p className="text-sm text-gray-500 font-medium">Active (Due Soon)</p>
-                <p className="text-2xl font-bold text-gray-800">{assignments.filter(a => a.status === 'active').length}</p>
+                <p className="text-2xl font-medium text-gray-800">{assignments.filter(a => a.status === 'active').length}</p>
             </div>
         </div>
         <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4 hover:shadow-md transition duration-200">
             <div className="p-3 bg-amber-50 text-amber-600 rounded-lg"><CheckSquare size={24} /></div>
             <div>
                 <p className="text-sm text-gray-500 font-medium">Ready to Mark</p>
-                <p className="text-2xl font-bold text-gray-800">{assignments.filter(a => a.status === 'reviewing').length}</p>
+                <p className="text-2xl font-medium text-gray-800">{assignments.filter(a => a.status === 'reviewing').length}</p>
             </div>
         </div>
         <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4 hover:shadow-md transition duration-200">
             <div className="p-3 bg-green-50 text-green-600 rounded-lg"><CheckCircle size={24} /></div>
             <div>
                 <p className="text-sm text-gray-500 font-medium">Fully Graded</p>
-                <p className="text-2xl font-bold text-gray-800">14</p>
+                <p className="text-2xl font-medium text-gray-800">14</p>
             </div>
         </div>
         <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4 hover:shadow-md transition duration-200">
             <div className="p-3 bg-purple-50 text-purple-600 rounded-lg"><FileText size={24} /></div>
             <div>
                 <p className="text-sm text-gray-500 font-medium">Drafts</p>
-                <p className="text-2xl font-bold text-gray-800">{assignments.filter(a => a.status === 'draft').length}</p>
+                <p className="text-2xl font-medium text-gray-800">{assignments.filter(a => a.status === 'draft').length}</p>
             </div>
         </div>
       </div>
@@ -188,7 +188,7 @@ const LMSAssignments = () => {
                         <FileText size={18} />
                       </div>
                       <div>
-                        <p className="font-bold text-gray-800 text-sm group-hover:text-brand-purple transition-colors">
+                        <p className="font-medium text-gray-800 text-sm group-hover:text-brand-purple transition-colors">
                           {assignment.title}
                         </p>
                         <p className="text-xs text-gray-500 mt-0.5">{assignment.points} Points possible</p>
@@ -219,7 +219,7 @@ const LMSAssignments = () => {
                     </div>
                   </td>
                   <td className="py-4 px-6">
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border ${getStatusColor(assignment.status)}`}>
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusColor(assignment.status)}`}>
                       {getStatusLabel(assignment.status)}
                     </span>
                   </td>
@@ -265,7 +265,7 @@ const LMSAssignments = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-gray-100">
-              <h2 className="text-xl font-bold text-gray-800">Create New Assignment</h2>
+              <h2 className="text-xl font-medium text-gray-800">Create New Assignment</h2>
             </div>
             <div className="p-6 space-y-4">
                <div>

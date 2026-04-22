@@ -101,7 +101,7 @@ const ValuesAssessmentForm = ({ onBack, onSuccess }) => {
             {onBack && (
               <button onClick={onBack} className="text-blue-600 hover:text-blue-700 text-sm font-medium">← Back</button>
             )}
-            <h1 className="text-2xl font-bold text-gray-900">National Values Assessment</h1>
+            <h1 className="text-2xl font-medium text-gray-900">National Values Assessment</h1>
             {saveStatus === 'success' && <span className="text-green-600 text-sm font-medium">✓ Saved</span>}
           </div>
           <p className="text-gray-600 text-sm">Assess learner demonstration of Kenya's national values</p>

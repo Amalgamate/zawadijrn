@@ -295,7 +295,7 @@ const SupportHub = () => {
           className="bg-blue-500 text-white rounded-xl p-6 hover:from-blue-600 hover:to-blue-700 transition cursor-pointer"
         >
           <Book size={32} className="mb-3" />
-          <h3 className="font-bold text-lg mb-2">Getting Started</h3>
+          <h3 className="font-medium text-lg mb-2">Getting Started</h3>
           <p className="text-blue-100 text-sm">New user? Start here</p>
         </a>
 
@@ -304,7 +304,7 @@ const SupportHub = () => {
           className="bg-cyan-500 text-white rounded-xl p-6 hover:from-cyan-600 hover:to-cyan-700 transition cursor-pointer"
         >
           <MessageSquare size={32} className="mb-3" />
-          <h3 className="font-bold text-lg mb-2">Communications</h3>
+          <h3 className="font-medium text-lg mb-2">Communications</h3>
           <p className="text-cyan-100 text-sm">Email, SMS, M-Pesa setup</p>
         </a>
 
@@ -313,7 +313,7 @@ const SupportHub = () => {
           className="bg-purple-500 text-white rounded-xl p-6 hover:from-purple-600 hover:to-purple-700 transition cursor-pointer"
         >
           <Video size={32} className="mb-3" />
-          <h3 className="font-bold text-lg mb-2">Video Tutorials</h3>
+          <h3 className="font-medium text-lg mb-2">Video Tutorials</h3>
           <p className="text-purple-100 text-sm">Watch step-by-step guides</p>
         </a>
 
@@ -322,7 +322,7 @@ const SupportHub = () => {
           className="bg-green-500 text-white rounded-xl p-6 hover:from-green-600 hover:to-green-700 transition cursor-pointer"
         >
           <Mail size={32} className="mb-3" />
-          <h3 className="font-bold text-lg mb-2">Contact Support</h3>
+          <h3 className="font-medium text-lg mb-2">Contact Support</h3>
           <p className="text-green-100 text-sm">Get help from our team</p>
         </a>
       </div>
@@ -332,7 +332,7 @@ const SupportHub = () => {
         {filteredSections.length === 0 ? (
           <div className="bg-white rounded-xl shadow-md p-12 text-center">
             <Search className="mx-auto text-gray-400 mb-4" size={48} />
-            <h3 className="text-xl font-bold text-gray-600 mb-2">No results found</h3>
+            <h3 className="text-xl font-medium text-gray-600 mb-2">No results found</h3>
             <p className="text-gray-500">Try different search terms or browse categories below</p>
           </div>
         ) : (
@@ -350,7 +350,7 @@ const SupportHub = () => {
                     <div className={`w-10 h-10 bg-${section.color}-100 rounded-lg flex items-center justify-center`}>
                       <SectionIcon className={`text-${section.color}-600`} size={20} />
                     </div>
-                    <h3 className="text-lg font-bold text-gray-800">{section.title}</h3>
+                    <h3 className="text-lg font-medium text-gray-800">{section.title}</h3>
                     <span className="text-sm text-gray-500">({section.articles.length} articles)</span>
                   </div>
                   {isExpanded ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
@@ -364,7 +364,7 @@ const SupportHub = () => {
                         className="px-6 py-4 border-b last:border-b-0 hover:bg-gray-50 transition"
                       >
                         <h4 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
-                          <span className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-bold">
+                          <span className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-medium">
                             {index + 1}
                           </span>
                           {article.title}
@@ -382,7 +382,7 @@ const SupportHub = () => {
 
       {/* Additional Resources */}
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-        <h3 className="text-lg font-bold text-blue-900 mb-3 flex items-center gap-2">
+        <h3 className="text-lg font-medium text-blue-900 mb-3 flex items-center gap-2">
           <HelpCircle size={20} />
           Need More Help?
         </h3>

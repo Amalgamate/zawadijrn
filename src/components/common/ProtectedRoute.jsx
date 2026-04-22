@@ -69,7 +69,7 @@ export const ProtectedRoute = ({
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Access Denied</h2>
+          <h2 className="text-2xl font-medium text-gray-800 mb-2">Access Denied</h2>
           <p className="text-gray-600">You don't have permission to access this page.</p>
           <button 
             onClick={() => window.history.back()}
@@ -93,7 +93,7 @@ export const ProtectedRoute = ({
       return (
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Access Denied</h2>
+            <h2 className="text-2xl font-medium text-gray-800 mb-2">Access Denied</h2>
             <p className="text-gray-600">This page is restricted to specific roles.</p>
             <button 
               onClick={() => window.history.back()}

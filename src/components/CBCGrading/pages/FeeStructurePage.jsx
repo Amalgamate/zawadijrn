@@ -315,7 +315,7 @@ const FeeStructurePage = () => {
       <div className="max-w-4xl mx-auto">
         <div className="bg-white rounded-xl shadow">
           <div className="bg-blue-600 px-6 py-4 rounded-t-xl flex justify-between items-center">
-            <h2 className="text-2xl font-bold text-white">
+            <h2 className="text-2xl font-medium text-white">
               {editingStructure ? 'Edit Fee Structure' : 'Add Fee Structure'}
             </h2>
             <div className="text-blue-100 text-sm">
@@ -613,7 +613,7 @@ const FeeStructurePage = () => {
         <div className="relative">
           <button
             onClick={() => setShowGlobalFilters(!showGlobalFilters)}
-            className={`px-5 py-2.5 border rounded-xl font-bold flex items-center gap-2 transition-all ${activeFilterCount > 0 ? 'bg-blue-50 border-blue-200 text-blue-700' : 'hover:bg-gray-50 text-gray-700 bg-white shadow-sm'}`}
+            className={`px-5 py-2.5 border rounded-xl font-medium flex items-center gap-2 transition-all ${activeFilterCount > 0 ? 'bg-blue-50 border-blue-200 text-blue-700' : 'hover:bg-gray-50 text-gray-700 bg-white shadow-sm'}`}
           >
             <Filter size={18} className={activeFilterCount > 0 ? "text-blue-600" : "text-gray-500"} />
             Filters
@@ -628,11 +628,11 @@ const FeeStructurePage = () => {
           {showGlobalFilters && (
             <div className="absolute right-0 top-full mt-2 w-[320px] bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden animate-fade-in origin-top-right">
               <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-                <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                <h3 className="font-medium text-gray-800 flex items-center gap-2">
                   <Filter size={16} className="text-blue-600" /> Structure Filters
                 </h3>
                 {activeFilterCount > 0 && (
-                  <button onClick={clearAllFilters} className="text-[11px] font-bold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-md transition-colors">
+                  <button onClick={clearAllFilters} className="text-[11px] font-medium text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-md transition-colors">
                     Clear All
                   </button>
                 )}
@@ -640,7 +640,7 @@ const FeeStructurePage = () => {
 
               <div className="p-5 space-y-5 max-h-[60vh] overflow-y-auto custom-scrollbar">
                 <div>
-                  <h4 className="text-[11px] font-extrabold text-blue-500 uppercase tracking-widest mb-3">Academic Term</h4>
+                  <h4 className="text-[11px] font-semibold text-blue-500 uppercase tracking-widest mb-3">Academic Term</h4>
                   <div className="flex flex-col gap-3">
                     <div className="flex flex-col gap-1.5">
                       <label className="text-xs font-semibold text-gray-600">Grade Level</label>
@@ -661,7 +661,7 @@ const FeeStructurePage = () => {
               </div>
 
               <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end">
-                <button onClick={() => setShowGlobalFilters(false)} className="px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm">
+                <button onClick={() => setShowGlobalFilters(false)} className="px-5 py-2 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm">
                   Apply & Close
                 </button>
               </div>
@@ -694,7 +694,7 @@ const FeeStructurePage = () => {
                       <DollarSign size={20} className="text-blue-600" />
                     </div>
                     <div>
-                      <h3 className="text-sm font-bold text-gray-900">{group.grade} - {group.term}</h3>
+                      <h3 className="text-sm font-medium text-gray-900">{group.grade} - {group.term}</h3>
                       <p className="text-xs text-gray-500">Academic Year {group.academicYear}</p>
                     </div>
                   </div>
@@ -758,7 +758,7 @@ const FeeStructurePage = () => {
                         {/* Total Amount and Actions */}
                         <div className="flex items-center gap-4 ml-4 flex-shrink-0">
                           <div className="text-right">
-                            <p className="text-sm font-bold text-gray-900">KES {total.toLocaleString()}</p>
+                            <p className="text-sm font-medium text-gray-900">KES {total.toLocaleString()}</p>
                           </div>
 
                           {/* Action Buttons */}
@@ -808,9 +808,9 @@ const FeeStructurePage = () => {
                               <table className="w-full text-sm border-collapse">
                                 <thead className="border-b border-[color:var(--table-border)]">
                                   <tr>
-                                    <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Fee Type</th>
-                                    <th className="px-3 py-1.5 text-right text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Amount</th>
-                                    <th className="px-3 py-1.5 text-center text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase">Mandatory</th>
+                                    <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Fee Type</th>
+                                    <th className="px-3 py-1.5 text-right text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Amount</th>
+                                    <th className="px-3 py-1.5 text-center text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase">Mandatory</th>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -829,7 +829,7 @@ const FeeStructurePage = () => {
                                       </td>
                                     </tr>
                                   ))}
-                                  <tr className="bg-blue-50 border-t-2 border-blue-200 font-bold">
+                                  <tr className="bg-blue-50 border-t-2 border-blue-200 font-medium">
                                     <td className="px-3 py-1.5 text-gray-900 border-r border-blue-200/50">Total</td>
                                     <td className="px-3 py-1.5 text-right text-blue-600 border-r border-blue-200/50">
                                       KES {total.toLocaleString()}

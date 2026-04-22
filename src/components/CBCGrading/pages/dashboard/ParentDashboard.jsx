@@ -38,14 +38,14 @@ const MatrixTile = ({ title, value, subtitle, icon: Icon, accentIndex = 0, onCli
     >
       <div className="relative flex flex-col gap-4">
         <div className="flex items-start justify-between gap-2">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">{title}</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-400">{title}</p>
           <div className={cn('rounded-xl p-2.5 text-white shadow-sm', bgColor)}>
             <Icon size={18} strokeWidth={2.5} />
           </div>
         </div>
         <div>
-          <p className="text-3xl font-black tracking-tight text-gray-900">{value}</p>
-          {subtitle && <p className="mt-1 text-[10px] font-bold text-gray-500 uppercase tracking-wide opacity-70">{subtitle}</p>}
+          <p className="text-3xl font-semibold tracking-tight text-gray-900">{value}</p>
+          {subtitle && <p className="mt-1 text-[10px] font-medium text-gray-500 uppercase tracking-wide opacity-70">{subtitle}</p>}
         </div>
       </div>
     </button>
@@ -57,7 +57,7 @@ const TabButton = ({ active, label, icon: Icon, onClick }) => (
     type="button"
     onClick={onClick}
     className={cn(
-      'flex items-center gap-2 px-6 py-3 text-xs font-black uppercase tracking-widest transition-all duration-300 border-b-2 relative',
+      'flex items-center gap-2 px-6 py-3 text-xs font-semibold uppercase tracking-widest transition-all duration-300 border-b-2 relative',
       active
         ? 'border-orange-600 text-orange-600 bg-orange-50'
         : 'border-transparent text-gray-400 hover:text-gray-600 hover:bg-white/50'
@@ -205,7 +205,7 @@ const ParentDashboard = ({ user, onNavigate }) => {
         <div className="flex flex-col gap-1 border-b border-gray-100 bg-slate-50 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
             <LayoutGrid className="h-4 w-4 text-orange-600" />
-            <h3 className="text-xs font-black uppercase tracking-widest text-gray-900">Learner matrix</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-widest text-gray-900">Learner matrix</h3>
           </div>
           <p className="text-[11px] font-semibold text-gray-500">Snapshot across your children</p>
         </div>
@@ -252,7 +252,7 @@ const ParentDashboard = ({ user, onNavigate }) => {
                       <div className="flex items-center gap-3">
                         <div
                           className={cn(
-                            'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[10px] font-black text-white shadow-sm',
+                            'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[10px] font-semibold text-white shadow-sm',
                             idx % 4 === 0 && 'bg-cyan-500',
                             idx % 4 === 1 && 'bg-fuchsia-500',
                             idx % 4 === 2 && 'bg-amber-500',
@@ -265,14 +265,14 @@ const ParentDashboard = ({ user, onNavigate }) => {
                             .join('')
                             .slice(0, 3)}
                         </div>
-                        <p className="text-sm font-bold text-gray-900">{child.name}</p>
+                        <p className="text-sm font-medium text-gray-900">{child.name}</p>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm font-semibold text-gray-600">{child.grade}</td>
                     <td className="px-6 py-4">
                       <span
                         className={cn(
-                          'inline-flex rounded-lg border px-2.5 py-1 text-[10px] font-black uppercase tracking-wider',
+                          'inline-flex rounded-lg border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider',
                           child.performanceLevel === 'EE'
                             ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
                             : 'border-violet-200 bg-violet-50 text-violet-800'
@@ -281,12 +281,12 @@ const ParentDashboard = ({ user, onNavigate }) => {
                         {child.overallPerformance}% ({child.performanceLevel})
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm font-bold text-gray-900">{child.attendanceRate}%</td>
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{child.attendanceRate}%</td>
                     <td className="px-6 py-4">
                       <button
                         type="button"
                         onClick={() => setActiveTab('children')}
-                        className="text-[10px] font-black uppercase tracking-widest text-orange-600 hover:underline"
+                        className="text-[10px] font-semibold uppercase tracking-widest text-orange-600 hover:underline"
                       >
                         Portfolio
                       </button>
@@ -309,8 +309,8 @@ const ParentDashboard = ({ user, onNavigate }) => {
         >
           <div className="flex items-start justify-between border-b border-gray-100 pb-4">
             <div>
-              <h3 className="text-base font-black tracking-tight text-gray-900">{child.name}</h3>
-              <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-gray-400">
+              <h3 className="text-base font-semibold tracking-tight text-gray-900">{child.name}</h3>
+              <p className="mt-1 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
                 {child.grade} • ADM {child.admissionNumber}
               </p>
             </div>
@@ -321,33 +321,33 @@ const ParentDashboard = ({ user, onNavigate }) => {
 
           <div className="grid grid-cols-3 gap-2">
             <div className="rounded-xl bg-orange-50/50 p-3 text-center">
-              <p className="text-[9px] font-black uppercase tracking-widest text-orange-800/60">Attendance</p>
-              <p className="text-lg font-black text-orange-900">{child.attendanceRate}%</p>
+              <p className="text-[9px] font-semibold uppercase tracking-widest text-orange-800/60">Attendance</p>
+              <p className="text-lg font-semibold text-orange-900">{child.attendanceRate}%</p>
             </div>
             <div className="rounded-xl bg-amber-50/50 p-3 text-center">
-              <p className="text-[9px] font-black uppercase tracking-widest text-amber-800/60">Assessments</p>
-              <p className="text-lg font-black text-amber-900">{(child.recentAssessments || []).length}</p>
+              <p className="text-[9px] font-semibold uppercase tracking-widest text-amber-800/60">Assessments</p>
+              <p className="text-lg font-semibold text-amber-900">{(child.recentAssessments || []).length}</p>
             </div>
             <div className="rounded-xl bg-rose-50/50 p-3 text-center">
-              <p className="text-[9px] font-black uppercase tracking-widest text-rose-800/60">Level</p>
-              <p className="text-lg font-black text-rose-900">{child.performanceLevel}</p>
+              <p className="text-[9px] font-semibold uppercase tracking-widest text-rose-800/60">Level</p>
+              <p className="text-lg font-semibold text-rose-900">{child.performanceLevel}</p>
             </div>
           </div>
 
           <div className="space-y-3 pt-2">
-            <h4 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-900">
+            <h4 className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-gray-900">
                <TrendingUp size={12} className="text-orange-600" /> Academic performance
             </h4>
             <div className="divide-y divide-gray-100 max-h-[300px] overflow-y-auto px-1">
               {(child.subjects || []).map((sub, i) => (
                 <div key={i} className="flex items-center justify-between py-2.5">
                   <div>
-                    <p className="text-xs font-bold text-gray-800">{sub.name}</p>
+                    <p className="text-xs font-medium text-gray-800">{sub.name}</p>
                     <p className="text-[9px] font-medium text-gray-400 uppercase tracking-tighter">Learning Area</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs font-black text-orange-600">{sub.grade}</p>
-                    <p className="text-[9px] font-bold text-gray-400">{sub.score}%</p>
+                    <p className="text-xs font-semibold text-orange-600">{sub.grade}</p>
+                    <p className="text-[9px] font-medium text-gray-400">{sub.score}%</p>
                   </div>
                 </div>
               ))}
@@ -360,7 +360,7 @@ const ParentDashboard = ({ user, onNavigate }) => {
           <button
             type="button"
             onClick={() => handleDownloadReportCard(child)}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-orange-200 bg-orange-50 py-2.5 text-[10px] font-black uppercase tracking-widest text-orange-700 transition hover:bg-orange-100"
+            className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-orange-200 bg-orange-50 py-2.5 text-[10px] font-semibold uppercase tracking-widest text-orange-700 transition hover:bg-orange-100"
           >
             <Download size={14} />
             Download transcript
@@ -386,7 +386,7 @@ const ParentDashboard = ({ user, onNavigate }) => {
                 <FileText size={20} />
               </div>
               <div>
-                <p className="font-bold text-gray-900">{child.name}</p>
+                <p className="font-medium text-gray-900">{child.name}</p>
                 <p className="text-xs text-orange-500">
                   {child.grade} • {child.overallPerformance}% overall
                 </p>
@@ -395,7 +395,7 @@ const ParentDashboard = ({ user, onNavigate }) => {
             <button
               type="button"
               onClick={() => handleDownloadReportCard(child)}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-600 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-white hover:bg-orange-700"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-600 px-4 py-2.5 text-xs font-semibold uppercase tracking-widest text-white hover:bg-orange-700"
             >
               <Download size={14} />
               PDF
@@ -415,10 +415,10 @@ const ParentDashboard = ({ user, onNavigate }) => {
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
           <div className="mb-4 flex items-center gap-2 text-amber-900">
             <DollarSign size={22} />
-            <h3 className="text-sm font-black uppercase tracking-widest">Household balance</h3>
+            <h3 className="text-sm font-semibold uppercase tracking-widest">Household balance</h3>
           </div>
           {stats.totalBalance > 0 && (
-            <p className="mt-2 text-[10px] font-bold text-amber-900/60 uppercase tracking-widest flex items-center gap-1">
+            <p className="mt-2 text-[10px] font-medium text-amber-900/60 uppercase tracking-widest flex items-center gap-1">
               <Sparkles size={10} /> Instant M-Pesa enabled
             </p>
           )}
@@ -426,13 +426,13 @@ const ParentDashboard = ({ user, onNavigate }) => {
         <div className="rounded-2xl border border-orange-200 bg-orange-50 p-6 shadow-sm">
           <div className="mb-4 flex items-center gap-2 text-orange-900">
             <Megaphone size={22} />
-            <h3 className="text-sm font-black uppercase tracking-widest">Communication</h3>
+            <h3 className="text-sm font-semibold uppercase tracking-widest">Communication</h3>
           </div>
-          <p className="text-2xl font-black text-gray-900">{stats.bulletins} Active Notices</p>
+          <p className="text-2xl font-semibold text-gray-900">{stats.bulletins} Active Notices</p>
           <button
             type="button"
             onClick={() => onNavigate?.('comm-notices')}
-            className="mt-4 flex items-center gap-2 text-xs font-black uppercase tracking-widest text-orange-600 hover:underline"
+            className="mt-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-orange-600 hover:underline"
           >
             Go to notice board <Activity size={14} />
           </button>
@@ -441,11 +441,11 @@ const ParentDashboard = ({ user, onNavigate }) => {
 
       <div className="rounded-2xl border border-amber-100 bg-white shadow-sm overflow-hidden">
         <div className="bg-amber-50/50 px-6 py-4 border-b border-amber-100">
-          <h4 className="text-xs font-black uppercase tracking-widest text-orange-900">Financial Ledger</h4>
+          <h4 className="text-xs font-semibold uppercase tracking-widest text-orange-900">Financial Ledger</h4>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
-            <thead className="bg-amber-50/30 text-[10px] font-black uppercase tracking-widest text-orange-900 border-b border-amber-100">
+            <thead className="bg-amber-50/30 text-[10px] font-semibold uppercase tracking-widest text-orange-900 border-b border-amber-100">
               <tr>
                 <th className="px-6 py-3">Date</th>
                 <th className="px-6 py-3">Invoice #</th>
@@ -458,12 +458,12 @@ const ParentDashboard = ({ user, onNavigate }) => {
               {children.flatMap(c => c.invoices || []).sort((a,b) => new Date(b.date) - new Date(a.date)).map((inv, i) => (
                 <tr key={i} className="hover:bg-orange-50/30">
                   <td className="px-6 py-4 text-xs text-gray-600">{new Date(inv.date).toLocaleDateString()}</td>
-                  <td className="px-6 py-4 text-xs font-bold text-gray-900">{inv.number}</td>
+                  <td className="px-6 py-4 text-xs font-medium text-gray-900">{inv.number}</td>
                   <td className="px-6 py-4 text-xs text-gray-500">{inv.term} {inv.year}</td>
-                  <td className="px-6 py-4 text-xs font-bold text-gray-900">KES {Number(inv.amount).toLocaleString()}</td>
+                  <td className="px-6 py-4 text-xs font-medium text-gray-900">KES {Number(inv.amount).toLocaleString()}</td>
                   <td className="px-6 py-4">
                     <span className={cn(
-                      "px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wider",
+                      "px-2 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider",
                       Number(inv.balance) > 0 ? "bg-rose-50 text-rose-600" : "bg-emerald-50 text-emerald-600"
                     )}>
                       {Number(inv.balance) > 0 ? `KES ${Number(inv.balance).toLocaleString()}` : 'PAID'}
@@ -494,7 +494,7 @@ const ParentDashboard = ({ user, onNavigate }) => {
               <Sparkles size={24} />
             </div>
             <div>
-              <h1 className="text-xl font-black tracking-tight md:text-2xl">Family portal</h1>
+              <h1 className="text-xl font-semibold tracking-tight md:text-2xl">Family portal</h1>
               <p className="mt-1 text-xs font-semibold uppercase tracking-widest text-white/75">
                 {user?.firstName || user?.name?.split(' ')[0] || 'Guardian'} • Linked learners & school pulse
               </p>
@@ -511,7 +511,7 @@ const ParentDashboard = ({ user, onNavigate }) => {
                   showError('No active balance found.');
                 }
               }}
-              className="rounded-xl bg-emerald-500 px-4 py-2 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-900/20 transition hover:bg-emerald-600 active:scale-95 flex items-center gap-2"
+              className="rounded-xl bg-emerald-500 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white shadow-lg shadow-emerald-900/20 transition hover:bg-emerald-600 active:scale-95 flex items-center gap-2"
             >
               <CreditCard size={14} />
               Pay Fees
@@ -519,14 +519,14 @@ const ParentDashboard = ({ user, onNavigate }) => {
             <button
               type="button"
               onClick={() => onNavigate?.('planner-calendar')}
-              className="rounded-xl bg-white/15 px-4 py-2 text-xs font-black uppercase tracking-widest backdrop-blur transition hover:bg-white/25"
+              className="rounded-xl bg-white/15 px-4 py-2 text-xs font-semibold uppercase tracking-widest backdrop-blur transition hover:bg-white/25"
             >
               Calendar
             </button>
             <button
               type="button"
               onClick={() => onNavigate?.('comm-messages')}
-              className="rounded-xl bg-white px-4 py-2 text-xs font-black uppercase tracking-widest text-orange-900 shadow hover:bg-white/90"
+              className="rounded-xl bg-white px-4 py-2 text-xs font-semibold uppercase tracking-widest text-orange-900 shadow hover:bg-white/90"
             >
               Messages
             </button>

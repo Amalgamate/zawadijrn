@@ -43,7 +43,7 @@ const SummativeTestFormMobile = ({ onBack, onSuccess }) => {
     error ? "border-rose-500 bg-rose-50/10 text-rose-600" : "border-gray-200 text-gray-900 group-hover:border-gray-300"
   );
 
-  const labelClass = "block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1";
+  const labelClass = "block text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5 ml-1";
 
   return (
     <div className="fixed inset-0 bg-white flex flex-col z-[100] w-screen h-screen font-sans">
@@ -62,8 +62,8 @@ const SummativeTestFormMobile = ({ onBack, onSuccess }) => {
               </button>
             )}
             <div>
-               <h1 className="text-xl font-black text-gray-900 tracking-tight leading-none">Create Test</h1>
-               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Academic Assessment</p>
+               <h1 className="text-xl font-semibold text-gray-900 tracking-tight leading-none">Create Test</h1>
+               <p className="text-[10px] font-medium text-gray-400 uppercase tracking-widest mt-1">Academic Assessment</p>
             </div>
           </div>
           {saveStatus === 'success' && (
@@ -83,7 +83,7 @@ const SummativeTestFormMobile = ({ onBack, onSuccess }) => {
               <div className="flex items-start gap-3">
                 <AlertCircle size={20} className="text-rose-500 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-black text-rose-900 uppercase tracking-tight">Access Denied / Save Failed</p>
+                  <p className="text-sm font-semibold text-rose-900 uppercase tracking-tight">Access Denied / Save Failed</p>
                   <p className="text-xs text-rose-700 font-medium">{errors.submit || 'Please verify the missing fields below'}</p>
                 </div>
               </div>
@@ -103,7 +103,7 @@ const SummativeTestFormMobile = ({ onBack, onSuccess }) => {
               placeholder="e.g., Mathematics CAT 1"
             />
             {errors.title && (
-              <p className="text-rose-600 text-[10px] font-bold mt-1.5 ml-1 uppercase tracking-wider">{errors.title}</p>
+              <p className="text-rose-600 text-[10px] font-medium mt-1.5 ml-1 uppercase tracking-wider">{errors.title}</p>
             )}
           </div>
 
@@ -124,7 +124,7 @@ const SummativeTestFormMobile = ({ onBack, onSuccess }) => {
                 ))}
               </select>
               {errors.type && (
-                <p className="text-rose-600 text-[10px] font-bold mt-1.5 ml-1 uppercase tracking-wider">{errors.type}</p>
+                <p className="text-rose-600 text-[10px] font-medium mt-1.5 ml-1 uppercase tracking-wider">{errors.type}</p>
               )}
             </div>
 
@@ -155,7 +155,7 @@ const SummativeTestFormMobile = ({ onBack, onSuccess }) => {
                 )}
               </select>
               {errors.grade && (
-                <p className="text-rose-600 text-[10px] font-bold mt-1.5 ml-1 uppercase tracking-wider">{errors.grade}</p>
+                <p className="text-rose-600 text-[10px] font-medium mt-1.5 ml-1 uppercase tracking-wider">{errors.grade}</p>
               )}
             </div>
           </div>
@@ -177,7 +177,7 @@ const SummativeTestFormMobile = ({ onBack, onSuccess }) => {
               ))}
             </select>
             {errors.learningArea && (
-              <p className="text-rose-600 text-[10px] font-bold mt-1.5 ml-1 uppercase tracking-wider">{errors.learningArea}</p>
+              <p className="text-rose-600 text-[10px] font-medium mt-1.5 ml-1 uppercase tracking-wider">{errors.learningArea}</p>
             )}
           </div>
 
@@ -198,7 +198,7 @@ const SummativeTestFormMobile = ({ onBack, onSuccess }) => {
               ))}
             </select>
             {errors.term && (
-              <p className="text-rose-600 text-[10px] font-bold mt-1.5 ml-1 uppercase tracking-wider">{errors.term}</p>
+              <p className="text-rose-600 text-[10px] font-medium mt-1.5 ml-1 uppercase tracking-wider">{errors.term}</p>
             )}
           </div>
 
@@ -255,7 +255,7 @@ const SummativeTestFormMobile = ({ onBack, onSuccess }) => {
               if (onBack) onBack();
             }
           }}
-          className="flex-1 px-4 py-4 border border-gray-100 bg-gray-50 text-gray-600 font-bold rounded-2xl active:scale-95 transition-all text-xs uppercase tracking-widest"
+          className="flex-1 px-4 py-4 border border-gray-100 bg-gray-50 text-gray-600 font-medium rounded-2xl active:scale-95 transition-all text-xs uppercase tracking-widest"
           disabled={saving}
         >
           Discard
@@ -265,7 +265,7 @@ const SummativeTestFormMobile = ({ onBack, onSuccess }) => {
           onClick={handleSubmit}
           disabled={saving}
           className={cn(
-            "flex-[2] px-4 py-4 text-white font-black rounded-2xl transition-all flex items-center justify-center gap-3 text-xs uppercase tracking-[0.2em] shadow-xl",
+            "flex-[2] px-4 py-4 text-white font-semibold rounded-2xl transition-all flex items-center justify-center gap-3 text-xs uppercase tracking-[0.2em] shadow-xl",
             saving ? "bg-gray-400" : "bg-[var(--brand-purple)] hover:brightness-110 active:scale-95 shadow-purple-100"
           )}
         >

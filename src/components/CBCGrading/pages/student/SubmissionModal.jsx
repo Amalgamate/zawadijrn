@@ -36,7 +36,7 @@ const SubmissionModal = ({ assignment, onClose, onSubmitted }) => {
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-100 flex items-start justify-between">
           <div>
-            <h2 className="text-base font-black text-gray-900">Submit Assignment</h2>
+            <h2 className="text-base font-semibold text-gray-900">Submit Assignment</h2>
             <p className="text-xs text-gray-500 mt-0.5 font-medium">{assignment.title}</p>
           </div>
           <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
@@ -47,7 +47,7 @@ const SubmissionModal = ({ assignment, onClose, onSubmitted }) => {
         {done ? (
           <div className="p-10 text-center">
             <CheckCircle size={48} className="mx-auto text-emerald-500 mb-3" />
-            <p className="text-base font-black text-gray-900">Submitted!</p>
+            <p className="text-base font-semibold text-gray-900">Submitted!</p>
             <p className="text-sm text-gray-500 mt-1">Your work has been sent to your teacher.</p>
           </div>
         ) : (
@@ -55,17 +55,17 @@ const SubmissionModal = ({ assignment, onClose, onSubmitted }) => {
             {/* Assignment info */}
             <div className="bg-gray-50 rounded-lg px-4 py-3 text-xs space-y-1">
               <div className="flex justify-between">
-                <span className="font-bold text-gray-500 uppercase tracking-wider">Course</span>
-                <span className="font-bold text-gray-800">{assignment.course?.title}</span>
+                <span className="font-medium text-gray-500 uppercase tracking-wider">Course</span>
+                <span className="font-medium text-gray-800">{assignment.course?.title}</span>
               </div>
               <div className="flex justify-between">
-                <span className="font-bold text-gray-500 uppercase tracking-wider">Points</span>
-                <span className="font-bold text-gray-800">{assignment.totalPoints}</span>
+                <span className="font-medium text-gray-500 uppercase tracking-wider">Points</span>
+                <span className="font-medium text-gray-800">{assignment.totalPoints}</span>
               </div>
               {assignment.dueDate && (
                 <div className="flex justify-between">
-                  <span className="font-bold text-gray-500 uppercase tracking-wider">Due</span>
-                  <span className="font-bold text-gray-800">
+                  <span className="font-medium text-gray-500 uppercase tracking-wider">Due</span>
+                  <span className="font-medium text-gray-800">
                     {new Date(assignment.dueDate).toLocaleDateString('en-KE', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </span>
                 </div>
@@ -74,7 +74,7 @@ const SubmissionModal = ({ assignment, onClose, onSubmitted }) => {
 
             {/* Written answer */}
             <div>
-              <label className="block text-xs font-black text-gray-700 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
                 Your Answer
               </label>
               <textarea
@@ -88,7 +88,7 @@ const SubmissionModal = ({ assignment, onClose, onSubmitted }) => {
 
             {/* File URL */}
             <div>
-              <label className="block text-xs font-black text-gray-700 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
                 File URL <span className="normal-case font-medium text-gray-400">(optional — Google Drive, OneDrive, etc.)</span>
               </label>
               <input
@@ -100,19 +100,19 @@ const SubmissionModal = ({ assignment, onClose, onSubmitted }) => {
               />
             </div>
 
-            {error && <p className="text-xs text-red-600 font-bold bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
+            {error && <p className="text-xs text-red-600 font-medium bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
           </div>
         )}
 
         {!done && (
           <div className="px-6 pb-6 flex gap-3">
-            <button onClick={onClose} className="flex-1 py-2.5 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+            <button onClick={onClose} className="flex-1 py-2.5 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
               Cancel
             </button>
             <button
               onClick={handleSubmit}
               disabled={submitting}
-              className="flex-1 py-2.5 text-sm font-black text-white bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+              className="flex-1 py-2.5 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
             >
               {submitting ? <Loader size={16} className="animate-spin" /> : <Send size={16} />}
               {submitting ? 'Submitting…' : 'Submit'}

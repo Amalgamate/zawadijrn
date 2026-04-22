@@ -58,7 +58,7 @@ const InventoryCategories = () => {
         <div className="p-6">
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800">Item Categories</h1>
+                    <h1 className="text-2xl font-medium text-gray-800">Item Categories</h1>
                     <p className="text-gray-500 text-sm">Organize your inventory into hierarchical groups</p>
                 </div>
                 <button 
@@ -92,7 +92,7 @@ const InventoryCategories = () => {
                             ) : categories.length === 0 ? (
                                 <div className="p-20 text-center text-gray-500">
                                     <Folder size={64} className="mx-auto mb-4 opacity-10 text-blue-600" />
-                                    <h3 className="text-lg font-bold text-gray-400">Empty Library</h3>
+                                    <h3 className="text-lg font-medium text-gray-400">Empty Library</h3>
                                     <p className="max-w-[200px] mx-auto text-sm">Start by creating your first inventory category.</p>
                                 </div>
                             ) : (
@@ -103,12 +103,12 @@ const InventoryCategories = () => {
                                                 <Folder size={24} />
                                             </div>
                                             <div>
-                                                <h3 className="font-bold text-gray-800 text-base">{cat.name}</h3>
+                                                <h3 className="font-medium text-gray-800 text-base">{cat.name}</h3>
                                                 <p className="text-sm text-gray-500 line-clamp-1">{cat.description || 'No description provided'}</p>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-4">
-                                            <span className="text-xs font-bold px-3 py-1.5 rounded-full bg-blue-100 text-blue-600">
+                                            <span className="text-xs font-medium px-3 py-1.5 rounded-full bg-blue-100 text-blue-600">
                                                 {cat.items?.length || 0} Items
                                             </span>
                                             <ChevronRight size={20} className="text-gray-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
@@ -125,12 +125,12 @@ const InventoryCategories = () => {
                     <div className="bg-blue-600 rounded-2xl p-8 text-white shadow-xl shadow-blue-200 flex flex-col relative overflow-hidden">
                         <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
                         <Layers className="mb-6 opacity-80" size={40} />
-                        <h2 className="text-xl font-bold mb-3">Category Management</h2>
+                        <h2 className="text-xl font-medium mb-3">Category Management</h2>
                         <p className="text-blue-100/90 text-sm leading-relaxed mb-6">
                             Categories help you group items for easier searching and reporting. You can even create sub-categories for laboratory equipment, sports gear, or office stationery.
                         </p>
                         <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-xs border border-white/20">
-                            <p className="font-bold text-white mb-2 flex items-center gap-2">
+                            <p className="font-medium text-white mb-2 flex items-center gap-2">
                                 <span className="w-1.5 h-1.5 rounded-full bg-yellow-400"></span>
                                 PRO TIP:
                             </p>
@@ -150,7 +150,7 @@ const InventoryCategories = () => {
                                     <Plus size={24} />
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-bold text-gray-800">New Category</h2>
+                                    <h2 className="text-xl font-medium text-gray-800">New Category</h2>
                                     <p className="text-sm text-gray-500">Add a high-level grouping for items</p>
                                 </div>
                             </div>
@@ -161,7 +161,7 @@ const InventoryCategories = () => {
                         <form onSubmit={handleSaveCategory} className="p-8">
                             <div className="space-y-6">
                                 <div className="space-y-2">
-                                    <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                                    <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                                         Category Name
                                         <span className="text-red-500">*</span>
                                     </label>
@@ -175,7 +175,7 @@ const InventoryCategories = () => {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-sm font-bold text-gray-700">Description</label>
+                                    <label className="text-sm font-medium text-gray-700">Description</label>
                                     <textarea 
                                         value={formData.description} 
                                         onChange={e => setFormData({ ...formData, description: e.target.value })} 
@@ -189,14 +189,14 @@ const InventoryCategories = () => {
                                 <button 
                                     type="button" 
                                     onClick={() => setShowModal(false)} 
-                                    className="px-6 py-3 rounded-xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition-all"
+                                    className="px-6 py-3 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 transition-all"
                                 >
                                     Cancel
                                 </button>
                                 <button 
                                     type="submit" 
                                     disabled={submitting} 
-                                    className="px-8 py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 disabled:opacity-50 flex items-center gap-2"
+                                    className="px-8 py-3 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 disabled:opacity-50 flex items-center gap-2"
                                 >
                                     {submitting ? 'Creating...' : 'Create Category'}
                                 </button>

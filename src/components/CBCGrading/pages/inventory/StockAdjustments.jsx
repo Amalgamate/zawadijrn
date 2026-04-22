@@ -99,7 +99,7 @@ const StockAdjustments = () => {
         return (
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 max-w-2xl mx-auto">
                 <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-100">
-                    <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <h2 className="text-xl font-medium text-gray-800 flex items-center gap-2">
                         <Sliders className="text-brand-purple" />
                         New Stock Adjustment
                     </h2>
@@ -165,7 +165,7 @@ const StockAdjustments = () => {
                     </div>
 
                     <div className="flex justify-end pt-4">
-                        <button type="submit" className={`px-6 py-2 text-white rounded-lg font-bold shadow-sm transition ${adjustmentType === 'INCREASE' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}>
+                        <button type="submit" className={`px-6 py-2 text-white rounded-lg font-medium shadow-sm transition ${adjustmentType === 'INCREASE' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}>
                             Record Adjustment
                         </button>
                     </div>
@@ -179,7 +179,7 @@ const StockAdjustments = () => {
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                     <div>
-                        <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <h2 className="text-xl font-medium text-gray-800 flex items-center gap-2">
                             <Sliders className="text-brand-purple" />
                             Stock Adjustments
                         </h2>
@@ -197,7 +197,7 @@ const StockAdjustments = () => {
                         </button>
                         <button
                             onClick={() => setShowForm(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-brand-purple text-white rounded-lg hover:bg-brand-purple/90 transition shadow-sm font-bold text-sm"
+                            className="flex items-center gap-2 px-4 py-2 bg-brand-purple text-white rounded-lg hover:bg-brand-purple/90 transition shadow-sm font-medium text-sm"
                         >
                             <Plus size={18} />
                             New Adjustment
@@ -258,7 +258,7 @@ const StockAdjustments = () => {
                                             <td className="p-4 text-gray-600">
                                                 {adj.fromStore?.name || 'Unknown Store'}
                                             </td>
-                                            <td className="p-4 text-center text-base font-bold">
+                                            <td className="p-4 text-center text-base font-medium">
                                                 {isPositive ? (
                                                     <span className="text-green-600 flex items-center justify-center gap-1">
                                                         <TrendingUp size={16} /> +{qty}

@@ -125,7 +125,7 @@ const DepsModal = ({ app, onConfirm, onCancel }) => {
       <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
         <div className="flex items-center gap-3 mb-3">
           <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0" />
-          <h3 className="font-bold text-gray-900">Enable dependencies?</h3>
+          <h3 className="font-medium text-gray-900">Enable dependencies?</h3>
         </div>
         <p className="text-sm text-gray-600 mb-4">
           Enabling <strong>{app.name}</strong> will also activate:
@@ -147,7 +147,7 @@ const DepsModal = ({ app, onConfirm, onCancel }) => {
           </button>
           <button
             onClick={() => onConfirm(app.slug)}
-            className="flex-1 rounded-lg bg-brand-purple px-4 py-2 text-sm font-bold text-white hover:bg-brand-purple/90"
+            className="flex-1 rounded-lg bg-brand-purple px-4 py-2 text-sm font-medium text-white hover:bg-brand-purple/90"
           >
             Enable All
           </button>
@@ -281,7 +281,7 @@ const AppsPage = () => {
             <LayoutGrid className="h-5 w-5 text-brand-purple" />
           </div>
           <div>
-            <h1 className="text-xl font-black text-gray-900">Apps</h1>
+            <h1 className="text-xl font-semibold text-gray-900">Apps</h1>
             <p className="text-sm text-gray-500">Enable or disable feature modules for this school</p>
           </div>
         </div>
@@ -322,7 +322,7 @@ const AppsPage = () => {
                 className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <span className="font-bold text-gray-800">{cat}</span>
+                  <span className="font-medium text-gray-800">{cat}</span>
                   <span className="text-xs text-gray-400">
                     {activeCount}/{catApps.length} active
                   </span>

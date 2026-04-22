@@ -36,7 +36,7 @@ const MetricCard = ({ title, value, subtitle, icon: Icon, trend, trendValue, col
           <Icon size={20} className={`text-${color}`} />
         </div>
         {trendValue && (
-          <span className={`flex items-center text-[10px] font-black px-2 py-1 rounded-full ${trend === 'up'
+          <span className={`flex items-center text-[10px] font-semibold px-2 py-1 rounded-full ${trend === 'up'
             ? 'bg-emerald-50 text-emerald-600'
             : 'bg-rose-50 text-rose-600'
             }`}>
@@ -45,8 +45,8 @@ const MetricCard = ({ title, value, subtitle, icon: Icon, trend, trendValue, col
           </span>
         )}
       </div>
-      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{title}</p>
-      <h3 className="text-2xl font-black text-gray-900 mt-1">{value}</h3>
+      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">{title}</p>
+      <h3 className="text-2xl font-semibold text-gray-900 mt-1">{value}</h3>
       {subtitle && <p className="text-[10px] font-medium text-gray-500 mt-1 truncate opacity-70">{subtitle}</p>}
     </div>
   );
@@ -55,7 +55,7 @@ const MetricCard = ({ title, value, subtitle, icon: Icon, trend, trendValue, col
 const TabButton = ({ active, label, icon: Icon, onClick }) => (
   <button
     onClick={onClick}
-    className={`flex items-center gap-2 px-6 py-3 text-xs font-black uppercase tracking-widest transition-all duration-300 border-b-2 relative ${active
+    className={`flex items-center gap-2 px-6 py-3 text-xs font-semibold uppercase tracking-widest transition-all duration-300 border-b-2 relative ${active
       ? 'border-brand-purple text-brand-purple bg-brand-purple/10'
       : 'border-transparent text-gray-400 hover:text-gray-600 hover:bg-white/50'
       }`}
@@ -192,8 +192,8 @@ const TeacherDashboard = ({ learners, user, onNavigate }) => {
           {/* Urgent Tasks */}
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-              <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest">Instructional Priorities</h3>
-              <span className="px-2 py-0.5 bg-rose-50 text-rose-600 border border-rose-100 rounded text-[9px] font-bold uppercase tracking-widest">Urgent</span>
+              <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-widest">Instructional Priorities</h3>
+              <span className="px-2 py-0.5 bg-rose-50 text-rose-600 border border-rose-100 rounded text-[9px] font-medium uppercase tracking-widest">Urgent</span>
             </div>
             <div className="divide-y divide-gray-100">
               {!clockInState.clockedIn && (
@@ -208,11 +208,11 @@ const TeacherDashboard = ({ learners, user, onNavigate }) => {
                       <ClipboardList size={18} />
                     </div>
                     <div>
-                      <h4 className="text-xs font-black text-gray-900">Grade Pending Formative Assessments</h4>
-                      <p className="text-[10px] text-gray-500 uppercase font-black">{metrics.stats.pendingTasks} submissions awaiting review</p>
+                      <h4 className="text-xs font-semibold text-gray-900">Grade Pending Formative Assessments</h4>
+                      <p className="text-[10px] text-gray-500 uppercase font-semibold">{metrics.stats.pendingTasks} submissions awaiting review</p>
                     </div>
                   </div>
-                  <button className="text-[10px] font-black text-brand-purple uppercase tracking-widest hover:underline">Process Now</button>
+                  <button className="text-[10px] font-semibold text-brand-purple uppercase tracking-widest hover:underline">Process Now</button>
                 </div>
               ) : (
                 <div className="px-6 py-12 text-center text-xs text-gray-400 italic">No high-priority tasks pending review.</div>
@@ -222,22 +222,22 @@ const TeacherDashboard = ({ learners, user, onNavigate }) => {
 
           {/* Next Class Preview */}
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-            <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest border-b border-gray-100 pb-3 mb-4 flex items-center gap-2">
+            <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-widest border-b border-gray-100 pb-3 mb-4 flex items-center gap-2">
               <Clock size={14} className="text-brand-purple" /> Immediate Schedule
             </h3>
             {metrics?.schedule?.length > 0 ? (
               <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="text-center p-2 min-w-[70px] bg-white border border-gray-100 rounded shadow-sm">
-                    <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Starts @</p>
-                    <p className="text-sm font-black text-gray-900">{metrics.schedule[0].time}</p>
+                    <p className="text-[10px] font-semibold text-blue-600 uppercase tracking-widest">Starts @</p>
+                    <p className="text-sm font-semibold text-gray-900">{metrics.schedule[0].time}</p>
                   </div>
                   <div>
-                    <h4 className="text-xs font-black text-gray-900 uppercase tracking-tight">{metrics.schedule[0].subject}</h4>
-                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-0.5">{metrics.schedule[0].grade} • Room {metrics.schedule[0].room}</p>
+                    <h4 className="text-xs font-semibold text-gray-900 uppercase tracking-tight">{metrics.schedule[0].subject}</h4>
+                    <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-0.5">{metrics.schedule[0].grade} • Room {metrics.schedule[0].room}</p>
                   </div>
                 </div>
-                <button className="px-4 py-1.5 bg-brand-purple text-white rounded text-[10px] font-black uppercase tracking-widest shadow-sm hover:bg-brand-purple/90 transition-all">Launch Session</button>
+                <button className="px-4 py-1.5 bg-brand-purple text-white rounded text-[10px] font-semibold uppercase tracking-widest shadow-sm hover:bg-brand-purple/90 transition-all">Launch Session</button>
               </div>
             ) : (
               <div className="text-center py-12 text-gray-400 text-xs italic">No more classes scheduled for the remainder of the session.</div>
@@ -252,8 +252,8 @@ const TeacherDashboard = ({ learners, user, onNavigate }) => {
     <div className="space-y-6">
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-          <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest text-[#242424]">Weekly Curricular Timetable</h3>
-          <button className="flex items-center gap-1.5 text-[10px] font-black uppercase text-gray-500 hover:text-brand-purple px-2 py-1 border border-gray-200 rounded bg-white"><FileText size={12} /> Export Table</button>
+          <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-widest text-[#242424]">Weekly Curricular Timetable</h3>
+          <button className="flex items-center gap-1.5 text-[10px] font-semibold uppercase text-gray-500 hover:text-brand-purple px-2 py-1 border border-gray-200 rounded bg-white"><FileText size={12} /> Export Table</button>
         </div>
         <div className="p-0">
           <table className="w-full text-left">
@@ -269,12 +269,12 @@ const TeacherDashboard = ({ learners, user, onNavigate }) => {
             <tbody className="divide-y divide-gray-100">
               {metrics?.schedule?.map((item, idx) => (
                 <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
-                  <td className="px-6 py-4 text-xs font-black text-gray-500">{item.time}</td>
-                  <td className="px-6 py-4 text-xs font-black text-gray-900 tracking-tight">{item.subject}</td>
-                  <td className="px-6 py-4 text-xs font-bold text-gray-600">{item.grade}</td>
+                  <td className="px-6 py-4 text-xs font-semibold text-gray-500">{item.time}</td>
+                  <td className="px-6 py-4 text-xs font-semibold text-gray-900 tracking-tight">{item.subject}</td>
+                  <td className="px-6 py-4 text-xs font-medium text-gray-600">{item.grade}</td>
                   <td className="px-6 py-4 text-xs text-gray-600">Building {item.room.charAt(0)} / RM {item.room}</td>
                   <td className="px-6 py-4">
-                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${idx === 0 ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' : 'bg-gray-50 text-gray-400'}`}>
+                    <span className={`px-2 py-0.5 rounded text-[9px] font-semibold uppercase tracking-widest ${idx === 0 ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' : 'bg-gray-50 text-gray-400'}`}>
                       {idx === 0 ? 'Next Up' : 'Scheduled'}
                     </span>
                   </td>
@@ -291,7 +291,7 @@ const TeacherDashboard = ({ learners, user, onNavigate }) => {
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-          <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest border-b border-gray-100 pb-3 mb-6">Subject Proficiency Metrics</h3>
+          <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-widest border-b border-gray-100 pb-3 mb-6">Subject Proficiency Metrics</h3>
           <div className="space-y-6">
             {[
               { label: 'Attendance Compliance', value: metrics?.stats?.analytics?.attendance || 94, color: 'bg-emerald-500' },
@@ -301,8 +301,8 @@ const TeacherDashboard = ({ learners, user, onNavigate }) => {
             ].map((bar, idx) => (
               <div key={idx}>
                 <div className="flex justify-between items-center mb-1.5">
-                  <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{bar.label}</span>
-                  <span className="text-xs font-black text-gray-900">{bar.value}%</span>
+                  <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">{bar.label}</span>
+                  <span className="text-xs font-semibold text-gray-900">{bar.value}%</span>
                 </div>
                 <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
                   <div className={`${bar.color} h-full transition-all duration-1000 ease-out`} style={{ width: `${bar.value}%` }} />
@@ -313,24 +313,24 @@ const TeacherDashboard = ({ learners, user, onNavigate }) => {
         </div>
 
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-          <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest border-b border-gray-100 pb-3 mb-6">Learning Outcomes Distribution</h3>
+          <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-widest border-b border-gray-100 pb-3 mb-6">Learning Outcomes Distribution</h3>
           <div className="flex items-center justify-center py-8">
             <div className="grid grid-cols-2 gap-8 text-center">
               <div>
-                <p className="text-3xl font-black text-brand-purple">EE</p>
-                <p className="text-[10px] font-black text-gray-400 uppercase mt-1 tracking-widest">Exceeding (24%)</p>
+                <p className="text-3xl font-semibold text-brand-purple">EE</p>
+                <p className="text-[10px] font-semibold text-gray-400 uppercase mt-1 tracking-widest">Exceeding (24%)</p>
               </div>
               <div>
-                <p className="text-3xl font-black text-brand-teal">ME</p>
-                <p className="text-[10px] font-black text-gray-400 uppercase mt-1 tracking-widest">Meeting (56%)</p>
+                <p className="text-3xl font-semibold text-brand-teal">ME</p>
+                <p className="text-[10px] font-semibold text-gray-400 uppercase mt-1 tracking-widest">Meeting (56%)</p>
               </div>
               <div>
-                <p className="text-3xl font-black text-amber-500">AE</p>
-                <p className="text-[10px] font-black text-gray-400 uppercase mt-1 tracking-widest">Approaching (15%)</p>
+                <p className="text-3xl font-semibold text-amber-500">AE</p>
+                <p className="text-[10px] font-semibold text-gray-400 uppercase mt-1 tracking-widest">Approaching (15%)</p>
               </div>
               <div>
-                <p className="text-3xl font-black text-rose-500">BE</p>
-                <p className="text-[10px] font-black text-gray-400 uppercase mt-1 tracking-widest">Below (5%)</p>
+                <p className="text-3xl font-semibold text-rose-500">BE</p>
+                <p className="text-[10px] font-semibold text-gray-400 uppercase mt-1 tracking-widest">Below (5%)</p>
               </div>
             </div>
           </div>
@@ -353,19 +353,19 @@ const TeacherDashboard = ({ learners, user, onNavigate }) => {
               <Target size={28} className="text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-black text-white tracking-tight">Faculty Instruction Console</h1>
-              <p className="text-sm font-bold text-white/80 uppercase tracking-widest mt-1">
+              <h1 className="text-3xl font-semibold text-white tracking-tight">Faculty Instruction Console</h1>
+              <p className="text-sm font-medium text-white/80 uppercase tracking-widest mt-1">
                 Tutor ID: {user?.staffId || 'T-8829'} • {new Date().toLocaleDateString()} • Term 01, 2026
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button className="px-4 py-2.5 border border-white/30 rounded-lg hover:bg-white/10 transition-all duration-300 text-white font-bold text-sm backdrop-blur-sm flex items-center gap-2">
+            <button className="px-4 py-2.5 border border-white/30 rounded-lg hover:bg-white/10 transition-all duration-300 text-white font-medium text-sm backdrop-blur-sm flex items-center gap-2">
               <Calendar size={16} /> View Full Calendar
             </button>
             <button
               onClick={clockInState.clockedIn ? handleClockOut : handleClockIn}
-              className={`px-4 py-2.5 rounded-lg border font-bold text-sm backdrop-blur-sm transition-all duration-300 ${clockInState.clockedIn
+              className={`px-4 py-2.5 rounded-lg border font-medium text-sm backdrop-blur-sm transition-all duration-300 ${clockInState.clockedIn
                 ? 'bg-amber-500/30 text-white border-amber-200/60 hover:bg-amber-500/40'
                 : 'border-white/40 text-white hover:bg-white/10'
                 }`}

@@ -119,7 +119,7 @@ const CreateClassForm = () => {
           <ArrowLeft size={18} />
         </Button>
         <div>
-          <h1 className="text-3xl font-black text-gray-900">Create New Class</h1>
+          <h1 className="text-3xl font-semibold text-gray-900">Create New Class</h1>
           <p className="text-sm text-gray-500 mt-1">Add a new class to your school. Class code will be auto-generated.</p>
         </div>
       </div>
@@ -136,7 +136,7 @@ const CreateClassForm = () => {
               <div className="flex gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
                 <AlertCircle size={20} className="text-red-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-bold text-red-900">Error</p>
+                  <p className="font-medium text-red-900">Error</p>
                   <p className="text-sm text-red-800">{error}</p>
                 </div>
               </div>
@@ -145,7 +145,7 @@ const CreateClassForm = () => {
             {/* Grade & Stream */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Grade *
                 </label>
                 <select
@@ -165,7 +165,7 @@ const CreateClassForm = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Stream
                 </label>
                 <select
@@ -184,7 +184,7 @@ const CreateClassForm = () => {
             {/* Class Name & Room */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Class Name (Optional)
                 </label>
                 <Input
@@ -199,7 +199,7 @@ const CreateClassForm = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Room/Location
                 </label>
                 <Input
@@ -216,7 +216,7 @@ const CreateClassForm = () => {
             {/* Branch & Capacity */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Branch/Campus *
                 </label>
                 <select
@@ -236,7 +236,7 @@ const CreateClassForm = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Capacity
                 </label>
                 <Input
@@ -253,7 +253,7 @@ const CreateClassForm = () => {
 
             {/* Teacher Selection */}
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Class Teacher (Optional)
               </label>
               <select
@@ -275,7 +275,7 @@ const CreateClassForm = () => {
             {/* Academic Context */}
             <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Academic Year
                 </label>
                 <Input
@@ -288,7 +288,7 @@ const CreateClassForm = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Term
                 </label>
                 <select

@@ -96,7 +96,7 @@ const TeachersList = ({
             <div className="relative flex-shrink-0">
               <button
                 onClick={() => setShowGlobalFilters(!showGlobalFilters)}
-                className={`px-5 py-2.5 border rounded-xl font-bold flex items-center gap-2 transition-all ${activeFilterCount > 0 ? 'bg-blue-50 border-blue-200 text-blue-700' : 'hover:bg-gray-50 text-gray-700 bg-white shadow-sm'}`}
+                className={`px-5 py-2.5 border rounded-xl font-medium flex items-center gap-2 transition-all ${activeFilterCount > 0 ? 'bg-blue-50 border-blue-200 text-blue-700' : 'hover:bg-gray-50 text-gray-700 bg-white shadow-sm'}`}
               >
                 <Filter size={16} className={activeFilterCount > 0 ? 'text-blue-600' : 'text-gray-500'} />
                 Filters
@@ -108,11 +108,11 @@ const TeachersList = ({
               {showGlobalFilters && (
                 <div className="absolute right-0 top-full mt-2 w-[280px] bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden animate-fade-in origin-top-right">
                   <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-                    <h3 className="font-bold text-gray-800 flex items-center gap-2"><Filter size={16} className="text-blue-600" /> Tutor Filters</h3>
-                    {activeFilterCount > 0 && <button onClick={() => setFilterStatus('all')} className="text-[11px] font-bold text-red-600 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-md">Clear</button>}
+                    <h3 className="font-medium text-gray-800 flex items-center gap-2"><Filter size={16} className="text-blue-600" /> Tutor Filters</h3>
+                    {activeFilterCount > 0 && <button onClick={() => setFilterStatus('all')} className="text-[11px] font-medium text-red-600 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-md">Clear</button>}
                   </div>
                   <div className="p-5">
-                    <h4 className="text-[11px] font-extrabold text-blue-500 uppercase tracking-widest mb-3">Employment Status</h4>
+                    <h4 className="text-[11px] font-semibold text-blue-500 uppercase tracking-widest mb-3">Employment Status</h4>
                     <div className="flex flex-col gap-1.5">
                       {['all', 'ACTIVE', 'ON_LEAVE', 'INACTIVE'].map(s => (
                         <button key={s} onClick={() => setFilterStatus(s)} className={`text-left text-sm px-3 py-1.5 rounded-lg font-semibold transition-all ${filterStatus === s ? 'bg-blue-600 text-white' : 'hover:bg-gray-50 text-gray-700'}`}>
@@ -122,7 +122,7 @@ const TeachersList = ({
                     </div>
                   </div>
                   <div className="p-4 bg-gray-50 border-t flex justify-end">
-                    <button onClick={() => setShowGlobalFilters(false)} className="px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm">Apply & Close</button>
+                    <button onClick={() => setShowGlobalFilters(false)} className="px-5 py-2 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm">Apply & Close</button>
                   </div>
                 </div>
               )}
@@ -134,8 +134,8 @@ const TeachersList = ({
             {/* Metrics */}
             <div className="hidden lg:flex items-center gap-4 mr-2 border-r pr-4 border-gray-200 h-10">
               <div className="text-right">
-                <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Total Tutors</p>
-                <p className="text-xl font-bold text-gray-800 leading-none">{pagination?.total || 0}</p>
+                <p className="text-[10px] text-gray-500 uppercase font-medium tracking-wider">Total Tutors</p>
+                <p className="text-xl font-medium text-gray-800 leading-none">{pagination?.total || 0}</p>
               </div>
             </div>
 
@@ -171,7 +171,7 @@ const TeachersList = ({
 
             <button
               onClick={onAddTeacher}
-              className="flex items-center gap-2 px-4 py-2 bg-brand-teal text-white rounded-lg hover:bg-brand-teal/90 transition shadow-sm font-bold"
+              className="flex items-center gap-2 px-4 py-2 bg-brand-teal text-white rounded-lg hover:bg-brand-teal/90 transition shadow-sm font-medium"
             >
               <Plus size={18} />
               <span className="hidden sm:inline">Add Tutor</span>
@@ -201,13 +201,13 @@ const TeachersList = ({
           <table className="w-full border-collapse text-xs">
             <thead className="border-b border-[color:var(--table-border)]">
               <tr>
-                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Teacher</th>
-                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Employee No</th>
-                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Role</th>
-                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Subject</th>
-                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Contact</th>
-                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Status</th>
-                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Actions</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Teacher</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Employee No</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Role</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Subject</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Contact</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Status</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -215,7 +215,7 @@ const TeachersList = ({
                 <tr key={teacher.id} onClick={() => onViewTeacher(teacher)} className="hover:bg-gray-50 cursor-pointer transition">
                   <td className="px-3 py-1.5 border-r border-gray-100">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-brand-purple/10 text-brand-purple flex items-center justify-center text-xs font-bold">
+                      <div className="w-8 h-8 rounded-full bg-brand-purple/10 text-brand-purple flex items-center justify-center text-xs font-medium">
                         {teacher.avatar || getInitials(teacher.firstName, teacher.lastName)}
                       </div>
                       <div>
@@ -286,7 +286,7 @@ const TeachersList = ({
                 <button
                   onClick={(e) => { e.stopPropagation(); handlePageChange(pagination.page - 1); }}
                   disabled={pagination.page === 1}
-                  className="px-3 py-1 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition text-sm font-bold text-brand-purple"
+                  className="px-3 py-1 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition text-sm font-medium text-brand-purple"
                 >
                   Previous
                 </button>
@@ -296,7 +296,7 @@ const TeachersList = ({
                 <button
                   onClick={(e) => { e.stopPropagation(); handlePageChange(pagination.page + 1); }}
                   disabled={pagination.page === pagination.pages}
-                  className="px-3 py-1 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition text-sm font-bold text-brand-purple"
+                  className="px-3 py-1 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition text-sm font-medium text-brand-purple"
                 >
                   Next
                 </button>

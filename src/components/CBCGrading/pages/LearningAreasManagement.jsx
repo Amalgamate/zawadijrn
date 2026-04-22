@@ -165,7 +165,7 @@ const LearningAreasManagement = () => {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+          <h2 className="text-2xl font-medium text-gray-800 flex items-center gap-2">
             <Layers className="text-brand-purple" />
             Learning Areas Management
           </h2>
@@ -177,7 +177,7 @@ const LearningAreasManagement = () => {
            <button
             onClick={handleSeedAreas}
             disabled={seeding || loading}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all shadow-sm ${seeding
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all shadow-sm ${seeding
               ? 'bg-gray-100 text-gray-400 cursor-wait'
               : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
               }`}
@@ -193,7 +193,7 @@ const LearningAreasManagement = () => {
 
           <button
             onClick={() => handleOpenModal()}
-            className="flex items-center gap-2 px-5 py-2.5 bg-brand-purple text-white rounded-xl font-bold hover:bg-brand-purple/90 transition-all shadow-md shadow-brand-purple/20"
+            className="flex items-center gap-2 px-5 py-2.5 bg-brand-purple text-white rounded-xl font-medium hover:bg-brand-purple/90 transition-all shadow-md shadow-brand-purple/20"
           >
             <Plus size={18} />
             Add Learning Area
@@ -203,7 +203,7 @@ const LearningAreasManagement = () => {
             <button
               onClick={handleBulkDelete}
               disabled={deleting}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all shadow-sm ${deleting
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all shadow-sm ${deleting
                 ? 'bg-gray-100 text-gray-400 cursor-wait'
                 : 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200'
                 }`}
@@ -231,7 +231,7 @@ const LearningAreasManagement = () => {
             <div className="bg-red-50 text-red-600 p-4 rounded-xl inline-block mb-4">
               <X size={32} />
             </div>
-            <h3 className="text-lg font-bold text-gray-800">{error}</h3>
+            <h3 className="text-lg font-medium text-gray-800">{error}</h3>
             <button
               onClick={fetchLearningAreas}
               className="mt-4 px-6 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition font-semibold"
@@ -258,7 +258,7 @@ const LearningAreasManagement = () => {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="px-6 py-4 bg-gray-50 border-b flex items-center justify-between">
-              <h3 className="text-xl font-bold text-gray-800">
+              <h3 className="text-xl font-medium text-gray-800">
                 {editingArea ? 'Edit Learning Area' : 'New Learning Area'}
               </h3>
               <button
@@ -272,7 +272,7 @@ const LearningAreasManagement = () => {
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Learning Area Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Learning Area Name</label>
                   <input
                     type="text"
                     value={formData.name}
@@ -284,7 +284,7 @@ const LearningAreasManagement = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Short Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Short Name</label>
                   <input
                     type="text"
                     value={formData.shortName}
@@ -295,7 +295,7 @@ const LearningAreasManagement = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Grade Level</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Grade Level</label>
                   <select
                     value={formData.gradeLevel}
                     onChange={(e) => setFormData({ ...formData, gradeLevel: e.target.value })}
@@ -308,7 +308,7 @@ const LearningAreasManagement = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Display Icon</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Display Icon</label>
                   <select
                     value={formData.icon}
                     onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
@@ -327,7 +327,7 @@ const LearningAreasManagement = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Theme Color</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Theme Color</label>
                   <input
                     type="color"
                     value={formData.color}
@@ -338,7 +338,7 @@ const LearningAreasManagement = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Description (Optional)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description (Optional)</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -350,7 +350,7 @@ const LearningAreasManagement = () => {
 
               {/* Preview */}
               <div className="p-4 bg-gray-50 border border-gray-100 rounded-2xl">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Preview</p>
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3 text-center">Preview</p>
                 <div className="flex items-center gap-4">
                   <div
                     className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shadow-sm"
@@ -359,7 +359,7 @@ const LearningAreasManagement = () => {
                     {formData.icon}
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-bold text-gray-900 leading-tight">{formData.name || 'Subject Name'}</h4>
+                    <h4 className="font-medium text-gray-900 leading-tight">{formData.name || 'Subject Name'}</h4>
                     <p className="text-xs text-gray-500 font-medium">
                       <span className="text-brand-purple">{formData.shortName || 'CODE'}</span> • {getGradeLabel(formData.gradeLevel)}
                     </p>
@@ -371,13 +371,13 @@ const LearningAreasManagement = () => {
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition"
+                  className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-6 py-3 bg-brand-purple text-white rounded-xl font-bold hover:bg-brand-purple/90 transition shadow-lg shadow-brand-purple/10"
+                  className="flex-1 px-6 py-3 bg-brand-purple text-white rounded-xl font-medium hover:bg-brand-purple/90 transition shadow-lg shadow-brand-purple/10"
                 >
                   {editingArea ? 'Update' : 'Create'}
                 </button>

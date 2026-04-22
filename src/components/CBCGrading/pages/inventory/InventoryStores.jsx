@@ -59,7 +59,7 @@ const InventoryStores = () => {
         <div className="p-6">
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800">Inventory Stores</h1>
+                    <h1 className="text-2xl font-medium text-gray-800">Inventory Stores</h1>
                     <p className="text-gray-500 text-sm">Manage physical storage locations and warehouses</p>
                 </div>
                 <button 
@@ -81,11 +81,11 @@ const InventoryStores = () => {
                 ) : stores.length === 0 ? (
                     <div className="md:col-span-2 lg:col-span-3 bg-white p-20 rounded-2xl border-2 border-dashed border-gray-100 text-center">
                         <Building2 size={64} className="mx-auto mb-6 text-blue-600 opacity-20" />
-                        <h2 className="text-xl font-bold text-gray-700 mb-2">No Stores Found</h2>
+                        <h2 className="text-xl font-medium text-gray-700 mb-2">No Stores Found</h2>
                         <p className="text-gray-500 mb-8 max-w-sm mx-auto text-sm">Storage locations like Main Store, Library, or Science Labs haven't been configured yet.</p>
                         <button 
                             onClick={() => setShowModal(true)}
-                            className="bg-blue-50 text-blue-600 font-bold px-6 py-3 rounded-xl hover:bg-blue-100 transition-all flex items-center gap-2 mx-auto"
+                            className="bg-blue-50 text-blue-600 font-medium px-6 py-3 rounded-xl hover:bg-blue-100 transition-all flex items-center gap-2 mx-auto"
                         >
                             <Plus size={20} />
                             Set up your first store
@@ -99,15 +99,15 @@ const InventoryStores = () => {
                                     <Home size={24} />
                                 </div>
                                 <div className="flex flex-col items-end gap-2">
-                                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${store.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                    <span className={`px-3 py-1 rounded-full text-[10px] font-medium uppercase tracking-wider ${store.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
                                         {store.isActive ? 'Active' : 'Inactive'}
                                     </span>
                                     {store.code && (
-                                        <span className="text-[10px] font-mono text-gray-400 font-bold uppercase">{store.code}</span>
+                                        <span className="text-[10px] font-mono text-gray-400 font-medium uppercase">{store.code}</span>
                                     )}
                                 </div>
                             </div>
-                            <h3 className="text-lg font-bold text-gray-800 mb-1 group-hover:text-blue-600 transition-colors uppercase">{store.name}</h3>
+                            <h3 className="text-lg font-medium text-gray-800 mb-1 group-hover:text-blue-600 transition-colors uppercase">{store.name}</h3>
                             <div className="flex items-center gap-2 text-gray-500 text-sm mb-6">
                                 <MapPin size={16} className="text-red-400" />
                                 <span className="font-medium">{store.location || 'Central Campus'}</span>
@@ -115,15 +115,15 @@ const InventoryStores = () => {
 
                             <div className="grid grid-cols-2 gap-4 mt-auto">
                                 <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Items</p>
+                                    <p className="text-[10px] font-medium text-gray-400 uppercase tracking-widest mb-1">Items</p>
                                     <div className="flex items-center gap-2">
                                         <Box size={16} className="text-blue-500" />
-                                        <span className="font-bold text-gray-800 text-lg">0</span>
+                                        <span className="font-medium text-gray-800 text-lg">0</span>
                                     </div>
                                 </div>
                                 <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Status</p>
-                                    <p className="font-bold text-green-600 text-sm flex items-center gap-1">
+                                    <p className="text-[10px] font-medium text-gray-400 uppercase tracking-widest mb-1">Status</p>
+                                    <p className="font-medium text-green-600 text-sm flex items-center gap-1">
                                         <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
                                         Ready
                                     </p>
@@ -131,7 +131,7 @@ const InventoryStores = () => {
                             </div>
 
                             <div className="mt-6 flex gap-3">
-                                <button className="flex-1 bg-white border-2 border-gray-50 text-gray-700 py-2.5 rounded-xl text-sm font-bold hover:bg-gray-50 transition-all flex items-center justify-center gap-2">
+                                <button className="flex-1 bg-white border-2 border-gray-50 text-gray-700 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 transition-all flex items-center justify-center gap-2">
                                     <Eye size={18} />
                                     Details
                                 </button>
@@ -151,7 +151,7 @@ const InventoryStores = () => {
                                     <Plus size={24} />
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-bold text-gray-800">New Store</h2>
+                                    <h2 className="text-xl font-medium text-gray-800">New Store</h2>
                                     <p className="text-sm text-gray-500">Configure a storage or distribution point</p>
                                 </div>
                             </div>
@@ -163,7 +163,7 @@ const InventoryStores = () => {
                             <div className="space-y-6">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2 col-span-2 md:col-span-1">
-                                        <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                                        <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                                             Store Name
                                             <span className="text-red-500">*</span>
                                         </label>
@@ -177,7 +177,7 @@ const InventoryStores = () => {
                                         />
                                     </div>
                                     <div className="space-y-2 col-span-2 md:col-span-1">
-                                        <label className="text-sm font-bold text-gray-700">Store Code</label>
+                                        <label className="text-sm font-medium text-gray-700">Store Code</label>
                                         <input 
                                             value={formData.code} 
                                             onChange={e => setFormData({ ...formData, code: e.target.value })} 
@@ -188,7 +188,7 @@ const InventoryStores = () => {
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-sm font-bold text-gray-700">Location / Landmark</label>
+                                    <label className="text-sm font-medium text-gray-700">Location / Landmark</label>
                                     <input 
                                         value={formData.location} 
                                         onChange={e => setFormData({ ...formData, location: e.target.value })} 
@@ -202,14 +202,14 @@ const InventoryStores = () => {
                                 <button 
                                     type="button" 
                                     onClick={() => setShowModal(false)} 
-                                    className="px-6 py-3 rounded-xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition-all"
+                                    className="px-6 py-3 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 transition-all"
                                 >
                                     Cancel
                                 </button>
                                 <button 
                                     type="submit" 
                                     disabled={submitting} 
-                                    className="px-8 py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 disabled:opacity-50 flex items-center gap-2"
+                                    className="px-8 py-3 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 disabled:opacity-50 flex items-center gap-2"
                                 >
                                     {submitting ? 'Adding...' : 'Create Store'}
                                 </button>

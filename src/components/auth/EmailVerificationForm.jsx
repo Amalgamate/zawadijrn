@@ -213,7 +213,7 @@ export default function EmailVerificationForm({ email, phone, onVerifySuccess, b
             <div className="inline-flex items-center justify-center w-20 h-20 bg-green-500 rounded-full mb-6 animate-bounce">
               <CheckCircle className="text-white" size={48} />
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-3">Verification Successful!</h1>
+            <h1 className="text-3xl font-medium text-gray-900 mb-3">Verification Successful!</h1>
             <p className="text-gray-600 text-lg">Your account has been verified. Redirecting you to the dashboard...</p>
           </div>
         </div>
@@ -251,7 +251,7 @@ export default function EmailVerificationForm({ email, phone, onVerifySuccess, b
                       onError={(e) => { e.target.style.display = 'none'; }}
                     />
                   )}
-                  <span className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tighter text-white whitespace-nowrap uppercase">
+                  <span className="text-2xl sm:text-4xl lg:text-5xl font-semibold tracking-tighter text-white whitespace-nowrap uppercase">
                     {brandingSettings?.schoolName || 'ZAWADI SMS'}
                   </span>
                 </div>
@@ -259,7 +259,7 @@ export default function EmailVerificationForm({ email, phone, onVerifySuccess, b
 
               {/* Verification Message */}
               <div className="space-y-6">
-                <h2 className="text-4xl font-bold drop-shadow-md">
+                <h2 className="text-4xl font-medium drop-shadow-md">
                   {isOtpSent ? 'Almost There!' : 'Secure Your Account'}
                 </h2>
                 <p className="text-white/80 text-lg leading-relaxed">
@@ -320,7 +320,7 @@ export default function EmailVerificationForm({ email, phone, onVerifySuccess, b
               <div className="inline-flex items-center justify-center w-16 h-16 bg-[var(--brand-purple)] rounded-2xl mb-4 shadow-lg">
                 {getVerificationIcon()}
               </div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              <h1 className="text-3xl font-medium text-gray-900 mb-2">
                 {isOtpSent ? 'Verify Your Account' : 'Choose Verification'}
               </h1>
               <p className="text-gray-600 mb-1">
@@ -397,7 +397,7 @@ export default function EmailVerificationForm({ email, phone, onVerifySuccess, b
                           onChange={(e) => handleChange(index, e.target.value)}
                           onKeyDown={(e) => handleKeyDown(index, e)}
                           onPaste={handlePaste}
-                          className={`w-12 h-14 text-center text-xl font-bold border-2 rounded-lg focus:ring-2 focus:ring-[var(--brand-purple)] focus:border-transparent transition ${error ? 'border-red-500' : 'border-gray-300'
+                          className={`w-12 h-14 text-center text-xl font-medium border-2 rounded-lg focus:ring-2 focus:ring-[var(--brand-purple)] focus:border-transparent transition ${error ? 'border-red-500' : 'border-gray-300'
                             }`}
                           autoFocus={index === 0}
                         />

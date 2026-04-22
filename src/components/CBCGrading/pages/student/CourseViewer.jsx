@@ -62,7 +62,7 @@ const ContentRenderer = ({ item }) => {
             <div className="w-24 h-24 rounded-full bg-emerald-100 flex items-center justify-center">
               <Music size={40} className="text-emerald-500" />
             </div>
-            <h3 className="text-lg font-bold text-gray-800">{title}</h3>
+            <h3 className="text-lg font-medium text-gray-800">{title}</h3>
             <audio src={contentUrl} controls className="w-full max-w-md" />
           </div>
         );
@@ -73,13 +73,13 @@ const ContentRenderer = ({ item }) => {
             <div className="w-20 h-20 rounded-full bg-purple-100 flex items-center justify-center">
               <Link2 size={36} className="text-purple-500" />
             </div>
-            <h3 className="text-lg font-bold text-gray-800">{title}</h3>
+            <h3 className="text-lg font-medium text-gray-800">{title}</h3>
             {description && <p className="text-sm text-gray-500 text-center max-w-md">{description}</p>}
             <a
               href={contentUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-6 py-3 bg-purple-600 text-white rounded-lg font-bold text-sm hover:bg-purple-700 transition-colors flex items-center gap-2"
+              className="px-6 py-3 bg-purple-600 text-white rounded-lg font-medium text-sm hover:bg-purple-700 transition-colors flex items-center gap-2"
             >
               <Link2 size={16} /> Open Link
             </a>
@@ -92,12 +92,12 @@ const ContentRenderer = ({ item }) => {
             <div className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center">
               <Download size={36} className="text-amber-500" />
             </div>
-            <h3 className="text-lg font-bold text-gray-800">{title}</h3>
+            <h3 className="text-lg font-medium text-gray-800">{title}</h3>
             {description && <p className="text-sm text-gray-500 text-center max-w-md">{description}</p>}
             <a
               href={contentUrl}
               download
-              className="px-6 py-3 bg-amber-500 text-white rounded-lg font-bold text-sm hover:bg-amber-600 transition-colors flex items-center gap-2"
+              className="px-6 py-3 bg-amber-500 text-white rounded-lg font-medium text-sm hover:bg-amber-600 transition-colors flex items-center gap-2"
             >
               <Download size={16} /> Download Document
             </a>
@@ -117,14 +117,14 @@ const ContentRenderer = ({ item }) => {
     <div className="flex-1 flex flex-col gap-4 min-h-0">
       <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-base font-black text-gray-900">{title}</h2>
+          <h2 className="text-base font-semibold text-gray-900">{title}</h2>
           {description && <p className="text-sm text-gray-500 mt-0.5">{description}</p>}
         </div>
         {(() => {
           const meta = TYPE_ICONS[contentType] || TYPE_ICONS.DOCUMENT;
           const Icon = meta.icon;
           return (
-            <span className={`flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${meta.bg} ${meta.color}`}>
+            <span className={`flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider ${meta.bg} ${meta.color}`}>
               <Icon size={11} /> {contentType}
             </span>
           );
@@ -203,7 +203,7 @@ const CourseViewer = ({ courseId, onNavigate }) => {
   if (!course) return (
     <div className="text-center py-12">
       <p className="text-gray-500">Course not found or you are not enrolled.</p>
-      <button onClick={() => onNavigate?.('student-courses')} className="mt-4 text-purple-600 font-bold text-sm hover:underline">Back to My Courses</button>
+      <button onClick={() => onNavigate?.('student-courses')} className="mt-4 text-purple-600 font-medium text-sm hover:underline">Back to My Courses</button>
     </div>
   );
 
@@ -211,16 +211,16 @@ const CourseViewer = ({ courseId, onNavigate }) => {
     <div className="flex flex-col gap-4" style={{ minHeight: '80vh' }}>
       {/* Top bar */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-5 py-3 flex items-center justify-between gap-4">
-        <button onClick={() => onNavigate?.('student-courses')} className="flex items-center gap-1 text-sm font-bold text-gray-500 hover:text-purple-700 transition-colors">
+        <button onClick={() => onNavigate?.('student-courses')} className="flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-purple-700 transition-colors">
           <ChevronLeft size={16} /> Back
         </button>
         <div className="flex-1 min-w-0">
-          <h1 className="text-sm font-black text-gray-900 truncate">{course.title}</h1>
+          <h1 className="text-sm font-semibold text-gray-900 truncate">{course.title}</h1>
           <div className="flex items-center gap-2 mt-0.5">
             <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden max-w-[160px]">
               <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${progressPct}%` }} />
             </div>
-            <span className="text-[10px] font-black text-gray-400">{completedCount}/{totalCount} done</span>
+            <span className="text-[10px] font-semibold text-gray-400">{completedCount}/{totalCount} done</span>
           </div>
         </div>
       </div>
@@ -230,7 +230,7 @@ const CourseViewer = ({ courseId, onNavigate }) => {
         {/* Left: outline */}
         <div className="w-64 flex-shrink-0 bg-white rounded-xl border border-gray-200 shadow-sm overflow-y-auto">
           <div className="p-4 border-b border-gray-100">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Course Outline</p>
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Course Outline</p>
           </div>
           <div className="p-2 space-y-1">
             {course.contentItems?.map((item, idx) => {
@@ -247,8 +247,8 @@ const CourseViewer = ({ courseId, onNavigate }) => {
                     {item.completed ? <CheckCircle size={16} /> : <Circle size={16} />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold truncate leading-tight">{idx + 1}. {item.title}</p>
-                    <span className={`text-[9px] font-black uppercase ${meta.color}`}>{item.contentType}</span>
+                    <p className="text-xs font-medium truncate leading-tight">{idx + 1}. {item.title}</p>
+                    <span className={`text-[9px] font-semibold uppercase ${meta.color}`}>{item.contentType}</span>
                   </div>
                 </button>
               );
@@ -265,7 +265,7 @@ const CourseViewer = ({ courseId, onNavigate }) => {
             <button
               onClick={() => goTo(-1)}
               disabled={!course.contentItems || course.contentItems.findIndex(i => i.id === activeItem?.id) === 0}
-              className="flex items-center gap-1 text-sm font-bold text-gray-500 hover:text-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronLeft size={16} /> Previous
             </button>
@@ -274,14 +274,14 @@ const CourseViewer = ({ courseId, onNavigate }) => {
               <button
                 onClick={markComplete}
                 disabled={markingComplete}
-                className="px-5 py-2 bg-emerald-500 text-white text-xs font-black uppercase tracking-wider rounded-lg hover:bg-emerald-600 transition-colors disabled:opacity-60 flex items-center gap-1.5"
+                className="px-5 py-2 bg-emerald-500 text-white text-xs font-semibold uppercase tracking-wider rounded-lg hover:bg-emerald-600 transition-colors disabled:opacity-60 flex items-center gap-1.5"
               >
                 {markingComplete ? <Loader size={13} className="animate-spin" /> : <CheckCircle size={13} />}
                 Mark as Complete
               </button>
             )}
             {activeItem?.completed && (
-              <span className="flex items-center gap-1.5 text-sm font-black text-emerald-600">
+              <span className="flex items-center gap-1.5 text-sm font-semibold text-emerald-600">
                 <CheckCircle size={16} /> Completed
               </span>
             )}
@@ -289,7 +289,7 @@ const CourseViewer = ({ courseId, onNavigate }) => {
             <button
               onClick={() => goTo(1)}
               disabled={!course.contentItems || course.contentItems.findIndex(i => i.id === activeItem?.id) === course.contentItems.length - 1}
-              className="flex items-center gap-1 text-sm font-bold text-gray-500 hover:text-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               Next <ChevronRight size={16} />
             </button>

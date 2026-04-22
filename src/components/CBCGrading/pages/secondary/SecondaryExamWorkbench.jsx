@@ -31,7 +31,7 @@ const ActionCard = ({ icon: Icon, title, description, onClick }) => (
         <Icon size={18} />
       </div>
       <div className="flex-1">
-        <div className="font-black text-gray-900">{title}</div>
+        <div className="font-semibold text-gray-900">{title}</div>
         <div className="mt-1 text-xs font-medium text-gray-600">{description}</div>
       </div>
       <ArrowRight className="text-gray-400" size={18} />
@@ -44,7 +44,7 @@ const SecondaryExamWorkbench = ({ type = 'cats', onNavigate }) => {
   return (
     <div className="p-6 space-y-4">
       <div>
-        <h1 className="text-2xl font-black text-gray-900">{cfg.title}</h1>
+        <h1 className="text-2xl font-semibold text-gray-900">{cfg.title}</h1>
         <p className="mt-1 text-sm font-medium text-gray-600">{cfg.description}</p>
       </div>
 

@@ -29,7 +29,7 @@ const StatsCard = ({
     <div className={`bg-gradient-to-br ${gradient} rounded-xl p-6 text-white shadow-md hover:shadow-lg transition ${className}`}>
       <div className="flex items-center justify-between mb-4">
         {Icon && <Icon size={32} className="opacity-90" />}
-        <span className="text-4xl font-bold">{value}</span>
+        <span className="text-4xl font-medium">{value}</span>
       </div>
       
       <div>

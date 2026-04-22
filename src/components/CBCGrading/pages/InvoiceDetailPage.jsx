@@ -259,10 +259,10 @@ const InvoiceDetailPage = ({ invoice }) => {
       {/* Header card */}
       <div className="bg-[#002C60] rounded-2xl px-8 py-6 text-white flex justify-between items-start shadow-lg">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">Invoice Details</h1>
+          <h1 className="text-2xl font-medium tracking-tight">Invoice Details</h1>
           <p className="text-blue-200 text-sm font-medium uppercase tracking-widest">{invoice.invoiceNumber}</p>
           {activePledges.length > 0 && (
-            <span className="inline-flex items-center gap-1 bg-amber-400 text-amber-900 text-xs font-bold px-2 py-0.5 rounded-full mt-1">
+            <span className="inline-flex items-center gap-1 bg-amber-400 text-amber-900 text-xs font-medium px-2 py-0.5 rounded-full mt-1">
               <Bookmark size={11} /> {activePledges.length} Active Pledge{activePledges.length > 1 ? 's' : ''}
             </span>
           )}
@@ -270,7 +270,7 @@ const InvoiceDetailPage = ({ invoice }) => {
         <div className="flex items-center gap-3">
           <button 
             onClick={() => setShowA5Preview(true)}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl font-bold text-xs transition-all shadow-sm"
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl font-medium text-xs transition-all shadow-sm"
             title="Download/Print A5 Invoice"
           >
             <Download size={14} />
@@ -279,7 +279,7 @@ const InvoiceDetailPage = ({ invoice }) => {
           
           <button
             onClick={handlePrintThermal}
-            className="flex items-center gap-1.5 bg-amber-500 text-white hover:bg-amber-600 px-3 py-2 rounded-xl font-bold text-xs transition-all shadow-sm"
+            className="flex items-center gap-1.5 bg-amber-500 text-white hover:bg-amber-600 px-3 py-2 rounded-xl font-medium text-xs transition-all shadow-sm"
             title="Thermal Printer (POS)"
           >
             <Download size={14} className="rotate-180" />
@@ -288,13 +288,13 @@ const InvoiceDetailPage = ({ invoice }) => {
 
           <div className="h-8 w-px bg-white/20 mx-1" />
 
-          <button onClick={() => navigateTo('fees-record-payment', { invoice })} className="flex items-center gap-2 bg-white text-[#002C60] hover:bg-blue-50 px-4 py-2 rounded-xl font-bold text-sm transition-all border border-blue-100">
+          <button onClick={() => navigateTo('fees-record-payment', { invoice })} className="flex items-center gap-2 bg-white text-[#002C60] hover:bg-blue-50 px-4 py-2 rounded-xl font-medium text-sm transition-all border border-blue-100">
             <Plus size={16} /> Collect Payment
           </button>
           
           <button 
             onClick={() => setShowWaiverModal(true)} 
-            className="flex items-center gap-2 bg-[#00A09D] text-white hover:bg-[#008c89] px-4 py-2 rounded-xl font-bold text-sm transition-all"
+            className="flex items-center gap-2 bg-[#00A09D] text-white hover:bg-[#008c89] px-4 py-2 rounded-xl font-medium text-sm transition-all"
             title="Request Fee Waiver"
           >
             <Gift size={16} /> Waiver
@@ -316,8 +316,8 @@ const InvoiceDetailPage = ({ invoice }) => {
           },
         ].map(s => (
           <div key={s.label} className={`${s.bg} p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center text-center transition-all`}>
-            <span className="text-[10px] font-bold text-gray-400 uppercase mb-1">{s.label}</span>
-            <span className={`text-xl font-bold ${s.color}`}>{s.value}</span>
+            <span className="text-[10px] font-medium text-gray-400 uppercase mb-1">{s.label}</span>
+            <span className={`text-xl font-medium ${s.color}`}>{s.value}</span>
           </div>
         ))}
       </div>
@@ -328,22 +328,22 @@ const InvoiceDetailPage = ({ invoice }) => {
           <div className="flex items-center gap-2">
             <span className="text-orange-600 text-lg">🚌</span>
             <div>
-              <p className="text-xs font-black text-orange-800 uppercase tracking-wider">Transport Sub-Ledger</p>
+              <p className="text-xs font-semibold text-orange-800 uppercase tracking-wider">Transport Sub-Ledger</p>
               <p className="text-[10px] text-orange-600">Billed separately from tuition</p>
             </div>
           </div>
           <div className="flex gap-6 text-center">
             <div>
-              <p className="text-[10px] font-bold text-orange-600 uppercase">Billed</p>
-              <p className="text-base font-black text-orange-900">KES {Number(invoice.transportBilled || 0).toLocaleString()}</p>
+              <p className="text-[10px] font-medium text-orange-600 uppercase">Billed</p>
+              <p className="text-base font-semibold text-orange-900">KES {Number(invoice.transportBilled || 0).toLocaleString()}</p>
             </div>
             <div>
-              <p className="text-[10px] font-bold text-orange-600 uppercase">Paid</p>
-              <p className="text-base font-black text-green-700">KES {Number(invoice.transportPaid || 0).toLocaleString()}</p>
+              <p className="text-[10px] font-medium text-orange-600 uppercase">Paid</p>
+              <p className="text-base font-semibold text-green-700">KES {Number(invoice.transportPaid || 0).toLocaleString()}</p>
             </div>
             <div>
-              <p className="text-[10px] font-bold text-orange-600 uppercase">Balance</p>
-              <p className={`text-base font-black ${Number(invoice.transportBalance || 0) <= 0 ? 'text-green-700' : 'text-red-600'}`}>
+              <p className="text-[10px] font-medium text-orange-600 uppercase">Balance</p>
+              <p className={`text-base font-semibold ${Number(invoice.transportBalance || 0) <= 0 ? 'text-green-700' : 'text-red-600'}`}>
                 KES {Number(invoice.transportBalance || 0).toLocaleString()}
               </p>
             </div>
@@ -354,17 +354,17 @@ const InvoiceDetailPage = ({ invoice }) => {
       {/* Student & parent */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm space-y-3">
-          <div className="flex items-center gap-2 text-[#002C60] font-bold text-xs uppercase tracking-wider"><User size={14} /> Student Information</div>
+          <div className="flex items-center gap-2 text-[#002C60] font-medium text-xs uppercase tracking-wider"><User size={14} /> Student Information</div>
           <div className="space-y-1 pt-1">
-            <p className="font-bold text-gray-900 text-lg">{invoice.learner?.firstName} {invoice.learner?.lastName}</p>
+            <p className="font-medium text-gray-900 text-lg">{invoice.learner?.firstName} {invoice.learner?.lastName}</p>
             <p className="text-sm text-gray-500">ADM: {invoice.learner?.admissionNumber}</p>
             <p className="text-sm text-gray-500">Grade: {invoice.learner?.grade} {invoice.learner?.stream}</p>
           </div>
         </div>
         <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm space-y-3">
-          <div className="flex items-center gap-2 text-[#002C60] font-bold text-xs uppercase tracking-wider"><ShieldCheck size={14} /> Parent / Guardian</div>
+          <div className="flex items-center gap-2 text-[#002C60] font-medium text-xs uppercase tracking-wider"><ShieldCheck size={14} /> Parent / Guardian</div>
           <div className="space-y-1 pt-1">
-            <p className="font-bold text-gray-900">{invoice.learner?.primaryContactName || 'N/A'}</p>
+            <p className="font-medium text-gray-900">{invoice.learner?.primaryContactName || 'N/A'}</p>
             <p className="text-sm text-green-600 font-medium">Phone: {invoice.learner?.primaryContactPhone || invoice.learner?.guardianPhone || 'N/A'}</p>
             <p className="text-xs text-gray-400 italic">Preferred contact for reminders</p>
           </div>
@@ -373,15 +373,15 @@ const InvoiceDetailPage = ({ invoice }) => {
 
       {/* Billing details */}
       <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm space-y-4">
-        <div className="flex items-center gap-2 text-[#002C60] font-bold text-xs uppercase tracking-wider"><Info size={14} /> Billing Details</div>
+        <div className="flex items-center gap-2 text-[#002C60] font-medium text-xs uppercase tracking-wider"><Info size={14} /> Billing Details</div>
         <div className="grid grid-cols-2 gap-8 pt-1">
           <div className="space-y-3">
-            <div className="flex justify-between border-b border-gray-100 pb-2"><span className="text-xs text-gray-400 font-bold uppercase">Term</span><span className="text-sm font-semibold">{invoice.term} {invoice.academicYear}</span></div>
-            <div className="flex justify-between border-b border-gray-100 pb-2"><span className="text-xs text-gray-400 font-bold uppercase">Due Date</span><span className="text-sm font-semibold text-rose-500">{new Date(invoice.dueDate).toLocaleDateString()}</span></div>
+            <div className="flex justify-between border-b border-gray-100 pb-2"><span className="text-xs text-gray-400 font-medium uppercase">Term</span><span className="text-sm font-semibold">{invoice.term} {invoice.academicYear}</span></div>
+            <div className="flex justify-between border-b border-gray-100 pb-2"><span className="text-xs text-gray-400 font-medium uppercase">Due Date</span><span className="text-sm font-semibold text-rose-500">{new Date(invoice.dueDate).toLocaleDateString()}</span></div>
           </div>
           <div className="space-y-3">
-            <div className="flex justify-between border-b border-gray-100 pb-2"><span className="text-xs text-gray-400 font-bold uppercase">Structure</span><span className="text-sm font-semibold truncate max-w-[140px]">{invoice.feeStructure?.name}</span></div>
-            <div className="flex justify-between border-b border-gray-100 pb-2"><span className="text-xs text-gray-400 font-bold uppercase">Issued On</span><span className="text-sm font-semibold">{new Date(invoice.createdAt).toLocaleDateString()}</span></div>
+            <div className="flex justify-between border-b border-gray-100 pb-2"><span className="text-xs text-gray-400 font-medium uppercase">Structure</span><span className="text-sm font-semibold truncate max-w-[140px]">{invoice.feeStructure?.name}</span></div>
+            <div className="flex justify-between border-b border-gray-100 pb-2"><span className="text-xs text-gray-400 font-medium uppercase">Issued On</span><span className="text-sm font-semibold">{new Date(invoice.createdAt).toLocaleDateString()}</span></div>
           </div>
         </div>
       </div>
@@ -389,10 +389,10 @@ const InvoiceDetailPage = ({ invoice }) => {
       {/* Payment History — Fee Statement */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="bg-[#f8fafc] px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-[#002C60] font-bold text-xs uppercase tracking-wider">
+          <div className="flex items-center gap-2 text-[#002C60] font-medium text-xs uppercase tracking-wider">
             <FileText size={14} /> Payment History / Fee Statement
           </div>
-          <span className="bg-emerald-100 text-emerald-700 text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
+          <span className="bg-emerald-100 text-emerald-700 text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase">
             {payments.length} Transactions
           </span>
         </div>
@@ -400,13 +400,13 @@ const InvoiceDetailPage = ({ invoice }) => {
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-gray-50/50 border-b border-gray-100">
-                <th className="px-6 py-3 font-bold text-gray-400 uppercase tracking-widest text-[9px]">Date</th>
-                <th className="px-6 py-3 font-bold text-gray-400 uppercase tracking-widest text-[9px]">Receipt #</th>
-                <th className="px-6 py-3 font-bold text-gray-400 uppercase tracking-widest text-[9px]">Method</th>
-                <th className="px-6 py-3 font-bold text-gray-400 uppercase tracking-widest text-[9px]">Reference</th>
-                <th className="px-6 py-3 font-bold text-gray-400 uppercase tracking-widest text-[9px] text-right">Total</th>
+                <th className="px-6 py-3 font-medium text-gray-400 uppercase tracking-widest text-[9px]">Date</th>
+                <th className="px-6 py-3 font-medium text-gray-400 uppercase tracking-widest text-[9px]">Receipt #</th>
+                <th className="px-6 py-3 font-medium text-gray-400 uppercase tracking-widest text-[9px]">Method</th>
+                <th className="px-6 py-3 font-medium text-gray-400 uppercase tracking-widest text-[9px]">Reference</th>
+                <th className="px-6 py-3 font-medium text-gray-400 uppercase tracking-widest text-[9px] text-right">Total</th>
                 {invoice.learner?.isTransportStudent && (
-                  <th className="px-6 py-3 font-bold text-orange-400 uppercase tracking-widest text-[9px] text-right">Transport</th>
+                  <th className="px-6 py-3 font-medium text-orange-400 uppercase tracking-widest text-[9px] text-right">Transport</th>
                 )}
               </tr>
             </thead>
@@ -424,30 +424,30 @@ const InvoiceDetailPage = ({ invoice }) => {
                       <td className="px-6 py-3 text-gray-600 font-medium">
                         {new Date(p.paymentDate).toLocaleDateString('en-GB')}
                       </td>
-                      <td className="px-6 py-3 font-bold text-gray-900">{p.receiptNumber}</td>
+                      <td className="px-6 py-3 font-medium text-gray-900">{p.receiptNumber}</td>
                       <td className="px-6 py-3">
-                        <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 text-[10px] font-black uppercase tracking-tighter">
+                        <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 text-[10px] font-semibold uppercase tracking-tighter">
                           {p.paymentMethod.replace('_', ' ')}
                         </span>
                       </td>
                       <td className="px-6 py-3 text-gray-500 font-mono tracking-tighter uppercase whitespace-nowrap">
                         {p.referenceNumber || 'INTERNAL'}
                       </td>
-                      <td className="px-6 py-3 text-right font-black text-emerald-600">
+                      <td className="px-6 py-3 text-right font-semibold text-emerald-600">
                         {Number(p.amount).toLocaleString()}
                       </td>
                       {invoice.learner?.isTransportStudent && (
-                        <td className="px-6 py-3 text-right font-bold text-orange-600">
+                        <td className="px-6 py-3 text-right font-medium text-orange-600">
                           {Number(p.transportAmount || 0) > 0 ? Number(p.transportAmount).toLocaleString() : '-'}
                         </td>
                       )}
                     </tr>
                   ))}
                   <tr className="bg-emerald-50/30">
-                    <td colSpan="4" className="px-6 py-3 text-right text-[10px] font-black text-emerald-700 uppercase tracking-widest">
+                    <td colSpan="4" className="px-6 py-3 text-right text-[10px] font-semibold text-emerald-700 uppercase tracking-widest">
                       Total Payments Recorded
                     </td>
-                    <td className="px-6 py-3 text-right font-black text-base text-emerald-700">
+                    <td className="px-6 py-3 text-right font-semibold text-base text-emerald-700">
                       KES {payments.reduce((sum, p) => sum + Number(p.amount), 0).toLocaleString()}
                     </td>
                   </tr>
@@ -460,12 +460,12 @@ const InvoiceDetailPage = ({ invoice }) => {
 
       {/* Reminders */}
       <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm space-y-4">
-        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Send Payment Reminder</p>
+        <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Send Payment Reminder</p>
         <div className="flex gap-3">
-          <button onClick={() => handleSendReminder('SMS')} disabled={loading} className="flex-1 bg-blue-600 text-white px-4 py-3 rounded-xl hover:bg-blue-700 font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50">
+          <button onClick={() => handleSendReminder('SMS')} disabled={loading} className="flex-1 bg-blue-600 text-white px-4 py-3 rounded-xl hover:bg-blue-700 font-medium text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50">
             {loading ? <Loader2 size={16} className="animate-spin" /> : <MessageSquare size={16} />} Send SMS
           </button>
-          <button onClick={() => handleSendReminder('WHATSAPP')} disabled={loading || whatsappStatus.status !== 'authenticated'} className={`flex-1 text-white px-4 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50 ${whatsappStatus.status === 'authenticated' ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400 cursor-not-allowed'}`}>
+          <button onClick={() => handleSendReminder('WHATSAPP')} disabled={loading || whatsappStatus.status !== 'authenticated'} className={`flex-1 text-white px-4 py-3 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50 ${whatsappStatus.status === 'authenticated' ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400 cursor-not-allowed'}`}>
             {loading ? <Loader2 size={16} className="animate-spin" /> : <Phone size={16} />} WhatsApp
           </button>
         </div>
@@ -480,9 +480,9 @@ const InvoiceDetailPage = ({ invoice }) => {
         >
           <div className="flex items-center gap-2">
             <Clock size={16} className="text-[#002C60]" />
-            <span className="font-bold text-[#002C60] text-sm uppercase tracking-wider">Activity & Notes</span>
+            <span className="font-medium text-[#002C60] text-sm uppercase tracking-wider">Activity & Notes</span>
             {(comments.length + pledges.length) > 0 && (
-              <span className="bg-[#002C60] text-white text-xs font-bold px-2 py-0.5 rounded-full">
+              <span className="bg-[#002C60] text-white text-xs font-medium px-2 py-0.5 rounded-full">
                 {comments.length}
               </span>
             )}
@@ -491,7 +491,7 @@ const InvoiceDetailPage = ({ invoice }) => {
             {invoice.status !== 'PAID' && invoice.status !== 'WAIVED' && (
               <button
                 onClick={(e) => { e.stopPropagation(); setShowPledgeModal(true); }}
-                className="flex items-center gap-1.5 bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-bold px-3 py-1.5 rounded-lg transition"
+                className="flex items-center gap-1.5 bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-medium px-3 py-1.5 rounded-lg transition"
               >
                 <Bookmark size={13} /> Record Pledge
               </button>
@@ -513,7 +513,7 @@ const InvoiceDetailPage = ({ invoice }) => {
                       <div className="flex items-center gap-3">
                         <Bookmark size={18} className="text-amber-600 flex-shrink-0" />
                         <div>
-                          <p className="text-sm font-bold text-amber-900">
+                          <p className="text-sm font-medium text-amber-900">
                             KES {Number(pledge.pledgedAmount).toLocaleString()} pledged by{' '}
                             {new Date(pledge.pledgeDate).toLocaleDateString('en-GB')}
                           </p>
@@ -523,7 +523,7 @@ const InvoiceDetailPage = ({ invoice }) => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${meta.bg} ${meta.color}`}>{meta.label}</span>
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${meta.bg} ${meta.color}`}>{meta.label}</span>
                         <button onClick={() => handleCancelPledge(pledge.id)} className="text-xs text-gray-400 hover:text-red-600 transition" title="Cancel pledge">
                           <X size={14} />
                         </button>
@@ -556,7 +556,7 @@ const InvoiceDetailPage = ({ invoice }) => {
                 <button
                   onClick={handleSaveNote}
                   disabled={!noteText.trim() || savingNote}
-                  className="px-4 py-2 bg-[#002C60] text-white rounded-lg text-sm font-bold hover:bg-[#003a7a] disabled:opacity-40 transition flex items-center gap-1"
+                  className="px-4 py-2 bg-[#002C60] text-white rounded-lg text-sm font-medium hover:bg-[#003a7a] disabled:opacity-40 transition flex items-center gap-1"
                 >
                   {savingNote ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
                 </button>
@@ -581,7 +581,7 @@ const InvoiceDetailPage = ({ invoice }) => {
                       <div className={`flex-shrink-0 mt-0.5 ${meta.color}`}><Icon size={15} /></div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
-                          <span className={`text-xs font-bold ${meta.color}`}>{meta.label}</span>
+                          <span className={`text-xs font-medium ${meta.color}`}>{meta.label}</span>
                           <span className="text-xs text-gray-400">·</span>
                           <span className="text-xs text-gray-500">
                             {c.createdBy?.firstName} {c.createdBy?.lastName}
@@ -610,24 +610,24 @@ const InvoiceDetailPage = ({ invoice }) => {
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
             <div className="bg-amber-500 px-6 py-4 flex justify-between items-center">
               <div>
-                <h3 className="text-white font-bold text-lg">Record Pledge</h3>
+                <h3 className="text-white font-medium text-lg">Record Pledge</h3>
                 <p className="text-amber-100 text-xs mt-0.5">Parent promises to pay on a specific date</p>
               </div>
               <button onClick={() => setShowPledgeModal(false)} className="text-white hover:bg-white/20 p-1.5 rounded-lg transition"><X size={20} /></button>
             </div>
             <div className="p-6 space-y-4">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-600 uppercase">Pledged Amount (KES) *</label>
+                <label className="text-xs font-medium text-gray-600 uppercase">Pledged Amount (KES) *</label>
                 <input
                   type="number"
                   value={pledgeForm.pledgedAmount}
                   onChange={e => setPledgeForm(f => ({ ...f, pledgedAmount: e.target.value }))}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-400 text-lg font-bold"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-400 text-lg font-medium"
                   placeholder="e.g. 5000"
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-600 uppercase">Promise to Pay By *</label>
+                <label className="text-xs font-medium text-gray-600 uppercase">Promise to Pay By *</label>
                 <input
                   type="date"
                   value={pledgeForm.pledgeDate}
@@ -637,7 +637,7 @@ const InvoiceDetailPage = ({ invoice }) => {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-600 uppercase">Notes (optional)</label>
+                <label className="text-xs font-medium text-gray-600 uppercase">Notes (optional)</label>
                 <textarea
                   value={pledgeForm.notes}
                   onChange={e => setPledgeForm(f => ({ ...f, notes: e.target.value }))}
@@ -654,12 +654,12 @@ const InvoiceDetailPage = ({ invoice }) => {
                 <button
                   onClick={handleSavePledge}
                   disabled={savingPledge}
-                  className="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold px-6 py-3 rounded-xl transition flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-medium px-6 py-3 rounded-xl transition flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {savingPledge ? <Loader2 size={16} className="animate-spin" /> : <Bookmark size={16} />}
                   Save Pledge
                 </button>
-                <button onClick={() => setShowPledgeModal(false)} className="px-6 py-3 border-2 border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 font-bold transition">
+                <button onClick={() => setShowPledgeModal(false)} className="px-6 py-3 border-2 border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 font-medium transition">
                   Cancel
                 </button>
               </div>

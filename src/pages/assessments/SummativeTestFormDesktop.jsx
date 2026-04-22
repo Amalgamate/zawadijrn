@@ -68,8 +68,8 @@ const SummativeTestFormDesktop = ({ onBack, onSuccess }) => {
               <ArrowLeft size={18} />
             </Button>
             <div>
-              <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">Construct New Test</h1>
-              <div className="flex items-center gap-2 text-[10px] text-brand-purple font-black uppercase tracking-widest">
+              <h1 className="text-xl font-semibold text-slate-900 tracking-tight">Construct New Test</h1>
+              <div className="flex items-center gap-2 text-[10px] text-brand-purple font-semibold uppercase tracking-widest">
                 <FileText size={12} className="fill-brand-purple/10" />
                 <span>Summative Assessment Engine</span>
               </div>
@@ -80,13 +80,13 @@ const SummativeTestFormDesktop = ({ onBack, onSuccess }) => {
             {saveStatus === 'success' && (
               <div className="flex items-center gap-2 text-brand-teal bg-brand-teal/5 px-4 py-1.5 rounded-full border border-brand-teal/20 animate-in fade-in zoom-in duration-300">
                 <Check size={16} />
-                <span className="text-xs font-bold uppercase tracking-wider">Saved Successfully</span>
+                <span className="text-xs font-medium uppercase tracking-wider">Saved Successfully</span>
               </div>
             )}
             <Button
               variant="ghost"
               onClick={onBack}
-              className="hidden md:flex text-slate-500 font-bold"
+              className="hidden md:flex text-slate-500 font-medium"
               disabled={saving}
             >
               Cancel
@@ -117,7 +117,7 @@ const SummativeTestFormDesktop = ({ onBack, onSuccess }) => {
 
           {/* Test Title */}
           <div className="space-y-2">
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">
+            <label className="block text-xs font-medium text-slate-500 uppercase tracking-widest">
               Test Title <span className="text-red-500">*</span>
             </label>
             <Input
@@ -126,13 +126,13 @@ const SummativeTestFormDesktop = ({ onBack, onSuccess }) => {
               onChange={(e) => handleInputChange('title', e.target.value)}
               className={`h-12 text-base border-slate-200 focus-visible:ring-brand-purple ${errors.title ? 'border-red-400' : ''}`}
             />
-            {errors.title && <p className="text-[10px] text-red-500 font-bold uppercase mt-1">{errors.title}</p>}
+            {errors.title && <p className="text-[10px] text-red-500 font-medium uppercase mt-1">{errors.title}</p>}
           </div>
 
           {/* Assessment Type & Term */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Assessment Type</label>
+              <label className="block text-xs font-medium text-slate-500 uppercase tracking-widest">Assessment Type</label>
               <select
                 value={formData.type}
                 onChange={(e) => handleInputChange('type', e.target.value)}
@@ -143,10 +143,10 @@ const SummativeTestFormDesktop = ({ onBack, onSuccess }) => {
                   <option key={type.value} value={type.value}>{type.label}</option>
                 ))}
               </select>
-              {errors.type && <p className="text-[10px] text-red-500 font-bold uppercase">{errors.type}</p>}
+              {errors.type && <p className="text-[10px] text-red-500 font-medium uppercase">{errors.type}</p>}
             </div>
             <div className="space-y-2">
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Academic Term</label>
+              <label className="block text-xs font-medium text-slate-500 uppercase tracking-widest">Academic Term</label>
               <select
                 value={formData.term}
                 onChange={(e) => handleInputChange('term', e.target.value)}
@@ -166,7 +166,7 @@ const SummativeTestFormDesktop = ({ onBack, onSuccess }) => {
           {/* Target Grade & Learning Area */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Target Grade</label>
+              <label className="block text-xs font-medium text-slate-500 uppercase tracking-widest">Target Grade</label>
               <select
                 value={formData.grade}
                 onChange={(e) => handleInputChange('grade', e.target.value)}
@@ -180,10 +180,10 @@ const SummativeTestFormDesktop = ({ onBack, onSuccess }) => {
                   </option>
                 ))}
               </select>
-              {errors.grade && <p className="text-[10px] text-red-500 font-bold uppercase mt-1">{errors.grade}</p>}
+              {errors.grade && <p className="text-[10px] text-red-500 font-medium uppercase mt-1">{errors.grade}</p>}
             </div>
             <div className="space-y-2">
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Learning Area / Subject</label>
+              <label className="block text-xs font-medium text-slate-500 uppercase tracking-widest">Learning Area / Subject</label>
               <select
                 value={formData.learningArea}
                 onChange={(e) => handleInputChange('learningArea', e.target.value)}
@@ -195,7 +195,7 @@ const SummativeTestFormDesktop = ({ onBack, onSuccess }) => {
                   <option key={area.id || area.name} value={area.name}>{area.name}</option>
                 ))}
               </select>
-              {errors.learningArea && <p className="text-[10px] text-red-500 font-bold uppercase mt-1">{errors.learningArea}</p>}
+              {errors.learningArea && <p className="text-[10px] text-red-500 font-medium uppercase mt-1">{errors.learningArea}</p>}
             </div>
           </div>
 
@@ -204,42 +204,42 @@ const SummativeTestFormDesktop = ({ onBack, onSuccess }) => {
           {/* Scoring */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2">
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Total Marks</label>
+              <label className="block text-xs font-medium text-slate-500 uppercase tracking-widest">Total Marks</label>
               <div className="flex items-center gap-2">
                 <Input
                   type="number"
                   value={formData.totalMarks}
                   onChange={(e) => handleInputChange('totalMarks', e.target.value)}
-                  className="h-11 border-slate-200 font-bold text-brand-purple"
+                  className="h-11 border-slate-200 font-medium text-brand-purple"
                 />
-                <span className="text-slate-400 text-xs font-bold shrink-0">PTS</span>
+                <span className="text-slate-400 text-xs font-medium shrink-0">PTS</span>
               </div>
             </div>
             <div className="space-y-2">
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Pass Threshold</label>
+              <label className="block text-xs font-medium text-slate-500 uppercase tracking-widest">Pass Threshold</label>
               <div className="flex items-center gap-2">
                 <Input
                   type="number"
                   value={formData.passMarks}
                   onChange={(e) => handleInputChange('passMarks', e.target.value)}
-                  className="h-11 border-slate-200 font-bold text-brand-purple"
+                  className="h-11 border-slate-200 font-medium text-brand-purple"
                 />
-                <span className="text-slate-400 text-xs font-bold shrink-0">%</span>
+                <span className="text-slate-400 text-xs font-medium shrink-0">%</span>
               </div>
             </div>
             <div className="space-y-2">
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Duration</label>
+              <label className="block text-xs font-medium text-slate-500 uppercase tracking-widest">Duration</label>
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
                   <Input
                     type="number"
                     value={formData.duration}
                     onChange={(e) => handleInputChange('duration', e.target.value)}
-                    className="h-11 border-slate-200 font-bold text-brand-purple pl-9"
+                    className="h-11 border-slate-200 font-medium text-brand-purple pl-9"
                   />
                   <Clock className="absolute left-3 top-3 text-slate-300" size={16} />
                 </div>
-                <span className="text-slate-400 text-xs font-bold shrink-0">MIN</span>
+                <span className="text-slate-400 text-xs font-medium shrink-0">MIN</span>
               </div>
             </div>
           </div>
@@ -249,14 +249,14 @@ const SummativeTestFormDesktop = ({ onBack, onSuccess }) => {
           {/* Performance Scale */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Performance Scale</label>
+              <label className="block text-xs font-medium text-slate-500 uppercase tracking-widest">Performance Scale</label>
               {user?.role === 'SUPER_ADMIN' && (
                 <button
                   type="button"
                   onClick={() => window.dispatchEvent(new CustomEvent('pageNavigate', {
                     detail: { page: 'settings-academic', params: { tab: 'performance-levels' } }
                   }))}
-                  className="text-[10px] font-bold text-brand-purple hover:underline"
+                  className="text-[10px] font-medium text-brand-purple hover:underline"
                 >
                   Manage in Settings
                 </button>
@@ -310,7 +310,7 @@ const SummativeTestFormDesktop = ({ onBack, onSuccess }) => {
               <AlertCircle size={28} className="text-red-400" />
             </div>
             <div className="space-y-1 flex-1">
-              <h4 className="text-sm font-black uppercase text-red-200 tracking-widest">Initialization Blocked</h4>
+              <h4 className="text-sm font-semibold uppercase text-red-200 tracking-widest">Initialization Blocked</h4>
               <p className="text-xs font-medium text-red-300 leading-relaxed">{errors.submit}</p>
             </div>
             <Button

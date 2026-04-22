@@ -64,7 +64,7 @@ const ExpenseImportModal = ({ isOpen, onClose, onComplete }) => {
               <Upload size={24} className="text-teal-100" />
             </div>
             <div>
-              <h2 className="text-xl font-bold">Import Expenses</h2>
+              <h2 className="text-xl font-medium">Import Expenses</h2>
               <p className="text-teal-200 text-sm">Upload Petty Cash & Operations Logs (.xlsx / .csv)</p>
             </div>
           </div>
@@ -78,7 +78,7 @@ const ExpenseImportModal = ({ isOpen, onClose, onComplete }) => {
             <>
               {/* File Upload Area */}
               <div className="space-y-3">
-                <label className="text-sm font-bold text-gray-700">Upload Expense File</label>
+                <label className="text-sm font-medium text-gray-700">Upload Expense File</label>
                 <div className="relative border-2 border-dashed border-teal-200 bg-teal-50/50 rounded-xl p-8 hover:bg-teal-50 transition-colors group text-center cursor-pointer">
                   <input
                     type="file"
@@ -87,7 +87,7 @@ const ExpenseImportModal = ({ isOpen, onClose, onComplete }) => {
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   />
                   <FileSpreadsheet className="mx-auto text-teal-400 group-hover:text-teal-500 mb-3 transition-colors" size={48} />
-                  <p className="text-sm font-bold text-teal-900">
+                  <p className="text-sm font-medium text-teal-900">
                     {file ? file.name : "Click or drag to upload .xlsx or .csv data file"}
                   </p>
                   {!file && (
@@ -107,30 +107,30 @@ const ExpenseImportModal = ({ isOpen, onClose, onComplete }) => {
                 <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-4">
                   <Upload size={32} />
                 </div>
-                <h3 className="text-xl font-bold text-green-900 mb-2">Import Complete!</h3>
+                <h3 className="text-xl font-medium text-green-900 mb-2">Import Complete!</h3>
                 <p className="text-green-700 font-medium">Successfully processed {results.summary?.totalRows} rows.</p>
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 text-center col-span-2">
-                  <p className="text-xs font-bold text-gray-500 uppercase">Total Rows</p>
-                  <p className="text-2xl font-black text-gray-800">{results.summary?.totalRows || 0}</p>
+                  <p className="text-xs font-medium text-gray-500 uppercase">Total Rows</p>
+                  <p className="text-2xl font-semibold text-gray-800">{results.summary?.totalRows || 0}</p>
                 </div>
               
                 <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 text-center">
-                  <p className="text-xs font-bold text-blue-500 uppercase">Processed</p>
-                  <p className="text-2xl font-black text-blue-700">{results.summary?.processed || 0}</p>
+                  <p className="text-xs font-medium text-blue-500 uppercase">Processed</p>
+                  <p className="text-2xl font-semibold text-blue-700">{results.summary?.processed || 0}</p>
                 </div>
                 
                 <div className="p-4 bg-red-50 rounded-xl border border-red-100 text-center">
-                  <p className="text-xs font-bold text-red-500 uppercase">Failed</p>
-                  <p className="text-2xl font-black text-red-700">{results.summary?.failed || 0}</p>
+                  <p className="text-xs font-medium text-red-500 uppercase">Failed</p>
+                  <p className="text-2xl font-semibold text-red-700">{results.summary?.failed || 0}</p>
                 </div>
               </div>
 
               {results.errors?.length > 0 && (
                 <div className="space-y-2">
-                  <h4 className="font-bold text-red-800 flex items-center gap-2">
+                  <h4 className="font-medium text-red-800 flex items-center gap-2">
                     <X size={18} className="p-0.5 bg-red-200 rounded-full" />
                     Review Errors (Top 50)
                   </h4>
@@ -153,14 +153,14 @@ const ExpenseImportModal = ({ isOpen, onClose, onComplete }) => {
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex-1 py-3.5 px-6 rounded-xl font-bold text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 transition-colors"
+                  className="flex-1 py-3.5 px-6 rounded-xl font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleUpload}
                   disabled={!file || loading}
-                  className="flex-[2] py-3.5 px-6 rounded-xl font-bold text-white bg-teal-600 hover:bg-teal-700 shadow-md shadow-teal-600/20 disabled:opacity-50 flex items-center justify-center gap-2 transition-all"
+                  className="flex-[2] py-3.5 px-6 rounded-xl font-medium text-white bg-teal-600 hover:bg-teal-700 shadow-md shadow-teal-600/20 disabled:opacity-50 flex items-center justify-center gap-2 transition-all"
                 >
                   {loading && <Loader2 className="animate-spin" size={20} />}
                   <span>{loading ? 'Processing Upload...' : 'Upload Expenses'}</span>
@@ -169,7 +169,7 @@ const ExpenseImportModal = ({ isOpen, onClose, onComplete }) => {
             ) : (
               <button
                 onClick={onComplete || onClose}
-                className="w-full py-4 rounded-xl font-bold text-white bg-gray-900 hover:bg-black shadow-xl transition-all"
+                className="w-full py-4 rounded-xl font-medium text-white bg-gray-900 hover:bg-black shadow-xl transition-all"
               >
                 Close Window
               </button>

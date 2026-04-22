@@ -149,9 +149,9 @@ const ClassScheduleTab = ({ classData, onRefresh }) => {
       <div className="overflow-x-auto">
         <div className="grid gap-2" style={{ gridTemplateColumns: `80px repeat(${DAYS.length}, 1fr)` }}>
           {/* Header */}
-          <div className="font-bold p-2 bg-gray-100"></div>
+          <div className="font-medium p-2 bg-gray-100"></div>
           {DAYS.map(day => (
-            <div key={day} className="font-bold p-2 bg-gray-100 text-center text-sm">
+            <div key={day} className="font-medium p-2 bg-gray-100 text-center text-sm">
               {day.substr(0, 3)}
             </div>
           ))}
@@ -159,7 +159,7 @@ const ClassScheduleTab = ({ classData, onRefresh }) => {
           {/* Time slots */}
           {TIME_SLOTS.map(time => (
             <React.Fragment key={time}>
-              <div className="font-bold p-2 bg-gray-50 text-xs">{time}</div>
+              <div className="font-medium p-2 bg-gray-50 text-xs">{time}</div>
               {DAYS.map(day => {
                 const schedule = schedules.find(
                   s => s.day === day && s.startTime === time
@@ -173,7 +173,7 @@ const ClassScheduleTab = ({ classData, onRefresh }) => {
                     {schedule ? (
                       <div className="bg-white border-l-4 border-purple-500 rounded shadow-sm p-1.5 text-[10px] h-full flex flex-col justify-between">
                         <div>
-                          <p className="font-bold text-gray-900 truncate">{schedule.subject}</p>
+                          <p className="font-medium text-gray-900 truncate">{schedule.subject}</p>
                           <div className="flex items-center gap-1 text-gray-500 mt-1 uppercase tracking-tighter text-[8px]">
                             <User size={8} />
                             <span className="truncate">
@@ -226,13 +226,13 @@ const ClassScheduleTab = ({ classData, onRefresh }) => {
                     <BookOpen size={16} />
                   </div>
                   <div>
-                    <h4 className="font-bold text-gray-900">{schedule.subject}</h4>
+                    <h4 className="font-medium text-gray-900">{schedule.subject}</h4>
                     {schedule.learningArea && <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">{schedule.learningArea.shortName}</p>}
                   </div>
                 </div>
               </td>
               <td className="p-4">
-                <Badge variant="outline" className="font-bold text-gray-700 bg-white shadow-sm border-gray-200">
+                <Badge variant="outline" className="font-medium text-gray-700 bg-white shadow-sm border-gray-200">
                   {schedule.day}
                 </Badge>
               </td>
@@ -253,7 +253,7 @@ const ClassScheduleTab = ({ classData, onRefresh }) => {
               <td className="p-4">
                 {schedule.teacher ? (
                   <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-[10px] font-bold text-indigo-600">
+                    <div className="w-7 h-7 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-[10px] font-medium text-indigo-600">
                       {schedule.teacher.firstName?.charAt(0)}{schedule.teacher.lastName?.charAt(0)}
                     </div>
                     <div className="text-sm font-medium text-gray-800">
@@ -295,14 +295,14 @@ const ClassScheduleTab = ({ classData, onRefresh }) => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h3 className="text-lg font-bold">Class Schedule</h3>
+          <h3 className="text-lg font-medium">Class Schedule</h3>
           <p className="text-sm text-gray-500 mt-1">{schedules.length} lessons scheduled</p>
         </div>
         <div className="flex gap-2">
           <div className="flex gap-1 bg-gray-100 p-1 rounded">
             <button
               onClick={() => setViewType('table')}
-              className={`px-3 py-1 rounded text-sm font-bold transition ${viewType === 'table'
+              className={`px-3 py-1 rounded text-sm font-medium transition ${viewType === 'table'
                 ? 'bg-white shadow'
                 : 'text-gray-600 hover:text-gray-900'
                 }`}
@@ -311,7 +311,7 @@ const ClassScheduleTab = ({ classData, onRefresh }) => {
             </button>
             <button
               onClick={() => setViewType('grid')}
-              className={`px-3 py-1 rounded text-sm font-bold transition ${viewType === 'grid'
+              className={`px-3 py-1 rounded text-sm font-medium transition ${viewType === 'grid'
                 ? 'bg-white shadow'
                 : 'text-gray-600 hover:text-gray-900'
                 }`}
@@ -356,7 +356,7 @@ const ClassScheduleTab = ({ classData, onRefresh }) => {
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Subject */}
               <div>
-                <label className="text-xs font-bold text-gray-600 uppercase">Subject *</label>
+                <label className="text-xs font-medium text-gray-600 uppercase">Subject *</label>
                 <select
                   value={formData.learningAreaId}
                   onChange={(e) => {
@@ -381,7 +381,7 @@ const ClassScheduleTab = ({ classData, onRefresh }) => {
               {/* Day & Time Grid */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-bold text-gray-600 uppercase">Day *</label>
+                  <label className="text-xs font-medium text-gray-600 uppercase">Day *</label>
                   <select
                     value={formData.day}
                     onChange={(e) => setFormData({ ...formData, day: e.target.value })}
@@ -392,7 +392,7 @@ const ClassScheduleTab = ({ classData, onRefresh }) => {
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-gray-600 uppercase">Room</label>
+                  <label className="text-xs font-medium text-gray-600 uppercase">Room</label>
                   <input
                     type="text"
                     value={formData.room}
@@ -405,7 +405,7 @@ const ClassScheduleTab = ({ classData, onRefresh }) => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-bold text-gray-600 uppercase">Start Time *</label>
+                  <label className="text-xs font-medium text-gray-600 uppercase">Start Time *</label>
                   <select
                     value={formData.startTime}
                     onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
@@ -416,7 +416,7 @@ const ClassScheduleTab = ({ classData, onRefresh }) => {
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-gray-600 uppercase">End Time *</label>
+                  <label className="text-xs font-medium text-gray-600 uppercase">End Time *</label>
                   <select
                     value={formData.endTime}
                     onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
@@ -430,7 +430,7 @@ const ClassScheduleTab = ({ classData, onRefresh }) => {
 
               {/* Teacher */}
               <div>
-                <label className="text-xs font-bold text-gray-600 uppercase flex justify-between">
+                <label className="text-xs font-medium text-gray-600 uppercase flex justify-between">
                   <span>Assigned Teacher (Tutor) *</span>
                   {loadingEligible && <span className="text-purple-600 animate-pulse text-[10px]">Checking assignments...</span>}
                 </label>
@@ -458,7 +458,7 @@ const ClassScheduleTab = ({ classData, onRefresh }) => {
 
               {/* Semester */}
               <div>
-                <label className="text-xs font-bold text-gray-600 uppercase">Term</label>
+                <label className="text-xs font-medium text-gray-600 uppercase">Term</label>
                 <select
                   value={formData.semester}
                   onChange={(e) => setFormData({ ...formData, semester: e.target.value })}

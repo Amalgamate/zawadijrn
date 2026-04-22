@@ -394,7 +394,7 @@ const FacilityManager = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+          <h2 className="text-2xl font-medium text-gray-800 flex items-center gap-2">
             <Grid className="text-brand-purple" />
             Facility Management
           </h2>
@@ -474,7 +474,7 @@ const FacilityManager = () => {
                 setSelectedBranchId(branch.id);
                 fetchInitialData(schoolId, branch.id);
               }}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${selectedBranchId === branch.id
+              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${selectedBranchId === branch.id
                 ? 'bg-brand-purple text-white shadow-sm'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
@@ -489,7 +489,7 @@ const FacilityManager = () => {
       <div className="flex gap-4 border-b border-gray-200">
         <button
           onClick={() => setActiveTab('classes')}
-          className={`px-4 py-3 font-bold text-sm border-b-2 transition-colors ${activeTab === 'classes'
+          className={`px-4 py-3 font-medium text-sm border-b-2 transition-colors ${activeTab === 'classes'
             ? 'border-brand-purple text-brand-purple'
             : 'border-transparent text-gray-600 hover:text-gray-900'
             }`}
@@ -498,7 +498,7 @@ const FacilityManager = () => {
         </button>
         <button
           onClick={() => setActiveTab('streams')}
-          className={`px-4 py-3 font-bold text-sm border-b-2 transition-colors ${activeTab === 'streams'
+          className={`px-4 py-3 font-medium text-sm border-b-2 transition-colors ${activeTab === 'streams'
             ? 'border-brand-purple text-brand-purple'
             : 'border-transparent text-gray-600 hover:text-gray-900'
             }`}
@@ -534,7 +534,7 @@ const FacilityManager = () => {
               <Card className="border-2 border-dashed text-center py-12">
                 <CardContent>
                   <BookOpen size={48} className="mx-auto text-gray-300 mb-4" />
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">No Classes Yet</h3>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Classes Yet</h3>
                   <p className="text-gray-600 mb-4">Create your first class to get started</p>
                   <Button
                     onClick={() => {
@@ -568,7 +568,7 @@ const FacilityManager = () => {
                       return (
                         <tr key={classItem.id} className="hover:bg-blue-50/30 transition-colors group">
                           <td className="p-4">
-                            <p className="font-bold text-gray-900">{classItem.name}</p>
+                            <p className="font-medium text-gray-900">{classItem.name}</p>
                             <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">{classItem.code}</p>
                           </td>
                           <td className="p-4 text-sm text-gray-600 font-medium">{classItem.grade}</td>
@@ -576,7 +576,7 @@ const FacilityManager = () => {
                           <td className="p-4">
                             {teacher ? (
                               <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-xs font-bold">
+                                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-xs font-medium">
                                   {teacher.firstName?.[0]}{teacher.lastName?.[0]}
                                 </div>
                                 <span className="text-sm font-semibold text-gray-700">
@@ -588,10 +588,10 @@ const FacilityManager = () => {
                             )}
                           </td>
                           <td className="p-4 text-center">
-                            <span className="text-sm font-bold text-gray-700">{classItem.capacity}</span>
+                            <span className="text-sm font-medium text-gray-700">{classItem.capacity}</span>
                           </td>
                           <td className="p-4">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${classItem.active !== false ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${classItem.active !== false ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
                               {classItem.active !== false ? 'Active' : 'Inactive'}
                             </span>
                           </td>
@@ -629,7 +629,7 @@ const FacilityManager = () => {
               <Card className="border-2 border-dashed text-center py-12">
                 <CardContent>
                   <Grid size={48} className="mx-auto text-gray-300 mb-4" />
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">No Streams Yet</h3>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Streams Yet</h3>
                   <p className="text-gray-600 mb-4">Create your first stream to get started</p>
                   <Button
                     onClick={() => {
@@ -660,12 +660,12 @@ const FacilityManager = () => {
                         </td>
                         <td className="px-6 py-4">
                           {stream.active ? (
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800">
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                               <span className="w-2 h-2 bg-green-600 rounded-full mr-2"></span>
                               Active
                             </span>
                           ) : (
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700">
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
                               <span className="w-2 h-2 bg-gray-500 rounded-full mr-2"></span>
                               Inactive
                             </span>

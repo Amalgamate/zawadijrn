@@ -247,7 +247,7 @@ const ProgressReports = () => {
                                 <Users className="h-8 w-8 text-blue-600" />
                                 <div>
                                     <p className="text-sm font-medium text-gray-600">Total Records</p>
-                                    <p className="text-2xl font-bold text-gray-900">{filteredReports.length}</p>
+                                    <p className="text-2xl font-medium text-gray-900">{filteredReports.length}</p>
                                 </div>
                             </div>
                         </CardContent>
@@ -261,7 +261,7 @@ const ProgressReports = () => {
                                         <TrendingUp className="h-8 w-8 text-green-600" />
                                         <div>
                                             <p className="text-sm font-medium text-gray-600">Active Enrollments</p>
-                                            <p className="text-2xl font-bold text-gray-900">
+                                            <p className="text-2xl font-medium text-gray-900">
                                                 {filteredReports.filter(r => r.status === 'ACTIVE').length}
                                             </p>
                                         </div>
@@ -275,7 +275,7 @@ const ProgressReports = () => {
                                         <BookOpen className="h-8 w-8 text-purple-600" />
                                         <div>
                                             <p className="text-sm font-medium text-gray-600">Completed Courses</p>
-                                            <p className="text-2xl font-bold text-gray-900">
+                                            <p className="text-2xl font-medium text-gray-900">
                                                 {filteredReports.filter(r => r.status === 'COMPLETED').length}
                                             </p>
                                         </div>
@@ -293,7 +293,7 @@ const ProgressReports = () => {
                                         <BarChart3 className="h-8 w-8 text-green-600" />
                                         <div>
                                             <p className="text-sm font-medium text-gray-600">Avg. Progress</p>
-                                            <p className="text-2xl font-bold text-gray-900">
+                                            <p className="text-2xl font-medium text-gray-900">
                                                 {Math.round(filteredReports.reduce((acc, r) => acc + r.progress, 0) / filteredReports.length)}%
                                             </p>
                                         </div>
@@ -307,7 +307,7 @@ const ProgressReports = () => {
                                         <CheckCircle className="h-8 w-8 text-blue-600" />
                                         <div>
                                             <p className="text-sm font-medium text-gray-600">Completed Items</p>
-                                            <p className="text-2xl font-bold text-gray-900">
+                                            <p className="text-2xl font-medium text-gray-900">
                                                 {filteredReports.filter(r => r.completed).length}
                                             </p>
                                         </div>

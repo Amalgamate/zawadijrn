@@ -43,8 +43,8 @@ function StatCard({ label, value, sub, color = 'blue', icon: Icon }) {
                 <Icon size={20} />
             </div>
             <div>
-                <p className="text-2xl font-black text-gray-900 leading-none">{value}</p>
-                <p className="text-xs font-bold text-gray-500 mt-1">{label}</p>
+                <p className="text-2xl font-semibold text-gray-900 leading-none">{value}</p>
+                <p className="text-xs font-medium text-gray-500 mt-1">{label}</p>
                 {sub && <p className="text-[11px] text-gray-400 mt-0.5">{sub}</p>}
             </div>
         </div>
@@ -56,7 +56,7 @@ function SectionHeader({ icon: Icon, title, children }) {
         <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
                 <Icon size={18} className="text-blue-500" />
-                <h2 className="text-base font-black text-gray-800">{title}</h2>
+                <h2 className="text-base font-semibold text-gray-800">{title}</h2>
             </div>
             {children}
         </div>
@@ -144,7 +144,7 @@ const TransportReports = () => {
             <div className="max-w-7xl mx-auto p-6 md:p-8">
                 <div className="flex items-center gap-3 mb-8">
                     <BarChart2 size={26} className="text-blue-500 animate-pulse" />
-                    <h1 className="text-2xl font-black text-gray-900">Transport Reports</h1>
+                    <h1 className="text-2xl font-semibold text-gray-900">Transport Reports</h1>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                     {[...Array(4)].map((_, i) => <div key={i} className="h-24 bg-gray-100 rounded-xl animate-pulse" />)}
@@ -166,7 +166,7 @@ const TransportReports = () => {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-black text-gray-900 flex items-center gap-3 tracking-tight">
+                    <h1 className="text-2xl md:text-3xl font-semibold text-gray-900 flex items-center gap-3 tracking-tight">
                         <BarChart2 className="text-blue-500" size={28} />
                         Transport Reports
                     </h1>
@@ -176,7 +176,7 @@ const TransportReports = () => {
                 </div>
                 <button
                     onClick={load}
-                    className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition"
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition"
                 >
                     <RefreshCw size={15} />
                     Refresh
@@ -203,13 +203,13 @@ const TransportReports = () => {
                         { label: 'Total Outstanding', value: bt.totalOutstanding,  color: 'text-red-600'     },
                     ].map(({ label, value, color }) => (
                         <div key={label} className="px-8 py-6 text-center">
-                            <p className={`text-3xl font-black ${color}`}>{fmtK(value)}</p>
-                            <p className="text-xs font-bold text-gray-400 mt-1 uppercase tracking-widest">{label}</p>
+                            <p className={`text-3xl font-semibold ${color}`}>{fmtK(value)}</p>
+                            <p className="text-xs font-medium text-gray-400 mt-1 uppercase tracking-widest">{label}</p>
                         </div>
                     ))}
                 </div>
                 <div className="px-6 pb-5">
-                    <div className="flex justify-between text-xs text-gray-500 font-bold mb-1.5">
+                    <div className="flex justify-between text-xs text-gray-500 font-medium mb-1.5">
                         <span>Collection Progress</span>
                         <span>{bt.collectionRate}%</span>
                     </div>
@@ -230,12 +230,12 @@ const TransportReports = () => {
                 {routeUtilisation.length === 0 ? (
                     <div className="p-12 text-center text-gray-400">
                         <MapPin size={40} className="mx-auto mb-3 text-gray-200" />
-                        <p className="font-bold">No routes configured yet</p>
+                        <p className="font-medium">No routes configured yet</p>
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
-                            <thead className="bg-gray-50 text-[10px] uppercase font-black tracking-widest text-gray-400 border-b border-gray-100">
+                            <thead className="bg-gray-50 text-[10px] uppercase font-semibold tracking-widest text-gray-400 border-b border-gray-100">
                                 <tr>
                                     <th className="px-6 py-3">Route</th>
                                     <th className="px-6 py-3">Vehicle / Driver</th>
@@ -254,7 +254,7 @@ const TransportReports = () => {
                                     return (
                                         <tr key={r.id} className="hover:bg-gray-50/50 transition text-sm">
                                             <td className="px-6 py-4">
-                                                <p className="font-black text-gray-900">{r.name}</p>
+                                                <p className="font-semibold text-gray-900">{r.name}</p>
                                                 {r.description && (
                                                     <p className="text-[11px] text-gray-400 truncate max-w-[180px]">{r.description}</p>
                                                 )}
@@ -262,32 +262,32 @@ const TransportReports = () => {
                                             <td className="px-6 py-4">
                                                 {r.vehicle ? (
                                                     <div>
-                                                        <p className="font-bold text-gray-700 text-xs">{r.vehicle.registrationNumber}</p>
+                                                        <p className="font-medium text-gray-700 text-xs">{r.vehicle.registrationNumber}</p>
                                                         <p className="text-[11px] text-gray-400">{r.vehicle.driverName}</p>
                                                     </div>
                                                 ) : (
-                                                    <span className="text-[10px] text-amber-500 font-black border border-amber-200 px-2 py-0.5 rounded">Unassigned</span>
+                                                    <span className="text-[10px] text-amber-500 font-semibold border border-amber-200 px-2 py-0.5 rounded">Unassigned</span>
                                                 )}
                                             </td>
                                             <td className="px-6 py-4 min-w-[140px]">
                                                 <div className="flex items-center gap-2 mb-1">
-                                                    <span className={`text-xs font-black ${full ? 'text-red-600' : warn ? 'text-amber-600' : 'text-gray-700'}`}>
+                                                    <span className={`text-xs font-semibold ${full ? 'text-red-600' : warn ? 'text-amber-600' : 'text-gray-700'}`}>
                                                         {r.assigned}{r.capacity ? `/${r.capacity}` : ' students'}
                                                     </span>
                                                     {r.fillPct !== null && (
-                                                        <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${full ? 'bg-red-100 text-red-700' : warn ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                                                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${full ? 'bg-red-100 text-red-700' : warn ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
                                                             {r.fillPct}%
                                                         </span>
                                                     )}
                                                 </div>
                                                 {r.capacity && <FillBar value={r.assigned} max={r.capacity} />}
                                             </td>
-                                            <td className="px-6 py-4 text-right font-bold text-gray-700 text-xs">{fmtK(r.feePerTerm)}</td>
-                                            <td className="px-6 py-4 text-right font-bold text-gray-700 text-xs">{fmtK(r.billing.billed)}</td>
-                                            <td className="px-6 py-4 text-right font-black text-emerald-600 text-xs">{fmtK(r.billing.collected)}</td>
-                                            <td className="px-6 py-4 text-right font-black text-red-500 text-xs">{fmtK(r.billing.outstanding)}</td>
+                                            <td className="px-6 py-4 text-right font-medium text-gray-700 text-xs">{fmtK(r.feePerTerm)}</td>
+                                            <td className="px-6 py-4 text-right font-medium text-gray-700 text-xs">{fmtK(r.billing.billed)}</td>
+                                            <td className="px-6 py-4 text-right font-semibold text-emerald-600 text-xs">{fmtK(r.billing.collected)}</td>
+                                            <td className="px-6 py-4 text-right font-semibold text-red-500 text-xs">{fmtK(r.billing.outstanding)}</td>
                                             <td className="px-6 py-4 text-center">
-                                                <span className={`text-[11px] font-black px-2 py-0.5 rounded-full ${r.billing.collectionRate >= 80 ? 'bg-emerald-100 text-emerald-700' : r.billing.collectionRate >= 50 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
+                                                <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${r.billing.collectionRate >= 80 ? 'bg-emerald-100 text-emerald-700' : r.billing.collectionRate >= 50 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
                                                     {r.billing.collectionRate}%
                                                 </span>
                                             </td>
@@ -307,7 +307,7 @@ const TransportReports = () => {
                     <div className="space-y-3">
                         {gradeDistribution.map(({ grade, count }) => (
                             <div key={grade} className="flex items-center gap-4">
-                                <p className="text-xs font-black text-gray-500 w-24 flex-shrink-0 uppercase tracking-wide">
+                                <p className="text-xs font-semibold text-gray-500 w-24 flex-shrink-0 uppercase tracking-wide">
                                     {grade.replace(/_/g, ' ')}
                                 </p>
                                 <div className="flex-1 bg-gray-100 rounded-full h-5 overflow-hidden">
@@ -315,7 +315,7 @@ const TransportReports = () => {
                                         className="h-5 bg-blue-500 rounded-full flex items-center justify-end pr-2 transition-all"
                                         style={{ width: `${pct(count, maxGrade)}%`, minWidth: '2.5rem' }}
                                     >
-                                        <span className="text-[10px] font-black text-white">{count}</span>
+                                        <span className="text-[10px] font-semibold text-white">{count}</span>
                                     </div>
                                 </div>
                             </div>
@@ -330,7 +330,7 @@ const TransportReports = () => {
                     <SectionHeader icon={Users} title={`Student Roster (${sorted.length})`}>
                         <button
                             onClick={() => printRoster(rosterRef)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
                         >
                             <Download size={13} />
                             Print / Export
@@ -360,7 +360,7 @@ const TransportReports = () => {
                                 <button
                                     key={col}
                                     onClick={() => toggleSort(col)}
-                                    className={`px-3 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1 transition ${sortBy === col ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-gray-100'}`}
+                                    className={`px-3 py-1.5 text-xs font-medium rounded-lg flex items-center gap-1 transition ${sortBy === col ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-gray-100'}`}
                                 >
                                     {label}
                                     {sortBy === col && (sortDir === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
@@ -375,11 +375,11 @@ const TransportReports = () => {
                     {sorted.length === 0 ? (
                         <div className="p-12 text-center text-gray-400">
                             <Users size={40} className="mx-auto mb-3 text-gray-200" />
-                            <p className="font-bold">{rosterQ ? 'No students match your search' : 'No transport students assigned yet'}</p>
+                            <p className="font-medium">{rosterQ ? 'No students match your search' : 'No transport students assigned yet'}</p>
                         </div>
                     ) : (
                         <table className="w-full text-left text-sm border-collapse">
-                            <thead className="bg-gray-50 text-[10px] uppercase font-black tracking-widest text-gray-400 border-b border-gray-100">
+                            <thead className="bg-gray-50 text-[10px] uppercase font-semibold tracking-widest text-gray-400 border-b border-gray-100">
                                 <tr>
                                     <th className="px-5 py-3">#</th>
                                     <th className="px-5 py-3">Student</th>
@@ -394,23 +394,23 @@ const TransportReports = () => {
                             <tbody className="divide-y divide-gray-50">
                                 {sorted.map((s, i) => (
                                     <tr key={s.learnerId} className="hover:bg-blue-50/10 transition">
-                                        <td className="px-5 py-3 text-gray-400 font-bold text-xs">{i + 1}</td>
+                                        <td className="px-5 py-3 text-gray-400 font-medium text-xs">{i + 1}</td>
                                         <td className="px-5 py-3">
-                                            <p className="font-black text-gray-900 text-sm">{s.name}</p>
+                                            <p className="font-semibold text-gray-900 text-sm">{s.name}</p>
                                             <p className="text-[11px] text-gray-400">{s.admissionNumber}</p>
                                         </td>
-                                        <td className="px-5 py-3 text-xs font-bold text-gray-700">
+                                        <td className="px-5 py-3 text-xs font-medium text-gray-700">
                                             {(s.grade || '').replace(/_/g, ' ')} {s.stream || ''}
                                         </td>
                                         <td className="px-5 py-3">
-                                            <span className="text-xs font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-lg">
+                                            <span className="text-xs font-medium text-blue-700 bg-blue-50 px-2 py-0.5 rounded-lg">
                                                 {s.routeName}
                                             </span>
                                         </td>
                                         <td className="px-5 py-3">
                                             {s.driverName ? (
                                                 <div>
-                                                    <p className="text-xs font-bold text-gray-700">{s.driverName}</p>
+                                                    <p className="text-xs font-medium text-gray-700">{s.driverName}</p>
                                                     {s.vehicle && <p className="text-[11px] text-gray-400">{s.vehicle}</p>}
                                                 </div>
                                             ) : <span className="text-gray-300 text-xs">—</span>}
@@ -418,7 +418,7 @@ const TransportReports = () => {
                                         <td className="px-5 py-3 text-xs text-gray-600">
                                             {s.pickupPoint || <span className="text-gray-300">—</span>}
                                         </td>
-                                        <td className="px-5 py-3 text-right font-black text-emerald-600 text-xs">
+                                        <td className="px-5 py-3 text-right font-semibold text-emerald-600 text-xs">
                                             {fmtK(s.feePerTerm)}
                                         </td>
                                         <td className="px-5 py-3 text-xs text-gray-600">
@@ -429,10 +429,10 @@ const TransportReports = () => {
                             </tbody>
                             <tfoot className="border-t-2 border-gray-200 bg-gray-50">
                                 <tr>
-                                    <td colSpan={6} className="px-5 py-3 text-xs font-black text-gray-500 uppercase tracking-widest">
+                                    <td colSpan={6} className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-widest">
                                         Total ({sorted.length} students)
                                     </td>
-                                    <td className="px-5 py-3 text-right font-black text-emerald-700 text-sm">
+                                    <td className="px-5 py-3 text-right font-semibold text-emerald-700 text-sm">
                                         {fmtK(sorted.reduce((s, r) => s + (r.feePerTerm || 0), 0))}
                                     </td>
                                     <td />

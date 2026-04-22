@@ -106,13 +106,13 @@ const IDCard = ({ learner, school, cardStyle, template }) => {
       {/* School name banner */}
       <div className="absolute top-2 left-0 right-0 flex items-center justify-between px-4 pt-3">
         <div className="flex-1 min-w-0">
-          <p className="text-[10px] font-black uppercase tracking-widest opacity-70">{school?.name || 'School Name'}</p>
+          <p className="text-[10px] font-semibold uppercase tracking-widest opacity-70">{school?.name || 'School Name'}</p>
           <p className="text-[8px] uppercase tracking-wider opacity-50">Student Identification Card</p>
         </div>
         {school?.logoUrl ? (
           <img src={school.logoUrl} alt="Logo" className="w-10 h-10 object-contain rounded-full border border-white/30" />
         ) : (
-          <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg font-black border border-white/30" style={{ background: accentColor }}>
+          <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg font-semibold border border-white/30" style={{ background: accentColor }}>
             🎓
           </div>
         )}
@@ -133,12 +133,12 @@ const IDCard = ({ learner, school, cardStyle, template }) => {
 
         {/* Details */}
         <div className="flex-1 min-w-0 pt-1">
-          <p className="font-black text-sm leading-tight truncate">{fullName}</p>
-          <p className="text-[10px] opacity-60 mt-0.5">Adm: <span className="font-bold opacity-90">{admNo}</span></p>
-          <p className="text-[10px] opacity-60">Grade: <span className="font-bold opacity-90">{grade} {stream}</span></p>
-          <p className="text-[10px] opacity-60">Gender: <span className="font-bold opacity-90">{learner.gender || '—'}</span></p>
+          <p className="font-semibold text-sm leading-tight truncate">{fullName}</p>
+          <p className="text-[10px] opacity-60 mt-0.5">Adm: <span className="font-medium opacity-90">{admNo}</span></p>
+          <p className="text-[10px] opacity-60">Grade: <span className="font-medium opacity-90">{grade} {stream}</span></p>
+          <p className="text-[10px] opacity-60">Gender: <span className="font-medium opacity-90">{learner.gender || '—'}</span></p>
           {learner.primaryContactPhone && (
-            <p className="text-[10px] opacity-60">Parent: <span className="font-bold opacity-90">{learner.primaryContactPhone}</span></p>
+            <p className="text-[10px] opacity-60">Parent: <span className="font-medium opacity-90">{learner.primaryContactPhone}</span></p>
           )}
         </div>
       </div>
@@ -148,7 +148,7 @@ const IDCard = ({ learner, school, cardStyle, template }) => {
         className="absolute bottom-0 left-0 right-0 h-8 flex items-center px-4 justify-between"
         style={{ background: `${accentColor}cc` }}
       >
-        <p className="text-[9px] font-bold uppercase tracking-wider opacity-90">
+        <p className="text-[9px] font-medium uppercase tracking-wider opacity-90">
           {new Date().getFullYear()} Academic Year
         </p>
         {/* Simple barcode placeholder */}
@@ -189,7 +189,7 @@ const PreviewModal = ({ learner, school, cardStyle, template, onClose, onPrint }
   <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
     <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden">
       <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-        <h3 className="font-black text-gray-900">ID Card Preview</h3>
+        <h3 className="font-semibold text-gray-900">ID Card Preview</h3>
         <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg">
           <X size={18} className="text-gray-500" />
         </button>
@@ -198,12 +198,12 @@ const PreviewModal = ({ learner, school, cardStyle, template, onClose, onPrint }
         <IDCard learner={learner} school={school} cardStyle={cardStyle} template={template} />
       </div>
       <div className="px-5 py-4 border-t border-gray-100 flex justify-end gap-2">
-        <button onClick={onClose} className="px-4 py-2 text-sm font-bold text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100">
+        <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100">
           Close
         </button>
         <button
           onClick={() => { onPrint([learner]); onClose(); }}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-brand-purple rounded-lg hover:bg-brand-purple/90 shadow-sm"
+          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-brand-purple rounded-lg hover:bg-brand-purple/90 shadow-sm"
         >
           <Printer size={15} /> Print This Card
         </button>
@@ -223,7 +223,7 @@ const StylePanel = ({ cardStyle, onChange, onClose }) => (
   <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-4">
     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
       <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-        <h3 className="font-black text-gray-900">Card Style</h3>
+        <h3 className="font-semibold text-gray-900">Card Style</h3>
         <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg"><X size={18} /></button>
       </div>
       <div className="p-5 space-y-4">
@@ -244,7 +244,7 @@ const StylePanel = ({ cardStyle, onChange, onClose }) => (
         ))}
         <button
           onClick={() => onChange(DEFAULT_STYLE)}
-          className="w-full py-2 text-sm font-bold text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+          className="w-full py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
         >
           Reset to Default
         </button>
@@ -387,8 +387,8 @@ const IDPrintingPage = () => {
 
           <div className="flex items-center gap-2">
             <div className="hidden md:block text-right border-r pr-4 border-gray-200">
-              <p className="text-[10px] font-bold text-gray-400 uppercase">Total</p>
-              <p className="text-xl font-black text-gray-800">{pagination.total}</p>
+              <p className="text-[10px] font-medium text-gray-400 uppercase">Total</p>
+              <p className="text-xl font-semibold text-gray-800">{pagination.total}</p>
             </div>
             <button
               onClick={() => setShowStylePanel(true)}
@@ -399,7 +399,7 @@ const IDPrintingPage = () => {
             <button
               onClick={handleBulkPrint}
               disabled={selected.length === 0}
-              className="flex items-center gap-2 px-4 py-2 bg-brand-purple text-white rounded-lg hover:bg-brand-purple/90 text-sm font-bold shadow-sm disabled:opacity-40 transition"
+              className="flex items-center gap-2 px-4 py-2 bg-brand-purple text-white rounded-lg hover:bg-brand-purple/90 text-sm font-medium shadow-sm disabled:opacity-40 transition"
             >
               <Printer size={15} />
               Print Selected ({selected.length})
@@ -412,12 +412,12 @@ const IDPrintingPage = () => {
       {selected.length > 0 && (
         <div className="bg-brand-purple/5 border border-brand-purple/20 rounded-xl px-4 py-3 flex items-center justify-between animate-in fade-in">
           <div className="flex items-center gap-3">
-            <span className="bg-brand-purple text-white text-sm font-bold px-3 py-1 rounded-full">{selected.length}</span>
+            <span className="bg-brand-purple text-white text-sm font-medium px-3 py-1 rounded-full">{selected.length}</span>
             <span className="text-brand-purple font-semibold text-sm">Students selected for printing</span>
           </div>
           <div className="flex gap-2">
-            <button onClick={selectAll} className="text-xs font-bold text-brand-purple hover:bg-brand-purple/10 px-2 py-1 rounded">Select all {learners.length}</button>
-            <button onClick={clearSelection} className="text-xs font-bold text-gray-500 hover:bg-gray-100 px-2 py-1 rounded">Clear</button>
+            <button onClick={selectAll} className="text-xs font-medium text-brand-purple hover:bg-brand-purple/10 px-2 py-1 rounded">Select all {learners.length}</button>
+            <button onClick={clearSelection} className="text-xs font-medium text-gray-500 hover:bg-gray-100 px-2 py-1 rounded">Clear</button>
           </div>
         </div>
       )}
@@ -469,7 +469,7 @@ const IDPrintingPage = () => {
                             {learner.photoUrl && (learner.photoUrl.startsWith('http') || learner.photoUrl.startsWith('/') || learner.photoUrl.startsWith('data:image')) ? (
                               <img src={learner.photoUrl} alt="" className="w-9 h-9 rounded-full object-cover border border-gray-200" />
                             ) : (
-                              <div className="w-9 h-9 rounded-full bg-brand-purple/10 text-brand-purple flex justify-center items-center font-bold text-xs border border-brand-purple/20 flex-shrink-0">
+                              <div className="w-9 h-9 rounded-full bg-brand-purple/10 text-brand-purple flex justify-center items-center font-medium text-xs border border-brand-purple/20 flex-shrink-0">
                                 {`${learner.firstName?.charAt(0) || ''}${learner.lastName?.charAt(0) || ''}`}
                               </div>
                             )}
@@ -479,7 +479,7 @@ const IDPrintingPage = () => {
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 font-mono text-sm font-bold text-gray-700">
+                        <td className="px-4 py-3 font-mono text-sm font-medium text-gray-700">
                           {learner.admNo || learner.admissionNumber || '—'}
                         </td>
                         <td className="px-4 py-3 font-medium text-gray-700">
@@ -493,14 +493,14 @@ const IDPrintingPage = () => {
                           <div className="flex items-center justify-end gap-1.5">
                             <button
                               onClick={() => setPreviewLearner(learner)}
-                              className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold text-brand-teal border border-brand-teal/30 rounded-lg hover:bg-brand-teal/10 transition"
+                              className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-brand-teal border border-brand-teal/30 rounded-lg hover:bg-brand-teal/10 transition"
                               title="Preview ID card"
                             >
                               <Eye size={13} /> Preview
                             </button>
                             <button
                               onClick={() => handlePrint([learner])}
-                              className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold text-white bg-brand-purple rounded-lg hover:bg-brand-purple/90 shadow-sm transition"
+                              className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-white bg-brand-purple rounded-lg hover:bg-brand-purple/90 shadow-sm transition"
                               title="Print ID card"
                             >
                               <Printer size={13} /> Print
@@ -522,12 +522,12 @@ const IDPrintingPage = () => {
                 </p>
                 <div className="flex gap-2">
                   <button onClick={() => fetchLearners({ page: pagination.page - 1 })} disabled={pagination.page === 1}
-                    className="flex items-center gap-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-bold text-brand-purple disabled:opacity-40 hover:bg-gray-100">
+                    className="flex items-center gap-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-medium text-brand-purple disabled:opacity-40 hover:bg-gray-100">
                     <ChevronLeft size={15} /> Prev
                   </button>
                   <span className="flex items-center px-3 text-sm text-gray-600 font-medium">{pagination.page} / {pagination.pages}</span>
                   <button onClick={() => fetchLearners({ page: pagination.page + 1 })} disabled={pagination.page === pagination.pages}
-                    className="flex items-center gap-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-bold text-brand-purple disabled:opacity-40 hover:bg-gray-100">
+                    className="flex items-center gap-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-medium text-brand-purple disabled:opacity-40 hover:bg-gray-100">
                     Next <ChevronRight size={15} />
                   </button>
                 </div>

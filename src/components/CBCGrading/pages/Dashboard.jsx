@@ -111,7 +111,7 @@ const Dashboard = ({ learners, teachers }) => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Demographics Pie */}
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-5 hover:shadow-md transition-shadow">
-            <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest mb-4">Demographics</h3>
+            <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-widest mb-4">Demographics</h3>
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -141,7 +141,7 @@ const Dashboard = ({ learners, teachers }) => {
 
           {/* Performance Trend Area */}
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-5 hover:shadow-md transition-shadow">
-            <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest mb-4">Academic Trend</h3>
+            <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-widest mb-4">Academic Trend</h3>
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={performanceData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
@@ -163,7 +163,7 @@ const Dashboard = ({ learners, teachers }) => {
 
           {/* Finance Overview Bar */}
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-5 hover:shadow-md transition-shadow">
-            <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest mb-4">Fee Collection (%)</h3>
+            <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-widest mb-4">Fee Collection (%)</h3>
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={financeData} margin={{ top: 10, right: 0, left: -25, bottom: 0 }}>
@@ -185,7 +185,7 @@ const Dashboard = ({ learners, teachers }) => {
           <div className="xl:col-span-2 space-y-6">
             <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-                <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest">Enterprise Service Console</h3>
+                <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-widest">Enterprise Service Console</h3>
                 <ShieldCheck size={16} className="text-brand-purple" />
               </div>
               <div className="p-6">
@@ -195,7 +195,7 @@ const Dashboard = ({ learners, teachers }) => {
                       <div className="p-2 bg-brand-purple/10 text-brand-purple rounded group-hover:bg-brand-purple group-hover:text-white transition-all">
                         <Users size={18} />
                       </div>
-                      <h4 className="text-xs font-black text-gray-900 uppercase">Registry Support</h4>
+                      <h4 className="text-xs font-semibold text-gray-900 uppercase">Registry Support</h4>
                     </div>
                     <p className="text-[10px] text-gray-500 font-medium">Coordinate student admissions, portfolio updates and academic transitions.</p>
                   </div>
@@ -205,7 +205,7 @@ const Dashboard = ({ learners, teachers }) => {
                       <div className="p-2 bg-brand-teal/10 text-brand-teal rounded group-hover:bg-brand-teal group-hover:text-white transition-all">
                         <Target size={18} />
                       </div>
-                      <h4 className="text-xs font-black text-gray-900 uppercase">Assessment Hub</h4>
+                      <h4 className="text-xs font-semibold text-gray-900 uppercase">Assessment Hub</h4>
                     </div>
                     <p className="text-[10px] text-gray-500 font-medium">Manage CBC formative assessments and end-of-term summative evaluations.</p>
                   </div>
@@ -215,7 +215,7 @@ const Dashboard = ({ learners, teachers }) => {
                       <div className="p-2 bg-amber-500/10 text-amber-600 rounded group-hover:bg-amber-500 group-hover:text-white transition-all">
                         <Zap size={18} />
                       </div>
-                      <h4 className="text-xs font-black text-gray-900 uppercase">Ops Framework</h4>
+                      <h4 className="text-xs font-semibold text-gray-900 uppercase">Ops Framework</h4>
                     </div>
                     <p className="text-[10px] text-gray-500 font-medium">Review daily attendance logs, schedule changes and institutional milestones.</p>
                   </div>
@@ -225,7 +225,7 @@ const Dashboard = ({ learners, teachers }) => {
                       <div className="p-2 bg-indigo-500/10 text-indigo-600 rounded group-hover:bg-indigo-500 group-hover:text-white transition-all">
                         <Calendar size={18} />
                       </div>
-                      <h4 className="text-xs font-black text-gray-900 uppercase">Planner</h4>
+                      <h4 className="text-xs font-semibold text-gray-900 uppercase">Planner</h4>
                     </div>
                     <p className="text-[10px] text-gray-500 font-medium">Access the unified academic calendar and term-based operational roadmaps.</p>
                   </div>
@@ -238,7 +238,7 @@ const Dashboard = ({ learners, teachers }) => {
           <div className="space-y-6">
             <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-                <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest">System Broadcasts</h3>
+                <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-widest">System Broadcasts</h3>
               </div>
               <div className="divide-y divide-gray-100">
                 <div className="px-6 py-8 text-center text-gray-400 text-xs italic">No active broadcasts for your role</div>

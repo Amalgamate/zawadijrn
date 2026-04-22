@@ -180,7 +180,7 @@ const FeeWaiverModal = ({ invoice, isOpen, onClose, onSuccess }) => {
           <div className="flex items-center gap-3">
             <FileText size={24} />
             <div>
-              <h2 className="text-lg font-bold">Fee Waivers</h2>
+              <h2 className="text-lg font-medium">Fee Waivers</h2>
               <p className="text-sm text-blue-100">Invoice: {invoice?.invoiceNumber}</p>
             </div>
           </div>

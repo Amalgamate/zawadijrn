@@ -182,7 +182,7 @@ const CoCurricularActivities = ({ learners }) => {
     <div className="space-y-6">
       {/* Header */}
       <div className="bg-orange-600 rounded-xl shadow-lg p-6 text-white">
-        <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
+        <h2 className="text-2xl font-medium mb-2 flex items-center gap-2">
           <Trophy size={28} />
           Co-Curricular Activities
         </h2>
@@ -191,7 +191,7 @@ const CoCurricularActivities = ({ learners }) => {
 
       {/* Selection Panel */}
       <div className="bg-white rounded-xl shadow-md p-6">
-        <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+        <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
           <User size={20} />
           Select Learner & Term
         </h3>
@@ -238,11 +238,11 @@ const CoCurricularActivities = ({ learners }) => {
           <div className="bg-orange-50 border-2 border-orange-200 rounded-xl p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="bg-orange-600 text-white rounded-full w-12 h-12 flex items-center justify-center font-bold text-xl">
+                <div className="bg-orange-600 text-white rounded-full w-12 h-12 flex items-center justify-center font-medium text-xl">
                   {selectedLearner.firstName[0]}{selectedLearner.lastName[0]}
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg text-gray-800">
+                  <h3 className="font-medium text-lg text-gray-800">
                     {selectedLearner.firstName} {selectedLearner.lastName}
                   </h3>
                   <p className="text-sm text-gray-600">
@@ -263,7 +263,7 @@ const CoCurricularActivities = ({ learners }) => {
           {/* Add/Edit Form */}
           {showForm && (
             <div className="bg-white rounded-xl shadow-md p-6 border-2 border-orange-200">
-              <h3 className="font-bold text-lg mb-4 text-gray-800">
+              <h3 className="font-medium text-lg mb-4 text-gray-800">
                 {editingId ? 'Edit Activity' : 'Add New Activity'}
               </h3>
               
@@ -353,7 +353,7 @@ const CoCurricularActivities = ({ learners }) => {
             {activities.length === 0 ? (
               <div className="bg-white rounded-xl shadow-md p-12 text-center">
                 <Award className="mx-auto text-gray-400 mb-4" size={64} />
-                <h3 className="text-xl font-bold text-gray-800 mb-2">No Activities Yet</h3>
+                <h3 className="text-xl font-medium text-gray-800 mb-2">No Activities Yet</h3>
                 <p className="text-gray-600 mb-4">Click "Add Activity" to record this learner's participation</p>
               </div>
             ) : (
@@ -364,7 +364,7 @@ const CoCurricularActivities = ({ learners }) => {
                       <div className="flex items-center gap-3 mb-2">
                         <span className="text-3xl">{getTypeIcon(activity.activityType)}</span>
                         <div>
-                          <h4 className="font-bold text-lg text-gray-800">{activity.activityName}</h4>
+                          <h4 className="font-medium text-lg text-gray-800">{activity.activityName}</h4>
                           <p className="text-sm text-gray-600">{activity.activityType}</p>
                         </div>
                       </div>
@@ -372,7 +372,7 @@ const CoCurricularActivities = ({ learners }) => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                         <div>
                           <p className="text-sm font-semibold text-gray-600 mb-1">Performance</p>
-                          <span className={`inline-block px-3 py-1 rounded-full text-sm font-bold border-2 ${getRatingColor(activity.performance)}`}>
+                          <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium border-2 ${getRatingColor(activity.performance)}`}>
                             {ratings.find(r => r.value === activity.performance)?.label || activity.performance}
                           </span>
                         </div>
@@ -421,7 +421,7 @@ const CoCurricularActivities = ({ learners }) => {
       {!selectedLearnerId && (
         <div className="bg-white rounded-xl shadow-md p-12 text-center">
           <Trophy className="mx-auto text-gray-400 mb-4" size={64} />
-          <h3 className="text-xl font-bold text-gray-800 mb-2">Select a Learner</h3>
+          <h3 className="text-xl font-medium text-gray-800 mb-2">Select a Learner</h3>
           <p className="text-gray-600">Choose a learner from the dropdown above to manage their activities</p>
         </div>
       )}

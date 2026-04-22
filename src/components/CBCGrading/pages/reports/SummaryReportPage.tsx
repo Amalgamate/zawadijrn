@@ -478,7 +478,7 @@ const SummaryReportPage = () => {
         </td>
         <td className="sticky left-12 z-10 bg-inherit border-r border-slate-200 px-4 py-3 min-w-[200px]">
           <div>
-            <div className="font-bold text-slate-800 uppercase text-xs">{row.name}</div>
+            <div className="font-medium text-slate-800 uppercase text-xs">{row.name}</div>
             <div className="text-[10px] text-slate-500 font-mono">{row.admissionNumber} • {row.stream}</div>
           </div>
         </td>
@@ -488,27 +488,27 @@ const SummaryReportPage = () => {
           if (!score) {
             return (
               <td key={sub} className="border-r border-slate-100 px-2 py-3 text-center bg-rose-50/30">
-                <span className="text-[10px] font-bold text-rose-400 opacity-40">ABS</span>
+                <span className="text-[10px] font-medium text-rose-400 opacity-40">ABS</span>
               </td>
             );
           }
           const { color } = getCBCGrade(score.percentage);
           return (
             <td key={sub} className="border-r border-slate-100 px-2 py-3 text-center">
-              <div className={`text-sm font-bold ${color}`}>{score.marks}</div>
+              <div className={`text-sm font-medium ${color}`}>{score.marks}</div>
               <div className="text-[9px] text-slate-400 leading-none">{score.grade}</div>
             </td>
           );
         })}
 
-        <td className="bg-indigo-50/30 border-r border-slate-200 px-4 py-3 text-center font-bold text-indigo-700 w-20">
+        <td className="bg-indigo-50/30 border-r border-slate-200 px-4 py-3 text-center font-medium text-indigo-700 w-20">
           {row.totalScore}
         </td>
-        <td className="bg-slate-50 border-r border-slate-200 px-4 py-3 text-center font-bold text-slate-700 w-20">
+        <td className="bg-slate-50 border-r border-slate-200 px-4 py-3 text-center font-medium text-slate-700 w-20">
           {row.averagePct}%
         </td>
         <td className={`${row.gradeBg} px-4 py-3 text-center w-20`}>
-          <div className={`text-sm font-black ${row.gradeColor}`}>{row.overallGrade}</div>
+          <div className={`text-sm font-semibold ${row.gradeColor}`}>{row.overallGrade}</div>
         </td>
       </tr>
     );
@@ -573,16 +573,16 @@ const SummaryReportPage = () => {
                 <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center shadow-md shadow-indigo-100">
                   <Layout className="text-white" size={16} />
                 </div>
-                <h2 className="text-lg font-bold text-gray-800 leading-none">
+                <h2 className="text-lg font-medium text-gray-800 leading-none">
                   Full Assessment Matrix
                 </h2>
                 
                 {matrixData && (
                   <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wide border bg-blue-50 text-blue-700 border-blue-200">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-medium tracking-wide border bg-blue-50 text-blue-700 border-blue-200">
                       {matrixData.rows.length} Students
                     </span>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wide border bg-emerald-50 text-emerald-700 border-emerald-200">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-medium tracking-wide border bg-emerald-50 text-emerald-700 border-emerald-200">
                       {matrixData.subjects.length} Subjects Assessed
                     </span>
                   </div>
@@ -618,7 +618,7 @@ const SummaryReportPage = () => {
         <div className="border-t border-slate-200 px-6 py-3.5 bg-slate-50/50">
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex-1 min-w-[140px]">
-              <label className="block text-[10px] font-black text-slate-400 uppercase mb-1 px-1">Class Grade</label>
+              <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-1 px-1">Class Grade</label>
               <select
                 value={stagedGrade}
                 onChange={(e) => setStagedGrade(e.target.value)}
@@ -632,7 +632,7 @@ const SummaryReportPage = () => {
             </div>
 
             <div className="flex-1 min-w-[120px]">
-              <label className="block text-[10px] font-black text-slate-400 uppercase mb-1 px-1">Specific Stream</label>
+              <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-1 px-1">Specific Stream</label>
               <select
                 value={stagedStream}
                 onChange={(e) => setStagedStream(e.target.value)}
@@ -646,7 +646,7 @@ const SummaryReportPage = () => {
             </div>
 
             <div className="w-32">
-              <label className="block text-[10px] font-black text-slate-400 uppercase mb-1 px-1">Active Term</label>
+              <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-1 px-1">Active Term</label>
               <select
                 value={stagedTerm}
                 onChange={(e) => setStagedTerm(e.target.value)}
@@ -659,7 +659,7 @@ const SummaryReportPage = () => {
             </div>
 
             <div className="w-36">
-              <label className="block text-[10px] font-black text-slate-400 uppercase mb-1 px-1">Year</label>
+              <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-1 px-1">Year</label>
               <select
                 value={stagedYear}
                 onChange={(e) => setStagedYear(Number(e.target.value))}
@@ -672,7 +672,7 @@ const SummaryReportPage = () => {
             </div>
 
             <div className="w-40">
-              <label className="block text-[10px] font-black text-slate-400 uppercase mb-1 px-1">Exam Type</label>
+              <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-1 px-1">Exam Type</label>
               <select
                 value={stagedTestType}
                 onChange={(e) => setStagedTestType(e.target.value)}
@@ -694,7 +694,7 @@ const SummaryReportPage = () => {
               <button
                 onClick={() => handleGenerate(true)}
                 disabled={loading || !stagedGrade}
-                className="h-9 px-4 bg-brand-teal hover:bg-brand-teal/90 disabled:bg-slate-200 text-white rounded font-bold text-xs transition-all flex items-center gap-2 shadow-sm"
+                className="h-9 px-4 bg-brand-teal hover:bg-brand-teal/90 disabled:bg-slate-200 text-white rounded font-medium text-xs transition-all flex items-center gap-2 shadow-sm"
               >
                 {loading ? <RefreshCw className="animate-spin" size={14} /> : <RefreshCw size={14} />}
                 Generate Matrix
@@ -720,23 +720,23 @@ const SummaryReportPage = () => {
                   className="pl-9 pr-3 py-1.5 bg-white border border-slate-200 rounded-md text-xs focus:ring-2 focus:ring-indigo-500 outline-none w-64 transition-all"
                 />
               </div>
-              <div className="flex items-center gap-3 text-[10px] font-black text-slate-400 uppercase">
+              <div className="flex items-center gap-3 text-[10px] font-semibold text-slate-400 uppercase">
                 <span className="flex items-center gap-1"><CheckCircle size={10} className="text-emerald-500"/> {matrixData.subjects.length} Subjects Assessed</span>
                 <span className="flex items-center gap-1"><AlertCircle size={10} className="text-indigo-500"/> {matrixData.rows.length} Total Students</span>
               </div>
             </div>
             
-            <div className="text-[10px] font-bold text-slate-400 bg-white px-3 py-1 rounded-full border border-slate-200 shadow-sm">
+            <div className="text-[10px] font-medium text-slate-400 bg-white px-3 py-1 rounded-full border border-slate-200 shadow-sm">
               Auto-Ranked by Academic Performance
             </div>
           </div>
 
           {/* Legend row */}
           <div className="px-6 pb-2 flex flex-wrap items-center gap-x-4 gap-y-1">
-            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Key:</span>
+            <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest">Key:</span>
             {/* ABS */}
             <span className="flex items-center gap-1.5">
-              <span className="text-[10px] font-bold text-rose-400 opacity-60">ABS</span>
+              <span className="text-[10px] font-medium text-rose-400 opacity-60">ABS</span>
               <span className="text-[9px] text-slate-400">= No result recorded</span>
             </span>
             {/* Stream dot */}
@@ -757,7 +757,7 @@ const SummaryReportPage = () => {
               { grade: 'BE2', label: 'Below',     range: '0–10%',   color: 'text-rose-800',    bg: 'bg-rose-100' },
             ].map(({ grade, label, range, color, bg }) => (
               <span key={grade} className="flex items-center gap-1" title={`${label} — ${range}`}>
-                <span className={`text-[9px] font-black ${color} ${bg} px-1.5 py-0.5 rounded`}>{grade}</span>
+                <span className={`text-[9px] font-semibold ${color} ${bg} px-1.5 py-0.5 rounded`}>{grade}</span>
                 <span className="text-[9px] text-slate-400">{range}</span>
               </span>
             ))}
@@ -771,20 +771,20 @@ const SummaryReportPage = () => {
           {loading ? (
              <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
                 <Loader className="animate-spin mb-4" size={40} />
-                <p className="text-sm font-bold uppercase tracking-widest">Constructing Matrix...</p>
+                <p className="text-sm font-medium uppercase tracking-widest">Constructing Matrix...</p>
              </div>
           ) : noStudentsFound ? (
              <div className="flex-1 flex flex-col items-center justify-center text-slate-300">
               <div className="w-24 h-24 rounded-full bg-rose-50 flex items-center justify-center mb-6">
                 <Users size={40} className="text-rose-300" />
               </div>
-              <h3 className="text-xl font-black text-rose-400">No Enrolled Students</h3>
+              <h3 className="text-xl font-semibold text-rose-400">No Enrolled Students</h3>
               <p className="text-sm font-medium text-slate-400 max-w-xs text-center mt-2">
                 We couldn't find any learners enrolled in {stagedGrade.replace(/_/g, ' ')} {stagedStream !== 'all' ? `(${stagedStream})` : ''}.
               </p>
               <button 
                 onClick={() => handleGenerate(true)}
-                className="mt-6 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-bold transition-all"
+                className="mt-6 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-medium transition-all"
               >
                 Retry Fetch
               </button>
@@ -794,7 +794,7 @@ const SummaryReportPage = () => {
               <div className="w-24 h-24 rounded-full bg-slate-50 flex items-center justify-center mb-6">
                 <Filter size={40} />
               </div>
-              <h3 className="text-xl font-black text-slate-400">Ready to Generate</h3>
+              <h3 className="text-xl font-semibold text-slate-400">Ready to Generate</h3>
               <p className="text-sm font-medium text-slate-400 max-w-xs text-center mt-2">
                 Select grade filters above for a deep-dive performance analysis across all subjects.
               </p>
@@ -809,52 +809,52 @@ const SummaryReportPage = () => {
                       <>
                         {/* Row 1: Total Marks */}
                         <tr className="bg-slate-50 border-t border-slate-200">
-                          <td className="sticky left-0 z-10 bg-slate-50 border-r border-slate-200 px-4 py-2 text-center text-[10px] font-bold text-slate-400 uppercase">—</td>
+                          <td className="sticky left-0 z-10 bg-slate-50 border-r border-slate-200 px-4 py-2 text-center text-[10px] font-medium text-slate-400 uppercase">—</td>
                           <td className="sticky left-12 z-10 bg-slate-50 border-r border-slate-200 px-4 py-2 min-w-[200px]">
-                            <div className="font-bold text-slate-600 text-[10px] uppercase tracking-wider">Total Marks</div>
+                            <div className="font-medium text-slate-600 text-[10px] uppercase tracking-wider">Total Marks</div>
                           </td>
                           {matrixData.subjects.map(sub => {
                             const m = subjectMeans[sub];
                             return (
                               <td key={`total-${sub}`} className="border-r border-slate-100 px-2 py-2 text-center">
-                                <span className="text-xs font-bold text-slate-600">{m ? m.totalSum : '—'}</span>
+                                <span className="text-xs font-medium text-slate-600">{m ? m.totalSum : '—'}</span>
                               </td>
                             );
                           })}
-                          <td className="bg-slate-100/50 border-r border-slate-200 px-4 py-2 text-center font-bold text-slate-600 w-20 text-xs text-indigo-700">
+                          <td className="bg-slate-100/50 border-r border-slate-200 px-4 py-2 text-center font-medium text-slate-600 w-20 text-xs text-indigo-700">
                             {filteredRows.reduce((acc, r) => acc + parseFloat(r.totalScore), 0).toFixed(0)}
                           </td>
-                          <td className="bg-slate-50 border-r border-slate-200 px-4 py-2 text-center font-bold text-slate-400 w-20 text-xs">—</td>
-                          <td className="bg-slate-50 border-r border-slate-200 px-4 py-2 text-center font-bold text-slate-400 w-20 text-xs">—</td>
+                          <td className="bg-slate-50 border-r border-slate-200 px-4 py-2 text-center font-medium text-slate-400 w-20 text-xs">—</td>
+                          <td className="bg-slate-50 border-r border-slate-200 px-4 py-2 text-center font-medium text-slate-400 w-20 text-xs">—</td>
                         </tr>
 
                         {/* Row 2: Class Mean */}
                         <tr className="bg-indigo-50 border-t-2 border-indigo-100">
-                          <td className="sticky left-0 z-10 bg-indigo-50 border-r border-indigo-200 px-4 py-3 text-center text-[10px] font-black text-indigo-400 uppercase">—</td>
+                          <td className="sticky left-0 z-10 bg-indigo-50 border-r border-indigo-200 px-4 py-3 text-center text-[10px] font-semibold text-indigo-400 uppercase">—</td>
                           <td className="sticky left-12 z-10 bg-indigo-50 border-r border-indigo-200 px-4 py-3 min-w-[200px]">
-                            <div className="font-black text-indigo-700 text-xs uppercase tracking-wide">Class Mean</div>
+                            <div className="font-semibold text-indigo-700 text-xs uppercase tracking-wide">Class Mean</div>
                             <div className="text-[10px] text-indigo-400">{filteredRows.length} students</div>
                           </td>
                           {matrixData.subjects.map(sub => {
                             const m = subjectMeans[sub];
                             if (!m) return (
                               <td key={`mean-${sub}`} className="border-r border-indigo-100 px-2 py-3 text-center bg-indigo-50/50">
-                                <span className="text-[10px] font-bold text-indigo-300">N/A</span>
+                                <span className="text-[10px] font-medium text-indigo-300">N/A</span>
                               </td>
                             );
                             const { color } = getCBCGrade(m.percentage);
                             return (
                               <td key={`mean-${sub}`} className="border-r border-indigo-100 px-2 py-3 text-center bg-indigo-50">
-                                <div className={`text-sm font-black ${color}`}>{m.mean}</div>
+                                <div className={`text-sm font-semibold ${color}`}>{m.mean}</div>
                               </td>
                             );
                           })}
-                          <td className="bg-indigo-100 border-r border-indigo-200 px-4 py-3 text-center font-black text-indigo-700 w-20 text-sm">—</td>
-                          <td className="bg-indigo-100 border-r border-indigo-200 px-4 py-3 text-center font-black text-indigo-700 w-20">
-                            <div className="text-sm font-black text-indigo-700">{classMeanPct.toFixed(1)}</div>
+                          <td className="bg-indigo-100 border-r border-indigo-200 px-4 py-3 text-center font-semibold text-indigo-700 w-20 text-sm">—</td>
+                          <td className="bg-indigo-100 border-r border-indigo-200 px-4 py-3 text-center font-semibold text-indigo-700 w-20">
+                            <div className="text-sm font-semibold text-indigo-700">{classMeanPct.toFixed(1)}</div>
                           </td>
                           <td className={`bg-indigo-100 px-4 py-3 text-center w-20 border-r border-indigo-200`}>
-                            <div className={`text-sm font-black text-indigo-400`}>—</div>
+                            <div className={`text-sm font-semibold text-indigo-400`}>—</div>
                           </td>
                         </tr>
                       </>

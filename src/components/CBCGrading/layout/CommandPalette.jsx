@@ -99,7 +99,7 @@ const CommandPalette = ({ onNavigate }) => {
             {/* Recently Visited */}
             {!query && recentSearches.length > 0 && (
               <Command.Group 
-                heading={<span className="px-3 text-[10px] font-black text-brand-teal uppercase tracking-[0.25em] mb-3 mt-2 block opacity-80">Recently Explored</span>}
+                heading={<span className="px-3 text-[10px] font-semibold text-brand-teal uppercase tracking-[0.25em] mb-3 mt-2 block opacity-80">Recently Explored</span>}
               >
                 {recentSearches.map((item) => (
                   <SearchItem 
@@ -114,7 +114,7 @@ const CommandPalette = ({ onNavigate }) => {
             {/* Navigation Results */}
             {results.nav.length > 0 && (
               <Command.Group 
-                heading={<span className="px-3 text-[10px] font-black text-gray-600 uppercase tracking-[0.25em] mt-5 mb-3 block">Navigation</span>}
+                heading={<span className="px-3 text-[10px] font-semibold text-gray-600 uppercase tracking-[0.25em] mt-5 mb-3 block">Navigation</span>}
               >
                 {results.nav.map((item) => (
                   <SearchItem 
@@ -129,7 +129,7 @@ const CommandPalette = ({ onNavigate }) => {
             {/* Scholar Results */}
             {results.learners.length > 0 && (
               <Command.Group 
-                heading={<span className="px-3 text-[10px] font-black text-gray-600 uppercase tracking-[0.25em] mt-5 mb-3 block">Scholars</span>}
+                heading={<span className="px-3 text-[10px] font-semibold text-gray-600 uppercase tracking-[0.25em] mt-5 mb-3 block">Scholars</span>}
               >
                 {results.learners.map((item) => (
                   <SearchItem 
@@ -144,7 +144,7 @@ const CommandPalette = ({ onNavigate }) => {
             {/* Tutor Results */}
             {results.teachers.length > 0 && (
               <Command.Group 
-                heading={<span className="px-3 text-[10px] font-black text-gray-600 uppercase tracking-[0.25em] mt-5 mb-3 block">Tutors & Staff</span>}
+                heading={<span className="px-3 text-[10px] font-semibold text-gray-600 uppercase tracking-[0.25em] mt-5 mb-3 block">Tutors & Staff</span>}
               >
                 {results.teachers.map((item) => (
                   <SearchItem 
@@ -160,19 +160,19 @@ const CommandPalette = ({ onNavigate }) => {
           {/* Footer / Shortcut Help */}
           <div className="px-5 py-3 border-t border-white/5 bg-black/20 flex justify-between items-center sm:flex-row flex-col gap-3">
             <div className="flex gap-5">
-              <span className="flex items-center gap-2 text-[10px] text-gray-500 font-bold uppercase tracking-wider">
+              <span className="flex items-center gap-2 text-[10px] text-gray-500 font-medium uppercase tracking-wider">
                  <kbd className="px-2 py-1 rounded bg-white/5 border border-white/10 text-gray-300 font-sans text-[9px] shadow-inner">↵ Enter</kbd> Select
               </span>
-              <span className="flex items-center gap-2 text-[10px] text-gray-500 font-bold uppercase tracking-wider">
+              <span className="flex items-center gap-2 text-[10px] text-gray-500 font-medium uppercase tracking-wider">
                  <kbd className="px-2 py-1 rounded bg-white/5 border border-white/10 text-gray-300 font-sans text-[9px] shadow-inner">↑↓</kbd> Navigate
               </span>
-              <span className="flex items-center gap-2 text-[10px] text-gray-500 font-bold uppercase tracking-wider">
+              <span className="flex items-center gap-2 text-[10px] text-gray-500 font-medium uppercase tracking-wider">
                  <kbd className="px-2 py-1 rounded bg-white/5 border border-white/10 text-gray-300 font-sans text-[9px] shadow-inner">Esc</kbd> Close
               </span>
             </div>
             <div className="flex items-center gap-2 group cursor-help transition-opacity hover:opacity-100 opacity-60">
                 <LucideIcons.Zap size={13} className="text-brand-teal animate-pulse" />
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em]">Zawadi QuickJump</span>
+                <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.15em]">Zawadi QuickJump</span>
             </div>
           </div>
         </Command>
@@ -191,21 +191,21 @@ const SearchItem = ({ item, onSelect }) => (
       <IconRenderer icon={item.icon} size={18} />
     </div>
     <div className="flex-1 min-w-0">
-      <p className="text-[15px] font-bold text-gray-200 truncate tracking-tight group-aria-selected:text-white">{item.label}</p>
+      <p className="text-[15px] font-medium text-gray-200 truncate tracking-tight group-aria-selected:text-white">{item.label}</p>
       <div className="flex items-center gap-2.5 mt-0.5">
-        <span className="text-[10px] uppercase font-black tracking-[0.12em] text-gray-500 group-aria-selected:text-brand-teal">
+        <span className="text-[10px] uppercase font-semibold tracking-[0.12em] text-gray-500 group-aria-selected:text-brand-teal">
             {item.category}
         </span>
         {item.sublabel && (
           <>
             <span className="w-1 h-1 rounded-full bg-white/10 group-aria-selected:bg-brand-teal/40" />
-            <span className="text-[10px] font-bold font-mono text-gray-600 group-aria-selected:text-gray-400">{item.sublabel}</span>
+            <span className="text-[10px] font-medium font-mono text-gray-600 group-aria-selected:text-gray-400">{item.sublabel}</span>
           </>
         )}
       </div>
     </div>
     <div className="flex items-center gap-2 opacity-0 group-aria-selected:opacity-100 transition-all transform translate-x-1 group-aria-selected:translate-x-0">
-        <span className="text-[10px] font-black text-brand-teal uppercase tracking-widest hidden sm:block">Jump</span>
+        <span className="text-[10px] font-semibold text-brand-teal uppercase tracking-widest hidden sm:block">Jump</span>
         <LucideIcons.ChevronRight size={16} className="text-brand-teal" />
     </div>
   </Command.Item>

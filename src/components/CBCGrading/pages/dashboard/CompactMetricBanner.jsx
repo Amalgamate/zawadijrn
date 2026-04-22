@@ -80,18 +80,18 @@ const CompactMetricBanner = ({ metrics }) => {
 
             {/* Content Container */}
             <div className="flex flex-col flex-1 min-w-0 z-10">
-              <p className={`text-[11px] font-black uppercase tracking-widest leading-none mb-2 truncate ${styles.title}`}>
+              <p className={`text-[11px] font-semibold uppercase tracking-widest leading-none mb-2 truncate ${styles.title}`}>
                 {metric.title}
               </p>
 
               <div className="flex items-center gap-2 mb-1">
-                <span className={`text-2xl font-black leading-none ${styles.value}`}>
+                <span className={`text-2xl font-semibold leading-none ${styles.value}`}>
                   {metric.value}
                 </span>
 
                 {/* Trend indicator */}
                 {metric.trendValue && (
-                  <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-bold ${metric.trend === 'up' ? styles.trendUp : styles.trendDown}`}>
+                  <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-medium ${metric.trend === 'up' ? styles.trendUp : styles.trendDown}`}>
                     {metric.trend === 'up' ? <ArrowUp size={10} strokeWidth={3} /> : <ArrowDown size={10} strokeWidth={3} />}
                     {metric.trendValue}
                   </span>

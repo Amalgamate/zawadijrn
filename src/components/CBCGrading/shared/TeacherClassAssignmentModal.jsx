@@ -159,11 +159,11 @@ const TeacherClassAssignmentModal = ({
                 {/* Header */}
                 <div className="bg-brand-purple p-6 text-white flex items-center justify-between">
                     <div>
-                        <h3 className="text-xl font-black flex items-center gap-2">
+                        <h3 className="text-xl font-semibold flex items-center gap-2">
                             {mode === 'TEACHER_CENTRIC' ? <BookOpen size={24} /> : <User size={24} />}
                             {mode === 'TEACHER_CENTRIC' ? 'Assign Class to Teacher' : 'Assign Teacher to Class'}
                         </h3>
-                        <p className="text-xs text-brand-purple-light opacity-80 mt-1 uppercase tracking-widest font-bold">
+                        <p className="text-xs text-brand-purple-light opacity-80 mt-1 uppercase tracking-widest font-medium">
                             Teacher-Class Management
                         </p>
                     </div>
@@ -175,17 +175,17 @@ const TeacherClassAssignmentModal = ({
                 <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
                     {/* Source Info (The static part) */}
                     <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">
+                        <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-2">
                             {mode === 'TEACHER_CENTRIC' ? 'Assigning for Teacher' : 'Assigning for Class'}
                         </p>
                         <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-full bg-brand-purple/10 text-brand-purple flex items-center justify-center font-black text-lg">
+                            <div className="w-12 h-12 rounded-full bg-brand-purple/10 text-brand-purple flex items-center justify-center font-semibold text-lg">
                                 {mode === 'TEACHER_CENTRIC'
                                     ? (teacher?.firstName?.charAt(0) || 'T')
                                     : (classData?.name?.charAt(0) || 'C')}
                             </div>
                             <div>
-                                <p className="font-black text-gray-900 leading-tight">
+                                <p className="font-semibold text-gray-900 leading-tight">
                                     {mode === 'TEACHER_CENTRIC'
                                         ? `${teacher?.firstName} ${teacher?.lastName}`
                                         : classData?.name}
@@ -201,42 +201,42 @@ const TeacherClassAssignmentModal = ({
                     {workload && mode === 'TEACHER_CENTRIC' && (
                         <div className="grid grid-cols-3 gap-3">
                             <div className="bg-blue-50/50 p-3 rounded-xl border border-blue-100 text-center">
-                                <p className="text-sm font-bold text-blue-900 leading-none">{workload.totalStudents || 0}</p>
-                                <p className="text-[10px] text-blue-600 mt-1 font-bold">Students</p>
+                                <p className="text-sm font-medium text-blue-900 leading-none">{workload.totalStudents || 0}</p>
+                                <p className="text-[10px] text-blue-600 mt-1 font-medium">Students</p>
                             </div>
                             <div className="bg-purple-50/50 p-3 rounded-xl border border-purple-100 text-center">
-                                <p className="text-sm font-bold text-purple-900 leading-none">{workload.classes?.length || 0}</p>
-                                <p className="text-[10px] text-purple-600 mt-1 font-bold">Classes</p>
+                                <p className="text-sm font-medium text-purple-900 leading-none">{workload.classes?.length || 0}</p>
+                                <p className="text-[10px] text-purple-600 mt-1 font-medium">Classes</p>
                             </div>
                             <div className="bg-teal-50/50 p-3 rounded-xl border border-teal-100 text-center">
-                                <p className="text-sm font-bold text-teal-900 leading-none">Healthy</p>
-                                <p className="text-[10px] text-teal-600 mt-1 font-bold">Workload</p>
+                                <p className="text-sm font-medium text-teal-900 leading-none">Healthy</p>
+                                <p className="text-[10px] text-teal-600 mt-1 font-medium">Workload</p>
                             </div>
                         </div>
                     )}
 
                     {/* Feedback Messages */}
                     {error && (
-                        <div className="p-3 bg-red-50 border border-red-100 text-red-700 text-xs font-bold rounded-lg flex items-center gap-2">
+                        <div className="p-3 bg-red-50 border border-red-100 text-red-700 text-xs font-medium rounded-lg flex items-center gap-2">
                             <AlertCircle size={16} /> {error}
                         </div>
                     )}
 
                     {warning && warning.map((w, i) => (
-                        <div key={i} className="p-3 bg-amber-50 border border-amber-100 text-amber-700 text-xs font-bold rounded-lg flex items-center gap-2">
+                        <div key={i} className="p-3 bg-amber-50 border border-amber-100 text-amber-700 text-xs font-medium rounded-lg flex items-center gap-2">
                             <AlertTriangle size={16} /> {w}
                         </div>
                     ))}
 
                     {success && (
-                        <div className="p-3 bg-green-50 border border-green-100 text-green-700 text-xs font-bold rounded-lg flex items-center gap-2">
+                        <div className="p-3 bg-green-50 border border-green-100 text-green-700 text-xs font-medium rounded-lg flex items-center gap-2">
                             <Check size={16} /> Assignment successful!
                         </div>
                     )}
 
                     {/* Selection Area */}
                     <div className="space-y-3">
-                        <p className="text-sm font-black text-gray-800">
+                        <p className="text-sm font-semibold text-gray-800">
                             {mode === 'TEACHER_CENTRIC' ? 'Select Class' : 'Select Teacher'}
                         </p>
                         <div className="relative">
@@ -271,16 +271,16 @@ const TeacherClassAssignmentModal = ({
                                                     : 'border-transparent bg-white hover:bg-gray-50'}`}
                                         >
                                             <div className="flex items-center gap-3">
-                                                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold 
+                                                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-medium 
                                                     ${isSelected ? 'bg-brand-purple text-white' : 'bg-gray-100 text-gray-500'}`}>
                                                     {mode === 'TEACHER_CENTRIC' ? 'C' : (item.firstName?.charAt(0) || 'T')}
                                                 </div>
                                                 <div>
-                                                    <p className={`text-sm font-bold ${isSelected ? 'text-brand-purple' : 'text-gray-900'}`}>
+                                                    <p className={`text-sm font-medium ${isSelected ? 'text-brand-purple' : 'text-gray-900'}`}>
                                                         {mode === 'TEACHER_CENTRIC' ? item.name : `${item.firstName} ${item.lastName}`}
                                                     </p>
                                                     <div className="flex items-center gap-2 mt-0.5">
-                                                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-tight">
+                                                        <p className="text-[10px] text-gray-500 font-medium uppercase tracking-tight">
                                                             {mode === 'TEACHER_CENTRIC' ? `Grade ${item.grade} • ${item.stream}` : item.teacherId || item.staffId}
                                                         </p>
                                                         {isCurrent && (
@@ -308,13 +308,13 @@ const TeacherClassAssignmentModal = ({
 
                 {/* Footer */}
                 <div className="p-6 pt-0 border-t border-gray-100 flex justify-end gap-3 bg-white mt-auto">
-                    <Button variant="ghost" onClick={onClose} disabled={submitting} className="font-bold text-gray-500">
+                    <Button variant="ghost" onClick={onClose} disabled={submitting} className="font-medium text-gray-500">
                         Cancel
                     </Button>
                     <Button
                         onClick={handleSubmit}
                         disabled={!selectedId || submitting || success}
-                        className="bg-brand-purple hover:bg-brand-purple/90 text-white font-black min-w-[140px]"
+                        className="bg-brand-purple hover:bg-brand-purple/90 text-white font-semibold min-w-[140px]"
                     >
                         {submitting ? (
                             <Loader className="animate-spin mr-2" size={18} />

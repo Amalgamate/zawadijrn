@@ -334,7 +334,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
       {/* Header with Save Button */}
       <div className="flex justify-between items-center bg-white p-6 rounded-xl shadow-sm mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">School Configuration</h2>
+          <h2 className="text-2xl font-medium text-gray-800">School Configuration</h2>
           <p className="text-gray-500 text-sm">Manage your school's identity, branding, and contact details.</p>
         </div>
         <div className="flex items-center gap-4">
@@ -386,7 +386,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
             <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
               <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex items-center gap-2">
                 <School className="text-blue-600" size={20} />
-                <h3 className="font-bold text-gray-700">School Identity</h3>
+                <h3 className="font-medium text-gray-700">School Identity</h3>
               </div>
               <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-2">
@@ -414,7 +414,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
                   {/* Primary Color */}
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Primary Color</label>
+                    <label className="block text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-2">Primary Color</label>
                     <div className="flex items-center gap-2">
                       <input
                         type="color"
@@ -433,7 +433,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
 
                   {/* Secondary Color */}
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Secondary Color</label>
+                    <label className="block text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-2">Secondary Color</label>
                     <div className="flex items-center gap-2">
                       <input
                         type="color"
@@ -452,7 +452,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
 
                   {/* Accent Color 1 */}
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Accent 1</label>
+                    <label className="block text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-2">Accent 1</label>
                     <div className="flex items-center gap-2">
                       <input
                         type="color"
@@ -471,7 +471,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
 
                   {/* Accent Color 2 */}
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Accent 2</label>
+                    <label className="block text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-2">Accent 2</label>
                     <div className="flex items-center gap-2">
                       <input
                         type="color"
@@ -505,7 +505,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
             <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
               <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex items-center gap-2">
                 <MapPin className="text-blue-600" size={20} />
-                <h3 className="font-bold text-gray-700">Location & Contact</h3>
+                <h3 className="font-medium text-gray-700">Location & Contact</h3>
               </div>
               <div className="p-6 space-y-6">
                 <div>
@@ -571,7 +571,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
             <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
               <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex items-center gap-2">
                 <Info className="text-blue-600" size={20} />
-                <h3 className="font-bold text-gray-700">Vision & Mission</h3>
+                <h3 className="font-medium text-gray-700">Vision & Mission</h3>
               </div>
               <div className="p-6 space-y-6">
                 <div>
@@ -603,12 +603,12 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
             <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
               <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex items-center gap-2">
                 <ImageIcon className="text-blue-600" size={20} />
-                <h3 className="font-bold text-gray-700">Brand Assets</h3>
+                <h3 className="font-medium text-gray-700">Brand Assets</h3>
               </div>
               <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-8">
                 {/* Logo */}
                 <div className="text-center group">
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">School Logo</label>
+                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-4">School Logo</label>
                   <div className="relative mx-auto w-40 h-40 border-2 border-dashed border-gray-200 rounded-2xl flex items-center justify-center bg-gray-50 overflow-hidden transition-colors hover:border-blue-400 group-hover:bg-white shadow-inner">
                     <img src={previews.logo} alt="Logo" className="max-w-[85%] max-h-[85%] object-contain drop-shadow-sm" onError={(e) => e.target.src = '/logo-new.png'} />
                     {previews.logo !== '/logo-new.png' && (
@@ -618,7 +618,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
                     )}
                   </div>
                   <input ref={fileInputRef} type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'logo')} className="hidden" />
-                  <button onClick={() => fileInputRef.current?.click()} className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-700 transition">
+                  <button onClick={() => fileInputRef.current?.click()} className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 transition">
                     <Upload size={16} />
                     Replace Logo
                   </button>
@@ -626,7 +626,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
 
                 {/* Favicon */}
                 <div className="text-center group">
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Page Favicon</label>
+                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-4">Page Favicon</label>
                   <div className="relative mx-auto w-24 h-24 border-2 border-dashed border-gray-200 rounded-2xl flex items-center justify-center bg-gray-50 overflow-hidden transition-colors hover:border-blue-400 group-hover:bg-white shadow-inner mt-8">
                     <img src={previews.favicon} alt="Favicon" className="w-12 h-12 object-contain" onError={(e) => e.target.src = '/favicon.png'} />
                     {previews.favicon !== '/favicon.png' && (
@@ -636,7 +636,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
                     )}
                   </div>
                   <input ref={faviconInputRef} type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'favicon')} className="hidden" />
-                  <button onClick={() => faviconInputRef.current?.click()} className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-700 transition">
+                  <button onClick={() => faviconInputRef.current?.click()} className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 transition">
                     <Upload size={16} />
                     Change Icon
                   </button>
@@ -645,7 +645,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
 
                 {/* Official Stamp */}
                 <div className="text-center group">
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Official Stamp</label>
+                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-4">Official Stamp</label>
                   <div className="relative mx-auto w-40 h-40 border-2 border-dashed border-gray-200 rounded-2xl flex items-center justify-center bg-gray-50 overflow-hidden transition-colors hover:border-blue-400 group-hover:bg-white shadow-inner">
                     <img src={previews.stamp} alt="Stamp" className="max-w-[85%] max-h-[85%] object-contain" onError={(e) => e.target.src = '/stamp.svg'} />
                     {previews.stamp !== '/stamp.svg' && (
@@ -655,7 +655,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
                     )}
                   </div>
                   <input ref={stampInputRef} type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'stamp')} className="hidden" />
-                  <button onClick={() => stampInputRef.current?.click()} className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-700 transition">
+                  <button onClick={() => stampInputRef.current?.click()} className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 transition">
                     <Upload size={16} />
                     Update Stamp
                   </button>
@@ -667,7 +667,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
             <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
               <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex items-center gap-2">
                 <MessageSquare className="text-blue-600" size={20} />
-                <h3 className="font-bold text-gray-700">Auth Portal Messaging</h3>
+                <h3 className="font-medium text-gray-700">Auth Portal Messaging</h3>
               </div>
               <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -724,7 +724,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
             <img src={previews.logo} alt="Logo" className="max-w-full max-h-full object-contain" />
           </div>
           <div className="flex-1 text-center md:text-left">
-            <h4 className="text-3xl font-black tracking-tight mb-2 uppercase">{settings.schoolName || 'YOUR SCHOOL NAME'}</h4>
+            <h4 className="text-3xl font-semibold tracking-tight mb-2 uppercase">{settings.schoolName || 'YOUR SCHOOL NAME'}</h4>
             <div className="flex flex-wrap justify-center md:justify-start gap-y-2 gap-x-6 text-blue-100 text-sm font-medium">
               <div className="flex items-center gap-2">
                 <MapPin size={16} />

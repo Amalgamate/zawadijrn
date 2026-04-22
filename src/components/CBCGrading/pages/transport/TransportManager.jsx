@@ -20,7 +20,7 @@ function CapacityBadge({ assigned, capacity }) {
     const warn  = pct >= 80;
     const color = full ? 'bg-red-100 text-red-700' : warn ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700';
     return (
-        <span className={`ml-2 text-[10px] font-black px-2 py-0.5 rounded-full ${color}`}>
+        <span className={`ml-2 text-[10px] font-semibold px-2 py-0.5 rounded-full ${color}`}>
             {assigned}/{capacity}
         </span>
     );
@@ -31,7 +31,7 @@ function Modal({ title, onClose, children, wide = false }) {
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
             <div className={`bg-white rounded-2xl shadow-xl w-full ${wide ? 'max-w-2xl' : 'max-w-md'} my-8 overflow-hidden`}>
                 <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-                    <h2 className="text-lg font-black text-gray-900 tracking-tight">{title}</h2>
+                    <h2 className="text-lg font-semibold text-gray-900 tracking-tight">{title}</h2>
                     <button onClick={onClose} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:bg-gray-100 rounded-full transition-colors">
                         <X size={16} />
                     </button>
@@ -45,7 +45,7 @@ function Modal({ title, onClose, children, wide = false }) {
 function FormField({ label, children }) {
     return (
         <div>
-            <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-1.5">{label}</label>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-widest mb-1.5">{label}</label>
             {children}
         </div>
     );
@@ -131,12 +131,12 @@ function SummaryBar({ summary }) {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
             {cards.map(c => (
                 <div key={c.label} className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
-                    <p className="text-2xl font-black text-gray-900">{c.value ?? '—'}</p>
-                    <p className="text-xs text-gray-400 font-bold mt-0.5">{c.label}</p>
+                    <p className="text-2xl font-semibold text-gray-900">{c.value ?? '—'}</p>
+                    <p className="text-xs text-gray-400 font-medium mt-0.5">{c.label}</p>
                 </div>
             ))}
             {summary.overCapacityRoutes?.length > 0 && (
-                <div className="col-span-2 md:col-span-4 flex items-center gap-2 p-3 bg-red-50 border border-red-100 rounded-xl text-sm text-red-700 font-bold">
+                <div className="col-span-2 md:col-span-4 flex items-center gap-2 p-3 bg-red-50 border border-red-100 rounded-xl text-sm text-red-700 font-medium">
                     <AlertTriangle size={16} />
                     Over-capacity: {summary.overCapacityRoutes.map(r => `${r.name} (${r.assigned}/${r.capacity})`).join(', ')}
                 </div>
@@ -387,7 +387,7 @@ const TransportManager = () => {
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-black text-gray-900 flex items-center gap-3 tracking-tight">
+                    <h1 className="text-2xl md:text-3xl font-semibold text-gray-900 flex items-center gap-3 tracking-tight">
                         <Bus className="text-blue-600" size={30} />
                         Transport & Fleet
                     </h1>
@@ -398,7 +398,7 @@ const TransportManager = () => {
                 {activeTab !== 'students' && (
                     <button
                         onClick={activeTab === 'vehicles' ? openAddVehicle : openAddRoute}
-                        className="px-4 py-2.5 bg-blue-600 text-white rounded-xl font-bold flex items-center gap-2 hover:bg-blue-700 transition shadow-lg shadow-blue-600/20 active:scale-95 text-sm"
+                        className="px-4 py-2.5 bg-blue-600 text-white rounded-xl font-medium flex items-center gap-2 hover:bg-blue-700 transition shadow-lg shadow-blue-600/20 active:scale-95 text-sm"
                     >
                         <Plus size={18} />
                         {activeTab === 'vehicles' ? 'Add Vehicle' : 'Add Route'}
@@ -407,7 +407,7 @@ const TransportManager = () => {
                 {activeTab === 'students' && (
                     <button
                         onClick={() => navigateTo('transport-students')}
-                        className="px-4 py-2.5 bg-blue-600 text-white rounded-xl font-bold flex items-center gap-2 hover:bg-blue-700 transition shadow-lg shadow-blue-600/20 active:scale-95 text-sm"
+                        className="px-4 py-2.5 bg-blue-600 text-white rounded-xl font-medium flex items-center gap-2 hover:bg-blue-700 transition shadow-lg shadow-blue-600/20 active:scale-95 text-sm"
                     >
                         <CreditCard size={18} />
                         Open Full View
@@ -426,7 +426,7 @@ const TransportManager = () => {
                     ['students', 'Transport Students'],
                 ].map(([id, label]) => (
                     <button key={id} onClick={() => setActiveTab(id)}
-                        className={`pb-3 px-4 font-bold text-sm transition-all ${activeTab === id ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}>
+                        className={`pb-3 px-4 font-medium text-sm transition-all ${activeTab === id ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}>
                         {label}
                     </button>
                 ))}
@@ -440,13 +440,13 @@ const TransportManager = () => {
                             <CreditCard size={32} className="text-blue-500" />
                         </div>
                         <div>
-                            <p className="font-black text-xl text-gray-800">Transport Student Fee Tracker</p>
+                            <p className="font-semibold text-xl text-gray-800">Transport Student Fee Tracker</p>
                             <p className="text-sm text-gray-400 mt-1.5 max-w-sm mx-auto">
                                 View every transport student with their fee invoices, balances, payment status and send SMS/WhatsApp reminders — all in one place.
                             </p>
                         </div>
                         {summary && (
-                            <div className="flex items-center gap-6 py-3 px-6 bg-blue-50 rounded-xl text-sm font-bold text-blue-700">
+                            <div className="flex items-center gap-6 py-3 px-6 bg-blue-50 rounded-xl text-sm font-medium text-blue-700">
                                 <span>{summary.transportStudentCount ?? 0} students enrolled</span>
                                 <span className="text-blue-300">·</span>
                                 <span>{summary.routeCount ?? 0} active routes</span>
@@ -454,7 +454,7 @@ const TransportManager = () => {
                         )}
                         <button
                             onClick={() => navigateTo('transport-students')}
-                            className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-600/20 flex items-center gap-2 text-sm mt-2"
+                            className="px-8 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition shadow-lg shadow-blue-600/20 flex items-center gap-2 text-sm mt-2"
                         >
                             <CreditCard size={18} /> Open Transport Students
                         </button>
@@ -466,10 +466,10 @@ const TransportManager = () => {
             {activeTab !== 'students' && (
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden min-h-[360px]">
                     {loading ? (
-                        <div className="p-12 text-center text-gray-400 font-bold animate-pulse">Loading…</div>
+                        <div className="p-12 text-center text-gray-400 font-medium animate-pulse">Loading…</div>
                     ) : activeTab === 'vehicles' ? (
                         <table className="w-full text-left border-collapse">
-                            <thead className="bg-gray-50 border-b border-gray-100 text-[10px] uppercase font-black tracking-widest text-gray-400">
+                            <thead className="bg-gray-50 border-b border-gray-100 text-[10px] uppercase font-semibold tracking-widest text-gray-400">
                                 <tr>
                                     <th className="p-4">Registration</th>
                                     <th className="p-4">Driver</th>
@@ -486,16 +486,16 @@ const TransportManager = () => {
                                                 <div className="w-9 h-9 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
                                                     <Bus size={16} />
                                                 </div>
-                                                <span className="font-black tracking-tight text-gray-900">{v.registrationNumber}</span>
+                                                <span className="font-semibold tracking-tight text-gray-900">{v.registrationNumber}</span>
                                             </div>
                                         </td>
                                         <td className="p-4 border-none">
-                                            <p className="font-bold text-gray-800 text-sm">{v.driverName}</p>
+                                            <p className="font-medium text-gray-800 text-sm">{v.driverName}</p>
                                             <p className="text-xs text-gray-400">{v.driverPhone || '—'}</p>
                                         </td>
-                                        <td className="p-4 text-gray-600 font-bold border-none text-sm">{v.capacity} seats</td>
+                                        <td className="p-4 text-gray-600 font-medium border-none text-sm">{v.capacity} seats</td>
                                         <td className="p-4 border-none">
-                                            <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-black rounded-lg uppercase">
+                                            <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-semibold rounded-lg uppercase">
                                                 {v.status || 'ACTIVE'}
                                             </span>
                                         </td>
@@ -524,7 +524,7 @@ const TransportManager = () => {
                         </table>
                     ) : (
                         <table className="w-full text-left border-collapse">
-                            <thead className="bg-gray-50 border-b border-gray-100 text-[10px] uppercase font-black tracking-widest text-gray-400">
+                            <thead className="bg-gray-50 border-b border-gray-100 text-[10px] uppercase font-semibold tracking-widest text-gray-400">
                                 <tr>
                                     <th className="p-4">Route</th>
                                     <th className="p-4">Fee</th>
@@ -544,21 +544,21 @@ const TransportManager = () => {
                                                         <MapPin size={16} />
                                                     </div>
                                                     <div>
-                                                        <p className="font-black tracking-tight text-gray-900 text-sm">{r.name}</p>
+                                                        <p className="font-semibold tracking-tight text-gray-900 text-sm">{r.name}</p>
                                                         {r.description && <p className="text-[11px] text-gray-400 truncate max-w-[200px]">{r.description}</p>}
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="p-4 font-black text-emerald-600 border-none text-sm">
+                                            <td className="p-4 font-semibold text-emerald-600 border-none text-sm">
                                                 KES {parseFloat(r.amount).toLocaleString()}
                                             </td>
                                             <td className="p-4 border-none">
                                                 {r.vehicle ? (
-                                                    <span className="px-2 py-0.5 bg-gray-100 text-gray-700 text-[10px] font-black rounded-lg">
+                                                    <span className="px-2 py-0.5 bg-gray-100 text-gray-700 text-[10px] font-semibold rounded-lg">
                                                         {r.vehicle.registrationNumber}
                                                     </span>
                                                 ) : (
-                                                    <span className="text-[10px] text-amber-500 font-black border border-amber-200 px-2 py-0.5 rounded-lg">
+                                                    <span className="text-[10px] text-amber-500 font-semibold border border-amber-200 px-2 py-0.5 rounded-lg">
                                                         Unassigned
                                                     </span>
                                                 )}
@@ -566,7 +566,7 @@ const TransportManager = () => {
                                             <td className="p-4 border-none">
                                                 <button
                                                     onClick={() => openPassengerModal(r)}
-                                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-xs transition-all
+                                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium text-xs transition-all
                                                         ${isFull
                                                             ? 'bg-red-50 text-red-700 hover:bg-red-100'
                                                             : 'bg-blue-50 text-blue-700 hover:bg-blue-100'}`}
@@ -611,11 +611,11 @@ const TransportManager = () => {
                         <VehicleForm data={vehicleForm} onChange={setVehicleForm} />
                         <div className="flex justify-end gap-2 pt-2">
                             <button type="button" onClick={() => setVehicleModal(false)}
-                                className="px-4 py-2 text-gray-500 hover:bg-gray-100 font-bold rounded-xl text-sm transition">
+                                className="px-4 py-2 text-gray-500 hover:bg-gray-100 font-medium rounded-xl text-sm transition">
                                 Cancel
                             </button>
                             <button type="submit" disabled={savingVehicle}
-                                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm shadow-lg shadow-blue-600/20 transition active:scale-95 disabled:opacity-60 flex items-center gap-2">
+                                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl text-sm shadow-lg shadow-blue-600/20 transition active:scale-95 disabled:opacity-60 flex items-center gap-2">
                                 {savingVehicle && <Loader2 size={14} className="animate-spin" />}
                                 {editingVehicle ? 'Save Changes' : 'Add Vehicle'}
                             </button>
@@ -631,11 +631,11 @@ const TransportManager = () => {
                         <RouteForm data={routeForm} onChange={setRouteForm} vehicles={vehicles} />
                         <div className="flex justify-end gap-2 pt-2">
                             <button type="button" onClick={() => setRouteModal(false)}
-                                className="px-4 py-2 text-gray-500 hover:bg-gray-100 font-bold rounded-xl text-sm transition">
+                                className="px-4 py-2 text-gray-500 hover:bg-gray-100 font-medium rounded-xl text-sm transition">
                                 Cancel
                             </button>
                             <button type="submit" disabled={savingRoute}
-                                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm shadow-lg shadow-blue-600/20 transition active:scale-95 disabled:opacity-60 flex items-center gap-2">
+                                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl text-sm shadow-lg shadow-blue-600/20 transition active:scale-95 disabled:opacity-60 flex items-center gap-2">
                                 {savingRoute && <Loader2 size={14} className="animate-spin" />}
                                 {editingRoute ? 'Save Changes' : 'Create Route'}
                             </button>
@@ -654,8 +654,8 @@ const TransportManager = () => {
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-white/20 rounded-xl"><Users size={20} /></div>
                                 <div>
-                                    <h2 className="text-lg font-black tracking-tight">{selectedRoute.name}</h2>
-                                    <p className="text-blue-100 text-xs font-bold">
+                                    <h2 className="text-lg font-semibold tracking-tight">{selectedRoute.name}</h2>
+                                    <p className="text-blue-100 text-xs font-medium">
                                         {passengers.length} student{passengers.length !== 1 ? 's' : ''} assigned
                                         {selectedRoute.vehicle && (
                                             <> · {selectedRoute.vehicle.capacity} seat capacity</>
@@ -674,7 +674,7 @@ const TransportManager = () => {
 
                             {/* Add student section */}
                             <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Assign Student</p>
+                                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Assign Student</p>
                                 <div className="flex items-end gap-3">
                                     <div className="flex-1">
                                         <SmartLearnerSearch
@@ -687,7 +687,7 @@ const TransportManager = () => {
                                     <button
                                         disabled={!newPassengerId || addingPassenger}
                                         onClick={addPassenger}
-                                        className="h-[42px] px-5 bg-blue-600 text-white rounded-xl font-bold flex items-center gap-2 hover:bg-blue-700 transition disabled:opacity-50 shadow-md shadow-blue-600/10 active:scale-95 text-sm flex-shrink-0"
+                                        className="h-[42px] px-5 bg-blue-600 text-white rounded-xl font-medium flex items-center gap-2 hover:bg-blue-700 transition disabled:opacity-50 shadow-md shadow-blue-600/10 active:scale-95 text-sm flex-shrink-0"
                                     >
                                         {addingPassenger
                                             ? <Loader2 className="animate-spin" size={16} />
@@ -699,26 +699,26 @@ const TransportManager = () => {
 
                             {/* Passenger list */}
                             <div>
-                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">
+                                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3">
                                     Assigned Students ({passengers.length})
                                 </p>
 
                                 {loadingPassengers ? (
-                                    <div className="py-10 text-center text-gray-400 font-bold animate-pulse">Loading…</div>
+                                    <div className="py-10 text-center text-gray-400 font-medium animate-pulse">Loading…</div>
                                 ) : passengers.length > 0 ? (
                                     <div className="grid gap-2">
                                         {passengers.map(a => (
                                             <div key={a.id}
                                                 className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl hover:border-blue-200 transition group shadow-sm">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center font-black text-gray-400 text-xs uppercase flex-shrink-0">
+                                                    <div className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center font-semibold text-gray-400 text-xs uppercase flex-shrink-0">
                                                         {a.passenger?.firstName?.[0]}{a.passenger?.lastName?.[0]}
                                                     </div>
                                                     <div>
-                                                        <p className="font-black text-gray-900 text-sm tracking-tight">
+                                                        <p className="font-semibold text-gray-900 text-sm tracking-tight">
                                                             {a.passenger?.firstName} {a.passenger?.lastName}
                                                         </p>
-                                                        <p className="text-[11px] text-gray-400 font-bold">
+                                                        <p className="text-[11px] text-gray-400 font-medium">
                                                             {a.passenger?.admissionNumber} · {a.passenger?.grade?.replace(/_/g, ' ')} {a.passenger?.stream}
                                                             {a.pickupPoint && <> · 📍 {a.pickupPoint}</>}
                                                         </p>
@@ -735,7 +735,7 @@ const TransportManager = () => {
                                 ) : (
                                     <div className="py-10 text-center bg-gray-50 rounded-xl border-2 border-dashed border-gray-100">
                                         <Users size={32} className="mx-auto text-gray-300 mb-2" />
-                                        <p className="text-gray-400 font-bold text-sm">No students assigned yet.</p>
+                                        <p className="text-gray-400 font-medium text-sm">No students assigned yet.</p>
                                     </div>
                                 )}
                             </div>
@@ -745,12 +745,12 @@ const TransportManager = () => {
                         <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-between items-center flex-shrink-0">
                             <button
                                 onClick={() => { setPassengerModal(false); navigateTo('transport-students'); }}
-                                className="flex items-center gap-1.5 px-4 py-2 text-blue-600 hover:bg-blue-50 border border-blue-100 rounded-xl font-bold text-sm transition"
+                                className="flex items-center gap-1.5 px-4 py-2 text-blue-600 hover:bg-blue-50 border border-blue-100 rounded-xl font-medium text-sm transition"
                             >
                                 <CreditCard size={14} /> View Fee Balances
                             </button>
                             <button onClick={() => setPassengerModal(false)}
-                                className="px-5 py-2 bg-gray-900 text-white rounded-xl font-bold hover:bg-black transition shadow-lg text-sm active:scale-95">
+                                className="px-5 py-2 bg-gray-900 text-white rounded-xl font-medium hover:bg-black transition shadow-lg text-sm active:scale-95">
                                 Done
                             </button>
                         </div>

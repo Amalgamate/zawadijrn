@@ -183,15 +183,15 @@ const AssignClassModal = ({ isOpen, onClose, teacher, onAssign }) => {
               </h4>
               <div className="grid grid-cols-3 gap-3">
                 <div className="bg-white p-3 rounded-lg text-center border border-gray-200">
-                  <p className="text-2xl font-bold text-blue-600">{workload.classCount}</p>
+                  <p className="text-2xl font-medium text-blue-600">{workload.classCount}</p>
                   <p className="text-xs text-gray-600 mt-1">Classes</p>
                 </div>
                 <div className="bg-white p-3 rounded-lg text-center border border-gray-200">
-                  <p className="text-2xl font-bold text-purple-600">{workload.totalStudents}</p>
+                  <p className="text-2xl font-medium text-purple-600">{workload.totalStudents}</p>
                   <p className="text-xs text-gray-600 mt-1">Students</p>
                 </div>
                 <div className="bg-white p-3 rounded-lg text-center border border-gray-200">
-                  <p className={`text-2xl font-bold ${workload.workloadLevel === 'HIGH' ? 'text-red-600' :
+                  <p className={`text-2xl font-medium ${workload.workloadLevel === 'HIGH' ? 'text-red-600' :
                     workload.workloadLevel === 'MEDIUM' ? 'text-amber-600' :
                       'text-green-600'
                     }`}>

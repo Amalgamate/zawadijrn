@@ -345,7 +345,7 @@ const LearnersList = ({
             <div className="relative flex-shrink-0">
               <button
                 onClick={() => setShowGlobalFilters(!showGlobalFilters)}
-                className={`px-5 py-2.5 border rounded-xl font-bold flex items-center gap-2 transition-all ${activeFilterCount > 0 ? 'bg-blue-50 border-blue-200 text-blue-700' : 'hover:bg-gray-50 text-gray-700 bg-white shadow-sm'}`}
+                className={`px-5 py-2.5 border rounded-xl font-medium flex items-center gap-2 transition-all ${activeFilterCount > 0 ? 'bg-blue-50 border-blue-200 text-blue-700' : 'hover:bg-gray-50 text-gray-700 bg-white shadow-sm'}`}
               >
                 <Filter size={16} className={activeFilterCount > 0 ? 'text-blue-600' : 'text-gray-500'} />
                 Filters
@@ -357,13 +357,13 @@ const LearnersList = ({
               {showGlobalFilters && (
                 <div className="absolute right-0 top-full mt-2 w-[320px] bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden animate-fade-in origin-top-right">
                   <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-                    <h3 className="font-bold text-gray-800 flex items-center gap-2"><Filter size={16} className="text-blue-600" /> Student Filters</h3>
-                    {activeFilterCount > 0 && <button onClick={clearAllFiltersLearners} className="text-[11px] font-bold text-red-600 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-md">Clear All</button>}
+                    <h3 className="font-medium text-gray-800 flex items-center gap-2"><Filter size={16} className="text-blue-600" /> Student Filters</h3>
+                    {activeFilterCount > 0 && <button onClick={clearAllFiltersLearners} className="text-[11px] font-medium text-red-600 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-md">Clear All</button>}
                   </div>
                   <div className="p-5 space-y-5 max-h-[60vh] overflow-y-auto custom-scrollbar">
                     {/* Grade */}
                     <div>
-                      <h4 className="text-[11px] font-extrabold text-blue-500 uppercase tracking-widest mb-2">Grade</h4>
+                      <h4 className="text-[11px] font-semibold text-blue-500 uppercase tracking-widest mb-2">Grade</h4>
                       <select value={filterGrade} onChange={(e) => setFilterGrade(e.target.value)} className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm w-full outline-blue-500">
                         <option value="all">All Grades</option>
                         {gradeOptions.map(g => <option key={g} value={g}>{formatGradeLabel(g)}</option>)}
@@ -371,7 +371,7 @@ const LearnersList = ({
                     </div>
                     {/* Stream */}
                     <div>
-                      <h4 className="text-[11px] font-extrabold text-blue-500 uppercase tracking-widest mb-2">Stream</h4>
+                      <h4 className="text-[11px] font-semibold text-blue-500 uppercase tracking-widest mb-2">Stream</h4>
                       <select value={filterStream} onChange={(e) => setFilterStream(e.target.value)} className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm w-full outline-blue-500">
                         <option value="all">All Streams</option>
                         {availableStreams.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
@@ -379,7 +379,7 @@ const LearnersList = ({
                     </div>
                     {/* Status */}
                     <div>
-                      <h4 className="text-[11px] font-extrabold text-blue-500 uppercase tracking-widest mb-2">Enrolment Status</h4>
+                      <h4 className="text-[11px] font-semibold text-blue-500 uppercase tracking-widest mb-2">Enrolment Status</h4>
                       <div className="flex flex-col gap-1.5">
                         {[['all','All Status'],['ACTIVE','Active'],['DROPPED_OUT','Archived'],['TRANSFERRED_OUT','Transferred Out'],['GRADUATED','Graduated'],['SUSPENDED','Suspended']].map(([val, label]) => (
                           <button key={val} onClick={() => setFilterStatus(val)} className={`text-left text-sm px-3 py-1.5 rounded-lg font-semibold transition-all ${filterStatus === val ? 'bg-blue-600 text-white' : 'hover:bg-gray-50 text-gray-700'}`}>{label}</button>
@@ -388,7 +388,7 @@ const LearnersList = ({
                     </div>
                   </div>
                   <div className="p-4 bg-gray-50 border-t flex justify-end">
-                    <button onClick={() => setShowGlobalFilters(false)} className="px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm">Apply & Close</button>
+                    <button onClick={() => setShowGlobalFilters(false)} className="px-5 py-2 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm">Apply & Close</button>
                   </div>
                 </div>
               )}
@@ -400,8 +400,8 @@ const LearnersList = ({
             {/* Metrics */}
             <div className="hidden lg:flex items-center gap-4 mr-2 border-r pr-4 border-gray-200 h-10">
               <div className="text-right">
-                <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Total Students</p>
-                <p className="text-xl font-bold text-gray-800 leading-none">{pagination?.total || 0}</p>
+                <p className="text-[10px] text-gray-500 uppercase font-medium tracking-wider">Total Students</p>
+                <p className="text-xl font-medium text-gray-800 leading-none">{pagination?.total || 0}</p>
               </div>
             </div>
 
@@ -439,7 +439,7 @@ const LearnersList = ({
 
                 <button
                   onClick={onAddLearner}
-                  className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-brand-teal text-white rounded-lg hover:bg-brand-teal/90 transition shadow-sm font-bold"
+                  className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-brand-teal text-white rounded-lg hover:bg-brand-teal/90 transition shadow-sm font-medium"
                 >
                   <Plus size={18} />
                   <span className="inline">Add Student</span>
@@ -466,7 +466,7 @@ const LearnersList = ({
           <div className="flex items-center gap-3">
             {selectAllDatabase ? (
               <>
-                <span className="bg-brand-purple text-white text-sm font-bold px-3 py-1 rounded-full">
+                <span className="bg-brand-purple text-white text-sm font-medium px-3 py-1 rounded-full">
                   ALL
                 </span>
                 <span className="text-brand-purple font-medium">
@@ -474,7 +474,7 @@ const LearnersList = ({
                 </span>
                 <button
                   onClick={() => setSelectAllDatabase(false)}
-                  className="text-xs font-bold text-brand-purple hover:bg-brand-purple/10 px-2 py-1 rounded transition"
+                  className="text-xs font-medium text-brand-purple hover:bg-brand-purple/10 px-2 py-1 rounded transition"
                   title="Deselect all students"
                 >
                   Deselect All
@@ -482,14 +482,14 @@ const LearnersList = ({
               </>
             ) : (
               <>
-                <span className="bg-brand-purple text-white text-sm font-bold px-3 py-1 rounded-full">
+                <span className="bg-brand-purple text-white text-sm font-medium px-3 py-1 rounded-full">
                   {selectedLearners.length}
                 </span>
                 <span className="text-brand-purple font-medium">Students Selected</span>
                 {selectedLearners.length < (pagination?.total || displayLearners.length) && (
                   <button
                     onClick={() => setSelectAllDatabase(true)}
-                    className="text-xs font-bold text-brand-purple hover:bg-brand-purple/10 px-2 py-1 rounded transition"
+                    className="text-xs font-medium text-brand-purple hover:bg-brand-purple/10 px-2 py-1 rounded transition"
                     title={`Select all ${pagination?.total || 0} students in database`}
                   >
                     Select All {pagination?.total || 0}
@@ -560,7 +560,7 @@ const LearnersList = ({
                     className="w-4 h-4 text-brand-teal border-gray-300 rounded focus:ring-brand-teal"
                   />
                 </div>
-                <div className="w-10 h-10 bg-brand-purple/10 text-brand-purple rounded-xl border border-brand-purple/20 flex-shrink-0 flex items-center justify-center font-bold text-base">
+                <div className="w-10 h-10 bg-brand-purple/10 text-brand-purple rounded-xl border border-brand-purple/20 flex-shrink-0 flex items-center justify-center font-medium text-base">
                   {learner.avatar && (learner.avatar.startsWith('http') || learner.avatar.startsWith('/') || learner.avatar.startsWith('data:image')) ? (
                     <img src={learner.avatar} alt="avatar" className="w-full h-full object-cover rounded-xl" />
                   ) : (
@@ -571,7 +571,7 @@ const LearnersList = ({
                 {/* Primary Student Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-start gap-2">
-                    <h3 className="font-bold text-gray-900 truncate">{learner.firstName} {learner.lastName}</h3>
+                    <h3 className="font-medium text-gray-900 truncate">{learner.firstName} {learner.lastName}</h3>
                     <StatusBadge status={learner.status} size="sm" />
                   </div>
                   <div className="flex items-center gap-2 mt-1 text-xs font-semibold text-gray-500">
@@ -585,7 +585,7 @@ const LearnersList = ({
                   {/* Guardian Info Compact */}
                   <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-50">
                     {learner.primaryContactType && (
-                      <span className={`text-[10px] uppercase font-black px-1.5 py-0.5 rounded flex-shrink-0 ${learner.primaryContactType === 'FATHER' ? 'bg-blue-100 text-blue-800' :
+                      <span className={`text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded flex-shrink-0 ${learner.primaryContactType === 'FATHER' ? 'bg-blue-100 text-blue-800' :
                         learner.primaryContactType === 'MOTHER' ? 'bg-amber-100 text-amber-800' :
                           'bg-rose-100 text-rose-800'
                         }`}>
@@ -633,7 +633,7 @@ const LearnersList = ({
                       {canEditLearner && (isTeacher ? canTeacherModify(learner) : true) && (
                         <button
                           onClick={(e) => { e.stopPropagation(); onEditLearner(learner); }}
-                          className="px-3 py-1.5 text-xs font-bold text-gray-600 bg-gray-50 border border-gray-200 rounded-lg shadow-sm"
+                          className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-lg shadow-sm"
                         >
                           Edit
                         </button>
@@ -646,7 +646,7 @@ const LearnersList = ({
                               e.stopPropagation();
                               if (window.confirm('Delete this student?')) { handleIndividualDelete(learner.id); }
                             }}
-                            className="px-3 py-1.5 text-xs font-bold text-red-600 bg-red-50 border border-red-100 rounded-lg"
+                            className="px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-100 rounded-lg"
                           >
                             Delete
                           </button>
@@ -669,7 +669,7 @@ const LearnersList = ({
               >
                 <ChevronLeft size={20} />
               </button>
-              <div className="text-xs font-bold text-gray-500">
+              <div className="text-xs font-medium text-gray-500">
                 Pg {pagination.page} of {pagination.pages}
               </div>
               <button
@@ -699,12 +699,12 @@ const LearnersList = ({
                     className="w-4 h-4 text-brand-teal border-gray-300 rounded focus:ring-brand-teal"
                   />
                 </th>
-                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Student</th>
-                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Admission No</th>
-                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Grade</th>
-                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Status</th>
-                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Parent/Guardian</th>
-                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase">Actions</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Student</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Admission No</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Grade</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Status</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Parent/Guardian</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase">Actions</th>
               </tr>
             }
             renderRow={(learner) => (
@@ -720,7 +720,7 @@ const LearnersList = ({
                 </td>
                 <td className="px-3 py-1.5 border-r border-gray-100">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-brand-purple/10 text-brand-purple flex justify-center items-center font-bold text-xs border border-brand-purple/20 flex-shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-brand-purple/10 text-brand-purple flex justify-center items-center font-medium text-xs border border-brand-purple/20 flex-shrink-0">
                       {learner.avatar && (learner.avatar.startsWith('http') || learner.avatar.startsWith('/') || learner.avatar.startsWith('data:image')) ? (
                         <img src={learner.avatar} alt="avatar" className="w-full h-full object-cover rounded-full" />
                       ) : (
@@ -738,7 +738,7 @@ const LearnersList = ({
                 <td className="px-3 py-1.5 border-r border-gray-100">
                   <div className="flex items-center gap-2">
                     {learner.primaryContactType && (
-                      <span className={`text-xs font-bold px-2 py-1 rounded-full ${learner.primaryContactType === 'FATHER' ? 'bg-blue-100 text-blue-800' :
+                      <span className={`text-xs font-medium px-2 py-1 rounded-full ${learner.primaryContactType === 'FATHER' ? 'bg-blue-100 text-blue-800' :
                         learner.primaryContactType === 'MOTHER' ? 'bg-amber-100 text-amber-800' :
                           'bg-rose-100 text-rose-800'
                         }`}>
@@ -843,7 +843,7 @@ const LearnersList = ({
                 <button
                   onClick={() => handlePageChange(pagination.page - 1)}
                   disabled={pagination.page === 1}
-                  className="flex items-center gap-1 px-3 py-1 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition text-sm font-bold text-brand-purple"
+                  className="flex items-center gap-1 px-3 py-1 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition text-sm font-medium text-brand-purple"
                 >
                   <ChevronLeft size={16} />
                   Previous
@@ -854,7 +854,7 @@ const LearnersList = ({
                 <button
                   onClick={() => handlePageChange(pagination.page + 1)}
                   disabled={pagination.page === pagination.pages}
-                  className="flex items-center gap-1 px-3 py-1 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition text-sm font-bold text-brand-purple"
+                  className="flex items-center gap-1 px-3 py-1 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition text-sm font-medium text-brand-purple"
                 >
                   Next
                   <ChevronRight size={16} />
@@ -872,7 +872,7 @@ const LearnersList = ({
             {/* Header */}
             <div className="bg-brand-purple/10 px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-black text-gray-900">Quick Message</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Quick Message</h3>
                 <p className="text-sm text-gray-500 font-medium mt-1">{selectedGuardian.name}</p>
               </div>
               <button
@@ -933,14 +933,14 @@ const LearnersList = ({
             <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex gap-2 justify-end">
               <button
                 onClick={() => setShowQuickContact(false)}
-                className="px-4 py-2 text-gray-700 font-bold border border-gray-300 rounded-lg hover:bg-gray-100 transition"
+                className="px-4 py-2 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-100 transition"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSendQuickMessage}
                 disabled={isSendingSMS || !quickMessage.trim()}
-                className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white font-bold rounded-lg hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition"
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white font-medium rounded-lg hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition"
               >
                 {isSendingSMS ? (
                   <>

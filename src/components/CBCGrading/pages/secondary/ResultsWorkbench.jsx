@@ -35,7 +35,7 @@ const ActionCard = ({ icon: Icon, title, description, onClick }) => (
         <Icon size={18} />
       </div>
       <div className="flex-1">
-        <div className="font-black text-gray-900">{title}</div>
+        <div className="font-semibold text-gray-900">{title}</div>
         <div className="mt-1 text-xs font-medium text-gray-600">{description}</div>
       </div>
       <ArrowRight className="text-gray-400" size={18} />
@@ -52,7 +52,7 @@ const ResultsWorkbench = ({ variant = 'mean', onNavigate }) => {
       <div>
         <div className="flex items-center gap-2">
           <HeaderIcon className="text-indigo-700" size={22} />
-          <h1 className="text-2xl font-black text-gray-900">{cfg.title}</h1>
+          <h1 className="text-2xl font-semibold text-gray-900">{cfg.title}</h1>
         </div>
         <p className="mt-1 text-sm font-medium text-gray-600">{cfg.description}</p>
       </div>
@@ -85,7 +85,7 @@ const ResultsWorkbench = ({ variant = 'mean', onNavigate }) => {
       </div>
 
       <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4">
-        <div className="text-xs font-black uppercase tracking-widest text-indigo-700">Tip</div>
+        <div className="text-xs font-semibold uppercase tracking-widest text-indigo-700">Tip</div>
         <div className="mt-1 text-sm font-medium text-indigo-900/90">
           Use filters for Grade 10–12 and Secondary institution scope to keep results isolated to Senior School.
         </div>

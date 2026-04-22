@@ -67,7 +67,7 @@ const CreateTestPage = ({ onSave, onCancel, initialData, availableGrades }) => {
           >
             <ArrowLeft size={20} />
           </button>
-          <h1 className="text-lg font-bold text-gray-800 uppercase tracking-wide">
+          <h1 className="text-lg font-medium text-gray-800 uppercase tracking-wide">
             {initialData && initialData.id ? 'Edit Test Configuration' : 'Create New Test'}
           </h1>
         </div>
@@ -83,7 +83,7 @@ const CreateTestPage = ({ onSave, onCancel, initialData, availableGrades }) => {
 
             {/* Test Name */}
             <div className="space-y-1">
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Test Name<span className="text-red-500">*</span>
               </label>
               <input
@@ -101,7 +101,7 @@ const CreateTestPage = ({ onSave, onCancel, initialData, availableGrades }) => {
 
               {/* Type */}
               <div className="space-y-1">
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Test Type
                 </label>
                 <div className="relative">
@@ -126,7 +126,7 @@ const CreateTestPage = ({ onSave, onCancel, initialData, availableGrades }) => {
               {/* Month (Conditional) */}
               {formData.testType === 'Monthly Test' && (
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Month
                   </label>
                   <div className="relative">
@@ -162,7 +162,7 @@ const CreateTestPage = ({ onSave, onCancel, initialData, availableGrades }) => {
 
               {/* Grade */}
               <div className="space-y-1">
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Grade Level
                 </label>
                 <div className="relative">
@@ -184,7 +184,7 @@ const CreateTestPage = ({ onSave, onCancel, initialData, availableGrades }) => {
 
               {/* Academic Term */}
               <div className="space-y-1">
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Term
                 </label>
                 <div className="relative">
@@ -205,7 +205,7 @@ const CreateTestPage = ({ onSave, onCancel, initialData, availableGrades }) => {
 
               {/* Total Marks */}
               <div className="space-y-1">
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Total Marks<span className="text-red-500">*</span>
                 </label>
                 <input
@@ -219,7 +219,7 @@ const CreateTestPage = ({ onSave, onCancel, initialData, availableGrades }) => {
 
               {/* Pass Marks */}
               <div className="space-y-1">
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Pass Marks
                 </label>
                 <input
@@ -232,7 +232,7 @@ const CreateTestPage = ({ onSave, onCancel, initialData, availableGrades }) => {
 
               {/* Assessment Weight */}
               <div className="space-y-1">
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Assessment Weight (Multiplier)<span className="text-red-500">*</span>
                 </label>
                 <input
@@ -251,7 +251,7 @@ const CreateTestPage = ({ onSave, onCancel, initialData, availableGrades }) => {
 
             {/* Subject / Learning Area */}
             <div className="space-y-1">
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Learning Area (Subject)<span className="text-red-500">*</span>
               </label>
               <div className="relative">
@@ -275,7 +275,7 @@ const CreateTestPage = ({ onSave, onCancel, initialData, availableGrades }) => {
 
             {/* Performance Level Scale - Full Width */}
             <div className="space-y-1 pt-2">
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Performance Level Scale
               </label>
               <div className="relative">

@@ -39,10 +39,10 @@ const TermlyReportTemplate = ({ reportData, id = "termly-report-content" }) => {
                             <h1 className="uppercase tracking-tight leading-none mb-1" style={{ fontSize: '36px', fontWeight: '950' }}>
                                 {reportData.schoolName || 'ACADEMIC SCHOOL'}
                             </h1>
-                            <p className="text-sm font-bold text-gray-500 uppercase tracking-[0.1em]">
+                            <p className="text-sm font-medium text-gray-500 uppercase tracking-[0.1em]">
                                 {reportData.schoolAddress || 'P.O. Box 1234, Nairobi, Kenya'}
                             </p>
-                            <div className="flex gap-4 mt-1 text-[10px] font-bold text-gray-400 uppercase">
+                            <div className="flex gap-4 mt-1 text-[10px] font-medium text-gray-400 uppercase">
                                 <span>TEL: {reportData.schoolPhone || '+254 700 000000'}</span>
                                 <span>•</span>
                                 <span>EMAIL: {reportData.schoolEmail || 'info@school.ac.ke'}</span>
@@ -50,10 +50,10 @@ const TermlyReportTemplate = ({ reportData, id = "termly-report-content" }) => {
                         </div>
                     </div>
                     <div className="text-right">
-                        <div className="px-5 py-2 text-white mb-2 inline-block rounded-sm font-black uppercase tracking-widest text-lg" style={{ backgroundColor: brandColor }}>
+                        <div className="px-5 py-2 text-white mb-2 inline-block rounded-sm font-semibold uppercase tracking-widest text-lg" style={{ backgroundColor: brandColor }}>
                             Progress Report
                         </div>
-                        <p className="text-xs font-black text-gray-400 uppercase tracking-widest">
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
                             {reportData.term?.replace('_', ' ') || 'Term'} | {reportData.academicYear || '2025'}
                         </p>
                     </div>
@@ -62,18 +62,18 @@ const TermlyReportTemplate = ({ reportData, id = "termly-report-content" }) => {
                 {/* 2. LEARNER INFO TILE */}
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-5 mb-6 grid grid-cols-4 gap-4 shadow-sm">
                     <div className="col-span-2">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Learner Full Name</p>
-                        <p className="text-xl font-bold text-gray-800 uppercase tracking-tight border-b border-gray-300 pb-1">
+                        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Learner Full Name</p>
+                        <p className="text-xl font-medium text-gray-800 uppercase tracking-tight border-b border-gray-300 pb-1">
                             {reportData.learner.firstName} {reportData.learner.lastName}
                         </p>
                     </div>
                     <div>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Admission No</p>
-                        <p className="text-lg font-bold text-gray-800">{reportData.learner.admissionNumber}</p>
+                        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Admission No</p>
+                        <p className="text-lg font-medium text-gray-800">{reportData.learner.admissionNumber}</p>
                     </div>
                     <div>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Grade Level</p>
-                        <p className="text-lg font-bold text-gray-800 uppercase">{reportData.learner.grade?.replace('_', ' ')}</p>
+                        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Grade Level</p>
+                        <p className="text-lg font-medium text-gray-800 uppercase">{reportData.learner.grade?.replace('_', ' ')}</p>
                     </div>
                 </div>
 
@@ -90,10 +90,10 @@ const TermlyReportTemplate = ({ reportData, id = "termly-report-content" }) => {
                         <tbody className="divide-y divide-gray-100">
                             {(reportData.summative?.summary?.bySubject || []).map((subject, idx) => (
                                 <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                    <td className="px-4 py-2.5 text-sm font-bold text-gray-700">{subject.subject}</td>
-                                    <td className="px-4 py-2.5 text-center text-sm font-bold text-gray-900 border-x border-gray-100">{subject.averagePercentage}%</td>
+                                    <td className="px-4 py-2.5 text-sm font-medium text-gray-700">{subject.subject}</td>
+                                    <td className="px-4 py-2.5 text-center text-sm font-medium text-gray-900 border-x border-gray-100">{subject.averagePercentage}%</td>
                                     <td className="px-4 py-2.5 text-center">
-                                        <span className="font-bold text-lg" style={{ color: brandColor }}>{subject.grade}</span>
+                                        <span className="font-medium text-lg" style={{ color: brandColor }}>{subject.grade}</span>
                                     </td>
                                 </tr>
                             ))}
@@ -111,14 +111,14 @@ const TermlyReportTemplate = ({ reportData, id = "termly-report-content" }) => {
                 {/* 4. PERFORMANCE SUMMARY & KEY */}
                 <div className="grid grid-cols-2 gap-6 mb-6">
                     <div className="bg-gray-50 border border-gray-200 rounded p-4">
-                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 border-b pb-1">Teacher's General Remarks</h4>
-                        <p className="text-sm font-bold italic text-gray-600 leading-relaxed">
+                        <h4 className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3 border-b pb-1">Teacher's General Remarks</h4>
+                        <p className="text-sm font-medium italic text-gray-600 leading-relaxed">
                             "{reportData.comments?.classTeacher || 'The learner has shown dedicated interest in all learning areas. Remarkable progress observed in social skills and mathematical reasoning.'}"
                         </p>
                     </div>
                     <div className="bg-white border border-gray-200 rounded p-4">
-                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 border-b pb-1 text-center">Grading System Key</h4>
-                        <div className="grid grid-cols-2 gap-y-2 text-[9px] font-black uppercase">
+                        <h4 className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3 border-b pb-1 text-center">Grading System Key</h4>
+                        <div className="grid grid-cols-2 gap-y-2 text-[9px] font-semibold uppercase">
                             <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-green-500"></span> <span>80 - 100 : EXCEEDING</span></div>
                             <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-blue-500"></span> <span>60 - 79 : MEETING</span></div>
                             <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-yellow-500"></span> <span>50 - 59 : APPROACHING</span></div>
@@ -132,9 +132,9 @@ const TermlyReportTemplate = ({ reportData, id = "termly-report-content" }) => {
                     <div className="grid grid-cols-3 gap-10 mb-4">
                         <div className="text-center">
                             <div className="border-b border-gray-300 h-8 mb-1"></div>
-                            <p className="text-[9px] font-black text-gray-500 uppercase">Class Teacher</p>
+                            <p className="text-[9px] font-semibold text-gray-500 uppercase">Class Teacher</p>
                             {reportData.comments?.classTeacherName && (
-                                <p className="text-[9px] font-bold text-gray-700 mt-0.5">{reportData.comments.classTeacherName}</p>
+                                <p className="text-[9px] font-medium text-gray-700 mt-0.5">{reportData.comments.classTeacherName}</p>
                             )}
                         </div>
                         <div className="text-center flex flex-col items-center justify-center">
@@ -147,31 +147,31 @@ const TermlyReportTemplate = ({ reportData, id = "termly-report-content" }) => {
                                 />
                             ) : (
                                 <div className="w-16 h-16 border-2 border-dashed border-gray-200 rounded-full flex items-center justify-center mb-1">
-                                    <span className="text-[8px] font-black text-gray-300 uppercase leading-none">School<br />Stamp</span>
+                                    <span className="text-[8px] font-semibold text-gray-300 uppercase leading-none">School<br />Stamp</span>
                                 </div>
                             )}
                         </div>
                         <div className="text-center">
                             <div className="border-b border-gray-300 h-8 mb-1"></div>
-                            <p className="text-[9px] font-black text-gray-500 uppercase">Head Teacher</p>
+                            <p className="text-[9px] font-semibold text-gray-500 uppercase">Head Teacher</p>
                             {reportData.comments?.headTeacherName && (
-                                <p className="text-[9px] font-bold text-gray-700 mt-0.5">{reportData.comments.headTeacherName}</p>
+                                <p className="text-[9px] font-medium text-gray-700 mt-0.5">{reportData.comments.headTeacherName}</p>
                             )}
                         </div>
                     </div>
 
                     {/* Next Term Opens */}
                     {reportData.comments?.nextTermOpens && (
-                        <div className="text-center mb-3 py-1.5 border border-gray-200 rounded text-[9px] font-bold text-gray-600 uppercase tracking-wider">
+                        <div className="text-center mb-3 py-1.5 border border-gray-200 rounded text-[9px] font-medium text-gray-600 uppercase tracking-wider">
                             Next Term Opens: <span style={{ color: brandColor }}>{reportData.comments.nextTermOpens}</span>
                         </div>
                     )}
 
                     <div className="bg-gray-900 text-white p-3 rounded-sm text-center">
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-1">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] mb-1">
                             {reportData.schoolSlogan || 'Excellence in Knowledge and Character'}
                         </p>
-                        <p className="text-[8px] font-bold opacity-60">
+                        <p className="text-[8px] font-medium opacity-60">
                             Valid only with official school stamp and signatures. Generated via Zawadi SMS on {new Date().toLocaleDateString()}.
                         </p>
                     </div>
@@ -191,14 +191,14 @@ const TermlyReportTemplate = ({ reportData, id = "termly-report-content" }) => {
                     border: '1px solid #eee'
                 }}
             >
-                <h3 className="text-lg font-black uppercase tracking-widest mb-6 border-b-2 pb-2" style={{ color: brandColor, borderColor: brandColor }}>
+                <h3 className="text-lg font-semibold uppercase tracking-widest mb-6 border-b-2 pb-2" style={{ color: brandColor, borderColor: brandColor }}>
                     Qualitative Assessment & Co-Curricular
                 </h3>
 
                 <div className="grid grid-cols-2 gap-8 flex-grow">
                     {/* Core Competencies */}
                     <div className="space-y-4">
-                        <h4 className="text-xs font-black bg-gray-100 p-2 rounded uppercase tracking-wider">Core Competencies</h4>
+                        <h4 className="text-xs font-semibold bg-gray-100 p-2 rounded uppercase tracking-wider">Core Competencies</h4>
                         <div className="space-y-3">
                             {[
                                 { label: 'Communication & Collaboration', val: reportData.coreCompetencies?.communication },
@@ -208,8 +208,8 @@ const TermlyReportTemplate = ({ reportData, id = "termly-report-content" }) => {
                                 { label: 'Learning to Learn', val: reportData.coreCompetencies?.learningToLearn }
                             ].map((item, i) => (
                                 <div key={i} className="flex justify-between items-center border-b border-gray-50 pb-1">
-                                    <span className="text-[10px] font-bold text-gray-600">{item.label}</span>
-                                    <span className="text-xs font-black" style={{ color: brandColor }}>{item.val ?? 'Not recorded'}</span>
+                                    <span className="text-[10px] font-medium text-gray-600">{item.label}</span>
+                                    <span className="text-xs font-semibold" style={{ color: brandColor }}>{item.val ?? 'Not recorded'}</span>
                                 </div>
                             ))}
                         </div>
@@ -217,7 +217,7 @@ const TermlyReportTemplate = ({ reportData, id = "termly-report-content" }) => {
 
                     {/* Values Assessment */}
                     <div className="space-y-4">
-                        <h4 className="text-xs font-black bg-gray-100 p-2 rounded uppercase tracking-wider">Values Assessment</h4>
+                        <h4 className="text-xs font-semibold bg-gray-100 p-2 rounded uppercase tracking-wider">Values Assessment</h4>
                         <div className="space-y-3">
                             {[
                                 { label: 'Love', val: reportData.values?.love },
@@ -229,8 +229,8 @@ const TermlyReportTemplate = ({ reportData, id = "termly-report-content" }) => {
                                 { label: 'Integrity', val: reportData.values?.integrity }
                             ].map((item, i) => (
                                 <div key={i} className="flex justify-between items-center border-b border-gray-50 pb-1">
-                                    <span className="text-[10px] font-bold text-gray-600">{item.label}</span>
-                                    <span className="text-xs font-black" style={{ color: brandColor }}>{item.val ?? 'Not recorded'}</span>
+                                    <span className="text-[10px] font-medium text-gray-600">{item.label}</span>
+                                    <span className="text-xs font-semibold" style={{ color: brandColor }}>{item.val ?? 'Not recorded'}</span>
                                 </div>
                             ))}
                         </div>
@@ -239,13 +239,13 @@ const TermlyReportTemplate = ({ reportData, id = "termly-report-content" }) => {
 
                 {/* Co-Curricular Activities */}
                 <div className="mt-8">
-                    <h4 className="text-xs font-black bg-gray-100 p-2 rounded uppercase tracking-wider mb-4">Co-Curricular Activities</h4>
+                    <h4 className="text-xs font-semibold bg-gray-100 p-2 rounded uppercase tracking-wider mb-4">Co-Curricular Activities</h4>
                     <div className="grid grid-cols-2 gap-4">
                         {(reportData.coCurricular || []).length > 0 ? (
                             reportData.coCurricular.map((activity, i) => (
                                 <div key={i} className="bg-gray-50 p-3 rounded border border-gray-100">
-                                    <p className="text-[10px] font-black text-gray-400 uppercase mb-1">{activity.activityName}</p>
-                                    <p className="text-xs font-bold text-gray-700">{activity.remarks || 'Active participation and good teamwork shown.'}</p>
+                                    <p className="text-[10px] font-semibold text-gray-400 uppercase mb-1">{activity.activityName}</p>
+                                    <p className="text-xs font-medium text-gray-700">{activity.remarks || 'Active participation and good teamwork shown.'}</p>
                                 </div>
                             ))
                         ) : (
@@ -255,7 +255,7 @@ const TermlyReportTemplate = ({ reportData, id = "termly-report-content" }) => {
                 </div>
 
                 {/* Footer on Page 2 */}
-                <div className="mt-auto pt-4 border-t border-gray-100 flex justify-between items-center text-[8px] font-bold text-gray-400 uppercase tracking-widest">
+                <div className="mt-auto pt-4 border-t border-gray-100 flex justify-between items-center text-[8px] font-medium text-gray-400 uppercase tracking-widest">
                     <span>{reportData.learner.firstName} {reportData.learner.lastName}</span>
                     <span>Page 2 of {reportData.pathwayPrediction ? '3' : '2'}</span>
                 </div>

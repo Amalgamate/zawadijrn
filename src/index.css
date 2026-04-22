@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
 :root {
   --background: 0 0% 100%;
@@ -67,8 +67,20 @@
 
 @layer base {
   body {
-    @apply text-slate-900 antialiased;
-    font-family: 'Raleway', sans-serif;
+    @apply text-slate-900 antialiased leading-relaxed;
+    font-family: 'Inter', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply leading-tight font-semibold tracking-tight text-slate-900;
+  }
+
+  p {
+    @apply leading-relaxed;
+  }
+
+  button, input, label, select, textarea {
+    @apply font-medium;
   }
 }
 
@@ -211,9 +223,7 @@
 
 body {
   margin: 0;
-  font-family: 'Raleway', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--bg-primary);

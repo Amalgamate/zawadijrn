@@ -84,7 +84,7 @@ const WaiversPage = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-[#002C60] flex items-center gap-2">
+          <h1 className="text-2xl font-medium text-[#002C60] flex items-center gap-2">
             <Gift className="text-[#00A09D]" />
             Fee Waiver Management
           </h1>
@@ -126,7 +126,7 @@ const WaiversPage = () => {
                   return newFilters;
                 });
               }}
-              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 (status === 'ALL' && !filters.status) || filters.status === status
                   ? 'bg-[#002C60] text-white shadow-md'
                   : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
@@ -155,11 +155,11 @@ const WaiversPage = () => {
           <table className="w-full text-left text-xs border-collapse">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100">Student</th>
-                <th className="px-3 py-1.5 text-right text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100">Amount</th>
-                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100">Reason</th>
-                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100">Status</th>
-                <th className="px-3 py-1.5 text-center text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100">Actions</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100">Student</th>
+                <th className="px-3 py-1.5 text-right text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100">Amount</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100">Reason</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100">Status</th>
+                <th className="px-3 py-1.5 text-center text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -167,21 +167,21 @@ const WaiversPage = () => {
                 <tr key={waiver.id} className="hover:bg-gray-50/50 transition-colors group">
                   <td className="px-3 py-1.5 border-r border-gray-100">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-[#002C60] font-bold text-xs border border-blue-100">
+                      <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-[#002C60] font-medium text-xs border border-blue-100">
                         {waiver.invoice?.learner?.firstName?.charAt(0)}{waiver.invoice?.learner?.lastName?.charAt(0)}
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-gray-900 leading-none mb-1">
+                        <p className="text-sm font-medium text-gray-900 leading-none mb-1">
                           {waiver.invoice?.learner?.firstName} {waiver.invoice?.learner?.lastName}
                         </p>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase">
+                        <p className="text-[10px] font-medium text-gray-400 uppercase">
                           ADM: {waiver.invoice?.learner?.admissionNumber} · {waiver.invoice?.learner?.grade}
                         </p>
                       </div>
                     </div>
                   </td>
                   <td className="px-3 py-1.5 text-right border-r border-gray-100">
-                    <p className="text-sm font-bold text-[#002C60]">KES {Number(waiver.amountWaived).toLocaleString()}</p>
+                    <p className="text-sm font-medium text-[#002C60]">KES {Number(waiver.amountWaived).toLocaleString()}</p>
                     <p className="text-[10px] text-gray-400 italic font-medium">Original Balance: KES {Number(waiver.invoice?.balance).toLocaleString()}</p>
                   </td>
                   <td className="px-3 py-1.5 border-r border-gray-100">
@@ -193,7 +193,7 @@ const WaiversPage = () => {
                     </div>
                   </td>
                   <td className="px-3 py-1.5 border-r border-gray-100">
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border uppercase ${WAIVER_STATUS_COLORS[waiver.status]}`}>
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-medium border uppercase ${WAIVER_STATUS_COLORS[waiver.status]}`}>
                       {waiver.status}
                     </span>
                   </td>
@@ -240,18 +240,18 @@ const WaiversPage = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
             <div className="bg-red-600 px-6 py-4 flex justify-between items-center text-white">
-              <h3 className="font-bold text-lg">Reject Waiver Request</h3>
+              <h3 className="font-medium text-lg">Reject Waiver Request</h3>
               <button onClick={() => setSelectedWaiver(null)} className="hover:bg-white/20 p-1 rounded-lg transition-all"><XCircle /></button>
             </div>
             <div className="p-6 space-y-4">
               <div className="bg-red-50 border border-red-100 p-4 rounded-xl">
-                <p className="text-sm font-bold text-red-900 mb-1">
+                <p className="text-sm font-medium text-red-900 mb-1">
                   KES {Number(selectedWaiver.amountWaived).toLocaleString()} Waiver for {selectedWaiver.invoice?.learner?.firstName}
                 </p>
                 <p className="text-xs text-red-700 italic">This will notify the parent that the request was declined.</p>
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">Reason for Rejection *</label>
+                <label className="text-[10px] font-medium text-gray-400 uppercase tracking-widest pl-1">Reason for Rejection *</label>
                 <textarea 
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all"
                   rows="3"
@@ -264,14 +264,14 @@ const WaiversPage = () => {
                 <button 
                   onClick={() => handleReject(selectedWaiver.id)}
                   disabled={processingId === selectedWaiver.id || !rejectionReason.trim()}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-red-100 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium py-3 rounded-xl shadow-lg shadow-red-100 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {processingId === selectedWaiver.id ? <Loader2 size={18} className="animate-spin" /> : <XCircle size={18} />}
                   Confirm Rejection
                 </button>
                 <button 
                   onClick={() => setSelectedWaiver(null)}
-                  className="px-6 py-3 border border-gray-200 text-gray-500 font-bold rounded-xl hover:bg-gray-50"
+                  className="px-6 py-3 border border-gray-200 text-gray-500 font-medium rounded-xl hover:bg-gray-50"
                 >
                   Cancel
                 </button>

@@ -95,7 +95,7 @@ const PaymentSettings = () => {
                             <DollarSign size={32} />
                         </div>
                         <div>
-                            <h2 className="text-3xl font-extrabold tracking-tight">Payment Gateway</h2>
+                            <h2 className="text-3xl font-semibold tracking-tight">Payment Gateway</h2>
                             <p className="text-green-50 opacity-90">Manage M-Pesa collections and bulk payouts</p>
                         </div>
                     </div>
@@ -104,7 +104,7 @@ const PaymentSettings = () => {
                 <div className="p-8">
                     {/* Provider Selection */}
                     <div className="mb-10">
-                        <label className="block text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-4 flex items-center gap-2">
                             <Globe size={18} className="text-green-600"/> Select M-Pesa Provider
                         </label>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -121,7 +121,7 @@ const PaymentSettings = () => {
                                         <Shield size={20} />
                                     </div>
                                     <div className="text-left">
-                                        <p className="font-bold">Safaricom Daraja</p>
+                                        <p className="font-medium">Safaricom Daraja</p>
                                         <p className="text-xs opacity-70">Direct integration via Safaricom</p>
                                     </div>
                                 </div>
@@ -141,7 +141,7 @@ const PaymentSettings = () => {
                                         <Terminal size={20} />
                                     </div>
                                     <div className="text-left">
-                                        <p className="font-bold">Kopo Kopo</p>
+                                        <p className="font-medium">Kopo Kopo</p>
                                         <p className="text-xs opacity-70">Unified collection & bulk payouts</p>
                                     </div>
                                 </div>
@@ -163,7 +163,7 @@ const PaymentSettings = () => {
                                         <CreditCard size={24} />
                                     </div>
                                     <div>
-                                        <h3 className={`text-lg font-bold ${mpesaSettings.sandbox ? 'text-orange-900' : 'text-blue-900'}`}>
+                                        <h3 className={`text-lg font-medium ${mpesaSettings.sandbox ? 'text-orange-900' : 'text-blue-900'}`}>
                                             {isKopoKopo ? 'Kopo Kopo Integration' : 'Daraja API Configuration'}
                                             {mpesaSettings.sandbox && <span className="ml-3 px-2 py-0.5 bg-orange-200 text-orange-800 text-xs rounded-full uppercase tracking-wider">Sandbox Mode</span>}
                                         </h3>
@@ -180,7 +180,7 @@ const PaymentSettings = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {/* Shortcode / Till Number */}
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
                                         {isKopoKopo ? 'Till Number / Shortcode' : 'Business Shortcode'}
                                     </label>
                                     <input
@@ -196,8 +196,8 @@ const PaymentSettings = () => {
                                 {/* Sandbox Toggle */}
                                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200 h-[72px] mt-auto">
                                     <div>
-                                        <p className="font-bold text-gray-800 text-sm">Sandbox Mode</p>
-                                        <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Recommended for testing</p>
+                                        <p className="font-medium text-gray-800 text-sm">Sandbox Mode</p>
+                                        <p className="text-[10px] text-gray-500 uppercase tracking-widest font-medium">Recommended for testing</p>
                                     </div>
                                     <label className="relative inline-flex items-center cursor-pointer">
                                         <input
@@ -214,7 +214,7 @@ const PaymentSettings = () => {
                             <div className="space-y-6 border-t pt-6">
                                 {/* Public Key / Consumer Key */}
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
                                         {isKopoKopo ? 'Application ID' : 'Consumer Key'}
                                     </label>
                                     <div className="relative">
@@ -226,14 +226,14 @@ const PaymentSettings = () => {
                                             placeholder={mpesaSettings.hasPublicKey ? '****************' : `Enter ${isKopoKopo ? 'Application ID' : 'Consumer Key'}...`}
                                         />
                                         {mpesaSettings.hasPublicKey && !mpesaSettings.publicKey && (
-                                            <span className="absolute right-3 top-3 text-[10px] text-emerald-700 font-bold bg-emerald-100 px-2 py-1 rounded-lg uppercase tracking-wider">Saved</span>
+                                            <span className="absolute right-3 top-3 text-[10px] text-emerald-700 font-medium bg-emerald-100 px-2 py-1 rounded-lg uppercase tracking-wider">Saved</span>
                                         )}
                                     </div>
                                 </div>
 
                                 {/* Secret Key / Consumer Secret */}
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
                                         {isKopoKopo ? 'Application Secret' : 'Consumer Secret'}
                                     </label>
                                     <div className="relative">
@@ -245,7 +245,7 @@ const PaymentSettings = () => {
                                             placeholder={mpesaSettings.hasSecretKey ? '****************' : `Enter ${isKopoKopo ? 'Application Secret' : 'Consumer Secret'}...`}
                                         />
                                         {mpesaSettings.hasSecretKey && !mpesaSettings.secretKey && (
-                                            <span className="absolute right-3 top-3 text-[10px] text-emerald-700 font-bold bg-emerald-100 px-2 py-1 rounded-lg uppercase tracking-wider">Saved</span>
+                                            <span className="absolute right-3 top-3 text-[10px] text-emerald-700 font-medium bg-emerald-100 px-2 py-1 rounded-lg uppercase tracking-wider">Saved</span>
                                         )}
                                     </div>
                                 </div>
@@ -253,7 +253,7 @@ const PaymentSettings = () => {
                                 {isKopoKopo ? (
                                     /* Kopo Kopo API Key */
                                     <div className="animate-in slide-in-from-top-2 duration-300">
-                                        <label className="block text-sm font-bold text-gray-700 mb-2">API Key</label>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">API Key</label>
                                         <div className="relative">
                                             <input
                                                 type="password"
@@ -263,7 +263,7 @@ const PaymentSettings = () => {
                                                 placeholder={mpesaSettings.hasApiKey ? '****************' : 'Enter Kopo Kopo API Key...'}
                                             />
                                             {mpesaSettings.hasApiKey && !mpesaSettings.apiKey && (
-                                                <span className="absolute right-3 top-3 text-[10px] text-emerald-700 font-bold bg-emerald-100 px-2 py-1 rounded-lg uppercase tracking-wider">Saved</span>
+                                                <span className="absolute right-3 top-3 text-[10px] text-emerald-700 font-medium bg-emerald-100 px-2 py-1 rounded-lg uppercase tracking-wider">Saved</span>
                                             )}
                                         </div>
                                         <p className="text-xs text-gray-500 mt-2">Required for validating webhooks and status inquiries</p>
@@ -271,7 +271,7 @@ const PaymentSettings = () => {
                                 ) : (
                                     /* Daraja Passkey */
                                     <div className="animate-in slide-in-from-top-2 duration-300">
-                                        <label className="block text-sm font-bold text-gray-700 mb-2">Daraja Passkey</label>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Daraja Passkey</label>
                                         <div className="relative">
                                             <input
                                                 type="password"
@@ -281,7 +281,7 @@ const PaymentSettings = () => {
                                                 placeholder={mpesaSettings.hasPasskey ? '****************' : 'Enter Lipa Na M-Pesa Passkey...'}
                                             />
                                             {mpesaSettings.hasPasskey && !mpesaSettings.passkey && (
-                                                <span className="absolute right-3 top-3 text-[10px] text-emerald-700 font-bold bg-emerald-100 px-2 py-1 rounded-lg uppercase tracking-wider">Saved</span>
+                                                <span className="absolute right-3 top-3 text-[10px] text-emerald-700 font-medium bg-emerald-100 px-2 py-1 rounded-lg uppercase tracking-wider">Saved</span>
                                             )}
                                         </div>
                                     </div>
@@ -300,14 +300,14 @@ const PaymentSettings = () => {
                                             />
                                             <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-green-600"></div>
                                         </label>
-                                        <span className="text-sm font-extrabold text-gray-700 uppercase tracking-widest">Gateway Active</span>
+                                        <span className="text-sm font-semibold text-gray-700 uppercase tracking-widest">Gateway Active</span>
                                     </div>
                                 </div>
 
                                 <button
                                     onClick={handleSave}
                                     disabled={loading}
-                                    className="w-full md:w-auto flex items-center justify-center gap-3 px-10 py-4 bg-green-600 text-white rounded-2xl hover:bg-green-700 active:scale-95 transition-all font-bold shadow-lg shadow-green-200 disabled:opacity-50 disabled:active:scale-100"
+                                    className="w-full md:w-auto flex items-center justify-center gap-3 px-10 py-4 bg-green-600 text-white rounded-2xl hover:bg-green-700 active:scale-95 transition-all font-medium shadow-lg shadow-green-200 disabled:opacity-50 disabled:active:scale-100"
                                 >
                                     {loading ? <Loader size={22} className="animate-spin" /> : <Save size={22} />}
                                     {loading ? 'Saving Changes...' : 'Synchronize Settings'}

@@ -182,7 +182,7 @@ const BulkAssessmentImport = ({
                 {/* Header */}
                 <div className="p-6 border-b flex justify-between items-center bg-gray-50">
                     <div>
-                        <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                        <h3 className="text-xl font-medium text-gray-900 flex items-center gap-2">
                             <UploadCloud className="text-blue-600" />
                             Bulk Score Import
                         </h3>
@@ -228,7 +228,7 @@ const BulkAssessmentImport = ({
                                     <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                                         <FileText size={40} className="text-blue-600" />
                                     </div>
-                                    <h4 className="text-lg font-bold text-gray-800">
+                                    <h4 className="text-lg font-medium text-gray-800">
                                         {parsing ? 'Reading file...' : 'Select Excel or CSV file'}
                                     </h4>
                                     <p className="text-gray-500 mt-2">
@@ -246,7 +246,7 @@ const BulkAssessmentImport = ({
                                 <div className="flex gap-2">
                                     <Settings className="text-amber-600" size={20} />
                                     <div>
-                                        <h4 className="font-bold text-amber-900 text-sm">Column Mapping</h4>
+                                        <h4 className="font-medium text-amber-900 text-sm">Column Mapping</h4>
                                         <p className="text-xs text-amber-800">Link your spreadsheet columns to school subjects</p>
                                     </div>
                                 </div>
@@ -259,7 +259,7 @@ const BulkAssessmentImport = ({
                                 {/* Admission No Selection */}
                                 <div className="grid grid-cols-2 gap-4 items-center p-3 bg-gray-50 rounded-lg border border-gray-100">
                                     <div>
-                                        <label className="block text-sm font-bold text-gray-700">Admission Number Column</label>
+                                        <label className="block text-sm font-medium text-gray-700">Admission Number Column</label>
                                         <p className="text-xs text-gray-500">Essential for student identification</p>
                                     </div>
                                     <select
@@ -273,7 +273,7 @@ const BulkAssessmentImport = ({
                                 </div>
 
                                 {/* Score Mapping */}
-                                <h5 className="font-bold text-gray-800 text-sm mt-6 border-b pb-2">Subject Columns</h5>
+                                <h5 className="font-medium text-gray-800 text-sm mt-6 border-b pb-2">Subject Columns</h5>
                                 <div className="divide-y border rounded-xl overflow-hidden">
                                     {headers.filter(h => h !== admissionColumn).map((header, idx) => (
                                         <div key={idx} className="grid grid-cols-2 gap-4 items-center p-3 hover:bg-gray-50 transition-colors">
@@ -301,35 +301,35 @@ const BulkAssessmentImport = ({
                                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                                     <CheckCircle size={32} className="text-green-600" />
                                 </div>
-                                <h3 className="text-2xl font-bold text-gray-900">Import Complete</h3>
+                                <h3 className="text-2xl font-medium text-gray-900">Import Complete</h3>
                                 <p className="text-gray-600">Successfully processed scores from your file</p>
                             </div>
 
                             <div className="grid grid-cols-3 gap-4">
                                 <div className="bg-blue-50 p-4 rounded-xl text-center border border-blue-100">
-                                    <p className="text-xs text-blue-600 font-bold uppercase tracking-wider">Total Rows</p>
-                                    <p className="text-2xl font-black text-blue-900">{summary.totalRows}</p>
+                                    <p className="text-xs text-blue-600 font-medium uppercase tracking-wider">Total Rows</p>
+                                    <p className="text-2xl font-semibold text-blue-900">{summary.totalRows}</p>
                                 </div>
                                 <div className="bg-green-50 p-4 rounded-xl text-center border border-green-100">
-                                    <p className="text-xs text-green-600 font-bold uppercase tracking-wider">Results Set</p>
-                                    <p className="text-2xl font-black text-green-900">{summary.resultsProcessed}</p>
+                                    <p className="text-xs text-green-600 font-medium uppercase tracking-wider">Results Set</p>
+                                    <p className="text-2xl font-semibold text-green-900">{summary.resultsProcessed}</p>
                                 </div>
                                 <div className="bg-red-50 p-4 rounded-xl text-center border border-red-100">
-                                    <p className="text-xs text-red-600 font-bold uppercase tracking-wider">Errors</p>
-                                    <p className="text-2xl font-black text-red-900">{summary.errorsFound}</p>
+                                    <p className="text-xs text-red-600 font-medium uppercase tracking-wider">Errors</p>
+                                    <p className="text-2xl font-semibold text-red-900">{summary.errorsFound}</p>
                                 </div>
                             </div>
 
                             {errors.length > 0 && (
                                 <div className="space-y-3">
-                                    <h4 className="font-bold flex items-center gap-2 text-red-700">
+                                    <h4 className="font-medium flex items-center gap-2 text-red-700">
                                         <AlertTriangle size={18} />
                                         Issues Encountered
                                     </h4>
                                     <div className="max-h-60 overflow-y-auto border rounded-xl bg-gray-50 p-2 text-sm divide-y">
                                         {errors.map((err, idx) => (
                                             <div key={idx} className="py-2 px-3 text-red-600">
-                                                <span className="font-bold font-mono text-xs bg-red-100 px-1 rounded mr-2">ROW {err.row}</span>
+                                                <span className="font-medium font-mono text-xs bg-red-100 px-1 rounded mr-2">ROW {err.row}</span>
                                                 {err.admNo && <span className="text-gray-500 mr-2 text-xs">({err.admNo})</span>}
                                                 {err.error}
                                             </div>
@@ -345,7 +345,7 @@ const BulkAssessmentImport = ({
                 <div className="p-6 border-t bg-gray-50 flex justify-end gap-3">
                     <button
                         onClick={onClose}
-                        className="px-6 py-2 border border-gray-300 text-gray-700 rounded-xl font-bold hover:bg-gray-100 transition-colors"
+                        className="px-6 py-2 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-100 transition-colors"
                     >
                         {step === 3 ? 'Close' : 'Cancel'}
                     </button>
@@ -354,7 +354,7 @@ const BulkAssessmentImport = ({
                         <button
                             onClick={handleUpload}
                             disabled={uploading}
-                            className="px-8 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all flex items-center gap-2 shadow-lg shadow-blue-200 disabled:opacity-50"
+                            className="px-8 py-2 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-all flex items-center gap-2 shadow-lg shadow-blue-200 disabled:opacity-50"
                         >
                             {uploading ? <Loader className="animate-spin" /> : <UploadCloud />}
                             {uploading ? 'Processing...' : 'Complete Import'}
@@ -364,7 +364,7 @@ const BulkAssessmentImport = ({
                     {step === 3 && (
                         <button
                             onClick={reset}
-                            className="px-6 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors"
+                            className="px-6 py-2 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors"
                         >
                             Import More
                         </button>

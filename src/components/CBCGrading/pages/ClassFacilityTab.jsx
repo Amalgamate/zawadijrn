@@ -135,7 +135,7 @@ const ClassFacilityTab = ({ classData, onRefresh }) => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h3 className="text-lg font-bold">Class Facilities</h3>
+          <h3 className="text-lg font-medium">Class Facilities</h3>
           <p className="text-sm text-gray-500 mt-1">{filteredFacilities.length} facilities tracked</p>
         </div>
         <Button
@@ -153,20 +153,20 @@ const ClassFacilityTab = ({ classData, onRefresh }) => {
         <div className="grid grid-cols-3 gap-3">
           <Card className="bg-green-50 border-green-200">
             <CardContent className="p-3 text-center">
-              <p className="text-xs font-bold text-green-900">Functional</p>
-              <p className="text-2xl font-black text-green-600 mt-1">{functionalCount}</p>
+              <p className="text-xs font-medium text-green-900">Functional</p>
+              <p className="text-2xl font-semibold text-green-600 mt-1">{functionalCount}</p>
             </CardContent>
           </Card>
           <Card className="bg-yellow-50 border-yellow-200">
             <CardContent className="p-3 text-center">
-              <p className="text-xs font-bold text-yellow-900">Needs Repair</p>
-              <p className="text-2xl font-black text-yellow-600 mt-1">{needsRepairCount}</p>
+              <p className="text-xs font-medium text-yellow-900">Needs Repair</p>
+              <p className="text-2xl font-semibold text-yellow-600 mt-1">{needsRepairCount}</p>
             </CardContent>
           </Card>
           <Card className="bg-red-50 border-red-200">
             <CardContent className="p-3 text-center">
-              <p className="text-xs font-bold text-red-900">Non-Functional</p>
-              <p className="text-2xl font-black text-red-600 mt-1">{nonFunctionalCount}</p>
+              <p className="text-xs font-medium text-red-900">Non-Functional</p>
+              <p className="text-2xl font-semibold text-red-600 mt-1">{nonFunctionalCount}</p>
             </CardContent>
           </Card>
         </div>
@@ -175,7 +175,7 @@ const ClassFacilityTab = ({ classData, onRefresh }) => {
       {/* Filters */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
-          <label className="text-xs font-bold text-gray-600 uppercase">Filter by Type</label>
+          <label className="text-xs font-medium text-gray-600 uppercase">Filter by Type</label>
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
@@ -189,7 +189,7 @@ const ClassFacilityTab = ({ classData, onRefresh }) => {
         </div>
 
         <div>
-          <label className="text-xs font-bold text-gray-600 uppercase">Filter by Condition</label>
+          <label className="text-xs font-medium text-gray-600 uppercase">Filter by Condition</label>
           <select
             value={filterCondition}
             onChange={(e) => setFilterCondition(e.target.value)}
@@ -217,10 +217,10 @@ const ClassFacilityTab = ({ classData, onRefresh }) => {
                   {/* Header */}
                   <div className="flex justify-between items-start mb-3">
                     <div>
-                      <p className="text-xs font-bold text-gray-600 uppercase">Facility</p>
-                      <p className="font-bold text-gray-900 mt-1">{facility.facilityName}</p>
+                      <p className="text-xs font-medium text-gray-600 uppercase">Facility</p>
+                      <p className="font-medium text-gray-900 mt-1">{facility.facilityName}</p>
                     </div>
-                    <span className={`text-xs font-bold px-2 py-1 rounded ${styles.bg} ${styles.text}`}>
+                    <span className={`text-xs font-medium px-2 py-1 rounded ${styles.bg} ${styles.text}`}>
                       {conditionLabel}
                     </span>
                   </div>
@@ -228,12 +228,12 @@ const ClassFacilityTab = ({ classData, onRefresh }) => {
                   {/* Type and Quantity */}
                   <div className="grid grid-cols-2 gap-2 mb-3 pb-3 border-b">
                     <div>
-                      <p className="text-xs font-bold text-gray-600 uppercase">Type</p>
-                      <p className="text-sm font-bold text-gray-900 mt-1">{facility.facilityType}</p>
+                      <p className="text-xs font-medium text-gray-600 uppercase">Type</p>
+                      <p className="text-sm font-medium text-gray-900 mt-1">{facility.facilityType}</p>
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-gray-600 uppercase">Quantity</p>
-                      <p className="text-sm font-bold text-blue-600 mt-1">{facility.quantity}</p>
+                      <p className="text-xs font-medium text-gray-600 uppercase">Quantity</p>
+                      <p className="text-sm font-medium text-blue-600 mt-1">{facility.quantity}</p>
                     </div>
                   </div>
 
@@ -242,7 +242,7 @@ const ClassFacilityTab = ({ classData, onRefresh }) => {
                     <div className="mb-3 p-2 bg-yellow-50 border border-yellow-200 rounded">
                       <div className="flex gap-2 items-center">
                         <Wrench size={14} className="text-yellow-700" />
-                        <span className="text-xs font-bold text-yellow-900">Maintenance Required</span>
+                        <span className="text-xs font-medium text-yellow-900">Maintenance Required</span>
                       </div>
                     </div>
                   )}
@@ -250,7 +250,7 @@ const ClassFacilityTab = ({ classData, onRefresh }) => {
                   {/* Last Maintenance */}
                   {facility.lastMaintenance && (
                     <div className="mb-3 text-xs text-gray-600">
-                      <p className="font-bold">Last Maintenance</p>
+                      <p className="font-medium">Last Maintenance</p>
                       <p>{new Date(facility.lastMaintenance).toLocaleDateString()}</p>
                     </div>
                   )}
@@ -298,7 +298,7 @@ const ClassFacilityTab = ({ classData, onRefresh }) => {
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Facility Name */}
               <div>
-                <label className="text-xs font-bold text-gray-600 uppercase">Facility Name *</label>
+                <label className="text-xs font-medium text-gray-600 uppercase">Facility Name *</label>
                 <input
                   type="text"
                   value={formData.facilityName}
@@ -311,7 +311,7 @@ const ClassFacilityTab = ({ classData, onRefresh }) => {
 
               {/* Facility Type */}
               <div>
-                <label className="text-xs font-bold text-gray-600 uppercase">Facility Type *</label>
+                <label className="text-xs font-medium text-gray-600 uppercase">Facility Type *</label>
                 <select
                   value={formData.facilityType}
                   onChange={(e) => setFormData({ ...formData, facilityType: e.target.value })}
@@ -327,7 +327,7 @@ const ClassFacilityTab = ({ classData, onRefresh }) => {
 
               {/* Quantity */}
               <div>
-                <label className="text-xs font-bold text-gray-600 uppercase">Quantity *</label>
+                <label className="text-xs font-medium text-gray-600 uppercase">Quantity *</label>
                 <input
                   type="number"
                   value={formData.quantity}
@@ -340,7 +340,7 @@ const ClassFacilityTab = ({ classData, onRefresh }) => {
 
               {/* Condition */}
               <div>
-                <label className="text-xs font-bold text-gray-600 uppercase">Condition *</label>
+                <label className="text-xs font-medium text-gray-600 uppercase">Condition *</label>
                 <select
                   value={formData.condition}
                   onChange={(e) => setFormData({ ...formData, condition: e.target.value })}
@@ -355,7 +355,7 @@ const ClassFacilityTab = ({ classData, onRefresh }) => {
 
               {/* Last Maintenance */}
               <div>
-                <label className="text-xs font-bold text-gray-600 uppercase">Last Maintenance</label>
+                <label className="text-xs font-medium text-gray-600 uppercase">Last Maintenance</label>
                 <input
                   type="date"
                   value={toInputDate(formData.lastMaintenance)}
@@ -373,7 +373,7 @@ const ClassFacilityTab = ({ classData, onRefresh }) => {
                   onChange={(e) => setFormData({ ...formData, maintenanceRequired: e.target.checked })}
                   className="w-4 h-4 rounded cursor-pointer"
                 />
-                <label htmlFor="maintenanceRequired" className="text-sm font-bold text-yellow-900 cursor-pointer flex-1">
+                <label htmlFor="maintenanceRequired" className="text-sm font-medium text-yellow-900 cursor-pointer flex-1">
                   Maintenance Required
                 </label>
               </div>

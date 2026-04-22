@@ -132,7 +132,7 @@ const InventoryList = () => {
             {/* Header Area */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 flex-shrink-0">
                 <div>
-                    <h1 className="text-3xl font-black text-gray-900 tracking-tight">Inventory Hub</h1>
+                    <h1 className="text-3xl font-semibold text-gray-900 tracking-tight">Inventory Hub</h1>
                     <p className="text-gray-500 font-medium">Manage and track school resources with precision.</p>
                 </div>
                 <div className="flex gap-3">
@@ -152,7 +152,7 @@ const InventoryList = () => {
                     </div>
                     <button
                         onClick={handleOpenAdd}
-                        className="flex items-center gap-2 px-6 py-3 bg-brand-teal text-white rounded-2xl hover:bg-brand-teal/90 transition shadow-lg shadow-brand-teal/20 font-bold"
+                        className="flex items-center gap-2 px-6 py-3 bg-brand-teal text-white rounded-2xl hover:bg-brand-teal/90 transition shadow-lg shadow-brand-teal/20 font-medium"
                     >
                         <Plus size={20} />
                         Add New
@@ -178,7 +178,7 @@ const InventoryList = () => {
                         <select
                             value={filterCategory}
                             onChange={(e) => setFilterCategory(e.target.value)}
-                            className="pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-brand-teal outline-none font-bold text-gray-600 transition-all appearance-none min-w-[180px]"
+                            className="pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-brand-teal outline-none font-medium text-gray-600 transition-all appearance-none min-w-[180px]"
                         >
                             <option value="all">All Categories</option>
                             {categories.map(c => <option key={c} value={c}>{c}</option>)}
@@ -201,7 +201,7 @@ const InventoryList = () => {
                     {loading && items.length === 0 ? (
                         <div className="bg-white rounded-3xl border border-gray-100 p-20 flex flex-col items-center justify-center space-y-4 shadow-sm h-full">
                             <div className="w-16 h-16 border-4 border-brand-teal/20 border-t-brand-teal rounded-full animate-spin"></div>
-                            <p className="text-gray-500 font-bold animate-pulse text-lg">Inventory Scanning...</p>
+                            <p className="text-gray-500 font-medium animate-pulse text-lg">Inventory Scanning...</p>
                         </div>
                     ) : filteredItems.length > 0 ? (
                         viewMode === 'grid' ? (
@@ -233,13 +233,13 @@ const InventoryList = () => {
                                             </div>
 
                                             <div className="space-y-1">
-                                                <h3 className="text-lg font-black text-gray-900 line-clamp-2 leading-snug group-hover:text-brand-teal transition-colors uppercase tracking-tight">{item.title}</h3>
-                                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{item.category}</p>
+                                                <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 leading-snug group-hover:text-brand-teal transition-colors uppercase tracking-tight">{item.title}</h3>
+                                                <p className="text-xs font-medium text-gray-400 uppercase tracking-widest">{item.category}</p>
                                             </div>
 
                                             <div className="mt-6 pt-6 border-t border-gray-50 flex items-center justify-between">
                                                 <StatusBadge status={item.status} />
-                                                <div className="flex items-center gap-1 text-brand-teal font-black text-[10px] uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <div className="flex items-center gap-1 text-brand-teal font-semibold text-[10px] uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
                                                     View Details <ChevronRight size={14} />
                                                 </div>
                                             </div>
@@ -272,16 +272,16 @@ const InventoryList = () => {
                                                             {getIcon(item.category, 16)}
                                                         </div>
                                                         <div className="min-w-0">
-                                                            <p className="font-bold text-gray-900 truncate uppercase tracking-tight">{item.title}</p>
+                                                            <p className="font-medium text-gray-900 truncate uppercase tracking-tight">{item.title}</p>
                                                             <p className="text-xs text-gray-400 font-medium truncate">{item.author || 'No Author Info'}</p>
                                                         </div>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">{item.category}</span>
+                                                    <span className="text-xs font-medium text-gray-500 uppercase tracking-widest">{item.category}</span>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <code className="text-xs font-mono font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-md">{item.isbn || 'N/A'}</code>
+                                                    <code className="text-xs font-mono font-medium text-gray-400 bg-gray-50 px-2 py-1 rounded-md">{item.isbn || 'N/A'}</code>
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <StatusBadge status={item.status} />
@@ -329,8 +329,8 @@ const InventoryList = () => {
                                         {getIcon(selectedItem.category, 24)}
                                     </div>
                                     <div>
-                                        <h2 className="text-lg font-black text-gray-900 leading-none">Resource Detail</h2>
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">ID: {selectedItem.id.substring(0, 8)}</p>
+                                        <h2 className="text-lg font-semibold text-gray-900 leading-none">Resource Detail</h2>
+                                        <p className="text-[10px] font-medium text-gray-400 uppercase tracking-widest mt-1">ID: {selectedItem.id.substring(0, 8)}</p>
                                     </div>
                                 </div>
                                 <button
@@ -346,15 +346,15 @@ const InventoryList = () => {
                                 {/* Title Section */}
                                 <div className="space-y-4">
                                     <StatusBadge status={selectedItem.status} />
-                                    <h1 className="text-2xl font-black text-gray-900 leading-tight uppercase tracking-tight">{selectedItem.title}</h1>
+                                    <h1 className="text-2xl font-semibold text-gray-900 leading-tight uppercase tracking-tight">{selectedItem.title}</h1>
                                     <div className="flex gap-4">
                                         <div className="flex items-center gap-2 text-gray-400">
                                             <Tag size={16} className="text-brand-teal" />
-                                            <span className="text-xs font-bold uppercase tracking-widest">{selectedItem.category}</span>
+                                            <span className="text-xs font-medium uppercase tracking-widest">{selectedItem.category}</span>
                                         </div>
                                         <div className="flex items-center gap-2 text-gray-400">
                                             <Hash size={16} className="text-brand-teal" />
-                                            <span className="text-xs font-mono font-bold tracking-tight">{selectedItem.isbn || 'No ID'}</span>
+                                            <span className="text-xs font-mono font-medium tracking-tight">{selectedItem.isbn || 'No ID'}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -364,16 +364,16 @@ const InventoryList = () => {
                                     <div className="p-5 bg-gray-50 rounded-2xl border border-gray-100 space-y-4">
                                         <div className="flex items-center gap-3 text-gray-500">
                                             <Book size={18} className="text-brand-teal" />
-                                            <span className="text-sm font-black uppercase tracking-widest text-[10px]">Publishing Info</span>
+                                            <span className="text-sm font-semibold uppercase tracking-widest text-[10px]">Publishing Info</span>
                                         </div>
                                         <div className="space-y-3">
                                             <div className="flex justify-between items-center">
-                                                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Author/Brand</span>
-                                                <span className="text-sm font-black text-gray-700">{selectedItem.author || 'N/A'}</span>
+                                                <span className="text-xs font-medium text-gray-400 uppercase tracking-widest">Author/Brand</span>
+                                                <span className="text-sm font-semibold text-gray-700">{selectedItem.author || 'N/A'}</span>
                                             </div>
                                             <div className="flex justify-between items-center">
-                                                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Academic Year</span>
-                                                <span className="text-sm font-black text-gray-700">2024</span>
+                                                <span className="text-xs font-medium text-gray-400 uppercase tracking-widest">Academic Year</span>
+                                                <span className="text-sm font-semibold text-gray-700">2024</span>
                                             </div>
                                         </div>
                                     </div>
@@ -382,27 +382,27 @@ const InventoryList = () => {
                                     <div className={`p-5 rounded-2xl border ${selectedItem.status === 'ISSUED' ? 'bg-orange-50 border-orange-100' : 'bg-emerald-50 border-emerald-100'} space-y-4`}>
                                         <div className={`flex items-center gap-3 ${selectedItem.status === 'ISSUED' ? 'text-orange-600' : 'text-emerald-600'}`}>
                                             <UserCheck size={18} />
-                                            <span className="text-sm font-black uppercase tracking-widest text-[10px]">Availability Status</span>
+                                            <span className="text-sm font-semibold uppercase tracking-widest text-[10px]">Availability Status</span>
                                         </div>
                                         {selectedItem.assignedTo ? (
                                             <div className="space-y-3">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-orange-600 font-black border border-orange-200">
+                                                    <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-orange-600 font-semibold border border-orange-200">
                                                         {selectedItem.assignedTo.firstName[0]}
                                                     </div>
                                                     <div>
-                                                        <p className="text-xs font-bold text-orange-400 uppercase tracking-widest leading-none">Currently with</p>
-                                                        <p className="text-sm font-black text-orange-900 leading-none mt-1">{selectedItem.assignedTo.firstName} {selectedItem.assignedTo.lastName}</p>
+                                                        <p className="text-xs font-medium text-orange-400 uppercase tracking-widest leading-none">Currently with</p>
+                                                        <p className="text-sm font-semibold text-orange-900 leading-none mt-1">{selectedItem.assignedTo.firstName} {selectedItem.assignedTo.lastName}</p>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-2 text-xs text-orange-700 font-bold bg-white/50 p-3 rounded-xl">
+                                                <div className="flex items-center gap-2 text-xs text-orange-700 font-medium bg-white/50 p-3 rounded-xl">
                                                     <Calendar size={14} /> Issued on: {new Date().toLocaleDateString()}
                                                 </div>
                                             </div>
                                         ) : (
                                             <div className="space-y-1">
-                                                <p className="text-sm font-black text-emerald-900 leading-none">Ready to Issue</p>
-                                                <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest">No pending assignments</p>
+                                                <p className="text-sm font-semibold text-emerald-900 leading-none">Ready to Issue</p>
+                                                <p className="text-xs font-medium text-emerald-600 uppercase tracking-widest">No pending assignments</p>
                                             </div>
                                         )}
                                     </div>
@@ -413,16 +413,16 @@ const InventoryList = () => {
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-3 text-gray-500">
                                             <History size={18} className="text-brand-teal" />
-                                            <span className="text-sm font-black uppercase tracking-widest text-[10px]">Resource Activity</span>
+                                            <span className="text-sm font-semibold uppercase tracking-widest text-[10px]">Resource Activity</span>
                                         </div>
-                                        <button className="text-[10px] font-black text-brand-teal uppercase tracking-widest hover:underline transition">Full Audit</button>
+                                        <button className="text-[10px] font-semibold text-brand-teal uppercase tracking-widest hover:underline transition">Full Audit</button>
                                     </div>
                                     <div className="space-y-3">
                                         <div className="flex gap-3 relative pl-6 before:absolute before:left-[5px] before:top-2 before:bottom-0 before:w-0.5 before:bg-gray-100">
                                             <div className="absolute left-0 top-1.5 w-[11px] h-[11px] rounded-full bg-emerald-500 border-2 border-white shadow-sm ring-4 ring-emerald-50"></div>
                                             <div>
-                                                <p className="text-xs font-black text-gray-800 tracking-tight leading-none mb-1">Added to Inventory</p>
-                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">Today, 10:15 AM</p>
+                                                <p className="text-xs font-semibold text-gray-800 tracking-tight leading-none mb-1">Added to Inventory</p>
+                                                <p className="text-[10px] font-medium text-gray-400 uppercase tracking-widest leading-none">Today, 10:15 AM</p>
                                             </div>
                                         </div>
                                     </div>
@@ -433,7 +433,7 @@ const InventoryList = () => {
                             <div className="p-6 bg-gray-50 border-t border-gray-100 flex gap-3">
                                 <button
                                     onClick={(e) => handleOpenEdit(selectedItem, e)}
-                                    className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-white text-gray-700 border border-gray-200 rounded-2xl hover:border-brand-teal/40 hover:text-brand-teal transition-all font-black uppercase tracking-widest text-xs"
+                                    className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-white text-gray-700 border border-gray-200 rounded-2xl hover:border-brand-teal/40 hover:text-brand-teal transition-all font-semibold uppercase tracking-widest text-xs"
                                 >
                                     <Edit size={18} /> Edit Info
                                 </button>
@@ -461,8 +461,8 @@ const InventoryList = () => {
                             <form onSubmit={handleSubmit}>
                                 <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                                     <div>
-                                        <h3 className="text-2xl font-black text-gray-900 tracking-tight uppercase tracking-tighter">{editingItem ? 'Edit Resource' : 'Register New Resource'}</h3>
-                                        <p className="text-[10px] font-black text-[#0D9488] mt-1 uppercase tracking-[0.2em]">Inventory Protocol</p>
+                                        <h3 className="text-2xl font-semibold text-gray-900 tracking-tight uppercase tracking-tighter">{editingItem ? 'Edit Resource' : 'Register New Resource'}</h3>
+                                        <p className="text-[10px] font-semibold text-[#0D9488] mt-1 uppercase tracking-[0.2em]">Inventory Protocol</p>
                                     </div>
                                     <button
                                         type="button"
@@ -483,7 +483,7 @@ const InventoryList = () => {
                                             value={formData.title}
                                             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                                             placeholder="e.g. Mathematics Grade 4 Pupil's Book"
-                                            className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-4 focus:ring-brand-teal/5 focus:border-brand-teal focus:bg-white outline-none transition-all font-bold text-gray-800 placeholder:text-gray-300 uppercase tracking-tight"
+                                            className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-4 focus:ring-brand-teal/5 focus:border-brand-teal focus:bg-white outline-none transition-all font-medium text-gray-800 placeholder:text-gray-300 uppercase tracking-tight"
                                         />
                                     </div>
 
@@ -494,7 +494,7 @@ const InventoryList = () => {
                                                 <select
                                                     value={formData.category}
                                                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                                    className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-4 focus:ring-brand-teal/5 focus:border-brand-teal focus:bg-white outline-none transition-all font-black text-gray-600 appearance-none uppercase tracking-widest text-[11px]"
+                                                    className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-4 focus:ring-brand-teal/5 focus:border-brand-teal focus:bg-white outline-none transition-all font-semibold text-gray-600 appearance-none uppercase tracking-widest text-[11px]"
                                                 >
                                                     {categories.map(c => <option key={c} value={c}>{c}</option>)}
                                                 </select>
@@ -507,7 +507,7 @@ const InventoryList = () => {
                                                 <select
                                                     value={formData.status}
                                                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                                    className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-4 focus:ring-brand-teal/5 focus:border-brand-teal focus:bg-white outline-none transition-all font-black text-gray-600 appearance-none uppercase tracking-widest text-[11px]"
+                                                    className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-4 focus:ring-brand-teal/5 focus:border-brand-teal focus:bg-white outline-none transition-all font-semibold text-gray-600 appearance-none uppercase tracking-widest text-[11px]"
                                                     disabled={formData.status === 'ISSUED'}
                                                 >
                                                     <option value="AVAILABLE">Available</option>
@@ -528,7 +528,7 @@ const InventoryList = () => {
                                                 value={formData.author}
                                                 onChange={(e) => setFormData({ ...formData, author: e.target.value })}
                                                 placeholder="e.g. Longhorn Publishers"
-                                                className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-4 focus:ring-brand-teal/5 focus:border-brand-teal focus:bg-white outline-none transition-all font-bold text-gray-700 placeholder:text-gray-300"
+                                                className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-4 focus:ring-brand-teal/5 focus:border-brand-teal focus:bg-white outline-none transition-all font-medium text-gray-700 placeholder:text-gray-300"
                                             />
                                         </div>
                                         <div className="group">
@@ -538,7 +538,7 @@ const InventoryList = () => {
                                                 value={formData.isbn}
                                                 onChange={(e) => setFormData({ ...formData, isbn: e.target.value })}
                                                 placeholder="e.g. 978-0-123456-78-9"
-                                                className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-4 focus:ring-brand-teal/5 focus:border-brand-teal focus:bg-white outline-none transition-all font-mono font-bold text-gray-700 placeholder:text-gray-300"
+                                                className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-4 focus:ring-brand-teal/5 focus:border-brand-teal focus:bg-white outline-none transition-all font-mono font-medium text-gray-700 placeholder:text-gray-300"
                                             />
                                         </div>
                                     </div>
@@ -549,8 +549,8 @@ const InventoryList = () => {
                                                 <Info size={20} />
                                             </div>
                                             <div>
-                                                <p className="text-[10px] font-black text-blue-800 uppercase tracking-[0.15em] mb-1">Ownership Locked</p>
-                                                <p className="text-xs text-blue-600/80 leading-relaxed font-bold">
+                                                <p className="text-[10px] font-semibold text-blue-800 uppercase tracking-[0.15em] mb-1">Ownership Locked</p>
+                                                <p className="text-xs text-blue-600/80 leading-relaxed font-medium">
                                                     This item is currently issued. Please return it via the teacher's profile before modifying availability status.
                                                 </p>
                                             </div>
@@ -562,14 +562,14 @@ const InventoryList = () => {
                                     <button
                                         type="button"
                                         onClick={() => setShowAddModal(false)}
-                                        className="px-6 py-3 text-xs font-black text-gray-400 uppercase tracking-widest hover:text-gray-600 transition"
+                                        className="px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-widest hover:text-gray-600 transition"
                                         disabled={isSubmitting}
                                     >
                                         Abort
                                     </button>
                                     <button
                                         type="submit"
-                                        className="flex items-center gap-2 px-8 py-4 bg-brand-teal text-white rounded-2xl hover:bg-brand-teal/90 transition shadow-xl shadow-brand-teal/30 font-black uppercase tracking-widest text-xs"
+                                        className="flex items-center gap-2 px-8 py-4 bg-brand-teal text-white rounded-2xl hover:bg-brand-teal/90 transition shadow-xl shadow-brand-teal/30 font-semibold uppercase tracking-widest text-xs"
                                         disabled={isSubmitting}
                                     >
                                         {isSubmitting ? <RefreshCw size={20} className="animate-spin" /> : <ShieldCheck size={20} />}

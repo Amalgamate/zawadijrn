@@ -14,7 +14,7 @@ const SummativeAssessmentModule = () => {
         <div className="max-w-6xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-800">Summative Assessment Module</h1>
+              <h1 className="text-2xl font-medium text-gray-800">Summative Assessment Module</h1>
               <p className="text-sm text-gray-600 mt-1">
                 Create and manage assessment scales and summative tests
               </p>
@@ -88,34 +88,34 @@ const QuickGuide = () => {
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="bg-white rounded-lg shadow-md p-8">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">Quick Guide</h2>
+        <h2 className="text-2xl font-medium text-gray-800 mb-6">Quick Guide</h2>
 
         <div className="space-y-6">
           {/* Workflow */}
           <div>
             <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-              <span className="bg-blue-100 text-blue-800 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">1</span>
+              <span className="bg-blue-100 text-blue-800 rounded-full w-8 h-8 flex items-center justify-center text-sm font-medium">1</span>
               Workflow Overview
             </h3>
             <div className="ml-10 space-y-2 text-gray-600">
               <p className="flex items-start gap-2">
-                <span className="text-blue-600 font-bold mt-1">→</span>
+                <span className="text-blue-600 font-medium mt-1">→</span>
                 <span><strong>Step 0 (Optional):</strong> Set up learning areas in Configuration → Learning Areas</span>
               </p>
               <p className="flex items-start gap-2">
-                <span className="text-blue-600 font-bold mt-1">→</span>
+                <span className="text-blue-600 font-medium mt-1">→</span>
                 <span><strong>Step 1:</strong> Create or manage assessment scales in the "Scales Management" tab</span>
               </p>
               <p className="flex items-start gap-2">
-                <span className="text-blue-600 font-bold mt-1">→</span>
+                <span className="text-blue-600 font-medium mt-1">→</span>
                 <span><strong>Step 2:</strong> Switch to "Create Test" tab to design your summative test</span>
               </p>
               <p className="flex items-start gap-2">
-                <span className="text-blue-600 font-bold mt-1">→</span>
+                <span className="text-blue-600 font-medium mt-1">→</span>
                 <span><strong>Step 3:</strong> Select a scale from the dropdown (populated from your saved scales)</span>
               </p>
               <p className="flex items-start gap-2">
-                <span className="text-blue-600 font-bold mt-1">→</span>
+                <span className="text-blue-600 font-medium mt-1">→</span>
                 <span><strong>Step 4:</strong> Fill in test details and deploy — data is saved to the server database</span>
               </p>
             </div>
@@ -124,7 +124,7 @@ const QuickGuide = () => {
           {/* Scales Management */}
           <div className="border-t pt-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-              <span className="bg-green-100 text-green-800 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">2</span>
+              <span className="bg-green-100 text-green-800 rounded-full w-8 h-8 flex items-center justify-center text-sm font-medium">2</span>
               Scales Management
             </h3>
             <div className="ml-10 space-y-2 text-gray-600">
@@ -142,7 +142,7 @@ const QuickGuide = () => {
           {/* Test Creation */}
           <div className="border-t pt-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-              <span className="bg-purple-100 text-purple-800 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">3</span>
+              <span className="bg-purple-100 text-purple-800 rounded-full w-8 h-8 flex items-center justify-center text-sm font-medium">3</span>
               Creating Tests
             </h3>
             <div className="ml-10 space-y-2 text-gray-600">
@@ -156,7 +156,7 @@ const QuickGuide = () => {
           {/* Data Storage — UPDATED to reflect actual DB storage */}
           <div className="border-t pt-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-              <span className="bg-amber-100 text-amber-800 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">4</span>
+              <span className="bg-amber-100 text-amber-800 rounded-full w-8 h-8 flex items-center justify-center text-sm font-medium">4</span>
               Data Storage
             </h3>
             <div className="ml-10 space-y-2 text-gray-600">
@@ -173,7 +173,7 @@ const QuickGuide = () => {
           {/* Tips */}
           <div className="border-t pt-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-              <span className="bg-indigo-100 text-indigo-800 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">5</span>
+              <span className="bg-indigo-100 text-indigo-800 rounded-full w-8 h-8 flex items-center justify-center text-sm font-medium">5</span>
               Tips &amp; Best Practices
             </h3>
             <div className="ml-10 space-y-2 text-gray-600">

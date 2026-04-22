@@ -150,8 +150,8 @@ const ParentsList = ({ parents = [], pagination, onFetchParents, onAddParent, on
             {/* Metrics */}
             <div className="flex items-center gap-4 mr-2 border-r pr-4 border-gray-200 h-10">
               <div className="text-right">
-                <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Total Parents</p>
-                <p className="text-xl font-bold text-gray-800 leading-none">{pagination?.total || parents.length || 0}</p>
+                <p className="text-[10px] text-gray-500 uppercase font-medium tracking-wider">Total Parents</p>
+                <p className="text-xl font-medium text-gray-800 leading-none">{pagination?.total || parents.length || 0}</p>
               </div>
             </div>
           </div>
@@ -172,15 +172,15 @@ const ParentsList = ({ parents = [], pagination, onFetchParents, onAddParent, on
           <table className="w-full border-collapse text-xs">
             <thead className="border-b border-[color:var(--table-border)]">
               <tr>
-                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Parent/Guardian</th>
-                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Relationship</th>
-                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Email</th>
-                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Phone</th>
-                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Occupation</th>
-                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Learners</th>
-                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Status</th>
-                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">WhatsApp</th>
-                <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Actions</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Parent/Guardian</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Relationship</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Email</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Phone</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Occupation</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Learners</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Status</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">WhatsApp</th>
+                <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -188,7 +188,7 @@ const ParentsList = ({ parents = [], pagination, onFetchParents, onAddParent, on
                 <tr key={parent.id} onClick={() => onViewParent(parent)} className="hover:bg-gray-50 cursor-pointer transition">
                   <td className="px-3 py-1.5 border-r border-gray-100">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-brand-purple rounded-full flex items-center justify-center text-white font-bold text-xs shadow-sm">
+                      <div className="w-8 h-8 bg-brand-purple rounded-full flex items-center justify-center text-white font-medium text-xs shadow-sm">
                         {parent.name?.substring(0, 2).toUpperCase()}
                       </div>
                       <div>

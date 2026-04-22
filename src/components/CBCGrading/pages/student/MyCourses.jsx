@@ -33,7 +33,7 @@ const MyCourses = ({ onNavigate }) => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-black text-gray-900 flex items-center gap-2">
+          <h1 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
             <BookOpen size={22} className="text-purple-600" /> My Courses
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">{courses.length} course{courses.length !== 1 ? 's' : ''} enrolled</p>
@@ -62,7 +62,7 @@ const MyCourses = ({ onNavigate }) => {
       ) : filtered.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
           <BookOpen size={40} className="mx-auto text-gray-300 mb-3" />
-          <p className="text-base font-bold text-gray-600">
+          <p className="text-base font-medium text-gray-600">
             {search ? 'No courses match your search.' : 'You are not enrolled in any courses yet.'}
           </p>
           <p className="text-sm text-gray-400 mt-1">Your teacher will enroll you when courses are available.</p>
@@ -83,7 +83,7 @@ const MyCourses = ({ onNavigate }) => {
                 <div className="p-5">
                   <div className="flex items-start justify-between gap-2 mb-3">
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-black text-gray-900 text-sm leading-tight group-hover:text-purple-700 transition-colors truncate">
+                      <h3 className="font-semibold text-gray-900 text-sm leading-tight group-hover:text-purple-700 transition-colors truncate">
                         {course.title}
                       </h3>
                       <p className="text-xs text-gray-400 mt-0.5">{course.subject}{course.grade ? ` • ${course.grade}` : ''}</p>
@@ -98,10 +98,10 @@ const MyCourses = ({ onNavigate }) => {
                   {/* Progress */}
                   <div className="space-y-1.5">
                     <div className="flex justify-between items-center">
-                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1">
+                      <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest flex items-center gap-1">
                         <TrendingUp size={10} /> Progress
                       </span>
-                      <span className="text-xs font-black" style={{ color: done ? '#10b981' : '#6b7280' }}>{pct}%</span>
+                      <span className="text-xs font-semibold" style={{ color: done ? '#10b981' : '#6b7280' }}>{pct}%</span>
                     </div>
                     <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                       <div className={`h-full rounded-full transition-all ${getProgressColor(pct)}`} style={{ width: `${pct}%` }} />
@@ -111,7 +111,7 @@ const MyCourses = ({ onNavigate }) => {
                 </div>
 
                 <div className="px-5 pb-4">
-                  <button className="w-full py-2 rounded-lg bg-purple-50 text-purple-700 text-xs font-black uppercase tracking-wider hover:bg-purple-100 transition-colors flex items-center justify-center gap-1">
+                  <button className="w-full py-2 rounded-lg bg-purple-50 text-purple-700 text-xs font-semibold uppercase tracking-wider hover:bg-purple-100 transition-colors flex items-center justify-center gap-1">
                     {done ? 'Review Course' : (pct > 0 ? 'Continue' : 'Start')} <ChevronRight size={13} />
                   </button>
                 </div>

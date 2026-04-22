@@ -28,7 +28,7 @@ const inputCls = 'w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm f
 function FormField({ label, required, children }) {
   return (
     <div>
-      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">
+      <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">
         {label} {required && <span className="text-red-400">*</span>}
       </label>
       {children}
@@ -43,7 +43,7 @@ function StatusBadge({ status }) {
     INACTIVE:  'bg-gray-100 text-gray-500',
   };
   return (
-    <span className={`text-[10px] font-black px-2.5 py-1 rounded-full ${map[status] || map.ACTIVE}`}>
+    <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-full ${map[status] || map.ACTIVE}`}>
       {(status || 'ACTIVE').replace('_', ' ')}
     </span>
   );
@@ -83,11 +83,11 @@ function DriverCard({ driver, onEdit, onDelete }) {
         {/* Avatar + name */}
         <div className="flex items-start justify-between gap-3 mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center flex-shrink-0 text-blue-700 font-black text-base">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center flex-shrink-0 text-blue-700 font-semibold text-base">
               {initials}
             </div>
             <div>
-              <p className="font-black text-gray-900 text-sm">{driver.name}</p>
+              <p className="font-semibold text-gray-900 text-sm">{driver.name}</p>
               {driver.phone ? (
                 <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5 font-medium">
                   <Phone size={11} /> {driver.phone}
@@ -105,7 +105,7 @@ function DriverCard({ driver, onEdit, onDelete }) {
           <Bus size={14} className="text-blue-400 flex-shrink-0" />
           {driver.vehicle ? (
             <div>
-              <p className="text-xs font-black text-gray-700">{driver.vehicle}</p>
+              <p className="text-xs font-semibold text-gray-700">{driver.vehicle}</p>
               <p className="text-[11px] text-gray-400">{driver.vehicleObj?.capacity} seats</p>
             </div>
           ) : (
@@ -115,7 +115,7 @@ function DriverCard({ driver, onEdit, onDelete }) {
 
         {/* Routes */}
         <div className="space-y-1.5 mb-4">
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1">
+          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest flex items-center gap-1">
             <Milestone size={10} /> Routes ({driver.routes.length})
           </p>
           {driver.routes.length === 0 ? (
@@ -123,7 +123,7 @@ function DriverCard({ driver, onEdit, onDelete }) {
           ) : (
             <div className="flex flex-wrap gap-1.5">
               {driver.routes.map(r => (
-                <span key={r.id} className="text-[11px] font-bold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-lg">
+                <span key={r.id} className="text-[11px] font-medium bg-blue-50 text-blue-700 px-2 py-0.5 rounded-lg">
                   {r.name}
                 </span>
               ))}
@@ -135,13 +135,13 @@ function DriverCard({ driver, onEdit, onDelete }) {
         <div className="flex items-center gap-2 pt-3 border-t border-gray-50">
           <button
             onClick={() => onEdit(driver)}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-black text-blue-600 hover:bg-blue-50 transition"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold text-blue-600 hover:bg-blue-50 transition"
           >
             <Pencil size={12} /> Edit
           </button>
           <button
             onClick={() => onDelete(driver)}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-black text-red-400 hover:bg-red-50 transition"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold text-red-400 hover:bg-red-50 transition"
           >
             <Trash2 size={12} /> Remove
           </button>
@@ -175,7 +175,7 @@ function DriverModal({ driver, vehicles, onClose, onSave, saving }) {
             <div className="w-8 h-8 bg-blue-50 rounded-xl flex items-center justify-center">
               <UserCheck size={15} className="text-blue-600" />
             </div>
-            <h2 className="font-black text-gray-900">{isNew ? 'Add Driver' : 'Edit Driver'}</h2>
+            <h2 className="font-semibold text-gray-900">{isNew ? 'Add Driver' : 'Edit Driver'}</h2>
           </div>
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:bg-gray-100 rounded-full transition">
             <X size={15} />
@@ -204,11 +204,11 @@ function DriverModal({ driver, vehicles, onClose, onSave, saving }) {
           </FormField>
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose}
-              className="px-4 py-2.5 text-gray-500 hover:bg-gray-100 rounded-xl font-black text-sm transition">
+              className="px-4 py-2.5 text-gray-500 hover:bg-gray-100 rounded-xl font-semibold text-sm transition">
               Cancel
             </button>
             <button type="submit" disabled={saving}
-              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-sm shadow-lg shadow-blue-600/20 transition disabled:opacity-60 flex items-center gap-2">
+              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm shadow-lg shadow-blue-600/20 transition disabled:opacity-60 flex items-center gap-2">
               {saving && <Loader2 size={14} className="animate-spin" />}
               {isNew ? 'Add Driver' : 'Save Changes'}
             </button>
@@ -305,9 +305,9 @@ const DriverManagement = () => {
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">Transport</span>
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">Transport</span>
           </div>
-          <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+          <h1 className="text-2xl md:text-3xl font-semibold text-gray-900 tracking-tight flex items-center gap-3">
             <UserCheck className="text-blue-600" size={28} />
             Driver Management
           </h1>
@@ -317,13 +317,13 @@ const DriverManagement = () => {
         </div>
         <div className="flex items-center gap-2">
           <button onClick={load} disabled={loading}
-            className="flex items-center gap-2 px-3.5 py-2 text-sm font-bold text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition disabled:opacity-50">
+            className="flex items-center gap-2 px-3.5 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition disabled:opacity-50">
             {loading ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
             Refresh
           </button>
           <button
             onClick={() => setModal({ driver: null })}
-            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl font-black text-sm hover:bg-blue-700 transition shadow-lg shadow-blue-600/20">
+            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl font-semibold text-sm hover:bg-blue-700 transition shadow-lg shadow-blue-600/20">
             <Plus size={16} />
             Assign Driver
           </button>
@@ -335,13 +335,13 @@ const DriverManagement = () => {
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center"><User size={18} /></div>
-            <div><p className="text-2xl font-black text-gray-900">{drivers.length}</p><p className="text-xs font-bold text-gray-400">Total Drivers</p></div>
+            <div><p className="text-2xl font-semibold text-gray-900">{drivers.length}</p><p className="text-xs font-medium text-gray-400">Total Drivers</p></div>
           </div>
         </div>
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center"><CheckCircle2 size={18} /></div>
-            <div><p className="text-2xl font-black text-gray-900">{activeDrivers}</p><p className="text-xs font-bold text-gray-400">Active Drivers</p></div>
+            <div><p className="text-2xl font-semibold text-gray-900">{activeDrivers}</p><p className="text-xs font-medium text-gray-400">Active Drivers</p></div>
           </div>
         </div>
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
@@ -349,15 +349,15 @@ const DriverManagement = () => {
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${unassigned > 0 ? 'bg-amber-50 text-amber-600' : 'bg-gray-50 text-gray-400'}`}>
               <AlertTriangle size={18} />
             </div>
-            <div><p className="text-2xl font-black text-gray-900">{unassigned}</p><p className="text-xs font-bold text-gray-400">Vehicles w/o Driver</p></div>
+            <div><p className="text-2xl font-semibold text-gray-900">{unassigned}</p><p className="text-xs font-medium text-gray-400">Vehicles w/o Driver</p></div>
           </div>
         </div>
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center"><Milestone size={18} /></div>
             <div>
-              <p className="text-2xl font-black text-gray-900">{coveredRoutes}<span className="text-sm text-gray-400 font-bold">/{totalRoutes}</span></p>
-              <p className="text-xs font-bold text-gray-400">Routes Covered</p>
+              <p className="text-2xl font-semibold text-gray-900">{coveredRoutes}<span className="text-sm text-gray-400 font-medium">/{totalRoutes}</span></p>
+              <p className="text-xs font-medium text-gray-400">Routes Covered</p>
             </div>
           </div>
         </div>
@@ -368,7 +368,7 @@ const DriverManagement = () => {
         <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
           <AlertTriangle size={16} className="text-amber-600 mt-0.5 flex-shrink-0" />
           <div>
-            <p className="font-black text-amber-800 text-sm">{unassigned} vehicle{unassigned > 1 ? 's' : ''} without a driver</p>
+            <p className="font-semibold text-amber-800 text-sm">{unassigned} vehicle{unassigned > 1 ? 's' : ''} without a driver</p>
             <p className="text-amber-600 text-xs mt-0.5">
               {vehicles.filter(v => !v.driverName).map(v => v.registrationNumber).join(', ')} — assign a driver using the button above.
             </p>
@@ -395,7 +395,7 @@ const DriverManagement = () => {
           {[['all', 'All'], ['ACTIVE', 'Active'], ['INACTIVE', 'Inactive']].map(([v, l]) => (
             <button key={v}
               onClick={() => setFilterStatus(v)}
-              className={`px-3 py-2 rounded-xl text-xs font-black transition ${filterStatus === v ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-gray-500 hover:bg-gray-100 border border-gray-200'}`}>
+              className={`px-3 py-2 rounded-xl text-xs font-semibold transition ${filterStatus === v ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-gray-500 hover:bg-gray-100 border border-gray-200'}`}>
               {l}
             </button>
           ))}
@@ -410,7 +410,7 @@ const DriverManagement = () => {
       ) : filtered.length === 0 ? (
         <div className="bg-white rounded-2xl border-2 border-dashed border-gray-200 p-16 text-center">
           <User size={40} className="mx-auto text-gray-200 mb-3" />
-          <p className="font-black text-gray-500 text-base">{query || filterStatus !== 'all' ? 'No drivers match your search' : 'No drivers recorded yet'}</p>
+          <p className="font-semibold text-gray-500 text-base">{query || filterStatus !== 'all' ? 'No drivers match your search' : 'No drivers recorded yet'}</p>
           <p className="text-gray-400 text-sm mt-1">
             {query || filterStatus !== 'all'
               ? 'Try adjusting your search or filters.'
@@ -418,7 +418,7 @@ const DriverManagement = () => {
           </p>
           {!query && filterStatus === 'all' && (
             <button onClick={() => setModal({ driver: null })}
-              className="mt-4 px-5 py-2.5 bg-blue-600 text-white rounded-xl font-black text-sm hover:bg-blue-700 transition shadow-lg shadow-blue-600/20 inline-flex items-center gap-2">
+              className="mt-4 px-5 py-2.5 bg-blue-600 text-white rounded-xl font-semibold text-sm hover:bg-blue-700 transition shadow-lg shadow-blue-600/20 inline-flex items-center gap-2">
               <Plus size={15} /> Assign First Driver
             </button>
           )}
@@ -439,7 +439,7 @@ const DriverManagement = () => {
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="px-5 py-3.5 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2">
             <Shield size={14} className="text-amber-500" />
-            <p className="font-black text-gray-700 text-sm">Vehicles Awaiting Driver Assignment</p>
+            <p className="font-semibold text-gray-700 text-sm">Vehicles Awaiting Driver Assignment</p>
           </div>
           <div className="divide-y divide-gray-50">
             {vehicles.filter(v => !v.driverName).map(v => (
@@ -449,13 +449,13 @@ const DriverManagement = () => {
                     <Bus size={14} />
                   </div>
                   <div>
-                    <p className="font-black text-sm text-gray-800">{v.registrationNumber}</p>
+                    <p className="font-semibold text-sm text-gray-800">{v.registrationNumber}</p>
                     <p className="text-xs text-gray-400">{v.capacity} seat capacity</p>
                   </div>
                 </div>
                 <button
                   onClick={() => setModal({ driver: { vehicleId: v.id, name: '', phone: '', vehicle: v.registrationNumber, vehicleObj: v, routes: [] } })}
-                  className="px-3.5 py-1.5 bg-blue-600 text-white rounded-xl font-black text-xs hover:bg-blue-700 transition flex items-center gap-1.5 shadow-lg shadow-blue-600/10">
+                  className="px-3.5 py-1.5 bg-blue-600 text-white rounded-xl font-semibold text-xs hover:bg-blue-700 transition flex items-center gap-1.5 shadow-lg shadow-blue-600/10">
                   <Plus size={12} /> Assign Driver
                 </button>
               </div>

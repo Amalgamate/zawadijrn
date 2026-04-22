@@ -72,7 +72,7 @@ const ClassDetailPage = ({ pageParams }) => {
   const TabButton = ({ tabId, label, icon: Icon }) => (
     <button
       onClick={() => setActiveTab(tabId)}
-      className={`px-4 py-3 font-bold text-sm flex items-center gap-2 border-b-2 transition-all ${activeTab === tabId
+      className={`px-4 py-3 font-medium text-sm flex items-center gap-2 border-b-2 transition-all ${activeTab === tabId
         ? 'border-brand-purple text-brand-purple'
         : 'border-transparent text-gray-600 hover:text-gray-900'
         }`}
@@ -115,7 +115,7 @@ const ClassDetailPage = ({ pageParams }) => {
           <ArrowLeft size={18} />
         </Button>
         <div className="flex-1">
-          <h1 className="text-3xl font-black text-gray-900">{classData.name}</h1>
+          <h1 className="text-3xl font-semibold text-gray-900">{classData.name}</h1>
           <p className="text-sm text-gray-500 mt-1">Grade: {classData.grade} • Stream: {classData.stream || 'A'} • Academic Year: {classData.academicYear}</p>
         </div>
       </div>
@@ -124,19 +124,19 @@ const ClassDetailPage = ({ pageParams }) => {
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <Card>
           <CardContent className="p-4 text-center">
-            <p className="text-xs text-gray-600 font-bold uppercase">Students</p>
-            <p className="text-2xl font-black text-blue-600 mt-1">{classData.studentCount || 0}</p>
+            <p className="text-xs text-gray-600 font-medium uppercase">Students</p>
+            <p className="text-2xl font-semibold text-blue-600 mt-1">{classData.studentCount || 0}</p>
             <p className="text-xs text-gray-500 mt-1">{classData.capacity - (classData.studentCount || 0)} Available</p>
           </CardContent>
         </Card>
 
         <Card className="relative overflow-hidden group">
           <CardContent className="p-4 text-center">
-            <p className="text-xs text-gray-600 font-bold uppercase">Teacher</p>
-            <p className="text-sm font-black text-amber-900 mt-1 truncate">{classData.teacher?.firstName || 'Unassigned'}</p>
+            <p className="text-xs text-gray-600 font-medium uppercase">Teacher</p>
+            <p className="text-sm font-semibold text-amber-900 mt-1 truncate">{classData.teacher?.firstName || 'Unassigned'}</p>
             <button
               onClick={() => setIsAssignModalOpen(true)}
-              className="absolute inset-0 bg-brand-purple/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-brand-purple font-bold text-xs"
+              className="absolute inset-0 bg-brand-purple/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-brand-purple font-medium text-xs"
             >
               Change
             </button>
@@ -145,22 +145,22 @@ const ClassDetailPage = ({ pageParams }) => {
 
         <Card>
           <CardContent className="p-4 text-center">
-            <p className="text-xs text-gray-600 font-bold uppercase">Inventory</p>
-            <p className="text-2xl font-black text-green-600 mt-1">{classData.inventoryCount || 0}</p>
+            <p className="text-xs text-gray-600 font-medium uppercase">Inventory</p>
+            <p className="text-2xl font-semibold text-green-600 mt-1">{classData.inventoryCount || 0}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-4 text-center">
-            <p className="text-xs text-gray-600 font-bold uppercase">Schedule</p>
-            <p className="text-2xl font-black text-purple-600 mt-1">{classData.scheduleCount || 0}</p>
+            <p className="text-xs text-gray-600 font-medium uppercase">Schedule</p>
+            <p className="text-2xl font-semibold text-purple-600 mt-1">{classData.scheduleCount || 0}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-4 text-center">
-            <p className="text-xs text-gray-600 font-bold uppercase">Facilities</p>
-            <p className="text-2xl font-black text-red-600 mt-1">{classData.facilitiesCount || 0}</p>
+            <p className="text-xs text-gray-600 font-medium uppercase">Facilities</p>
+            <p className="text-2xl font-semibold text-red-600 mt-1">{classData.facilitiesCount || 0}</p>
           </CardContent>
         </Card>
       </div>
@@ -240,29 +240,29 @@ const OverviewTab = ({ classData, onAssignTeacher }) => (
         {/* Left Column */}
         <div className="space-y-4">
           <div>
-            <p className="text-xs font-bold text-gray-600 uppercase">Class Name</p>
-            <p className="text-lg font-bold text-gray-900 mt-1">{classData.name}</p>
+            <p className="text-xs font-medium text-gray-600 uppercase">Class Name</p>
+            <p className="text-lg font-medium text-gray-900 mt-1">{classData.name}</p>
           </div>
           <div>
-            <p className="text-xs font-bold text-gray-600 uppercase">Grade</p>
-            <p className="text-lg font-bold text-gray-900 mt-1">{classData.grade}</p>
+            <p className="text-xs font-medium text-gray-600 uppercase">Grade</p>
+            <p className="text-lg font-medium text-gray-900 mt-1">{classData.grade}</p>
           </div>
           <div>
-            <p className="text-xs font-bold text-gray-600 uppercase">Stream</p>
-            <p className="text-lg font-bold text-gray-900 mt-1">{classData.stream || 'A'}</p>
+            <p className="text-xs font-medium text-gray-600 uppercase">Stream</p>
+            <p className="text-lg font-medium text-gray-900 mt-1">{classData.stream || 'A'}</p>
           </div>
           <div>
-            <p className="text-xs font-bold text-gray-600 uppercase">Academic Year</p>
-            <p className="text-lg font-bold text-gray-900 mt-1">{classData.academicYear}</p>
+            <p className="text-xs font-medium text-gray-600 uppercase">Academic Year</p>
+            <p className="text-lg font-medium text-gray-900 mt-1">{classData.academicYear}</p>
           </div>
         </div>
 
         {/* Right Column */}
         <div className="space-y-4">
           <div>
-            <p className="text-xs font-bold text-gray-600 uppercase">Class Teacher</p>
+            <p className="text-xs font-medium text-gray-600 uppercase">Class Teacher</p>
             <div className="flex items-center justify-between">
-              <p className="text-lg font-bold text-gray-900 mt-1">
+              <p className="text-lg font-medium text-gray-900 mt-1">
                 {classData.teacher
                   ? `${classData.teacher.firstName} ${classData.teacher.lastName}`
                   : 'Unassigned'}
@@ -279,16 +279,16 @@ const OverviewTab = ({ classData, onAssignTeacher }) => (
             {classData.teacher?.phone && <p className="text-xs text-gray-500 mt-1">{classData.teacher.phone}</p>}
           </div>
           <div>
-            <p className="text-xs font-bold text-gray-600 uppercase">Classroom</p>
-            <p className="text-lg font-bold text-gray-900 mt-1">{classData.room || 'TBD'}</p>
+            <p className="text-xs font-medium text-gray-600 uppercase">Classroom</p>
+            <p className="text-lg font-medium text-gray-900 mt-1">{classData.room || 'TBD'}</p>
           </div>
           <div>
-            <p className="text-xs font-bold text-gray-600 uppercase">Capacity</p>
-            <p className="text-lg font-bold text-gray-900 mt-1">{classData.capacity} Students</p>
+            <p className="text-xs font-medium text-gray-600 uppercase">Capacity</p>
+            <p className="text-lg font-medium text-gray-900 mt-1">{classData.capacity} Students</p>
           </div>
           <div>
-            <p className="text-xs font-bold text-gray-600 uppercase">Current Enrollment</p>
-            <p className="text-lg font-bold text-blue-600 mt-1">{classData.studentCount || 0}</p>
+            <p className="text-xs font-medium text-gray-600 uppercase">Current Enrollment</p>
+            <p className="text-lg font-medium text-blue-600 mt-1">{classData.studentCount || 0}</p>
           </div>
         </div>
       </div>
@@ -296,20 +296,20 @@ const OverviewTab = ({ classData, onAssignTeacher }) => (
       {/* Statistics Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-6 border-t">
         <div className="bg-blue-50 p-3 rounded-lg">
-          <p className="text-xs font-bold text-blue-900">Utilization</p>
-          <p className="text-xl font-black text-blue-600 mt-1">{Math.round(((classData.studentCount || 0) / classData.capacity) * 100)}%</p>
+          <p className="text-xs font-medium text-blue-900">Utilization</p>
+          <p className="text-xl font-semibold text-blue-600 mt-1">{Math.round(((classData.studentCount || 0) / classData.capacity) * 100)}%</p>
         </div>
         <div className="bg-green-50 p-3 rounded-lg">
-          <p className="text-xs font-bold text-green-900">Available Seats</p>
-          <p className="text-xl font-black text-green-600 mt-1">{classData.capacity - (classData.studentCount || 0)}</p>
+          <p className="text-xs font-medium text-green-900">Available Seats</p>
+          <p className="text-xl font-semibold text-green-600 mt-1">{classData.capacity - (classData.studentCount || 0)}</p>
         </div>
         <div className="bg-purple-50 p-3 rounded-lg">
-          <p className="text-xs font-bold text-purple-900">Inventory Items</p>
-          <p className="text-xl font-black text-purple-600 mt-1">{classData.inventoryCount || 0}</p>
+          <p className="text-xs font-medium text-purple-900">Inventory Items</p>
+          <p className="text-xl font-semibold text-purple-600 mt-1">{classData.inventoryCount || 0}</p>
         </div>
         <div className="bg-amber-50 p-3 rounded-lg">
-          <p className="text-xs font-bold text-amber-900">Facilities</p>
-          <p className="text-xl font-black text-amber-600 mt-1">{classData.facilitiesCount || 0}</p>
+          <p className="text-xs font-medium text-amber-900">Facilities</p>
+          <p className="text-xl font-semibold text-amber-600 mt-1">{classData.facilitiesCount || 0}</p>
         </div>
       </div>
     </CardContent>
@@ -318,7 +318,7 @@ const OverviewTab = ({ classData, onAssignTeacher }) => (
 
 const EnrollmentsTab = ({ classData }) => (
   <div className="space-y-4">
-    <h3 className="text-lg font-bold">Enrolled Students ({classData.studentCount || 0})</h3>
+    <h3 className="text-lg font-medium">Enrolled Students ({classData.studentCount || 0})</h3>
 
     {classData.enrollments && classData.enrollments.length > 0 ? (
       <div className="overflow-x-auto">
@@ -334,7 +334,7 @@ const EnrollmentsTab = ({ classData }) => (
           <tbody>
             {classData.enrollments.map(enrollment => (
               <tr key={enrollment.id} className="border-b hover:bg-gray-50">
-                <td className="p-3 font-bold">{enrollment.learner?.admissionNumber}</td>
+                <td className="p-3 font-medium">{enrollment.learner?.admissionNumber}</td>
                 <td className="p-3">{enrollment.learner?.firstName} {enrollment.learner?.lastName}</td>
                 <td className="p-3">{enrollment.learner?.gender === 'MALE' ? '♂ Male' : '♀ Female'}</td>
                 <td className="p-3 text-xs text-gray-500">{new Date(enrollment.enrolledAt).toLocaleDateString()}</td>
@@ -361,18 +361,18 @@ const PerformanceTab = ({ classData }) => (
     <CardContent className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-          <p className="text-xs font-bold text-blue-900 uppercase">Average Score</p>
-          <p className="text-3xl font-black text-blue-600 mt-2">78.5%</p>
+          <p className="text-xs font-medium text-blue-900 uppercase">Average Score</p>
+          <p className="text-3xl font-semibold text-blue-600 mt-2">78.5%</p>
           <p className="text-xs text-blue-700 mt-1">↑ 2.3% from last term</p>
         </div>
         <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-          <p className="text-xs font-bold text-green-900 uppercase">Pass Rate</p>
-          <p className="text-3xl font-black text-green-600 mt-2">92%</p>
+          <p className="text-xs font-medium text-green-900 uppercase">Pass Rate</p>
+          <p className="text-3xl font-semibold text-green-600 mt-2">92%</p>
           <p className="text-xs text-green-700 mt-1">{Math.round((classData.studentCount || 0) * 0.92)} of {classData.studentCount || 0} passed</p>
         </div>
         <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-          <p className="text-xs font-bold text-purple-900 uppercase">Attendance</p>
-          <p className="text-3xl font-black text-purple-600 mt-2">94%</p>
+          <p className="text-xs font-medium text-purple-900 uppercase">Attendance</p>
+          <p className="text-3xl font-semibold text-purple-600 mt-2">94%</p>
           <p className="text-xs text-purple-700 mt-1">Average attendance rate</p>
         </div>
       </div>

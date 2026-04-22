@@ -110,7 +110,7 @@ const RatingBadge = ({
         ${sizeClasses[size]}
       `}>
         <span>{config.icon}</span>
-        <span className="font-bold">{rating}</span>
+        <span className="font-medium">{rating}</span>
         {points && (
           <span className="text-xs opacity-75">({points} pts)</span>
         )}

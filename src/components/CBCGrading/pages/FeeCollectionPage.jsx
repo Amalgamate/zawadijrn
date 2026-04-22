@@ -741,7 +741,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
       <div className="flex items-center gap-1 border-b border-gray-200 -mb-2">
         <button
           onClick={() => setActiveTab('invoices')}
-          className={`px-5 py-3 text-sm font-bold transition-colors border-b-2 -mb-px ${activeTab === 'invoices'
+          className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${activeTab === 'invoices'
               ? 'border-brand-teal text-brand-teal'
               : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
@@ -750,7 +750,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
         </button>
         <button
           onClick={() => setActiveTab('unmatched')}
-          className={`px-5 py-3 text-sm font-bold transition-colors border-b-2 -mb-px flex items-center gap-2 ${activeTab === 'unmatched'
+          className={`px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px flex items-center gap-2 ${activeTab === 'unmatched'
               ? 'border-amber-500 text-amber-700'
               : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
@@ -758,7 +758,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
           <AlertTriangle size={14} />
           Unmatched Payments
           {unmatchedCount > 0 && (
-            <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-amber-500 text-white text-[10px] font-black">
+            <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-amber-500 text-white text-[10px] font-semibold">
               {unmatchedCount}
             </span>
           )}
@@ -790,8 +790,8 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                 >
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-widest text-indigo-200 mb-1">Expected Income</p>
-                      <p className="text-2xl font-bold">{stats.totalBilled}</p>
+                      <p className="text-xs font-medium uppercase tracking-widest text-indigo-200 mb-1">Expected Income</p>
+                      <p className="text-2xl font-medium">{stats.totalBilled}</p>
                       <p className="text-lg font-semibold text-indigo-300 mt-1">{stats.totalCount} Students</p>
                     </div>
                     <div className="p-2.5 bg-white/15 rounded-xl">
@@ -810,8 +810,8 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                 >
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-widest text-red-100 mb-1">Not Paid Anything</p>
-                      <p className="text-2xl font-bold">{stats.pendingAmt}</p>
+                      <p className="text-xs font-medium uppercase tracking-widest text-red-100 mb-1">Not Paid Anything</p>
+                      <p className="text-2xl font-medium">{stats.pendingAmt}</p>
                       <p className="text-lg font-semibold text-red-200 mt-1">{stats.pendingCount} Students</p>
                     </div>
                     <div className="p-2.5 bg-white/15 rounded-xl">
@@ -830,10 +830,10 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                 >
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-widest text-orange-100 mb-1">Partial Payments</p>
-                      <p className="text-2xl font-bold mb-2">{stats.partialAmt}</p>
+                      <p className="text-xs font-medium uppercase tracking-widest text-orange-100 mb-1">Partial Payments</p>
+                      <p className="text-2xl font-medium mb-2">{stats.partialAmt}</p>
                       <div className="flex flex-col items-start gap-1">
-                        <p className="text-lg font-bold text-orange-100 uppercase tracking-tight leading-none">BAL: {stats.partialBalanceAmt}</p>
+                        <p className="text-lg font-medium text-orange-100 uppercase tracking-tight leading-none">BAL: {stats.partialBalanceAmt}</p>
                         <p className="text-sm font-semibold text-orange-200">{stats.partialCount} Students</p>
                       </div>
                     </div>
@@ -853,8 +853,8 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                 >
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-widest text-emerald-100 mb-1">Completely Cleared</p>
-                      <p className="text-2xl font-bold">{stats.paidAmt}</p>
+                      <p className="text-xs font-medium uppercase tracking-widest text-emerald-100 mb-1">Completely Cleared</p>
+                      <p className="text-2xl font-medium">{stats.paidAmt}</p>
                       <p className="text-lg font-semibold text-emerald-200 mt-1">{stats.paidCount} Students</p>
                     </div>
                     <div className="p-2.5 bg-white/15 rounded-xl">
@@ -873,8 +873,8 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                 >
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-widest text-purple-100 mb-1">Collected (Overpaid)</p>
-                      <p className="text-2xl font-bold">{stats.overpaidAmt}</p>
+                      <p className="text-xs font-medium uppercase tracking-widest text-purple-100 mb-1">Collected (Overpaid)</p>
+                      <p className="text-2xl font-medium">{stats.overpaidAmt}</p>
                       <p className="text-lg font-semibold text-purple-200 mt-1">{stats.overpaidCount} Students</p>
                     </div>
                     <div className="p-2.5 bg-white/15 rounded-xl">
@@ -896,13 +896,13 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                     <Wallet size={20} />
                   </div>
                   <div className="space-y-0.5">
-                    <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-widest flex items-center gap-1.5 leading-none">
+                    <p className="text-[10px] font-medium text-emerald-700 uppercase tracking-widest flex items-center gap-1.5 leading-none">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                       Total Collections
                     </p>
-                    <span className="text-xl font-bold text-gray-900 tracking-tight leading-none block">
+                    <span className="text-xl font-medium text-gray-900 tracking-tight leading-none block">
                       {stats.actualCollected.replace('KES ', '')}
-                      <span className="text-[10px] font-bold text-gray-500 ml-1">KES</span>
+                      <span className="text-[10px] font-medium text-gray-500 ml-1">KES</span>
                     </span>
                   </div>
                 </div>
@@ -913,13 +913,13 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                     <AlertCircle size={20} />
                   </div>
                   <div className="space-y-0.5">
-                    <p className="text-[10px] font-bold text-red-700 uppercase tracking-widest flex items-center gap-1.5 leading-none">
+                    <p className="text-[10px] font-medium text-red-700 uppercase tracking-widest flex items-center gap-1.5 leading-none">
                       <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
                       Total Balances
                     </p>
-                    <span className="text-xl font-bold text-gray-900 tracking-tight leading-none block">
+                    <span className="text-xl font-medium text-gray-900 tracking-tight leading-none block">
                       {Number(listTotals.totalBalance || 0).toLocaleString()}
-                      <span className="text-[10px] font-bold text-gray-500 ml-1">KES</span>
+                      <span className="text-[10px] font-medium text-gray-500 ml-1">KES</span>
                     </span>
                   </div>
                 </div>
@@ -930,13 +930,13 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                     <ShieldCheck size={20} />
                   </div>
                   <div className="space-y-0.5">
-                    <p className="text-[10px] font-bold text-purple-700 uppercase tracking-widest flex items-center gap-1.5 leading-none">
+                    <p className="text-[10px] font-medium text-purple-700 uppercase tracking-widest flex items-center gap-1.5 leading-none">
                       <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
                       Total Overpaid
                     </p>
-                    <span className="text-xl font-bold text-gray-900 tracking-tight leading-none block">
+                    <span className="text-xl font-medium text-gray-900 tracking-tight leading-none block">
                       {Number(listTotals.totalOverpaid || 0).toLocaleString()}
-                      <span className="text-[10px] font-bold text-gray-500 ml-1">KES</span>
+                      <span className="text-[10px] font-medium text-gray-500 ml-1">KES</span>
                     </span>
                   </div>
                 </div>
@@ -947,13 +947,13 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                     <Gift size={20} />
                   </div>
                   <div className="space-y-0.5">
-                    <p className="text-[10px] font-bold text-teal-700 uppercase tracking-widest flex items-center gap-1.5 leading-none">
+                    <p className="text-[10px] font-medium text-teal-700 uppercase tracking-widest flex items-center gap-1.5 leading-none">
                       <span className="w-1.5 h-1.5 rounded-full bg-teal-400" />
                       Total Waived
                     </p>
-                    <span className="text-xl font-bold text-gray-900 tracking-tight leading-none block">
+                    <span className="text-xl font-medium text-gray-900 tracking-tight leading-none block">
                       - {stats.waivedTotal.replace('KES ', '')}
-                      <span className="text-[10px] font-bold text-gray-500 ml-1">KES</span>
+                      <span className="text-[10px] font-medium text-gray-500 ml-1">KES</span>
                     </span>
                   </div>
                 </div>
@@ -967,17 +967,17 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                     className={`flex-1 flex items-center gap-4 pr-4 border-r-[0.5px] border-gray-200 justify-center cursor-pointer transition-all duration-200 hover:scale-[1.02] ${paymentMethodFilter === 'MPESA' ? 'bg-lime-50/50 ring-2 ring-lime-400 ring-inset rounded-l-xl' : ''
                       }`}
                   >
-                    <div className={`w-10 h-10 bg-lime-500 text-white rounded-xl shadow-sm shadow-lime-200 flex items-center justify-center font-bold text-base shrink-0 ${paymentMethodFilter === 'MPESA' ? 'ring-2 ring-white' : ''}`}>
+                    <div className={`w-10 h-10 bg-lime-500 text-white rounded-xl shadow-sm shadow-lime-200 flex items-center justify-center font-medium text-base shrink-0 ${paymentMethodFilter === 'MPESA' ? 'ring-2 ring-white' : ''}`}>
                       M
                     </div>
                     <div className="flex flex-col">
                       <div className="flex items-center gap-1.5 mb-1">
                         <span className={`w-1.5 h-1.5 rounded-full bg-lime-500 ${paymentMethodFilter === 'MPESA' ? 'animate-ping' : 'animate-pulse'}`} />
-                        <span className="text-[10px] font-bold text-lime-700 uppercase tracking-widest">Mpesa</span>
+                        <span className="text-[10px] font-medium text-lime-700 uppercase tracking-widest">Mpesa</span>
                       </div>
-                      <span className="text-xl font-bold text-gray-900 tracking-tight leading-none block">
+                      <span className="text-xl font-medium text-gray-900 tracking-tight leading-none block">
                         {stats.mpesaTotal.replace('KES ', '')}
-                        <span className="text-[10px] font-bold text-gray-500 ml-1">KES</span>
+                        <span className="text-[10px] font-medium text-gray-500 ml-1">KES</span>
                       </span>
                     </div>
                   </div>
@@ -994,11 +994,11 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                     <div className="flex flex-col">
                       <div className="flex items-center gap-1.5 mb-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                        <span className="text-[10px] font-bold text-blue-700 uppercase tracking-widest">Cash</span>
+                        <span className="text-[10px] font-medium text-blue-700 uppercase tracking-widest">Cash</span>
                       </div>
-                      <span className="text-xl font-bold text-gray-900 tracking-tight leading-none block">
+                      <span className="text-xl font-medium text-gray-900 tracking-tight leading-none block">
                         {stats.cashTotal.replace('KES ', '')}
-                        <span className="text-[10px] font-bold text-gray-500 ml-1">KES</span>
+                        <span className="text-[10px] font-medium text-gray-500 ml-1">KES</span>
                       </span>
                     </div>
                   </div>
@@ -1015,11 +1015,11 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                     <div className="flex flex-col">
                       <div className="flex items-center gap-1.5 mb-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                        <span className="text-[10px] font-bold text-indigo-700 uppercase tracking-widest">Bank/Cheque</span>
+                        <span className="text-[10px] font-medium text-indigo-700 uppercase tracking-widest">Bank/Cheque</span>
                       </div>
-                      <span className="text-xl font-bold text-gray-900 tracking-tight leading-none block">
+                      <span className="text-xl font-medium text-gray-900 tracking-tight leading-none block">
                         {stats.bankTotal.replace('KES ', '')}
-                        <span className="text-[10px] font-bold text-gray-500 ml-1">KES</span>
+                        <span className="text-[10px] font-medium text-gray-500 ml-1">KES</span>
                       </span>
                     </div>
                   </div>
@@ -1035,7 +1035,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
           <div className="bg-white rounded-xl shadow-sm p-4 border-[0.5px] border-gray-200">
             <div className="flex flex-wrap items-center gap-4 w-full">          {/* Quick Action Chips Bar (Unified) */}
               <div className="flex flex-wrap gap-2 items-center flex-1 overflow-x-auto custom-scrollbar whitespace-nowrap pb-1 lg:pb-0">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mr-1 shrink-0">Quick Filters:</span>
+                <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mr-1 shrink-0">Quick Filters:</span>
 
                 {/* Terms */}
                 {[['TERM_1', 'Term 1'], ['TERM_2', 'Term 2'], ['TERM_3', 'Term 3']].map(([val, label]) => (
@@ -1096,7 +1096,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                 {activeFilterCount > 0 && (
                   <button
                     onClick={clearAllFilters}
-                    className="flex items-center gap-1 px-3 py-1 text-xs font-bold rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-colors shrink-0 ml-2"
+                    className="flex items-center gap-1 px-3 py-1 text-xs font-medium rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-colors shrink-0 ml-2"
                   >
                     <X size={12} /> Clear All
                   </button>
@@ -1107,7 +1107,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                 <div className="relative">
                   <button
                     onClick={() => setShowGlobalFilters(!showGlobalFilters)}
-                    className={`px-4 py-2 border rounded-xl font-bold flex items-center gap-2 transition-all text-sm ${activeFilterCount > 0 ? 'bg-blue-50 border-blue-200 text-blue-700' : 'hover:bg-gray-50 text-gray-700 bg-white shadow-sm'}`}
+                    className={`px-4 py-2 border rounded-xl font-medium flex items-center gap-2 transition-all text-sm ${activeFilterCount > 0 ? 'bg-blue-50 border-blue-200 text-blue-700' : 'hover:bg-gray-50 text-gray-700 bg-white shadow-sm'}`}
                   >
                     <Filter size={16} className={activeFilterCount > 0 ? "text-blue-600" : "text-gray-500"} />
                     Filters
@@ -1122,7 +1122,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                   {showGlobalFilters && (
                     <div className="absolute left-0 mt-2 w-[480px] bg-white border border-gray-200 rounded-2xl shadow-2xl z-50 p-6 flex flex-col gap-6 animate-in slide-in-from-top-2">
                       <div className="flex justify-between items-center border-b pb-3">
-                        <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                        <h3 className="font-medium text-gray-800 flex items-center gap-2">
                           <Filter size={18} className="text-gray-400" /> Refine Results
                         </h3>
                         <button onClick={() => setShowGlobalFilters(false)} className="text-gray-400 hover:text-gray-700 p-1 bg-gray-50 rounded-lg hover:bg-gray-100">
@@ -1133,7 +1133,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                       <div className="grid grid-cols-1 gap-6">
                         {/* Academic Context */}
                         <div>
-                          <h4 className="text-[11px] font-bold text-blue-500 uppercase tracking-widest mb-3">Academic Context</h4>
+                          <h4 className="text-[11px] font-medium text-blue-500 uppercase tracking-widest mb-3">Academic Context</h4>
                           <div className="flex gap-3">
                             <div className="flex-1 flex flex-col gap-1.5">
                               <label className="text-xs font-semibold text-gray-600">Grade</label>
@@ -1169,7 +1169,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
 
                         {/* Financial Context */}
                         <div>
-                          <h4 className="text-[11px] font-bold text-emerald-500 uppercase tracking-widest mb-3">Financials</h4>
+                          <h4 className="text-[11px] font-medium text-emerald-500 uppercase tracking-widest mb-3">Financials</h4>
                           <div className="flex gap-3">
                             <div className="flex-1 flex flex-col gap-1.5">
                               <label className="text-xs font-semibold text-gray-600">Status</label>
@@ -1190,7 +1190,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
 
                       {/* Date Bounds */}
                       <div className="border-t pt-4">
-                        <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3">Date Bounds</h4>
+                        <h4 className="text-[11px] font-medium text-gray-400 uppercase tracking-widest mb-3">Date Bounds</h4>
                         <div className="flex gap-3">
                           <div className="flex-1 flex flex-col gap-1.5">
                             <label className="text-xs font-semibold text-gray-600">From</label>
@@ -1206,11 +1206,11 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                       {/* Actions */}
                       <div className="flex justify-end gap-2 border-t pt-4 bg-gray-50/50 -mx-6 -mb-6 p-4 rounded-b-2xl">
                         {activeFilterCount > 0 && (
-                          <button onClick={clearAllFilters} className="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-800 hover:bg-gray-200 rounded-lg transition-colors">
+                          <button onClick={clearAllFilters} className="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-200 rounded-lg transition-colors">
                             Clear Filters
                           </button>
                         )}
-                        <button onClick={() => { setShowGlobalFilters(false); fetchInvoices(); }} className="px-6 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-md hover:shadow-lg transition-all">
+                        <button onClick={() => { setShowGlobalFilters(false); fetchInvoices(); }} className="px-6 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-md hover:shadow-lg transition-all">
                           Apply Filters
                         </button>
                       </div>
@@ -1221,14 +1221,14 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                 <div className="relative">
                   <button
                     onClick={() => setShowColumnFilter(!showColumnFilter)}
-                    className="px-4 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 text-gray-600 font-bold text-sm flex items-center gap-2 shadow-sm transition-all"
+                    className="px-4 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 text-gray-600 font-medium text-sm flex items-center gap-2 shadow-sm transition-all"
                     title="Toggle Layout Columns"
                   >
                     Columns <ArrowUpDown size={16} className="text-gray-400" />
                   </button>
                   {showColumnFilter && (
                     <div className="absolute left-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 p-2 text-sm flex flex-col">
-                      <div className="font-bold border-b pb-2 mb-2 px-2 text-gray-700 bg-gray-50/80 -mx-2 -mt-2 p-2 rounded-t-xl text-[11px] uppercase tracking-wider">Display Columns</div>
+                      <div className="font-medium border-b pb-2 mb-2 px-2 text-gray-700 bg-gray-50/80 -mx-2 -mt-2 p-2 rounded-t-xl text-[11px] uppercase tracking-wider">Display Columns</div>
                       {Object.keys(visibleColumns).map(colKey => (
                         <label key={colKey} className="flex items-center gap-3 cursor-pointer hover:bg-blue-50/50 p-1.5 rounded transition-colors group">
                           <input
@@ -1280,7 +1280,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                     </th>
                     {visibleColumns.invoiceNumber && (
                       <th
-                        className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
+                        className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
                         onClick={() => handleSort('invoiceNumber')}
                       >
                         <div className="flex items-center gap-1">
@@ -1293,7 +1293,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                     )}
                     {visibleColumns.student && (
                       <th
-                        className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
+                        className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
                         onClick={() => handleSort('studentName')}
                       >
                         <div className="flex items-center gap-1">
@@ -1306,7 +1306,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                     )}
                     {visibleColumns.grade && (
                       <th
-                        className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
+                        className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
                         onClick={() => handleSort('grade')}
                       >
                         <div className="flex items-center gap-1">
@@ -1318,11 +1318,11 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                       </th>
                     )}
                     {visibleColumns.feeType && (
-                      <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm">Fee Type</th>
+                      <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm">Fee Type</th>
                     )}
                     {visibleColumns.dateIssue && (
                       <th
-                        className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
+                        className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
                         onClick={() => handleSort('createdAt')}
                       >
                         <div className="flex items-center gap-1">
@@ -1335,7 +1335,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                     )}
                     {visibleColumns.billed && (
                       <th
-                        className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
+                        className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
                         onClick={() => handleSort('totalAmount')}
                       >
                         <div className="flex items-center gap-1">
@@ -1348,7 +1348,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                     )}
                     {visibleColumns.paid && (
                       <th
-                        className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
+                        className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
                         onClick={() => handleSort('paidAmount')}
                       >
                         <div className="flex items-center gap-1">
@@ -1360,11 +1360,11 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                       </th>
                     )}
                     {visibleColumns.waived && (
-                      <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm">Waived</th>
+                      <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm">Waived</th>
                     )}
                     {visibleColumns.balance && (
                       <th
-                        className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
+                        className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
                         onClick={() => handleSort('balance')}
                       >
                         <div className="flex items-center gap-1">
@@ -1377,20 +1377,20 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                     )}
                     {visibleColumns.overpaid && (
                       <th
-                        className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
+                        className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
                       >
                         Overpaid
                       </th>
                     )}
 
                     {visibleColumns.status && (
-                      <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm">Status</th>
+                      <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm">Status</th>
                     )}
                     {visibleColumns.paymentMode && (
-                      <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm">Mode / Quick Pay</th>
+                      <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm">Mode / Quick Pay</th>
                     )}
                     {visibleColumns.actions && (
-                      <th className="px-3 py-1.5 text-right text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm">Actions</th>
+                      <th className="px-3 py-1.5 text-right text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm">Actions</th>
                     )}
                   </tr>
                 </thead>
@@ -1434,7 +1434,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                                 {invoice.feeStructure?.name || 'Standard Fees'}
                               </div>
                               {invoice.totalAmount > 0 && (
-                                <div className="text-[9px] font-bold text-blue-600 uppercase tracking-tight hidden">
+                                <div className="text-[9px] font-medium text-blue-600 uppercase tracking-tight hidden">
                                   KES {Number(invoice.totalAmount).toLocaleString()}
                                 </div>
                               )}
@@ -1446,36 +1446,36 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                             </td>
                           )}
                           {visibleColumns.billed && (
-                            <td className="px-3 py-1.5 text-xs font-bold text-gray-900 border-r-[0.5px] border-gray-200 text-right w-24">
+                            <td className="px-3 py-1.5 text-xs font-medium text-gray-900 border-r-[0.5px] border-gray-200 text-right w-24">
                               {Number(invoice.totalAmount).toLocaleString()}
                             </td>
                           )}
                           {visibleColumns.paid && (
-                            <td className="px-3 py-1.5 text-xs font-bold text-green-600 border-r-[0.5px] border-gray-200 text-right w-24">
+                            <td className="px-3 py-1.5 text-xs font-medium text-green-600 border-r-[0.5px] border-gray-200 text-right w-24">
                               {Number(invoice.paidAmount).toLocaleString()}
                             </td>
                           )}
                           {visibleColumns.waived && (
                             <td className="px-3 py-1.5 border-r-[0.5px] border-gray-200 text-right w-24">
-                              <div className="text-xs font-bold text-teal-600">
+                              <div className="text-xs font-medium text-teal-600">
                                 {(invoice.waivers || [])
                                   .filter(w => w.status === 'APPROVED')
                                   .reduce((acc, w) => acc + Number(w.amountWaived), 0).toLocaleString()}
                               </div>
                               {invoice.waivers?.some(w => w.status === 'PENDING') && (
-                                <span className="block mt-0.5 text-[9px] font-bold text-amber-600">
+                                <span className="block mt-0.5 text-[9px] font-medium text-amber-600">
                                   PENDING
                                 </span>
                               )}
                             </td>
                           )}
                           {visibleColumns.balance && (
-                            <td className="px-3 py-1.5 text-xs font-bold text-red-600 border-r-[0.5px] border-gray-200 text-right w-24">
+                            <td className="px-3 py-1.5 text-xs font-medium text-red-600 border-r-[0.5px] border-gray-200 text-right w-24">
                               {invoice.balance > 0 ? Number(invoice.balance).toLocaleString() : '0'}
                             </td>
                           )}
                           {visibleColumns.overpaid && (
-                            <td className="px-3 py-1.5 text-xs font-bold text-purple-600 border-r-[0.5px] border-gray-200 text-right w-24">
+                            <td className="px-3 py-1.5 text-xs font-medium text-purple-600 border-r-[0.5px] border-gray-200 text-right w-24">
                               {Number(invoice.paidAmount) > Number(invoice.totalAmount)
                                 ? (Number(invoice.paidAmount) - Number(invoice.totalAmount)).toLocaleString()
                                 : '0'}
@@ -1490,7 +1490,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                           {visibleColumns.paymentMode && (
                             <td className="px-3 py-1.5 border-r-[0.5px] border-gray-200 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                               {Number(invoice.paidAmount) > 0 ? (
-                                <div className={`flex items-center gap-1.5 text-[9px] font-black uppercase px-2 py-1 rounded-md border w-fit shadow-inner-sm ${recentMode === 'MPESA' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-blue-50 text-blue-700 border-blue-100'
+                                <div className={`flex items-center gap-1.5 text-[9px] font-semibold uppercase px-2 py-1 rounded-md border w-fit shadow-inner-sm ${recentMode === 'MPESA' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-blue-50 text-blue-700 border-blue-100'
                                   }`}>
                                   <span className={`w-1.5 h-1.5 rounded-full ${recentMode === 'MPESA' ? 'bg-emerald-500 animate-pulse' : 'bg-blue-500'}`} />
                                   {recentMode.replace('_', ' ')}
@@ -1500,19 +1500,19 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                                 <div className="flex items-center gap-1">
                                   <button
                                     onClick={() => navigateTo('fees-record-payment', { invoice, initialMode: 'MPESA' })}
-                                    className={`px-2 py-0.5 text-[9px] font-black rounded transition-all border ${recentMode === 'MPESA' ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-white text-emerald-600 border-emerald-100 hover:bg-emerald-50'}`}
+                                    className={`px-2 py-0.5 text-[9px] font-semibold rounded transition-all border ${recentMode === 'MPESA' ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-white text-emerald-600 border-emerald-100 hover:bg-emerald-50'}`}
                                   >
                                     MPESA
                                   </button>
                                   <button
                                     onClick={() => navigateTo('fees-record-payment', { invoice, initialMode: 'CASH' })}
-                                    className={`px-2 py-0.5 text-[9px] font-black rounded transition-all border ${recentMode === 'CASH' ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-blue-600 border-blue-100 hover:bg-blue-50'}`}
+                                    className={`px-2 py-0.5 text-[9px] font-semibold rounded transition-all border ${recentMode === 'CASH' ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-blue-600 border-blue-100 hover:bg-blue-50'}`}
                                   >
                                     CASH
                                   </button>
                                   <button
                                     onClick={() => navigateTo('fees-record-payment', { invoice, initialMode: 'BANK_TRANSFER' })}
-                                    className="px-2 py-0.5 text-[9px] font-black rounded border border-gray-100 text-gray-400 hover:bg-gray-50 hover:text-gray-700 transition-all"
+                                    className="px-2 py-0.5 text-[9px] font-semibold rounded border border-gray-100 text-gray-400 hover:bg-gray-50 hover:text-gray-700 transition-all"
                                   >
                                     BANK
                                   </button>
@@ -1582,7 +1582,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
 
                 {/* Table Totals Footer */}
                 <tfoot className="bg-gray-50 border-t-[0.5px] border-gray-200">
-                  <tr className="font-bold text-gray-900">
+                  <tr className="font-medium text-gray-900">
                     <td className="px-3 py-3 border-r-[0.5px] border-gray-200"></td>
                     {visibleColumns.invoiceNumber && <td className="px-3 py-3 border-r-[0.5px] border-gray-200"></td>}
                     {visibleColumns.student && (
@@ -1598,27 +1598,27 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                     {visibleColumns.dateIssue && <td className="px-3 py-3 border-r-[0.5px] border-gray-200"></td>}
 
                     {visibleColumns.billed && (
-                      <td className="px-3 py-3 text-xs font-black text-gray-900 border-r-[0.5px] border-gray-200 text-right">
+                      <td className="px-3 py-3 text-xs font-semibold text-gray-900 border-r-[0.5px] border-gray-200 text-right">
                         {Number(listTotals.totalBilled || 0).toLocaleString()}
                       </td>
                     )}
                     {visibleColumns.paid && (
-                      <td className="px-3 py-3 text-xs font-black text-emerald-600 border-r-[0.5px] border-gray-200 text-right">
+                      <td className="px-3 py-3 text-xs font-semibold text-emerald-600 border-r-[0.5px] border-gray-200 text-right">
                         {Number(listTotals.totalPaid || 0).toLocaleString()}
                       </td>
                     )}
                     {visibleColumns.waived && (
-                      <td className="px-3 py-3 text-xs font-black text-teal-600 border-r-[0.5px] border-gray-200 text-right">
+                      <td className="px-3 py-3 text-xs font-semibold text-teal-600 border-r-[0.5px] border-gray-200 text-right">
                         {Number(listTotals.totalWaived || 0).toLocaleString()}
                       </td>
                     )}
                     {visibleColumns.balance && (
-                      <td className="px-3 py-3 text-xs font-black text-red-600 border-r-[0.5px] border-gray-200 text-right">
+                      <td className="px-3 py-3 text-xs font-semibold text-red-600 border-r-[0.5px] border-gray-200 text-right">
                         {Number(listTotals.totalBalance || 0).toLocaleString()}
                       </td>
                     )}
                     {visibleColumns.overpaid && (
-                      <td className="px-3 py-3 text-xs font-black text-purple-600 border-r-[0.5px] border-gray-200 text-right">
+                      <td className="px-3 py-3 text-xs font-semibold text-purple-600 border-r-[0.5px] border-gray-200 text-right">
                         {Number(listTotals.totalOverpaid || 0).toLocaleString()}
                       </td>
                     )}
@@ -1631,7 +1631,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                   {/* Footnote Message */}
                   <tr>
                     <td colSpan={Object.values(visibleColumns).filter(v => v).length + 1} className="px-6 py-2 bg-blue-50/50">
-                      <div className="flex items-center gap-2 text-[10px] font-bold text-blue-600 uppercase tracking-widest">
+                      <div className="flex items-center gap-2 text-[10px] font-medium text-blue-600 uppercase tracking-widest">
                         <Info size={12} />
                         Note: This is the total of the ({totalPages} page{totalPages !== 1 ? 's' : ''})
                       </div>
@@ -1652,14 +1652,14 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                 <button
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="px-4 py-2 rounded-lg border border-gray-200 text-sm font-bold shadow-sm hover:bg-[#00A09D] hover:text-white hover:border-[#00A09D] disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-gray-500 disabled:hover:border-gray-200 transition-all"
+                  className="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium shadow-sm hover:bg-[#00A09D] hover:text-white hover:border-[#00A09D] disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-gray-500 disabled:hover:border-gray-200 transition-all"
                 >
                   Previous
                 </button>
                 <button
                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
-                  className="px-4 py-2 rounded-lg border border-gray-200 text-sm font-bold shadow-sm hover:bg-[#00A09D] hover:text-white hover:border-[#00A09D] disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-gray-500 disabled:hover:border-gray-200 transition-all"
+                  className="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium shadow-sm hover:bg-[#00A09D] hover:text-white hover:border-[#00A09D] disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-gray-500 disabled:hover:border-gray-200 transition-all"
                 >
                   Next
                 </button>
@@ -1673,17 +1673,17 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
               <span className="font-semibold">{selectedInvoiceIds.length} Invoices selected</span>
               <div className="h-6 w-px bg-gray-700" />
               <div className="flex items-center gap-3">
-                <span className="text-xs text-gray-400 uppercase tracking-wider font-bold">Send Reminders:</span>
+                <span className="text-xs text-gray-400 uppercase tracking-wider font-medium">Send Reminders:</span>
                 <button
                   onClick={() => handleBulkReminders('SMS')}
-                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 px-4 py-1.5 rounded-full text-sm font-bold transition-all"
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 px-4 py-1.5 rounded-full text-sm font-medium transition-all"
                 >
                   <FileText size={16} /> SMS
                 </button>
                 <button
                   onClick={() => handleBulkReminders('WHATSAPP')}
                   disabled={loading || whatsappStatus.status !== 'authenticated'}
-                  className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold transition-all ${whatsappStatus.status === 'authenticated' ? 'bg-green-600 hover:bg-green-500' : 'bg-gray-700 cursor-not-allowed opacity-50'}`}
+                  className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium transition-all ${whatsappStatus.status === 'authenticated' ? 'bg-green-600 hover:bg-green-500' : 'bg-gray-700 cursor-not-allowed opacity-50'}`}
                   title={whatsappStatus.status !== 'authenticated' ? 'WhatsApp not authenticated' : 'Send Bulk WhatsApp Reminders'}
                 >
                   <CheckCircle size={16} /> WhatsApp
@@ -1704,7 +1704,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
               <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden">
                 {/* Header - Matching Bulk Operations */}
                 <div className="bg-[var(--brand-purple)] px-6 py-4 flex justify-between items-center text-white">
-                  <h3 className="text-lg font-bold">Create New Invoice</h3>
+                  <h3 className="text-lg font-medium">Create New Invoice</h3>
                   <button
                     onClick={() => setShowCreateModal(false)}
                     className="hover:bg-white/20 p-1.5 rounded-lg transition-colors"
@@ -1733,7 +1733,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                     ) : (
                       <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg flex justify-between items-center group">
                         <div className="flex flex-col">
-                          <span className="text-sm font-bold text-gray-800">
+                          <span className="text-sm font-medium text-gray-800">
                             {allLearners.find(l => l.id === searchLearnerId)?.firstName} {allLearners.find(l => l.id === searchLearnerId)?.lastName}
                           </span>
                           <span className="text-xs text-gray-500">
@@ -1742,7 +1742,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                         </div>
                         <button
                           onClick={() => setSearchLearnerId(null)}
-                          className="text-[#00A09D] text-xs font-bold hover:underline transition-all"
+                          className="text-[#00A09D] text-xs font-medium hover:underline transition-all"
                         >
                           Change
                         </button>
@@ -1776,7 +1776,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                       const learner = allLearners.find(l => l.id === lId);
                       return learner && fs.grade === learner.grade;
                     }).length === 0 && (newInvoice.learnerId || searchLearnerId) && (
-                        <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase">
+                        <p className="text-[10px] font-medium text-rose-500 mt-1 uppercase">
                           No matching fee structure found for student grade.
                         </p>
                       )}
@@ -1823,14 +1823,14 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                     <button
                       onClick={handleCreateInvoice}
                       disabled={loading}
-                      className="flex-1 bg-[#00A09D] text-white px-6 py-3 rounded-xl hover:bg-[#008c89] hover:shadow-lg font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                      className="flex-1 bg-[#00A09D] text-white px-6 py-3 rounded-xl hover:bg-[#008c89] hover:shadow-lg font-medium transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                       {loading && <Loader2 size={18} className="animate-spin" />}
                       <span>{loading ? 'Processing...' : 'Create Invoice'}</span>
                     </button>
                     <button
                       onClick={() => setShowCreateModal(false)}
-                      className="px-6 py-3 border-2 border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 font-bold transition-all"
+                      className="px-6 py-3 border-2 border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 font-medium transition-all"
                     >
                       Cancel
                     </button>
@@ -1903,7 +1903,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                 <div className="bg-red-600 px-6 py-4 flex items-center gap-3 text-white">
                   <Trash2 size={22} />
                   <div>
-                    <h3 className="text-lg font-black tracking-tight">Reset Fee Invoices</h3>
+                    <h3 className="text-lg font-semibold tracking-tight">Reset Fee Invoices</h3>
                     <p className="text-red-200 text-xs font-semibold">This action permanently deletes invoices &amp; payments</p>
                   </div>
                 </div>
@@ -1915,11 +1915,11 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <label className="block text-xs font-black text-gray-600 uppercase tracking-wider">Academic Year</label>
+                      <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider">Academic Year</label>
                       <select
                         value={resetScope.academicYear}
                         onChange={(e) => setResetScope(prev => ({ ...prev, academicYear: e.target.value }))}
-                        className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl font-bold focus:border-red-400 focus:ring-2 focus:ring-red-100 outline-none transition-all"
+                        className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl font-medium focus:border-red-400 focus:ring-2 focus:ring-red-100 outline-none transition-all"
                       >
                         {[2024, 2025, 2026, 2027].map(y => (
                           <option key={y} value={y}>{y}</option>
@@ -1927,11 +1927,11 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                       </select>
                     </div>
                     <div className="space-y-1.5">
-                      <label className="block text-xs font-black text-gray-600 uppercase tracking-wider">Term</label>
+                      <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider">Term</label>
                       <select
                         value={resetScope.term}
                         onChange={(e) => setResetScope(prev => ({ ...prev, term: e.target.value }))}
-                        className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl font-bold focus:border-red-400 focus:ring-2 focus:ring-red-100 outline-none transition-all"
+                        className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl font-medium focus:border-red-400 focus:ring-2 focus:ring-red-100 outline-none transition-all"
                       >
                         <option value="TERM_1">Term 1</option>
                         <option value="TERM_2">Term 2</option>
@@ -1943,13 +1943,13 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                   <div className="flex gap-3 pt-2">
                     <button
                       onClick={() => setShowResetModal(false)}
-                      className="flex-1 py-3 px-4 rounded-xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-all"
+                      className="flex-1 py-3 px-4 rounded-xl font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition-all"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={handleConfirmReset}
-                      className="flex-1 py-3 px-4 rounded-xl font-black text-white bg-red-600 hover:bg-red-700 shadow-lg shadow-red-600/20 transition-all active:scale-95 transform"
+                      className="flex-1 py-3 px-4 rounded-xl font-semibold text-white bg-red-600 hover:bg-red-700 shadow-lg shadow-red-600/20 transition-all active:scale-95 transform"
                     >
                       Confirm Reset
                     </button>
@@ -1973,7 +1973,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                 <div className="bg-blue-600 px-6 py-4 flex items-center gap-3 text-white">
                   <Download size={22} />
                   <div>
-                    <h3 className="text-lg font-black tracking-tight">Export Fee Data</h3>
+                    <h3 className="text-lg font-semibold tracking-tight">Export Fee Data</h3>
                     <p className="text-blue-200 text-xs font-semibold">Generate an Excel-compatible CSV report</p>
                   </div>
                 </div>
@@ -1982,13 +1982,13 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                   <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex gap-3">
                     <Info size={20} className="text-blue-500 shrink-0" />
                     <div className="text-sm text-blue-800">
-                      <p className="font-bold mb-1 border-b border-blue-200 pb-1">Current Filters Applied:</p>
+                      <p className="font-medium mb-1 border-b border-blue-200 pb-1">Current Filters Applied:</p>
                       <ul className="space-y-1 list-disc list-inside text-xs opacity-90">
-                        <li>Grade: <span className="font-bold">{gradeFilter === 'all' ? 'All Classes' : gradeFilter}</span></li>
-                        <li>Term: <span className="font-bold">{termFilter === 'all' ? 'All Terms' : termFilter}</span></li>
-                        <li>Status: <span className="font-bold capitalize">{statusFilter}</span></li>
-                        {startDate && <li>From: <span className="font-bold">{startDate}</span></li>}
-                        {endDate && <li>To: <span className="font-bold">{endDate}</span></li>}
+                        <li>Grade: <span className="font-medium">{gradeFilter === 'all' ? 'All Classes' : gradeFilter}</span></li>
+                        <li>Term: <span className="font-medium">{termFilter === 'all' ? 'All Terms' : termFilter}</span></li>
+                        <li>Status: <span className="font-medium capitalize">{statusFilter}</span></li>
+                        {startDate && <li>From: <span className="font-medium">{startDate}</span></li>}
+                        {endDate && <li>To: <span className="font-medium">{endDate}</span></li>}
                       </ul>
                     </div>
                   </div>
@@ -1997,7 +1997,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                     <button
                       onClick={handleExportExcel}
                       disabled={exporting}
-                      className="w-full bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 hover:shadow-lg font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                      className="w-full bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 hover:shadow-lg font-medium transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                       {exporting ? (
                         <>
@@ -2014,7 +2014,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                     <button
                       onClick={() => setShowExportModal(false)}
                       disabled={exporting}
-                      className="w-full px-6 py-3 border-2 border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 font-bold transition-all"
+                      className="w-full px-6 py-3 border-2 border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 font-medium transition-all"
                     >
                       Close
                     </button>

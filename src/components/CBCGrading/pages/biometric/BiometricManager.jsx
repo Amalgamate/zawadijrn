@@ -83,10 +83,10 @@ const BiometricManager = ({ currentPage }) => {
                 <ShieldCheck size={28} />
               </div>
               <div>
-                <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Biometric Authority</h1>
+                <h1 className="text-2xl font-semibold text-slate-900 tracking-tight uppercase">Biometric Authority</h1>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest italic">System Online • Hardware Agnostic Protocol v1.0</p>
+                  <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest italic">System Online • Hardware Agnostic Protocol v1.0</p>
                 </div>
               </div>
             </div>
@@ -94,12 +94,12 @@ const BiometricManager = ({ currentPage }) => {
             <div className="flex items-center gap-4">
               <div className="hidden lg:flex items-center gap-6 pr-6 border-r border-slate-100">
                 <div className="text-right">
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Active Terminals</p>
-                  <p className="text-lg font-black text-slate-900">{stats.devices}</p>
+                  <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest">Active Terminals</p>
+                  <p className="text-lg font-semibold text-slate-900">{stats.devices}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Pending Sync</p>
-                  <p className="text-lg font-black text-slate-900">{stats.pendingLogs}</p>
+                  <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest">Pending Sync</p>
+                  <p className="text-lg font-semibold text-slate-900">{stats.pendingLogs}</p>
                 </div>
               </div>
               <button 
@@ -117,7 +117,7 @@ const BiometricManager = ({ currentPage }) => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-6 py-3 rounded-t-2xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+                className={`flex items-center gap-2 px-6 py-3 rounded-t-2xl text-xs font-semibold uppercase tracking-widest transition-all whitespace-nowrap ${
                   activeTab === tab.id 
                     ? 'bg-slate-50 text-indigo-600 border-x border-t border-slate-200' 
                     : 'text-slate-400 hover:text-slate-600'
@@ -150,8 +150,8 @@ const BiometricManager = ({ currentPage }) => {
             </div>
           </div>
           <div className="pr-2">
-            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">Global Status</p>
-            <p className="text-[10px] font-bold text-slate-900 mt-0.5">Secure Link Established</p>
+            <p className="text-[8px] font-semibold text-slate-400 uppercase tracking-widest leading-none">Global Status</p>
+            <p className="text-[10px] font-medium text-slate-900 mt-0.5">Secure Link Established</p>
           </div>
         </div>
       </div>

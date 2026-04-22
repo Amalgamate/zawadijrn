@@ -177,7 +177,7 @@ export default function OTPVerificationForm({
           <button onClick={onBackToLogin} className="text-gray-500 hover:text-gray-700 transition">
             <ArrowLeft size={20} />
           </button>
-          <h2 className="text-2xl font-bold text-gray-900">Verification</h2>
+          <h2 className="text-2xl font-medium text-gray-900">Verification</h2>
         </div>
 
         <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-2">
@@ -204,7 +204,7 @@ export default function OTPVerificationForm({
                 onKeyDown={(e) => handleKeyDown(index, e)}
                 onPaste={handlePaste}
                 disabled={isLoading || success}
-                className={`w-10 h-12 sm:w-12 sm:h-14 text-2xl font-bold text-center border-2 rounded-xl transition-all
+                className={`w-10 h-12 sm:w-12 sm:h-14 text-2xl font-medium text-center border-2 rounded-xl transition-all
                   ${success
                     ? 'border-green-500 bg-green-50 text-green-600'
                     : error

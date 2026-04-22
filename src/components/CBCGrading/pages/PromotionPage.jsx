@@ -181,7 +181,7 @@ const PromotionPage = ({ onPromote, showNotification }) => {
 
       {/* Step 1: Select Source Class */}
       <div className="bg-white rounded-xl shadow-md p-6">
-        <h3 className="text-lg font-black mb-4 text-brand-purple uppercase tracking-widest">Step 1: Select Source Class</h3>
+        <h3 className="text-lg font-semibold mb-4 text-brand-purple uppercase tracking-widest">Step 1: Select Source Class</h3>
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
           <div className="md:col-span-4">
             <label className="block text-sm font-semibold text-gray-700 mb-2">Grade Level</label>
@@ -233,7 +233,7 @@ const PromotionPage = ({ onPromote, showNotification }) => {
             <button
               onClick={selectAll}
               disabled={classLearners.length === 0}
-              className={`flex-1 px-4 py-3 rounded-lg transition shadow-md font-bold text-sm uppercase tracking-wide ${classLearners.length === 0 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' :
+              className={`flex-1 px-4 py-3 rounded-lg transition shadow-md font-medium text-sm uppercase tracking-wide ${classLearners.length === 0 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' :
                 selectedLearners.length === classLearners.length ? 'bg-gray-600 text-white' : 'bg-brand-teal text-white hover:bg-brand-teal/90'
                 }`}
             >
@@ -252,7 +252,7 @@ const PromotionPage = ({ onPromote, showNotification }) => {
 
       {/* Step 2: Select Learners */}
       <div className="bg-white rounded-xl shadow-md p-6">
-        <h3 className="text-lg font-black mb-4 text-brand-purple uppercase tracking-widest flex justify-between items-center">
+        <h3 className="text-lg font-semibold mb-4 text-brand-purple uppercase tracking-widest flex justify-between items-center">
           <span>Step 2: Select Learners to Promote</span>
           <span className="text-sm bg-brand-purple/10 text-brand-purple px-3 py-1 rounded-full">
             {selectedLearners.length} / {classLearners.length} Selected
@@ -290,12 +290,12 @@ const PromotionPage = ({ onPromote, showNotification }) => {
                       {isSelected && <CheckCircle size={14} className="text-white" />}
                     </div>
 
-                    <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold transition-colors ${isSelected ? 'bg-brand-teal text-white' : 'bg-gray-100 text-gray-500 group-hover:bg-brand-teal/10 group-hover:text-brand-teal'
+                    <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-lg font-medium transition-colors ${isSelected ? 'bg-brand-teal text-white' : 'bg-gray-100 text-gray-500 group-hover:bg-brand-teal/10 group-hover:text-brand-teal'
                       }`}>
                       {learner.avatar || learner.firstName.charAt(0)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-gray-800 truncate">{learner.firstName} {learner.lastName}</p>
+                      <p className="font-medium text-gray-800 truncate">{learner.firstName} {learner.lastName}</p>
                       <p className="text-xs text-gray-500 font-medium tracking-wide">{learner.admNo}</p>
                     </div>
                   </div>
@@ -303,7 +303,7 @@ const PromotionPage = ({ onPromote, showNotification }) => {
                   <div className="flex items-center justify-between text-xs bg-gray-50 rounded-lg px-3 py-2 mt-2">
                     <span className="font-semibold text-gray-500">{learner.grade}</span>
                     <ArrowRight size={14} className="text-gray-400" />
-                    <span className="font-bold text-brand-teal">{nextGrade}</span>
+                    <span className="font-medium text-brand-teal">{nextGrade}</span>
                   </div>
                 </div>
               );
@@ -317,7 +317,7 @@ const PromotionPage = ({ onPromote, showNotification }) => {
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-10 md:static md:bg-transparent md:border-t-0 md:shadow-none md:p-0 flex justify-end">
           <button
             onClick={handlePromote}
-            className="w-full md:w-auto flex items-center justify-center gap-2 px-8 py-3 bg-brand-teal text-white rounded-xl hover:bg-brand-teal/90 transition shadow-lg hover:shadow-xl font-bold text-lg transform active:scale-95 duration-150"
+            className="w-full md:w-auto flex items-center justify-center gap-2 px-8 py-3 bg-brand-teal text-white rounded-xl hover:bg-brand-teal/90 transition shadow-lg hover:shadow-xl font-medium text-lg transform active:scale-95 duration-150"
           >
             <CheckCircle size={24} />
             <span>Promote {selectedLearners.length} Learner{selectedLearners.length !== 1 ? 's' : ''}</span>

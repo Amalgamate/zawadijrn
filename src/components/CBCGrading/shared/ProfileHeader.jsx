@@ -31,11 +31,11 @@ const ProfileHeader = ({
                     <div className="flex items-end gap-6 w-full md:w-auto">
                         {/* Avatar */}
                         <div className={`group relative ${compact ? 'w-24 h-24' : 'w-28 h-28'} bg-white p-1 rounded-full shadow-lg transition-all`}>
-                            <div className="w-full h-full bg-gray-50 rounded-full flex items-center justify-center text-3xl font-bold text-gray-400 overflow-hidden border-2 border-white ring-1 ring-gray-100">
+                            <div className="w-full h-full bg-gray-50 rounded-full flex items-center justify-center text-3xl font-medium text-gray-400 overflow-hidden border-2 border-white ring-1 ring-gray-100">
                                 {avatar ? (
                                     <img src={avatar} alt="Profile" className="w-full h-full object-cover" />
                                 ) : (
-                                    <div className={`w-full h-full flex items-center justify-center bg-${bannerColor} text-white text-3xl font-bold`}>
+                                    <div className={`w-full h-full flex items-center justify-center bg-${bannerColor} text-white text-3xl font-medium`}>
                                         {avatarFallback || '??'}
                                     </div>
                                 )}
@@ -46,7 +46,7 @@ const ProfileHeader = ({
                                     className="absolute inset-0 bg-black/40 text-white rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"
                                 >
                                     <Camera size={24} className="mb-1" />
-                                    <span className="text-[10px] font-bold uppercase tracking-wider">Change</span>
+                                    <span className="text-[10px] font-medium uppercase tracking-wider">Change</span>
                                 </button>
                             )}
                         </div>
@@ -54,7 +54,7 @@ const ProfileHeader = ({
                         {/* Identity Details */}
                         <div className="mb-1 flex-1">
                             <div className="flex items-center gap-3">
-                                <h2 className={`${compact ? 'text-2xl' : 'text-3xl'} font-bold text-gray-900 tracking-tight transition-all`}>
+                                <h2 className={`${compact ? 'text-2xl' : 'text-3xl'} font-medium text-gray-900 tracking-tight transition-all`}>
                                     {name}
                                 </h2>
                                 {status && <StatusBadge status={status} />}
@@ -81,7 +81,7 @@ const ProfileHeader = ({
                         {quickStats.map((stat, idx) => (
                             <div key={idx} className="p-4 rounded-xl border border-gray-100 bg-gray-50/50">
                                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{stat.label}</p>
-                                <p className={`text-lg font-bold ${stat.className || 'text-gray-900'}`}>{stat.value}</p>
+                                <p className={`text-lg font-medium ${stat.className || 'text-gray-900'}`}>{stat.value}</p>
                             </div>
                         ))}
                     </div>
@@ -94,7 +94,7 @@ const ProfileHeader = ({
                             <button
                                 key={tab.id}
                                 onClick={() => onTabChange(tab.id)}
-                                className={`flex items-center gap-2 px-6 py-4 text-sm font-bold border-b-2 transition whitespace-nowrap ${activeTab === tab.id
+                                className={`flex items-center gap-2 px-6 py-4 text-sm font-medium border-b-2 transition whitespace-nowrap ${activeTab === tab.id
                                     ? `border-${bannerColor} text-${bannerColor} bg-${bannerColor}/5 rounded-t-lg`
                                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-200'
                                     }`}

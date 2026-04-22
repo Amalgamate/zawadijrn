@@ -23,7 +23,7 @@ const EmptyState = ({
           </div>
         )}
         
-        <h3 className="text-2xl font-bold text-gray-800 mb-3">{title}</h3>
+        <h3 className="text-2xl font-medium text-gray-800 mb-3">{title}</h3>
         <p className="text-gray-600 mb-6">{message}</p>
         
         {actionText && onAction && (

@@ -186,14 +186,14 @@ const BulkCreateTest = ({ onBack, onSuccess }) => {
                             <ArrowLeft size={18} />
                         </button>
                         <div>
-                            <h1 className="text-base font-bold text-slate-900 leading-none">Bulk Create Tests</h1>
+                            <h1 className="text-base font-medium text-slate-900 leading-none">Bulk Create Tests</h1>
                             <p className="text-[10px] text-slate-400 font-medium mt-0.5 uppercase tracking-wider">Assessment Series Generator</p>
                         </div>
                     </div>
                     <Button
                         onClick={handleSubmit}
                         disabled={saving || !formData.title.trim() || selectedGrades.length === 0}
-                        className="bg-brand-teal hover:bg-brand-teal/90 text-white px-6 rounded-lg font-bold text-sm disabled:opacity-50"
+                        className="bg-brand-teal hover:bg-brand-teal/90 text-white px-6 rounded-lg font-medium text-sm disabled:opacity-50"
                     >
                         {saving ? (
                             <><Loader className="animate-spin mr-2" size={14} /> Generating...</>
@@ -210,7 +210,7 @@ const BulkCreateTest = ({ onBack, onSuccess }) => {
 
                     {/* Series Name */}
                     <div className="space-y-1.5">
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Series Name *</label>
+                        <label className="block text-xs font-medium text-slate-500 uppercase tracking-widest">Series Name *</label>
                         <input
                             type="text"
                             placeholder="e.g., 2026 Term 1 Opening Assessments"
@@ -226,7 +226,7 @@ const BulkCreateTest = ({ onBack, onSuccess }) => {
                     {/* Assessment Type + Term */}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Assessment Type</label>
+                            <label className="block text-xs font-medium text-slate-500 uppercase tracking-widest">Assessment Type</label>
                             <select
                                 value={formData.testType}
                                 onChange={(e) => setFormData({ ...formData, testType: e.target.value })}
@@ -236,7 +236,7 @@ const BulkCreateTest = ({ onBack, onSuccess }) => {
                             </select>
                         </div>
                         <div className="space-y-1.5">
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Term</label>
+                            <label className="block text-xs font-medium text-slate-500 uppercase tracking-widest">Term</label>
                             <select
                                 value={formData.term}
                                 onChange={(e) => setFormData({ ...formData, term: e.target.value })}
@@ -250,7 +250,7 @@ const BulkCreateTest = ({ onBack, onSuccess }) => {
                     {/* Academic Year + Test Date */}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Academic Year</label>
+                            <label className="block text-xs font-medium text-slate-500 uppercase tracking-widest">Academic Year</label>
                             <input
                                 type="number"
                                 value={formData.academicYear}
@@ -259,7 +259,7 @@ const BulkCreateTest = ({ onBack, onSuccess }) => {
                             />
                         </div>
                         <div className="space-y-1.5">
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Test Date</label>
+                            <label className="block text-xs font-medium text-slate-500 uppercase tracking-widest">Test Date</label>
                             <DatePicker
                                 value={formData.testDate}
                                 onChange={(date) => setFormData({
@@ -276,7 +276,7 @@ const BulkCreateTest = ({ onBack, onSuccess }) => {
                     {/* Marks + Duration */}
                     <div className="grid grid-cols-3 gap-4">
                         <div className="space-y-1.5">
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Total Marks</label>
+                            <label className="block text-xs font-medium text-slate-500 uppercase tracking-widest">Total Marks</label>
                             <input
                                 type="number"
                                 value={formData.totalMarks}
@@ -285,7 +285,7 @@ const BulkCreateTest = ({ onBack, onSuccess }) => {
                             />
                         </div>
                         <div className="space-y-1.5">
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Pass Mark</label>
+                            <label className="block text-xs font-medium text-slate-500 uppercase tracking-widest">Pass Mark</label>
                             <input
                                 type="number"
                                 value={formData.passMarks}
@@ -294,7 +294,7 @@ const BulkCreateTest = ({ onBack, onSuccess }) => {
                             />
                         </div>
                         <div className="space-y-1.5">
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Duration (min)</label>
+                            <label className="block text-xs font-medium text-slate-500 uppercase tracking-widest">Duration (min)</label>
                             <input
                                 type="number"
                                 value={formData.duration}
@@ -307,14 +307,14 @@ const BulkCreateTest = ({ onBack, onSuccess }) => {
                     {/* Performance Scale */}
                     <div className="space-y-1.5">
                         <div className="flex items-center justify-between">
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Performance Scale</label>
+                            <label className="block text-xs font-medium text-slate-500 uppercase tracking-widest">Performance Scale</label>
                             {user?.role === 'SUPER_ADMIN' && (
                                 <button
                                     type="button"
                                     onClick={() => window.dispatchEvent(new CustomEvent('pageNavigate', {
                                         detail: { page: 'settings-academic', params: { tab: 'performance-levels' } }
                                     }))}
-                                    className="text-[10px] font-bold text-brand-purple hover:underline"
+                                    className="text-[10px] font-medium text-brand-purple hover:underline"
                                 >
                                     Manage in Settings
                                 </button>
@@ -340,14 +340,14 @@ const BulkCreateTest = ({ onBack, onSuccess }) => {
                     {/* Grade Selection */}
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">
+                            <label className="block text-xs font-medium text-slate-500 uppercase tracking-widest">
                                 <GraduationCap size={12} className="inline mr-1.5 mb-0.5" />
                                 Target Grade Levels *
                             </label>
                             <button
                                 type="button"
                                 onClick={handleSelectAll}
-                                className="text-[10px] font-bold text-brand-purple hover:underline uppercase tracking-wider"
+                                className="text-[10px] font-medium text-brand-purple hover:underline uppercase tracking-wider"
                             >
                                 {selectedGrades.length === allGrades.length ? 'Deselect All' : 'Select All'}
                             </button>
@@ -356,11 +356,11 @@ const BulkCreateTest = ({ onBack, onSuccess }) => {
                         {gradeGroups.map(group => (
                             <div key={group.id} className="space-y-2">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{group.name}</span>
+                                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">{group.name}</span>
                                     <button
                                         type="button"
                                         onClick={() => handleSelectGroup(group.grades)}
-                                        className="text-[10px] font-bold text-slate-400 hover:text-brand-purple transition uppercase tracking-wider"
+                                        className="text-[10px] font-medium text-slate-400 hover:text-brand-purple transition uppercase tracking-wider"
                                     >
                                         {group.grades.every(g => selectedGrades.includes(g)) ? 'Clear' : 'Select Group'}
                                     </button>
@@ -373,7 +373,7 @@ const BulkCreateTest = ({ onBack, onSuccess }) => {
                                                 key={grade}
                                                 type="button"
                                                 onClick={() => handleGradeToggle(grade)}
-                                                className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border-2 text-xs font-bold transition-all text-left ${
+                                                className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border-2 text-xs font-medium transition-all text-left ${
                                                     isSelected
                                                         ? 'bg-brand-purple/5 border-brand-purple text-brand-purple'
                                                         : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'

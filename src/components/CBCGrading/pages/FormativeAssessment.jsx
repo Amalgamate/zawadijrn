@@ -270,8 +270,8 @@ const FormativeAssessment = ({ learners }) => {
               <Sparkles size={22} />
            </div>
            <div>
-              <h2 className="text-xl font-black text-gray-900 tracking-tight leading-none">Formative</h2>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Continuous Assessment</p>
+              <h2 className="text-xl font-semibold text-gray-900 tracking-tight leading-none">Formative</h2>
+              <p className="text-[10px] font-medium text-gray-400 uppercase tracking-widest mt-1">Continuous Assessment</p>
            </div>
         </div>
         <div className="flex items-center gap-1">
@@ -291,28 +291,28 @@ const FormativeAssessment = ({ learners }) => {
         <div className="px-5 space-y-6 animate-in fade-in slide-in-from-bottom-4">
           <div className="bg-white rounded-[2.5rem] border border-transparent shadow-xl shadow-purple-50 p-6 space-y-6">
             <div className="space-y-1">
-               <span className="text-[10px] font-black text-[var(--brand-teal)] uppercase tracking-widest">Stage 01</span>
-               <h3 className="text-lg font-black text-gray-900">Configure Context</h3>
+               <span className="text-[10px] font-semibold text-[var(--brand-teal)] uppercase tracking-widest">Stage 01</span>
+               <h3 className="text-lg font-semibold text-gray-900">Configure Context</h3>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{labels.grade}</label>
+                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest ml-1">{labels.grade}</label>
                 <select
                   value={selectedGrade}
                   onChange={(e) => setSelectedGrade(e.target.value)}
-                  className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-purple-100 outline-none"
+                  className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-medium focus:ring-2 focus:ring-purple-100 outline-none"
                 >
                   {filteredGrades.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}
                 </select>
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{labels.term}</label>
+                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest ml-1">{labels.term}</label>
                 <select
                   value={selectedTerm}
                   onChange={(e) => setSelectedTerm(e.target.value)}
-                  className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-purple-100 outline-none"
+                  className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-medium focus:ring-2 focus:ring-purple-100 outline-none"
                 >
                   {terms.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </select>
@@ -320,11 +320,11 @@ const FormativeAssessment = ({ learners }) => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{labels.subject}</label>
+              <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest ml-1">{labels.subject}</label>
               <select
                 value={selectedArea}
                 onChange={(e) => { setSelectedArea(e.target.value); learningAreas.selectLearningArea(e.target.value); }}
-                className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-purple-100 outline-none"
+                className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-medium focus:ring-2 focus:ring-purple-100 outline-none"
               >
                 <option value="">Select Area</option>
                 {filteredLearningAreasByWorkload.map(a => <option key={a} value={a}>{a}</option>)}
@@ -332,23 +332,23 @@ const FormativeAssessment = ({ learners }) => {
             </div>
 
             <div className="space-y-2">
-               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Test Title</label>
+               <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest ml-1">Test Title</label>
                <input
                  type="text"
                  value={assessmentTitle}
                  onChange={(e) => setAssessmentTitle(e.target.value)}
-                 className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-purple-100 outline-none"
+                 className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-medium focus:ring-2 focus:ring-purple-100 outline-none"
                  placeholder="e.g. Oral Addition Test"
                />
             </div>
 
             <div className="space-y-2">
-               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Topic / Strand</label>
+               <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest ml-1">Topic / Strand</label>
                <input
                  type="text"
                  value={strand}
                  onChange={(e) => setStrand(e.target.value)}
-                 className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-purple-100 outline-none"
+                 className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-medium focus:ring-2 focus:ring-purple-100 outline-none"
                  placeholder="e.g. Basic Operations"
                />
             </div>
@@ -358,7 +358,7 @@ const FormativeAssessment = ({ learners }) => {
             onClick={goToNextStep}
             className="w-full h-16 bg-[var(--brand-purple)] text-white rounded-[2rem] flex items-center justify-center gap-3 shadow-xl shadow-purple-200 active:scale-95 transition-all outline-none"
           >
-            <span className="text-xs font-black uppercase tracking-[0.2em] ml-2">Begin Entry</span>
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] ml-2">Begin Entry</span>
             <ArrowRight size={20} strokeWidth={3} />
           </button>
         </div>
@@ -372,8 +372,8 @@ const FormativeAssessment = ({ learners }) => {
                 <ChevronLeft size={20} className="text-gray-900" />
              </button>
              <div className="text-center flex-1">
-                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{selectedGrade} • {selectedArea}</h4>
-                <p className="text-xs font-black text-gray-900 truncate px-4">{strand}</p>
+                <h4 className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">{selectedGrade} • {selectedArea}</h4>
+                <p className="text-xs font-semibold text-gray-900 truncate px-4">{strand}</p>
              </div>
              <button onClick={handleSaveAll} disabled={saving} className="w-11 h-11 flex items-center justify-center bg-[var(--brand-teal)] text-white rounded-2xl shadow-lg shadow-teal-50 active:scale-90 transition-all disabled:opacity-30">
                 {saving ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
@@ -388,7 +388,7 @@ const FormativeAssessment = ({ learners }) => {
                   selectedLearnerId={searchLearnerId}
                   onSelect={handleLearnerSelect}
                   placeholder={`Search ${labels.learners}...`}
-                  className="w-full h-14 pl-12 pr-4 bg-gray-50 border-none rounded-[1.5rem] text-xs font-bold outline-none"
+                  className="w-full h-14 pl-12 pr-4 bg-gray-50 border-none rounded-[1.5rem] text-xs font-medium outline-none"
                 />
              </div>
 
@@ -400,12 +400,12 @@ const FormativeAssessment = ({ learners }) => {
                       <div key={learner.id} className="bg-white rounded-[2.5rem] border border-gray-50 p-6 shadow-sm space-y-6">
                          <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
-                               <div className="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center text-xs font-black text-gray-600">
+                               <div className="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center text-xs font-semibold text-gray-600">
                                   {learner.firstName[0]}{learner.lastName[0]}
                                </div>
                                <div>
-                                  <h5 className="text-sm font-black text-gray-900">{learner.firstName} {learner.lastName}</h5>
-                                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">ADM: {learner.admissionNumber}</p>
+                                  <h5 className="text-sm font-semibold text-gray-900">{learner.firstName} {learner.lastName}</h5>
+                                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-tighter">ADM: {learner.admissionNumber}</p>
                                </div>
                             </div>
                             {isSaved && <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center"><Check size={18} strokeWidth={4} /></div>}
@@ -422,11 +422,11 @@ const FormativeAssessment = ({ learners }) => {
                          {assessment?.enhanced && (
                             <div className="space-y-4 pt-4 border-t border-gray-50 animate-in fade-in zoom-in-95">
                                <div className="relative">
-                                  <span className="absolute -top-2 left-4 px-2 bg-white text-[8px] font-black text-gray-300 uppercase tracking-widest">Observations</span>
+                                  <span className="absolute -top-2 left-4 px-2 bg-white text-[8px] font-semibold text-gray-300 uppercase tracking-widest">Observations</span>
                                   <textarea
                                      value={assessment.strengths || ''}
                                      onChange={(e) => handleFeedbackChange(learner.id, 'strengths', e.target.value)}
-                                     className="w-full p-4 bg-gray-50 rounded-2xl border-none text-[11px] font-bold outline-none focus:ring-1 focus:ring-purple-100"
+                                     className="w-full p-4 bg-gray-50 rounded-2xl border-none text-[11px] font-medium outline-none focus:ring-1 focus:ring-purple-100"
                                      placeholder="Strong areas..."
                                   />
                                </div>
@@ -436,7 +436,7 @@ const FormativeAssessment = ({ learners }) => {
                          <div className="flex gap-2">
                              <button 
                                 onClick={() => setAssessments(prev => ({...prev, [learner.id]: {...prev[learner.id], enhanced: !prev[learner.id]?.enhanced}}))}
-                                className="flex-1 py-3 bg-purple-50 text-[var(--brand-purple)] text-[9px] font-black uppercase tracking-widest rounded-2xl active:scale-95 transition-all"
+                                className="flex-1 py-3 bg-purple-50 text-[var(--brand-purple)] text-[9px] font-semibold uppercase tracking-widest rounded-2xl active:scale-95 transition-all"
                              >
                                 {assessment?.enhanced ? 'Hide Details' : 'Add Remarks'}
                              </button>
@@ -460,7 +460,7 @@ const FormativeAssessment = ({ learners }) => {
             onClick={goToNextStep}
             className="w-full h-16 bg-[var(--brand-purple)] text-white rounded-[2rem] flex items-center justify-center gap-3 shadow-xl shadow-purple-200 active:scale-95 transition-all"
           >
-            <span className="text-xs font-black uppercase tracking-[0.2em]">Summary Board</span>
+            <span className="text-xs font-semibold uppercase tracking-[0.2em]">Summary Board</span>
             <BarChart2 size={20} strokeWidth={3} />
           </button>
         </div>
@@ -473,21 +473,21 @@ const FormativeAssessment = ({ learners }) => {
              <button onClick={goToPrevStep} className="p-3 border border-gray-100 rounded-2xl active:scale-90 transition-all">
                 <ChevronLeft size={20} className="text-gray-900" />
              </button>
-             <h3 className="text-lg font-black text-gray-900">Final Summary</h3>
+             <h3 className="text-lg font-semibold text-gray-900">Final Summary</h3>
           </div>
 
           <div className="grid grid-cols-3 gap-3">
              <div className="bg-purple-50 p-4 rounded-[2rem] text-center border border-purple-100">
-                <p className="text-[8px] font-black text-purple-400 uppercase tracking-widest mb-1">Total</p>
-                <p className="text-xl font-black text-[var(--brand-purple)]">{stats.total}</p>
+                <p className="text-[8px] font-semibold text-purple-400 uppercase tracking-widest mb-1">Total</p>
+                <p className="text-xl font-semibold text-[var(--brand-purple)]">{stats.total}</p>
              </div>
              <div className="bg-indigo-50 p-4 rounded-[2rem] text-center border border-indigo-100">
-                <p className="text-[8px] font-black text-indigo-400 uppercase tracking-widest mb-1">Entry</p>
-                <p className="text-xl font-black text-indigo-600">{stats.assessed}</p>
+                <p className="text-[8px] font-semibold text-indigo-400 uppercase tracking-widest mb-1">Entry</p>
+                <p className="text-xl font-semibold text-indigo-600">{stats.assessed}</p>
              </div>
              <div className="bg-emerald-50 p-4 rounded-[2rem] text-center border border-emerald-100">
-                <p className="text-[8px] font-black text-emerald-400 uppercase tracking-widest mb-1">Saved</p>
-                <p className="text-xl font-black text-[var(--brand-teal)]">{stats.saved}</p>
+                <p className="text-[8px] font-semibold text-emerald-400 uppercase tracking-widest mb-1">Saved</p>
+                <p className="text-xl font-semibold text-[var(--brand-teal)]">{stats.saved}</p>
              </div>
           </div>
 
@@ -496,12 +496,12 @@ const FormativeAssessment = ({ learners }) => {
                 <CheckCircle size={48} strokeWidth={1} />
              </div>
              <div className="space-y-2">
-                <h4 className="text-xl font-black text-gray-900">Session Complete?</h4>
-                <p className="text-xs text-gray-400 font-bold leading-relaxed px-6">Review the summary above. If all {labels.learners} are marked, you can safely return to the dashboard.</p>
+                <h4 className="text-xl font-semibold text-gray-900">Session Complete?</h4>
+                <p className="text-xs text-gray-400 font-medium leading-relaxed px-6">Review the summary above. If all {labels.learners} are marked, you can safely return to the dashboard.</p>
              </div>
              <button
                onClick={() => window.history.back()}
-               className="w-full py-5 bg-[var(--brand-purple)] text-white text-xs font-black uppercase tracking-[0.2em] rounded-[2rem] shadow-xl shadow-purple-50 active:scale-95 transition-all"
+               className="w-full py-5 bg-[var(--brand-purple)] text-white text-xs font-semibold uppercase tracking-[0.2em] rounded-[2rem] shadow-xl shadow-purple-50 active:scale-95 transition-all"
              >
                 Exit Session
              </button>

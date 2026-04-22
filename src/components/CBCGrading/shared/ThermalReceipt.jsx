@@ -18,21 +18,21 @@ const ThermalReceipt = ({ invoice, schoolInfo }) => {
     <div className="thermal-receipt-container font-mono text-[10px] leading-tight text-black p-1 w-[58mm] mx-auto bg-white border border-gray-100">
       {/* Header */}
       <div className="text-center mb-4 space-y-1">
-        <h1 className="text-sm font-black uppercase">{schoolInfo?.name || 'ZAWADI SCHOOL'}</h1>
+        <h1 className="text-sm font-semibold uppercase">{schoolInfo?.name || 'ZAWADI SCHOOL'}</h1>
         <p>{schoolInfo?.address || 'P.O. BOX 123-00100, NAIROBI'}</p>
         <p>Tel: {schoolInfo?.phone || '0700 000 000'}</p>
         <div className="border-b border-dashed border-black my-2" />
-        <p className="font-black text-xs">OFFICIAL RECEIPT</p>
+        <p className="font-semibold text-xs">OFFICIAL RECEIPT</p>
         <p>No: RCT-{invoice.invoiceNumber}</p>
         <p>Date: {new Date().toLocaleDateString('en-GB')} {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
       </div>
 
       {/* Student Details */}
       <div className="mb-4 space-y-0.5">
-        <p><span className="font-bold">STUDENT:</span> {learner.firstName} {learner.lastName}</p>
-        <p><span className="font-bold">ADM NO:</span> {learner.admissionNumber}</p>
-        <p><span className="font-bold">CLASS:</span> {(learner.grade || '').replace(/_/g, ' ')}</p>
-        <p><span className="font-bold">TERM:</span> {(invoice.term || '').replace(/_/g, ' ')} {invoice.academicYear}</p>
+        <p><span className="font-medium">STUDENT:</span> {learner.firstName} {learner.lastName}</p>
+        <p><span className="font-medium">ADM NO:</span> {learner.admissionNumber}</p>
+        <p><span className="font-medium">CLASS:</span> {(learner.grade || '').replace(/_/g, ' ')}</p>
+        <p><span className="font-medium">TERM:</span> {(invoice.term || '').replace(/_/g, ' ')} {invoice.academicYear}</p>
       </div>
 
       <div className="border-b border-dashed border-black mb-2" />
@@ -58,7 +58,7 @@ const ThermalReceipt = ({ invoice, schoolInfo }) => {
       <div className="border-b border-dashed border-black mb-2" />
 
       {/* Totals */}
-      <div className="space-y-1 font-bold">
+      <div className="space-y-1 font-medium">
         <div className="flex justify-between">
           <span>SUBTOTAL:</span>
           <span>KES {Number(invoice.totalAmount || 0).toLocaleString()}</span>
@@ -77,10 +77,10 @@ const ThermalReceipt = ({ invoice, schoolInfo }) => {
 
       {/* Footer */}
       <div className="text-center space-y-1">
-        <p className="font-bold">Mode: {invoice.paymentType || 'CASH/BANK'}</p>
+        <p className="font-medium">Mode: {invoice.paymentType || 'CASH/BANK'}</p>
         <p className="italic">Served by: {invoice.servedBy || 'System Admin'}</p>
         <div className="pt-2">
-          <p className="font-black">THANK YOU</p>
+          <p className="font-semibold">THANK YOU</p>
           <p>Excellence in Education</p>
         </div>
       </div>

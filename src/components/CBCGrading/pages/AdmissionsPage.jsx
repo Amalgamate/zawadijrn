@@ -418,13 +418,13 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
       <div className="max-w-4xl mx-auto">
         <div className="border-b border-gray-100 pb-4 mb-6 flex justify-between items-end">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">{isEdit ? 'Edit Student Details' : 'Student Admission'}</h2>
+            <h2 className="text-2xl font-medium text-gray-900">{isEdit ? 'Edit Student Details' : 'Student Admission'}</h2>
             <p className="text-sm text-gray-500">{isEdit ? 'Update student records below.' : 'Fill in the details below to admit a new student.'}</p>
           </div>
           {isDraft && !isEdit && (
             <div className="flex items-center gap-2 mb-1 px-3 py-1 bg-green-50 rounded-full border border-green-100 animate-in fade-in slide-in-from-top-2 duration-500">
               <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-[10px] font-bold text-green-700 uppercase tracking-wider">
+              <span className="text-[10px] font-medium text-green-700 uppercase tracking-wider">
                 Draft Saved {lastSaved && lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>
@@ -455,7 +455,7 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
             {isMobile ? (
               <div className="flex w-full items-center justify-between px-2">
                 <div className="flex flex-col">
-                  <h4 className="text-sm font-bold text-gray-800">Step {currentStep} of {steps.length}</h4>
+                  <h4 className="text-sm font-medium text-gray-800">Step {currentStep} of {steps.length}</h4>
                   <p className="text-xs text-brand-purple font-semibold">{steps[currentStep - 1].title}</p>
                 </div>
                 <div className="flex gap-1.5">
@@ -471,11 +471,11 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
                 return (
                   <React.Fragment key={step.number}>
                     <div className="flex items-center gap-2">
-                      <div className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold transition-colors ${isActive ? 'bg-brand-purple text-white shadow-md shadow-brand-purple/20' : 'bg-gray-200 text-gray-500'}`}>
+                      <div className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-medium transition-colors ${isActive ? 'bg-brand-purple text-white shadow-md shadow-brand-purple/20' : 'bg-gray-200 text-gray-500'}`}>
                         {isActive ? <StepIcon size={14} /> : step.number}
                       </div>
                       <div className="hidden sm:block">
-                        <p className={`text-xs font-black uppercase tracking-widest ${isActive ? 'text-brand-purple' : 'text-gray-400'}`}>{step.title}</p>
+                        <p className={`text-xs font-semibold uppercase tracking-widest ${isActive ? 'text-brand-purple' : 'text-gray-400'}`}>{step.title}</p>
                       </div>
                     </div>
                     {index < steps.length - 1 && <div className={`flex-1 h-px mx-2 ${currentStep > step.number ? 'bg-brand-purple' : 'bg-gray-200'}`} />}
@@ -489,13 +489,13 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
             {/* Step 1: Students Information */}
             {currentStep === 1 && (
               <div className="space-y-6">
-                <h3 className="text-xl font-bold text-gray-800 mb-4">Students Information</h3>
+                <h3 className="text-xl font-medium text-gray-800 mb-4">Students Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {[{ name: 'firstName', label: 'First Name', required: true },
                   { name: 'middleName', label: 'Middle Name', required: false },
                   { name: 'lastName', label: 'Last Name', required: true }].map(field => (
                     <div key={field.name}>
-                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-tight mb-1">
+                      <label className="block text-xs font-medium text-gray-500 uppercase tracking-tight mb-1">
                         {field.label} {field.required && <span className="text-red-500">*</span>}
                       </label>
                       <input type="text" name={field.name} value={formData[field.name]} onChange={handleInputChange}
@@ -510,7 +510,7 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-tight mb-1">Gender <span className="text-red-500">*</span></label>
+                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-tight mb-1">Gender <span className="text-red-500">*</span></label>
                     <select name="gender" value={formData.gender} onChange={handleInputChange} className={`w-full px-3 py-2 bg-white border rounded-md text-sm transition-all focus:ring-1 focus:ring-brand-purple ${stepErrors.gender
                       ? 'border-red-500 bg-red-50 focus:border-red-500'
                       : 'border-gray-200 focus:border-brand-purple'
@@ -522,7 +522,7 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
                     {stepErrors.gender && <p className="text-xs text-red-500 font-semibold mt-1">{stepErrors.gender}</p>}
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-tight mb-1">Date of Birth <span className="text-red-500">*</span></label>
+                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-tight mb-1">Date of Birth <span className="text-red-500">*</span></label>
                     <input type="date" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleInputChange} className={`w-full px-3 py-2 bg-white border rounded-md text-sm transition-all focus:ring-1 focus:ring-brand-purple ${stepErrors.dateOfBirth
                       ? 'border-red-500 bg-red-50 focus:border-red-500'
                       : 'border-gray-200 focus:border-brand-purple'
@@ -566,7 +566,7 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
 
                 {/* Photo Upload */}
                 <div className="border-t pt-6 mt-6">
-                  <h4 className="text-lg font-bold text-gray-800 mb-4">Student Photo</h4>
+                  <h4 className="text-lg font-medium text-gray-800 mb-4">Student Photo</h4>
                   <div className="flex items-start gap-6">
                     {photoPreview ? (
                       <div className="relative">
@@ -602,32 +602,32 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
                 </div>
 
                 <div className="border-t pt-6 mt-6">
-                  <h4 className="text-lg font-bold text-gray-800 mb-4">Academic Information</h4>
+                  <h4 className="text-lg font-medium text-gray-800 mb-4">Academic Information</h4>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-tight mb-1">Admission Number</label>
+                      <label className="block text-xs font-medium text-gray-500 uppercase tracking-tight mb-1">Admission Number</label>
                       <input
                         type="text"
                         name="admissionNumber"
                         value={formData.admissionNumber}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md text-sm shadow-sm focus:border-brand-purple focus:ring-1 focus:ring-brand-purple font-mono font-bold text-brand-purple"
+                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md text-sm shadow-sm focus:border-brand-purple focus:ring-1 focus:ring-brand-purple font-mono font-medium text-brand-purple"
                         placeholder="Auto-generating..."
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-tight mb-1">UPI Number (NEMIS)</label>
+                      <label className="block text-xs font-medium text-gray-500 uppercase tracking-tight mb-1">UPI Number (NEMIS)</label>
                       <input
                         type="text"
                         name="upiNumber"
                         value={formData.upiNumber}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-md text-sm shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-mono font-bold text-emerald-700"
+                        className="w-full px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-md text-sm shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-mono font-medium text-emerald-700"
                         placeholder="e.g. ABC1234567"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-tight mb-1">Grade <span className="text-red-500">*</span></label>
+                      <label className="block text-xs font-medium text-gray-500 uppercase tracking-tight mb-1">Grade <span className="text-red-500">*</span></label>
                       <select name="grade" value={formData.grade} onChange={handleInputChange} className={`w-full px-3 py-2 bg-white border rounded-md text-sm shadow-sm transition-all focus:ring-1 focus:ring-brand-purple ${stepErrors.grade
                         ? 'border-red-500 bg-red-50 focus:border-red-500'
                         : 'border-gray-200 focus:border-brand-purple'
@@ -642,7 +642,7 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
                       {stepErrors.grade && <p className="text-xs text-red-500 font-semibold mt-1">{stepErrors.grade}</p>}
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-tight mb-1">Stream</label>
+                      <label className="block text-xs font-medium text-gray-500 uppercase tracking-tight mb-1">Stream</label>
                       <select name="stream" value={formData.stream} onChange={handleInputChange} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md text-sm shadow-sm focus:border-brand-purple focus:ring-1 focus:ring-brand-purple">
                         <option value="">Select Stream (Optional)</option>
                         {availableStreams.length > 0 ? (
@@ -666,36 +666,36 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
                           className="w-4 h-4 text-brand-purple border-gray-300 rounded focus:ring-brand-purple cursor-pointer"
                         />
                         <label htmlFor="isTransportStudent" className="flex flex-col cursor-pointer">
-                          <span className="text-sm font-bold text-brand-purple">Transport Service</span>
+                          <span className="text-sm font-medium text-brand-purple">Transport Service</span>
                           <span className="text-[10px] text-gray-500 uppercase tracking-widest font-semibold font-mono">Check this if the learner will be using school transport</span>
                         </label>
                       </div>
                     </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 border-t pt-6">
-                    <h4 className="md:col-span-2 text-lg font-bold text-gray-800 mb-2">Location & Contact</h4>
+                    <h4 className="md:col-span-2 text-lg font-medium text-gray-800 mb-2">Location & Contact</h4>
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-tight mb-1">County</label>
+                      <label className="block text-xs font-medium text-gray-500 uppercase tracking-tight mb-1">County</label>
                       <input type="text" name="county" value={formData.county} onChange={handleInputChange} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md text-sm shadow-sm focus:border-brand-purple focus:ring-1 focus:ring-brand-purple" placeholder="e.g., Nairobi" />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-tight mb-1">Residential Address</label>
+                      <label className="block text-xs font-medium text-gray-500 uppercase tracking-tight mb-1">Residential Address</label>
                       <input type="text" name="address" value={formData.address} onChange={handleInputChange} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md text-sm shadow-sm focus:border-brand-purple focus:ring-1 focus:ring-brand-purple" placeholder="e.g., Westlands, Estate name" />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-tight mb-1">Date of Admission</label>
+                      <label className="block text-xs font-medium text-gray-500 uppercase tracking-tight mb-1">Date of Admission</label>
                       <input type="date" name="dateOfAdmission" value={toInputDate(formData.dateOfAdmission)} disabled={true} className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm shadow-sm cursor-not-allowed font-mono text-gray-600" />
                       <p className="text-[10px] text-gray-400 mt-1 font-medium">✨ Automatically set to today</p>
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-tight mb-1">Previous School</label>
+                      <label className="block text-xs font-medium text-gray-500 uppercase tracking-tight mb-1">Previous School</label>
                       <input type="text" name="previousSchool" value={formData.previousSchool} onChange={handleInputChange} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md text-sm shadow-sm focus:border-brand-purple focus:ring-1 focus:ring-brand-purple" />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-tight mb-1">Previous Class</label>
+                      <label className="block text-xs font-medium text-gray-500 uppercase tracking-tight mb-1">Previous Class</label>
                       <input type="text" name="previousClass" value={formData.previousClass} onChange={handleInputChange} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md text-sm shadow-sm focus:border-brand-purple focus:ring-1 focus:ring-brand-purple" placeholder="e.g., Grade 2" />
                     </div>
                   </div>
@@ -720,10 +720,10 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
             {/* Step 3: Medical Information */}
             {currentStep === 3 && (
               <div className="space-y-6">
-                <h3 className="text-xl font-bold text-gray-800 mb-4">Medical Information</h3>
+                <h3 className="text-xl font-medium text-gray-800 mb-4">Medical Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-tight mb-1">Blood Group</label>
+                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-tight mb-1">Blood Group</label>
                     <select name="bloodGroup" value={formData.bloodGroup} onChange={handleInputChange} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md text-sm focus:border-brand-purple focus:ring-1 focus:ring-brand-purple">
                       <option value="">Select Blood Group</option>
                       {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(bg => <option key={bg} value={bg}>{bg}</option>)}
@@ -731,28 +731,28 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-tight mb-1">Known Allergies</label>
+                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-tight mb-1">Known Allergies</label>
                   <textarea name="allergies" value={formData.allergies} onChange={handleInputChange} rows="2" className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md text-sm focus:border-brand-purple focus:ring-1 focus:ring-brand-purple" placeholder="List any allergies" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-tight mb-1">Medical Conditions</label>
+                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-tight mb-1">Medical Conditions</label>
                   <textarea name="medicalConditions" value={formData.medicalConditions} onChange={handleInputChange} rows="2" className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md text-sm focus:border-brand-purple focus:ring-1 focus:ring-brand-purple" placeholder="List any medical conditions" />
                 </div>
                 <div className="pt-4 mt-4 border-t border-gray-100">
-                  <h4 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Doctor Information</h4>
+                  <h4 className="text-sm font-medium text-gray-400 uppercase tracking-widest mb-4">Doctor Information</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-tight mb-1">Doctor Name</label>
+                      <label className="block text-xs font-medium text-gray-500 uppercase tracking-tight mb-1">Doctor Name</label>
                       <input type="text" name="doctorName" value={formData.doctorName} onChange={handleInputChange} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md text-sm focus:border-brand-purple focus:ring-1 focus:ring-brand-purple" />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-tight mb-1">Doctor Phone</label>
+                      <label className="block text-xs font-medium text-gray-500 uppercase tracking-tight mb-1">Doctor Phone</label>
                       <input type="tel" name="doctorPhone" value={formData.doctorPhone} onChange={handleInputChange} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md text-sm focus:border-brand-purple focus:ring-1 focus:ring-brand-purple" />
                     </div>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-tight mb-1">Special Needs</label>
+                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-tight mb-1">Special Needs</label>
                   <textarea name="specialNeeds" value={formData.specialNeeds} onChange={handleInputChange} rows="2" className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md text-sm focus:border-brand-purple focus:ring-1 focus:ring-brand-purple" placeholder="Any special needs" />
                 </div>
               </div>
@@ -762,11 +762,11 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
             {currentStep === 4 && (
               <div className="space-y-6">
                 <div className="border-b border-gray-100 pb-2 mb-4">
-                  <h3 className="text-lg font-bold text-gray-800">Review Admission Details</h3>
+                  <h3 className="text-lg font-medium text-gray-800">Review Admission Details</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="border border-gray-100 rounded-md p-3 bg-gray-50/30">
-                    <h4 className="text-xs font-black text-brand-purple uppercase tracking-widest mb-2 border-b border-brand-purple/10 pb-1">Personal Info</h4>
+                    <h4 className="text-xs font-semibold text-brand-purple uppercase tracking-widest mb-2 border-b border-brand-purple/10 pb-1">Personal Info</h4>
                     <div className="space-y-2 text-sm">
                       <p className="flex justify-between"><span className="text-gray-500">Name:</span> <span className="font-semibold text-gray-800">{formData.firstName} {formData.middleName} {formData.lastName}</span></p>
                       <p className="flex justify-between"><span className="text-gray-500">Gender:</span> <span className="font-semibold text-gray-800">{formData.gender === 'MALE' ? 'Male' : 'Female'}</span></p>
@@ -775,7 +775,7 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
                     </div>
                   </div>
                   <div className="border border-gray-100 rounded-md p-3 bg-gray-50/30">
-                    <h4 className="text-xs font-bold text-green-600 uppercase tracking-widest mb-2 border-b border-green-50 pb-1">
+                    <h4 className="text-xs font-medium text-green-600 uppercase tracking-widest mb-2 border-b border-green-50 pb-1">
                       {(() => {
                         const pc = computePrimaryContact(formData);
                         const typeLabel = { 'FATHER': '👨 Father', 'MOTHER': '👩 Mother', 'GUARDIAN': '👤 Guardian' }[pc.primaryContactType] || 'Contact';
@@ -798,14 +798,14 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
                     </div>
                   </div>
                   <div className="border border-gray-100 rounded-md p-3 bg-gray-50/30">
-                    <h4 className="text-xs font-bold text-brand-purple uppercase tracking-widest mb-2 border-b border-brand-purple/10 pb-1">Medical & Extras</h4>
+                    <h4 className="text-xs font-medium text-brand-purple uppercase tracking-widest mb-2 border-b border-brand-purple/10 pb-1">Medical & Extras</h4>
                     <div className="space-y-2 text-sm">
                       <p className="flex justify-between"><span className="text-gray-500">Blood Group:</span> <span className="font-semibold text-gray-800">{formData.bloodGroup || 'N/A'}</span></p>
                       <p className="flex justify-between"><span className="text-gray-500">Allergies:</span> <span className="font-semibold text-gray-800 truncate max-w-[150px]">{formData.allergies || 'None'}</span></p>
                     </div>
                   </div>
                   <div className="border border-gray-100 rounded-md p-3 bg-gray-50/30">
-                    <h4 className="text-xs font-bold text-orange-600 uppercase tracking-widest mb-2 border-b border-orange-50 pb-1">Admin Info</h4>
+                    <h4 className="text-xs font-medium text-orange-600 uppercase tracking-widest mb-2 border-b border-orange-50 pb-1">Admin Info</h4>
                     <div className="space-y-2 text-sm">
                       <p className="flex justify-between"><span className="text-gray-500">Adm No:</span> <span className="font-semibold text-gray-800">{formData.admissionNumber || 'Auto-generated'}</span></p>
                       <p className="flex justify-between"><span className="text-gray-500">UPI (NEMIS):</span> <span className="font-semibold text-emerald-600 font-mono">{formData.upiNumber || 'N/A'}</span></p>
@@ -816,7 +816,7 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
                 </div>
                 <div className="p-3 bg-brand-purple/5 border border-brand-purple/10 rounded-md flex items-start gap-3 mt-4">
                   <CheckCircle className="text-brand-purple shrink-0 mt-0.5" size={16} />
-                  <p className="text-xs text-brand-purple leading-relaxed font-bold">Please verify all information above before completing the admission. You can edit these details later in student management.</p>
+                  <p className="text-xs text-brand-purple leading-relaxed font-medium">Please verify all information above before completing the admission. You can edit these details later in student management.</p>
 
                 </div>
 
@@ -829,7 +829,7 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
                     className="w-5 h-5 text-brand-purple rounded focus:ring-brand-purple border-gray-300"
                   />
                   <div>
-                    <label htmlFor="generateInvoice" className="block text-sm font-bold text-gray-800 cursor-pointer">
+                    <label htmlFor="generateInvoice" className="block text-sm font-medium text-gray-800 cursor-pointer">
                       Generate Automatic Invoice
                     </label>
                     <p className="text-xs text-gray-500 mt-1">
@@ -842,15 +842,15 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
 
             {/* Navigation Buttons */}
             <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-100">
-              <button type="button" onClick={handlePrevious} disabled={currentStep === 1} className={`flex items-center gap-2 px-4 md:px-5 py-2.5 rounded-md transition-all text-sm font-bold ${currentStep === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+              <button type="button" onClick={handlePrevious} disabled={currentStep === 1} className={`flex items-center gap-2 px-4 md:px-5 py-2.5 rounded-md transition-all text-sm font-medium ${currentStep === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
                 <ArrowLeft size={16} /> <span className="hidden sm:inline">Previous</span>
               </button>
               <div className="flex items-center gap-2 md:gap-3">
-                <button type="button" onClick={() => { setFormData(initialFormData); setCurrentStep(1); }} className="flex items-center gap-2 px-3 md:px-5 py-2.5 bg-gray-50 text-gray-600 rounded-md hover:bg-gray-100 transition-all text-sm font-bold border border-gray-200">
+                <button type="button" onClick={() => { setFormData(initialFormData); setCurrentStep(1); }} className="flex items-center gap-2 px-3 md:px-5 py-2.5 bg-gray-50 text-gray-600 rounded-md hover:bg-gray-100 transition-all text-sm font-medium border border-gray-200">
                   <X size={16} /> <span className="hidden sm:inline">Clear</span>
                 </button>
                 {currentStep < 4 ? (
-                  <button type="button" onClick={handleNext} disabled={Object.keys(stepErrors).length > 0} className={`flex items-center gap-2 px-4 md:px-5 py-2.5 rounded-md transition-all shadow-sm text-sm font-bold ${Object.keys(stepErrors).length > 0
+                  <button type="button" onClick={handleNext} disabled={Object.keys(stepErrors).length > 0} className={`flex items-center gap-2 px-4 md:px-5 py-2.5 rounded-md transition-all shadow-sm text-sm font-medium ${Object.keys(stepErrors).length > 0
                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                     : 'bg-brand-teal text-white hover:bg-brand-teal/90'
                     }`}>
@@ -860,7 +860,7 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
                   <button 
                     type="submit" 
                     disabled={isSaving}
-                    className="flex items-center gap-2 px-4 md:px-5 py-2.5 bg-brand-purple text-white rounded-md hover:bg-brand-purple/90 transition-all shadow-md text-sm font-bold disabled:opacity-70 disabled:cursor-wait"
+                    className="flex items-center gap-2 px-4 md:px-5 py-2.5 bg-brand-purple text-white rounded-md hover:bg-brand-purple/90 transition-all shadow-md text-sm font-medium disabled:opacity-70 disabled:cursor-wait"
                   >
                     {isSaving ? (
                       <>

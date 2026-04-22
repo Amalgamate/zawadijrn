@@ -25,10 +25,10 @@ const isOverdue = (dueDate) => dueDate && new Date(dueDate) < new Date();
 
 const LoanStatusBadge = ({ loan }) => {
   if (loan.returnedAt)
-    return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500">RETURNED</span>;
+    return <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-500">RETURNED</span>;
   if (isOverdue(loan.dueDate))
-    return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-600">OVERDUE</span>;
-  return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 text-sky-600">ACTIVE</span>;
+    return <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-100 text-red-600">OVERDUE</span>;
+  return <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-sky-100 text-sky-600">ACTIVE</span>;
 };
 
 // ─── Borrow Modal ─────────────────────────────────────────────────────────────
@@ -78,7 +78,7 @@ const BorrowModal = ({ onClose, onSaved }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-          <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+          <h2 className="text-lg font-medium text-slate-900 flex items-center gap-2">
             <ArrowDownLeft size={18} className="text-violet-500" /> Issue Book
           </h2>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors"><X size={20} /></button>
@@ -178,7 +178,7 @@ const ActionModal = ({ loan, action, onClose, onSaved }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-          <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+          <h2 className="text-lg font-medium text-slate-900 flex items-center gap-2">
             {action === 'return'
               ? <><ArrowUpRight size={18} className="text-emerald-500" /> Return Book</>
               : <><RotateCcw size={18} className="text-sky-500" /> Renew Loan</>}
@@ -284,7 +284,7 @@ const CirculationDesk = () => {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Circulation Desk</h1>
+          <h1 className="text-2xl font-medium text-slate-900">Circulation Desk</h1>
           <p className="text-sm text-slate-500 mt-0.5">
             {activeCount} active loan{activeCount !== 1 ? 's' : ''}
             {overdueCount > 0 && <span className="ml-2 text-red-500 font-semibold">· {overdueCount} overdue</span>}
@@ -333,10 +333,10 @@ const CirculationDesk = () => {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/60">
-                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Book / Copy</th>
-                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide hidden md:table-cell">Member</th>
-                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Due Date</th>
-                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Status</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Book / Copy</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide hidden md:table-cell">Member</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Due Date</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Status</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>

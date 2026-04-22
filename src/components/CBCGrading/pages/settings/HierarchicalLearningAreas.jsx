@@ -147,10 +147,10 @@ const HierarchicalLearningAreas = ({
                               <BookOpen size={16} />
                             </div>
                             <div className="flex flex-col">
-                              <span className="text-sm font-black text-slate-900 uppercase tracking-tight leading-none">
+                              <span className="text-sm font-semibold text-slate-900 uppercase tracking-tight leading-none">
                                 {grade.replace(/_/g, ' ')}
                               </span>
-                              <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">
+                              <span className="text-[9px] text-slate-400 font-medium uppercase tracking-widest mt-1">
                                 {areaCount} Learning {areaCount === 1 ? 'Area' : 'Areas'}
                               </span>
                             </div>
@@ -183,9 +183,9 @@ const HierarchicalLearningAreas = ({
                                 <div className="flex-shrink-0 text-2xl" title={area.color}>{area.icon}</div>
                                 <div className="flex flex-col">
                                   <div className="flex items-center gap-2">
-                                    <span className="text-sm font-bold text-slate-800 leading-tight">{area.name}</span>
+                                    <span className="text-sm font-medium text-slate-800 leading-tight">{area.name}</span>
                                     {area.shortName && (
-                                      <span className="px-1.5 py-0.5 bg-brand-purple/5 text-brand-purple border border-brand-purple/10 text-[9px] font-black rounded uppercase tracking-widest">
+                                      <span className="px-1.5 py-0.5 bg-brand-purple/5 text-brand-purple border border-brand-purple/10 text-[9px] font-semibold rounded uppercase tracking-widest">
                                         {area.shortName}
                                       </span>
                                     )}
@@ -197,13 +197,13 @@ const HierarchicalLearningAreas = ({
                               {strands.length > 0 ? (
                                 <button
                                   onClick={() => toggleArea(area.id)}
-                                  className="px-3 py-1 rounded-full text-[9px] font-black border uppercase tracking-widest border-transparent bg-slate-100/50 text-slate-500 hover:bg-slate-200/50 transition"
+                                  className="px-3 py-1 rounded-full text-[9px] font-semibold border uppercase tracking-widest border-transparent bg-slate-100/50 text-slate-500 hover:bg-slate-200/50 transition"
                                 >
                                   {strands.length} {strands.length === 1 ? 'Strand' : 'Strands'}
                                   {isAreaExpanded ? <ChevronDown size={10} className="inline ml-1 mb-[1px]" /> : <ChevronRight size={10} className="inline ml-1 mb-[1px]" />}
                                 </button>
                               ) : (
-                                <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">0 Strands</span>
+                                <span className="text-[9px] font-semibold uppercase tracking-widest text-slate-400">0 Strands</span>
                               )}
                             </td>
                             <td className="px-6 py-5 text-right">
@@ -219,7 +219,7 @@ const HierarchicalLearningAreas = ({
                             <tr className="bg-slate-50/30">
                               <td colSpan={4} className="px-12 py-6 border-l-4 border-brand-purple/20">
                                 <div className="flex items-center gap-2 mb-3">
-                                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Curriculum Strands</span>
+                                  <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">Curriculum Strands</span>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                   {strands.map((strand, strandIndex) => (
@@ -229,7 +229,7 @@ const HierarchicalLearningAreas = ({
                                     >
                                       <div className="flex items-center gap-3">
                                         <div className="w-1.5 h-1.5 rounded-full bg-brand-purple/40 group-hover/strand:bg-brand-purple"></div>
-                                        <span className="text-[11px] font-bold text-slate-700">{strand}</span>
+                                        <span className="text-[11px] font-medium text-slate-700">{strand}</span>
                                       </div>
                                       <button
                                         onClick={() => onAddStrand(area, strand)}

@@ -62,7 +62,7 @@ const MobileAssessmentsDashboard = ({ learners, brandingSettings, onNavigate, on
                                 key={tab.id}
                                 onClick={() => { setActiveTab(tab.id); setShowConfigMenu(false); }}
                                 className={cn(
-                                    "flex items-center gap-2 py-4 text-[10px] font-black uppercase tracking-[0.1em] transition-all relative whitespace-nowrap",
+                                    "flex items-center gap-2 py-4 text-[10px] font-semibold uppercase tracking-[0.1em] transition-all relative whitespace-nowrap",
                                     isActive ? "text-[var(--brand-purple)]" : "text-gray-400 hover:text-gray-600"
                                 )}
                             >
@@ -93,31 +93,31 @@ const MobileAssessmentsDashboard = ({ learners, brandingSettings, onNavigate, on
                     {showConfigMenu && (
                         <div className="absolute top-full right-0 mt-3 w-60 bg-white/95 backdrop-blur-2xl rounded-[2rem] shadow-2xl shadow-purple-200 py-3 border border-gray-100 overflow-hidden animate-in zoom-in-95 duration-200" style={{ zIndex: 100 }}>
                             <div className="px-6 py-3 mb-1">
-                                <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest leading-none">Assessment Suite</p>
+                                <p className="text-[9px] font-semibold text-gray-300 uppercase tracking-widest leading-none">Assessment Suite</p>
                             </div>
                             <button
                                 onClick={() => { setActiveTab('tests'); setShowConfigMenu(false); }}
                                 className={cn(
-                                    "w-full px-6 py-4 text-xs font-bold text-left flex items-center gap-4 transition-all",
+                                    "w-full px-6 py-4 text-xs font-medium text-left flex items-center gap-4 transition-all",
                                     activeTab === 'tests' ? "bg-[var(--brand-purple)]/5 text-[var(--brand-purple)]" : "text-gray-700 hover:bg-gray-50"
                                 )}
                             >
                                 <div className={cn("w-9 h-9 rounded-2xl flex items-center justify-center transition-colors", activeTab === 'tests' ? "bg-white shadow-sm text-[var(--brand-purple)]" : "bg-gray-100 text-gray-400")}>
                                     <BookOpen size={18} strokeWidth={2.5} />
                                 </div>
-                                <span className="font-black uppercase tracking-tight">Configure Tests</span>
+                                <span className="font-semibold uppercase tracking-tight">Configure Tests</span>
                             </button>
                             <button
                                 onClick={() => { setActiveTab('scales'); setShowConfigMenu(false); }}
                                 className={cn(
-                                    "w-full px-6 py-4 text-xs font-bold text-left flex items-center gap-4 transition-all",
+                                    "w-full px-6 py-4 text-xs font-medium text-left flex items-center gap-4 transition-all",
                                     activeTab === 'scales' ? "bg-[var(--brand-purple)]/5 text-[var(--brand-purple)]" : "text-gray-700 hover:bg-gray-50"
                                 )}
                             >
                                 <div className={cn("w-9 h-9 rounded-2xl flex items-center justify-center transition-colors", activeTab === 'scales' ? "bg-white shadow-sm text-[var(--brand-purple)]" : "bg-gray-100 text-gray-400")}>
                                     <PenTool size={18} strokeWidth={2.5} />
                                 </div>
-                                <span className="font-black uppercase tracking-tight">Performance Scales</span>
+                                <span className="font-semibold uppercase tracking-tight">Performance Scales</span>
                             </button>
                         </div>
                     )}

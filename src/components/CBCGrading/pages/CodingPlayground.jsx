@@ -48,7 +48,7 @@ const CodingPlayground = () => {
                         <Terminal size={24} />
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold text-gray-800">Coding & Robotics Playground</h1>
+                        <h1 className="text-xl font-medium text-gray-800">Coding & Robotics Playground</h1>
                         <p className="text-sm text-gray-500">Practice Python, Web Development, and Virtual Robotics</p>
                     </div>
                 </div>
@@ -68,7 +68,7 @@ const CodingPlayground = () => {
                     <button
                         onClick={handleRun}
                         disabled={isRunning}
-                        className="flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-bold shadow-sm"
+                        className="flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium shadow-sm"
                     >
                         {isRunning ? (
                             <RotateCcw className="animate-spin" size={18} />

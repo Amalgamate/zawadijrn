@@ -139,12 +139,12 @@ const PerformanceManager = () => {
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Performance Management</h1>
+                    <h1 className="text-2xl font-medium text-gray-900">Performance Management</h1>
                     <p className="text-gray-500">Track staff evaluations, KRAs, and professional growth.</p>
                 </div>
                 <button
                     onClick={() => { resetForm(); setShowModal(true); }}
-                    className="flex items-center gap-2 px-4 py-2 bg-brand-teal text-white rounded-xl hover:bg-brand-teal/90 transition-all font-bold shadow-lg shadow-brand-teal/20"
+                    className="flex items-center gap-2 px-4 py-2 bg-brand-teal text-white rounded-xl hover:bg-brand-teal/90 transition-all font-medium shadow-lg shadow-brand-teal/20"
                 >
                     <Plus size={18} />
                     New Evaluation
@@ -156,7 +156,7 @@ const PerformanceManager = () => {
                 <div className="bg-brand-purple p-6 rounded-2xl shadow-sm text-white relative overflow-hidden group">
                     <Award className="absolute -right-4 -bottom-4 w-32 h-32 opacity-10 group-hover:scale-110 transition-transform duration-500" />
                     <h3 className="text-lg font-medium opacity-80">Average Performance</h3>
-                    <p className="text-3xl font-bold mt-2">{avgRating} / 5.0</p>
+                    <p className="text-3xl font-medium mt-2">{avgRating} / 5.0</p>
                     <div className="mt-4 flex items-center gap-2 text-sm bg-white/20 w-fit px-2 py-1 rounded-lg">
                         <TrendingUp size={14} />
                         <span>{reviews.length} review{reviews.length !== 1 ? 's' : ''} recorded</span>
@@ -168,7 +168,7 @@ const PerformanceManager = () => {
                     </div>
                     <div>
                         <h3 className="text-sm font-medium text-gray-500">Goal Completion</h3>
-                        <p className="text-2xl font-bold text-gray-900">{totalGoals > 0 ? `${goalCompletion}%` : '—'}</p>
+                        <p className="text-2xl font-medium text-gray-900">{totalGoals > 0 ? `${goalCompletion}%` : '—'}</p>
                     </div>
                 </div>
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
@@ -177,7 +177,7 @@ const PerformanceManager = () => {
                     </div>
                     <div>
                         <h3 className="text-sm font-medium text-gray-500">Reviews Completed</h3>
-                        <p className="text-2xl font-bold text-gray-900">{reviews.length}</p>
+                        <p className="text-2xl font-medium text-gray-900">{reviews.length}</p>
                     </div>
                 </div>
             </div>
@@ -211,35 +211,35 @@ const PerformanceManager = () => {
                     <div key={review.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all group">
                         <div className="flex justify-between items-start mb-4">
                             <div className="flex items-center gap-3">
-                                <div className="w-12 h-12 rounded-full bg-brand-teal/10 flex items-center justify-center font-bold text-brand-teal">
+                                <div className="w-12 h-12 rounded-full bg-brand-teal/10 flex items-center justify-center font-medium text-brand-teal">
                                     {review.user.firstName[0]}{review.user.lastName[0]}
                                 </div>
                                 <div>
-                                    <h4 className="font-bold text-gray-900">{review.user.firstName} {review.user.lastName}</h4>
+                                    <h4 className="font-medium text-gray-900">{review.user.firstName} {review.user.lastName}</h4>
                                     <p className="text-xs text-gray-500">{review.user.role.replace('_', ' ')}</p>
                                 </div>
                             </div>
                             <div className="text-right">
-                                <div className="flex items-center gap-1 text-amber-500 font-bold text-lg">
+                                <div className="flex items-center gap-1 text-amber-500 font-medium text-lg">
                                     <Star size={18} fill="currentColor" />
                                     {Number(review.overallRating).toFixed(1)}
                                 </div>
-                                <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Overall Score</p>
+                                <p className="text-[10px] text-gray-400 uppercase font-medium tracking-wider">Overall Score</p>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-3 gap-2 mb-4">
                             <div className="bg-gray-50 p-2 rounded-xl text-center">
-                                <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Technical</p>
-                                <p className="font-bold text-gray-900">{review.technicalRating}/5</p>
+                                <p className="text-[10px] text-gray-500 font-medium uppercase mb-1">Technical</p>
+                                <p className="font-medium text-gray-900">{review.technicalRating}/5</p>
                             </div>
                             <div className="bg-gray-50 p-2 rounded-xl text-center">
-                                <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Behavior</p>
-                                <p className="font-bold text-gray-900">{review.behavioralRating}/5</p>
+                                <p className="text-[10px] text-gray-500 font-medium uppercase mb-1">Behavior</p>
+                                <p className="font-medium text-gray-900">{review.behavioralRating}/5</p>
                             </div>
                             <div className="bg-gray-50 p-2 rounded-xl text-center">
-                                <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Collab</p>
-                                <p className="font-bold text-gray-900">{review.collaborationRating}/5</p>
+                                <p className="text-[10px] text-gray-500 font-medium uppercase mb-1">Collab</p>
+                                <p className="font-medium text-gray-900">{review.collaborationRating}/5</p>
                             </div>
                         </div>
 
@@ -270,7 +270,7 @@ const PerformanceManager = () => {
                                     });
                                     setShowModal(true);
                                 }}
-                                className="text-brand-teal hover:underline text-sm font-bold flex items-center gap-1"
+                                className="text-brand-teal hover:underline text-sm font-medium flex items-center gap-1"
                             >
                                 Details <ChevronRight size={16} />
                             </button>
@@ -284,7 +284,7 @@ const PerformanceManager = () => {
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in duration-200">
                         <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-                            <h2 className="text-xl font-bold text-gray-900">
+                            <h2 className="text-xl font-medium text-gray-900">
                                 {selectedReview ? 'Update Performance Review' : 'Create Performance Review'}
                             </h2>
                             <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400">
@@ -295,7 +295,7 @@ const PerformanceManager = () => {
                         <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-6 space-y-6">
                             {/* Staff Selection */}
                             <div className="space-y-2">
-                                <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                                     <User size={16} /> Select Staff Member
                                 </label>
                                 <select
@@ -314,7 +314,7 @@ const PerformanceManager = () => {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <label className="text-sm font-bold text-gray-700">Period Start</label>
+                                    <label className="text-sm font-medium text-gray-700">Period Start</label>
                                     <input
                                         type="date"
                                         required
@@ -324,7 +324,7 @@ const PerformanceManager = () => {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-sm font-bold text-gray-700">Period End</label>
+                                    <label className="text-sm font-medium text-gray-700">Period End</label>
                                     <input
                                         type="date"
                                         required
@@ -336,7 +336,7 @@ const PerformanceManager = () => {
                             </div>
 
                             <div className="space-y-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                                <h3 className="font-bold text-gray-900 text-sm uppercase tracking-wider mb-2">Performance Metrics</h3>
+                                <h3 className="font-medium text-gray-900 text-sm uppercase tracking-wider mb-2">Performance Metrics</h3>
                                 <div className="flex justify-between items-center bg-white p-3 rounded-xl">
                                     <span className="text-sm font-medium text-gray-700">Technical Skills</span>
                                     <RatingStars
@@ -361,7 +361,7 @@ const PerformanceManager = () => {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-bold text-gray-700">KRAs & Goals</label>
+                                <label className="text-sm font-medium text-gray-700">KRAs & Goals</label>
                                 <div className="space-y-3">
                                     {formData.goals.map((goal) => (
                                         <div key={goal.id} className="flex gap-2">
@@ -384,7 +384,7 @@ const PerformanceManager = () => {
                                     <button
                                         type="button"
                                         onClick={addGoal}
-                                        className="text-brand-teal text-sm font-bold flex items-center gap-1 hover:underline"
+                                        className="text-brand-teal text-sm font-medium flex items-center gap-1 hover:underline"
                                     >
                                         <Plus size={16} /> Add Goal
                                     </button>
@@ -392,7 +392,7 @@ const PerformanceManager = () => {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-bold text-gray-700">Review Comments</label>
+                                <label className="text-sm font-medium text-gray-700">Review Comments</label>
                                 <textarea
                                     className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-brand-teal/20 min-h-[100px]"
                                     placeholder="Provide detailed feedback on performance..."
@@ -406,13 +406,13 @@ const PerformanceManager = () => {
                             <button
                                 type="button"
                                 onClick={() => setShowModal(false)}
-                                className="flex-1 py-3 bg-white border border-gray-200 text-gray-700 rounded-2xl font-bold hover:bg-gray-100 transition-all"
+                                className="flex-1 py-3 bg-white border border-gray-200 text-gray-700 rounded-2xl font-medium hover:bg-gray-100 transition-all"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleSave}
-                                className="flex-1 py-3 bg-brand-teal text-white rounded-2xl font-bold hover:bg-brand-teal/90 transition-all shadow-lg shadow-brand-teal/20 flex items-center justify-center gap-2"
+                                className="flex-1 py-3 bg-brand-teal text-white rounded-2xl font-medium hover:bg-brand-teal/90 transition-all shadow-lg shadow-brand-teal/20 flex items-center justify-center gap-2"
                             >
                                 <Save size={18} />
                                 {selectedReview ? 'Update Review' : 'Save Review'}

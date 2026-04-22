@@ -9,7 +9,7 @@ const gradeLabel = (g) => {
 };
 
 const Pill = ({ children, className = '' }) => (
-  <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-black uppercase tracking-widest ${className}`}>
+  <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest ${className}`}>
     {children}
   </span>
 );
@@ -75,7 +75,7 @@ const SubjectManagement = () => {
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-black text-gray-900">Subject Catalog</h1>
+            <h1 className="text-2xl font-semibold text-gray-900">Subject Catalog</h1>
             <Pill className="bg-indigo-50 text-indigo-800 border-indigo-200">Secondary</Pill>
           </div>
           <p className="mt-1 text-sm font-medium text-gray-600">
@@ -85,7 +85,7 @@ const SubjectManagement = () => {
         <button
           type="button"
           onClick={load}
-          className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border bg-white text-xs font-black text-gray-700 hover:bg-gray-50"
+          className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border bg-white text-xs font-semibold text-gray-700 hover:bg-gray-50"
         >
           <RefreshCw size={16} />
           Refresh
@@ -93,17 +93,17 @@ const SubjectManagement = () => {
       </div>
 
       <div className="rounded-2xl border bg-white p-4">
-        <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-gray-500">
+        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gray-500">
           <Filter size={16} />
           Filters
         </div>
         <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
-          <label className="text-xs font-black uppercase tracking-widest text-gray-600">
+          <label className="text-xs font-semibold uppercase tracking-widest text-gray-600">
             Grade
             <select
               value={gradeLevel}
               onChange={(e) => setGradeLevel(e.target.value)}
-              className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-900"
+              className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-900"
             >
               <option value="">All</option>
               {filters.grades.map((g) => (
@@ -114,12 +114,12 @@ const SubjectManagement = () => {
             </select>
           </label>
 
-          <label className="text-xs font-black uppercase tracking-widest text-gray-600">
+          <label className="text-xs font-semibold uppercase tracking-widest text-gray-600">
             Pathway
             <select
               value={pathway}
               onChange={(e) => setPathway(e.target.value)}
-              className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-900"
+              className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-900"
             >
               <option value="">All</option>
               {filters.pathways.map((p) => (
@@ -130,12 +130,12 @@ const SubjectManagement = () => {
             </select>
           </label>
 
-          <label className="text-xs font-black uppercase tracking-widest text-gray-600">
+          <label className="text-xs font-semibold uppercase tracking-widest text-gray-600">
             Category
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-900"
+              className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-900"
             >
               <option value="">All</option>
               {filters.categories.map((c) => (
@@ -151,18 +151,18 @@ const SubjectManagement = () => {
       {loading ? (
         <div className="rounded-2xl border bg-white p-6 text-sm font-medium text-gray-600">Loading…</div>
       ) : error ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm font-bold text-red-700">{error}</div>
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm font-medium text-red-700">{error}</div>
       ) : (
         <div className="rounded-2xl border bg-white overflow-hidden">
-          <div className="px-4 py-3 bg-gray-50 border-b text-xs font-black uppercase tracking-widest text-gray-500">
+          <div className="px-4 py-3 bg-gray-50 border-b text-xs font-semibold uppercase tracking-widest text-gray-500">
             {shown.length} learning areas
           </div>
           <div className="divide-y">
             {shown.map((r) => (
               <div key={r.id} className="px-4 py-3 flex items-start justify-between gap-3">
                 <div>
-                  <div className="font-black text-gray-900">{r.name}</div>
-                  <div className="mt-1 text-xs font-bold text-gray-600">
+                  <div className="font-semibold text-gray-900">{r.name}</div>
+                  <div className="mt-1 text-xs font-medium text-gray-600">
                     {gradeLabel(r.gradeLevel)}
                     {r.isCore ? ' • Core' : ''}
                   </div>

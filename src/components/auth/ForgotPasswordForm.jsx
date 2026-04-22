@@ -65,19 +65,19 @@ export default function ForgotPasswordForm({ onSwitchToLogin, brandingSettings }
                 <CheckCircle className="text-green-500" size={40} />
               </div>
             </div>
-            <CardTitle className="text-2xl font-bold text-gray-900">Check Your Email</CardTitle>
-            <CardDescription className="text-gray-500 font-bold uppercase tracking-tight text-xs mt-1">
+            <CardTitle className="text-2xl font-medium text-gray-900">Check Your Email</CardTitle>
+            <CardDescription className="text-gray-500 font-medium uppercase tracking-tight text-xs mt-1">
               Instructions sent to your inbox
             </CardDescription>
           </CardHeader>
           <CardContent className="p-8 space-y-8 text-center">
             <p className="text-gray-600 text-sm leading-relaxed">
               We've sent a password reset link to<br />
-              <strong className="text-brand-purple font-black">{email}</strong>
+              <strong className="text-brand-purple font-semibold">{email}</strong>
             </p>
 
             <div className="bg-gray-50/50 border border-gray-100 rounded-xl p-4 text-left">
-              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider leading-relaxed">
+              <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider leading-relaxed">
                 💡 Tip: The link will expire in 1 hour. Check your spam folder if you don't see the email.
               </p>
             </div>
@@ -86,14 +86,14 @@ export default function ForgotPasswordForm({ onSwitchToLogin, brandingSettings }
               <Button
                 variant="outline"
                 onClick={() => setEmailSent(false)}
-                className="w-full h-12 border-gray-200 hover:bg-gray-50 font-bold text-gray-700"
+                className="w-full h-12 border-gray-200 hover:bg-gray-50 font-medium text-gray-700"
               >
                 Try Another Email
               </Button>
               <Button
                 variant="ghost"
                 onClick={onSwitchToLogin}
-                className="w-full h-12 flex items-center justify-center gap-2 text-brand-purple hover:text-brand-purple hover:bg-brand-purple/5 font-bold"
+                className="w-full h-12 flex items-center justify-center gap-2 text-brand-purple hover:text-brand-purple hover:bg-brand-purple/5 font-medium"
               >
                 <ArrowLeft size={18} />
                 Back to Sign In
@@ -127,12 +127,12 @@ export default function ForgotPasswordForm({ onSwitchToLogin, brandingSettings }
                 onError={(e) => { e.target.style.display = 'none'; }}
               />
             )}
-            <CardTitle className="text-xl font-black tracking-tighter text-gray-900 uppercase">
+            <CardTitle className="text-xl font-semibold tracking-tighter text-gray-900 uppercase">
               {brandingSettings?.schoolName || 'ZAWADI JUNIOR ACADEMY'}
             </CardTitle>
           </div>
-          <CardTitle className="text-2xl font-bold text-gray-900 mt-2">Forgot Password?</CardTitle>
-          <CardDescription className="text-gray-500 font-bold uppercase tracking-tight text-xs mt-1">
+          <CardTitle className="text-2xl font-medium text-gray-900 mt-2">Forgot Password?</CardTitle>
+          <CardDescription className="text-gray-500 font-medium uppercase tracking-tight text-xs mt-1">
             We'll help you get back into your account
           </CardDescription>
         </CardHeader>
@@ -140,7 +140,7 @@ export default function ForgotPasswordForm({ onSwitchToLogin, brandingSettings }
         <CardContent className="p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-gray-700 font-bold ml-1">Email Address</Label>
+              <Label htmlFor="email" className="text-gray-700 font-medium ml-1">Email Address</Label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-brand-purple transition-colors">
                   <Mail size={18} />
@@ -161,7 +161,7 @@ export default function ForgotPasswordForm({ onSwitchToLogin, brandingSettings }
               {error && (
                 <div className="flex items-center gap-1.5 mt-1.5 ml-1 text-red-600 animate-in fade-in slide-in-from-top-1">
                   <AlertCircle size={14} />
-                  <span className="text-[10px] font-black uppercase tracking-tight">{error}</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-tight">{error}</span>
                 </div>
               )}
             </div>
@@ -169,7 +169,7 @@ export default function ForgotPasswordForm({ onSwitchToLogin, brandingSettings }
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full h-12 text-sm font-black uppercase tracking-[0.2em] shadow-xl transition-all duration-300 transform active:scale-[0.98] bg-brand-purple hover:bg-brand-purple/90"
+              className="w-full h-12 text-sm font-semibold uppercase tracking-[0.2em] shadow-xl transition-all duration-300 transform active:scale-[0.98] bg-brand-purple hover:bg-brand-purple/90"
             >
               {isLoading ? (
                 <div className="flex items-center gap-3">
@@ -186,7 +186,7 @@ export default function ForgotPasswordForm({ onSwitchToLogin, brandingSettings }
                 variant="ghost"
                 type="button"
                 onClick={onSwitchToLogin}
-                className="inline-flex items-center gap-2 text-gray-500 hover:text-brand-purple hover:bg-brand-purple/5 font-bold transition-all"
+                className="inline-flex items-center gap-2 text-gray-500 hover:text-brand-purple hover:bg-brand-purple/5 font-medium transition-all"
               >
                 <ArrowLeft size={18} />
                 Back to Sign In
@@ -196,11 +196,11 @@ export default function ForgotPasswordForm({ onSwitchToLogin, brandingSettings }
 
           {/* Security Badges */}
           <div className="mt-8 pt-6 border-t border-gray-100/50 grid grid-cols-2 gap-4">
-            <div className="flex items-center gap-2 text-[10px] text-gray-400 font-bold uppercase tracking-tighter">
+            <div className="flex items-center gap-2 text-[10px] text-gray-400 font-medium uppercase tracking-tighter">
               <Shield size={14} className="text-brand-purple/50" />
               Secure Reset
             </div>
-            <div className="flex items-center gap-2 text-[10px] text-gray-400 font-bold uppercase tracking-tighter">
+            <div className="flex items-center gap-2 text-[10px] text-gray-400 font-medium uppercase tracking-tighter">
               <Lock size={14} className="text-brand-purple/50" />
               Encrypted flow
             </div>

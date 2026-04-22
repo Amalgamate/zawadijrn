@@ -31,7 +31,7 @@ const STATUS_META = {
 function StatusBadge({ status = 'UNKNOWN' }) {
   const meta = STATUS_META[status] || STATUS_META.UNKNOWN;
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black ${meta.color}`}>
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ${meta.color}`}>
       <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${meta.dot} ${meta.pulse ? 'animate-pulse' : ''}`} />
       {meta.label}
     </span>
@@ -52,8 +52,8 @@ function KpiCard({ icon: Icon, label, value, color = 'blue', sub }) {
         <Icon size={20} />
       </div>
       <div>
-        <p className="text-2xl font-black text-gray-900 leading-none">{value}</p>
-        <p className="text-xs font-bold text-gray-500 mt-0.5">{label}</p>
+        <p className="text-2xl font-semibold text-gray-900 leading-none">{value}</p>
+        <p className="text-xs font-medium text-gray-500 mt-0.5">{label}</p>
         {sub && <p className="text-[11px] text-gray-400">{sub}</p>}
       </div>
     </div>
@@ -77,11 +77,11 @@ function VehicleCard({ route, onConfigureGPS }) {
             <Bus size={18} />
           </div>
           <div className="min-w-0">
-            <p className="font-black text-gray-900 text-sm truncate">{route.name}</p>
+            <p className="font-semibold text-gray-900 text-sm truncate">{route.name}</p>
             {route.vehicle ? (
-              <p className="text-xs text-gray-400 font-bold truncate">{route.vehicle.registrationNumber}</p>
+              <p className="text-xs text-gray-400 font-medium truncate">{route.vehicle.registrationNumber}</p>
             ) : (
-              <p className="text-xs text-amber-500 font-bold">No vehicle assigned</p>
+              <p className="text-xs text-amber-500 font-medium">No vehicle assigned</p>
             )}
           </div>
         </div>
@@ -94,12 +94,12 @@ function VehicleCard({ route, onConfigureGPS }) {
         {route.vehicle?.driverName ? (
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-              <span className="text-[11px] font-black text-gray-500">
+              <span className="text-[11px] font-semibold text-gray-500">
                 {route.vehicle.driverName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
               </span>
             </div>
             <div>
-              <p className="text-xs font-black text-gray-800">{route.vehicle.driverName}</p>
+              <p className="text-xs font-semibold text-gray-800">{route.vehicle.driverName}</p>
               {route.vehicle.driverPhone && (
                 <p className="text-[11px] text-gray-400 flex items-center gap-1">
                   <Phone size={10} />
@@ -114,12 +114,12 @@ function VehicleCard({ route, onConfigureGPS }) {
 
         {/* Meta row */}
         <div className="flex items-center gap-4 text-xs text-gray-500">
-          <span className="flex items-center gap-1.5 font-bold">
+          <span className="flex items-center gap-1.5 font-medium">
             <Users size={12} className="text-gray-400" />
             {passengerCount} student{passengerCount !== 1 ? 's' : ''}
           </span>
           {route.vehicle?.capacity && (
-            <span className="flex items-center gap-1.5 font-bold">
+            <span className="flex items-center gap-1.5 font-medium">
               <Bus size={12} className="text-gray-400" />
               {route.vehicle.capacity} seats
             </span>
@@ -139,13 +139,13 @@ function VehicleCard({ route, onConfigureGPS }) {
           {gpsStatus === 'UNKNOWN' || gpsStatus === 'OFFLINE' ? (
             <div className="flex items-center gap-2 text-amber-600">
               <WifiOff size={13} />
-              <p className="text-[11px] font-black">GPS unit not configured for this vehicle.</p>
+              <p className="text-[11px] font-semibold">GPS unit not configured for this vehicle.</p>
             </div>
           ) : (
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-gray-500">
                 <MapPin size={12} className="text-blue-400 flex-shrink-0" />
-                <p className="text-[11px] font-bold">Last known: Near {route.name.split('–')[0]?.trim() || 'pickup zone'}</p>
+                <p className="text-[11px] font-medium">Last known: Near {route.name.split('–')[0]?.trim() || 'pickup zone'}</p>
               </div>
               <div className="flex items-center gap-4 mt-1">
                 <span className="text-[10px] text-gray-400 flex items-center gap-1">
@@ -163,7 +163,7 @@ function VehicleCard({ route, onConfigureGPS }) {
         {(!route.vehicle || gpsStatus === 'UNKNOWN' || gpsStatus === 'OFFLINE') && (
           <button
             onClick={onConfigureGPS}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-dashed border-blue-200 text-blue-500 hover:border-blue-400 hover:bg-blue-50 transition text-xs font-black"
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-dashed border-blue-200 text-blue-500 hover:border-blue-400 hover:bg-blue-50 transition text-xs font-semibold"
           >
             <Settings size={13} />
             Configure GPS Integration
@@ -191,7 +191,7 @@ function GPSConfigModal({ onClose }) {
               <Navigation size={18} />
             </div>
             <div>
-              <h2 className="font-black text-base">GPS Integration Setup</h2>
+              <h2 className="font-semibold text-base">GPS Integration Setup</h2>
               <p className="text-blue-100 text-xs mt-0.5">Connect a provider to enable live tracking</p>
             </div>
           </div>
@@ -206,17 +206,17 @@ function GPSConfigModal({ onClose }) {
             {providers.map(p => (
               <div key={p.id} className="flex items-center justify-between p-4 bg-gray-50 border border-gray-100 rounded-xl">
                 <div>
-                  <p className="font-black text-sm text-gray-800">{p.name}</p>
+                  <p className="font-semibold text-sm text-gray-800">{p.name}</p>
                   <p className="text-xs text-gray-400">{p.desc}</p>
                 </div>
-                <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-amber-100 text-amber-600 ml-3 flex-shrink-0">
+                <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-600 ml-3 flex-shrink-0">
                   Coming Soon
                 </span>
               </div>
             ))}
           </div>
           <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-700">
-            <p className="font-black mb-1">📍 What you can do now</p>
+            <p className="font-semibold mb-1">📍 What you can do now</p>
             <ul className="space-y-1 text-xs font-medium list-disc list-inside text-blue-600">
               <li>Assign vehicles to routes in <strong>Bus Routes & Roster</strong></li>
               <li>Manage drivers in <strong>Driver Management</strong></li>
@@ -226,7 +226,7 @@ function GPSConfigModal({ onClose }) {
         </div>
         <div className="px-6 pb-5 flex justify-end">
           <button onClick={onClose}
-            className="px-6 py-2.5 bg-gray-900 text-white rounded-xl font-black text-sm hover:bg-black transition shadow-lg">
+            className="px-6 py-2.5 bg-gray-900 text-white rounded-xl font-semibold text-sm hover:bg-black transition shadow-lg">
             Close
           </button>
         </div>
@@ -277,9 +277,9 @@ const GPSTracking = () => {
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">Transport</span>
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">Transport</span>
           </div>
-          <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+          <h1 className="text-2xl md:text-3xl font-semibold text-gray-900 tracking-tight flex items-center gap-3">
             <Navigation className="text-blue-600" size={28} />
             GPS Tracking
           </h1>
@@ -291,14 +291,14 @@ const GPSTracking = () => {
           <button
             onClick={load}
             disabled={loading}
-            className="flex items-center gap-2 px-3.5 py-2 text-sm font-bold text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition disabled:opacity-50"
+            className="flex items-center gap-2 px-3.5 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition disabled:opacity-50"
           >
             {loading ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
             Refresh
           </button>
           <button
             onClick={() => setShowConfig(true)}
-            className="flex items-center gap-2 px-3.5 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition shadow-lg shadow-blue-600/20"
+            className="flex items-center gap-2 px-3.5 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition shadow-lg shadow-blue-600/20"
           >
             <Settings size={14} />
             Configure GPS
@@ -312,7 +312,7 @@ const GPSTracking = () => {
           <AlertTriangle size={16} className="text-amber-600" />
         </div>
         <div>
-          <p className="font-black text-amber-800 text-sm">GPS integration not yet configured</p>
+          <p className="font-semibold text-amber-800 text-sm">GPS integration not yet configured</p>
           <p className="text-amber-600 text-xs mt-0.5 font-medium">
             Vehicle cards below show route data from your fleet. Connect a GPS provider to enable
             live location tracking, speed, ETA and geofence alerts.
@@ -329,7 +329,7 @@ const GPSTracking = () => {
       </div>
 
       {/* Last refresh */}
-      <div className="flex items-center gap-2 text-xs text-gray-400 font-bold -mt-2">
+      <div className="flex items-center gap-2 text-xs text-gray-400 font-medium -mt-2">
         <Clock size={12} />
         Last refreshed: {lastRefresh.toLocaleTimeString()}
       </div>
@@ -344,7 +344,7 @@ const GPSTracking = () => {
       ) : routes.length === 0 ? (
         <div className="bg-white rounded-2xl border-2 border-dashed border-gray-200 p-16 text-center">
           <Bus size={40} className="mx-auto text-gray-200 mb-3" />
-          <p className="font-black text-gray-500 text-base">No routes configured</p>
+          <p className="font-semibold text-gray-500 text-base">No routes configured</p>
           <p className="text-gray-400 text-sm mt-1">Add routes in <strong>Bus Routes & Roster</strong> first.</p>
         </div>
       ) : (
@@ -352,7 +352,7 @@ const GPSTracking = () => {
           {/* Live section header */}
           <div className="flex items-center gap-2">
             <div className="flex-1 h-px bg-gray-100" />
-            <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-gray-400">
+            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-gray-400">
               <Wifi size={12} /> {routes.length} Vehicle{routes.length !== 1 ? 's' : ''} — Awaiting GPS Signal
             </div>
             <div className="flex-1 h-px bg-gray-100" />
@@ -373,7 +373,7 @@ const GPSTracking = () => {
             <Navigation size={16} className="text-indigo-500" />
           </div>
           <div>
-            <p className="font-black text-gray-800 text-sm">How live GPS tracking works</p>
+            <p className="font-semibold text-gray-800 text-sm">How live GPS tracking works</p>
             <p className="text-xs text-gray-400">What each step will look like once integration is active</p>
           </div>
         </div>
@@ -386,12 +386,12 @@ const GPSTracking = () => {
           ].map(item => (
             <div key={item.step} className={`p-4 rounded-xl border ${item.done ? 'bg-emerald-50 border-emerald-100' : 'bg-gray-50 border-gray-100'}`}>
               <div className="flex items-center gap-2 mb-2">
-                <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${item.done ? 'bg-emerald-200 text-emerald-800' : 'bg-gray-200 text-gray-600'}`}>
+                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${item.done ? 'bg-emerald-200 text-emerald-800' : 'bg-gray-200 text-gray-600'}`}>
                   {item.step}
                 </span>
                 {item.done && <CheckCircle2 size={13} className="text-emerald-500" />}
               </div>
-              <p className={`text-xs font-black mb-1 ${item.done ? 'text-emerald-700' : 'text-gray-700'}`}>{item.title}</p>
+              <p className={`text-xs font-semibold mb-1 ${item.done ? 'text-emerald-700' : 'text-gray-700'}`}>{item.title}</p>
               <p className="text-[11px] text-gray-400 leading-relaxed">{item.desc}</p>
             </div>
           ))}

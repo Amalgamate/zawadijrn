@@ -60,7 +60,7 @@ const AnimatedDoughnutChart = ({
         
         {/* Center text */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-2xl font-bold text-gray-900">{progress}%</span>
+          <span className="text-2xl font-medium text-gray-900">{progress}%</span>
         </div>
       </div>
       

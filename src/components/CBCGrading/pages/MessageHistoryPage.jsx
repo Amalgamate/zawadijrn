@@ -154,7 +154,7 @@ const MessageHistoryPage = () => {
                         <MessageSquare size={24} className="text-white" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold text-white">Message History</h1>
+                        <h1 className="text-2xl font-medium text-white">Message History</h1>
                         <p className="text-white/80 text-sm">Track all communications sent to parents and guardians</p>
                     </div>
                 </div>
@@ -162,7 +162,7 @@ const MessageHistoryPage = () => {
                     <Button
                         onClick={handleExportCSV}
                         disabled={logs.length === 0}
-                        className="bg-white text-brand-teal hover:bg-gray-100 font-bold gap-2"
+                        className="bg-white text-brand-teal hover:bg-gray-100 font-medium gap-2"
                     >
                         <Download size={18} />
                         Export CSV
@@ -192,7 +192,7 @@ const MessageHistoryPage = () => {
                         <CardContent className="p-4">
                             <div className="text-center">
                                 <p className="text-gray-600 text-sm mb-1">{label}</p>
-                                <p className={`text-3xl font-bold ${color}`}>{value}</p>
+                                <p className={`text-3xl font-medium ${color}`}>{value}</p>
                             </div>
                         </CardContent>
                     </Card>
@@ -203,7 +203,7 @@ const MessageHistoryPage = () => {
             <div className="px-6 py-4 bg-white border-b border-gray-200">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
                     <div className="space-y-1">
-                        <Label htmlFor="startDate" className="text-xs font-bold">From Date</Label>
+                        <Label htmlFor="startDate" className="text-xs font-medium">From Date</Label>
                         <Input
                             id="startDate"
                             type="date"
@@ -212,7 +212,7 @@ const MessageHistoryPage = () => {
                         />
                     </div>
                     <div className="space-y-1">
-                        <Label htmlFor="endDate" className="text-xs font-bold">To Date</Label>
+                        <Label htmlFor="endDate" className="text-xs font-medium">To Date</Label>
                         <Input
                             id="endDate"
                             type="date"
@@ -221,7 +221,7 @@ const MessageHistoryPage = () => {
                         />
                     </div>
                     <div className="space-y-1">
-                        <Label htmlFor="channel" className="text-xs font-bold">Channel</Label>
+                        <Label htmlFor="channel" className="text-xs font-medium">Channel</Label>
                         <select
                             id="channel"
                             value={filters.channel}
@@ -234,7 +234,7 @@ const MessageHistoryPage = () => {
                         </select>
                     </div>
                     <div className="space-y-1">
-                        <Label htmlFor="status" className="text-xs font-bold">Status</Label>
+                        <Label htmlFor="status" className="text-xs font-medium">Status</Label>
                         <select
                             id="status"
                             value={filters.status}
@@ -248,7 +248,7 @@ const MessageHistoryPage = () => {
                         </select>
                     </div>
                     <div className="space-y-1">
-                        <Label htmlFor="search" className="text-xs font-bold">Search</Label>
+                        <Label htmlFor="search" className="text-xs font-medium">Search</Label>
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                             <Input
@@ -296,11 +296,11 @@ const MessageHistoryPage = () => {
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     <div className="flex items-center gap-2">
-                                                        <div className="w-8 h-8 bg-brand-teal/10 rounded-full flex items-center justify-center text-brand-teal font-bold text-sm flex-shrink-0">
+                                                        <div className="w-8 h-8 bg-brand-teal/10 rounded-full flex items-center justify-center text-brand-teal font-medium text-sm flex-shrink-0">
                                                             {log.learner?.firstName?.charAt(0)?.toUpperCase() || 'L'}
                                                         </div>
                                                         <div>
-                                                            <p className="text-sm font-bold text-gray-800 whitespace-nowrap">
+                                                            <p className="text-sm font-medium text-gray-800 whitespace-nowrap">
                                                                 {log.learner?.firstName} {log.learner?.lastName}
                                                             </p>
                                                             <p className="text-xs text-gray-500">{log.learner?.admissionNumber || '—'}</p>
@@ -321,7 +321,7 @@ const MessageHistoryPage = () => {
                                                 <td className="px-4 py-3">
                                                     <div className={`flex items-center gap-1 ${className}`}>
                                                         <StatusIcon size={14} />
-                                                        <span className="text-xs font-bold">{label}</span>
+                                                        <span className="text-xs font-medium">{label}</span>
                                                     </div>
                                                 </td>
                                                 <td className="px-4 py-3 text-xs text-gray-700 whitespace-nowrap">
@@ -341,7 +341,7 @@ const MessageHistoryPage = () => {
                         {totalPages > 1 && (
                             <div className="bg-gray-50 border-t border-gray-200 px-6 py-4 flex items-center justify-between">
                                 <p className="text-sm text-gray-600">
-                                    Page <span className="font-bold">{page}</span> of <span className="font-bold">{totalPages}</span>
+                                    Page <span className="font-medium">{page}</span> of <span className="font-medium">{totalPages}</span>
                                 </p>
                                 <div className="flex gap-2">
                                     <Button
@@ -369,7 +369,7 @@ const MessageHistoryPage = () => {
                 ) : (
                     <div className="p-12 flex flex-col items-center justify-center">
                         <MessageSquare size={48} className="text-gray-300 mb-4" />
-                        <h3 className="text-lg font-bold text-gray-600">No Messages Found</h3>
+                        <h3 className="text-lg font-medium text-gray-600">No Messages Found</h3>
                         <p className="text-gray-400 text-sm mt-2">
                             {filters.startDate || filters.endDate || filters.channel !== 'all' || filters.status !== 'all' || filters.search
                                 ? 'No messages match your current filters — try adjusting the date range or clearing filters.'

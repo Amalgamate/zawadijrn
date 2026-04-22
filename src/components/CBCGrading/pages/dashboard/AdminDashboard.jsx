@@ -47,7 +47,7 @@ const MetricCard = ({ title, value, subtitle, icon: Icon, trend, trendValue, col
           <Icon size={20} className={`text-${color}`} />
         </div>
         {trendValue && (
-          <span className={`flex items-center text-[10px] font-black px-2 py-1 rounded-full ${trend === 'up'
+          <span className={`flex items-center text-[10px] font-semibold px-2 py-1 rounded-full ${trend === 'up'
             ? 'bg-emerald-50 text-emerald-600'
             : 'bg-rose-50 text-rose-600'
             }`}>
@@ -56,8 +56,8 @@ const MetricCard = ({ title, value, subtitle, icon: Icon, trend, trendValue, col
           </span>
         )}
       </div>
-      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{title}</p>
-      <h3 className="text-2xl font-black text-gray-900 mt-1">{value}</h3>
+      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">{title}</p>
+      <h3 className="text-2xl font-semibold text-gray-900 mt-1">{value}</h3>
       {subtitle && <p className="text-[10px] font-medium text-gray-500 mt-1 truncate opacity-70">{subtitle}</p>}
     </div>
   );
@@ -67,7 +67,7 @@ const MetricCard = ({ title, value, subtitle, icon: Icon, trend, trendValue, col
 const TabButton = ({ active, label, icon: Icon, onClick }) => (
   <button
     onClick={onClick}
-    className={`flex items-center gap-2 px-6 py-3 text-sm font-bold transition-all duration-300 border-b-2 relative ${active
+    className={`flex items-center gap-2 px-6 py-3 text-sm font-medium transition-all duration-300 border-b-2 relative ${active
       ? 'border-brand-purple text-brand-purple bg-brand-purple/10'
       : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-white/50'
       }`}
@@ -135,11 +135,11 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl max-w-md">
           <div className="text-3xl mb-3">⚡</div>
-          <h3 className="text-base font-black text-amber-900 mb-1">Dashboard is warming up</h3>
+          <h3 className="text-base font-semibold text-amber-900 mb-1">Dashboard is warming up</h3>
           <p className="text-xs text-amber-700 mb-4">{apiError}</p>
           <button
             onClick={() => loadMetrics(timeFilter)}
-            className="px-6 py-2 bg-brand-purple text-white text-xs font-black uppercase tracking-widest rounded-lg hover:bg-brand-purple/90 transition"
+            className="px-6 py-2 bg-brand-purple text-white text-xs font-semibold uppercase tracking-widest rounded-lg hover:bg-brand-purple/90 transition"
           >
             Retry Now
           </button>
@@ -203,7 +203,7 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
         subtitle: (
           <span className="flex items-center gap-1.5 whitespace-nowrap">
             <span>{stats.activeStudents} active</span>
-            <span className="text-pink-300 font-black text-[10px] border-l border-indigo-400/50 pl-1.5 opacity-90 drop-shadow-sm">
+            <span className="text-pink-300 font-semibold text-[10px] border-l border-indigo-400/50 pl-1.5 opacity-90 drop-shadow-sm">
               {stats.males} Male / {stats.females} Female
             </span>
           </span>
@@ -254,7 +254,7 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           {/* Daily Attendance Pie */}
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-5 hover:shadow-md transition-shadow">
-            <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest mb-4">Daily Attendance</h3>
+            <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-widest mb-4">Daily Attendance</h3>
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -284,9 +284,9 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
 
           {/* Assessment Progress */}
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-5 hover:shadow-md transition-shadow">
-            <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest mb-4 flex items-center justify-between">
+            <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-widest mb-4 flex items-center justify-between">
               Assessment Fulfillment
-              {stats.totalMissedExams > 0 && <span className="text-[9px] font-black uppercase text-rose-500 bg-rose-50 px-2 py-0.5 rounded">Action Req</span>}
+              {stats.totalMissedExams > 0 && <span className="text-[9px] font-semibold uppercase text-rose-500 bg-rose-50 px-2 py-0.5 rounded">Action Req</span>}
             </h3>
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
@@ -317,7 +317,7 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
 
           {/* Finance Overview Bar */}
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-5 hover:shadow-md transition-shadow">
-            <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest mb-4">Uncollected Balances</h3>
+            <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-widest mb-4">Uncollected Balances</h3>
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
                 {dynamicFinanceData.length > 0 ? (
@@ -343,7 +343,7 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
           <div className="xl:col-span-2 bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
               <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-widest">Recent Activity Log</h3>
-              <button className="text-xs font-bold text-brand-purple hover:underline">Download Audit</button>
+              <button className="text-xs font-medium text-brand-purple hover:underline">Download Audit</button>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left">
@@ -359,22 +359,22 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
                   {metrics?.recentActivity?.admissions?.slice(0, 5).map((student, idx) => (
                     <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
                       <td className="px-6 py-4 text-xs text-gray-500">{new Date(student.createdAt).toLocaleDateString()}</td>
-                      <td className="px-6 py-4 text-xs font-bold text-blue-600">Admission</td>
+                      <td className="px-6 py-4 text-xs font-medium text-blue-600">Admission</td>
                       <td className="px-6 py-4 text-xs font-semibold text-gray-700">New student {student.firstName} {student.lastName} enrolled</td>
-                      <td className="px-6 py-4 text-xs"><span className="px-2 py-0.5 bg-green-50 text-green-700 rounded-full font-bold uppercase tracking-widest text-[9px]">Verified</span></td>
+                      <td className="px-6 py-4 text-xs"><span className="px-2 py-0.5 bg-green-50 text-green-700 rounded-full font-medium uppercase tracking-widest text-[9px]">Verified</span></td>
                     </tr>
                   ))}
                   {metrics?.recentActivity?.assessments?.slice(0, 5).map((as, idx) => (
                     <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
                       <td className="px-6 py-4 text-xs text-gray-500">{new Date(as.createdAt).toLocaleDateString()}</td>
-                      <td className={`px-6 py-4 text-xs font-bold ${as.type === 'SUMMATIVE' ? 'text-brand-purple' : 'text-brand-teal'}`}>
+                      <td className={`px-6 py-4 text-xs font-medium ${as.type === 'SUMMATIVE' ? 'text-brand-purple' : 'text-brand-teal'}`}>
                         {as.type || 'Assessment'}
                       </td>
                       <td className="px-6 py-4 text-xs font-semibold text-gray-700">
                         {as.title} recorded for {as.learner?.firstName} {as.learner?.lastName}
                       </td>
                       <td className="px-6 py-4 text-xs">
-                        <span className={`px-2 py-0.5 ${as.type === 'SUMMATIVE' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'} rounded-full font-bold uppercase tracking-widest text-[9px]`}>
+                        <span className={`px-2 py-0.5 ${as.type === 'SUMMATIVE' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'} rounded-full font-medium uppercase tracking-widest text-[9px]`}>
                           {as.type === 'SUMMATIVE' ? 'Graded' : 'Calculated'}
                         </span>
                       </td>
@@ -391,7 +391,7 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
           {/* Quick Actions Panel */}
           <div className="space-y-4">
             <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-5">
-              <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-4">Operations Hub</h3>
+              <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-widest mb-4">Operations Hub</h3>
               <div className="grid grid-cols-1 gap-2">
                 {[
                   { label: 'Register New Student', icon: Users, page: 'learners-admissions' },
@@ -406,7 +406,7 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
                   >
                     <div className="flex items-center gap-3">
                       <action.icon size={18} className="text-gray-400 group-hover:text-brand-purple" />
-                      <span className="text-xs font-bold text-gray-700 group-hover:text-gray-900">{action.label}</span>
+                      <span className="text-xs font-medium text-gray-700 group-hover:text-gray-900">{action.label}</span>
                     </div>
                     <ChevronRight size={14} className="text-gray-300 group-hover:text-brand-purple" />
                   </button>
@@ -416,15 +416,15 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
 
             {/* Critical Alerts */}
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-5">
-              <h3 className="text-xs font-black text-amber-900 uppercase tracking-widest mb-3 flex items-center gap-2">
+              <h3 className="text-xs font-semibold text-amber-900 uppercase tracking-widest mb-3 flex items-center gap-2">
                 <AlertCircle size={14} /> System Alerts
               </h3>
               <div className="space-y-3">
                 <div className="flex gap-2">
                   <div className="w-1 h-8 bg-amber-400 rounded-full" />
                   <div>
-                    <p className="text-[11px] font-bold text-amber-900">{metrics?.stats?.totalPendingAssessments || 0} Pending Assessments</p>
-                    <p className="text-[9px] text-amber-700 uppercase font-black">Requires Head Teacher Review</p>
+                    <p className="text-[11px] font-medium text-amber-900">{metrics?.stats?.totalPendingAssessments || 0} Pending Assessments</p>
+                    <p className="text-[9px] text-amber-700 uppercase font-semibold">Requires Head Teacher Review</p>
                   </div>
                 </div>
               </div>
@@ -444,9 +444,9 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
       </div>
 
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-6">
-         <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-4 flex items-center justify-between">
+         <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-widest mb-4 flex items-center justify-between">
            Financial Collection Risks
-           {stats.feePending > 0 && <span className="text-[9px] font-black uppercase text-rose-500 bg-rose-50 px-2 py-0.5 rounded border border-rose-100">Action Required</span>}
+           {stats.feePending > 0 && <span className="text-[9px] font-semibold uppercase text-rose-500 bg-rose-50 px-2 py-0.5 rounded border border-rose-100">Action Required</span>}
          </h3>
          <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -469,10 +469,10 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
 
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
         <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-          <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Revenue Breakdown by Stream</h3>
+          <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-widest">Revenue Breakdown by Stream</h3>
           <div className="flex gap-2">
-            <button className="px-3 py-1 bg-white border border-gray-200 rounded text-[10px] font-bold uppercase hover:bg-gray-50 flex items-center gap-1"><Download size={12} /> XLS</button>
-            <button className="px-3 py-1 bg-white border border-gray-200 rounded text-[10px] font-bold uppercase hover:bg-gray-50 flex items-center gap-1"><FileText size={12} /> PDF</button>
+            <button className="px-3 py-1 bg-white border border-gray-200 rounded text-[10px] font-medium uppercase hover:bg-gray-50 flex items-center gap-1"><Download size={12} /> XLS</button>
+            <button className="px-3 py-1 bg-white border border-gray-200 rounded text-[10px] font-medium uppercase hover:bg-gray-50 flex items-center gap-1"><FileText size={12} /> PDF</button>
           </div>
         </div>
         <div className="p-0">
@@ -516,7 +516,7 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
         {/* Top Classes Table */}
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-            <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Ranking by Academic Average</h3>
+            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-widest">Ranking by Academic Average</h3>
           </div>
           <table className="w-full text-left">
             <thead className="bg-[color:var(--table-header-bg)] text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">
@@ -529,7 +529,7 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
             </thead>
             <tbody className="divide-y divide-gray-100">
               {(metrics?.topPerformingClasses?.length > 0 ? metrics.topPerformingClasses : []).map((cls, idx) => (
-                <tr key={idx} className="text-xs font-bold text-gray-700">
+                <tr key={idx} className="text-xs font-medium text-gray-700">
                   <td className="px-6 py-4 text-gray-400">#0{idx + 1}</td>
                   <td className="px-6 py-4 text-gray-900">{cls.grade}</td>
                   <td className="px-6 py-4 text-right">{cls.avg}</td>
@@ -545,7 +545,7 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
 
         {/* Learning Area Statistics */}
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-          <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-6 border-b border-gray-100 pb-2">Subject Proficiency Distribution</h3>
+          <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-widest mb-6 border-b border-gray-100 pb-2">Subject Proficiency Distribution</h3>
           <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 {dynamicProficiencyData.length > 0 ? (
@@ -575,19 +575,19 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
         {/* Upcoming Operational Deadlines */}
         <div className="xl:col-span-2 bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-            <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Academic Calendar & Milestones</h3>
+            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-widest">Academic Calendar & Milestones</h3>
           </div>
           <div className="p-0">
             {(metrics?.upcomingEvents?.length > 0 ? metrics.upcomingEvents : []).map((evt, idx) => (
               <div key={idx} className="px-6 py-4 flex items-center justify-between border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors">
                 <div className="flex items-center gap-4">
                   <div className="text-center p-2 min-w-[60px] bg-gray-100 rounded-md">
-                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">{new Date(evt.date).toLocaleDateString('en-US', { month: 'short' })}</p>
-                    <p className="text-sm font-black text-gray-900">{new Date(evt.date).getDate()}</p>
+                    <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-widest">{new Date(evt.date).toLocaleDateString('en-US', { month: 'short' })}</p>
+                    <p className="text-sm font-semibold text-gray-900">{new Date(evt.date).getDate()}</p>
                   </div>
                   <div>
-                    <h4 className="text-xs font-black text-gray-900">{evt.title}</h4>
-                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">{evt.category} • Lead: {evt.responsible}</p>
+                    <h4 className="text-xs font-semibold text-gray-900">{evt.title}</h4>
+                    <p className="text-[10px] font-medium text-gray-500 uppercase tracking-widest mt-0.5">{evt.category} • Lead: {evt.responsible}</p>
                   </div>
                 </div>
                 <button onClick={() => onNavigate('events-calendar')} className="p-2 text-gray-400 hover:text-brand-purple hover:bg-brand-purple/5 rounded-md transition-all">
@@ -603,7 +603,7 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
 
         {/* Staff Utilization */}
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-          <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-6 border-b border-gray-100 pb-2 flex items-center gap-2"><Briefcase size={16} className="text-gray-400" /> Staffing Capacity vs Deficit</h3>
+          <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-widest mb-6 border-b border-gray-100 pb-2 flex items-center gap-2"><Briefcase size={16} className="text-gray-400" /> Staffing Capacity vs Deficit</h3>
           
           <div className="h-48 mb-6">
               <ResponsiveContainer width="100%" height="100%">
@@ -635,8 +635,8 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
           <div className="space-y-4">
             <div className="p-4 bg-gray-50 border border-gray-100 rounded-lg">
               <div className="flex justify-between items-center mb-1">
-                <span className="text-[10px] font-black uppercase text-gray-500 tracking-wider">Teaching Staff</span>
-                <span className="text-xs font-black text-brand-teal">{stats.activeTeachers} / {stats.totalTeachers} Active</span>
+                <span className="text-[10px] font-semibold uppercase text-gray-500 tracking-wider">Teaching Staff</span>
+                <span className="text-xs font-semibold text-brand-teal">{stats.activeTeachers} / {stats.totalTeachers} Active</span>
               </div>
               <div className="w-full bg-white border border-gray-200 h-1 rounded-full overflow-hidden">
                 <div className="bg-brand-teal h-full" style={{ width: `${(stats.activeTeachers / stats.totalTeachers) * 100}%` }} />
@@ -645,10 +645,10 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
 
             <div className="p-4 bg-gray-50 border border-gray-100 rounded-lg">
               <div className="flex justify-between items-center mb-1">
-                <span className="text-[10px] font-black uppercase text-gray-500 tracking-wider">Teacher-Student Ratio</span>
-                <span className="text-xs font-black text-brand-purple">1 : {Math.round(stats.totalStudents / (stats.totalTeachers || 1))}</span>
+                <span className="text-[10px] font-semibold uppercase text-gray-500 tracking-wider">Teacher-Student Ratio</span>
+                <span className="text-xs font-semibold text-brand-purple">1 : {Math.round(stats.totalStudents / (stats.totalTeachers || 1))}</span>
               </div>
-              <p className="text-[10px] text-gray-400 font-bold uppercase mt-1">Within optimal standard</p>
+              <p className="text-[10px] text-gray-400 font-medium uppercase mt-1">Within optimal standard</p>
             </div>
           </div>
         </div>
@@ -670,7 +670,7 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
                 <AlertCircle size={20} />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-slate-900">Un-Assessed Students</h2>
+                <h2 className="text-xl font-medium text-slate-900">Un-Assessed Students</h2>
                 <p className="text-xs text-slate-500 font-medium tracking-tight">Progress breakdown for {stats.currentTestSeries}</p>
               </div>
             </div>
@@ -685,19 +685,19 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
           {/* Filters Layout - Matching Assessment Page Style */}
           <div className="bg-slate-50/50 px-6 py-4 border-b border-slate-100 flex flex-wrap gap-4 items-center">
              <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-md shadow-sm">
-                <Calendar size={14} className="text-slate-400 font-bold" />
-                <span className="text-xs font-black text-slate-600">2026</span>
+                <Calendar size={14} className="text-slate-400 font-medium" />
+                <span className="text-xs font-semibold text-slate-600">2026</span>
              </div>
              <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-md shadow-sm">
-                <Filter size={14} className="text-slate-400 font-bold" />
-                <span className="text-xs font-black text-slate-600">TERM 1</span>
+                <Filter size={14} className="text-slate-400 font-medium" />
+                <span className="text-xs font-semibold text-slate-600">TERM 1</span>
              </div>
              <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-md shadow-sm max-w-[150px]">
-                <GraduationCap size={14} className="text-slate-400 font-bold" />
-                <span className="text-xs font-black text-slate-600 truncate">{stats.currentTestSeries}</span>
+                <GraduationCap size={14} className="text-slate-400 font-medium" />
+                <span className="text-xs font-semibold text-slate-600 truncate">{stats.currentTestSeries}</span>
              </div>
              <div className="ml-auto">
-                <div className="bg-brand-purple/10 text-brand-purple border border-brand-purple/20 px-2 py-0.5 rounded text-[10px] font-black uppercase">
+                <div className="bg-brand-purple/10 text-brand-purple border border-brand-purple/20 px-2 py-0.5 rounded text-[10px] font-semibold uppercase">
                   Live Sync
                 </div>
              </div>
@@ -709,20 +709,20 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
               <div className="space-y-6">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total</p>
-                    <p className="text-2xl font-black text-slate-900">{stats.totalStudents}</p>
+                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">Total</p>
+                    <p className="text-2xl font-semibold text-slate-900">{stats.totalStudents}</p>
                   </div>
                   <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 border-l-4 border-l-brand-teal">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Assessed</p>
-                    <p className="text-2xl font-black text-brand-teal">{stats.totalStudents - stats.totalMissedExams}</p>
+                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">Assessed</p>
+                    <p className="text-2xl font-semibold text-brand-teal">{stats.totalStudents - stats.totalMissedExams}</p>
                   </div>
                   <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
-                    <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">Progress</p>
-                    <p className="text-2xl font-black text-emerald-600">{Math.round(((stats.totalStudents - stats.totalMissedExams) / stats.totalStudents) * 100)}%</p>
+                    <p className="text-[10px] font-semibold text-emerald-400 uppercase tracking-widest mb-1">Progress</p>
+                    <p className="text-2xl font-semibold text-emerald-600">{Math.round(((stats.totalStudents - stats.totalMissedExams) / stats.totalStudents) * 100)}%</p>
                   </div>
                   <div className="bg-rose-50 rounded-xl p-4 border border-rose-100 border-l-4 border-l-rose-500">
-                    <p className="text-[10px] font-black text-rose-400 uppercase tracking-widest mb-1">Un-Assessed</p>
-                    <p className="text-2xl font-black text-rose-600">{stats.totalMissedExams}</p>
+                    <p className="text-[10px] font-semibold text-rose-400 uppercase tracking-widest mb-1">Un-Assessed</p>
+                    <p className="text-2xl font-semibold text-rose-600">{stats.totalMissedExams}</p>
                   </div>
                 </div>
 
@@ -742,13 +742,13 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
                         const pct = item.total > 0 ? Math.round((item.assessed / item.total) * 100) : 0;
                         return (
                           <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                            <td className="px-5 py-3.5 text-sm font-bold text-slate-900 uppercase tracking-tighter">{item.grade}</td>
-                            <td className="px-5 py-3.5 text-sm text-center text-slate-600 font-bold">{item.total}</td>
-                            <td className="px-5 py-3.5 text-sm text-center text-brand-teal font-black">{item.assessed}</td>
-                            <td className="px-5 py-3.5 text-sm text-center text-rose-500 font-black">{item.unAssessed}</td>
+                            <td className="px-5 py-3.5 text-sm font-medium text-slate-900 uppercase tracking-tighter">{item.grade}</td>
+                            <td className="px-5 py-3.5 text-sm text-center text-slate-600 font-medium">{item.total}</td>
+                            <td className="px-5 py-3.5 text-sm text-center text-brand-teal font-semibold">{item.assessed}</td>
+                            <td className="px-5 py-3.5 text-sm text-center text-rose-500 font-semibold">{item.unAssessed}</td>
                             <td className="px-5 py-3.5 text-right">
                               <div className="flex items-center justify-end gap-2">
-                                <span className="text-[10px] font-black text-slate-500">{pct}%</span>
+                                <span className="text-[10px] font-semibold text-slate-500">{pct}%</span>
                                 <div className="w-12 h-1 bg-slate-100 rounded-full overflow-hidden">
                                   <div 
                                     className={`h-full rounded-full ${pct === 100 ? 'bg-brand-teal' : pct > 0 ? 'bg-brand-purple' : 'bg-slate-300'}`} 
@@ -769,7 +769,7 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
                 <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
                   <Activity className="text-slate-300" size={32} />
                 </div>
-                <h3 className="text-lg font-bold text-slate-900">Synchronizing...</h3>
+                <h3 className="text-lg font-medium text-slate-900">Synchronizing...</h3>
                 <p className="text-sm text-slate-500 max-w-xs">Connecting to the assessment matrix to fetch the latest grade-level progress.</p>
               </div>
             )}
@@ -779,7 +779,7 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
           <div className="p-6 bg-slate-50 border-t border-slate-100">
             <button 
               onClick={() => { setShowUnAssessedSheet(false); onNavigate('assess-summary-report'); }}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-brand-purple text-white rounded-xl font-bold hover:bg-brand-purple/90 transition shadow-lg shadow-brand-purple/20"
+              className="w-full flex items-center justify-center gap-2 py-3 bg-brand-purple text-white rounded-xl font-medium hover:bg-brand-purple/90 transition shadow-lg shadow-brand-purple/20"
             >
               Open Full Assessment Matrix <ChevronRight size={18} />
             </button>
@@ -809,7 +809,7 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
             <div className={`p-3.5 mb-2 rounded-full ${shortcut.color} shadow-md group-hover:shadow-lg group-hover:-translate-y-1 transition-transform duration-300 flex items-center justify-center`}>
               <shortcut.icon size={20} strokeWidth={2.5} />
             </div>
-            <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-600 group-hover:text-brand-purple text-center leading-tight w-full truncate">
+            <span className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-gray-600 group-hover:text-brand-purple text-center leading-tight w-full truncate">
               {shortcut.label}
             </span>
           </button>

@@ -2689,13 +2689,13 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                   <div className="p-2 border-b bg-slate-50 flex gap-2 shrink-0">
                     <button
                       onClick={() => setStagedLearnerIds(filteredLearners.map(l => l.id))}
-                      className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded hover:bg-indigo-100 flex-1 transition-colors"
+                      className="text-[10px] font-medium text-indigo-600 bg-indigo-50 px-2 py-1 rounded hover:bg-indigo-100 flex-1 transition-colors"
                     >
                       Select All
                     </button>
                     <button
                       onClick={() => setStagedLearnerIds([])}
-                      className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded hover:bg-slate-200 flex-1 transition-colors"
+                      className="text-[10px] font-medium text-slate-600 bg-slate-100 px-2 py-1 rounded hover:bg-slate-200 flex-1 transition-colors"
                     >
                       Clear
                     </button>
@@ -2755,7 +2755,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                     <div className="p-2 border-b bg-slate-50 flex gap-2 shrink-0">
                       <button
                         onClick={() => setStagedTestGroups([])}
-                        className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded hover:bg-slate-200 w-full transition-colors"
+                        className="text-[10px] font-medium text-slate-600 bg-slate-100 px-2 py-1 rounded hover:bg-slate-200 w-full transition-colors"
                       >
                         Reset Group Selection
                       </button>
@@ -2896,15 +2896,15 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                   <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Printer size={32} />
                   </div>
-                  <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Bulk Summary Reports</h2>
-                  <p className="text-slate-500 font-bold mt-1 uppercase text-sm">
+                  <h2 className="text-2xl font-semibold text-slate-900 uppercase tracking-tight">Bulk Summary Reports</h2>
+                  <p className="text-slate-500 font-medium mt-1 uppercase text-sm">
                     GRADE: {selectedGrade} | STREAM: {selectedStream} | {reportData.rows.length} STUDENTS SELECTED
                   </p>
                 </div>
 
 
                 <div className="mb-8 border rounded-xl overflow-hidden shadow-sm bg-white">
-                  <div className="bg-slate-50 border-b p-3 hidden md:grid grid-cols-12 text-[10px] font-black text-slate-500 uppercase tracking-widest items-center">
+                  <div className="bg-slate-50 border-b p-3 hidden md:grid grid-cols-12 text-[10px] font-semibold text-slate-500 uppercase tracking-widest items-center">
                     <div className="col-span-1 flex items-center gap-3">
                       <input
                         type="checkbox"
@@ -2920,7 +2920,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                     <div className="col-span-4 text-right">Individual Actions</div>
                   </div>
                   {/* Mobile Select All row */}
-                  <div className="md:hidden bg-slate-50 border-b p-3 flex items-center justify-between text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                  <div className="md:hidden bg-slate-50 border-b p-3 flex items-center justify-between text-[10px] font-semibold text-slate-500 uppercase tracking-widest">
                     <div className="flex items-center gap-3">
                       <input
                         type="checkbox"
@@ -2944,32 +2944,32 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                               checked={selectedReportRows.includes(idx)}
                               onChange={() => handleToggleSelectRow(idx)}
                             />
-                            <span className="text-[10px] font-bold text-slate-400">{idx + 1}</span>
+                            <span className="text-[10px] font-medium text-slate-400">{idx + 1}</span>
                           </div>
                           <div className="md:col-span-4 flex-1 ml-3 md:ml-0">
-                            <p className="font-bold text-slate-800 text-sm md:text-sm">{row.learner.firstName} {row.learner.lastName}</p>
+                            <p className="font-medium text-slate-800 text-sm md:text-sm">{row.learner.firstName} {row.learner.lastName}</p>
                             <p className="text-[10px] text-slate-500 uppercase font-semibold">{row.learner.admissionNumber || 'ADM: N/A'}</p>
                           </div>
                           {/* Avg on mobile goes to top right */}
                           <div className="md:col-span-1 text-right md:text-center shrink-0">
-                            <div className="md:hidden text-[10px] text-slate-500 uppercase font-black mb-0.5">Avg</div>
-                            <div className="font-black text-blue-600 text-sm">{row.averageScore}%</div>
+                            <div className="md:hidden text-[10px] text-slate-500 uppercase font-semibold mb-0.5">Avg</div>
+                            <div className="font-semibold text-blue-600 text-sm">{row.averageScore}%</div>
                           </div>
                         </div>
 
                         <div className="md:col-span-2 flex flex-wrap justify-start items-center gap-2 mt-1 md:mt-0 pl-7 md:pl-6">
-                          <span className="md:hidden text-[10px] text-slate-500 font-bold uppercase self-center mr-1">Pathway:</span>
+                          <span className="md:hidden text-[10px] text-slate-500 font-medium uppercase self-center mr-1">Pathway:</span>
                           {row.pathwayPrediction ? (
                             <div
                               className="flex items-center cursor-help"
                               title={`Pathway: ${row.pathwayPrediction.predictedPathway}\nConfidence: ${row.pathwayPrediction.confidence}%\n\nJustification: ${row.pathwayPrediction.justification}\n\nRecommended Careers:\n${(row.pathwayPrediction.careerRecommendations || []).map(c => '• ' + c).join('\n')}\n\nGrowth Areas:\n${(row.pathwayPrediction.growthAreas || []).map(g => '• ' + g).join('\n')}\n\n💡 Hint: Good fit for Kenyan Secondary Schools strong in ${row.pathwayPrediction.predictedPathway === 'STEM' ? 'Sciences & Math (e.g., Kenya High, Alliance High)' : row.pathwayPrediction.predictedPathway === 'Social Sciences' ? 'Humanities & Languages (e.g., Pangani Girls, Alliance Girls)' : 'Sports & Arts (e.g., Laiser Hill, Dagoretti High)'}.`}
                             >
-                              <span className="px-2 py-0.5 bg-brand-teal/10 hover:bg-brand-teal/20 transition-colors text-brand-teal rounded text-[9px] font-black uppercase border border-brand-teal/30">
+                              <span className="px-2 py-0.5 bg-brand-teal/10 hover:bg-brand-teal/20 transition-colors text-brand-teal rounded text-[9px] font-semibold uppercase border border-brand-teal/30">
                                 {row.pathwayPrediction.predictedPathway === 'Arts and Sports Science' ? 'Arts & Sports' : row.pathwayPrediction.predictedPathway}
                               </span>
                             </div>
                           ) : (
-                            <span className="text-[9px] text-slate-400 font-bold uppercase italic">-</span>
+                            <span className="text-[9px] text-slate-400 font-medium uppercase italic">-</span>
                           )}
 
                           {/* Keep mini-indicators for communication if they exist */}
@@ -2997,21 +2997,21 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                                 pathwayPrediction: row.pathwayPrediction
                               });
                             }}
-                            className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded transition shadow-sm flex-1 md:flex-none flex justify-center items-center gap-1 text-[10px] font-bold uppercase"
+                            className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded transition shadow-sm flex-1 md:flex-none flex justify-center items-center gap-1 text-[10px] font-medium uppercase"
                             title="View Full Report"
                           >
                             <Printer size={12} /> <span className="md:hidden">View</span>
                           </button>
                           <button
                             onClick={() => handleSingleDownload(row)}
-                            className="p-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded transition shadow-sm flex-1 md:flex-none flex justify-center items-center gap-1 text-[10px] font-bold uppercase"
+                            className="p-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded transition shadow-sm flex-1 md:flex-none flex justify-center items-center gap-1 text-[10px] font-medium uppercase"
                             title="Download PDF"
                           >
                             <Download size={12} /> <span className="md:hidden">PDF</span>
                           </button>
                           <button
                             disabled={isSendingSMS}
-                            className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded transition shadow-sm disabled:opacity-30 flex-1 md:flex-none flex justify-center items-center gap-1 text-[10px] font-bold uppercase"
+                            className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded transition shadow-sm disabled:opacity-30 flex-1 md:flex-none flex justify-center items-center gap-1 text-[10px] font-medium uppercase"
                             title="Send SMS"
                             onClick={() => handleSendSMS(row)}
                           >
@@ -3019,7 +3019,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                           </button>
                           <button
                             disabled={!(row.learner.parent?.phone || row.learner.parentPhone || row.learner.parentPhoneNumber || row.learner.guardianPhone)}
-                            className={`p-2 rounded transition shadow-sm disabled:opacity-30 flex-1 md:flex-none flex justify-center items-center gap-1 text-[10px] font-bold uppercase ${row.communication?.hasSentWhatsApp ? 'bg-green-600 text-white' : 'bg-green-50 text-green-600 hover:bg-green-600 hover:text-white'}`}
+                            className={`p-2 rounded transition shadow-sm disabled:opacity-30 flex-1 md:flex-none flex justify-center items-center gap-1 text-[10px] font-medium uppercase ${row.communication?.hasSentWhatsApp ? 'bg-green-600 text-white' : 'bg-green-50 text-green-600 hover:bg-green-600 hover:text-white'}`}
                             title={row.communication?.hasSentWhatsApp ? "WhatsApp Sent - Click to resend" : "Send WhatsApp"}
                             onClick={() => {
                               const currentLearner = row.learner;
@@ -3038,8 +3038,8 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                   {/* ACTION BAR FOR BULK PREVIEW */}
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center w-full bg-indigo-50 p-4 rounded-xl border border-indigo-100 no-print gap-4 md:gap-0">
                     <div>
-                      <p className="text-sm font-bold text-indigo-900">Combined Actions</p>
-                      <p className="text-[10px] text-indigo-600 font-bold uppercase tracking-wider">
+                      <p className="text-sm font-medium text-indigo-900">Combined Actions</p>
+                      <p className="text-[10px] text-indigo-600 font-medium uppercase tracking-wider">
                         {selectedReportRows.length > 0 ? `${selectedReportRows.length} learners selected` : `Apply to all ${reportData.rows.length} learners`}
                       </p>
                     </div>
@@ -3047,7 +3047,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                       <button
                         onClick={handleBulkSMS}
                         disabled={bulkProgress.active}
-                        className="flex-1 md:flex-none justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-md flex items-center gap-2 font-bold uppercase text-[10px]"
+                        className="flex-1 md:flex-none justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-md flex items-center gap-2 font-medium uppercase text-[10px]"
                       >
                         {bulkProgress.active ? <Loader className="animate-spin" size={14} /> : <MessageSquare size={14} />}
                         {bulkProgress.active ? 'Sending SMS...' : 'Bulk Send SMS'}
@@ -3055,7 +3055,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                       <button
                         onClick={() => setShowWhatsAppConfirm(true)}
                         disabled={isSendingWhatsApp}
-                        className="flex-1 md:flex-none justify-center px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition shadow-md flex items-center gap-2 font-bold uppercase text-[10px]"
+                        className="flex-1 md:flex-none justify-center px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition shadow-md flex items-center gap-2 font-medium uppercase text-[10px]"
                       >
                         {isSendingWhatsApp ? <Loader className="animate-spin" size={14} /> : <MessageCircle size={14} />}
                         {isSendingWhatsApp ? 'Sending...' : 'Bulk WhatsApp'}
@@ -3064,7 +3064,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                         <button
                           onClick={handleBulkPrint}
                           disabled={isBulkPrinting}
-                          className="w-full justify-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-md flex items-center gap-2 font-bold uppercase text-[10px]"
+                          className="w-full justify-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-md flex items-center gap-2 font-medium uppercase text-[10px]"
                         >
                           {isBulkPrinting ? <Loader className="animate-spin" size={14} /> : <Printer size={14} />}
                           {isBulkPrinting ? 'Processing...' : 'Download Combined PDF'}
@@ -3078,13 +3078,13 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                                 setPdfProgress('Cancelling bulk PDF generation…');
                               }
                             }}
-                            className="mt-2 w-full justify-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition shadow-md flex items-center gap-2 font-bold uppercase text-[10px]"
+                            className="mt-2 w-full justify-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition shadow-md flex items-center gap-2 font-medium uppercase text-[10px]"
                           >
                             Cancel
                           </button>
                         )}
                         {isBulkPrinting && pdfProgress && (
-                          <div className="absolute top-full left-0 md:left-auto md:right-0 mt-1.5 text-[10px] font-bold text-indigo-600 animate-pulse whitespace-nowrap">
+                          <div className="absolute top-full left-0 md:left-auto md:right-0 mt-1.5 text-[10px] font-medium text-indigo-600 animate-pulse whitespace-nowrap">
                             {pdfProgress}
                           </div>
                         )}
@@ -3093,7 +3093,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                   </div>
                   <button
                     onClick={() => setReportData(null)}
-                    className="text-slate-500 hover:text-slate-800 font-bold uppercase text-xs transition px-4 py-2 border rounded-lg hover:bg-slate-50"
+                    className="text-slate-500 hover:text-slate-800 font-medium uppercase text-xs transition px-4 py-2 border rounded-lg hover:bg-slate-50"
                   >
                     ← Back to Filters
                   </button>
@@ -3283,12 +3283,12 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                   {(bulkProgress.active || isSendingWhatsApp) && (
                     <div className="w-full text-center mt-2 text-sm font-medium text-gray-700">
                       {isSendingWhatsApp ? (
-                        <span className="text-green-600 flex items-center justify-center gap-2 font-bold animate-pulse">
+                        <span className="text-green-600 flex items-center justify-center gap-2 font-medium animate-pulse">
                           <Loader className="animate-spin" size={12} />
                           WhatsApp Batch: {whatsAppProgress.current}/{whatsAppProgress.total}
                         </span>
                       ) : (
-                        <div className="flex justify-center gap-3 font-bold">
+                        <div className="flex justify-center gap-3 font-medium">
                           <span className="text-green-600">SUCCESS: {bulkProgress.success}</span>
                           <span className="text-gray-300">|</span>
                           <span className="text-red-500">FAILED: {bulkProgress.failed}</span>
@@ -3358,7 +3358,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
 
                 {/* Subject Performance Table */}
                 <div className="mb-8">
-                  <h2 className="text-lg font-bold text-gray-800 mb-4 border-l-4 border-blue-600 pl-2">Subject Performance Analysis</h2>
+                  <h2 className="text-lg font-medium text-gray-800 mb-4 border-l-4 border-blue-600 pl-2">Subject Performance Analysis</h2>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
                     <thead>
                       <tr style={{ backgroundColor: '#f1f5f9', color: '#1e293b' }}>
@@ -3385,23 +3385,23 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
 
                 {/* Grade Distribution */}
                 <div className="mb-8">
-                  <h2 className="text-lg font-bold text-gray-800 mb-4 border-l-4 border-blue-600 pl-2">Grade Distribution</h2>
+                  <h2 className="text-lg font-medium text-gray-800 mb-4 border-l-4 border-blue-600 pl-2">Grade Distribution</h2>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px' }}>
                     <div className="p-4 bg-green-50 rounded border border-green-200 text-center">
-                      <div className="text-2xl font-bold text-green-700">{reportData.gradeDist['EE'] || 0}</div>
-                      <div className="text-xs font-bold text-green-800 uppercase mt-1">Exceeding Exp.</div>
+                      <div className="text-2xl font-medium text-green-700">{reportData.gradeDist['EE'] || 0}</div>
+                      <div className="text-xs font-medium text-green-800 uppercase mt-1">Exceeding Exp.</div>
                     </div>
                     <div className="p-4 bg-blue-50 rounded border border-blue-200 text-center">
-                      <div className="text-2xl font-bold text-blue-700">{reportData.gradeDist['ME'] || 0}</div>
-                      <div className="text-xs font-bold text-blue-800 uppercase mt-1">Meeting Exp.</div>
+                      <div className="text-2xl font-medium text-blue-700">{reportData.gradeDist['ME'] || 0}</div>
+                      <div className="text-xs font-medium text-blue-800 uppercase mt-1">Meeting Exp.</div>
                     </div>
                     <div className="p-4 bg-yellow-50 rounded border border-yellow-200 text-center">
-                      <div className="text-2xl font-bold text-yellow-700">{reportData.gradeDist['AE'] || 0}</div>
-                      <div className="text-xs font-bold text-yellow-800 uppercase mt-1">Approaching Exp.</div>
+                      <div className="text-2xl font-medium text-yellow-700">{reportData.gradeDist['AE'] || 0}</div>
+                      <div className="text-xs font-medium text-yellow-800 uppercase mt-1">Approaching Exp.</div>
                     </div>
                     <div className="p-4 bg-red-50 rounded border border-red-200 text-center">
-                      <div className="text-2xl font-bold text-red-700">{reportData.gradeDist['BE'] || 0}</div>
-                      <div className="text-xs font-bold text-red-800 uppercase mt-1">Below Exp.</div>
+                      <div className="text-2xl font-medium text-red-700">{reportData.gradeDist['BE'] || 0}</div>
+                      <div className="text-xs font-medium text-red-800 uppercase mt-1">Below Exp.</div>
                     </div>
                   </div>
                 </div>
@@ -3490,18 +3490,18 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                       <AlertCircle className="h-6 w-6 text-blue-600" aria-hidden="true" />
                     </div>
                     <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                      <h3 className="text-lg leading-6 font-bold text-gray-900" id="modal-title">
+                      <h3 className="text-lg leading-6 font-medium text-gray-900" id="modal-title">
                         Confirm SMS Delivery
                       </h3>
                       <div className="mt-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
                         {/* Editable Phone Number Input */}
                         <div className="mb-4">
-                          <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Recipient Phone Number</label>
+                          <label className="block text-xs font-medium text-gray-700 uppercase mb-1">Recipient Phone Number</label>
                           <input
                             type="text"
                             value={editedPhoneNumber}
                             onChange={(e) => setEditedPhoneNumber(e.target.value)}
-                            className="w-full border border-gray-300 rounded p-2 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none"
+                            className="w-full border border-gray-300 rounded p-2 text-sm font-medium text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none"
                             placeholder="e.g. 0712345678"
                           />
 
@@ -3512,7 +3512,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                                 <button
                                   key={i}
                                   onClick={() => setEditedPhoneNumber(opt.phone)}
-                                  className={`px-2 py-1 rounded text-[10px] font-bold transition-all border ${editedPhoneNumber === opt.phone
+                                  className={`px-2 py-1 rounded text-[10px] font-medium transition-all border ${editedPhoneNumber === opt.phone
                                     ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
                                     : 'bg-white text-gray-600 border-gray-200 hover:border-blue-400 hover:text-blue-600'
                                     }`}
@@ -3574,7 +3574,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
 
               {!bulkProgress.active ? (
                 <>
-                  <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-gray-800">
+                  <h3 className="text-xl font-medium mb-4 flex items-center gap-2 text-gray-800">
                     <MessageSquare className="text-blue-500" />
                     Start Bulk SMS?
                   </h3>
@@ -3585,7 +3585,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                     <div className="flex items-start gap-2">
                       <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
                       <div>
-                        <div className="font-bold mb-1">Cost Estimate</div>
+                        <div className="font-medium mb-1">Cost Estimate</div>
                         <div>Approx. {Math.ceil((selectedReportRows.length > 0 ? selectedReportRows.length : reportData.rows.length) * 2)} SMS parts will be sent.</div>
                         <div className="text-[10px] text-blue-600 mt-1 italic">Each report is ~2-3 SMS parts (160 chars each)</div>
                       </div>
@@ -3593,7 +3593,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                   </div>
 
                   <div className="mb-6">
-                    <label className="block text-xs font-bold mb-1 text-gray-500 uppercase">Send Test Message To (Optional)</label>
+                    <label className="block text-xs font-medium mb-1 text-gray-500 uppercase">Send Test Message To (Optional)</label>
                     <input
                       type="text"
                       placeholder="e.g. 0712345678"
@@ -3606,7 +3606,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                   <div className="flex justify-end gap-3">
                     <button
                       onClick={() => setShowSMSBulkConfirm(false)}
-                      className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded text-sm font-bold transition"
+                      className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded text-sm font-medium transition"
                     >
                       Cancel
                     </button>
@@ -3615,7 +3615,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                         const testNum = document.getElementById('sms-test-number').value;
                         executeBulkSMS(testNum || null);
                       }}
-                      className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-bold text-sm shadow-lg shadow-blue-200 transition transform hover:scale-105"
+                      className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium text-sm shadow-lg shadow-blue-200 transition transform hover:scale-105"
                     >
                       Start Sending
                     </button>
@@ -3624,7 +3624,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
               ) : (
                 <div className="text-center py-4">
                   <div className="w-16 h-16 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-                  <h3 className="text-lg font-bold text-gray-800 mb-2">Sending SMS Messages...</h3>
+                  <h3 className="text-lg font-medium text-gray-800 mb-2">Sending SMS Messages...</h3>
                   <p className="text-gray-500 text-sm mb-6">Please do not close this window.</p>
 
                   <div className="w-full bg-gray-100 rounded-full h-4 mb-2 overflow-hidden">
@@ -3633,7 +3633,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                       style={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }}
                     ></div>
                   </div>
-                  <div className="flex justify-between text-xs font-bold text-gray-500 uppercase mb-4">
+                  <div className="flex justify-between text-xs font-medium text-gray-500 uppercase mb-4">
                     <span>Progress</span>
                     <span>{bulkProgress.current} / {bulkProgress.total}</span>
                   </div>
@@ -3665,7 +3665,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
 
               {!isSendingWhatsApp ? (
                 <>
-                  <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-gray-800">
+                  <h3 className="text-xl font-medium mb-4 flex items-center gap-2 text-gray-800">
                     <MessageCircle className="text-green-500" />
                     Start Bulk WhatsApp?
                   </h3>
@@ -3677,7 +3677,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                   </div>
 
                   <div className="mb-6">
-                    <label className="block text-xs font-bold mb-1 text-gray-500 uppercase">Send Test Message To (Optional)</label>
+                    <label className="block text-xs font-medium mb-1 text-gray-500 uppercase">Send Test Message To (Optional)</label>
                     <input
                       type="text"
                       placeholder="e.g. 0712345678"
@@ -3690,7 +3690,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                   <div className="flex justify-end gap-3">
                     <button
                       onClick={() => setShowWhatsAppConfirm(false)}
-                      className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded text-sm font-bold transition"
+                      className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded text-sm font-medium transition"
                     >
                       Cancel
                     </button>
@@ -3699,7 +3699,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                         const testNum = document.getElementById('wa-test-number').value;
                         handleBulkWhatsApp(testNum || null);
                       }}
-                      className="px-6 py-2 bg-green-500 text-white rounded hover:bg-green-600 font-bold text-sm shadow-lg shadow-green-200 transition transform hover:scale-105"
+                      className="px-6 py-2 bg-green-500 text-white rounded hover:bg-green-600 font-medium text-sm shadow-lg shadow-green-200 transition transform hover:scale-105"
                     >
                       Start Sending
                     </button>
@@ -3708,7 +3708,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
               ) : (
                 <div className="text-center py-4">
                   <div className="w-16 h-16 border-4 border-green-100 border-t-green-500 rounded-full animate-spin mx-auto mb-4"></div>
-                  <h3 className="text-lg font-bold text-gray-800 mb-2">Sending WhatsApp Messages...</h3>
+                  <h3 className="text-lg font-medium text-gray-800 mb-2">Sending WhatsApp Messages...</h3>
                   <p className="text-gray-500 text-sm mb-6">Please do not close this window.</p>
 
                   <div className="w-full bg-gray-100 rounded-full h-4 mb-2 overflow-hidden">
@@ -3717,7 +3717,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                       style={{ width: `${(whatsAppProgress.current / whatsAppProgress.total) * 100}%` }}
                     ></div>
                   </div>
-                  <div className="flex justify-between text-xs font-bold text-gray-500 uppercase">
+                  <div className="flex justify-between text-xs font-medium text-gray-500 uppercase">
                     <span>Progress</span>
                     <span>{whatsAppProgress.current} / {whatsAppProgress.total}</span>
                   </div>
@@ -3836,11 +3836,11 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                 <div className="w-16 h-16 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="w-8 h-8 bg-blue-600 rounded-lg animate-pulse flex items-center justify-center">
-                    <span className="text-white text-[10px] font-bold">PDF</span>
+                    <span className="text-white text-[10px] font-medium">PDF</span>
                   </div>
                 </div>
               </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Generating High-Quality Report</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Generating High-Quality Report</h3>
               <p className="text-sm text-gray-500 mb-4">Please wait while we render your professional vector PDF. This may take a few seconds.</p>
               <div className="flex items-center justify-center gap-2 text-blue-600 font-semibold text-sm">
                 <Loader className="animate-spin" size={14} />

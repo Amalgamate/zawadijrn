@@ -202,9 +202,9 @@ const TeacherProfile = ({ teacher, onBack, onEdit }) => {
                 status={teacher.status}
                 bannerColor="brand-teal"
                 badges={[
-                    { text: teacher.role?.replace(/_/g, ' ') || 'Teacher', icon: Briefcase, className: "bg-brand-teal/5 text-brand-teal px-2.5 py-1 rounded-full border border-brand-teal/10 font-bold text-xs" },
+                    { text: teacher.role?.replace(/_/g, ' ') || 'Teacher', icon: Briefcase, className: "bg-brand-teal/5 text-brand-teal px-2.5 py-1 rounded-full border border-brand-teal/10 font-medium text-xs" },
                     { text: teacher.assignedClasses?.length > 0 ? teacher.assignedClasses.join(', ') : 'No Classes', icon: BookOpen },
-                    { text: `ID: ${teacher.staffId || teacher.employeeNo || 'N/A'}`, className: "text-gray-400 font-bold" }
+                    { text: `ID: ${teacher.staffId || teacher.employeeNo || 'N/A'}`, className: "text-gray-400 font-medium" }
                 ]}
                 tabs={tabs}
                 activeTab={activeTab}
@@ -225,33 +225,33 @@ const TeacherProfile = ({ teacher, onBack, onEdit }) => {
                                     <div className="w-10 h-10 bg-brand-teal/10 rounded-xl flex items-center justify-center text-brand-teal">
                                         <User size={20} />
                                     </div>
-                                    <h3 className="text-xl font-bold text-gray-900 tracking-tight">Personal & Employment Details</h3>
+                                    <h3 className="text-xl font-medium text-gray-900 tracking-tight">Personal & Employment Details</h3>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-y-8 gap-x-12">
                                     <div className="space-y-1">
-                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Gender</label>
-                                        <p className="text-gray-900 font-bold">{teacher.gender || 'N/A'}</p>
+                                        <label className="text-[10px] font-medium text-gray-400 uppercase tracking-widest">Gender</label>
+                                        <p className="text-gray-900 font-medium">{teacher.gender || 'N/A'}</p>
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Employee Number</label>
-                                        <p className="text-gray-900 font-bold">{teacher.employeeNo || teacher.staffId || 'N/A'}</p>
+                                        <label className="text-[10px] font-medium text-gray-400 uppercase tracking-widest">Employee Number</label>
+                                        <p className="text-gray-900 font-medium">{teacher.employeeNo || teacher.staffId || 'N/A'}</p>
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">TSC Number</label>
-                                        <p className="text-gray-900 font-bold">{teacher.tscNo || 'N/A'}</p>
+                                        <label className="text-[10px] font-medium text-gray-400 uppercase tracking-widest">TSC Number</label>
+                                        <p className="text-gray-900 font-medium">{teacher.tscNo || 'N/A'}</p>
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">ID Number</label>
-                                        <p className="text-gray-900 font-bold">{teacher.idNumber || 'N/A'}</p>
+                                        <label className="text-[10px] font-medium text-gray-400 uppercase tracking-widest">ID Number</label>
+                                        <p className="text-gray-900 font-medium">{teacher.idNumber || 'N/A'}</p>
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Primary Subject</label>
-                                        <p className="text-gray-900 font-bold">{teacher.subject || 'N/A'}</p>
+                                        <label className="text-[10px] font-medium text-gray-400 uppercase tracking-widest">Primary Subject</label>
+                                        <p className="text-gray-900 font-medium">{teacher.subject || 'N/A'}</p>
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Date of Employment</label>
-                                        <p className="text-gray-900 font-bold">
+                                        <label className="text-[10px] font-medium text-gray-400 uppercase tracking-widest">Date of Employment</label>
+                                        <p className="text-gray-900 font-medium">
                                             {teacher.dateOfEmployment ? new Date(teacher.dateOfEmployment).toLocaleDateString() : 'N/A'}
                                         </p>
                                     </div>
@@ -266,14 +266,14 @@ const TeacherProfile = ({ teacher, onBack, onEdit }) => {
                                     <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
                                         <Phone size={20} />
                                     </div>
-                                    <h3 className="text-xl font-bold text-gray-900 tracking-tight">Contact Information</h3>
+                                    <h3 className="text-xl font-medium text-gray-900 tracking-tight">Contact Information</h3>
                                 </div>
 
                                 <div className="space-y-8">
                                     <div>
-                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">Phone Number</label>
+                                        <label className="text-[10px] font-medium text-gray-400 uppercase tracking-widest mb-2 block">Phone Number</label>
                                         <div className="flex items-center justify-between">
-                                            <p className="text-gray-900 font-bold text-lg">{teacher.phone || 'N/A'}</p>
+                                            <p className="text-gray-900 font-medium text-lg">{teacher.phone || 'N/A'}</p>
                                             {teacher.phone && (
                                                 <div className="flex gap-2">
                                                     <a
@@ -297,9 +297,9 @@ const TeacherProfile = ({ teacher, onBack, onEdit }) => {
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">Email Address</label>
+                                        <label className="text-[10px] font-medium text-gray-400 uppercase tracking-widest mb-2 block">Email Address</label>
                                         <div className="flex items-center justify-between">
-                                            <p className="text-gray-900 font-bold truncate max-w-[200px]">{teacher.email || 'N/A'}</p>
+                                            <p className="text-gray-900 font-medium truncate max-w-[200px]">{teacher.email || 'N/A'}</p>
                                             {teacher.email && (
                                                 <a
                                                     href={`mailto:${teacher.email}`}
@@ -311,7 +311,7 @@ const TeacherProfile = ({ teacher, onBack, onEdit }) => {
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">Residential Address</label>
+                                        <label className="text-[10px] font-medium text-gray-400 uppercase tracking-widest mb-1 block">Residential Address</label>
                                         <div className="flex items-start gap-2">
                                             <MapPin size={16} className="text-gray-400 mt-0.5" />
                                             <p className="text-gray-700 font-medium leading-relaxed">{teacher.address || 'Not Provided'}</p>
@@ -339,8 +339,8 @@ const TeacherProfile = ({ teacher, onBack, onEdit }) => {
                                         <stat.icon size={22} />
                                     </div>
                                     <div>
-                                        <p className="text-2xl font-black text-gray-900">{loadingWorkload ? '—' : stat.value}</p>
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{stat.label}</p>
+                                        <p className="text-2xl font-semibold text-gray-900">{loadingWorkload ? '—' : stat.value}</p>
+                                        <p className="text-[10px] font-medium text-gray-400 uppercase tracking-widest">{stat.label}</p>
                                     </div>
                                 </div>
                             ))}
@@ -354,13 +354,13 @@ const TeacherProfile = ({ teacher, onBack, onEdit }) => {
                                         <GraduationCap size={20} />
                                     </div>
                                     <div>
-                                        <h3 className="text-lg font-bold text-gray-900">Assigned Classes</h3>
+                                        <h3 className="text-lg font-medium text-gray-900">Assigned Classes</h3>
                                         <p className="text-xs text-gray-400">Classes this teacher is responsible for</p>
                                     </div>
                                 </div>
                                 <button
                                     onClick={() => setShowAssignModal(true)}
-                                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition text-xs font-bold shadow-sm"
+                                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition text-xs font-medium shadow-sm"
                                 >
                                     <Plus size={14} />
                                     Assign to Class
@@ -393,14 +393,14 @@ const TeacherProfile = ({ teacher, onBack, onEdit }) => {
                                                             <div className="w-9 h-9 bg-purple-50 rounded-lg flex items-center justify-center text-purple-600">
                                                                 <GraduationCap size={16} />
                                                             </div>
-                                                            <span className="font-bold text-gray-900">{cls.name}</span>
+                                                            <span className="font-medium text-gray-900">{cls.name}</span>
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4">
-                                                        <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-lg text-[10px] font-black uppercase tracking-widest">{cls.grade?.replace('_', ' ')}</span>
+                                                        <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-lg text-[10px] font-semibold uppercase tracking-widest">{cls.grade?.replace('_', ' ')}</span>
                                                     </td>
                                                     <td className="px-6 py-4 text-gray-600 font-medium">{cls.stream || '—'}</td>
-                                                    <td className="px-6 py-4 text-center font-black text-gray-900">{cls.studentCount}</td>
+                                                    <td className="px-6 py-4 text-center font-semibold text-gray-900">{cls.studentCount}</td>
                                                     <td className="px-6 py-4 text-center text-gray-500">{cls.capacity}</td>
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center justify-center gap-2">
@@ -410,7 +410,7 @@ const TeacherProfile = ({ teacher, onBack, onEdit }) => {
                                                                     style={{ width: `${Math.min(cls.utilization, 100)}%` }}
                                                                 />
                                                             </div>
-                                                            <span className="text-xs font-bold text-gray-600">{cls.utilization}%</span>
+                                                            <span className="text-xs font-medium text-gray-600">{cls.utilization}%</span>
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -423,11 +423,11 @@ const TeacherProfile = ({ teacher, onBack, onEdit }) => {
                                     <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
                                         <GraduationCap size={28} className="text-gray-300" />
                                     </div>
-                                    <h4 className="text-gray-800 font-bold mb-1">No Classes Assigned</h4>
+                                    <h4 className="text-gray-800 font-medium mb-1">No Classes Assigned</h4>
                                     <p className="text-gray-400 text-sm mb-4">Click "Assign to Class" to give this teacher a class.</p>
                                     <button
                                         onClick={() => setShowAssignModal(true)}
-                                        className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-xl text-xs font-bold hover:bg-purple-700 transition"
+                                        className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-xl text-xs font-medium hover:bg-purple-700 transition"
                                     >
                                         <Plus size={14} /> Assign to Class
                                     </button>
@@ -442,7 +442,7 @@ const TeacherProfile = ({ teacher, onBack, onEdit }) => {
                                     <BookOpen size={20} />
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-bold text-gray-900">Subject Schedules</h3>
+                                    <h3 className="text-lg font-medium text-gray-900">Subject Schedules</h3>
                                     <p className="text-xs text-gray-400">Subjects this teacher teaches across classes (from timetable)</p>
                                 </div>
                             </div>
@@ -468,11 +468,11 @@ const TeacherProfile = ({ teacher, onBack, onEdit }) => {
                                             {schedules.map((sched, i) => (
                                                 <tr key={sched.id || i} className="hover:bg-teal-50/20 transition-colors">
                                                     <td className="px-6 py-3">
-                                                        <span className="px-2.5 py-1 bg-brand-teal/10 text-brand-teal rounded-lg text-xs font-black">{sched.subject}</span>
+                                                        <span className="px-2.5 py-1 bg-brand-teal/10 text-brand-teal rounded-lg text-xs font-semibold">{sched.subject}</span>
                                                     </td>
-                                                    <td className="px-6 py-3 font-bold text-gray-900">{sched.class?.name || '—'}</td>
+                                                    <td className="px-6 py-3 font-medium text-gray-900">{sched.class?.name || '—'}</td>
                                                     <td className="px-6 py-3">
-                                                        <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[10px] font-black uppercase">{sched.class?.grade?.replace('_', ' ') || '—'}</span>
+                                                        <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[10px] font-semibold uppercase">{sched.class?.grade?.replace('_', ' ') || '—'}</span>
                                                     </td>
                                                     <td className="px-6 py-3 text-gray-600 font-medium capitalize">{sched.day?.toLowerCase()}</td>
                                                     <td className="px-6 py-3 text-gray-500 font-mono text-xs">{sched.startTime} – {sched.endTime}</td>
@@ -501,10 +501,10 @@ const TeacherProfile = ({ teacher, onBack, onEdit }) => {
                                 <div className="w-10 h-10 bg-brand-teal/10 rounded-xl flex items-center justify-center text-brand-teal">
                                     <FileText size={20} />
                                 </div>
-                                <h3 className="text-xl font-bold text-gray-900 tracking-tight">Professional Documents</h3>
+                                <h3 className="text-xl font-medium text-gray-900 tracking-tight">Professional Documents</h3>
                             </div>
                             <input type="file" ref={fileInputRef} onChange={handleUploadDoc} className="hidden" />
-                            <button onClick={() => fileInputRef.current?.click()} className="px-4 py-2 bg-white border border-gray-200 text-brand-teal rounded-lg font-bold text-sm hover:bg-gray-50 transition shadow-sm">
+                            <button onClick={() => fileInputRef.current?.click()} className="px-4 py-2 bg-white border border-gray-200 text-brand-teal rounded-lg font-medium text-sm hover:bg-gray-50 transition shadow-sm">
                                 Upload New
                             </button>
                         </div>
@@ -517,9 +517,9 @@ const TeacherProfile = ({ teacher, onBack, onEdit }) => {
                                                 <FileText size={22} />
                                             </div>
                                             <div>
-                                                <p className="font-black text-gray-900 tracking-tight">{doc.name}</p>
+                                                <p className="font-semibold text-gray-900 tracking-tight">{doc.name}</p>
                                                 <div className="flex items-center gap-2 mt-1">
-                                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-gray-100 px-1.5 py-0.5 rounded">{formatSize(doc.size)}</span>
+                                                    <span className="text-[10px] font-medium text-gray-400 uppercase tracking-widest bg-gray-100 px-1.5 py-0.5 rounded">{formatSize(doc.size)}</span>
                                                     <span className="text-gray-300">•</span>
                                                     <span className="text-xs text-gray-500 font-medium">Uploaded on {new Date(doc.createdAt || doc.date || Date.now()).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                                                 </div>

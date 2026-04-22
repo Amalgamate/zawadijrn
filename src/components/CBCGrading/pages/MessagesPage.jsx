@@ -517,7 +517,7 @@ const MessagesPage = () => {
             <MessageSquare size={24} className="text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">Messages & Inbox</h1>
+            <h1 className="text-2xl font-medium text-white">Messages & Inbox</h1>
             <p className="text-white/80 text-sm">Manage communications and broadcast messages</p>
           </div>
         </div>
@@ -532,14 +532,14 @@ const MessagesPage = () => {
               className="rounded-none border-b-2 border-transparent data-[state=active]:border-brand-teal data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-4 flex items-center gap-2"
             >
               <MessageSquare size={16} />
-              <span className="font-bold">Inbox</span>
+              <span className="font-medium">Inbox</span>
             </TabsTrigger>
             <TabsTrigger
               value="broadcast"
               className="rounded-none border-b-2 border-transparent data-[state=active]:border-brand-purple data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-4 flex items-center gap-2"
             >
               <Send size={16} />
-              <span className="font-bold">Broadcast Messages</span>
+              <span className="font-medium">Broadcast Messages</span>
             </TabsTrigger>
           </TabsList>
 
@@ -549,7 +549,7 @@ const MessagesPage = () => {
               <div className="flex justify-end">
                 <Button
                   onClick={() => setShowCompose(true)}
-                  className="bg-brand-teal hover:bg-brand-teal/90 text-white font-bold gap-2"
+                  className="bg-brand-teal hover:bg-brand-teal/90 text-white font-medium gap-2"
                 >
                   <Plus size={20} />
                   Compose Message
@@ -561,7 +561,7 @@ const MessagesPage = () => {
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center">
                       <MessageSquare size={48} className="mx-auto text-gray-300 mb-4" />
-                      <h3 className="text-lg font-bold text-gray-600 mb-2">No Messages</h3>
+                      <h3 className="text-lg font-medium text-gray-600 mb-2">No Messages</h3>
                       <p className="text-gray-400 max-w-sm">Your inbox is empty. Create a new message to get started.</p>
                     </div>
                   </div>
@@ -573,7 +573,7 @@ const MessagesPage = () => {
                           <div className="flex items-start justify-between gap-4">
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-2">
-                                <h3 className="font-bold text-gray-800">{msg.subject}</h3>
+                                <h3 className="font-medium text-gray-800">{msg.subject}</h3>
                                 {!msg.read && (
                                   <Badge className="bg-blue-600">New</Badge>
                                 )}
@@ -608,7 +608,7 @@ const MessagesPage = () => {
       <Dialog open={showCompose} onOpenChange={setShowCompose}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+            <DialogTitle className="text-xl font-medium flex items-center gap-2">
               <Plus size={20} className="text-brand-teal" />
               Send Message
             </DialogTitle>
@@ -629,7 +629,7 @@ const MessagesPage = () => {
           {/* Single Message Tab */}
           <TabsContent value="single" className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="composePhone" className="font-bold">Phone Number</Label>
+              <Label htmlFor="composePhone" className="font-medium">Phone Number</Label>
               <Input
                 id="composePhone"
                 type="tel"
@@ -657,7 +657,7 @@ const MessagesPage = () => {
           {/* Bulk Upload Tab */}
           <TabsContent value="bulk" className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="csvFile" className="font-bold">Upload CSV or Excel File</Label>
+              <Label htmlFor="csvFile" className="font-medium">Upload CSV or Excel File</Label>
               <p className="text-xs text-gray-500">File should contain phone numbers (with or without header row)</p>
               <input
                 id="csvFile"
@@ -665,18 +665,18 @@ const MessagesPage = () => {
                 accept=".csv,.xlsx,.xls"
                 onChange={(e) => handleLoadCsvFile(e.target.files?.[0])}
                 disabled={isSendingCompose}
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-brand-teal file:text-white file:font-bold hover:file:bg-brand-teal/90 cursor-pointer"
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-brand-teal file:text-white file:font-medium hover:file:bg-brand-teal/90 cursor-pointer"
               />
             </div>
 
             {composeCsvFile && composePhones.length > 0 && (
               <Card className="bg-green-50 border-green-200">
                 <CardContent className="p-4">
-                  <p className="text-sm font-bold text-green-700 mb-2">✓ File loaded successfully</p>
+                  <p className="text-sm font-medium text-green-700 mb-2">✓ File loaded successfully</p>
                   <p className="text-sm text-green-600">{composeCsvFile.name}</p>
-                  <p className="text-lg font-bold text-green-700 mt-2">{composePhones.length} phone numbers</p>
+                  <p className="text-lg font-medium text-green-700 mt-2">{composePhones.length} phone numbers</p>
                   <div className="mt-3 max-h-32 overflow-y-auto">
-                    <p className="text-xs font-bold text-green-600 mb-1">First 10 numbers:</p>
+                    <p className="text-xs font-medium text-green-600 mb-1">First 10 numbers:</p>
                     <div className="space-y-1">
                       {composePhones.slice(0, 10).map((phone, idx) => (
                         <p key={idx} className="text-xs text-green-600 font-mono">
@@ -709,7 +709,7 @@ const MessagesPage = () => {
               {loadingStaff ? (
                 <div className="p-8 text-center">
                   <Loader2 className="animate-spin mx-auto text-brand-teal mb-2" size={24} />
-                  <p className="text-sm text-gray-500 font-bold uppercase tracking-widest">Loading directory...</p>
+                  <p className="text-sm text-gray-500 font-medium uppercase tracking-widest">Loading directory...</p>
                 </div>
               ) : filteredStaff.length === 0 ? (
                 <div className="p-8 text-center">
@@ -728,8 +728,8 @@ const MessagesPage = () => {
                     className="w-full flex items-center justify-between p-3 hover:bg-slate-50 transition-colors group"
                   >
                     <div className="text-left">
-                      <p className="font-bold text-gray-900 group-hover:text-brand-purple transition-colors">{staff.name}</p>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{staff.role.replace(/_/g, ' ')}</p>
+                      <p className="font-medium text-gray-900 group-hover:text-brand-purple transition-colors">{staff.name}</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">{staff.role.replace(/_/g, ' ')}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-xs font-mono text-gray-500">{getDisplayPhoneNumber(staff.phone)}</p>
@@ -743,7 +743,7 @@ const MessagesPage = () => {
         </Tabs>
 
           <div className="space-y-4">
-            <Label htmlFor="composeSubject" className="font-bold">Subject (optional)</Label>
+            <Label htmlFor="composeSubject" className="font-medium">Subject (optional)</Label>
             <Input
               id="composeSubject"
               type="text"
@@ -755,7 +755,7 @@ const MessagesPage = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="msgContent" className="font-bold">Message</Label>
+            <Label htmlFor="msgContent" className="font-medium">Message</Label>
             <textarea
               id="msgContent"
               rows={6}
@@ -771,7 +771,7 @@ const MessagesPage = () => {
           </div>
 
             <div className="space-y-2">
-              <Label htmlFor="scheduledFor" className="font-bold">Schedule Send</Label>
+              <Label htmlFor="scheduledFor" className="font-medium">Schedule Send</Label>
               <Input
                 id="scheduledFor"
                 type="datetime-local"
@@ -801,7 +801,7 @@ const MessagesPage = () => {
                 (composeInputMode === 'single' && !composePhone) ||
                 (composeInputMode === 'bulk' && composePhones.length === 0)
               }
-              className="bg-brand-teal hover:bg-brand-teal/90 text-white font-bold gap-2"
+              className="bg-brand-teal hover:bg-brand-teal/90 text-white font-medium gap-2"
             >
               {isSendingCompose ? (
                 <Loader2 size={18} className="animate-spin" />
@@ -834,13 +834,13 @@ const MessagesPage = () => {
                 <Card className="bg-green-50">
                   <CardContent className="p-3 text-center">
                     <p className="text-xs text-gray-600">Total</p>
-                    <p className="text-2xl font-bold text-green-700">{composeSendReport.length}</p>
+                    <p className="text-2xl font-medium text-green-700">{composeSendReport.length}</p>
                   </CardContent>
                 </Card>
                 <Card className="bg-green-50">
                   <CardContent className="p-3 text-center">
                     <p className="text-xs text-gray-600">Sent</p>
-                    <p className="text-2xl font-bold text-green-700">
+                    <p className="text-2xl font-medium text-green-700">
                       {composeSendReport.filter(r => r.status === 'Sent').length}
                     </p>
                   </CardContent>
@@ -848,7 +848,7 @@ const MessagesPage = () => {
                 <Card className="bg-red-50">
                   <CardContent className="p-3 text-center">
                     <p className="text-xs text-gray-600">Failed</p>
-                    <p className="text-2xl font-bold text-red-700">
+                    <p className="text-2xl font-medium text-red-700">
                       {composeSendReport.filter(r => r.status === 'Failed').length}
                     </p>
                   </CardContent>
@@ -890,7 +890,7 @@ const MessagesPage = () => {
                 setShowCompose(false);
                 resetComposeState();
               }}
-              className="bg-brand-teal hover:bg-brand-teal/90 text-white font-bold"
+              className="bg-brand-teal hover:bg-brand-teal/90 text-white font-medium"
             >
               Close
             </Button>

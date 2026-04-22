@@ -77,7 +77,7 @@ const InventoryItems = () => {
         <div className="p-6">
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800">Inventory Items</h1>
+                    <h1 className="text-2xl font-medium text-gray-800">Inventory Items</h1>
                     <p className="text-gray-500 text-sm">Manage stock items, consumables and assets</p>
                 </div>
                 <div className="flex gap-3">
@@ -107,7 +107,7 @@ const InventoryItems = () => {
                             </div>
                         </div>
                         <p className="text-gray-500 text-sm">{stat.label}</p>
-                        <p className="text-2xl font-bold text-gray-800">{stat.value}</p>
+                        <p className="text-2xl font-medium text-gray-800">{stat.value}</p>
                     </div>
                 ))}
             </div>
@@ -220,7 +220,7 @@ const InventoryItems = () => {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                         <div className="flex justify-between items-center p-6 border-b border-gray-100">
-                            <h2 className="text-xl font-bold text-gray-800 text-left">Add Inventory Item</h2>
+                            <h2 className="text-xl font-medium text-gray-800 text-left">Add Inventory Item</h2>
                             <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-lg">
                                 <X size={20} />
                             </button>

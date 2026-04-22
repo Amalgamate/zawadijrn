@@ -186,7 +186,7 @@ const JournalEntries = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800 tracking-tight">Journal Entries</h1>
+                    <h1 className="text-2xl font-medium text-gray-800 tracking-tight">Journal Entries</h1>
                     <p className="text-gray-500 text-sm">Review and manage double-entry bookkeeping records</p>
                 </div>
                 <div className="flex gap-3">
@@ -260,7 +260,7 @@ const JournalEntries = () => {
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
-                            <tr className="bg-gray-50/50 text-[11px] font-bold text-gray-500 uppercase tracking-widest">
+                            <tr className="bg-gray-50/50 text-[11px] font-medium text-gray-500 uppercase tracking-widest">
                                 <th className="px-6 py-4">Ref / Description</th>
                                 <th className="px-6 py-4 text-center">Date</th>
                                 <th className="px-6 py-4">Journal</th>
@@ -288,7 +288,7 @@ const JournalEntries = () => {
                                         <tr key={entry.id} className="group hover:bg-gray-50/50 transition-all">
                                             <td className="px-6 py-4">
                                                 <div className="flex flex-col">
-                                                    <span className="text-xs font-mono font-bold text-brand-purple">{entry.reference || 'NO-REF'}</span>
+                                                    <span className="text-xs font-mono font-medium text-brand-purple">{entry.reference || 'NO-REF'}</span>
                                                     <span className="text-sm font-medium text-gray-800">{entry.items[0]?.label || 'General Entry'}</span>
                                                 </div>
                                             </td>
@@ -298,20 +298,20 @@ const JournalEntries = () => {
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-2">
                                                     <ArrowRightLeft size={14} className="text-gray-300" />
-                                                    <span className="text-xs font-bold text-gray-600 uppercase">{entry.journal?.name}</span>
+                                                    <span className="text-xs font-medium text-gray-600 uppercase">{entry.journal?.name}</span>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <span className="text-sm font-bold text-gray-900">{formatCurrency(total)}</span>
+                                                <span className="text-sm font-medium text-gray-900">{formatCurrency(total)}</span>
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 {entry.status === 'POSTED' ? (
-                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 uppercase tracking-tighter">
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700 uppercase tracking-tighter">
                                                         <CheckCircle2 size={12} />
                                                         Posted
                                                     </span>
                                                 ) : (
-                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 uppercase tracking-tighter">
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium bg-amber-50 text-amber-700 uppercase tracking-tighter">
                                                         <Clock size={12} />
                                                         Draft
                                                     </span>
@@ -322,7 +322,7 @@ const JournalEntries = () => {
                                                     {entry.status === 'DRAFT' && (
                                                         <button 
                                                             onClick={() => handlePostEntry(entry.id)}
-                                                            className="p-1.5 h-8 flex items-center gap-1 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition-all text-[10px] font-bold uppercase"
+                                                            className="p-1.5 h-8 flex items-center gap-1 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition-all text-[10px] font-medium uppercase"
                                                             title="Post to Ledger"
                                                         >
                                                             <Check size={14} />
@@ -389,7 +389,7 @@ const JournalEntries = () => {
                         </div>
 
                         <div className="space-y-3">
-                            <div className="grid grid-cols-12 gap-2 text-[10px] font-bold text-gray-400 uppercase px-2">
+                            <div className="grid grid-cols-12 gap-2 text-[10px] font-medium text-gray-400 uppercase px-2">
                                 <div className="col-span-5">Account</div>
                                 <div className="col-span-3 text-right">Debit</div>
                                 <div className="col-span-3 text-right">Credit</div>
@@ -442,7 +442,7 @@ const JournalEntries = () => {
                             <button 
                                 type="button" 
                                 onClick={handleAddItem}
-                                className="text-xs font-bold text-brand-purple hover:underline flex items-center gap-1 mt-2"
+                                className="text-xs font-medium text-brand-purple hover:underline flex items-center gap-1 mt-2"
                             >
                                 <Plus size={14} />
                                 Add Row
@@ -450,15 +450,15 @@ const JournalEntries = () => {
                         </div>
 
                         <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-100">
-                            <span className="text-xs font-bold text-gray-500">Totals</span>
+                            <span className="text-xs font-medium text-gray-500">Totals</span>
                             <div className="flex gap-8">
                                 <div className="text-right">
                                     <p className="text-[10px] text-gray-400 uppercase">Debit</p>
-                                    <p className="text-sm font-bold">{formatCurrency(totalDebits)}</p>
+                                    <p className="text-sm font-medium">{formatCurrency(totalDebits)}</p>
                                 </div>
                                 <div className="text-right">
                                     <p className="text-[10px] text-gray-400 uppercase">Credit</p>
-                                    <p className="text-sm font-bold text-rose-600">{formatCurrency(totalCredits)}</p>
+                                    <p className="text-sm font-medium text-rose-600">{formatCurrency(totalCredits)}</p>
                                 </div>
                             </div>
                         </div>

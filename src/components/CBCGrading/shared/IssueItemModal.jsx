@@ -23,8 +23,8 @@ const IssueItemModal = ({ isOpen, onClose, items, onIssue, teacherName }) => {
                     {/* Header */}
                     <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                         <div>
-                            <h3 className="text-2xl font-black text-gray-900 tracking-tight">Issue Item</h3>
-                            <p className="text-sm font-bold text-gray-500 mt-1 uppercase tracking-widest">
+                            <h3 className="text-2xl font-semibold text-gray-900 tracking-tight">Issue Item</h3>
+                            <p className="text-sm font-medium text-gray-500 mt-1 uppercase tracking-widest">
                                 Assigning to: <span className="text-brand-teal">{teacherName}</span>
                             </p>
                         </div>
@@ -56,9 +56,9 @@ const IssueItemModal = ({ isOpen, onClose, items, onIssue, teacherName }) => {
                                                 <Package size={24} />
                                             </div>
                                             <div>
-                                                <p className="font-bold text-gray-900">{item.title}</p>
+                                                <p className="font-medium text-gray-900">{item.title}</p>
                                                 <div className="flex items-center gap-2 mt-0.5">
-                                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-100 px-1.5 py-0.5 rounded">{item.category}</span>
+                                                    <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest bg-gray-100 px-1.5 py-0.5 rounded">{item.category}</span>
                                                     {item.isbn && (
                                                         <>
                                                             <span className="text-gray-300">•</span>
@@ -70,7 +70,7 @@ const IssueItemModal = ({ isOpen, onClose, items, onIssue, teacherName }) => {
                                         </div>
                                         <button
                                             onClick={() => onIssue(item.id)}
-                                            className="flex items-center gap-2 px-4 py-2 bg-brand-teal text-white rounded-xl hover:bg-brand-teal/90 transition shadow-sm font-bold text-sm"
+                                            className="flex items-center gap-2 px-4 py-2 bg-brand-teal text-white rounded-xl hover:bg-brand-teal/90 transition shadow-sm font-medium text-sm"
                                         >
                                             <Plus size={16} />
                                             Issue
@@ -80,7 +80,7 @@ const IssueItemModal = ({ isOpen, onClose, items, onIssue, teacherName }) => {
                             ) : (
                                 <div className="py-12 text-center">
                                     <Package size={48} className="text-gray-200 mx-auto mb-4" />
-                                    <p className="text-gray-500 font-bold">No available items found</p>
+                                    <p className="text-gray-500 font-medium">No available items found</p>
                                     <p className="text-sm text-gray-400 mt-1">Try a different search term or add more items to inventory.</p>
                                 </div>
                             )}
@@ -90,7 +90,7 @@ const IssueItemModal = ({ isOpen, onClose, items, onIssue, teacherName }) => {
                         <div className="mt-8 flex gap-3 p-4 bg-blue-50/50 rounded-2xl border border-blue-100">
                             <Info size={20} className="text-blue-500 shrink-0" />
                             <p className="text-xs text-blue-700 leading-relaxed font-medium">
-                                Issuing an item will change its status to <span className="font-bold">ISSUED</span>.
+                                Issuing an item will change its status to <span className="font-medium">ISSUED</span>.
                                 The teacher will be responsible for returning this item upon departure or at the end of the term.
                             </p>
                         </div>

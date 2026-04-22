@@ -60,7 +60,7 @@ const CircularChart = ({
     
     return (
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <div className="text-3xl font-bold text-gray-800">{centerLabel.value}</div>
+        <div className="text-3xl font-medium text-gray-800">{centerLabel.value}</div>
         <div className="text-sm text-gray-600">{centerLabel.label}</div>
       </div>
     );
@@ -73,11 +73,11 @@ const CircularChart = ({
         <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3">
           <p className="font-semibold text-gray-800">{data.name}</p>
           <p className="text-sm text-gray-600">
-            Value: <span className="font-bold" style={{ color: data.payload.fill }}>{data.value}</span>
+            Value: <span className="font-medium" style={{ color: data.payload.fill }}>{data.value}</span>
           </p>
           {data.payload.percentage && (
             <p className="text-sm text-gray-600">
-              Percentage: <span className="font-bold">{data.payload.percentage}%</span>
+              Percentage: <span className="font-medium">{data.payload.percentage}%</span>
             </p>
           )}
         </div>

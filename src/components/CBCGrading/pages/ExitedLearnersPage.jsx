@@ -115,7 +115,7 @@ const ExitedLearnersPage = () => {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Error Loading Data</h2>
+          <h2 className="text-xl font-medium text-gray-900 mb-2">Error Loading Data</h2>
           <p className="text-gray-600">{error}</p>
         </div>
       </div>
@@ -161,16 +161,16 @@ const ExitedLearnersPage = () => {
             {/* Compact Metrics */}
             <div className="hidden lg:flex items-center gap-4 mr-2 border-r pr-4 border-gray-200 h-10">
               <div className="text-right">
-                <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Total</p>
-                <p className="text-xl font-bold text-gray-800 leading-none">{stats.total}</p>
+                <p className="text-[10px] text-gray-500 uppercase font-medium tracking-wider">Total</p>
+                <p className="text-xl font-medium text-gray-800 leading-none">{stats.total}</p>
               </div>
               <div className="text-right border-l pl-4 border-gray-100">
-                <p className="text-[10px] text-blue-600 uppercase font-bold tracking-wider">Transferred</p>
-                <p className="text-xl font-bold text-blue-700 leading-none">{stats.transferred}</p>
+                <p className="text-[10px] text-blue-600 uppercase font-medium tracking-wider">Transferred</p>
+                <p className="text-xl font-medium text-blue-700 leading-none">{stats.transferred}</p>
               </div>
               <div className="text-right border-l pl-4 border-gray-100">
-                <p className="text-[10px] text-green-600 uppercase font-bold tracking-wider">Graduated</p>
-                <p className="text-xl font-bold text-green-700 leading-none">{stats.graduated}</p>
+                <p className="text-[10px] text-green-600 uppercase font-medium tracking-wider">Graduated</p>
+                <p className="text-xl font-medium text-green-700 leading-none">{stats.graduated}</p>
               </div>
             </div>
 
@@ -316,12 +316,12 @@ const ExitedLearnersPage = () => {
                       className="w-16 h-16 rounded-full object-cover border-4 border-white"
                     />
                   ) : (
-                    <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-2xl">
+                    <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center text-white font-medium text-2xl">
                       {selectedLearner.firstName?.charAt(0)}{selectedLearner.lastName?.charAt(0)}
                     </div>
                   )}
                   <div>
-                    <h3 className="text-xl font-bold text-white">
+                    <h3 className="text-xl font-medium text-white">
                       {selectedLearner.firstName} {selectedLearner.lastName}
                     </h3>
                     <p className="text-red-100">{selectedLearner.admissionNumber || selectedLearner.admNo}</p>
@@ -341,13 +341,13 @@ const ExitedLearnersPage = () => {
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <p className="text-sm font-semibold text-gray-600">Grade & Stream</p>
-                  <p className="text-lg font-bold text-gray-900">
+                  <p className="text-lg font-medium text-gray-900">
                     {selectedLearner.grade}{selectedLearner.stream ? ` - ${selectedLearner.stream}` : ''}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-gray-600">Exit Date</p>
-                  <p className="text-lg font-bold text-gray-900">
+                  <p className="text-lg font-medium text-gray-900">
                     {selectedLearner.exitDate
                       ? new Date(selectedLearner.exitDate).toLocaleDateString()
                       : 'N/A'}

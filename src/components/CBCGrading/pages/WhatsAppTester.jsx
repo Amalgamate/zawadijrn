@@ -103,7 +103,7 @@ const WhatsAppTester = () => {
       <div className="bg-white rounded-xl shadow-md p-6">
         <div className="flex items-center gap-3 mb-4">
           <Send className="text-green-600" size={24} />
-          <h3 className="text-xl font-bold">Test Connection</h3>
+          <h3 className="text-xl font-medium">Test Connection</h3>
         </div>
         <p className="text-gray-600 mb-4">Send a test message to verify WhatsApp integration is working.</p>
 
@@ -132,7 +132,7 @@ const WhatsAppTester = () => {
       <div className="bg-white rounded-xl shadow-md p-6">
         <div className="flex items-center gap-3 mb-4">
           <Bell className="text-blue-600" size={24} />
-          <h3 className="text-xl font-bold">Assessment Notification</h3>
+          <h3 className="text-xl font-medium">Assessment Notification</h3>
         </div>
         <p className="text-gray-600 mb-4">Simulate sending assessment completion notification to a parent.</p>
 
@@ -167,7 +167,7 @@ const WhatsAppTester = () => {
       <div className="bg-white rounded-xl shadow-md p-6">
         <div className="flex items-center gap-3 mb-4">
           <Users className="text-purple-600" size={24} />
-          <h3 className="text-xl font-bold">School Announcement</h3>
+          <h3 className="text-xl font-medium">School Announcement</h3>
         </div>
         <p className="text-gray-600 mb-4">Send announcement to all parents or filtered by grade.</p>
 
@@ -209,7 +209,7 @@ const WhatsAppTester = () => {
 
       {/* Instructions */}
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-        <h4 className="font-bold text-blue-900 mb-3">Setup Instructions:</h4>
+        <h4 className="font-medium text-blue-900 mb-3">Setup Instructions:</h4>
         <ol className="list-decimal list-inside space-y-2 text-blue-800">
           <li>Configure Africa's Talking API key in server/.env file</li>
           <li>Restart backend server: <code className="bg-blue-100 px-2 py-1 rounded">npm run dev</code></li>

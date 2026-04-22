@@ -141,7 +141,7 @@ const AddEditTeacherPage = ({ onSave, onCancel, teacher = null }) => {
                     <ArrowLeft size={20} />
                 </button>
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800">
+                    <h1 className="text-2xl font-medium text-gray-800">
                         {isEdit ? 'Edit Tutor Details' : 'Add New Tutor'}
                     </h1>
                     <p className="text-gray-500">
@@ -157,7 +157,7 @@ const AddEditTeacherPage = ({ onSave, onCancel, teacher = null }) => {
                         <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
                             <User size={20} />
                         </div>
-                        <h3 className="text-lg font-bold text-gray-800">Personal Information</h3>
+                        <h3 className="text-lg font-medium text-gray-800">Personal Information</h3>
                     </div>
                     <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div>
@@ -229,7 +229,7 @@ const AddEditTeacherPage = ({ onSave, onCancel, teacher = null }) => {
                         <div className="p-2 bg-green-100 text-green-600 rounded-lg">
                             <Mail size={20} />
                         </div>
-                        <h3 className="text-lg font-bold text-gray-800">Contact & Professional</h3>
+                        <h3 className="text-lg font-medium text-gray-800">Contact & Professional</h3>
                     </div>
                     <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div>
@@ -285,14 +285,14 @@ const AddEditTeacherPage = ({ onSave, onCancel, teacher = null }) => {
                             <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg">
                                 <AlertCircle size={20} />
                             </div>
-                            <h3 className="text-lg font-bold text-gray-800 uppercase tracking-tight">Government Compliance & Banking</h3>
+                            <h3 className="text-lg font-medium text-gray-800 uppercase tracking-tight">Government Compliance & Banking</h3>
                         </div>
-                        <span className="text-[10px] font-black text-emerald-600 bg-emerald-100/50 px-2 py-1 rounded uppercase tracking-widest">KRA / NSSF / SHIF</span>
+                        <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-100/50 px-2 py-1 rounded uppercase tracking-widest">KRA / NSSF / SHIF</span>
                     </div>
                     <div className="p-6">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                             <div>
-                                <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">KRA PIN</label>
+                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">KRA PIN</label>
                                 <input
                                     type="text"
                                     name="kraPin"
@@ -303,7 +303,7 @@ const AddEditTeacherPage = ({ onSave, onCancel, teacher = null }) => {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">NSSF Number</label>
+                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">NSSF Number</label>
                                 <input
                                     type="text"
                                     name="nssfNumber"
@@ -313,7 +313,7 @@ const AddEditTeacherPage = ({ onSave, onCancel, teacher = null }) => {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">SHIF Number</label>
+                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">SHIF Number</label>
                                 <input
                                     type="text"
                                     name="shifNumber"
@@ -326,7 +326,7 @@ const AddEditTeacherPage = ({ onSave, onCancel, teacher = null }) => {
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div>
-                                <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Bank Name</label>
+                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">Bank Name</label>
                                 <input
                                     type="text"
                                     name="bankName"
@@ -337,7 +337,7 @@ const AddEditTeacherPage = ({ onSave, onCancel, teacher = null }) => {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Account Number</label>
+                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">Account Number</label>
                                 <input
                                     type="text"
                                     name="bankAccountNumber"
@@ -347,19 +347,19 @@ const AddEditTeacherPage = ({ onSave, onCancel, teacher = null }) => {
                                 />
                             </div>
                             <div className="bg-emerald-600 rounded-xl p-4 text-white shadow-lg">
-                                <label className="block text-[10px] font-black uppercase tracking-[0.2em] mb-1 opacity-80">Monthly Basic Salary</label>
+                                <label className="block text-[10px] font-semibold uppercase tracking-[0.2em] mb-1 opacity-80">Monthly Basic Salary</label>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-xl font-black italic opacity-60">KES</span>
+                                    <span className="text-xl font-semibold italic opacity-60">KES</span>
                                     <input
                                         type="number"
                                         name="basicSalary"
                                         value={formData.basicSalary}
                                         onChange={handleChange}
-                                        className="w-full bg-transparent border-none text-2xl font-black focus:ring-0 placeholder:text-white/30"
+                                        className="w-full bg-transparent border-none text-2xl font-semibold focus:ring-0 placeholder:text-white/30"
                                         placeholder="0.00"
                                     />
                                 </div>
-                                <p className="text-[9px] mt-2 font-bold opacity-70 italic">* Used for automated KRA/NSSF/SHIF calculations</p>
+                                <p className="text-[9px] mt-2 font-medium opacity-70 italic">* Used for automated KRA/NSSF/SHIF calculations</p>
                             </div>
                         </div>
                     </div>
@@ -371,7 +371,7 @@ const AddEditTeacherPage = ({ onSave, onCancel, teacher = null }) => {
                         <div className="p-2 bg-orange-100 text-orange-600 rounded-lg">
                             <BookOpen size={20} />
                         </div>
-                        <h3 className="text-lg font-bold text-gray-800">Account Security</h3>
+                        <h3 className="text-lg font-medium text-gray-800">Account Security</h3>
                     </div>
                     <div className="p-6">
                         <div className="max-w-md">

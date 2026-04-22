@@ -136,8 +136,8 @@ const HeadTeacherDashboard = ({ learners = [], teachers = [], user, onNavigate }
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">{item.title}</p>
-                      <h4 className="text-sm font-black text-gray-900 group-hover:text-brand-purple transition-colors">{item.name}</h4>
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-widest mb-1">{item.title}</p>
+                      <h4 className="text-sm font-semibold text-gray-900 group-hover:text-brand-purple transition-colors">{item.name}</h4>
                       <p className="text-xs text-gray-600 mt-1">{item.desc}</p>
                     </div>
                     <div className={`p-3 rounded-lg bg-${item.color === 'brand-purple' ? 'brand-purple' : item.color === 'brand-teal' ? 'brand-teal' : item.color}-100 group-hover:scale-110 transition-transform duration-300`}>
@@ -165,29 +165,29 @@ const HeadTeacherDashboard = ({ learners = [], teachers = [], user, onNavigate }
               onClick={() => onNavigate('comm-notices')}
               className="w-full p-4 text-left rounded-xl border-2 border-brand-purple/20 bg-brand-purple/5 hover:border-brand-purple/50 hover:bg-brand-purple/10 transition-all duration-300 group hover:shadow-md"
             >
-              <p className="text-xs font-bold text-brand-purple uppercase tracking-widest">Communications</p>
-              <p className="text-sm font-black text-gray-900 mt-1 group-hover:text-brand-purple">Send Notices</p>
+              <p className="text-xs font-medium text-brand-purple uppercase tracking-widest">Communications</p>
+              <p className="text-sm font-semibold text-gray-900 mt-1 group-hover:text-brand-purple">Send Notices</p>
             </button>
 
             <button
               onClick={() => onNavigate('assess-performance-scale')}
               className="w-full p-4 text-left rounded-xl border-2 border-brand-teal/20 bg-brand-teal/5 hover:border-brand-teal/50 hover:bg-brand-teal/10 transition-all duration-300 group hover:shadow-md"
             >
-              <p className="text-xs font-bold text-brand-teal uppercase tracking-widest">Assessment</p>
-              <p className="text-sm font-black text-gray-900 mt-1 group-hover:text-brand-teal">Performance Scale</p>
+              <p className="text-xs font-medium text-brand-teal uppercase tracking-widest">Assessment</p>
+              <p className="text-sm font-semibold text-gray-900 mt-1 group-hover:text-brand-teal">Performance Scale</p>
             </button>
 
             <div className="pt-4 border-t-2 border-gray-100">
               <div className="bg-gray-50 rounded-xl p-4">
-                <p className="text-xs font-bold text-gray-600 uppercase tracking-widest mb-3">📊 System Info</p>
+                <p className="text-xs font-medium text-gray-600 uppercase tracking-widest mb-3">📊 System Info</p>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-xs text-gray-600">Last Updated</span>
-                    <span className="text-sm font-black text-gray-900">{new Date().toLocaleDateString()}</span>
+                    <span className="text-sm font-semibold text-gray-900">{new Date().toLocaleDateString()}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-xs text-gray-600">Your Role</span>
-                    <span className="text-sm font-black text-brand-purple">Head Teacher</span>
+                    <span className="text-sm font-semibold text-brand-purple">Head Teacher</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-xs text-gray-600">Status</span>

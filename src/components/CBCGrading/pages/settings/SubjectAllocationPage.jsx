@@ -248,7 +248,7 @@ const SubjectAllocationPage = () => {
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
         <div>
-          <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+          <h2 className="text-xl font-medium text-gray-800 flex items-center gap-2">
             <GraduationCap className="text-purple-600" />
             Subject Allocation
           </h2>
@@ -346,7 +346,7 @@ const SubjectAllocationPage = () => {
         <DialogContent className="max-w-md overflow-hidden p-0 rounded-2xl border-none shadow-2xl">
           <div className="bg-purple-600 p-6 text-white">
             <DialogHeader>
-              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              <DialogTitle className="text-xl font-medium flex items-center gap-2">
                 <UserPlus />
                 Assign Teacher
               </DialogTitle>
@@ -385,12 +385,12 @@ const SubjectAllocationPage = () => {
                     onClick={() => !alreadyAssigned && !submitting && handleAssign(teacher.id)}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold shadow-sm">
+                      <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-medium shadow-sm">
                         {teacher.firstName?.charAt(0)}{teacher.lastName?.charAt(0)}
                       </div>
                       <div>
-                        <p className="font-bold text-gray-800 text-sm">{teacher.firstName} {teacher.lastName}</p>
-                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{teacher.staffId || 'Teacher'}</p>
+                        <p className="font-medium text-gray-800 text-sm">{teacher.firstName} {teacher.lastName}</p>
+                        <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">{teacher.staffId || 'Teacher'}</p>
                       </div>
                     </div>
                     {alreadyAssigned ? <CheckCircle2 className="text-green-500" size={20} /> : null}
@@ -408,7 +408,7 @@ const SubjectAllocationPage = () => {
           </div>
 
           <DialogFooter className="bg-gray-50 p-4 border-t border-gray-100">
-            <Button variant="ghost" onClick={() => setShowAssignModal(false)} className="rounded-xl font-bold" disabled={submitting}>
+            <Button variant="ghost" onClick={() => setShowAssignModal(false)} className="rounded-xl font-medium" disabled={submitting}>
               Cancel
             </Button>
           </DialogFooter>

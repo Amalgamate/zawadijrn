@@ -76,7 +76,7 @@ const AccountingManager = ({ user }) => {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800 tracking-tight">Accounting Dashboard</h1>
+                    <h1 className="text-2xl font-medium text-gray-800 tracking-tight">Accounting Dashboard</h1>
                     <p className="text-gray-500 text-sm">Real-time financial overview and ledger management</p>
                 </div>
                 <div className="flex gap-3">
@@ -131,7 +131,7 @@ const AccountingManager = ({ user }) => {
                 {/* Recent Activity */}
                 <div className="lg:col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
                     <div className="px-6 py-4 border-b border-gray-50 flex items-center justify-between">
-                        <h2 className="font-bold text-gray-800 flex items-center gap-2">
+                        <h2 className="font-medium text-gray-800 flex items-center gap-2">
                             <History size={18} className="text-brand-purple" />
                             Recent Journal Entries
                         </h2>
@@ -140,7 +140,7 @@ const AccountingManager = ({ user }) => {
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
                             <thead>
-                                <tr className="bg-gray-50/50 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                <tr className="bg-gray-50/50 text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     <th className="px-6 py-3">Date</th>
                                     <th className="px-6 py-3">Description</th>
                                     <th className="px-6 py-3">Type</th>
@@ -159,7 +159,7 @@ const AccountingManager = ({ user }) => {
                                                 {entry.type}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 text-sm font-bold text-gray-900 text-right">
+                                        <td className="px-6 py-4 text-sm font-medium text-gray-900 text-right">
                                             {formatCurrency(entry.amount)}
                                         </td>
                                         <td className="px-6 py-4 text-center">
@@ -179,7 +179,7 @@ const AccountingManager = ({ user }) => {
                 <div className="space-y-6">
                     <div className="bg-[var(--brand-purple)] rounded-xl p-6 text-white shadow-xl shadow-brand-purple/20 relative overflow-hidden group">
                         <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all duration-700"></div>
-                        <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
+                        <h3 className="text-lg font-medium mb-2 flex items-center gap-2">
                             <BarChart3 size={20} className="text-brand-teal" />
                             Fiscal Year Summary
                         </h3>
@@ -187,13 +187,13 @@ const AccountingManager = ({ user }) => {
                         <div className="space-y-4">
                             <div className="flex justify-between items-end">
                                 <span className="text-sm opacity-80">Collection Target</span>
-                                <span className="font-bold">85%</span>
+                                <span className="font-medium">85%</span>
                             </div>
                             <div className="w-full bg-white/20 rounded-full h-2">
                                 <div className="bg-brand-teal h-full rounded-full transition-all duration-1000" style={{ width: '85%' }}></div>
                             </div>
                             <div className="pt-2">
-                                <button className="w-full py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-sm font-bold transition-all">
+                                <button className="w-full py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-sm font-medium transition-all">
                                     Generate Balance Sheet
                                 </button>
                             </div>
@@ -201,7 +201,7 @@ const AccountingManager = ({ user }) => {
                     </div>
 
                     <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
-                        <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <h3 className="font-medium text-gray-800 mb-4 flex items-center gap-2">
                             <AlertCircle size={18} className="text-amber-500" />
                             Critical Notifications
                         </h3>
@@ -236,14 +236,14 @@ const StatCard = ({ title, amount, icon, trend, trendUp }) => (
                 {icon}
             </div>
             {trend && (
-                <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${trendUp ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-50 text-gray-500'
+                <span className={`text-[10px] font-medium px-2 py-1 rounded-full ${trendUp ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-50 text-gray-500'
                     }`}>
                     {trend}
                 </span>
             )}
         </div>
         <h3 className="text-sm font-medium text-gray-500 mb-1">{title}</h3>
-        <p className="text-2xl font-bold text-gray-900 tracking-tight">
+        <p className="text-2xl font-medium text-gray-900 tracking-tight">
             {new Intl.NumberFormat('en-KE', {
                 style: 'currency',
                 currency: 'KES',

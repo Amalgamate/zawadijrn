@@ -223,7 +223,7 @@ const SchemeOfWorkForm = ({ schemeId, onBack }) => {
           >
             <ArrowLeft size={20} />
           </button>
-          <h2 className="text-xl font-bold text-gray-800">
+          <h2 className="text-xl font-medium text-gray-800">
             {schemeId ? `${isViewOnly ? 'View' : 'Edit'} Scheme of Work` : 'New Scheme of Work'}
           </h2>
           {schemeData.status && (
@@ -301,7 +301,7 @@ const SchemeOfWorkForm = ({ schemeId, onBack }) => {
 
       {/* --- Print Header --- */}
       <div className="hidden print:block text-center border-b-2 border-gray-800 pb-4 mb-8">
-        <h1 className="text-2xl font-bold uppercase tracking-wider mb-2">Scheme of Work</h1>
+        <h1 className="text-2xl font-medium uppercase tracking-wider mb-2">Scheme of Work</h1>
         <div className="flex justify-center gap-8 text-sm font-semibold">
           <span>Teacher: {schemeData.teacher?.firstName || user.firstName} {schemeData.teacher?.lastName || user.lastName}</span>
           <span>Subject: {schemeData.learningArea}</span>
@@ -427,7 +427,7 @@ const SchemeOfWorkForm = ({ schemeId, onBack }) => {
             <tbody className="divide-y divide-gray-200">
               {schemeData.weeks.map((week, idx) => (
                 <tr key={idx} className="group hover:bg-teal-50/30 transition-colors print:hover:bg-transparent">
-                  <td className="py-2 px-2 text-center font-bold text-gray-500 bg-gray-50 border-r border-gray-200 print:bg-transparent print:border-black align-top">
+                  <td className="py-2 px-2 text-center font-medium text-gray-500 bg-gray-50 border-r border-gray-200 print:bg-transparent print:border-black align-top">
                     {week.weekNumber}
                   </td>
                   <td className="p-0 border-r border-gray-200 print:border-black align-top">

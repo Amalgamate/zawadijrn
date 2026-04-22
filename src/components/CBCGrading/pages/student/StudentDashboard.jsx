@@ -10,8 +10,8 @@ const MetricCard = ({ title, value, subtitle, icon: Icon, colorClass = 'text-gra
     <div className="flex justify-between items-start mb-2">
       <div className={`p-2 bg-gray-50 rounded-md ${colorClass}`}><Icon size={18} /></div>
     </div>
-    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{title}</p>
-    <h3 className="text-xl font-black text-gray-900 mt-1">{value}</h3>
+    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">{title}</p>
+    <h3 className="text-xl font-semibold text-gray-900 mt-1">{value}</h3>
     {subtitle && <p className="text-[10px] text-gray-500 mt-1 font-medium">{subtitle}</p>}
   </div>
 );
@@ -48,8 +48,8 @@ const StudentDashboard = ({ user, onNavigate }) => {
       <div className="bg-[#520050] rounded-xl p-6 text-white relative overflow-hidden shadow-lg">
         <div className="absolute right-0 top-0 opacity-10 pointer-events-none"><GraduationCap size={200} /></div>
         <div className="relative z-10">
-          <p className="text-purple-200 text-xs font-bold uppercase tracking-widest mb-1">Welcome back</p>
-          <h1 className="text-2xl font-black tracking-tight mb-1">{user?.firstName || 'Student'}</h1>
+          <p className="text-purple-200 text-xs font-medium uppercase tracking-widest mb-1">Welcome back</p>
+          <h1 className="text-2xl font-semibold tracking-tight mb-1">{user?.firstName || 'Student'}</h1>
           <p className="text-purple-100 text-sm mt-2">
             You have <strong>{dueSoon.length}</strong> assignment{dueSoon.length !== 1 ? 's' : ''} due soon.
           </p>
@@ -67,10 +67,10 @@ const StudentDashboard = ({ user, onNavigate }) => {
       {/* My Courses strip */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-          <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest flex items-center gap-2">
+          <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-widest flex items-center gap-2">
             <PlayCircle size={14} className="text-purple-600" /> My Courses
           </h3>
-          <button onClick={() => onNavigate?.('student-courses')} className="text-purple-600 text-[10px] font-black uppercase tracking-widest hover:underline flex items-center gap-1">
+          <button onClick={() => onNavigate?.('student-courses')} className="text-purple-600 text-[10px] font-semibold uppercase tracking-widest hover:underline flex items-center gap-1">
             View All <ChevronRight size={12} />
           </button>
         </div>
@@ -90,14 +90,14 @@ const StudentDashboard = ({ user, onNavigate }) => {
                   <BookOpen size={18} className="text-purple-600" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-gray-800 truncate">{course.title}</p>
+                  <p className="text-sm font-medium text-gray-800 truncate">{course.title}</p>
                   <p className="text-xs text-gray-400">{course.subject}{course.grade ? ` • ${course.grade}` : ''}</p>
                   <div className="mt-1.5 h-1.5 bg-gray-100 rounded-full overflow-hidden w-full max-w-[200px]">
                     <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${course.progressPercent || 0}%` }} />
                   </div>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <span className="text-xs font-black text-emerald-600">{course.progressPercent || 0}%</span>
+                  <span className="text-xs font-semibold text-emerald-600">{course.progressPercent || 0}%</span>
                   <p className="text-[10px] text-gray-400">{course.completedItems}/{course.totalItems} done</p>
                 </div>
                 <ChevronRight size={16} className="text-gray-300 flex-shrink-0" />
@@ -111,10 +111,10 @@ const StudentDashboard = ({ user, onNavigate }) => {
       {!loading && dueSoon.length > 0 && (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-amber-100 bg-amber-50/50 flex justify-between items-center">
-            <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest flex items-center gap-2">
+            <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-widest flex items-center gap-2">
               <Clock size={14} className="text-amber-500" /> Due Soon
             </h3>
-            <button onClick={() => onNavigate?.('student-assignments')} className="text-amber-600 text-[10px] font-black uppercase tracking-widest hover:underline flex items-center gap-1">
+            <button onClick={() => onNavigate?.('student-assignments')} className="text-amber-600 text-[10px] font-semibold uppercase tracking-widest hover:underline flex items-center gap-1">
               View All <ChevronRight size={12} />
             </button>
           </div>
@@ -125,10 +125,10 @@ const StudentDashboard = ({ user, onNavigate }) => {
                   <ClipboardList size={14} className="text-amber-600" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-gray-800 truncate">{a.title}</p>
+                  <p className="text-sm font-medium text-gray-800 truncate">{a.title}</p>
                   <p className="text-xs text-gray-400">{a.course?.title} • {a.totalPoints} pts</p>
                 </div>
-                <p className="text-xs font-bold text-amber-600 flex items-center gap-1 flex-shrink-0">
+                <p className="text-xs font-medium text-amber-600 flex items-center gap-1 flex-shrink-0">
                   <Calendar size={11} />
                   {new Date(a.dueDate).toLocaleDateString('en-KE', { month: 'short', day: 'numeric' })}
                 </p>

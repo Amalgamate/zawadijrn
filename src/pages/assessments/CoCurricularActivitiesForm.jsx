@@ -110,7 +110,7 @@ const CoCurricularActivitiesForm = ({ onBack, onSuccess }) => {
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex items-center gap-3 mb-2">
             <Award size={24} className="text-blue-600" />
-            <h1 className="text-2xl font-bold text-gray-900">Co-Curricular Activities Assessment</h1>
+            <h1 className="text-2xl font-medium text-gray-900">Co-Curricular Activities Assessment</h1>
           </div>
           {onBack && (
             <button onClick={onBack} className="text-blue-600 hover:text-blue-700 text-sm font-medium">← Back</button>

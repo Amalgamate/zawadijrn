@@ -186,7 +186,7 @@ const ParentGuardianStep = ({ formData = {}, onChange }) => {
     <div className="space-y-3 max-w-2xl mx-auto">
       {/* Header */}
       <div className="pb-2">
-        <h3 className="text-lg font-bold text-gray-900">Parent/Guardian Information</h3>
+        <h3 className="text-lg font-medium text-gray-900">Parent/Guardian Information</h3>
         <p className="text-xs text-gray-600 mt-0.5">Select primary guardian and provide contact</p>
       </div>
 
@@ -235,15 +235,15 @@ const ParentGuardianStep = ({ formData = {}, onChange }) => {
       {/* Guardian Information Form Section */}
       <div className={`border-l-4 p-4 rounded-lg space-y-3 ${config.bgColor} ${config.borderColor}`}>
         <div className="flex items-center gap-2">
-          <div className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${config.badgeColor}`}>
+          <div className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${config.badgeColor}`}>
             {config.label}
           </div>
-          <h4 className="text-base font-bold text-gray-900">{config.title}</h4>
+          <h4 className="text-base font-medium text-gray-900">{config.title}</h4>
         </div>
 
         {/* Full Name Field */}
         <div>
-          <label className="block text-xs font-bold text-gray-600 uppercase tracking-tight mb-1">
+          <label className="block text-xs font-medium text-gray-600 uppercase tracking-tight mb-1">
             Full Name <span className="text-red-500">*</span>
           </label>
           <input
@@ -258,7 +258,7 @@ const ParentGuardianStep = ({ formData = {}, onChange }) => {
 
         {/* Phone Number Field */}
         <div>
-          <label className="block text-xs font-bold text-gray-600 uppercase tracking-tight mb-1">
+          <label className="block text-xs font-medium text-gray-600 uppercase tracking-tight mb-1">
             <Phone size={13} className="inline mr-0.5" /> Phone <span className="text-red-500">*</span>
           </label>
           <input
@@ -315,7 +315,7 @@ const ParentGuardianStep = ({ formData = {}, onChange }) => {
             />
             <div className="flex-1">
               <div className="flex items-center justify-between">
-                <p className={`text-sm font-bold ${formData.primaryContactType && formData.primaryContactType !== selectedGuardian ? 'text-gray-400' : 'text-gray-800'}`}>Primary Contact</p>
+                <p className={`text-sm font-medium ${formData.primaryContactType && formData.primaryContactType !== selectedGuardian ? 'text-gray-400' : 'text-gray-800'}`}>Primary Contact</p>
                 {formData.primaryContactType && formData.primaryContactType !== selectedGuardian && (
                   <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">
                     {GUARDIAN_CONFIG[formData.primaryContactType]?.label} is selected
@@ -332,7 +332,7 @@ const ParentGuardianStep = ({ formData = {}, onChange }) => {
         {/* Email Field (if applicable) */}
         {config.showEmail && (
           <div>
-            <label className="block text-xs font-bold text-gray-600 uppercase tracking-tight mb-1">
+            <label className="block text-xs font-medium text-gray-600 uppercase tracking-tight mb-1">
               <Mail size={13} className="inline mr-0.5" /> Email (Optional)
             </label>
             <input
@@ -348,7 +348,7 @@ const ParentGuardianStep = ({ formData = {}, onChange }) => {
         {/* Relationship Field (for Guardian only) */}
         {config.showRelation && (
           <div>
-            <label className="block text-xs font-bold text-gray-600 uppercase tracking-tight mb-1">
+            <label className="block text-xs font-medium text-gray-600 uppercase tracking-tight mb-1">
               <Users size={13} className="inline mr-0.5" /> Relationship <span className="text-red-500">*</span>
             </label>
             <select
@@ -396,7 +396,7 @@ const ParentGuardianStep = ({ formData = {}, onChange }) => {
       {!formData.primaryContactPhone && (
         <div className="flex items-center gap-2 p-2.5 bg-red-50 border border-red-200 rounded-lg">
           <AlertCircle size={16} className="text-red-600 flex-shrink-0" />
-          <p className="text-xs text-red-800 font-bold">
+          <p className="text-xs text-red-800 font-medium">
             A primary contact phone number is mandatory. Please provide a phone number for the selected primary contact.
           </p>
         </div>

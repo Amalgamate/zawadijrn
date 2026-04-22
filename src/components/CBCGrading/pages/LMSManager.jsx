@@ -79,7 +79,7 @@ const LMSManager = ({ currentPage = 'lms-courses' }) => {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Learning Management System</h1>
+                    <h1 className="text-2xl font-medium text-gray-900">Learning Management System</h1>
                     <p className="text-gray-600">Manage courses, content, and learner progress</p>
                 </div>
                 {canCreateCourses && (
@@ -106,7 +106,7 @@ const LMSManager = ({ currentPage = 'lms-courses' }) => {
                                 <BookOpen className="h-8 w-8 text-blue-600" />
                                 <div>
                                     <p className="text-sm font-medium text-gray-600">Total Courses</p>
-                                    <p className="text-2xl font-bold text-gray-900">{stats.totalCourses}</p>
+                                    <p className="text-2xl font-medium text-gray-900">{stats.totalCourses}</p>
                                 </div>
                             </div>
                         </CardContent>
@@ -118,7 +118,7 @@ const LMSManager = ({ currentPage = 'lms-courses' }) => {
                                 <Users className="h-8 w-8 text-green-600" />
                                 <div>
                                     <p className="text-sm font-medium text-gray-600">Active Enrollments</p>
-                                    <p className="text-2xl font-bold text-gray-900">{stats.activeEnrollments}</p>
+                                    <p className="text-2xl font-medium text-gray-900">{stats.activeEnrollments}</p>
                                 </div>
                             </div>
                         </CardContent>
@@ -130,7 +130,7 @@ const LMSManager = ({ currentPage = 'lms-courses' }) => {
                                 <Video className="h-8 w-8 text-purple-600" />
                                 <div>
                                     <p className="text-sm font-medium text-gray-600">Content Items</p>
-                                    <p className="text-2xl font-bold text-gray-900">{stats.totalContent}</p>
+                                    <p className="text-2xl font-medium text-gray-900">{stats.totalContent}</p>
                                 </div>
                             </div>
                         </CardContent>
@@ -142,7 +142,7 @@ const LMSManager = ({ currentPage = 'lms-courses' }) => {
                                 <BarChart3 className="h-8 w-8 text-orange-600" />
                                 <div>
                                     <p className="text-sm font-medium text-gray-600">Total Enrollments</p>
-                                    <p className="text-2xl font-bold text-gray-900">{stats.totalEnrollments}</p>
+                                    <p className="text-2xl font-medium text-gray-900">{stats.totalEnrollments}</p>
                                 </div>
                             </div>
                         </CardContent>

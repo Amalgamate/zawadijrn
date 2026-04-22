@@ -74,7 +74,7 @@ export const AssessmentStatsCard = ({
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <p className={`text-sm font-semibold ${colors.label}`}>{label}</p>
-          <p className={`text-3xl font-bold ${colors.value} mt-1`}>{value}</p>
+          <p className={`text-3xl font-medium ${colors.value} mt-1`}>{value}</p>
           {subtitle && (
             <p className={`text-xs ${colors.label} mt-2 opacity-75`}>{subtitle}</p>
           )}

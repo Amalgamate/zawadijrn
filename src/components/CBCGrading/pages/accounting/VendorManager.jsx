@@ -81,7 +81,7 @@ const VendorManager = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800 tracking-tight text-brand-purple">Vendor Directory</h1>
+                    <h1 className="text-2xl font-medium text-gray-800 tracking-tight text-brand-purple">Vendor Directory</h1>
                     <p className="text-gray-500 text-sm italic">Manage school suppliers and service providers</p>
                 </div>
                 <div className="flex gap-3">
@@ -117,7 +117,7 @@ const VendorManager = () => {
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
-                            <tr className="bg-gray-50/50 text-[10px] font-bold text-gray-400 uppercase tracking-widest px-6">
+                            <tr className="bg-gray-50/50 text-[10px] font-medium text-gray-400 uppercase tracking-widest px-6">
                                 <th className="px-6 py-4">Vendor Name</th>
                                 <th className="px-6 py-4">Contact Info</th>
                                 <th className="px-6 py-4">Address</th>
@@ -140,11 +140,11 @@ const VendorManager = () => {
                                     <tr key={vendor.id} className="group hover:bg-gray-50/20 transition-all">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-9 h-9 rounded-full bg-brand-purple/10 flex items-center justify-center text-brand-purple font-bold">
+                                                <div className="w-9 h-9 rounded-full bg-brand-purple/10 flex items-center justify-center text-brand-purple font-medium">
                                                     {vendor.name.charAt(0)}
                                                 </div>
                                                 <div className="flex flex-col">
-                                                    <span className="text-sm font-bold text-gray-800">{vendor.name}</span>
+                                                    <span className="text-sm font-medium text-gray-800">{vendor.name}</span>
                                                     <span className="text-[10px] text-gray-400 font-mono">SUP-{vendor.id.slice(0,6)}</span>
                                                 </div>
                                             </div>
@@ -172,7 +172,7 @@ const VendorManager = () => {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-center">
-                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700">
+                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700">
                                                 ACTIVE
                                             </span>
                                         </td>

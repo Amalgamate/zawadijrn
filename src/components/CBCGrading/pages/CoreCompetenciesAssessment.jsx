@@ -109,8 +109,8 @@ const CoreCompetenciesAssessment = ({ learners }) => {
               <Star size={22} fill="currentColor" />
            </div>
            <div>
-              <h2 className="text-xl font-black text-gray-900 tracking-tight leading-none">Core Competencies</h2>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Holistic Records</p>
+              <h2 className="text-xl font-semibold text-gray-900 tracking-tight leading-none">Core Competencies</h2>
+              <p className="text-[10px] font-medium text-gray-400 uppercase tracking-widest mt-1">Holistic Records</p>
            </div>
         </div>
         {viewMode !== 'setup' && (
@@ -128,40 +128,40 @@ const CoreCompetenciesAssessment = ({ learners }) => {
         <div className="px-5 space-y-6 animate-in fade-in slide-in-from-bottom-4">
           <div className="bg-white rounded-[2.5rem] border border-transparent shadow-xl shadow-indigo-50 p-6 space-y-6">
             <div className="space-y-1">
-               <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Stage 01</span>
-               <h3 className="text-lg font-black text-gray-900">Define Scope</h3>
+               <span className="text-[10px] font-semibold text-indigo-500 uppercase tracking-widest">Stage 01</span>
+               <h3 className="text-lg font-semibold text-gray-900">Define Scope</h3>
             </div>
 
             <div className="space-y-4">
                <div>
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{labels.learners}</label>
+                  <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest ml-1">{labels.learners}</label>
                   <SmartLearnerSearch
                     learners={selection.filteredLearners}
                     selectedLearnerId={selection.selectedLearnerId}
                     onSelect={selection.selectLearner}
                     placeholder={`Find ${labels.learners}...`}
-                    className="w-full h-14 pl-4 bg-gray-50 border-none rounded-2xl text-xs font-bold outline-none ring-offset-0 focus:ring-2 focus:ring-indigo-100"
+                    className="w-full h-14 pl-4 bg-gray-50 border-none rounded-2xl text-xs font-medium outline-none ring-offset-0 focus:ring-2 focus:ring-indigo-100"
                   />
                </div>
 
                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{labels.term}</label>
+                    <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest ml-1">{labels.term}</label>
                     <select
                       value={setup.selectedTerm}
                       onChange={(e) => setup.updateTerm(e.target.value)}
-                      className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-indigo-500/20"
+                      className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-medium focus:ring-2 focus:ring-indigo-500/20"
                     >
                       {setup.terms.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                     </select>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Year</label>
+                    <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest ml-1">Year</label>
                     <input
                       type="number"
                       value={setup.academicYear}
                       onChange={(e) => setup.updateAcademicYear(parseInt(e.target.value))}
-                      className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-bold"
+                      className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-medium"
                     />
                   </div>
                </div>
@@ -173,7 +173,7 @@ const CoreCompetenciesAssessment = ({ learners }) => {
             disabled={!selection.selectedLearnerId}
             className="w-full h-16 bg-indigo-600 text-white rounded-[2rem] flex items-center justify-center gap-3 shadow-xl shadow-indigo-100 active:scale-95 transition-all outline-none disabled:opacity-30"
           >
-            <span className="text-xs font-black uppercase tracking-[0.2em] ml-2">Begin Grading</span>
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] ml-2">Begin Grading</span>
             <ArrowRight size={20} strokeWidth={3} />
           </button>
         </div>
@@ -186,8 +186,8 @@ const CoreCompetenciesAssessment = ({ learners }) => {
                 <ChevronLeft size={20} className="text-gray-900" />
              </button>
              <div className="text-center flex-1">
-                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">{labels.term} {setup.selectedTerm.split('_')[1]}</h4>
-                <p className="text-xs font-black text-gray-900 truncate px-4">{selection.selectedLearner.firstName} {selection.selectedLearner.lastName}</p>
+                <h4 className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest leading-none mb-1">{labels.term} {setup.selectedTerm.split('_')[1]}</h4>
+                <p className="text-xs font-semibold text-gray-900 truncate px-4">{selection.selectedLearner.firstName} {selection.selectedLearner.lastName}</p>
              </div>
              <div className="w-10" />
           </div>
@@ -202,8 +202,8 @@ const CoreCompetenciesAssessment = ({ learners }) => {
                            <Icon size={28} />
                         </div>
                         <div>
-                           <h5 className="text-sm font-black text-gray-900">{def.name}</h5>
-                           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">{def.label}</p>
+                           <h5 className="text-sm font-semibold text-gray-900">{def.name}</h5>
+                           <p className="text-[10px] font-medium text-gray-400 uppercase tracking-tight">{def.label}</p>
                         </div>
                      </div>
 
@@ -214,7 +214,7 @@ const CoreCompetenciesAssessment = ({ learners }) => {
                                 key={r.value}
                                 onClick={() => ratings.setRating(key, r.value)}
                                 className={cn(
-                                   "py-3 px-2 rounded-2xl text-[10px] font-black uppercase transition-all tracking-tighter border-2",
+                                   "py-3 px-2 rounded-2xl text-[10px] font-semibold uppercase transition-all tracking-tighter border-2",
                                    ratings.ratings[key] === r.value 
                                       ? "bg-indigo-600 border-transparent text-white shadow-lg shadow-indigo-100 scale-[1.02]" 
                                       : "bg-white border-gray-50 text-gray-400 hover:border-indigo-100"
@@ -229,7 +229,7 @@ const CoreCompetenciesAssessment = ({ learners }) => {
                            <textarea
                               value={ratings.comments[key] || ''}
                               onChange={(e) => ratings.setComment(key, e.target.value)}
-                              className="w-full h-24 p-4 bg-gray-50 border-none rounded-[1.5rem] text-xs font-bold outline-none placeholder:text-gray-300 resize-none focus:ring-2 focus:ring-indigo-100"
+                              className="w-full h-24 p-4 bg-gray-50 border-none rounded-[1.5rem] text-xs font-medium outline-none placeholder:text-gray-300 resize-none focus:ring-2 focus:ring-indigo-100"
                               placeholder="Describe demonstrated abilities..."
                            />
                            <Sparkles size={14} className="absolute bottom-4 right-4 text-gray-200" />
@@ -245,13 +245,13 @@ const CoreCompetenciesAssessment = ({ learners }) => {
                 <CheckCircle size={40} strokeWidth={1} />
              </div>
              <div className="space-y-1">
-                <h4 className="text-lg font-black text-gray-900">Entries Complete?</h4>
-                <p className="text-xs text-gray-400 font-bold leading-relaxed px-6">Review your ratings and comments above before finalizing this session.</p>
+                <h4 className="text-lg font-semibold text-gray-900">Entries Complete?</h4>
+                <p className="text-xs text-gray-400 font-medium leading-relaxed px-6">Review your ratings and comments above before finalizing this session.</p>
              </div>
              <button
                onClick={handleSave}
                disabled={saving}
-               className="w-full py-5 bg-indigo-600 text-white text-xs font-black uppercase tracking-[0.2em] rounded-[2rem] shadow-xl shadow-indigo-50 active:scale-95 transition-all"
+               className="w-full py-5 bg-indigo-600 text-white text-xs font-semibold uppercase tracking-[0.2em] rounded-[2rem] shadow-xl shadow-indigo-50 active:scale-95 transition-all"
              >
                 Save Final Record
              </button>

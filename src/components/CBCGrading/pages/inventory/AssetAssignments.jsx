@@ -110,7 +110,7 @@ const AssetAssignments = () => {
         return (
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 max-w-2xl mx-auto">
                 <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-100">
-                    <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <h2 className="text-xl font-medium text-gray-800 flex items-center gap-2">
                         <UserCheck className="text-brand-purple" />
                         New Asset Assignment
                     </h2>
@@ -141,7 +141,7 @@ const AssetAssignments = () => {
                         </div>
 
                         <div className="flex flex-col justify-center items-center">
-                            <span className="text-xs font-bold text-gray-400 bg-white px-2 rounded-full border border-gray-200">- OR -</span>
+                            <span className="text-xs font-medium text-gray-400 bg-white px-2 rounded-full border border-gray-200">- OR -</span>
                         </div>
 
                         <div className="col-span-1 md:col-span-2 mt-[-10px]">
@@ -172,7 +172,7 @@ const AssetAssignments = () => {
                     </div>
 
                     <div className="flex justify-end pt-4">
-                        <button type="submit" className="px-6 py-2 bg-brand-purple text-white rounded-lg hover:bg-brand-purple/90 font-bold shadow-sm">
+                        <button type="submit" className="px-6 py-2 bg-brand-purple text-white rounded-lg hover:bg-brand-purple/90 font-medium shadow-sm">
                             Confirm Assignment
                         </button>
                     </div>
@@ -186,7 +186,7 @@ const AssetAssignments = () => {
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                     <div>
-                        <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <h2 className="text-xl font-medium text-gray-800 flex items-center gap-2">
                             <Users className="text-brand-purple" />
                             Asset Assignments
                         </h2>
@@ -204,7 +204,7 @@ const AssetAssignments = () => {
                         </button>
                         <button
                             onClick={() => setShowForm(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-brand-purple text-white rounded-lg hover:bg-brand-purple/90 transition shadow-sm font-bold text-sm"
+                            className="flex items-center gap-2 px-4 py-2 bg-brand-purple text-white rounded-lg hover:bg-brand-purple/90 transition shadow-sm font-medium text-sm"
                         >
                             <Plus size={18} />
                             Check Out Asset

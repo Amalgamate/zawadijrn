@@ -175,7 +175,7 @@ const AttendanceReports = ({ learners }) => {
               <FileText size={24} />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900 tracking-tight">Attendance Analytics</h1>
+              <h1 className="text-xl font-medium text-gray-900 tracking-tight">Attendance Analytics</h1>
               <p className="text-xs text-gray-500 font-medium italic uppercase tracking-widest">Intelligence Synthesis</p>
             </div>
           </div>
@@ -183,14 +183,14 @@ const AttendanceReports = ({ learners }) => {
           <div className="flex items-center gap-3">
             <button
               onClick={() => printWindow('attendance-report-content')}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 transition font-bold text-xs shadow-sm"
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 transition font-medium text-xs shadow-sm"
             >
               <Printer size={16} />
               Print
             </button>
             <button
               onClick={() => exportAttendanceCSV(filteredRecords, teacherScopedLearners, activeReport)}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-bold text-xs shadow-lg shadow-indigo-600/20"
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-medium text-xs shadow-lg shadow-indigo-600/20"
             >
               <Download size={16} />
               Export
@@ -204,14 +204,14 @@ const AttendanceReports = ({ learners }) => {
             <button
               disabled={isTeacher}
               onClick={() => setReportType('grade')}
-              className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${reportType === 'grade' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'} disabled:opacity-50`}
+              className={`px-4 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-widest transition-all ${reportType === 'grade' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'} disabled:opacity-50`}
             >
               Grade
             </button>
             <button
               disabled={isTeacher}
               onClick={() => setReportType('learner')}
-              className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${reportType === 'learner' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'} disabled:opacity-50`}
+              className={`px-4 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-widest transition-all ${reportType === 'learner' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'} disabled:opacity-50`}
             >
               Learner
             </button>
@@ -245,20 +245,20 @@ const AttendanceReports = ({ learners }) => {
               type="date"
               value={toInputDate(stagedStartDate)}
               onChange={(e) => setStagedStartDate(e.target.value)}
-              className="bg-transparent border-none text-[10px] font-bold text-slate-600 focus:ring-0 outline-none w-24"
+              className="bg-transparent border-none text-[10px] font-medium text-slate-600 focus:ring-0 outline-none w-24"
             />
             <span className="text-slate-300">→</span>
             <input
               type="date"
               value={toInputDate(stagedEndDate)}
               onChange={(e) => setStagedEndDate(e.target.value)}
-              className="bg-transparent border-none text-[10px] font-bold text-slate-600 focus:ring-0 outline-none w-24"
+              className="bg-transparent border-none text-[10px] font-medium text-slate-600 focus:ring-0 outline-none w-24"
             />
           </div>
 
           <button
             onClick={handleLoadReport}
-            className="h-9 px-4 bg-brand-teal hover:bg-brand-teal/90 text-white rounded-lg text-xs font-bold flex items-center gap-2 transition-all"
+            className="h-9 px-4 bg-brand-teal hover:bg-brand-teal/90 text-white rounded-lg text-xs font-medium flex items-center gap-2 transition-all"
           >
             <Filter size={14} />
             Run Analysis
@@ -288,10 +288,10 @@ const AttendanceReports = ({ learners }) => {
                 <div className={`p-3 rounded-2xl ${stat.bg} ${stat.color}`}>
                   <stat.icon size={20} />
                 </div>
-                <span className={`text-[10px] font-black uppercase tracking-widest ${stat.color} opacity-70`}>{stat.trend}</span>
+                <span className={`text-[10px] font-semibold uppercase tracking-widest ${stat.color} opacity-70`}>{stat.trend}</span>
               </div>
-              <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">{stat.title}</p>
-              <p className="text-3xl font-black text-slate-900">{stat.value}</p>
+              <p className="text-slate-400 text-[10px] font-semibold uppercase tracking-widest mb-1">{stat.title}</p>
+              <p className="text-3xl font-semibold text-slate-900">{stat.value}</p>
             </div>
           ))}
         </div>
@@ -299,9 +299,9 @@ const AttendanceReports = ({ learners }) => {
         {/* Data Presentation */}
         <div id="attendance-report-content" className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
           <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-            <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight">Observation Matrix</h3>
+            <h3 className="text-lg font-semibold text-slate-800 uppercase tracking-tight">Observation Matrix</h3>
             {activeReport && (
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">
                 Showing data from {new Date(activeReport.startDate).toLocaleDateString()} to {new Date(activeReport.endDate).toLocaleDateString()}
               </span>
             )}
@@ -317,7 +317,7 @@ const AttendanceReports = ({ learners }) => {
                 <div className="w-16 h-16 bg-slate-50 text-slate-200 rounded-full flex items-center justify-center mb-4">
                   <FileText size={32} />
                 </div>
-                <h4 className="font-black text-slate-300 uppercase tracking-widest">No Intelligence Data</h4>
+                <h4 className="font-semibold text-slate-300 uppercase tracking-widest">No Intelligence Data</h4>
                 <p className="text-[10px] font-semibold text-slate-400">Run an analysis with the filters above</p>
               </div>
             ) : (
@@ -347,23 +347,23 @@ const AttendanceReports = ({ learners }) => {
                       return (
                         <tr key={record.id} className="hover:bg-slate-50/50 transition-colors group">
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <p className="text-xs font-black text-slate-900 font-mono">
+                            <p className="text-xs font-semibold text-slate-900 font-mono">
                               {new Date(record.date).toLocaleDateString('en-GB').replace(/\//g, ' . ')}
                             </p>
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center font-black text-[10px] text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                              <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center font-semibold text-[10px] text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all">
                                 {learner.firstName[0]}{learner.lastName[0]}
                               </div>
                               <div>
-                                <p className="text-sm font-bold text-slate-900 tracking-tight">{learner.firstName} {learner.lastName}</p>
-                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mt-1">{learner.admissionNumber} | {learner.grade}</p>
+                                <p className="text-sm font-medium text-slate-900 tracking-tight">{learner.firstName} {learner.lastName}</p>
+                                <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest leading-none mt-1">{learner.admissionNumber} | {learner.grade}</p>
                               </div>
                             </div>
                           </td>
                           <td className="px-6 py-4 text-center">
-                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${style.bg} ${style.text} ring-1 ring-inset ring-current/20`}>
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-[9px] font-semibold uppercase tracking-widest ${style.bg} ${style.text} ring-1 ring-inset ring-current/20`}>
                               <div className={`w-1.5 h-1.5 rounded-full ${style.color} mr-2`} />
                               {record.status}
                             </span>

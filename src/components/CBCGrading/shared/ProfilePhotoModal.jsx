@@ -96,7 +96,7 @@ const ProfilePhotoModal = ({ isOpen, onClose, onSave, currentPhoto }) => {
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
                 {/* Header */}
                 <div className="flex justify-between items-center p-4 border-b border-gray-100">
-                    <h3 className="font-bold text-gray-800">Update Profile Photo</h3>
+                    <h3 className="font-medium text-gray-800">Update Profile Photo</h3>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition">
                         <X size={20} />
                     </button>
@@ -168,7 +168,7 @@ const ProfilePhotoModal = ({ isOpen, onClose, onSave, currentPhoto }) => {
                                 </button>
                                 <button
                                     onClick={capturePhoto}
-                                    className="flex-1 py-2 flex items-center justify-center gap-2 bg-brand-purple text-white rounded-lg font-bold hover:bg-brand-purple/90 transition shadow-lg shadow-brand-purple/20"
+                                    className="flex-1 py-2 flex items-center justify-center gap-2 bg-brand-purple text-white rounded-lg font-medium hover:bg-brand-purple/90 transition shadow-lg shadow-brand-purple/20"
                                 >
                                     <Camera size={18} />
                                     Capture
@@ -194,7 +194,7 @@ const ProfilePhotoModal = ({ isOpen, onClose, onSave, currentPhoto }) => {
                                 </button>
                                 <button
                                     onClick={handleSave}
-                                    className="flex-1 py-2 flex items-center justify-center gap-2 bg-brand-teal text-white rounded-lg font-bold hover:bg-brand-teal/90 transition shadow-lg shadow-brand-teal/20"
+                                    className="flex-1 py-2 flex items-center justify-center gap-2 bg-brand-teal text-white rounded-lg font-medium hover:bg-brand-teal/90 transition shadow-lg shadow-brand-teal/20"
                                 >
                                     <Check size={18} />
                                     Save Photo

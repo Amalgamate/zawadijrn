@@ -30,7 +30,7 @@ const FineStatusBadge = ({ status }) => {
     PARTIAL:  'bg-blue-100 text-blue-700',
   };
   return (
-    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${map[status] || map.PENDING}`}>
+    <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${map[status] || map.PENDING}`}>
       {status}
     </span>
   );
@@ -59,14 +59,14 @@ const WaiveModal = ({ fine, onClose, onSaved }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-          <h2 className="text-lg font-bold text-slate-900">Waive Fine</h2>
+          <h2 className="text-lg font-medium text-slate-900">Waive Fine</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors"><X size={20} /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 text-sm space-y-1">
             <p className="font-semibold text-slate-800">{fine.loan?.book?.title || fine.loan?.copy?.book?.title || 'Book fine'}</p>
             <p className="text-slate-500 text-xs">Member: {fine.member?.name || fine.memberId || '—'}</p>
-            <p className="text-amber-700 font-bold">{KES(fine.amount)}</p>
+            <p className="text-amber-700 font-medium">{KES(fine.amount)}</p>
           </div>
           <div>
             <label className="block text-xs font-semibold text-slate-600 mb-1">Reason for waiving</label>
@@ -119,7 +119,7 @@ const ManualFineModal = ({ onClose, onSaved }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-          <h2 className="text-lg font-bold text-slate-900">Create Manual Fine</h2>
+          <h2 className="text-lg font-medium text-slate-900">Create Manual Fine</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors"><X size={20} /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
@@ -236,7 +236,7 @@ const LateFeeAutomation = () => {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Late Fee Automation</h1>
+          <h1 className="text-2xl font-medium text-slate-900">Late Fee Automation</h1>
           <p className="text-sm text-slate-500 mt-0.5">
             {fines.filter(f => f.status === 'PENDING').length} pending fine{fines.filter(f => f.status === 'PENDING').length !== 1 ? 's' : ''} · {KES(totalPending)} outstanding
           </p>
@@ -286,11 +286,11 @@ const LateFeeAutomation = () => {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/60">
-                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Member</th>
-                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide hidden md:table-cell">Book / Reason</th>
-                <th className="text-right px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Amount</th>
-                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Status</th>
-                <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide hidden md:table-cell">Date</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Member</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide hidden md:table-cell">Book / Reason</th>
+                <th className="text-right px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Amount</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Status</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide hidden md:table-cell">Date</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -305,7 +305,7 @@ const LateFeeAutomation = () => {
                     <p className="text-sm text-slate-700">{fine.loan?.book?.title || fine.loan?.copy?.book?.title || fine.reason || '—'}</p>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <span className={`font-bold ${fine.status === 'PENDING' ? 'text-amber-600' : 'text-slate-600'}`}>
+                    <span className={`font-medium ${fine.status === 'PENDING' ? 'text-amber-600' : 'text-slate-600'}`}>
                       {KES(fine.amount)}
                     </span>
                   </td>

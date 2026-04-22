@@ -147,7 +147,7 @@ const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
         <div className="bg-gradient-to-r from-blue-700 to-blue-900 px-5 py-3 flex justify-between items-center text-white">
           <div className="flex items-center gap-2">
             <Upload size={20} className="text-blue-100" />
-            <h2 className="text-lg font-bold">Import Records</h2>
+            <h2 className="text-lg font-medium">Import Records</h2>
           </div>
           <button onClick={handleCloseTrigger} className="hover:bg-white/20 p-1.5 rounded-lg transition-colors">
             <X size={20} />
@@ -161,7 +161,7 @@ const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
               <div className="bg-gray-100 p-1 rounded-lg flex gap-1">
                 <button
                   onClick={() => setImportMode('balances')}
-                  className={`flex-1 py-1.5 text-[13px] font-bold rounded-md flex items-center justify-center gap-1.5 transition-all ${
+                  className={`flex-1 py-1.5 text-[13px] font-medium rounded-md flex items-center justify-center gap-1.5 transition-all ${
                     importMode === 'balances' ? 'bg-white shadow-sm text-blue-700' : 'text-gray-500 hover:text-gray-700'
                   }`}
                 >
@@ -169,7 +169,7 @@ const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
                 </button>
                 <button
                   onClick={() => setImportMode('payments')}
-                  className={`flex-1 py-1.5 text-[13px] font-bold rounded-md flex items-center justify-center gap-1.5 transition-all ${
+                  className={`flex-1 py-1.5 text-[13px] font-medium rounded-md flex items-center justify-center gap-1.5 transition-all ${
                     importMode === 'payments' ? 'bg-white shadow-sm text-green-700' : 'text-gray-500 hover:text-gray-700'
                   }`}
                 >
@@ -177,7 +177,7 @@ const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
                 </button>
                 <button
                   onClick={() => setImportMode('waivers')}
-                  className={`flex-1 py-1.5 text-[13px] font-bold rounded-md flex items-center justify-center gap-1.5 transition-all ${
+                  className={`flex-1 py-1.5 text-[13px] font-medium rounded-md flex items-center justify-center gap-1.5 transition-all ${
                     importMode === 'waivers' ? 'bg-white shadow-sm text-teal-700' : 'text-gray-500 hover:text-gray-700'
                   }`}
                 >
@@ -185,7 +185,7 @@ const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
                 </button>
                 <button
                   onClick={() => setImportMode('transport')}
-                  className={`flex-1 py-1.5 text-[13px] font-bold rounded-md flex items-center justify-center gap-1.5 transition-all ${
+                  className={`flex-1 py-1.5 text-[13px] font-medium rounded-md flex items-center justify-center gap-1.5 transition-all ${
                     importMode === 'transport' ? 'bg-white shadow-sm text-orange-700' : 'text-gray-500 hover:text-gray-700'
                   }`}
                 >
@@ -225,13 +225,13 @@ const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
                 />
                 <FileSpreadsheet className="mx-auto text-blue-500 mb-2 transition-colors" size={32} />
                 {file ? (
-                  <p className="text-sm font-bold text-blue-900">{file.name}</p>
+                  <p className="text-sm font-medium text-blue-900">{file.name}</p>
                 ) : (
                   <>
-                    <p className="text-sm font-bold text-blue-900">Click or drag .xlsx/.csv</p>
+                    <p className="text-sm font-medium text-blue-900">Click or drag .xlsx/.csv</p>
                     <div className="mt-3 flex justify-center">
                       <button 
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-blue-200 rounded-md shadow-sm text-[11px] font-bold text-blue-700 hover:bg-blue-50 cursor-pointer relative z-20" 
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-blue-200 rounded-md shadow-sm text-[11px] font-medium text-blue-700 hover:bg-blue-50 cursor-pointer relative z-20" 
                         onClick={(e) => { 
                           e.stopPropagation(); 
                           e.preventDefault();
@@ -252,7 +252,7 @@ const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
                 <div className="flex items-center gap-1.5 mb-2">
                   <Info size={14} className="text-blue-600" />
-                  <p className="text-[11px] font-bold text-gray-700 uppercase tracking-tight">Required Columns</p>
+                  <p className="text-[11px] font-medium text-gray-700 uppercase tracking-tight">Required Columns</p>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {(importMode === 'balances' 
@@ -263,7 +263,7 @@ const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
                     ? ['Adm No', 'Charges', 'Paid', 'Bal']
                     : ['Adm No', 'Amount', 'Date', 'Reference', 'Allocation']
                   ).map(col => (
-                    <span key={col} className="px-1.5 py-0.5 bg-white border border-gray-200 rounded text-[10px] font-bold text-gray-600 shadow-sm">{col}</span>
+                    <span key={col} className="px-1.5 py-0.5 bg-white border border-gray-200 rounded text-[10px] font-medium text-gray-600 shadow-sm">{col}</span>
                   ))}
                 </div>
               </div>
@@ -272,17 +272,17 @@ const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
                 <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 flex gap-2">
                   <Bus size={16} className="text-orange-500 flex-shrink-0 mt-0.5" />
                   <div className="text-xs text-orange-800">
-                    <p className="font-bold mb-0.5">Transport Append Mode</p>
+                    <p className="font-medium mb-0.5">Transport Append Mode</p>
                     <p className="font-medium text-orange-700">
                       Appends transport fees onto existing invoices. Students must already have an invoice for the selected term.
-                      Only students marked as <span className="font-black">Transport Students</span> will be updated.
+                      Only students marked as <span className="font-semibold">Transport Students</span> will be updated.
                     </p>
                   </div>
                 </div>
               )}
 
               {error && (
-                <div className="bg-red-50 text-red-600 text-xs font-bold p-2.5 rounded-lg flex items-center gap-2 border border-red-100">
+                <div className="bg-red-50 text-red-600 text-xs font-medium p-2.5 rounded-lg flex items-center gap-2 border border-red-100">
                   <X size={14} className="text-red-500"/>
                   {error}
                 </div>
@@ -292,11 +292,11 @@ const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
               {loading && progress && (
                 <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg">
                   <div className="flex justify-between items-end mb-2">
-                    <p className="text-[11px] font-bold text-blue-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <p className="text-[11px] font-medium text-blue-800 uppercase tracking-wider flex items-center gap-1.5">
                       <Loader2 size={12} className="animate-spin" />
                       {progress.message || 'Importing...'}
                     </p>
-                    <p className="text-lg font-black text-blue-700 tabular-nums leading-none">
+                    <p className="text-lg font-semibold text-blue-700 tabular-nums leading-none">
                       {progress.percent}%
                     </p>
                   </div>
@@ -319,54 +319,54 @@ const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
                   <Upload size={20} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-green-900">Import Complete!</h3>
+                  <h3 className="text-sm font-medium text-green-900">Import Complete!</h3>
                   <p className="text-xs text-green-700 font-medium">Successfully processed {results.summary?.totalRows} rows.</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className="p-3 bg-gray-50 rounded-lg border border-gray-100 text-center">
-                  <p className="text-[10px] font-bold text-gray-500 uppercase">Total Rows</p>
-                  <p className="text-lg font-black text-gray-800">{results.summary?.totalRows || 0}</p>
+                  <p className="text-[10px] font-medium text-gray-500 uppercase">Total Rows</p>
+                  <p className="text-lg font-semibold text-gray-800">{results.summary?.totalRows || 0}</p>
                 </div>
                 {importMode === 'balances' ? (
                   <>
                     <div className="p-3 bg-blue-50 rounded-lg border border-blue-100 text-center">
-                      <p className="text-[10px] font-bold text-blue-500 uppercase">Created</p>
-                      <p className="text-lg font-black text-blue-700">{results.summary?.created || 0}</p>
+                      <p className="text-[10px] font-medium text-blue-500 uppercase">Created</p>
+                      <p className="text-lg font-semibold text-blue-700">{results.summary?.created || 0}</p>
                     </div>
                     <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-100 text-center">
-                      <p className="text-[10px] font-bold text-emerald-500 uppercase">Updated</p>
-                      <p className="text-lg font-black text-emerald-700">{results.summary?.updated || 0}</p>
+                      <p className="text-[10px] font-medium text-emerald-500 uppercase">Updated</p>
+                      <p className="text-lg font-semibold text-emerald-700">{results.summary?.updated || 0}</p>
                     </div>
                   </>
                 ) : importMode === 'transport' ? (
                   <>
                     <div className="p-3 bg-orange-50 rounded-lg border border-orange-100 text-center">
-                      <p className="text-[10px] font-bold text-orange-500 uppercase">Updated</p>
-                      <p className="text-lg font-black text-orange-700">{results.summary?.updated || 0}</p>
+                      <p className="text-[10px] font-medium text-orange-500 uppercase">Updated</p>
+                      <p className="text-lg font-semibold text-orange-700">{results.summary?.updated || 0}</p>
                     </div>
                     <div className="p-3 bg-gray-50 rounded-lg border border-gray-100 text-center">
-                      <p className="text-[10px] font-bold text-gray-500 uppercase">Skipped</p>
-                      <p className="text-lg font-black text-gray-700">{results.summary?.skipped || 0}</p>
+                      <p className="text-[10px] font-medium text-gray-500 uppercase">Skipped</p>
+                      <p className="text-lg font-semibold text-gray-700">{results.summary?.skipped || 0}</p>
                     </div>
                   </>
                 ) : (
                   <div className="p-3 bg-blue-50 rounded-lg border border-blue-100 text-center col-span-2">
-                    <p className="text-[10px] font-bold text-blue-500 uppercase">Processed</p>
-                    <p className="text-lg font-black text-blue-700">{results.summary?.processed || 0}</p>
+                    <p className="text-[10px] font-medium text-blue-500 uppercase">Processed</p>
+                    <p className="text-lg font-semibold text-blue-700">{results.summary?.processed || 0}</p>
                   </div>
                 )}
                 
                 <div className="p-3 bg-red-50 rounded-lg border border-red-100 text-center">
-                  <p className="text-[10px] font-bold text-red-500 uppercase">Failed</p>
-                  <p className="text-lg font-black text-red-700">{results.summary?.failed || 0}</p>
+                  <p className="text-[10px] font-medium text-red-500 uppercase">Failed</p>
+                  <p className="text-lg font-semibold text-red-700">{results.summary?.failed || 0}</p>
                 </div>
               </div>
 
               {results.errors?.length > 0 && (
                 <div className="space-y-1.5">
-                  <h4 className="text-xs font-bold text-red-800 flex items-center gap-1.5">
+                  <h4 className="text-xs font-medium text-red-800 flex items-center gap-1.5">
                     <X size={14} className="p-0.5 bg-red-200 rounded-full" />
                     Review Errors
                   </h4>
@@ -389,14 +389,14 @@ const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
                 <button
                   type="button"
                   onClick={handleCloseTrigger}
-                  className="flex-1 py-2 px-4 rounded-lg text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
+                  className="flex-1 py-2 px-4 rounded-lg text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleUpload}
                   disabled={!file || loading}
-                  className={`flex-[2] py-2 px-4 rounded-lg text-sm font-bold text-white disabled:opacity-50 flex items-center justify-center gap-2 transition-all ${
+                  className={`flex-[2] py-2 px-4 rounded-lg text-sm font-medium text-white disabled:opacity-50 flex items-center justify-center gap-2 transition-all ${
                     loading ? 'bg-indigo-600' : 'bg-blue-600 hover:bg-blue-700 shadow-sm'
                   }`}
                 >
@@ -407,7 +407,7 @@ const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
             ) : (
               <button
                 onClick={onComplete || onClose}
-                className="w-full py-2.5 rounded-lg text-sm font-bold text-white bg-gray-900 hover:bg-black transition-all"
+                className="w-full py-2.5 rounded-lg text-sm font-medium text-white bg-gray-900 hover:bg-black transition-all"
               >
                 Close
               </button>

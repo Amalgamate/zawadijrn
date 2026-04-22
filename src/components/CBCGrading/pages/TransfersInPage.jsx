@@ -69,20 +69,20 @@ const TransfersInPage = () => {
       {/* Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-brand-purple/10 border border-brand-purple/20 rounded-lg p-4">
-          <p className="text-brand-purple text-sm font-bold uppercase tracking-wider">Total Transfers</p>
-          <p className="text-3xl font-bold text-brand-purple">{stats.total}</p>
+          <p className="text-brand-purple text-sm font-medium uppercase tracking-wider">Total Transfers</p>
+          <p className="text-3xl font-medium text-brand-purple">{stats.total}</p>
         </div>
         <div className="bg-brand-teal/10 border border-brand-teal/20 rounded-lg p-4">
-          <p className="text-brand-teal text-sm font-bold uppercase tracking-wider">Pending</p>
-          <p className="text-3xl font-bold text-brand-teal">{stats.pending}</p>
+          <p className="text-brand-teal text-sm font-medium uppercase tracking-wider">Pending</p>
+          <p className="text-3xl font-medium text-brand-teal">{stats.pending}</p>
         </div>
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
           <p className="text-green-700 text-sm font-semibold">Approved</p>
-          <p className="text-3xl font-bold text-green-800">{stats.approved}</p>
+          <p className="text-3xl font-medium text-green-800">{stats.approved}</p>
         </div>
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <p className="text-red-700 text-sm font-semibold">Rejected</p>
-          <p className="text-3xl font-bold text-red-800">{stats.rejected}</p>
+          <p className="text-3xl font-medium text-red-800">{stats.rejected}</p>
         </div>
       </div>
 
@@ -149,7 +149,7 @@ const TransfersInPage = () => {
                     <td className="px-6 py-4 text-gray-700">{transfer.grade} - {transfer.stream}</td>
                     <td className="px-6 py-4 text-gray-600">{transfer.transferDate}</td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${transfer.status === 'Approved' ? 'bg-green-100 text-green-800' :
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-medium uppercase tracking-wider ${transfer.status === 'Approved' ? 'bg-green-100 text-green-800' :
                         transfer.status === 'Rejected' ? 'bg-red-100 text-red-800' :
                           'bg-brand-teal/10 text-brand-teal'
                         }`}>
@@ -199,7 +199,7 @@ const TransfersInPage = () => {
           <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold text-gray-900">Transfer Details</h3>
+                <h3 className="text-xl font-medium text-gray-900">Transfer Details</h3>
                 <button onClick={() => setShowDetailsModal(false)} className="text-gray-400 hover:text-gray-600">
                   <XCircle size={24} />
                 </button>
@@ -210,11 +210,11 @@ const TransfersInPage = () => {
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <p className="text-sm font-semibold text-gray-600">Student Name</p>
-                  <p className="text-lg font-bold text-gray-900">{selectedTransfer.firstName} {selectedTransfer.lastName}</p>
+                  <p className="text-lg font-medium text-gray-900">{selectedTransfer.firstName} {selectedTransfer.lastName}</p>
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-gray-600">Status</p>
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${selectedTransfer.status === 'Approved' ? 'bg-green-100 text-green-800' :
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-medium uppercase tracking-wider ${selectedTransfer.status === 'Approved' ? 'bg-green-100 text-green-800' :
                     selectedTransfer.status === 'Rejected' ? 'bg-red-100 text-red-800' :
                       'bg-brand-teal/10 text-brand-teal'
                     }`}>

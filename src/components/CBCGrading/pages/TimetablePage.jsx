@@ -475,7 +475,7 @@ const TimetablePage = () => {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-gray-500 bg-white rounded-xl shadow-sm border border-gray-100">
         <Loader2 className="animate-spin mb-4 text-brand-purple" size={48} />
-        <p className="text-lg font-bold">Synchronizing Timetable...</p>
+        <p className="text-lg font-medium">Synchronizing Timetable...</p>
       </div>
     );
   }
@@ -493,7 +493,7 @@ const TimetablePage = () => {
           </button>
           <button
             onClick={openAddModal}
-            className="flex items-center gap-2 px-4 py-2 bg-brand-teal text-white rounded-lg hover:bg-brand-teal/90 transition shadow-sm font-bold"
+            className="flex items-center gap-2 px-4 py-2 bg-brand-teal text-white rounded-lg hover:bg-brand-teal/90 transition shadow-sm font-medium"
           >
             <Plus size={18} />
             Add Lesson
@@ -504,7 +504,7 @@ const TimetablePage = () => {
       {/* Actions Toolbar */}
       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex justify-between items-center">
         <div>
-          <h2 className="text-xl font-bold text-gray-800">Class Timetable</h2>
+          <h2 className="text-xl font-medium text-gray-800">Class Timetable</h2>
           <p className="text-sm text-gray-500">Manage daily schedules and room allocations interactively</p>
         </div>
         <div className="flex items-center gap-3">
@@ -548,7 +548,7 @@ const TimetablePage = () => {
             <button
               key={day}
               onClick={() => setSelectedDay(day)}
-              className={`flex-1 px-6 py-4 text-sm font-black uppercase tracking-widest transition-all ${selectedDay === day
+              className={`flex-1 px-6 py-4 text-sm font-semibold uppercase tracking-widest transition-all ${selectedDay === day
                 ? 'bg-brand-purple/5 text-brand-purple border-b-2 border-brand-purple'
                 : 'text-gray-500 hover:bg-gray-50'
                 }`}
@@ -694,7 +694,7 @@ const TimetablePage = () => {
                             <div className="space-y-2">
                               {lessons.map(lesson => (
                                 <div key={lesson.id} className="bg-brand-purple/5 border border-brand-purple/10 rounded p-2 hover:bg-brand-purple/10 cursor-pointer" onClick={() => { setSelectedDay(day); openEditModal(lesson, day); }}>
-                                  <p className="text-xs font-bold text-brand-purple">{lesson.subject}</p>
+                                  <p className="text-xs font-medium text-brand-purple">{lesson.subject}</p>
                                   <p className="text-[10px] text-brand-purple/80">{lesson.teacherName} • {lesson.room}</p>
                                 </div>
                               ))}
@@ -718,7 +718,7 @@ const TimetablePage = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl border border-gray-100 w-full max-w-md">
             <div className="flex justify-between items-center p-6 border-b border-gray-100">
-              <h3 className="text-lg font-bold text-gray-900">
+              <h3 className="text-lg font-medium text-gray-900">
                 {editingLesson ? 'Edit Lesson' : 'Schedule New Lesson'}
               </h3>
               <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">
@@ -808,7 +808,7 @@ const TimetablePage = () => {
                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-50 bg-white border border-gray-200 rounded-lg font-medium">
                   Cancel
                 </button>
-                <button type="submit" className="px-4 py-2 bg-brand-purple text-white rounded-lg hover:bg-brand-purple/90 font-bold shadow-sm">
+                <button type="submit" className="px-4 py-2 bg-brand-purple text-white rounded-lg hover:bg-brand-purple/90 font-medium shadow-sm">
                   {editingLesson ? 'Save Changes' : 'Add to Timetable'}
                 </button>
               </div>

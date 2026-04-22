@@ -69,7 +69,7 @@ const EnrollmentDashboard = () => {
           <div className="flex bg-slate-100 p-1.5 rounded-2xl w-fit">
             <button 
               onClick={() => setActiveType('LEARNER')}
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-widest transition-all ${
                 activeType === 'LEARNER' ? 'bg-white text-indigo-600 shadow-md' : 'text-slate-500 hover:text-slate-700'
               }`}
             >
@@ -78,7 +78,7 @@ const EnrollmentDashboard = () => {
             </button>
             <button 
               onClick={() => setActiveType('STAFF')}
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-widest transition-all ${
                 activeType === 'STAFF' ? 'bg-white text-indigo-600 shadow-md' : 'text-slate-500 hover:text-slate-700'
               }`}
             >
@@ -105,7 +105,7 @@ const EnrollmentDashboard = () => {
         {loading ? (
           <div className="col-span-full py-20 flex flex-col items-center justify-center bg-white rounded-3xl border border-dashed border-slate-300">
             <Loader2 size={40} className="text-indigo-600 animate-spin mb-4" />
-            <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Scanning Database...</p>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Scanning Database...</p>
           </div>
         ) : results.length > 0 ? (
           results.map((person) => (
@@ -121,21 +121,21 @@ const EnrollmentDashboard = () => {
                     <UserCircle size={32} />
                   )}
                 </div>
-                <div className="px-3 py-1 rounded-full bg-slate-100 text-[9px] font-black uppercase tracking-widest text-slate-500">
+                <div className="px-3 py-1 rounded-full bg-slate-100 text-[9px] font-semibold uppercase tracking-widest text-slate-500">
                   {person.admissionNumber || person.employeeCode || 'ID: ' + person.id.split('-')[0]}
                 </div>
               </div>
 
-              <h3 className="text-lg font-black text-slate-900 leading-tight mb-1">
+              <h3 className="text-lg font-semibold text-slate-900 leading-tight mb-1">
                 {person.firstName} {person.lastName}
               </h3>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-6">
                 {activeType === 'LEARNER' ? `Grade: ${person.grade}` : `Role: ${person.role}`}
               </p>
 
               <button 
                 onClick={() => openEnrollment(person)}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-slate-50 text-slate-600 rounded-xl text-xs font-black uppercase tracking-widest group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm group-hover:shadow-lg group-hover:shadow-indigo-600/20"
+                className="w-full flex items-center justify-center gap-2 py-3 bg-slate-50 text-slate-600 rounded-xl text-xs font-semibold uppercase tracking-widest group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm group-hover:shadow-lg group-hover:shadow-indigo-600/20"
               >
                 <Fingerprint size={16} />
                 Enroll Biometrics
@@ -146,14 +146,14 @@ const EnrollmentDashboard = () => {
         ) : searchQuery ? (
           <div className="col-span-full py-20 flex flex-col items-center justify-center bg-white rounded-3xl border border-slate-200">
             <UserMinus size={48} className="text-slate-200 mb-4" />
-            <h4 className="text-slate-900 font-black uppercase tracking-tight">No Entities Found</h4>
+            <h4 className="text-slate-900 font-semibold uppercase tracking-tight">No Entities Found</h4>
             <p className="text-xs text-slate-400 font-medium">Verify your search query and try again.</p>
           </div>
         ) : (
           <div className="col-span-full py-20 flex flex-col items-center justify-center bg-white/50 rounded-3xl border border-dashed border-slate-200">
             <Users size={48} className="text-slate-200 mb-4" />
-            <h4 className="text-slate-400 font-black uppercase tracking-widest">Search Entry Required</h4>
-            <p className="text-[10px] text-slate-300 font-black uppercase tracking-widest mt-2 italic">Initiate queries to begin enrollment cycle</p>
+            <h4 className="text-slate-400 font-semibold uppercase tracking-widest">Search Entry Required</h4>
+            <p className="text-[10px] text-slate-300 font-semibold uppercase tracking-widest mt-2 italic">Initiate queries to begin enrollment cycle</p>
           </div>
         )}
       </div>

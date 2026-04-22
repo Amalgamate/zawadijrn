@@ -168,7 +168,7 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                                 <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
                                     <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
                                         <User className="text-brand-purple" size={18} />
-                                        <h3 className="text-base font-bold text-gray-800">Personal Data</h3>
+                                        <h3 className="text-base font-medium text-gray-800">Personal Data</h3>
                                     </div>
                                     <div className="space-y-3">
                                         <InfoRow label="Date of Birth" value={currentLearner.dateOfBirth ? new Date(currentLearner.dateOfBirth).toLocaleDateString() : 'N/A'} />
@@ -182,7 +182,7 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                                 <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
                                     <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
                                         <Calendar className="text-brand-teal" size={18} />
-                                        <h3 className="text-base font-bold text-gray-800">Academic</h3>
+                                        <h3 className="text-base font-medium text-gray-800">Academic</h3>
                                     </div>
                                     <div className="space-y-3">
                                         <InfoRow label="Adm Number" value={currentLearner.admissionNumber || currentLearner.admNo} />
@@ -196,13 +196,13 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                                 <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
                                     <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
                                         <Users className="text-blue-500" size={18} />
-                                        <h3 className="text-base font-bold text-gray-800">Contacts</h3>
+                                        <h3 className="text-base font-medium text-gray-800">Contacts</h3>
                                     </div>
                                     <div className="space-y-4">
                                         <div className="pb-3 border-b border-dashed border-gray-100 last:border-0 last:pb-0">
-                                            <p className="text-[10px] font-black uppercase text-blue-500 mb-1 tracking-wider">👨 Father</p>
+                                            <p className="text-[10px] font-semibold uppercase text-blue-500 mb-1 tracking-wider">👨 Father</p>
                                             <div className="space-y-1">
-                                                <p className="text-sm font-bold text-gray-800">{currentLearner.fatherName || 'N/A'}</p>
+                                                <p className="text-sm font-medium text-gray-800">{currentLearner.fatherName || 'N/A'}</p>
                                                 {currentLearner.fatherPhone && (
                                                     <p className="text-xs text-gray-600 flex items-center gap-1.5 font-medium">
                                                         <span className="opacity-50">📱</span> {currentLearner.fatherPhone}
@@ -211,9 +211,9 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                                             </div>
                                         </div>
                                         <div className="pb-3 border-b border-dashed border-gray-100 last:border-0 last:pb-0">
-                                            <p className="text-[10px] font-black uppercase text-amber-500 mb-1 tracking-wider">👩 Mother</p>
+                                            <p className="text-[10px] font-semibold uppercase text-amber-500 mb-1 tracking-wider">👩 Mother</p>
                                             <div className="space-y-1">
-                                                <p className="text-sm font-bold text-gray-800">{currentLearner.motherName || 'N/A'}</p>
+                                                <p className="text-sm font-medium text-gray-800">{currentLearner.motherName || 'N/A'}</p>
                                                 {currentLearner.motherPhone && (
                                                     <p className="text-xs text-gray-600 flex items-center gap-1.5 font-medium">
                                                         <span className="opacity-50">📱</span> {currentLearner.motherPhone}
@@ -222,9 +222,9 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                                             </div>
                                         </div>
                                         <div>
-                                            <p className="text-[10px] font-black uppercase text-rose-500 mb-1 tracking-wider">👤 Parent/Guardian</p>
+                                            <p className="text-[10px] font-semibold uppercase text-rose-500 mb-1 tracking-wider">👤 Parent/Guardian</p>
                                             <div className="space-y-1">
-                                                <p className="text-sm font-bold text-gray-800">{currentLearner.guardianName || 'N/A'} {currentLearner.guardianRelation && `(${currentLearner.guardianRelation})`}</p>
+                                                <p className="text-sm font-medium text-gray-800">{currentLearner.guardianName || 'N/A'} {currentLearner.guardianRelation && `(${currentLearner.guardianRelation})`}</p>
                                                 {currentLearner.guardianPhone && (
                                                     <p className="text-xs text-gray-600 flex items-center gap-1.5 font-medium">
                                                         <span className="opacity-50">📱</span> {currentLearner.guardianPhone}
@@ -239,7 +239,7 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                                     <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
                                         <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
                                             <MapPin className="text-orange-500" size={18} />
-                                            <h3 className="text-base font-bold text-gray-800">Location Details</h3>
+                                            <h3 className="text-base font-medium text-gray-800">Location Details</h3>
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
                                             <InfoRow label="County" value={currentLearner.county || 'N/A'} />
@@ -257,13 +257,13 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                                     <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                                         <div className="flex items-center gap-4">
                                             <div>
-                                                <h3 className="text-lg font-bold text-gray-800">Fee Statement</h3>
+                                                <h3 className="text-lg font-medium text-gray-800">Fee Statement</h3>
                                                 <p className="text-sm text-gray-500">Recent invoices and payments</p>
                                             </div>
                                             {onNavigate && feeBalance > 0 && (
                                                 <button
                                                     onClick={() => onNavigate('fees-collection', { learnerId: currentLearner.id })}
-                                                    className="flex items-center gap-2 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-sm text-xs font-bold uppercase tracking-wider"
+                                                    className="flex items-center gap-2 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-sm text-xs font-medium uppercase tracking-wider"
                                                 >
                                                     <Plus size={14} />
                                                     Record Payment
@@ -272,7 +272,7 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                                         </div>
                                         <div className="text-right">
                                             <p className="text-sm text-gray-500 mb-1">Total Outstanding</p>
-                                            <p className="text-3xl font-bold text-brand-purple">
+                                            <p className="text-3xl font-medium text-brand-purple">
                                                 KES {feeBalance.toLocaleString()}
                                             </p>
                                         </div>
@@ -298,15 +298,15 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                                                                 {inv.createdAt ? new Date(inv.createdAt).toLocaleDateString() : 'N/A'}
                                                             </td>
                                                             <td className="px-6 py-4">
-                                                                <p className="font-bold text-gray-800">{inv.feeStructure?.name || 'Academic Fee'}</p>
+                                                                <p className="font-medium text-gray-800">{inv.feeStructure?.name || 'Academic Fee'}</p>
                                                                 <p className="text-[10px] opacity-60 uppercase">{inv.feeStructure?.term?.replace('_', ' ')} • {inv.feeStructure?.academicYear}</p>
                                                             </td>
                                                             <td className="px-6 py-4 text-right">
-                                                                <div className="font-black text-gray-900">KES {Number(inv.totalAmount || inv.amount).toLocaleString()}</div>
-                                                                <div className="text-[10px] text-red-500 font-bold">Bal: {Number(inv.balance).toLocaleString()}</div>
+                                                                <div className="font-semibold text-gray-900">KES {Number(inv.totalAmount || inv.amount).toLocaleString()}</div>
+                                                                <div className="text-[10px] text-red-500 font-medium">Bal: {Number(inv.balance).toLocaleString()}</div>
                                                             </td>
                                                             <td className="px-6 py-4 text-center">
-                                                                <span className={`px-2 py-1 rounded-full text-[10px] font-black uppercase ${inv.status === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                                                <span className={`px-2 py-1 rounded-full text-[10px] font-semibold uppercase ${inv.status === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                                                     {inv.status}
                                                                 </span>
                                                             </td>
@@ -329,7 +329,7 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                         {activeTab === 'academic' && (
                             <div className="space-y-6 animate-fade-in">
                                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                                    <h3 className="text-lg font-bold text-gray-800 mb-6">Recent Assessments</h3>
+                                    <h3 className="text-lg font-medium text-gray-800 mb-6">Recent Assessments</h3>
                                     {assessments.length > 0 ? (
                                         <div className="space-y-4">
                                             {assessments.map((assessment, idx) => (
@@ -339,14 +339,14 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                                                             <Activity size={20} />
                                                         </div>
                                                         <div>
-                                                            <h4 className="font-bold text-gray-800">{assessment.test?.name || 'Assessment'}</h4>
+                                                            <h4 className="font-medium text-gray-800">{assessment.test?.name || 'Assessment'}</h4>
                                                             <p className="text-sm text-gray-500">
                                                                 {assessment.test?.subject} • {assessment.test?.term} • {assessment.createdAt ? new Date(assessment.createdAt).toLocaleDateString() : 'N/A'}
                                                             </p>
                                                         </div>
                                                     </div>
                                                     <div className="text-right">
-                                                        <p className="text-2xl font-bold text-gray-900">{assessment.score}%</p>
+                                                        <p className="text-2xl font-medium text-gray-900">{assessment.score}%</p>
                                                         <p className="text-xs font-semibold text-gray-500 uppercase">{assessment.grade}</p>
                                                     </div>
                                                 </div>
@@ -367,7 +367,7 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                             <div className="animate-fade-in">
                                 {/* status badge */}
                                 <div className="mb-4 flex items-center gap-3">
-                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase ${
+                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold uppercase ${
                                         currentLearner.isTransportStudent
                                             ? 'bg-emerald-100 text-emerald-700'
                                             : 'bg-gray-100 text-gray-500'
@@ -378,7 +378,7 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                                     {onNavigate && (
                                         <button
                                             onClick={() => onNavigate('transport-routes')}
-                                            className="text-xs text-blue-600 font-bold hover:underline"
+                                            className="text-xs text-blue-600 font-medium hover:underline"
                                         >
                                             Manage in Transport module →
                                         </button>
@@ -394,27 +394,27 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                                                         <Bus size={18} />
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="font-black text-gray-900 text-base">{a.route?.name || 'Unknown Route'}</p>
+                                                        <p className="font-semibold text-gray-900 text-base">{a.route?.name || 'Unknown Route'}</p>
                                                         {a.route?.description && (
                                                             <p className="text-xs text-gray-400 mt-0.5">{a.route.description}</p>
                                                         )}
                                                         <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3">
                                                             <div>
-                                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Route Fee</p>
-                                                                <p className="text-sm font-black text-emerald-600">
+                                                                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Route Fee</p>
+                                                                <p className="text-sm font-semibold text-emerald-600">
                                                                     KES {Number(a.route?.amount || 0).toLocaleString()}
                                                                 </p>
                                                             </div>
                                                             {a.route?.vehicle && (
                                                                 <div>
-                                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Vehicle</p>
-                                                                    <p className="text-sm font-bold text-gray-700">{a.route.vehicle.registrationNumber}</p>
+                                                                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Vehicle</p>
+                                                                    <p className="text-sm font-medium text-gray-700">{a.route.vehicle.registrationNumber}</p>
                                                                 </div>
                                                             )}
                                                             {a.route?.vehicle?.driverName && (
                                                                 <div>
-                                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Driver</p>
-                                                                    <p className="text-sm font-bold text-gray-700">{a.route.vehicle.driverName}</p>
+                                                                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Driver</p>
+                                                                    <p className="text-sm font-medium text-gray-700">{a.route.vehicle.driverName}</p>
                                                                     {a.route.vehicle.driverPhone && (
                                                                         <p className="text-[11px] text-gray-400">{a.route.vehicle.driverPhone}</p>
                                                                     )}
@@ -422,14 +422,14 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                                                             )}
                                                             {(a.pickupPoint || a.dropoffPoint) && (
                                                                 <div>
-                                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Stop</p>
-                                                                    {a.pickupPoint  && <p className="text-[11px] font-bold text-gray-700">📍 {a.pickupPoint}</p>}
-                                                                    {a.dropoffPoint && <p className="text-[11px] font-bold text-gray-700">🏁 {a.dropoffPoint}</p>}
+                                                                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Stop</p>
+                                                                    {a.pickupPoint  && <p className="text-[11px] font-medium text-gray-700">📍 {a.pickupPoint}</p>}
+                                                                    {a.dropoffPoint && <p className="text-[11px] font-medium text-gray-700">🏁 {a.dropoffPoint}</p>}
                                                                 </div>
                                                             )}
                                                         </div>
                                                     </div>
-                                                    <span className={`flex-shrink-0 text-[10px] font-black px-2 py-0.5 rounded-full uppercase ${
+                                                    <span className={`flex-shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase ${
                                                         a.status === 'ACTIVE'
                                                             ? 'bg-emerald-100 text-emerald-700'
                                                             : 'bg-gray-100 text-gray-500'
@@ -443,11 +443,11 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                                 ) : (
                                     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center flex flex-col items-center">
                                         <Bus size={48} className="mb-4 text-gray-200" />
-                                        <p className="font-bold text-gray-500">Not assigned to any transport route</p>
+                                        <p className="font-medium text-gray-500">Not assigned to any transport route</p>
                                         {onNavigate && (
                                             <button
                                                 onClick={() => onNavigate('transport-routes')}
-                                                className="mt-4 text-sm text-blue-600 font-bold hover:underline"
+                                                className="mt-4 text-sm text-blue-600 font-medium hover:underline"
                                             >
                                                 Go to Transport module to assign →
                                             </button>
@@ -463,7 +463,7 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                                 <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                                     <div className="flex items-center gap-2 mb-6 pb-2 border-b border-gray-100">
                                         <Heart className="text-red-500" size={20} />
-                                        <h3 className="text-lg font-bold text-gray-800">Medical Conditions</h3>
+                                        <h3 className="text-lg font-medium text-gray-800">Medical Conditions</h3>
                                     </div>
                                     {currentLearner.medicalConditions ? (
                                         <div className="p-4 bg-red-50 rounded-lg border border-red-100 text-red-900">
@@ -480,7 +480,7 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                                 <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                                     <div className="flex items-center gap-2 mb-6 pb-2 border-b border-gray-100">
                                         <AlertCircle className="text-orange-500" size={20} />
-                                        <h3 className="text-lg font-bold text-gray-800">Allergies</h3>
+                                        <h3 className="text-lg font-medium text-gray-800">Allergies</h3>
                                     </div>
                                     {currentLearner.allergies ? (
                                         <div className="p-4 bg-orange-50 rounded-lg border border-orange-100 text-orange-900">
@@ -500,7 +500,7 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                         {activeTab === 'documents' && (
                             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden animate-fade-in">
                                 <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                                    <h3 className="text-lg font-bold text-gray-800">Attached Documents</h3>
+                                    <h3 className="text-lg font-medium text-gray-800">Attached Documents</h3>
                                     <button className="text-sm text-brand-purple font-medium hover:underline">Upload New</button>
                                 </div>
                                 <div className="p-12 text-center text-gray-400 flex flex-col items-center">
@@ -527,7 +527,7 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
 const InfoRow = ({ label, value }) => (
     <div>
         <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{label}</label>
-        <p className="text-sm font-bold text-gray-900">{value}</p>
+        <p className="text-sm font-medium text-gray-900">{value}</p>
     </div>
 );
 

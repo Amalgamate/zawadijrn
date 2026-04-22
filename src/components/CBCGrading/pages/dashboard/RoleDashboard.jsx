@@ -30,11 +30,11 @@ const Tile = ({ title, description, onClick, badge, tone = 'indigo' }) => {
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="text-base font-black">{title}</div>
+          <div className="text-base font-semibold">{title}</div>
           <div className="mt-1 text-xs font-medium opacity-80">{description}</div>
         </div>
         {badge ? (
-          <span className="shrink-0 inline-flex items-center rounded-full border border-white/40 bg-white/60 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest">
+          <span className="shrink-0 inline-flex items-center rounded-full border border-white/40 bg-white/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest">
             {badge}
           </span>
         ) : null}
@@ -56,15 +56,15 @@ const RoleDashboard = ({ learners, pagination, teachers, user, onNavigate, brand
         <div className="rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-indigo-50 p-6 shadow-sm">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-black text-indigo-900">Senior School Dashboard</h1>
+              <h1 className="text-2xl font-semibold text-indigo-900">Senior School Dashboard</h1>
               <p className="mt-2 text-sm font-medium text-indigo-900/80">
                 This is the Senior School environment. Modules will open progressively; anything unfinished will clearly show “Coming Soon”.
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
-                <span className="inline-flex items-center rounded-full border border-indigo-200 bg-white px-2 py-1 text-[10px] font-black uppercase tracking-widest text-indigo-800">
+                <span className="inline-flex items-center rounded-full border border-indigo-200 bg-white px-2 py-1 text-[10px] font-semibold uppercase tracking-widest text-indigo-800">
                   Portal: Senior
                 </span>
-                <span className="inline-flex items-center rounded-full border border-indigo-200 bg-white px-2 py-1 text-[10px] font-black uppercase tracking-widest text-indigo-800">
+                <span className="inline-flex items-center rounded-full border border-indigo-200 bg-white px-2 py-1 text-[10px] font-semibold uppercase tracking-widest text-indigo-800">
                   Role: {String(role || user?.role || 'USER').replaceAll('_', ' ')}
                 </span>
               </div>
@@ -72,7 +72,7 @@ const RoleDashboard = ({ learners, pagination, teachers, user, onNavigate, brand
             <button
               type="button"
               onClick={() => onNavigate?.('learners-list')}
-              className="hidden sm:inline-flex items-center px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-black uppercase tracking-widest shadow hover:bg-indigo-700"
+              className="hidden sm:inline-flex items-center px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold uppercase tracking-widest shadow hover:bg-indigo-700"
             >
               View Students
             </button>

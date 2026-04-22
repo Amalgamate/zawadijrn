@@ -373,7 +373,7 @@ const CommunicationSettings = () => {
       {activeTab === 'email' && (
         <div className="space-y-6">
           <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100 transition-colors duration-300">
-            <h3 className="text-lg font-bold mb-6">Email Configuration (Resend)</h3>
+            <h3 className="text-lg font-medium mb-6">Email Configuration (Resend)</h3>
 
             {loading && <div className="text-center py-4"><Loader className="animate-spin inline" /> Loading config...</div>}
 
@@ -459,7 +459,7 @@ const CommunicationSettings = () => {
       {/* Template Editor */}
       {activeTab === 'email' && (
         <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100 transition-colors duration-300">
-          <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+          <h3 className="text-lg font-medium mb-6 flex items-center gap-2">
             <MessageSquare size={20} className="text-purple-600" />
             Email Templates
           </h3>
@@ -528,7 +528,7 @@ const CommunicationSettings = () => {
       {/* Test Email */}
       {activeTab === 'email' && (
         <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100 transition-colors duration-300">
-          <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+          <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
             <TestTube size={20} className="text-blue-600" />
             Test Email
           </h3>
@@ -659,7 +659,7 @@ const CommunicationSettings = () => {
       {activeTab === 'sms' && (
         <div className="space-y-6">
           <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100 transition-colors duration-300">
-            <h3 className="text-lg font-bold mb-6">SMS Configuration</h3>
+            <h3 className="text-lg font-medium mb-6">SMS Configuration</h3>
 
             {loading && <div className="text-center py-4"><Loader className="animate-spin inline" /> Loading config...</div>}
 
@@ -812,7 +812,7 @@ const CommunicationSettings = () => {
 
           {/* Test SMS */}
           <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100 transition-colors duration-300">
-            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+            <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
               <TestTube size={20} className="text-blue-600" />
               Test SMS
             </h3>
@@ -903,7 +903,7 @@ const CommunicationSettings = () => {
         <div className="space-y-6">
           <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100 transition-colors duration-300">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-bold">WhatsApp Connection</h3>
+              <h3 className="text-lg font-medium">WhatsApp Connection</h3>
               <div className="flex gap-2">
                 <button
                   onClick={() => { setIsPolling(true); handleInitializeWhatsApp(); }}
@@ -939,8 +939,8 @@ const CommunicationSettings = () => {
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-gray-900">Status:</span>
-                    <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase ${
+                    <span className="font-medium text-gray-900">Status:</span>
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium uppercase ${
                       whatsappStatus.status === 'authenticated' ? 'bg-green-100 text-green-700' :
                       whatsappStatus.status === 'qr_needed'     ? 'bg-yellow-100 text-yellow-700' :
                       whatsappStatus.status === 'initializing'  ? 'bg-blue-100 text-blue-700' :
@@ -962,7 +962,7 @@ const CommunicationSettings = () => {
               {(whatsappStatus.status === 'qr_needed') && (
                 <div className="flex flex-col items-center gap-4 p-8 border-2 border-dashed border-gray-200 rounded-2xl">
                   <div className="text-center">
-                    <h4 className="font-bold flex items-center justify-center gap-2"><QrCode size={18} className="text-green-600" /> Scan with WhatsApp</h4>
+                    <h4 className="font-medium flex items-center justify-center gap-2"><QrCode size={18} className="text-green-600" /> Scan with WhatsApp</h4>
                     <p className="text-xs text-gray-500 mt-1">Open WhatsApp → Linked Devices → Link a Device</p>
                   </div>
                   {whatsappStatus.qrCode ? (
@@ -989,7 +989,7 @@ const CommunicationSettings = () => {
               {whatsappStatus.status === 'authenticated' && (
                 <div className="bg-green-50 border border-green-100 rounded-xl p-6 text-center space-y-2">
                   <CheckCircle className="text-green-600 mx-auto" size={32} />
-                  <h4 className="font-bold text-gray-900">WhatsApp is Connected!</h4>
+                  <h4 className="font-medium text-gray-900">WhatsApp is Connected!</h4>
                   <p className="text-sm text-gray-600">Bulk reports and reminders will now be delivered via WhatsApp. The session persists across server restarts.</p>
                 </div>
               )}
@@ -1011,7 +1011,7 @@ const CommunicationSettings = () => {
                       <button
                         onClick={handleInitializeWhatsApp}
                         disabled={wsLoading}
-                        className="px-8 py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition shadow disabled:opacity-50"
+                        className="px-8 py-3 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition shadow disabled:opacity-50"
                       >
                         {wsLoading ? 'Starting...' : '📱 Connect WhatsApp'}
                       </button>
@@ -1025,7 +1025,7 @@ const CommunicationSettings = () => {
           {/* Test WhatsApp block (only visible when authenticated) */}
           {whatsappStatus.status === 'authenticated' && (
             <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100 transition-colors duration-300">
-              <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+              <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
                 <TestTube size={20} className="text-green-600" />
                 Test WhatsApp
               </h3>
@@ -1116,7 +1116,7 @@ const CommunicationSettings = () => {
                 <div className="flex items-center gap-3 mb-4">
                   <Phone size={24} className="text-blue-600" />
                   <div>
-                    <h3 className="text-lg font-bold">VoIP Settings</h3>
+                    <h3 className="text-lg font-medium">VoIP Settings</h3>
                     <p className="text-sm text-gray-500">This feature is coming soon. We’ll add VoIP calling and telephony integration here.</p>
                   </div>
                 </div>

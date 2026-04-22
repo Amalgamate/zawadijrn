@@ -120,7 +120,7 @@ const RecordPaymentPage = ({ invoice, initialMode }) => {
       <div className="max-w-2xl mx-auto space-y-6 pb-12 pt-8">
         <div className="bg-green-50 border border-green-200 rounded-2xl p-8 flex flex-col items-center text-center space-y-4 shadow-sm">
           <CheckCircle2 size={56} className="text-green-500" />
-          <h2 className="text-2xl font-bold text-green-800">Payment Recorded!</h2>
+          <h2 className="text-2xl font-medium text-green-800">Payment Recorded!</h2>
           <p className="text-green-700 font-semibold">
             KES {Number(paymentData.amount).toLocaleString()} recorded via{' '}
             {paymentData.paymentMethod.replace('_', ' ')}.
@@ -132,13 +132,13 @@ const RecordPaymentPage = ({ invoice, initialMode }) => {
           <div className="grid grid-cols-2 gap-3 w-full mt-4">
             <button
               onClick={() => setShowA5Preview(true)}
-              className="flex items-center justify-center gap-2 bg-[#002C60] text-white px-4 py-3 rounded-xl font-bold text-sm hover:bg-[#003a7a] transition shadow-md"
+              className="flex items-center justify-center gap-2 bg-[#002C60] text-white px-4 py-3 rounded-xl font-medium text-sm hover:bg-[#003a7a] transition shadow-md"
             >
               Print A5 Receipt
             </button>
             <button
               onClick={() => setShowThermalReceipt(true)}
-              className="flex items-center justify-center gap-2 bg-indigo-600 text-white px-4 py-3 rounded-xl font-bold text-sm hover:bg-indigo-700 transition shadow-md"
+              className="flex items-center justify-center gap-2 bg-indigo-600 text-white px-4 py-3 rounded-xl font-medium text-sm hover:bg-indigo-700 transition shadow-md"
             >
               Print Thermal
             </button>
@@ -148,7 +148,7 @@ const RecordPaymentPage = ({ invoice, initialMode }) => {
             <div className="flex items-start gap-2 bg-white border border-green-200 rounded-xl px-4 py-3 text-left w-full mt-2">
               <MessageSquare size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-sm font-bold text-green-800">Note saved ✓</p>
+                <p className="text-sm font-medium text-green-800">Note saved ✓</p>
                 <p className="text-xs text-gray-600 mt-0.5">
                   Your note was saved with this payment. You can view it in the{' '}
                   <span className="font-semibold">Invoice Detail → Activity</span> section.
@@ -162,7 +162,7 @@ const RecordPaymentPage = ({ invoice, initialMode }) => {
           <div className="flex flex-col items-center gap-3 mt-6">
             <button
               onClick={() => navigateTo('fees-collection')}
-              className="text-[#002C60] font-bold text-sm hover:underline"
+              className="text-[#002C60] font-medium text-sm hover:underline"
             >
               Done & Return to List
             </button>
@@ -187,7 +187,7 @@ const RecordPaymentPage = ({ invoice, initialMode }) => {
               >
                 <ArrowLeft size={20} className="rotate-90" />
               </button>
-              <h3 className="text-lg font-bold text-gray-800 mb-4">Thermal Preview</h3>
+              <h3 className="text-lg font-medium text-gray-800 mb-4">Thermal Preview</h3>
               <div className="bg-gray-50 p-4 rounded-xl border border-dashed border-gray-200 overflow-auto max-h-[60vh]">
                 <ThermalReceipt invoice={successResult.data.invoice} schoolInfo={schoolInfo} />
               </div>
@@ -199,7 +199,7 @@ const RecordPaymentPage = ({ invoice, initialMode }) => {
                    win.document.close();
                    win.print();
                 }}
-                className="w-full mt-6 bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition"
+                className="w-full mt-6 bg-indigo-600 text-white py-3 rounded-xl font-medium hover:bg-indigo-700 transition"
               >
                 Send to Printer
               </button>
@@ -228,13 +228,13 @@ const RecordPaymentPage = ({ invoice, initialMode }) => {
 
       {/* Page Header */}
       <div className="bg-green-600 rounded-2xl px-8 py-6 text-white shadow-lg">
-        <h1 className="text-2xl font-bold">Record Payment</h1>
+        <h1 className="text-2xl font-medium">Record Payment</h1>
         <p className="text-green-100 text-sm mt-1">{invoice.invoiceNumber}</p>
       </div>
 
       {/* Invoice Summary */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 space-y-3">
-        <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider">Invoice Details</h2>
+        <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wider">Invoice Details</h2>
         <div className="grid grid-cols-2 gap-3 text-sm pt-1">
           <div>
             <span className="text-gray-500">Student:</span>
@@ -269,14 +269,14 @@ const RecordPaymentPage = ({ invoice, initialMode }) => {
           <div className={`col-span-2 pt-2 border-t border-gray-100 flex items-center justify-between`}>
             <div>
               <span className="text-gray-500">Tuition Balance:</span>
-              <span className="ml-2 font-bold text-red-600 text-xl">
+              <span className="ml-2 font-medium text-red-600 text-xl">
                 KES {Number(invoice.balance).toLocaleString()}
               </span>
             </div>
             {hasTransport && (
               <div>
                 <span className="text-gray-500">Transport Bal:</span>
-                <span className="ml-2 font-bold text-orange-600 text-xl">
+                <span className="ml-2 font-medium text-orange-600 text-xl">
                   KES {Number(invoice.transportBalance).toLocaleString()}
                 </span>
               </div>
@@ -287,7 +287,7 @@ const RecordPaymentPage = ({ invoice, initialMode }) => {
 
       {/* Payment Form */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 space-y-5">
-        <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider">Payment Information</h2>
+        <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wider">Payment Information</h2>
 
         <div className="space-y-2">
           <label className="block text-sm font-semibold text-gray-700">Amount to Pay *</label>
@@ -317,10 +317,10 @@ const RecordPaymentPage = ({ invoice, initialMode }) => {
         {hasTransport && paymentData.amount && (
             <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 mt-2 space-y-3">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-bold text-orange-900">Payment Allocation</label>
+                <label className="text-sm font-medium text-orange-900">Payment Allocation</label>
                 <div className="flex bg-white rounded-lg p-0.5 border border-orange-200">
                   <button 
-                    className={`px-3 py-1 text-xs font-bold rounded-md transition ${allocationMode === 'AUTO' ? 'bg-orange-500 text-white shadow-sm' : 'text-orange-600 hover:bg-orange-100'}`}
+                    className={`px-3 py-1 text-xs font-medium rounded-md transition ${allocationMode === 'AUTO' ? 'bg-orange-500 text-white shadow-sm' : 'text-orange-600 hover:bg-orange-100'}`}
                     onClick={() => {
                         setAllocationMode('AUTO');
                         const amt = parseFloat(paymentData.amount) || 0;
@@ -337,7 +337,7 @@ const RecordPaymentPage = ({ invoice, initialMode }) => {
                     Auto
                   </button>
                   <button 
-                    className={`px-3 py-1 text-xs font-bold rounded-md transition ${allocationMode === 'CUSTOM' ? 'bg-orange-500 text-white shadow-sm' : 'text-orange-600 hover:bg-orange-100'}`}
+                    className={`px-3 py-1 text-xs font-medium rounded-md transition ${allocationMode === 'CUSTOM' ? 'bg-orange-500 text-white shadow-sm' : 'text-orange-600 hover:bg-orange-100'}`}
                     onClick={() => setAllocationMode('CUSTOM')}
                   >
                     Custom Split
@@ -347,16 +347,16 @@ const RecordPaymentPage = ({ invoice, initialMode }) => {
 
               {allocationMode === 'AUTO' ? (
                  <p className="text-xs text-orange-700">
-                   Automatically pays off general tuition first <span className="font-bold border-b border-orange-400">({allocatedTuition})</span>, and puts the remainder towards transport <span className="font-bold border-b border-orange-400">({allocatedTransport})</span>.
+                   Automatically pays off general tuition first <span className="font-medium border-b border-orange-400">({allocatedTuition})</span>, and puts the remainder towards transport <span className="font-medium border-b border-orange-400">({allocatedTransport})</span>.
                  </p>
               ) : (
                  <div className="grid grid-cols-2 gap-3 pb-1">
                    <div>
-                     <label className="block text-xs font-bold text-orange-800 mb-1">To Tuition</label>
+                     <label className="block text-xs font-medium text-orange-800 mb-1">To Tuition</label>
                      <input type="number" value={allocatedTuition} onChange={e => setAllocatedTuition(e.target.value)} className="w-full px-3 py-2 text-sm border border-orange-200 rounded-lg focus:ring-orange-500 focus:border-orange-500" placeholder="0.00" />
                    </div>
                    <div>
-                     <label className="block text-xs font-bold text-orange-800 mb-1">To Transport</label>
+                     <label className="block text-xs font-medium text-orange-800 mb-1">To Transport</label>
                      <input type="number" value={allocatedTransport} onChange={e => setAllocatedTransport(e.target.value)} className="w-full px-3 py-2 text-sm border border-orange-200 rounded-lg focus:ring-orange-500 focus:border-orange-500" placeholder="0.00" />
                    </div>
                  </div>
@@ -428,14 +428,14 @@ const RecordPaymentPage = ({ invoice, initialMode }) => {
           <button
             onClick={handleRecordPayment}
             disabled={loading}
-            className="flex-1 bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 font-bold text-base flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 disabled:opacity-50"
+            className="flex-1 bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 font-medium text-base flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 disabled:opacity-50"
           >
             {loading ? <Loader2 size={18} className="animate-spin" /> : null}
             {loading ? 'Processing...' : 'Record Payment'}
           </button>
           <button
             onClick={() => navigateTo('fees-invoice-detail', { invoice })}
-            className="px-6 py-3 border-2 border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 font-bold transition-all"
+            className="px-6 py-3 border-2 border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 font-medium transition-all"
           >
             Cancel
           </button>

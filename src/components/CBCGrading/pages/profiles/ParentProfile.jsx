@@ -85,7 +85,7 @@ const ParentProfile = ({ parent, onBack }) => {
                 bannerPattern="pattern-grid-lg"
                 bannerColor="brand-purple"
                 badges={[
-                    { text: parent.relationship, className: "px-2.5 py-0.5 rounded-md bg-purple-50 text-brand-purple text-xs font-bold uppercase tracking-wider border border-purple-100" },
+                    { text: parent.relationship, className: "px-2.5 py-0.5 rounded-md bg-purple-50 text-brand-purple text-xs font-medium uppercase tracking-wider border border-purple-100" },
                     { text: parent.county || 'N/A', icon: MapPin }
                 ]}
                 tabs={tabs}
@@ -103,7 +103,7 @@ const ParentProfile = ({ parent, onBack }) => {
                             <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                                 <div className="flex items-center gap-2 mb-6 pb-2 border-b border-gray-100">
                                     <User className="text-brand-purple" size={20} />
-                                    <h3 className="text-lg font-bold text-gray-800">Contact & Personal Details</h3>
+                                    <h3 className="text-lg font-medium text-gray-800">Contact & Personal Details</h3>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8">
@@ -142,7 +142,7 @@ const ParentProfile = ({ parent, onBack }) => {
                     <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 animate-fade-in">
                         <div className="flex items-center gap-2 mb-6 pb-2 border-b border-gray-100">
                             <Users className="text-brand-teal" size={20} />
-                            <h3 className="text-lg font-bold text-gray-800">Linked Students</h3>
+                            <h3 className="text-lg font-medium text-gray-800">Linked Students</h3>
                         </div>
 
                         {(parent.learners && parent.learners.length > 0) || (parent.learnerIds && parent.learnerIds.length > 0) ? (
@@ -154,7 +154,7 @@ const ParentProfile = ({ parent, onBack }) => {
                                                 <GraduationCap size={24} />
                                             </div>
                                             <div>
-                                                <p className="font-bold text-gray-800 text-lg">{learner.firstName} {learner.lastName}</p>
+                                                <p className="font-medium text-gray-800 text-lg">{learner.firstName} {learner.lastName}</p>
                                                 <p className="text-sm text-gray-500">{learner.admissionNumber}</p>
                                             </div>
                                         </div>
@@ -166,7 +166,7 @@ const ParentProfile = ({ parent, onBack }) => {
                                                 <GraduationCap size={24} />
                                             </div>
                                             <div>
-                                                <p className="font-bold text-gray-800 text-lg">Student: {id}</p>
+                                                <p className="font-medium text-gray-800 text-lg">Student: {id}</p>
                                                 <p className="text-sm text-gray-500">Linked Profile</p>
                                             </div>
                                         </div>
@@ -186,7 +186,7 @@ const ParentProfile = ({ parent, onBack }) => {
                 {activeTab === 'documents' && (
                     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden animate-fade-in">
                         <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                            <h3 className="text-lg font-bold text-gray-800">Attached Documents</h3>
+                            <h3 className="text-lg font-medium text-gray-800">Attached Documents</h3>
                             <button className="text-sm text-brand-purple font-medium hover:underline">
                                 Upload New
                             </button>

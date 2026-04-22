@@ -81,7 +81,7 @@ const AssignModal = ({ payment, onClose, onResolved }) => {
                 {/* Header */}
                 <div className="sticky top-0 bg-white rounded-t-3xl z-10 flex items-center justify-between p-6 border-b border-gray-100">
                     <div>
-                        <h2 className="text-lg font-bold text-gray-900">Assign Payment</h2>
+                        <h2 className="text-lg font-medium text-gray-900">Assign Payment</h2>
                         <p className="text-xs text-gray-500 mt-0.5">
                             KES {fmt(payment.amount)} · {payment.receiptNo} · from {payment.phone}
                         </p>
@@ -93,7 +93,7 @@ const AssignModal = ({ payment, onClose, onResolved }) => {
 
                 <div className="p-6 space-y-5">
                     {/* Step indicator */}
-                    <div className="flex items-center gap-2 text-xs font-bold">
+                    <div className="flex items-center gap-2 text-xs font-medium">
                         <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] ${step >= 1 ? 'bg-brand-teal text-white' : 'bg-gray-100 text-gray-400'}`}>1</span>
                         <span className={step >= 1 ? 'text-gray-700' : 'text-gray-400'}>Find Learner</span>
                         <ChevronRight size={12} className="text-gray-300" />
@@ -124,11 +124,11 @@ const AssignModal = ({ payment, onClose, onResolved }) => {
                                 {learners.map(l => (
                                     <button key={l.id} onClick={() => selectLearner(l)}
                                         className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-teal-50 border border-transparent hover:border-teal-100 transition-all text-left group">
-                                        <div className="w-9 h-9 rounded-full bg-brand-purple/10 text-brand-purple flex items-center justify-center font-bold text-sm flex-shrink-0">
+                                        <div className="w-9 h-9 rounded-full bg-brand-purple/10 text-brand-purple flex items-center justify-center font-medium text-sm flex-shrink-0">
                                             {l.firstName?.[0]}{l.lastName?.[0]}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="font-bold text-gray-900 text-sm truncate group-hover:text-teal-800">{l.firstName} {l.lastName}</p>
+                                            <p className="font-medium text-gray-900 text-sm truncate group-hover:text-teal-800">{l.firstName} {l.lastName}</p>
                                             <p className="text-xs text-gray-400 font-mono">{l.admissionNumber} · Grade {l.grade}</p>
                                         </div>
                                         <ChevronRight size={16} className="text-gray-300 group-hover:text-teal-500 flex-shrink-0" />
@@ -144,14 +144,14 @@ const AssignModal = ({ payment, onClose, onResolved }) => {
                             <div className="flex items-center gap-3 p-3 bg-teal-50 rounded-xl border border-teal-100">
                                 <UserCheck size={18} className="text-teal-600 flex-shrink-0" />
                                 <div>
-                                    <p className="font-bold text-sm text-gray-800">{selectedLearner.firstName} {selectedLearner.lastName}</p>
+                                    <p className="font-medium text-sm text-gray-800">{selectedLearner.firstName} {selectedLearner.lastName}</p>
                                     <p className="text-xs text-gray-500">{selectedLearner.admissionNumber}</p>
                                 </div>
                                 <button onClick={() => { setStep(1); setSelectedLearner(null); setSelectedInvoice(null); }}
-                                    className="ml-auto text-xs text-teal-600 font-bold hover:underline">Change</button>
+                                    className="ml-auto text-xs text-teal-600 font-medium hover:underline">Change</button>
                             </div>
 
-                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Outstanding Invoices</p>
+                            <p className="text-xs font-medium text-gray-400 uppercase tracking-widest">Outstanding Invoices</p>
 
                             {invoices.length === 0 ? (
                                 <div className="text-center py-8">
@@ -170,12 +170,12 @@ const AssignModal = ({ payment, onClose, onResolved }) => {
                                             }`}>
                                             <div className="flex justify-between items-start">
                                                 <div>
-                                                    <p className="font-bold text-sm text-gray-900">{inv.invoiceNumber}</p>
+                                                    <p className="font-medium text-sm text-gray-900">{inv.invoiceNumber}</p>
                                                     <p className="text-xs text-gray-500">{inv.term?.replace('_', ' ')} · {inv.academicYear}</p>
                                                 </div>
                                                 <div className="text-right">
                                                     <p className="text-xs text-gray-400">Balance</p>
-                                                    <p className="font-bold text-red-600 text-sm">KES {fmt(inv.balance)}</p>
+                                                    <p className="font-medium text-red-600 text-sm">KES {fmt(inv.balance)}</p>
                                                 </div>
                                             </div>
                                             <div className="mt-2 h-1.5 rounded-full bg-gray-100 overflow-hidden">
@@ -191,13 +191,13 @@ const AssignModal = ({ payment, onClose, onResolved }) => {
 
                             {selectedInvoice && (
                                 <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl text-sm text-amber-800">
-                                    <p className="font-bold mb-1">Confirm Assignment</p>
+                                    <p className="font-medium mb-1">Confirm Assignment</p>
                                     <p>KES {fmt(payment.amount)} from <strong>{payment.phone}</strong> will be applied to invoice <strong>{selectedInvoice.invoiceNumber}</strong> (balance: KES {fmt(selectedInvoice.balance)}).</p>
                                 </div>
                             )}
 
                             <button onClick={handleResolve} disabled={!selectedInvoice || resolving}
-                                className="w-full py-3 bg-teal-600 text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-teal-700 transition-all disabled:opacity-50">
+                                className="w-full py-3 bg-teal-600 text-white rounded-2xl font-medium flex items-center justify-center gap-2 hover:bg-teal-700 transition-all disabled:opacity-50">
                                 {resolving
                                     ? <><div className="animate-spin rounded-full h-4 w-4 border-2 border-white/50 border-t-white" /> Applying…</>
                                     : <><CheckCircle2 size={18} /> Apply Payment</>}
@@ -231,7 +231,7 @@ const DismissModal = ({ payment, onClose, onDismissed }) => {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4" onClick={onClose}>
             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 space-y-5" onClick={e => e.stopPropagation()}>
                 <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-bold text-gray-900">Dismiss Payment</h2>
+                    <h2 className="text-lg font-medium text-gray-900">Dismiss Payment</h2>
                     <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full text-gray-400"><X size={18} /></button>
                 </div>
                 <p className="text-sm text-gray-500">
@@ -246,9 +246,9 @@ const DismissModal = ({ payment, onClose, onDismissed }) => {
                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none resize-none focus:ring-2 focus:ring-red-500/20"
                 />
                 <div className="flex gap-3">
-                    <button onClick={onClose} className="flex-1 py-3 border border-gray-200 text-gray-600 rounded-2xl font-bold text-sm hover:bg-gray-50">Cancel</button>
+                    <button onClick={onClose} className="flex-1 py-3 border border-gray-200 text-gray-600 rounded-2xl font-medium text-sm hover:bg-gray-50">Cancel</button>
                     <button onClick={handleDismiss} disabled={dismissing}
-                        className="flex-1 py-3 bg-red-600 text-white rounded-2xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-red-700 disabled:opacity-50">
+                        className="flex-1 py-3 bg-red-600 text-white rounded-2xl font-medium text-sm flex items-center justify-center gap-2 hover:bg-red-700 disabled:opacity-50">
                         {dismissing ? <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/50 border-t-white" /> : <XCircle size={16} />}
                         Dismiss
                     </button>
@@ -310,7 +310,7 @@ const UnmatchedPaymentsPanel = ({ onCountChange }) => {
 
             {/* Toast */}
             {toast && (
-                <div className={`fixed top-4 right-4 z-[100] flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl text-sm font-bold animate-in slide-in-from-top duration-300
+                <div className={`fixed top-4 right-4 z-[100] flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl text-sm font-medium animate-in slide-in-from-top duration-300
                     ${toast.type === 'error' ? 'bg-red-600 text-white' : toast.type === 'info' ? 'bg-gray-800 text-white' : 'bg-emerald-600 text-white'}`}>
                     <CheckCircle2 size={18} />
                     {toast.msg}
@@ -330,7 +330,7 @@ const UnmatchedPaymentsPanel = ({ onCountChange }) => {
             <div className="flex items-center gap-3">
                 {['PENDING', 'RESOLVED', 'DISMISSED'].map(s => (
                     <button key={s} onClick={() => setStatusFilter(s)}
-                        className={`px-4 py-1.5 rounded-full text-xs font-bold border transition-all ${
+                        className={`px-4 py-1.5 rounded-full text-xs font-medium border transition-all ${
                             statusFilter === s ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-500 hover:border-gray-300 bg-white'
                         }`}>
                         {s}
@@ -348,7 +348,7 @@ const UnmatchedPaymentsPanel = ({ onCountChange }) => {
                         <thead className="border-b border-gray-100">
                             <tr>
                                 {['Phone', 'Amount', 'M-Pesa Receipt', 'Date', 'Status', 'Note', ''].map(h => (
-                                    <th key={h} className="px-5 py-3.5 text-xs font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                                    <th key={h} className="px-5 py-3.5 text-xs font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
                                 ))}
                             </tr>
                         </thead>
@@ -369,7 +369,7 @@ const UnmatchedPaymentsPanel = ({ onCountChange }) => {
                                                 <CheckCircle2 size={40} />
                                             </div>
                                             <div>
-                                                <p className="font-bold text-gray-800">
+                                                <p className="font-medium text-gray-800">
                                                     {statusFilter === 'PENDING' ? 'No unmatched payments' : `No ${statusFilter.toLowerCase()} payments`}
                                                 </p>
                                                 <p className="text-sm text-gray-400 mt-1">
@@ -391,7 +391,7 @@ const UnmatchedPaymentsPanel = ({ onCountChange }) => {
                                             </div>
                                         </td>
                                         <td className="px-5 py-4">
-                                            <span className="text-sm font-bold text-gray-900">KES {fmt(p.amount)}</span>
+                                            <span className="text-sm font-medium text-gray-900">KES {fmt(p.amount)}</span>
                                         </td>
                                         <td className="px-5 py-4">
                                             <span className="text-xs font-mono text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">{p.receiptNo}</span>
@@ -400,7 +400,7 @@ const UnmatchedPaymentsPanel = ({ onCountChange }) => {
                                             <span className="text-xs text-gray-500">{fmtDate(p.transactionDate)}</span>
                                         </td>
                                         <td className="px-5 py-4">
-                                            <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase border ${statusColors[p.status]}`}>
+                                            <span className={`px-2 py-1 rounded-md text-[10px] font-medium uppercase border ${statusColors[p.status]}`}>
                                                 {p.status}
                                             </span>
                                         </td>
@@ -412,13 +412,13 @@ const UnmatchedPaymentsPanel = ({ onCountChange }) => {
                                                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <button
                                                         onClick={() => setAssignTarget(p)}
-                                                        className="px-3 py-1.5 bg-teal-600 text-white rounded-lg text-xs font-bold hover:bg-teal-700 transition-colors flex items-center gap-1">
+                                                        className="px-3 py-1.5 bg-teal-600 text-white rounded-lg text-xs font-medium hover:bg-teal-700 transition-colors flex items-center gap-1">
                                                         <UserCheck size={12} />
                                                         Assign
                                                     </button>
                                                     <button
                                                         onClick={() => setDismissTarget(p)}
-                                                        className="px-3 py-1.5 border border-gray-200 text-gray-500 rounded-lg text-xs font-bold hover:bg-gray-100 transition-colors">
+                                                        className="px-3 py-1.5 border border-gray-200 text-gray-500 rounded-lg text-xs font-medium hover:bg-gray-100 transition-colors">
                                                         Dismiss
                                                     </button>
                                                 </div>

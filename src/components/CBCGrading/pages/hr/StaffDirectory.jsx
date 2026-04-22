@@ -23,7 +23,7 @@ const validatePhone = (phone) => {
 const StatusBadge = ({ status }) => {
     const colors = { ACTIVE:'bg-green-100 text-green-700', INACTIVE:'bg-gray-100 text-gray-600', SUSPENDED:'bg-red-100 text-red-700' };
     return (
-        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${colors[status]||'bg-gray-100 text-gray-600'}`}>
+        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-medium uppercase ${colors[status]||'bg-gray-100 text-gray-600'}`}>
             {status}
         </span>
     );
@@ -141,7 +141,7 @@ const HRProfileEditor = ({ staff, onCancel, onSaved }) => {
 
     const LabeledInput = ({ label, field, type='text', placeholder='', hint, children }) => (
         <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">{label}</label>
+            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">{label}</label>
             {children || (
                 <input type={type} value={form[field]} onChange={e => set(field, e.target.value)}
                     placeholder={placeholder} className={inputClass(field)}/>
@@ -159,16 +159,16 @@ const HRProfileEditor = ({ staff, onCancel, onSaved }) => {
                     <ArrowLeft size={20}/>
                 </button>
                 <div className="flex items-center gap-3 flex-1">
-                    <div className="w-10 h-10 rounded-full bg-brand-purple/10 text-brand-purple flex items-center justify-center font-bold text-sm">
+                    <div className="w-10 h-10 rounded-full bg-brand-purple/10 text-brand-purple flex items-center justify-center font-medium text-sm">
                         {staff.firstName[0]}{staff.lastName[0]}
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold text-gray-900">{staff.firstName} {staff.lastName}</h1>
+                        <h1 className="text-xl font-medium text-gray-900">{staff.firstName} {staff.lastName}</h1>
                         <p className="text-xs text-gray-500">{(staff.role||'').replace(/_/g,' ')} · {staff.staffId}</p>
                     </div>
                 </div>
                 <button onClick={handleSave} disabled={saving}
-                    className="px-5 py-2.5 bg-brand-teal text-white rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-brand-teal/90 transition-all disabled:opacity-60 shadow-lg shadow-teal-100">
+                    className="px-5 py-2.5 bg-brand-teal text-white rounded-xl font-medium text-sm flex items-center gap-2 hover:bg-brand-teal/90 transition-all disabled:opacity-60 shadow-lg shadow-teal-100">
                     {saving ? <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/50 border-t-white"/> : <CheckCircle2 size={16}/>}
                     Save Changes
                 </button>
@@ -176,7 +176,7 @@ const HRProfileEditor = ({ staff, onCancel, onSaved }) => {
 
             {/* Toast */}
             {toast && (
-                <div className={`fixed top-4 right-4 z-[100] flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl text-sm font-bold animate-in slide-in-from-top duration-300
+                <div className={`fixed top-4 right-4 z-[100] flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl text-sm font-medium animate-in slide-in-from-top duration-300
                     ${toast.type === 'error' ? 'bg-red-600 text-white' : 'bg-emerald-600 text-white'}`}>
                     {toast.type === 'error' ? <AlertCircle size={16}/> : <CheckCircle2 size={16}/>}
                     {toast.msg}
@@ -187,7 +187,7 @@ const HRProfileEditor = ({ staff, onCancel, onSaved }) => {
             <div className="flex gap-1 bg-gray-100 p-1 rounded-2xl mb-6">
                 {tabs.map(({ id, label, icon: Icon }) => (
                     <button key={id} onClick={() => setActiveTab(id)}
-                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-xs transition-all ${
+                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium text-xs transition-all ${
                             activeTab === id ? 'bg-white text-brand-teal shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
                         <Icon size={14}/> <span className="hidden sm:inline">{label}</span>
                     </button>
@@ -200,7 +200,7 @@ const HRProfileEditor = ({ staff, onCancel, onSaved }) => {
                     <div className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-4">
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2"><FileText size={12}/> Statutory Numbers</p>
+                                <p className="text-xs font-medium text-gray-400 uppercase tracking-widest flex items-center gap-2"><FileText size={12}/> Statutory Numbers</p>
                                 <LabeledInput label="KRA PIN" field="kraPin" placeholder="A123456789Z"/>
                                 <LabeledInput label="NSSF Number" field="nssfNumber" placeholder="NSSF-XXXXXX"/>
                                 <LabeledInput label="SHIF / NHIF Number" field="shifNumber" placeholder="SHIF-XXXXXX"/>
@@ -208,7 +208,7 @@ const HRProfileEditor = ({ staff, onCancel, onSaved }) => {
                                     hint="Kenyan format: 07XX or 01XX (10 digits)"/>
                             </div>
                             <div className="space-y-4">
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2"><Building2 size={12}/> Banking Details</p>
+                                <p className="text-xs font-medium text-gray-400 uppercase tracking-widest flex items-center gap-2"><Building2 size={12}/> Banking Details</p>
                                 <LabeledInput label="Bank Name" field="bankName" placeholder="e.g. Equity Bank"/>
                                 <LabeledInput label="Account Name" field="bankAccountName" placeholder="Full name on account"/>
                                 <LabeledInput label="Account Number" field="bankAccountNumber" placeholder="Account number"/>
@@ -220,7 +220,7 @@ const HRProfileEditor = ({ staff, onCancel, onSaved }) => {
                             <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
                                 <AlertCircle size={16} className="text-amber-500 flex-shrink-0 mt-0.5"/>
                                 <div>
-                                    <p className="text-sm font-bold text-amber-800">Invalid phone on record</p>
+                                    <p className="text-sm font-medium text-amber-800">Invalid phone on record</p>
                                     <p className="text-xs text-amber-600 mt-0.5">
                                         Current value <code className="bg-amber-100 px-1 rounded">{staff.phone}</code> is not a valid Kenyan number.
                                         Please update it above to ensure SMS delivery works correctly.
@@ -247,7 +247,7 @@ const HRProfileEditor = ({ staff, onCancel, onSaved }) => {
                             </LabeledInput>
                             <LabeledInput label="Date of Joining" field="joinedAt" type="date"/>
                             <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Housing Levy</label>
+                                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">Housing Levy</label>
                                 <label className="flex items-center gap-3 cursor-pointer">
                                     <div className={`relative w-11 h-6 rounded-full transition-colors ${form.housingLevyExempt ? 'bg-brand-teal' : 'bg-gray-300'}`}
                                         onClick={() => set('housingLevyExempt', !form.housingLevyExempt)}>
@@ -271,7 +271,7 @@ const HRProfileEditor = ({ staff, onCancel, onSaved }) => {
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
                             <p className="text-sm text-gray-500">Per-month recurring allowances added on top of basic salary.</p>
-                            <button onClick={addAllowance} className="flex items-center gap-2 px-4 py-2 bg-brand-teal text-white rounded-xl font-bold text-sm hover:bg-brand-teal/90 transition-all">
+                            <button onClick={addAllowance} className="flex items-center gap-2 px-4 py-2 bg-brand-teal text-white rounded-xl font-medium text-sm hover:bg-brand-teal/90 transition-all">
                                 <Plus size={15}/> Add Allowance
                             </button>
                         </div>
@@ -287,20 +287,20 @@ const HRProfileEditor = ({ staff, onCancel, onSaved }) => {
                                     <div key={idx} className={`grid grid-cols-12 gap-3 items-end p-4 rounded-2xl border transition-all ${
                                         item._saved ? 'border-emerald-200 bg-emerald-50/30' : item._dirty ? 'border-amber-200 bg-amber-50/30' : 'border-gray-100 bg-gray-50/50'}`}>
                                         <div className="col-span-3">
-                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Type</label>
+                                            <label className="text-xs font-medium text-gray-400 uppercase tracking-wider block mb-1">Type</label>
                                             <select value={item.type} onChange={e => updateAllowance(idx, 'type', e.target.value)}
                                                 className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm outline-none">
                                                 {ALLOWANCE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                                             </select>
                                         </div>
                                         <div className="col-span-4">
-                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Label</label>
+                                            <label className="text-xs font-medium text-gray-400 uppercase tracking-wider block mb-1">Label</label>
                                             <input value={item.label} onChange={e => updateAllowance(idx, 'label', e.target.value)}
                                                 placeholder="e.g. House Allowance"
                                                 className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-teal/30"/>
                                         </div>
                                         <div className="col-span-3">
-                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Amount (KES)</label>
+                                            <label className="text-xs font-medium text-gray-400 uppercase tracking-wider block mb-1">Amount (KES)</label>
                                             <input type="number" value={item.amount} onChange={e => updateAllowance(idx, 'amount', Number(e.target.value))}
                                                 className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-teal/30"/>
                                         </div>
@@ -318,8 +318,8 @@ const HRProfileEditor = ({ staff, onCancel, onSaved }) => {
                                 ))}
                                 {allowances.length > 0 && (
                                     <div className="flex justify-between items-center px-4 py-3 bg-blue-50 rounded-xl text-sm">
-                                        <span className="text-blue-700 font-bold">Total monthly allowances</span>
-                                        <span className="font-bold text-blue-900">KES {fmt(allowances.reduce((s, a) => s + Number(a.amount||0), 0))}</span>
+                                        <span className="text-blue-700 font-medium">Total monthly allowances</span>
+                                        <span className="font-medium text-blue-900">KES {fmt(allowances.reduce((s, a) => s + Number(a.amount||0), 0))}</span>
                                     </div>
                                 )}
                             </div>
@@ -332,7 +332,7 @@ const HRProfileEditor = ({ staff, onCancel, onSaved }) => {
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
                             <p className="text-sm text-gray-500">Custom deductions (loans, SACCO, advances) applied after statutory deductions.</p>
-                            <button onClick={addDeduction} className="flex items-center gap-2 px-4 py-2 bg-brand-teal text-white rounded-xl font-bold text-sm hover:bg-brand-teal/90 transition-all">
+                            <button onClick={addDeduction} className="flex items-center gap-2 px-4 py-2 bg-brand-teal text-white rounded-xl font-medium text-sm hover:bg-brand-teal/90 transition-all">
                                 <Plus size={15}/> Add Deduction
                             </button>
                         </div>
@@ -348,25 +348,25 @@ const HRProfileEditor = ({ staff, onCancel, onSaved }) => {
                                     <div key={idx} className={`grid grid-cols-12 gap-3 items-end p-4 rounded-2xl border transition-all ${
                                         item._saved ? 'border-emerald-200 bg-emerald-50/30' : item._dirty ? 'border-amber-200 bg-amber-50/30' : 'border-gray-100 bg-gray-50/50'}`}>
                                         <div className="col-span-2">
-                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Type</label>
+                                            <label className="text-xs font-medium text-gray-400 uppercase tracking-wider block mb-1">Type</label>
                                             <select value={item.type} onChange={e => updateDeduction(idx, 'type', e.target.value)}
                                                 className="w-full px-2 py-2 bg-white border border-gray-200 rounded-xl text-sm outline-none">
                                                 {DEDUCTION_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                                             </select>
                                         </div>
                                         <div className="col-span-3">
-                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Label</label>
+                                            <label className="text-xs font-medium text-gray-400 uppercase tracking-wider block mb-1">Label</label>
                                             <input value={item.label} onChange={e => updateDeduction(idx, 'label', e.target.value)}
                                                 placeholder="e.g. Equity SACCO"
                                                 className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm outline-none"/>
                                         </div>
                                         <div className="col-span-2">
-                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Amount</label>
+                                            <label className="text-xs font-medium text-gray-400 uppercase tracking-wider block mb-1">Amount</label>
                                             <input type="number" value={item.amount} onChange={e => updateDeduction(idx, 'amount', Number(e.target.value))}
                                                 className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm outline-none"/>
                                         </div>
                                         <div className="col-span-2">
-                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Months</label>
+                                            <label className="text-xs font-medium text-gray-400 uppercase tracking-wider block mb-1">Months</label>
                                             <input type="number" min={0} value={item.totalMonths||0} onChange={e => updateDeduction(idx, 'totalMonths', Number(e.target.value))}
                                                 placeholder="0 = ∞"
                                                 className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm outline-none"/>
@@ -425,12 +425,12 @@ const TaxPreview = ({ salary, exempt }) => {
 
     return (
         <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-5 text-white">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">2024 Tax Preview (Basic Salary only)</p>
+            <p className="text-xs font-medium text-slate-400 uppercase tracking-widest mb-4">2024 Tax Preview (Basic Salary only)</p>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
                 {[['Gross', salary], ['PAYE', -paye], ['NSSF', -nssf], ['SHIF', -shif], ['Housing Levy', -levy], ['Net Pay', net]].map(([label, val]) => (
                     <div key={label} className={`p-3 rounded-xl ${label==='Net Pay' ? 'bg-brand-teal/20 border border-brand-teal/40' : 'bg-white/5'}`}>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">{label}</p>
-                        <p className={`text-lg font-bold mt-0.5 ${label==='Net Pay' ? 'text-brand-teal' : val < 0 ? 'text-red-400' : 'text-white'}`}>
+                        <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">{label}</p>
+                        <p className={`text-lg font-medium mt-0.5 ${label==='Net Pay' ? 'text-brand-teal' : val < 0 ? 'text-red-400' : 'text-white'}`}>
                             {val < 0 ? '-' : ''}KES {fmt(Math.abs(val))}
                         </p>
                     </div>
@@ -490,7 +490,7 @@ const StaffDirectory = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Staff Directory</h1>
+                    <h1 className="text-2xl font-medium text-gray-900">Staff Directory</h1>
                     <p className="text-gray-500 text-sm">View and manage HR profiles for all employees.</p>
                 </div>
             </div>
@@ -500,7 +500,7 @@ const StaffDirectory = () => {
                 <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
                     <AlertCircle size={18} className="text-amber-500 flex-shrink-0 mt-0.5"/>
                     <div>
-                        <p className="text-sm font-bold text-amber-800">{invalidPhones.length} staff with invalid phone numbers</p>
+                        <p className="text-sm font-medium text-amber-800">{invalidPhones.length} staff with invalid phone numbers</p>
                         <p className="text-xs text-amber-600 mt-0.5">
                             {invalidPhones.map(s => `${s.firstName} ${s.lastName} (${s.phone})`).join(', ')} — click Edit to fix.
                         </p>
@@ -532,7 +532,7 @@ const StaffDirectory = () => {
                         <thead className="border-b border-gray-100">
                             <tr>
                                 {['Staff Member','Staff ID','Role','Contact','Status','Basic Salary','Actions'].map(h => (
-                                    <th key={h} className="px-5 py-3.5 text-xs font-bold text-gray-400 uppercase tracking-wider">{h}</th>
+                                    <th key={h} className="px-5 py-3.5 text-xs font-medium text-gray-400 uppercase tracking-wider">{h}</th>
                                 ))}
                             </tr>
                         </thead>
@@ -553,13 +553,13 @@ const StaffDirectory = () => {
                                         <tr key={member.id} className="hover:bg-gray-50/50 transition-colors group">
                                             <td className="px-5 py-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-9 h-9 rounded-full bg-brand-purple/10 flex items-center justify-center font-bold text-brand-purple text-xs overflow-hidden flex-shrink-0">
+                                                    <div className="w-9 h-9 rounded-full bg-brand-purple/10 flex items-center justify-center font-medium text-brand-purple text-xs overflow-hidden flex-shrink-0">
                                                         {member.profilePicture
                                                             ? <img src={member.profilePicture} alt="" className="w-full h-full object-cover"/>
                                                             : `${member.firstName[0]}${member.lastName[0]}`}
                                                     </div>
                                                     <div>
-                                                        <p className="font-bold text-gray-900 text-sm group-hover:text-brand-teal transition-colors">
+                                                        <p className="font-medium text-gray-900 text-sm group-hover:text-brand-teal transition-colors">
                                                             {member.firstName} {member.lastName}
                                                         </p>
                                                         <p className="text-xs text-gray-400 lowercase">{member.email}</p>
@@ -587,7 +587,7 @@ const StaffDirectory = () => {
                                             <td className="px-5 py-4">
                                                 <div className="flex items-center gap-1.5">
                                                     <Banknote size={14} className={Number(member.basicSalary) > 0 ? 'text-emerald-500' : 'text-gray-300'}/>
-                                                    <span className={`text-sm font-bold ${Number(member.basicSalary) > 0 ? 'text-emerald-600' : 'text-gray-400'}`}>
+                                                    <span className={`text-sm font-medium ${Number(member.basicSalary) > 0 ? 'text-emerald-600' : 'text-gray-400'}`}>
                                                         {Number(member.basicSalary) > 0 ? `KES ${fmt(member.basicSalary)}` : 'Not set'}
                                                     </span>
                                                 </div>
@@ -595,7 +595,7 @@ const StaffDirectory = () => {
                                             <td className="px-5 py-4">
                                                 <div className="flex items-center gap-2">
                                                     {missingData && (
-                                                        <span className="px-2 py-0.5 bg-amber-50 text-amber-600 text-[10px] font-bold rounded-full border border-amber-200">
+                                                        <span className="px-2 py-0.5 bg-amber-50 text-amber-600 text-[10px] font-medium rounded-full border border-amber-200">
                                                             Incomplete
                                                         </span>
                                                     )}

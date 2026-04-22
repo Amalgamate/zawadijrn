@@ -43,7 +43,7 @@ const PlannerLayout = ({ currentPage, onNavigate }) => {
             {/* Planner Header/Nav */}
             <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800">School Planner</h1>
+                    <h1 className="text-2xl font-medium text-gray-800">School Planner</h1>
                     <p className="text-gray-500 text-sm">Manage schedule, events, and meetings</p>
                 </div>
 

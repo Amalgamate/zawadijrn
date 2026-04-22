@@ -40,7 +40,7 @@ class ErrorBoundary extends React.Component {
             </svg>
           </div>
           
-          <h2 className="text-xl font-bold text-gray-900 mb-2">
+          <h2 className="text-xl font-medium text-gray-900 mb-2">
             Something went wrong connecting to this module
           </h2>
           
@@ -69,7 +69,7 @@ class ErrorBoundary extends React.Component {
           
           {process.env.NODE_ENV === 'development' && this.state.error && (
             <div className="mt-8 p-4 bg-gray-50 rounded-lg w-full text-left overflow-auto text-xs text-red-600 font-mono border border-gray-200 max-h-48">
-              <p className="font-bold mb-1">{this.state.error.toString()}</p>
+              <p className="font-medium mb-1">{this.state.error.toString()}</p>
               <pre>{this.state.errorInfo?.componentStack}</pre>
             </div>
           )}

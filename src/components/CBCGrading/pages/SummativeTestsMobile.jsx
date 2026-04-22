@@ -100,8 +100,8 @@ const SummativeTestsMobile = ({ onNavigate, onBack }) => {
             <ArrowLeft size={20} className="text-gray-900" />
           </button>
           <div>
-            <h1 className="text-lg font-black text-gray-900">Database Tools</h1>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Assessment Cleanup</p>
+            <h1 className="text-lg font-semibold text-gray-900">Database Tools</h1>
+            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-widest mt-0.5">Assessment Cleanup</p>
           </div>
         </div>
         <div className="p-5">
@@ -138,8 +138,8 @@ const SummativeTestsMobile = ({ onNavigate, onBack }) => {
               <ArrowLeft size={22} className="text-gray-900" />
             </button>
             <div>
-               <h1 className="text-xl font-black text-gray-900 tracking-tight leading-none">Manage Tests</h1>
-               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Master Repository</p>
+               <h1 className="text-xl font-semibold text-gray-900 tracking-tight leading-none">Manage Tests</h1>
+               <p className="text-[10px] font-medium text-gray-400 uppercase tracking-widest mt-1">Master Repository</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -170,7 +170,7 @@ const SummativeTestsMobile = ({ onNavigate, onBack }) => {
             placeholder={`Search by ${labels.grade} or ${labels.subject}...`}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 py-4 bg-gray-50 border-none rounded-2xl text-sm font-bold placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-purple-50 transition-all outline-none"
+            className="w-full pl-12 pr-4 py-4 bg-gray-50 border-none rounded-2xl text-sm font-medium placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-purple-50 transition-all outline-none"
           />
         </div>
       </div>
@@ -179,7 +179,7 @@ const SummativeTestsMobile = ({ onNavigate, onBack }) => {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
              <div className="w-10 h-10 border-4 border-purple-50 border-t-purple-500 rounded-full animate-spin" />
-             <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Loading Tests...</p>
+             <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">Loading Tests...</p>
           </div>
         ) : tests.length === 0 ? (
           <div className="py-20 px-10 text-center space-y-6">
@@ -187,12 +187,12 @@ const SummativeTestsMobile = ({ onNavigate, onBack }) => {
                 <BookOpen size={40} className="text-gray-200" />
              </div>
              <div className="space-y-1">
-                <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">No Tests Defined</h3>
+                <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-widest">No Tests Defined</h3>
                 <p className="text-xs text-gray-400 font-medium leading-relaxed">It seems you haven\'t created any assessments for this academic session yet.</p>
              </div>
              <button
                  onClick={() => setViewMode('create')}
-                 className="px-6 py-3 bg-[var(--brand-purple)] text-white text-[10px] font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-purple-50"
+                 className="px-6 py-3 bg-[var(--brand-purple)] text-white text-[10px] font-semibold uppercase tracking-widest rounded-2xl shadow-xl shadow-purple-50"
              >
                 Create Initial Test
              </button>
@@ -200,7 +200,7 @@ const SummativeTestsMobile = ({ onNavigate, onBack }) => {
         ) : Object.keys(groupedData).length === 0 ? (
           <div className="py-20 text-center">
              <Search size={40} className="mx-auto text-gray-200 mb-4" />
-             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">No Search Results</p>
+             <p className="text-xs font-medium text-gray-400 uppercase tracking-widest">No Search Results</p>
           </div>
         ) : (
           Object.entries(groupedData)
@@ -208,10 +208,10 @@ const SummativeTestsMobile = ({ onNavigate, onBack }) => {
             .map(([gradeKey, gradeTests]) => (
               <div key={gradeKey} className="space-y-4">
                 <div className="flex items-center gap-3 ml-2">
-                   <div className="w-8 h-8 rounded-2xl bg-gray-50 flex items-center justify-center text-[10px] font-black text-gray-800 shadow-inner">
+                   <div className="w-8 h-8 rounded-2xl bg-gray-50 flex items-center justify-center text-[10px] font-semibold text-gray-800 shadow-inner">
                       {gradeKey.substring(0, 2).toUpperCase()}
                    </div>
-                   <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                   <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.2em]">
                       {gradeKey.replace(/_/g, ' ')}
                    </span>
                 </div>
@@ -221,10 +221,10 @@ const SummativeTestsMobile = ({ onNavigate, onBack }) => {
                     <div key={test.id} className="bg-white rounded-[2rem] border border-gray-100 p-5 shadow-sm space-y-5">
                        <div className="flex items-start justify-between gap-4">
                           <div className="flex-1 min-w-0">
-                             <h4 className="text-base font-black text-gray-900 leading-tight mb-1">{test.title}</h4>
+                             <h4 className="text-base font-semibold text-gray-900 leading-tight mb-1">{test.title}</h4>
                              <div className="flex items-center gap-2">
-                                <span className="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-tight">Active</span>
-                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{test.totalMarks} Points Max</span>
+                                <span className="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-lg text-[9px] font-semibold uppercase tracking-tight">Active</span>
+                                <span className="text-[10px] font-medium text-gray-400 uppercase tracking-tighter">{test.totalMarks} Points Max</span>
                              </div>
                           </div>
                           <div className="w-10 h-10 rounded-2xl bg-purple-50 flex items-center justify-center flex-shrink-0">
@@ -238,7 +238,7 @@ const SummativeTestsMobile = ({ onNavigate, onBack }) => {
                               setSelectedTest(test);
                               setViewMode('edit');
                             }}
-                            className="flex-1 py-3 bg-gray-50 border border-transparent text-gray-700 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white hover:border-gray-100 transition-all active:scale-95"
+                            className="flex-1 py-3 bg-gray-50 border border-transparent text-gray-700 rounded-2xl text-[10px] font-semibold uppercase tracking-widest hover:bg-white hover:border-gray-100 transition-all active:scale-95"
                           >
                              Configure
                           </button>

@@ -141,11 +141,11 @@ const ChartOfAccounts = () => {
                         {account.name}
                     </td>
                     <td className="px-6 py-4 text-sm">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getTypeStyle(account.type)}`}>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-medium border ${getTypeStyle(account.type)}`}>
                             {account.type.replace('_', ' ')}
                         </span>
                     </td>
-                    <td className="px-6 py-4 text-sm font-bold text-gray-900 text-right">
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900 text-right">
                         {formatCurrency(account.balance)}
                     </td>
                     <td className="px-6 py-4 text-center">
@@ -172,7 +172,7 @@ const ChartOfAccounts = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800 tracking-tight">Chart of Accounts</h1>
+                    <h1 className="text-2xl font-medium text-gray-800 tracking-tight">Chart of Accounts</h1>
                     <p className="text-gray-500 text-sm">Organize and manage your school's financial accounts</p>
                 </div>
                 <div className="flex gap-3">
@@ -196,7 +196,7 @@ const ChartOfAccounts = () => {
                     <button
                         key={type}
                         onClick={() => setFilterType(type)}
-                        className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all border ${filterType === type
+                        className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all border ${filterType === type
                                 ? 'bg-gray-800 text-white border-gray-800 shadow-sm'
                                 : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
                             }`}
@@ -224,7 +224,7 @@ const ChartOfAccounts = () => {
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
-                            <tr className="bg-gray-50/50 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            <tr className="bg-gray-50/50 text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 <th className="px-6 py-4">Code</th>
                                 <th className="px-6 py-4">Account Name</th>
                                 <th className="px-6 py-4">Type</th>

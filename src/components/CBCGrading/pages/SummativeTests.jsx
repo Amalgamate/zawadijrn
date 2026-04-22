@@ -352,7 +352,7 @@ const SummativeTests = ({ onNavigate }) => {
         <div className="flex items-center justify-between px-2">
           <button 
             onClick={() => setViewMode('list')}
-            className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors font-black uppercase tracking-widest text-[10px]"
+            className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors font-semibold uppercase tracking-widest text-[10px]"
           >
             ← Back to List
           </button>
@@ -371,12 +371,12 @@ const SummativeTests = ({ onNavigate }) => {
           {/* Left: Stats + Bulk actions */}
           {selectedIds.length > 0 ? (
             <div className="flex items-center gap-4 bg-brand-purple/5 px-4 py-2 rounded-lg border border-brand-purple/10">
-              <span className="text-sm font-bold text-brand-purple">{selectedIds.length} Selected</span>
+              <span className="text-sm font-medium text-brand-purple">{selectedIds.length} Selected</span>
               <div className="flex gap-2">
-                <button onClick={handleBulkDelete} className="flex items-center gap-2 px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded-md hover:bg-red-700 transition">
+                <button onClick={handleBulkDelete} className="flex items-center gap-2 px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700 transition">
                   <Trash2 size={14} /> Bulk Delete
                 </button>
-                <button onClick={() => setSelectedIds([])} className="px-3 py-1.5 bg-white text-gray-600 text-xs font-bold rounded-md border border-gray-200 hover:bg-gray-50 transition">
+                <button onClick={() => setSelectedIds([])} className="px-3 py-1.5 bg-white text-gray-600 text-xs font-medium rounded-md border border-gray-200 hover:bg-gray-50 transition">
                   Cancel
                 </button>
               </div>
@@ -384,8 +384,8 @@ const SummativeTests = ({ onNavigate }) => {
           ) : (
             <div className="flex items-center gap-4 overflow-x-auto pb-2 md:pb-0 shrink-0">
               <div className="text-right border-r pr-4 border-gray-200 min-w-[80px]">
-                <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Total Tests</p>
-                <p className="text-xl font-bold text-gray-800 leading-none">{filteredTests.length}</p>
+                <p className="text-[10px] text-gray-500 uppercase font-medium tracking-wider">Total Tests</p>
+                <p className="text-xl font-medium text-gray-800 leading-none">{filteredTests.length}</p>
               </div>
             </div>
           )}
@@ -434,7 +434,7 @@ const SummativeTests = ({ onNavigate }) => {
             </select>
             {/* Clear */}
             {(searchQuery || activeFilterCount > 0) && (
-              <button onClick={clearAllFilters} className="flex items-center gap-1 h-9 px-3 text-xs font-bold text-red-600 hover:bg-red-50 border border-red-200 rounded-xl transition">
+              <button onClick={clearAllFilters} className="flex items-center gap-1 h-9 px-3 text-xs font-medium text-red-600 hover:bg-red-50 border border-red-200 rounded-xl transition">
                 <X size={13} /> Clear
               </button>
             )}
@@ -442,14 +442,14 @@ const SummativeTests = ({ onNavigate }) => {
 
           {/* Right: Action buttons */}
           <div className="flex-shrink-0 flex items-center gap-2">
-            <button onClick={handleAddSingleTest} className="flex items-center gap-2 px-4 py-2 bg-brand-teal text-white rounded-xl hover:bg-brand-teal/90 transition shadow-sm font-bold text-sm">
+            <button onClick={handleAddSingleTest} className="flex items-center gap-2 px-4 py-2 bg-brand-teal text-white rounded-xl hover:bg-brand-teal/90 transition shadow-sm font-medium text-sm">
               <Plus size={16} /> <span className="hidden sm:inline">New Test</span><span className="inline sm:hidden">+</span>
             </button>
-            <button onClick={handleAdd} className="flex items-center gap-2 px-4 py-2 bg-brand-purple text-white rounded-xl hover:bg-brand-purple/90 transition shadow-sm font-bold text-sm border border-brand-purple/20">
+            <button onClick={handleAdd} className="flex items-center gap-2 px-4 py-2 bg-brand-purple text-white rounded-xl hover:bg-brand-purple/90 transition shadow-sm font-medium text-sm border border-brand-purple/20">
               <Plus size={16} /> <span className="hidden sm:inline">Bulk Create</span><span className="inline sm:hidden">Bulk</span>
             </button>
             {user?.role !== 'TEACHER' && (
-              <button onClick={() => setViewMode('reset')} className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition shadow-sm font-bold text-sm">
+              <button onClick={() => setViewMode('reset')} className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition shadow-sm font-medium text-sm">
                 <RefreshCw size={16} /> <span className="hidden sm:inline">Reset DB</span>
               </button>
             )}
@@ -461,7 +461,7 @@ const SummativeTests = ({ onNavigate }) => {
         <div className="flex items-center justify-center py-20">
           <div className="flex flex-col items-center">
             <Loader className="animate-spin text-brand-purple mb-4" size={40} />
-            <p className="text-slate-400 font-black uppercase tracking-widest text-[10px]">Synchronizing Assessment Matrix...</p>
+            <p className="text-slate-400 font-semibold uppercase tracking-widest text-[10px]">Synchronizing Assessment Matrix...</p>
           </div>
         </div>
       ) : Object.keys(groupedData).length > 0 ? (
@@ -512,10 +512,10 @@ const SummativeTests = ({ onNavigate }) => {
                                 <GraduationCap size={16} />
                               </div>
                               <div className="flex flex-col">
-                                <span className="text-sm font-black text-slate-900 uppercase tracking-tight leading-none">
+                                <span className="text-sm font-semibold text-slate-900 uppercase tracking-tight leading-none">
                                   {formatGradeDisplay(gradeKey)}
                                 </span>
-                                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">
+                                <span className="text-[9px] text-slate-400 font-medium uppercase tracking-widest mt-1">
                                   {totalSeries} Assessment {totalSeries === 1 ? 'Series' : 'Series'} • {totalTests} Total Tests
                                 </span>
                               </div>
@@ -552,22 +552,22 @@ const SummativeTests = ({ onNavigate }) => {
                               </td>
                               <td className="px-6 py-5">
                                 <div className="flex flex-col">
-                                  <span className="text-sm font-bold text-slate-800 leading-tight">{data.displayType}</span>
-                                  <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest mt-1">
+                                  <span className="text-sm font-medium text-slate-800 leading-tight">{data.displayType}</span>
+                                  <span className="text-[9px] text-slate-400 font-semibold uppercase tracking-widest mt-1">
                                     Summative Series • {data.displayTerm} {data.academicYear}
                                   </span>
                                 </div>
                               </td>
                               <td className="px-6 py-5 text-center">
-                                <Badge className="border-transparent bg-slate-100/50 text-slate-500 px-2 py-0.5 font-black text-[9px] uppercase tracking-widest">
+                                <Badge className="border-transparent bg-slate-100/50 text-slate-500 px-2 py-0.5 font-semibold text-[9px] uppercase tracking-widest">
                                   {data.tests.length} Assessment Areas
                                 </Badge>
                               </td>
                               <td className="px-6 py-5">
                                 <div className="flex items-center justify-center gap-4">
                                   <div className="flex flex-col items-center">
-                                    <span className="text-[11px] font-black text-brand-teal leading-none">{data.tests.length}</span>
-                                    <span className="text-[7px] text-brand-teal/60 font-black uppercase tracking-tight mt-1">Published</span>
+                                    <span className="text-[11px] font-semibold text-brand-teal leading-none">{data.tests.length}</span>
+                                    <span className="text-[7px] text-brand-teal/60 font-semibold uppercase tracking-tight mt-1">Published</span>
                                   </div>
                                 </div>
                               </td>
@@ -576,7 +576,7 @@ const SummativeTests = ({ onNavigate }) => {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => toggleGrade(groupKey)}
-                                  className="h-9 px-4 text-[9px] font-black uppercase tracking-widest text-slate-500 hover:text-brand-purple rounded-xl border border-transparent hover:border-slate-100 hover:bg-slate-50 transition-all"
+                                  className="h-9 px-4 text-[9px] font-semibold uppercase tracking-widest text-slate-500 hover:text-brand-purple rounded-xl border border-transparent hover:border-slate-100 hover:bg-slate-50 transition-all"
                                 >
                                   {isExpanded ? 'Hide Subjects' : 'View Subjects'}
                                 </Button>
@@ -596,22 +596,22 @@ const SummativeTests = ({ onNavigate }) => {
                                             onChange={() => toggleSelect(test.id)}
                                           />
                                           <div>
-                                            <p className="text-[11px] font-bold text-slate-800">{test.learningArea}</p>
+                                            <p className="text-[11px] font-medium text-slate-800">{test.learningArea}</p>
                                             <div className="flex items-center gap-2 mt-0.5">
-                                              <span className="text-[8px] text-slate-400 font-black uppercase tracking-widest">{test.testType || 'General Assessment'}</span>
+                                              <span className="text-[8px] text-slate-400 font-semibold uppercase tracking-widest">{test.testType || 'General Assessment'}</span>
                                               <span className="w-1 h-1 rounded-full bg-slate-200" />
-                                              <span className="text-[8px] text-slate-500 font-bold uppercase tracking-tight">{test.totalMarks} Marks</span>
+                                              <span className="text-[8px] text-slate-500 font-medium uppercase tracking-tight">{test.totalMarks} Marks</span>
                                               {test.weight !== 1 && (
                                                 <>
                                                   <span className="w-1 h-1 rounded-full bg-slate-200" />
-                                                  <span className="text-[8px] text-brand-purple font-bold uppercase tracking-tight">Weight: {test.weight}x</span>
+                                                  <span className="text-[8px] text-brand-purple font-medium uppercase tracking-tight">Weight: {test.weight}x</span>
                                                 </>
                                               )}
                                             </div>
                                           </div>
                                         </div>
                                         <div className="flex items-center gap-4">
-                                          <div className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${['Published', 'PUBLISHED'].includes(test.status) ? 'bg-brand-teal/10 text-brand-teal' : 'bg-orange-100 text-orange-600'}`}>
+                                          <div className={`px-2 py-0.5 rounded-full text-[8px] font-semibold uppercase tracking-widest ${['Published', 'PUBLISHED'].includes(test.status) ? 'bg-brand-teal/10 text-brand-teal' : 'bg-orange-100 text-orange-600'}`}>
                                             {test.status}
                                           </div>
 

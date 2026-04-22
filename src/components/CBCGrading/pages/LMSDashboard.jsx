@@ -150,7 +150,7 @@ const LMSDashboard = ({
                 <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="text-center">
-                            <div className="text-3xl font-bold text-blue-600 mb-2">
+                            <div className="text-3xl font-medium text-blue-600 mb-2">
                                 {stats?.totalCourses || 0}
                             </div>
                             <p className="text-gray-600">Active Courses</p>
@@ -158,7 +158,7 @@ const LMSDashboard = ({
                         </div>
 
                         <div className="text-center">
-                            <div className="text-3xl font-bold text-green-600 mb-2">
+                            <div className="text-3xl font-medium text-green-600 mb-2">
                                 {stats?.activeEnrollments || 0}
                             </div>
                             <p className="text-gray-600">Active Learners</p>
@@ -166,7 +166,7 @@ const LMSDashboard = ({
                         </div>
 
                         <div className="text-center">
-                            <div className="text-3xl font-bold text-purple-600 mb-2">
+                            <div className="text-3xl font-medium text-purple-600 mb-2">
                                 {stats?.totalContent || 0}
                             </div>
                             <p className="text-gray-600">Content Items</p>

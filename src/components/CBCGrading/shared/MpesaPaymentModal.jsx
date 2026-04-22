@@ -90,7 +90,7 @@ const MpesaPaymentModal = ({ isOpen, onClose, invoice, parentPhone, onPaymentSuc
             <div className="p-1.5 bg-white/20 rounded-lg backdrop-blur-md">
               <CreditCard size={18} className="text-white" />
             </div>
-            <h3 className="text-sm font-bold uppercase tracking-wider">Fee Payment</h3>
+            <h3 className="text-sm font-medium uppercase tracking-wider">Fee Payment</h3>
           </div>
           <button 
             onClick={onClose} 
@@ -105,16 +105,16 @@ const MpesaPaymentModal = ({ isOpen, onClose, invoice, parentPhone, onPaymentSuc
           {status === 'idle' || status === 'initiating' ? (
             <form onSubmit={handleInitiate} className="space-y-5">
               <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Payment Amount (KES)</label>
+                <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-500 ml-1">Payment Amount (KES)</label>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-                    <span className="text-slate-400 font-bold">KES</span>
+                    <span className="text-slate-400 font-medium">KES</span>
                   </div>
                   <input
                     type="number"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    className="w-full pl-14 pr-4 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl text-lg font-black text-slate-900 focus:bg-white focus:border-orange-500 focus:ring-0 transition-all outline-none"
+                    className="w-full pl-14 pr-4 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl text-lg font-semibold text-slate-900 focus:bg-white focus:border-orange-500 focus:ring-0 transition-all outline-none"
                     placeholder="0.00"
                     required
                   />
@@ -122,7 +122,7 @@ const MpesaPaymentModal = ({ isOpen, onClose, invoice, parentPhone, onPaymentSuc
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">M-Pesa Phone Number</label>
+                <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-500 ml-1">M-Pesa Phone Number</label>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
                     <Phone size={18} className="text-slate-400" />
@@ -131,7 +131,7 @@ const MpesaPaymentModal = ({ isOpen, onClose, invoice, parentPhone, onPaymentSuc
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl text-lg font-black text-slate-900 focus:bg-white focus:border-orange-500 focus:ring-0 transition-all outline-none"
+                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl text-lg font-semibold text-slate-900 focus:bg-white focus:border-orange-500 focus:ring-0 transition-all outline-none"
                     placeholder="2547XXXXXXXX"
                     required
                   />
@@ -148,7 +148,7 @@ const MpesaPaymentModal = ({ isOpen, onClose, invoice, parentPhone, onPaymentSuc
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-4 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-lg shadow-orange-900/20 transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-3"
+                className="w-full py-4 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white rounded-2xl font-semibold uppercase tracking-[0.2em] shadow-lg shadow-orange-900/20 transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-3"
               >
                 {loading ? <Loader2 size={20} className="animate-spin" /> : <Smartphone size={20} />}
                 {loading ? 'Initiating...' : 'Pay with M-Pesa'}
@@ -156,7 +156,7 @@ const MpesaPaymentModal = ({ isOpen, onClose, invoice, parentPhone, onPaymentSuc
 
               <div className="flex items-center justify-center gap-2 text-slate-400">
                 <ShieldCheck size={14} />
-                <span className="text-[10px] font-bold uppercase tracking-wider">Secured by M-Pesa Payment Gateway</span>
+                <span className="text-[10px] font-medium uppercase tracking-wider">Secured by M-Pesa Payment Gateway</span>
               </div>
             </form>
           ) : status === 'pending' ? (
@@ -168,16 +168,16 @@ const MpesaPaymentModal = ({ isOpen, onClose, invoice, parentPhone, onPaymentSuc
                 </div>
               </div>
               <div className="space-y-2">
-                <h4 className="text-xl font-black text-slate-900 uppercase tracking-tight">Check your Phone</h4>
+                <h4 className="text-xl font-semibold text-slate-900 uppercase tracking-tight">Check your Phone</h4>
                 <p className="text-sm font-semibold text-slate-500 max-w-[240px]">
-                  An M-Pesa PIN prompt has been sent to <span className="text-orange-600 font-bold">{phone}</span>.
+                  An M-Pesa PIN prompt has been sent to <span className="text-orange-600 font-medium">{phone}</span>.
                 </p>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-full border border-slate-100">
                 <Loader2 size={14} className="animate-spin text-orange-600" />
-                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-[0.1em]">Waiting for confirmation</span>
+                <span className="text-[11px] font-medium text-slate-500 uppercase tracking-[0.1em]">Waiting for confirmation</span>
               </div>
-              <p className="text-[10px] text-slate-400 font-bold uppercase underline cursor-pointer hover:text-slate-600" onClick={() => setStatus('idle')}>
+              <p className="text-[10px] text-slate-400 font-medium uppercase underline cursor-pointer hover:text-slate-600" onClick={() => setStatus('idle')}>
                 Didn't get a prompt? Try again
               </p>
             </div>
@@ -187,15 +187,15 @@ const MpesaPaymentModal = ({ isOpen, onClose, invoice, parentPhone, onPaymentSuc
                 <CheckCircle2 size={64} />
               </div>
               <div className="space-y-1">
-                <h4 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Payment Complete!</h4>
+                <h4 className="text-2xl font-semibold text-slate-900 uppercase tracking-tight">Payment Complete!</h4>
                 <p className="text-sm font-semibold text-slate-500">
                   Transaction of KES {amount} was successful.
                 </p>
               </div>
               <div className="p-4 w-full bg-slate-50 rounded-2xl border border-slate-100 text-left">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-[10px] font-black uppercase text-slate-400">Receipt No</span>
-                  <span className="text-xs font-black text-slate-900">{checkoutId?.slice(-8).toUpperCase()}</span>
+                  <span className="text-[10px] font-semibold uppercase text-slate-400">Receipt No</span>
+                  <span className="text-xs font-semibold text-slate-900">{checkoutId?.slice(-8).toUpperCase()}</span>
                 </div>
                 <div className="h-px bg-slate-200 w-full mb-2" />
                 <p className="text-[10px] font-semibold text-slate-500">
@@ -209,14 +209,14 @@ const MpesaPaymentModal = ({ isOpen, onClose, invoice, parentPhone, onPaymentSuc
                 <AlertCircle size={64} />
               </div>
               <div className="space-y-2">
-                <h4 className="text-xl font-black text-slate-900 uppercase tracking-tight">Payment Failed</h4>
+                <h4 className="text-xl font-semibold text-slate-900 uppercase tracking-tight">Payment Failed</h4>
                 <p className="text-sm font-semibold text-slate-600">
                   {error || 'Something went wrong while processing your request.'}
                 </p>
               </div>
               <button
                 onClick={() => setStatus('idle')}
-                className="px-8 py-3 bg-slate-900 text-white rounded-xl font-black uppercase tracking-wider text-xs transition-transform active:scale-95"
+                className="px-8 py-3 bg-slate-900 text-white rounded-xl font-semibold uppercase tracking-wider text-xs transition-transform active:scale-95"
               >
                 Try Again
               </button>

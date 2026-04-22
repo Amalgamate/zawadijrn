@@ -176,7 +176,7 @@ const DocumentCenter = () => {
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    className="min-w-[11rem] justify-between gap-2 border-slate-200 font-bold text-gray-800"
+                                    className="min-w-[11rem] justify-between gap-2 border-slate-200 font-medium text-gray-800"
                                     aria-expanded={categoryMenuOpen}
                                     aria-haspopup="dialog"
                                 >
@@ -192,7 +192,7 @@ const DocumentCenter = () => {
                                 className="w-64 p-2 border border-slate-200 shadow-none"
                                 sideOffset={6}
                             >
-                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2 py-1.5">
+                                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest px-2 py-1.5">
                                     Categories
                                 </p>
                                 <div className="max-h-[min(60vh,320px)] overflow-y-auto space-y-0.5">
@@ -204,7 +204,7 @@ const DocumentCenter = () => {
                                                 setActiveCategory(cat.id);
                                                 setCategoryMenuOpen(false);
                                             }}
-                                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-bold text-left transition ${activeCategory === cat.id
+                                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-left transition ${activeCategory === cat.id
                                                 ? 'bg-brand-teal/10 text-brand-teal'
                                                 : 'text-gray-600 hover:bg-gray-50'
                                                 }`}
@@ -251,11 +251,11 @@ const DocumentCenter = () => {
                     {uploadProgress > 0 && (
                         <div className="px-6 py-2 bg-gray-50 border-b border-gray-100 animate-in fade-in slide-in-from-top-2 duration-300">
                             <div className="flex items-center justify-between mb-1.5">
-                                <span className="text-xs font-bold text-gray-500 flex items-center gap-2">
+                                <span className="text-xs font-medium text-gray-500 flex items-center gap-2">
                                     <RefreshCw className="animate-spin" size={12} />
                                     Uploading document...
                                 </span>
-                                <span className="text-xs font-black text-brand-teal">{uploadProgress}%</span>
+                                <span className="text-xs font-semibold text-brand-teal">{uploadProgress}%</span>
                             </div>
                             <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
                                 <div 
@@ -277,7 +277,7 @@ const DocumentCenter = () => {
                                 <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4">
                                     <Folder size={40} className="text-gray-200" />
                                 </div>
-                                <p className="text-lg font-black text-gray-400">Empty Category</p>
+                                <p className="text-lg font-semibold text-gray-400">Empty Category</p>
                                 <p className="text-sm font-medium">Drop files here to start uploading</p>
                             </div>
                         ) : (
@@ -297,10 +297,10 @@ const DocumentCenter = () => {
                                                     <img src={file.url} alt={file.name} loading="lazy" className="w-full h-full object-cover" />
                                                 ) : getFileIcon(file.type)}
                                             </div>
-                                            <h3 className="text-sm font-bold text-gray-800 truncate w-full mb-1 px-2" title={file.name}>
+                                            <h3 className="text-sm font-medium text-gray-800 truncate w-full mb-1 px-2" title={file.name}>
                                                 {file.name}
                                             </h3>
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
                                                 {formatSize(file.size)} • {new Date(file.createdAt).toLocaleDateString()}
                                             </p>
 
@@ -328,7 +328,7 @@ const DocumentCenter = () => {
                                                 )}
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-bold text-gray-800 truncate">{file.name}</p>
+                                                <p className="text-sm font-medium text-gray-800 truncate">{file.name}</p>
                                                 <p className="text-xs text-gray-400">{formatSize(file.size)} • {new Date(file.createdAt).toLocaleDateString()}</p>
                                             </div>
                                             <div className="opacity-0 group-hover:opacity-100 flex gap-2">

@@ -127,7 +127,7 @@ const ExpenseManager = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800 tracking-tight text-brand-purple">Expense Management</h1>
+                    <h1 className="text-2xl font-medium text-gray-800 tracking-tight text-brand-purple">Expense Management</h1>
                     <p className="text-gray-500 text-sm italic">Track and categorize school spending</p>
                 </div>
                 <div className="flex gap-3">
@@ -159,8 +159,8 @@ const ExpenseManager = () => {
                         <DollarSign size={24} />
                     </div>
                     <div>
-                        <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Expenses This Period</p>
-                        <p className="text-xl font-black text-gray-900 font-mono">{formatCurrency(stats.totalThisMonth)}</p>
+                        <p className="text-xs font-medium text-gray-500 uppercase tracking-widest mb-1">Expenses This Period</p>
+                        <p className="text-xl font-semibold text-gray-900 font-mono">{formatCurrency(stats.totalThisMonth)}</p>
                     </div>
                 </div>
                 <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4">
@@ -168,8 +168,8 @@ const ExpenseManager = () => {
                         <CreditCard size={24} />
                     </div>
                     <div>
-                        <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Total Payables</p>
-                        <p className="text-xl font-black text-gray-900 font-mono">{formatCurrency(stats.unpaidClaims)}</p>
+                        <p className="text-xs font-medium text-gray-500 uppercase tracking-widest mb-1">Total Payables</p>
+                        <p className="text-xl font-semibold text-gray-900 font-mono">{formatCurrency(stats.unpaidClaims)}</p>
                     </div>
                 </div>
                 <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4">
@@ -177,8 +177,8 @@ const ExpenseManager = () => {
                         <Tag size={24} />
                     </div>
                     <div>
-                        <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Active Category</p>
-                        <p className="text-xl font-black text-gray-900 capitalize">{stats.topCategory}</p>
+                        <p className="text-xs font-medium text-gray-500 uppercase tracking-widest mb-1">Active Category</p>
+                        <p className="text-xl font-semibold text-gray-900 capitalize">{stats.topCategory}</p>
                     </div>
                 </div>
             </div>
@@ -201,7 +201,7 @@ const ExpenseManager = () => {
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
-                            <tr className="bg-gray-50/50 text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">
+                            <tr className="bg-gray-50/50 text-[10px] font-medium text-gray-400 uppercase tracking-[0.2em]">
                                 <th className="px-6 py-4">Expense Details</th>
                                 <th className="px-6 py-4">Category</th>
                                 <th className="px-6 py-4">Vendor</th>
@@ -225,30 +225,30 @@ const ExpenseManager = () => {
                                     <tr key={expense.id} className="group hover:bg-gray-50/20 transition-all">
                                         <td className="px-6 py-4">
                                             <div className="flex flex-col">
-                                                <span className="text-sm font-bold text-gray-800">{expense.description}</span>
+                                                <span className="text-sm font-medium text-gray-800">{expense.description}</span>
                                                 <span className="text-[11px] text-gray-400 flex items-center gap-1">
                                                     <Calendar size={12} /> {new Date(expense.date).toLocaleDateString()}
                                                 </span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className="px-2 py-1 rounded text-[10px] font-bold bg-white border border-gray-100 text-gray-600">
+                                            <span className="px-2 py-1 rounded text-[10px] font-medium bg-white border border-gray-100 text-gray-600">
                                                 {expense.category}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">
-                                                <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-400 uppercase">
+                                                <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center text-[10px] font-medium text-gray-400 uppercase">
                                                     {expense.vendor?.name?.charAt(0) || '?'}
                                                 </div>
                                                 <span className="text-sm text-gray-600">{expense.vendor?.name || 'Walk-in Vendor'}</span>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-right font-black text-gray-900 font-mono">
+                                        <td className="px-6 py-4 text-right font-semibold text-gray-900 font-mono">
                                             {formatCurrency(expense.amount)}
                                         </td>
                                         <td className="px-6 py-4 text-center">
-                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 uppercase tracking-tighter">
+                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700 uppercase tracking-tighter">
                                                 <CheckCircle2 size={12} />
                                                 Paid
                                             </span>
@@ -318,7 +318,7 @@ const ExpenseManager = () => {
                                 <Input 
                                     type="number"
                                     placeholder="0.00"
-                                    className="font-bold text-brand-purple"
+                                    className="font-medium text-brand-purple"
                                     value={newExpense.amount || ''}
                                     onChange={(e) => setNewExpense({...newExpense, amount: e.target.value})}
                                     required

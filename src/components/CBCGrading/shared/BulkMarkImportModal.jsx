@@ -156,7 +156,7 @@ const BulkMarkImportModal = ({ show, onClose, onImport, learners, totalMarks }) 
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center p-4 border-b">
-          <h3 className="text-lg font-bold">Bulk Import Summative Marks</h3>
+          <h3 className="text-lg font-medium">Bulk Import Summative Marks</h3>
           <button onClick={handleClose} className="text-gray-500 hover:text-gray-700">
             <X size={20} />
           </button>
@@ -199,7 +199,7 @@ const BulkMarkImportModal = ({ show, onClose, onImport, learners, totalMarks }) 
 
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-              <strong className="font-bold">Error! </strong>
+              <strong className="font-medium">Error! </strong>
               <span className="block sm:inline">{error}</span>
             </div>
           )}
@@ -215,10 +215,10 @@ const BulkMarkImportModal = ({ show, onClose, onImport, learners, totalMarks }) 
 
           {importPreview && (
             <div className="mt-6">
-              <h4 className="text-md font-bold mb-3">Import Preview:</h4>
+              <h4 className="text-md font-medium mb-3">Import Preview:</h4>
               {importPreview.invalidEntries.length > 0 && (
                 <div className="bg-red-50 border-l-4 border-red-400 p-3 mb-4">
-                  <p className="font-bold text-red-800 flex items-center gap-2">
+                  <p className="font-medium text-red-800 flex items-center gap-2">
                     <AlertCircle size={20} /> {importPreview.invalidEntries.length} Invalid Entries
                   </p>
                   <ul className="list-disc list-inside text-red-700 text-sm mt-2">
@@ -231,7 +231,7 @@ const BulkMarkImportModal = ({ show, onClose, onImport, learners, totalMarks }) 
 
               {Object.keys(importPreview.validMarks).length > 0 && (
                 <div className="bg-green-50 border-l-4 border-green-400 p-3">
-                  <p className="font-bold text-green-800 flex items-center gap-2">
+                  <p className="font-medium text-green-800 flex items-center gap-2">
                     <CheckCircle size={20} /> {Object.keys(importPreview.validMarks).length} Valid Marks Ready to Import
                   </p>
                   {/* Optional: Display a few valid entries as a sample */}

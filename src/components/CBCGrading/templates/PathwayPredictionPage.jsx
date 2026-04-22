@@ -73,16 +73,16 @@ const PathwayPredictionPage = ({ data, brandColor = '#4a0404' }) => {
                     <Brain size={28} />
                 </div>
                 <div className="flex-1">
-                    <h2 className="text-2xl font-black uppercase tracking-tight leading-none">
+                    <h2 className="text-2xl font-semibold uppercase tracking-tight leading-none">
                         CBC Pathway Analysis
                     </h2>
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">
+                    <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mt-1">
                         {gradeLabel} · Junior School Career Navigator · {data.term?.replace('_', ' ')} {data.academicYear}
                     </p>
                 </div>
                 {/* Confidence pill */}
                 <div
-                    className="text-white text-xs font-black px-4 py-2 rounded-full flex-shrink-0"
+                    className="text-white text-xs font-semibold px-4 py-2 rounded-full flex-shrink-0"
                     style={{ backgroundColor: brandColor }}
                 >
                     {confidence}% confidence
@@ -98,7 +98,7 @@ const PathwayPredictionPage = ({ data, brandColor = '#4a0404' }) => {
                     {/* Pathway badge */}
                     <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100 text-center shadow-sm">
                         <p
-                            className="text-[9px] font-black uppercase tracking-[0.2em] mb-4"
+                            className="text-[9px] font-semibold uppercase tracking-[0.2em] mb-4"
                             style={{ color: brandColor }}
                         >
                             Recommended Pathway
@@ -110,7 +110,7 @@ const PathwayPredictionPage = ({ data, brandColor = '#4a0404' }) => {
                             <PathwayIcon size={38} />
                         </div>
                         <h3
-                            className="text-lg font-black uppercase leading-tight"
+                            className="text-lg font-semibold uppercase leading-tight"
                             style={{ color: brandColor }}
                         >
                             {predictedPathway || 'Pending'}
@@ -119,13 +119,13 @@ const PathwayPredictionPage = ({ data, brandColor = '#4a0404' }) => {
 
                     {/* Cluster bars - Compact Multi-colored Graph */}
                     <div className="space-y-3 bg-gray-50/50 p-4 rounded-xl border border-gray-100">
-                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">
+                        <p className="text-[8px] font-semibold text-gray-400 uppercase tracking-[0.2em] mb-1">
                             Cluster Analysis
                         </p>
 
                         {/* STEM */}
                         <div className="space-y-1">
-                            <div className="flex justify-between text-[9px] font-black uppercase">
+                            <div className="flex justify-between text-[9px] font-semibold uppercase">
                                 <span className="text-gray-600">STEM</span>
                                 <span className="text-blue-600">{stem}%</span>
                             </div>
@@ -139,7 +139,7 @@ const PathwayPredictionPage = ({ data, brandColor = '#4a0404' }) => {
 
                         {/* Social */}
                         <div className="space-y-1">
-                            <div className="flex justify-between text-[9px] font-black uppercase">
+                            <div className="flex justify-between text-[9px] font-semibold uppercase">
                                 <span className="text-gray-600">Social Sciences</span>
                                 <span className="text-emerald-600">{social}%</span>
                             </div>
@@ -153,7 +153,7 @@ const PathwayPredictionPage = ({ data, brandColor = '#4a0404' }) => {
 
                         {/* Arts */}
                         <div className="space-y-1">
-                            <div className="flex justify-between text-[9px] font-black uppercase">
+                            <div className="flex justify-between text-[9px] font-semibold uppercase">
                                 <span className="text-gray-600">Arts &amp; Sports</span>
                                 <span className="text-amber-600">{arts}%</span>
                             </div>
@@ -165,7 +165,7 @@ const PathwayPredictionPage = ({ data, brandColor = '#4a0404' }) => {
                             </div>
                         </div>
 
-                        <p className="text-[6px] text-gray-400 font-bold uppercase pt-1 border-t border-gray-100 mt-2">
+                        <p className="text-[6px] text-gray-400 font-medium uppercase pt-1 border-t border-gray-100 mt-2">
                             * Based on cluster averages
                         </p>
                     </div>
@@ -178,7 +178,7 @@ const PathwayPredictionPage = ({ data, brandColor = '#4a0404' }) => {
                     <div>
                         <div className="flex items-center gap-2 mb-3">
                             <Lightbulb size={15} className="text-yellow-500 flex-shrink-0" />
-                            <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-700">
+                            <h4 className="text-[10px] font-semibold uppercase tracking-widest text-gray-700">
                                 Counselor's Insight
                             </h4>
                         </div>
@@ -194,7 +194,7 @@ const PathwayPredictionPage = ({ data, brandColor = '#4a0404' }) => {
                         <div>
                             <div className="flex items-center gap-2 mb-3">
                                 <Briefcase size={15} className="text-blue-500 flex-shrink-0" />
-                                <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-700">
+                                <h4 className="text-[10px] font-semibold uppercase tracking-widest text-gray-700">
                                     Potential Career Horizons
                                 </h4>
                             </div>
@@ -208,7 +208,7 @@ const PathwayPredictionPage = ({ data, brandColor = '#4a0404' }) => {
                                             className="w-2 h-2 rounded-full flex-shrink-0"
                                             style={{ backgroundColor: brandColor }}
                                         />
-                                        <span className="text-[11px] font-bold text-gray-700">{career}</span>
+                                        <span className="text-[11px] font-medium text-gray-700">{career}</span>
                                     </div>
                                 ))}
                             </div>
@@ -220,13 +220,13 @@ const PathwayPredictionPage = ({ data, brandColor = '#4a0404' }) => {
                         <div>
                             <div className="flex items-center gap-2 mb-3">
                                 <TrendingUp size={15} className="text-orange-500 flex-shrink-0" />
-                                <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-700">
+                                <h4 className="text-[10px] font-semibold uppercase tracking-widest text-gray-700">
                                     Future Readiness Tips
                                 </h4>
                             </div>
                             <ul className="space-y-2">
                                 {growthAreas.map((tip, i) => (
-                                    <li key={i} className="flex gap-2 text-[11px] font-bold text-gray-600 leading-snug">
+                                    <li key={i} className="flex gap-2 text-[11px] font-medium text-gray-600 leading-snug">
                                         <span className="text-orange-400 mt-0.5 flex-shrink-0">•</span>
                                         {tip}
                                     </li>
@@ -242,7 +242,7 @@ const PathwayPredictionPage = ({ data, brandColor = '#4a0404' }) => {
                 className="mt-8 p-5 rounded-lg text-white relative overflow-hidden"
                 style={{ backgroundColor: '#1a1a2e' }}
             >
-                <p className="text-[9px] font-black uppercase tracking-[0.2em] mb-1 opacity-50">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.2em] mb-1 opacity-50">
                     Important Note for Parents &amp; Guardians
                 </p>
                 <p className="text-[10px] font-medium leading-relaxed relative z-10">
@@ -259,11 +259,11 @@ const PathwayPredictionPage = ({ data, brandColor = '#4a0404' }) => {
             <div className="mt-6 grid grid-cols-2 gap-10 pt-5 border-t border-gray-100">
                 <div className="text-center">
                     <div className="border-b border-gray-200 h-8 mb-1" />
-                    <p className="text-[8px] font-black text-gray-400 uppercase">Career Guidance Counselor</p>
+                    <p className="text-[8px] font-semibold text-gray-400 uppercase">Career Guidance Counselor</p>
                 </div>
                 <div className="text-center">
                     <div className="border-b border-gray-200 h-8 mb-1" />
-                    <p className="text-[8px] font-black text-gray-400 uppercase">Parent / Guardian Signature</p>
+                    <p className="text-[8px] font-semibold text-gray-400 uppercase">Parent / Guardian Signature</p>
                 </div>
             </div>
         </div>

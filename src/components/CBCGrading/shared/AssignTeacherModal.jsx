@@ -63,7 +63,7 @@ const AssignTeacherModal = ({ isOpen, onClose, classData, onAssignmentComplete }
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="max-w-md">
                 <DialogHeader className="bg-brand-purple text-white px-6 py-4 -m-6 mb-4 rounded-t-lg">
-                    <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                    <DialogTitle className="text-xl font-medium flex items-center gap-2">
                         <User size={24} />
                         Assign Teacher
                     </DialogTitle>
@@ -71,8 +71,8 @@ const AssignTeacherModal = ({ isOpen, onClose, classData, onAssignmentComplete }
 
                 <div className="space-y-4 py-2">
                     <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Class</p>
-                        <p className="font-bold text-gray-800">{classData?.name || `${classData?.grade} ${classData?.stream}`}</p>
+                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Class</p>
+                        <p className="font-medium text-gray-800">{classData?.name || `${classData?.grade} ${classData?.stream}`}</p>
                     </div>
 
                     <div className="relative">
@@ -106,12 +106,12 @@ const AssignTeacherModal = ({ isOpen, onClose, classData, onAssignmentComplete }
                                             }`}
                                     >
                                         <div className="flex items-center gap-3">
-                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${isSelected ? 'bg-brand-purple text-white' : 'bg-gray-100 text-gray-600'
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-medium text-sm ${isSelected ? 'bg-brand-purple text-white' : 'bg-gray-100 text-gray-600'
                                                 }`}>
                                                 {teacher.firstName?.charAt(0)}{teacher.lastName?.charAt(0)}
                                             </div>
                                             <div>
-                                                <p className={`font-bold text-sm ${isSelected ? 'text-brand-purple' : 'text-gray-800'}`}>
+                                                <p className={`font-medium text-sm ${isSelected ? 'text-brand-purple' : 'text-gray-800'}`}>
                                                     {teacher.firstName} {teacher.lastName}
                                                 </p>
                                                 <div className="flex items-center gap-2">
@@ -146,7 +146,7 @@ const AssignTeacherModal = ({ isOpen, onClose, classData, onAssignmentComplete }
                     <Button
                         onClick={handleSubmit}
                         disabled={submitting || !selectedTeacherId}
-                        className="bg-brand-purple hover:bg-brand-purple/90 text-white font-bold gap-2"
+                        className="bg-brand-purple hover:bg-brand-purple/90 text-white font-medium gap-2"
                     >
                         {submitting ? <Loader className="animate-spin" size={18} /> : <CheckCircle size={18} />}
                         {isCurrentSelected ? 'Apply Assignment' : 'Assign Teacher'}

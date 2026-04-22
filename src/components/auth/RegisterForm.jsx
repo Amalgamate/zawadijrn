@@ -431,14 +431,14 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess, brand
                 onError={(e) => { e.target.style.display = 'none'; }}
               />
             )}
-            <CardTitle className="text-xl md:text-2xl font-black tracking-tighter text-gray-900 uppercase">
+            <CardTitle className="text-xl md:text-2xl font-semibold tracking-tighter text-gray-900 uppercase">
               {brandingSettings?.schoolName || 'ZAWADI SMS ACADEMY'}
             </CardTitle>
           </div>
-          <CardTitle className="text-2xl font-bold text-gray-900 mt-2">
+          <CardTitle className="text-2xl font-medium text-gray-900 mt-2">
             {brandingSettings?.onboardingTitle || 'Create Account'}
           </CardTitle>
-          <CardDescription className="text-gray-500 font-bold uppercase tracking-tight text-xs mt-1">
+          <CardDescription className="text-gray-500 font-medium uppercase tracking-tight text-xs mt-1">
             {brandingSettings?.onboardingMessage || 'Join our modern school management community'}
           </CardDescription>
         </CardHeader>
@@ -450,14 +450,14 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess, brand
               {/* Left Column: Personal & Security */}
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
                     <div className="h-[1px] w-8 bg-gray-200" />
                     Personal Details
                   </h3>
                   <div className="space-y-5">
                     {/* Name */}
                     <div className="space-y-2">
-                      <Label htmlFor="fullName" className="text-gray-700 font-bold ml-1">Full Name</Label>
+                      <Label htmlFor="fullName" className="text-gray-700 font-medium ml-1">Full Name</Label>
                       <div className="relative group">
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-brand-purple transition-colors">
                           <User size={18} />
@@ -477,12 +477,12 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess, brand
                           {fieldStatus.fullName === 'valid' && <CheckCircle className="h-5 w-5 text-green-500 animate-in fade-in zoom-in" />}
                         </div>
                       </div>
-                      {showErrors && errors.fullName && <p className="text-[10px] text-red-600 font-bold uppercase ml-1">{errors.fullName}</p>}
+                      {showErrors && errors.fullName && <p className="text-[10px] text-red-600 font-medium uppercase ml-1">{errors.fullName}</p>}
                     </div>
 
                     {/* Email */}
                     <div className="space-y-2">
-                      <Label htmlFor="email" className="text-gray-700 font-bold ml-1">Email Address</Label>
+                      <Label htmlFor="email" className="text-gray-700 font-medium ml-1">Email Address</Label>
                       <div className="relative group">
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-brand-purple transition-colors">
                           <Mail size={18} />
@@ -505,17 +505,17 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess, brand
                           {fieldStatus.email === 'invalid' && <XCircle className="h-5 w-5 text-red-500 animate-in fade-in zoom-in" />}
                         </div>
                       </div>
-                      {showErrors && errors.email && <p className="text-[10px] text-red-600 font-bold uppercase ml-1">{errors.email}</p>}
+                      {showErrors && errors.email && <p className="text-[10px] text-red-600 font-medium uppercase ml-1">{errors.email}</p>}
                     </div>
 
                     {/* Phone */}
                     <div className="space-y-2">
-                      <Label className="text-gray-700 font-bold ml-1">Mobile Number</Label>
+                      <Label className="text-gray-700 font-medium ml-1">Mobile Number</Label>
                       <div className="flex gap-2">
                         <select
                           value={countryCode}
                           onChange={handleCountryCodeChange}
-                          className="w-28 h-12 px-3 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-brand-purple/20 focus:border-brand-purple outline-none bg-white font-bold transition-all"
+                          className="w-28 h-12 px-3 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-brand-purple/20 focus:border-brand-purple outline-none bg-white font-medium transition-all"
                         >
                           {africanCountries.map(country => (
                             <option key={country.code} value={country.code}>
@@ -540,20 +540,20 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess, brand
                           </div>
                         </div>
                       </div>
-                      {showErrors && errors.phone && <p className="text-[10px] text-red-600 font-bold uppercase ml-1">{errors.phone}</p>}
+                      {showErrors && errors.phone && <p className="text-[10px] text-red-600 font-medium uppercase ml-1">{errors.phone}</p>}
                     </div>
                   </div>
                 </div>
 
                 <div className="pt-2">
-                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
                     <div className="h-[1px] w-8 bg-gray-200" />
                     Security
                   </h3>
                   <div className="space-y-5">
                     {/* Password */}
                     <div className="space-y-2">
-                      <Label htmlFor="password" className="text-gray-700 font-bold ml-1">Password</Label>
+                      <Label htmlFor="password" className="text-gray-700 font-medium ml-1">Password</Label>
                       <div className="relative group">
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-brand-purple transition-colors">
                           <Lock size={18} />
@@ -583,7 +583,7 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess, brand
                         {formData.password && (
                           <div className="space-y-1.5">
                             <div className="flex justify-between items-center px-0.5">
-                              <span className="text-[10px] text-gray-500 font-black uppercase tracking-wider">Strength: {passwordStrength.label}</span>
+                              <span className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider">Strength: {passwordStrength.label}</span>
                             </div>
                             <div className="flex gap-1 h-1.5">
                               {[1, 2, 3, 4].map((step) => (
@@ -599,12 +599,12 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess, brand
                           </div>
                         )}
                       </div>
-                      {showErrors && errors.password && <p className="text-[10px] text-red-600 font-bold uppercase ml-1">{errors.password}</p>}
+                      {showErrors && errors.password && <p className="text-[10px] text-red-600 font-medium uppercase ml-1">{errors.password}</p>}
                     </div>
 
                     {/* Confirm Password */}
                     <div className="space-y-2">
-                      <Label htmlFor="confirmPassword" className="text-gray-700 font-bold ml-1">Confirm Password</Label>
+                      <Label htmlFor="confirmPassword" className="text-gray-700 font-medium ml-1">Confirm Password</Label>
                       <div className="relative group">
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-brand-purple transition-colors">
                           <Lock size={18} />
@@ -629,7 +629,7 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess, brand
                           {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                         </button>
                       </div>
-                      {showErrors && errors.confirmPassword && <p className="text-[10px] text-red-600 font-bold uppercase ml-1">{errors.confirmPassword}</p>}
+                      {showErrors && errors.confirmPassword && <p className="text-[10px] text-red-600 font-medium uppercase ml-1">{errors.confirmPassword}</p>}
                     </div>
                   </div>
                 </div>
@@ -638,14 +638,14 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess, brand
               {/* Right Column: School & Location */}
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
                     <div className="h-[1px] w-8 bg-gray-200" />
                     School Details
                   </h3>
                   <div className="space-y-5">
                     {/* School Name */}
                     <div className="space-y-2">
-                      <Label htmlFor="schoolName" className="text-gray-700 font-bold ml-1">School Name</Label>
+                      <Label htmlFor="schoolName" className="text-gray-700 font-medium ml-1">School Name</Label>
                       <div className="relative group">
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-brand-purple transition-colors">
                           <Building2 size={18} />
@@ -663,19 +663,19 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess, brand
                           placeholder="School Name"
                         />
                       </div>
-                      {showErrors && errors.schoolName && <p className="text-[10px] text-red-600 font-bold uppercase ml-1">{errors.schoolName}</p>}
+                      {showErrors && errors.schoolName && <p className="text-[10px] text-red-600 font-medium uppercase ml-1">{errors.schoolName}</p>}
                     </div>
 
                     {/* School Type */}
                     <div className="space-y-2">
-                      <Label htmlFor="schoolType" className="text-gray-700 font-bold ml-1">School Type</Label>
+                      <Label htmlFor="schoolType" className="text-gray-700 font-medium ml-1">School Type</Label>
                       <select
                         id="schoolType"
                         name="schoolType"
                         value={formData.schoolType}
                         onChange={handleChange}
                         className={cn(
-                          "w-full h-12 px-4 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-brand-purple/20 focus:border-brand-purple outline-none bg-white font-bold transition-all",
+                          "w-full h-12 px-4 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-brand-purple/20 focus:border-brand-purple outline-none bg-white font-medium transition-all",
                           (showErrors && errors.schoolType) && "border-red-500 bg-red-50"
                         )}
                       >
@@ -685,12 +685,12 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess, brand
                         <option>Private Primary</option>
                         <option>Private Secondary</option>
                       </select>
-                      {showErrors && errors.schoolType && <p className="text-[10px] text-red-600 font-bold uppercase ml-1">{errors.schoolType}</p>}
+                      {showErrors && errors.schoolType && <p className="text-[10px] text-red-600 font-medium uppercase ml-1">{errors.schoolType}</p>}
                     </div>
 
                     {/* Domain */}
                     <div className="space-y-2">
-                      <Label htmlFor="subdomain" className="text-gray-700 font-bold ml-1">School Domain (Optional)</Label>
+                      <Label htmlFor="subdomain" className="text-gray-700 font-medium ml-1">School Domain (Optional)</Label>
                       <div className={cn(
                         "relative flex items-center border border-gray-200 rounded-md overflow-hidden h-12 transition-all focus-within:ring-2 focus-within:ring-brand-purple/20 focus-within:border-brand-purple",
                         fieldStatus.subdomain === 'invalid' && "border-red-500 bg-red-50",
@@ -704,7 +704,7 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess, brand
                           type="text"
                           value={formData.subdomain || suggestedSubdomain}
                           onChange={handleSubdomainChange}
-                          className="flex-1 px-4 h-full outline-none text-gray-900 font-bold placeholder-gray-400 bg-transparent"
+                          className="flex-1 px-4 h-full outline-none text-gray-900 font-medium placeholder-gray-400 bg-transparent"
                           placeholder="your-school"
                         />
                         <div className="absolute inset-y-0 right-32 pr-4 flex items-center">
@@ -712,31 +712,31 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess, brand
                           {fieldStatus.subdomain === 'valid' && <CheckCircle className="h-5 w-5 text-green-500 animate-in fade-in zoom-in" />}
                           {fieldStatus.subdomain === 'invalid' && <XCircle className="h-5 w-5 text-red-500 animate-in fade-in zoom-in" />}
                         </div>
-                        <div className="bg-gray-100/50 h-full px-4 flex items-center border-l border-gray-200 text-gray-500 text-[10px] font-black uppercase tracking-tighter">
+                        <div className="bg-gray-100/50 h-full px-4 flex items-center border-l border-gray-200 text-gray-500 text-[10px] font-semibold uppercase tracking-tighter">
                           .{brandingSettings?.schoolName ? brandingSettings.schoolName.toLowerCase().replace(/\s+/g, '') : 'zawadi-sms'}.co.ke
                         </div>
                       </div>
-                      {showErrors && errors.subdomain && <p className="text-[10px] text-red-600 font-bold uppercase ml-1">{errors.subdomain}</p>}
+                      {showErrors && errors.subdomain && <p className="text-[10px] text-red-600 font-medium uppercase ml-1">{errors.subdomain}</p>}
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
                     <div className="h-[1px] w-8 bg-gray-200" />
                     Location
                   </h3>
                   <div className="space-y-5">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="county" className="text-gray-700 font-bold ml-1">County</Label>
+                        <Label htmlFor="county" className="text-gray-700 font-medium ml-1">County</Label>
                         <select
                           id="county"
                           name="county"
                           value={formData.county}
                           onChange={handleChange}
                           className={cn(
-                            "w-full h-12 px-4 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-brand-purple/20 focus:border-brand-purple outline-none bg-white font-bold transition-all",
+                            "w-full h-12 px-4 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-brand-purple/20 focus:border-brand-purple outline-none bg-white font-medium transition-all",
                             (showErrors && errors.county) && "border-red-500 bg-red-50"
                           )}
                         >
@@ -747,21 +747,21 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess, brand
                         </select>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="subCounty" className="text-gray-700 font-bold ml-1">Sub-County</Label>
+                        <Label htmlFor="subCounty" className="text-gray-700 font-medium ml-1">Sub-County</Label>
                         <Input
                           id="subCounty"
                           type="text"
                           name="subCounty"
                           value={formData.subCounty}
                           onChange={handleChange}
-                          className="h-12 border-gray-200 focus:border-brand-purple focus:ring-brand-purple/20 transition-all font-bold"
+                          className="h-12 border-gray-200 focus:border-brand-purple focus:ring-brand-purple/20 transition-all font-medium"
                           placeholder="e.g. Westlands"
                         />
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="address" className="text-gray-700 font-bold ml-1">Physical Address</Label>
+                      <Label htmlFor="address" className="text-gray-700 font-medium ml-1">Physical Address</Label>
                       <div className="relative group">
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-brand-purple transition-colors">
                           <MapPin size={18} />
@@ -773,13 +773,13 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess, brand
                           value={formData.address}
                           onChange={handleChange}
                           className={cn(
-                            "h-12 pl-12 border-gray-200 focus:border-brand-purple focus:ring-brand-purple/20 transition-all font-bold",
+                            "h-12 pl-12 border-gray-200 focus:border-brand-purple focus:ring-brand-purple/20 transition-all font-medium",
                             (showErrors && errors.address) && "border-red-500 bg-red-50"
                           )}
                           placeholder="Street, Road, or Landmark"
                         />
                       </div>
-                      {showErrors && errors.address && <p className="text-[10px] text-red-600 font-bold uppercase ml-1">{errors.address}</p>}
+                      {showErrors && errors.address && <p className="text-[10px] text-red-600 font-medium uppercase ml-1">{errors.address}</p>}
                     </div>
                   </div>
                 </div>
@@ -798,18 +798,18 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess, brand
                     onChange={handleChange}
                     className="w-5 h-5 rounded border-gray-300 text-brand-purple focus:ring-brand-purple accent-brand-purple cursor-pointer transition-transform group-active:scale-95"
                   />
-                  <span className="text-sm text-gray-600 font-bold group-hover:text-gray-900 transition-colors">
+                  <span className="text-sm text-gray-600 font-medium group-hover:text-gray-900 transition-colors">
                     I agree to the <a href="#" className="text-brand-purple hover:underline underline-offset-4">Terms of Service</a> & <a href="#" className="text-brand-purple hover:underline underline-offset-4">Privacy Policy</a>
                   </span>
                 </label>
               </div>
-              {showErrors && errors.termsAccepted && <p className="text-[10px] text-red-600 font-bold uppercase text-center -mt-6 mb-6 animate-shake">{errors.termsAccepted}</p>}
+              {showErrors && errors.termsAccepted && <p className="text-[10px] text-red-600 font-medium uppercase text-center -mt-6 mb-6 animate-shake">{errors.termsAccepted}</p>}
 
               <div className="flex flex-col items-center gap-8">
                 <Button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full max-w-md h-14 text-sm font-black uppercase tracking-[0.2em] shadow-2xl transition-all duration-300 transform active:scale-[0.98] bg-brand-purple hover:bg-brand-purple/90 group"
+                  className="w-full max-w-md h-14 text-sm font-semibold uppercase tracking-[0.2em] shadow-2xl transition-all duration-300 transform active:scale-[0.98] bg-brand-purple hover:bg-brand-purple/90 group"
                 >
                   {isLoading ? (
                     <div className="flex items-center gap-3">
@@ -824,12 +824,12 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess, brand
                   )}
                 </Button>
 
-                <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">
+                <p className="text-xs text-gray-500 font-medium uppercase tracking-widest">
                   Already have an account?{' '}
                   <button
                     type="button"
                     onClick={onSwitchToLogin}
-                    className="text-brand-purple hover:underline font-black ml-2"
+                    className="text-brand-purple hover:underline font-semibold ml-2"
                   >
                     Sign in
                   </button>

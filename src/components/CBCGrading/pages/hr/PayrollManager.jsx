@@ -163,11 +163,11 @@ const PayslipModal = ({ record, onClose, onConfirm, onMarkPaid, confirming, payi
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-100 sticky top-0 bg-white rounded-t-3xl z-10">
                     <div>
-                        <h2 className="text-lg font-bold text-gray-900">{record.user.firstName} {record.user.lastName}</h2>
-                        <p className="text-xs text-gray-500 uppercase tracking-wider font-bold mt-0.5">{(record.user.role||'').replace(/_/g,' ')} · {record.user.staffId}</p>
+                        <h2 className="text-lg font-medium text-gray-900">{record.user.firstName} {record.user.lastName}</h2>
+                        <p className="text-xs text-gray-500 uppercase tracking-wider font-medium mt-0.5">{(record.user.role||'').replace(/_/g,' ')} · {record.user.staffId}</p>
                     </div>
                     <div className="flex items-center gap-3">
-                        <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase border ${sm.bg} ${sm.text} ${sm.border}`}>{sm.label}</span>
+                        <span className={`px-2 py-1 rounded-md text-[10px] font-medium uppercase border ${sm.bg} ${sm.text} ${sm.border}`}>{sm.label}</span>
                         <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400"><X size={18}/></button>
                     </div>
                 </div>
@@ -175,11 +175,11 @@ const PayslipModal = ({ record, onClose, onConfirm, onMarkPaid, confirming, payi
                 <div className="p-6 space-y-5">
                     {/* Earnings breakdown */}
                     <div>
-                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Earnings</p>
+                        <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-2">Earnings</p>
                         <div className="space-y-1">
                             <div className="flex justify-between py-1.5 border-b border-gray-50">
                                 <span className="text-sm text-gray-600">Basic Salary</span>
-                                <span className="text-sm font-bold text-gray-900">KES {fmt(record.basicSalary)}</span>
+                                <span className="text-sm font-medium text-gray-900">KES {fmt(record.basicSalary)}</span>
                             </div>
                             {(alw.items||[]).map(a => (
                                 <div key={a.id} className="flex justify-between py-1.5 border-b border-gray-50">
@@ -188,15 +188,15 @@ const PayslipModal = ({ record, onClose, onConfirm, onMarkPaid, confirming, payi
                                 </div>
                             ))}
                             <div className="flex justify-between py-2 bg-green-50 px-3 rounded-lg mt-2">
-                                <span className="text-sm font-bold text-gray-800">Gross Pay</span>
-                                <span className="text-sm font-bold text-green-700">KES {fmt(grossSalary)}</span>
+                                <span className="text-sm font-medium text-gray-800">Gross Pay</span>
+                                <span className="text-sm font-medium text-green-700">KES {fmt(grossSalary)}</span>
                             </div>
                         </div>
                     </div>
 
                     {/* Deductions breakdown */}
                     <div>
-                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Statutory Deductions</p>
+                        <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-2">Statutory Deductions</p>
                         <div className="space-y-1">
                             {[['PAYE (Income Tax)', ded.paye], ['NSSF', ded.nssf], ['SHIF', ded.shif], ['Housing Levy', ded.housingLevy]]
                                 .filter(([, v]) => Number(v) > 0)
@@ -210,7 +210,7 @@ const PayslipModal = ({ record, onClose, onConfirm, onMarkPaid, confirming, payi
 
                         {(ded.customItems||[]).length > 0 && (
                             <>
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 mt-3">Other Deductions</p>
+                                <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-2 mt-3">Other Deductions</p>
                                 <div className="space-y-1">
                                     {(ded.customItems||[]).map(c => (
                                         <div key={c.id} className="flex justify-between py-1.5 border-b border-gray-50">
@@ -223,15 +223,15 @@ const PayslipModal = ({ record, onClose, onConfirm, onMarkPaid, confirming, payi
                         )}
 
                         <div className="flex justify-between py-2 bg-red-50 px-3 rounded-lg mt-2">
-                            <span className="text-sm font-bold text-gray-800">Total Deductions</span>
-                            <span className="text-sm font-bold text-red-600">KES {fmt(totalDed)}</span>
+                            <span className="text-sm font-medium text-gray-800">Total Deductions</span>
+                            <span className="text-sm font-medium text-red-600">KES {fmt(totalDed)}</span>
                         </div>
                     </div>
 
                     {/* Net Pay */}
                     <div className="bg-brand-purple text-white rounded-2xl p-4 flex justify-between items-center">
-                        <span className="font-bold text-sm">Net Pay (Take Home)</span>
-                        <span className="text-xl font-black">KES {fmt(netPay)}</span>
+                        <span className="font-medium text-sm">Net Pay (Take Home)</span>
+                        <span className="text-xl font-semibold">KES {fmt(netPay)}</span>
                     </div>
 
                     {/* Worked info */}
@@ -253,7 +253,7 @@ const PayslipModal = ({ record, onClose, onConfirm, onMarkPaid, confirming, payi
                     {/* Action buttons */}
                     {record.status === 'DRAFT' && (
                         <button onClick={() => onConfirm(record.id)} disabled={confirming}
-                            className="w-full py-3 bg-blue-600 text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700 transition-all disabled:opacity-50">
+                            className="w-full py-3 bg-blue-600 text-white rounded-2xl font-medium flex items-center justify-center gap-2 hover:bg-blue-700 transition-all disabled:opacity-50">
                             {confirming ? <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/50 border-t-white"/> : <CheckCircle2 size={18}/>}
                             Confirm & Post to Ledger
                         </button>
@@ -261,7 +261,7 @@ const PayslipModal = ({ record, onClose, onConfirm, onMarkPaid, confirming, payi
 
                     {record.status === 'GENERATED' && !showPayInput && (
                         <button onClick={() => setShowPayInput(true)}
-                            className="w-full py-3 bg-emerald-600 text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all">
+                            className="w-full py-3 bg-emerald-600 text-white rounded-2xl font-medium flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all">
                             <Banknote size={18}/>
                             Mark as Paid
                         </button>
@@ -277,11 +277,11 @@ const PayslipModal = ({ record, onClose, onConfirm, onMarkPaid, confirming, payi
                                 className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 outline-none"
                             />
                             <div className="flex gap-2">
-                                <button onClick={() => setShowPayInput(false)} className="flex-1 py-3 border border-gray-200 text-gray-600 rounded-2xl font-bold text-sm hover:bg-gray-50 transition-all">
+                                <button onClick={() => setShowPayInput(false)} className="flex-1 py-3 border border-gray-200 text-gray-600 rounded-2xl font-medium text-sm hover:bg-gray-50 transition-all">
                                     Cancel
                                 </button>
                                 <button onClick={() => onMarkPaid(record.id, payRef)} disabled={paying}
-                                    className="flex-1 py-3 bg-emerald-600 text-white rounded-2xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all disabled:opacity-50">
+                                    className="flex-1 py-3 bg-emerald-600 text-white rounded-2xl font-medium text-sm flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all disabled:opacity-50">
                                     {paying ? <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/50 border-t-white"/> : <CheckCircle2 size={16}/>}
                                     Confirm Payment
                                 </button>
@@ -302,7 +302,7 @@ const VoidModal = ({ record, onClose, onConfirm, loading }) => {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 space-y-5" onClick={e => e.stopPropagation()}>
                 <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-bold text-gray-900">Void Payroll Record</h2>
+                    <h2 className="text-lg font-medium text-gray-900">Void Payroll Record</h2>
                     <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full text-gray-400"><X size={18}/></button>
                 </div>
                 <p className="text-sm text-gray-500">
@@ -315,9 +315,9 @@ const VoidModal = ({ record, onClose, onConfirm, loading }) => {
                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-red-500/30 outline-none resize-none"
                 />
                 <div className="flex gap-3">
-                    <button onClick={onClose} className="flex-1 py-3 border border-gray-200 text-gray-600 rounded-2xl font-bold text-sm hover:bg-gray-50 transition-all">Cancel</button>
+                    <button onClick={onClose} className="flex-1 py-3 border border-gray-200 text-gray-600 rounded-2xl font-medium text-sm hover:bg-gray-50 transition-all">Cancel</button>
                     <button onClick={() => onConfirm(record.id, reason)} disabled={loading || reason.trim().length < 5}
-                        className="flex-1 py-3 bg-red-600 text-white rounded-2xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-red-700 transition-all disabled:opacity-50">
+                        className="flex-1 py-3 bg-red-600 text-white rounded-2xl font-medium text-sm flex items-center justify-center gap-2 hover:bg-red-700 transition-all disabled:opacity-50">
                         {loading ? <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/50 border-t-white"/> : <Ban size={15}/>}
                         Void Record
                     </button>
@@ -334,7 +334,7 @@ const BulkPayModal = ({ month, year, count, onClose, onConfirm, loading }) => {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 space-y-5" onClick={e => e.stopPropagation()}>
                 <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-bold text-gray-900">Mark All as Paid</h2>
+                    <h2 className="text-lg font-medium text-gray-900">Mark All as Paid</h2>
                     <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full text-gray-400"><X size={18}/></button>
                 </div>
                 <p className="text-sm text-gray-500">
@@ -349,11 +349,11 @@ const BulkPayModal = ({ month, year, count, onClose, onConfirm, loading }) => {
                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/30 outline-none"
                 />
                 <div className="flex gap-3">
-                    <button onClick={onClose} className="flex-1 py-3 border border-gray-200 text-gray-600 rounded-2xl font-bold text-sm hover:bg-gray-50 transition-all">
+                    <button onClick={onClose} className="flex-1 py-3 border border-gray-200 text-gray-600 rounded-2xl font-medium text-sm hover:bg-gray-50 transition-all">
                         Cancel
                     </button>
                     <button onClick={() => onConfirm(ref)} disabled={loading}
-                        className="flex-1 py-3 bg-emerald-600 text-white rounded-2xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all disabled:opacity-50">
+                        className="flex-1 py-3 bg-emerald-600 text-white rounded-2xl font-medium text-sm flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all disabled:opacity-50">
                         {loading ? <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/50 border-t-white"/> : <Banknote size={16}/>}
                         Confirm
                     </button>
@@ -374,7 +374,7 @@ const BulkDisburseModal = ({ month, year, records, onClose, onConfirm, loading }
                         <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg">
                             <CreditCard size={24}/>
                         </div>
-                        <h2 className="text-xl font-bold text-gray-900">M-Pesa Payout</h2>
+                        <h2 className="text-xl font-medium text-gray-900">M-Pesa Payout</h2>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full text-gray-400"><X size={18}/></button>
                 </div>
@@ -387,17 +387,17 @@ const BulkDisburseModal = ({ month, year, records, onClose, onConfirm, loading }
 
                 <div className="flex justify-between items-end border-b border-gray-100 pb-4">
                     <span className="text-gray-500 text-sm font-medium">Total Disbursement</span>
-                    <span className="text-2xl font-black text-gray-900">KES {fmt(totalNet)}</span>
+                    <span className="text-2xl font-semibold text-gray-900">KES {fmt(totalNet)}</span>
                 </div>
 
                 <div className="space-y-3">
-                    <p className="text-[10px] text-gray-400 uppercase tracking-widest font-black text-center">Security Verification Required</p>
+                    <p className="text-[10px] text-gray-400 uppercase tracking-widest font-semibold text-center">Security Verification Required</p>
                     <button onClick={onConfirm} disabled={loading}
-                        className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black text-base flex items-center justify-center gap-3 hover:bg-emerald-700 active:scale-[0.98] transition-all shadow-xl shadow-emerald-100 disabled:opacity-50 disabled:active:scale-100">
+                        className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-semibold text-base flex items-center justify-center gap-3 hover:bg-emerald-700 active:scale-[0.98] transition-all shadow-xl shadow-emerald-100 disabled:opacity-50 disabled:active:scale-100">
                         {loading ? <div className="animate-spin rounded-full h-5 w-5 border-2 border-white/50 border-t-white"/> : <CheckCheck size={20}/>}
                         Authorize Disburse
                     </button>
-                    <button onClick={onClose} className="w-full py-3 text-gray-400 font-bold text-sm hover:text-gray-600 transition-all">
+                    <button onClick={onClose} className="w-full py-3 text-gray-400 font-medium text-sm hover:text-gray-600 transition-all">
                         Cancel & Review
                     </button>
                 </div>
@@ -626,7 +626,7 @@ const PayrollManager = () => {
 
             {/* Toast */}
             {toast && (
-                <div className={`fixed top-4 right-4 z-[100] flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl text-sm font-bold transition-all animate-in slide-in-from-top duration-300
+                <div className={`fixed top-4 right-4 z-[100] flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl text-sm font-medium transition-all animate-in slide-in-from-top duration-300
                     ${toast.type === 'error' ? 'bg-red-600 text-white' : 'bg-emerald-600 text-white'}`}>
                     {toast.type === 'error' ? <AlertCircle size={18}/> : <CheckCircle2 size={18}/>}
                     {toast.msg}
@@ -636,18 +636,18 @@ const PayrollManager = () => {
             {/* Page Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Payroll Center</h1>
+                    <h1 className="text-2xl font-medium text-gray-900">Payroll Center</h1>
                     <p className="text-gray-500 text-sm">Process salaries with statutory deductions and custom allowances.</p>
                 </div>
                 {/* Month / Year picker */}
                 <div className="flex bg-white border border-gray-200 rounded-xl px-4 py-2 gap-4 shadow-sm items-center">
                     <Calendar size={16} className="text-gray-400"/>
                     <select value={month} onChange={e => setMonth(Number(e.target.value))}
-                        className="bg-transparent border-none focus:ring-0 font-bold text-gray-700 text-sm">
+                        className="bg-transparent border-none focus:ring-0 font-medium text-gray-700 text-sm">
                         {MONTHS.map((m, i) => <option key={m} value={i+1}>{m}</option>)}
                     </select>
                     <select value={year} onChange={e => setYear(Number(e.target.value))}
-                        className="bg-transparent border-none focus:ring-0 font-bold text-gray-700 text-sm">
+                        className="bg-transparent border-none focus:ring-0 font-medium text-gray-700 text-sm">
                         {yearOptions.map(y => <option key={y} value={y}>{y}</option>)}
                     </select>
                 </div>
@@ -665,8 +665,8 @@ const PayrollManager = () => {
                     <div key={label} className="bg-white p-4 rounded-2xl border border-gray-100 flex items-center gap-3">
                         <div className={`p-2.5 rounded-xl bg-${color}-50 text-${color}-600`}><Icon size={20}/></div>
                         <div className="min-w-0">
-                            <p className="text-gray-400 text-xs font-bold uppercase tracking-wide truncate">{label}</p>
-                            <p className="text-base font-bold text-gray-900">{value}</p>
+                            <p className="text-gray-400 text-xs font-medium uppercase tracking-wide truncate">{label}</p>
+                            <p className="text-base font-medium text-gray-900">{value}</p>
                         </div>
                     </div>
                 ))}
@@ -686,7 +686,7 @@ const PayrollManager = () => {
                 <div className="flex items-center gap-2 flex-wrap">
                     {records.length === 0 && (
                         <button onClick={handleGenerate} disabled={generating}
-                            className="px-5 py-2.5 bg-brand-teal text-white rounded-xl font-bold text-sm shadow-lg shadow-teal-100 hover:bg-brand-teal/90 transition-all flex items-center gap-2 disabled:opacity-60">
+                            className="px-5 py-2.5 bg-brand-teal text-white rounded-xl font-medium text-sm shadow-lg shadow-teal-100 hover:bg-brand-teal/90 transition-all flex items-center gap-2 disabled:opacity-60">
                             {generating ? <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/50 border-t-white"/> : <DollarSign size={16}/>}
                             Generate Payroll
                         </button>
@@ -696,7 +696,7 @@ const PayrollManager = () => {
                         <>
                             {/* Regen (add missing staff) */}
                             <button onClick={handleGenerate} disabled={generating}
-                                className="px-4 py-2.5 border border-gray-200 text-gray-600 rounded-xl font-bold text-sm hover:bg-gray-50 transition-all flex items-center gap-2 disabled:opacity-60"
+                                className="px-4 py-2.5 border border-gray-200 text-gray-600 rounded-xl font-medium text-sm hover:bg-gray-50 transition-all flex items-center gap-2 disabled:opacity-60"
                                 title="Add payroll for any newly added staff">
                                 {generating ? <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-gray-600"/> : <RefreshCw size={15}/>}
                                 Update
@@ -705,7 +705,7 @@ const PayrollManager = () => {
                             {/* Bulk confirm drafts */}
                             {draftCount > 0 && (
                                 <button onClick={handleBulkConfirm} disabled={bulkConfirming}
-                                    className="px-4 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-all flex items-center gap-2 disabled:opacity-60">
+                                    className="px-4 py-2.5 bg-blue-600 text-white rounded-xl font-medium text-sm hover:bg-blue-700 transition-all flex items-center gap-2 disabled:opacity-60">
                                     {bulkConfirming ? <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/50 border-t-white"/> : <Layers size={15}/>}
                                     Confirm All ({draftCount})
                                 </button>
@@ -716,13 +716,13 @@ const PayrollManager = () => {
                                 <>
                                     {isKopoKopo ? (
                                         <button onClick={() => setShowBulkDisburse(true)}
-                                            className="px-4 py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 transition-all flex items-center gap-2 shadow-lg shadow-emerald-50">
+                                            className="px-4 py-2.5 bg-emerald-600 text-white rounded-xl font-medium text-sm hover:bg-emerald-700 transition-all flex items-center gap-2 shadow-lg shadow-emerald-50">
                                             <CreditCard size={15}/>
                                             Batch Payout ({confirmedCount})
                                         </button>
                                     ) : (
                                         <button onClick={() => setShowBulkPay(true)}
-                                            className="px-4 py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 transition-all flex items-center gap-2">
+                                            className="px-4 py-2.5 bg-emerald-600 text-white rounded-xl font-medium text-sm hover:bg-emerald-700 transition-all flex items-center gap-2">
                                             <CheckCheck size={15}/>
                                             Mark All Paid ({confirmedCount})
                                         </button>
@@ -731,12 +731,12 @@ const PayrollManager = () => {
                             )}
 
                             <button onClick={handlePrintAll} disabled={printing}
-                                className="px-4 py-2.5 border border-gray-200 text-gray-600 rounded-xl font-bold text-sm hover:bg-gray-50 transition-all flex items-center gap-2 disabled:opacity-60">
+                                className="px-4 py-2.5 border border-gray-200 text-gray-600 rounded-xl font-medium text-sm hover:bg-gray-50 transition-all flex items-center gap-2 disabled:opacity-60">
                                 <Printer size={15}/>
                                 Print
                             </button>
                             <button onClick={handleDownloadAll} disabled={printing}
-                                className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition-all flex items-center gap-2 disabled:opacity-60">
+                                className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-medium text-sm hover:bg-indigo-700 transition-all flex items-center gap-2 disabled:opacity-60">
                                 <Download size={15}/>
                                 PDF
                             </button>
@@ -750,7 +750,7 @@ const PayrollManager = () => {
                 <div className="flex items-center gap-2 text-xs text-gray-500 px-1">
                     {[['DRAFT', draftCount, 'amber'], ['GENERATED', confirmedCount, 'blue'], ['PAID', paidCount, 'emerald']].map(([s, count, c], i) => (
                         <React.Fragment key={s}>
-                            <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full font-bold bg-${c}-50 text-${c}-700`}>
+                            <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full font-medium bg-${c}-50 text-${c}-700`}>
                                 <span className={`w-1.5 h-1.5 rounded-full bg-${c}-500 inline-block`}/>
                                 {s === 'GENERATED' ? 'Confirmed' : s} · {count}
                             </span>
@@ -768,7 +768,7 @@ const PayrollManager = () => {
                         <thead className="border-b border-gray-100">
                             <tr>
                                 {['Employee', 'Basic Salary', 'Allowances', 'Gross Pay', 'Deductions', 'Net Pay', 'Days', 'Status', ''].map(h => (
-                                    <th key={h} className="px-5 py-3.5 text-xs font-bold text-gray-400 uppercase tracking-wider">{h}</th>
+                                    <th key={h} className="px-5 py-3.5 text-xs font-medium text-gray-400 uppercase tracking-wider">{h}</th>
                                 ))}
                             </tr>
                         </thead>
@@ -793,11 +793,11 @@ const PayrollManager = () => {
                                             onClick={() => setSelectedRecord(record)}>
                                             <td className="px-5 py-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-full bg-brand-purple/10 text-brand-purple flex items-center justify-center font-bold text-xs flex-shrink-0">
+                                                    <div className="w-8 h-8 rounded-full bg-brand-purple/10 text-brand-purple flex items-center justify-center font-medium text-xs flex-shrink-0">
                                                         {record.user.firstName[0]}{record.user.lastName[0]}
                                                     </div>
                                                     <div>
-                                                        <p className="font-bold text-gray-900 text-sm group-hover:text-brand-teal transition-colors">
+                                                        <p className="font-medium text-gray-900 text-sm group-hover:text-brand-teal transition-colors">
                                                             {record.user.firstName} {record.user.lastName}
                                                         </p>
                                                         <p className="text-xs text-gray-400 font-mono">{record.user.staffId}</p>
@@ -808,14 +808,14 @@ const PayrollManager = () => {
                                             <td className="px-5 py-4 text-sm text-blue-600 font-mono">
                                                 {Number(alw.total||0) > 0 ? `+KES ${fmt(alw.total)}` : <span className="text-gray-300">—</span>}
                                             </td>
-                                            <td className="px-5 py-4 text-sm font-bold text-gray-800 font-mono">KES {fmt(grossSalary)}</td>
+                                            <td className="px-5 py-4 text-sm font-medium text-gray-800 font-mono">KES {fmt(grossSalary)}</td>
                                             <td className="px-5 py-4 text-sm text-red-500 font-mono">-KES {fmt(totalDed)}</td>
-                                            <td className="px-5 py-4 text-sm font-bold text-emerald-600 font-mono">KES {fmt(record.netSalary)}</td>
+                                            <td className="px-5 py-4 text-sm font-medium text-emerald-600 font-mono">KES {fmt(record.netSalary)}</td>
                                             <td className="px-5 py-4 text-sm text-gray-500">
                                                 {record.workedDays > 0 ? `${record.workedDays}d` : <span className="text-gray-200">—</span>}
                                             </td>
                                             <td className="px-5 py-4">
-                                                <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase border ${sm.bg} ${sm.text} ${sm.border}`}>
+                                                <span className={`px-2 py-1 rounded-md text-[10px] font-medium uppercase border ${sm.bg} ${sm.text} ${sm.border}`}>
                                                     {sm.label}
                                                 </span>
                                             </td>
@@ -842,7 +842,7 @@ const PayrollManager = () => {
                                         <div className="flex flex-col items-center gap-4">
                                             <div className="p-4 bg-amber-50 text-amber-400 rounded-full"><AlertCircle size={40}/></div>
                                             <div>
-                                                <h3 className="text-base font-bold text-gray-800">No Payroll Records</h3>
+                                                <h3 className="text-base font-medium text-gray-800">No Payroll Records</h3>
                                                 <p className="text-sm text-gray-400 mt-1 max-w-xs mx-auto">
                                                     {records.length === 0
                                                         ? `No payroll generated for ${MONTHS[month-1]} ${year} yet. Click Generate Payroll above.`

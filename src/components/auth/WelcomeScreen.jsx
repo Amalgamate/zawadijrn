@@ -23,7 +23,7 @@ export default function WelcomeScreen({ user, onGetStarted, brandingSettings }) 
                 onError={(e) => { e.target.style.display = 'none'; }}
               />
             )}
-            <span className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tighter text-white whitespace-nowrap uppercase">
+            <span className="text-2xl sm:text-4xl lg:text-5xl font-semibold tracking-tighter text-white whitespace-nowrap uppercase">
               {brandingSettings?.schoolName || 'ZAWADI SMS'}
             </span>
           </div>
@@ -35,7 +35,7 @@ export default function WelcomeScreen({ user, onGetStarted, brandingSettings }) 
         </div>
 
         {/* Welcome Message */}
-        <h1 className="text-4xl lg:text-5xl font-bold text-white mb-4 drop-shadow-sm">
+        <h1 className="text-4xl lg:text-5xl font-medium text-white mb-4 drop-shadow-sm">
           Welcome, {user?.name || 'User'}!
         </h1>
         <p className="text-xl text-white/80 mb-10 leading-relaxed max-w-lg mx-auto">
@@ -45,7 +45,7 @@ export default function WelcomeScreen({ user, onGetStarted, brandingSettings }) 
         {/* Get Started Button */}
         <button
           onClick={onGetStarted}
-          className="group inline-flex items-center gap-3 bg-white text-brand-purple px-10 py-4 rounded-2xl font-bold text-xl hover:bg-white/90 transition-all shadow-2xl hover:shadow-brand-teal/20 hover:scale-105 active:scale-95"
+          className="group inline-flex items-center gap-3 bg-white text-brand-purple px-10 py-4 rounded-2xl font-medium text-xl hover:bg-white/90 transition-all shadow-2xl hover:shadow-brand-teal/20 hover:scale-105 active:scale-95"
         >
           Get Started
           <ArrowRight className="group-hover:translate-x-1 transition-transform" size={24} />

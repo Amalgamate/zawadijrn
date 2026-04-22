@@ -221,7 +221,7 @@ const BulkOperationsModal = ({
         {/* Header */}
         <div className="bg-[var(--brand-purple)] text-white p-5 flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold tracking-tight">{title}</h2>
+            <h2 className="text-xl font-medium tracking-tight">{title}</h2>
             <p className="text-white/70 text-[10px] uppercase tracking-widest font-medium mt-0.5">Bulk Management System</p>
           </div>
           <button onClick={onClose} className="text-white hover:bg-white/20 p-2 rounded-xl transition-all active:scale-95">
@@ -239,7 +239,7 @@ const BulkOperationsModal = ({
               <div className="p-2 bg-[#00A09D]/10 rounded-xl group-hover:bg-[#00A09D]/20 transition-colors">
                 <FileDown size={22} className="text-[#00A09D]" />
               </div>
-              <span className="text-xs font-bold text-[#00A09D] uppercase tracking-wider">Template</span>
+              <span className="text-xs font-medium text-[#00A09D] uppercase tracking-wider">Template</span>
             </button>
 
             <button
@@ -254,7 +254,7 @@ const BulkOperationsModal = ({
                   <Download size={22} className="text-[var(--brand-purple)]" />
                 )}
               </div>
-              <span className="text-xs font-bold text-[var(--brand-purple)] uppercase tracking-wider">
+              <span className="text-xs font-medium text-[var(--brand-purple)] uppercase tracking-wider">
                 {exporting ? 'Exporting...' : 'Export CSV'}
               </span>
             </button>
@@ -264,7 +264,7 @@ const BulkOperationsModal = ({
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-1">
               <Upload size={16} className="text-gray-400" />
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Update Records</h3>
+              <h3 className="text-xs font-medium text-gray-400 uppercase tracking-widest">Update Records</h3>
             </div>
 
             {/* Drag and Drop Zone */}
@@ -284,7 +284,7 @@ const BulkOperationsModal = ({
                     <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500 mb-1">
                       <CheckCircle size={28} />
                     </div>
-                    <span className="text-sm font-bold text-gray-700 truncate max-w-[280px]">{file.name}</span>
+                    <span className="text-sm font-medium text-gray-700 truncate max-w-[280px]">{file.name}</span>
                     <p className="text-[10px] text-gray-400 font-medium">Ready for processing</p>
                   </div>
 
@@ -301,7 +301,7 @@ const BulkOperationsModal = ({
                       <CheckCircle className="absolute h-3.5 w-3.5 text-white left-0.5 opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" />
                     </div>
                     <div className="text-left">
-                      <span className="text-xs font-bold text-amber-900 block">Force Update (Overwrite)</span>
+                      <span className="text-xs font-medium text-amber-900 block">Force Update (Overwrite)</span>
                       <p className="text-[10px] text-amber-700 leading-tight mt-0.5">Replace existing records with matching identifiers.</p>
                     </div>
                   </label>
@@ -309,7 +309,7 @@ const BulkOperationsModal = ({
                   <div className="flex flex-col items-center w-full pt-2">
                     {uploading && (
                       <div className="w-full space-y-2 mb-4">
-                        <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                        <div className="flex justify-between text-[10px] font-medium text-gray-400 uppercase tracking-widest">
                           <span className="flex items-center gap-1.5">
                             <Loader size={12} className="animate-spin" />
                             Processing Data...
@@ -330,7 +330,7 @@ const BulkOperationsModal = ({
                         <button
                           onClick={handleUpload}
                           disabled={!canUpload() || uploading}
-                          className="flex-1 px-6 py-3 bg-[#00A09D] text-white text-xs font-bold rounded-xl hover:bg-[#00908d] transition-all disabled:bg-gray-200 disabled:cursor-not-allowed flex items-center justify-center gap-2 uppercase tracking-widest shadow-lg shadow-[#00A09D]/20 active:scale-95"
+                          className="flex-1 px-6 py-3 bg-[#00A09D] text-white text-xs font-medium rounded-xl hover:bg-[#00908d] transition-all disabled:bg-gray-200 disabled:cursor-not-allowed flex items-center justify-center gap-2 uppercase tracking-widest shadow-lg shadow-[#00A09D]/20 active:scale-95"
                         >
                           {uploading ? <Loader size={16} className="animate-spin" /> : <Upload size={16} />}
                           <span>{uploading ? 'Processing' : 'Upload Now'}</span>
@@ -338,7 +338,7 @@ const BulkOperationsModal = ({
                         <button
                           onClick={resetUpload}
                           disabled={uploading}
-                          className="px-6 py-3 border border-gray-200 text-xs font-bold text-gray-500 rounded-xl hover:bg-gray-50 transition-all uppercase tracking-widest active:scale-95"
+                          className="px-6 py-3 border border-gray-200 text-xs font-medium text-gray-500 rounded-xl hover:bg-gray-50 transition-all uppercase tracking-widest active:scale-95"
                         >
                           Cancel
                         </button>
@@ -348,7 +348,7 @@ const BulkOperationsModal = ({
                     {uploadResult && (
                       <button
                         onClick={handleFinish}
-                        className="w-full px-6 py-3.5 bg-[var(--brand-purple)] text-white text-xs font-bold rounded-xl hover:bg-[#420040] transition-all flex items-center justify-center gap-2 uppercase tracking-widest shadow-lg shadow-[var(--brand-purple)]/20 active:scale-95"
+                        className="w-full px-6 py-3.5 bg-[var(--brand-purple)] text-white text-xs font-medium rounded-xl hover:bg-[#420040] transition-all flex items-center justify-center gap-2 uppercase tracking-widest shadow-lg shadow-[var(--brand-purple)]/20 active:scale-95"
                       >
                         <CheckCircle size={18} />
                         <span>Complete & Refresh View</span>
@@ -362,9 +362,9 @@ const BulkOperationsModal = ({
                     <Upload size={32} />
                   </div>
                   <div className="space-y-1">
-                    <p className="text-sm font-bold text-gray-700">Drop your CSV file here</p>
+                    <p className="text-sm font-medium text-gray-700">Drop your CSV file here</p>
                     <p className="text-xs text-gray-400">
-                      Or <label className="text-[var(--brand-purple)] cursor-pointer hover:underline font-bold">
+                      Or <label className="text-[var(--brand-purple)] cursor-pointer hover:underline font-medium">
                         browse files
                         <input
                           ref={fileInputRef}
@@ -396,13 +396,13 @@ const BulkOperationsModal = ({
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <h4 className={`text-base font-bold ${uploadResult.success ? 'text-emerald-900' : 'text-rose-900'}`}>
+                      <h4 className={`text-base font-medium ${uploadResult.success ? 'text-emerald-900' : 'text-rose-900'}`}>
                         {uploadResult.success ? 'Import Finished' : 'Import Failed'}
                       </h4>
                       {uploadResult.success && uploadResult.summary?.failed > 0 && (
                         <button
                           onClick={downloadErrorReport}
-                          className="text-[10px] font-bold text-rose-600 hover:text-rose-700 uppercase tracking-tighter flex items-center gap-1 bg-rose-100/50 px-2 py-1 rounded-md transition-colors"
+                          className="text-[10px] font-medium text-rose-600 hover:text-rose-700 uppercase tracking-tighter flex items-center gap-1 bg-rose-100/50 px-2 py-1 rounded-md transition-colors"
                         >
                           <FileDown size={12} />
                           Error Report
@@ -414,41 +414,41 @@ const BulkOperationsModal = ({
                       <div className="mt-3 space-y-3">
                         <div className="flex items-center gap-4">
                           <div className="bg-white p-2 rounded-xl border border-emerald-100 flex-1 text-center shadow-sm">
-                            <p className="text-[10px] font-bold text-gray-400 uppercase leading-tight">Total</p>
-                            <p className="text-lg font-black text-emerald-700 leading-none mt-1">{uploadResult.summary.total}</p>
+                            <p className="text-[10px] font-medium text-gray-400 uppercase leading-tight">Total</p>
+                            <p className="text-lg font-semibold text-emerald-700 leading-none mt-1">{uploadResult.summary.total}</p>
                           </div>
                           <div className="bg-white p-2 rounded-xl border border-emerald-100 flex-1 text-center shadow-sm">
-                            <p className="text-[10px] font-bold text-gray-400 uppercase leading-tight">Added</p>
-                            <p className="text-lg font-black text-emerald-700 leading-none mt-1">{uploadResult.summary.created}</p>
+                            <p className="text-[10px] font-medium text-gray-400 uppercase leading-tight">Added</p>
+                            <p className="text-lg font-semibold text-emerald-700 leading-none mt-1">{uploadResult.summary.created}</p>
                           </div>
                           <div className={`bg-white p-2 rounded-xl border flex-1 text-center shadow-sm ${uploadResult.summary.failed > 0 ? 'border-rose-100' : 'border-emerald-100'}`}>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase leading-tight">Failed</p>
-                            <p className={`text-lg font-black leading-none mt-1 ${uploadResult.summary.failed > 0 ? 'text-rose-600' : 'text-emerald-700'}`}>{uploadResult.summary.failed}</p>
+                            <p className="text-[10px] font-medium text-gray-400 uppercase leading-tight">Failed</p>
+                            <p className={`text-lg font-semibold leading-none mt-1 ${uploadResult.summary.failed > 0 ? 'text-rose-600' : 'text-emerald-700'}`}>{uploadResult.summary.failed}</p>
                           </div>
                         </div>
 
                         {/* Show errors if any */}
                         {uploadResult.details && (uploadResult.details.failed.length > 0 || uploadResult.details.validationErrors.length > 0) && (
                           <details className="mt-2 group">
-                            <summary className="cursor-pointer text-xs font-bold text-rose-600 group-open:mb-2 flex items-center gap-2 p-2 hover:bg-rose-100/30 rounded-lg transition-colors">
+                            <summary className="cursor-pointer text-xs font-medium text-rose-600 group-open:mb-2 flex items-center gap-2 p-2 hover:bg-rose-100/30 rounded-lg transition-colors">
                               <AlertCircle size={14} />
                               Review Issues ({uploadResult.details.failed.length + uploadResult.details.validationErrors.length})
                             </summary>
                             <div className="max-h-40 overflow-y-auto bg-white border border-rose-100 rounded-xl p-3 text-[11px] space-y-2 shadow-inner">
                               {uploadResult.details.failed.map((err, idx) => (
                                 <div key={idx} className="flex gap-3 items-start border-b border-rose-50 pb-1.5 last:border-0 last:pb-0">
-                                  <span className="font-bold text-gray-400 min-w-[24px]">L{err.line}</span>
+                                  <span className="font-medium text-gray-400 min-w-[24px]">L{err.line}</span>
                                   <div className="flex-1 min-w-0">
-                                    <p className="font-bold text-gray-800 truncate">{err.email || err.admissionNumber || 'Record'}</p>
+                                    <p className="font-medium text-gray-800 truncate">{err.email || err.admissionNumber || 'Record'}</p>
                                     <p className="text-rose-600">{err.reason}</p>
                                   </div>
                                 </div>
                               ))}
                               {uploadResult.details.validationErrors.map((err, idx) => (
                                 <div key={idx} className="flex gap-3 items-start border-b border-rose-50 pb-1.5 last:border-0 last:pb-0">
-                                  <span className="font-bold text-gray-400 min-w-[24px]">L{err.line}</span>
+                                  <span className="font-medium text-gray-400 min-w-[24px]">L{err.line}</span>
                                   <div className="flex-1 min-w-0">
-                                    <p className="font-bold text-gray-800">Validation Error</p>
+                                    <p className="font-medium text-gray-800">Validation Error</p>
                                     <p className="text-rose-400 italic">Check template format</p>
                                   </div>
                                 </div>
@@ -461,7 +461,7 @@ const BulkOperationsModal = ({
 
                     {uploadResult.error && (
                       <div className="mt-2 p-3 bg-white border border-rose-100 rounded-xl">
-                        <p className="text-xs font-bold text-rose-600">
+                        <p className="text-xs font-medium text-rose-600">
                           {typeof uploadResult.error === 'string'
                             ? uploadResult.error
                             : uploadResult.error?.message || 'A system error occurred'}

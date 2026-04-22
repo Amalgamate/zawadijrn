@@ -483,14 +483,14 @@ const UserManagement = () => {
         {/* Unified Header & Search */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
+            <h1 className="text-2xl font-medium text-gray-900">User Management</h1>
             <p className="text-sm text-gray-500">Manage school staff, parents, and administrative access</p>
           </div>
           <div className="flex flex-col sm:flex-row items-center gap-3">
             <div className="flex bg-gray-100 p-1 rounded-xl w-full sm:w-auto">
               <button
                 onClick={() => setViewMode('list')}
-                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2 rounded-lg transition-all text-sm font-bold ${viewMode === 'list' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2 rounded-lg transition-all text-sm font-medium ${viewMode === 'list' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                   }`}
               >
                 <Users size={18} />
@@ -498,7 +498,7 @@ const UserManagement = () => {
               </button>
               <button
                 onClick={() => setViewMode('config')}
-                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2 rounded-lg transition-all text-sm font-bold ${viewMode === 'config' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2 rounded-lg transition-all text-sm font-medium ${viewMode === 'config' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                   }`}
               >
                 <Shield size={18} />
@@ -506,7 +506,7 @@ const UserManagement = () => {
               </button>
               <button
                 onClick={() => setViewMode('logs')}
-                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2 rounded-lg transition-all text-sm font-bold ${viewMode === 'logs' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2 rounded-lg transition-all text-sm font-medium ${viewMode === 'logs' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                   }`}
               >
                 <Activity size={18} />
@@ -522,7 +522,7 @@ const UserManagement = () => {
                 resetForm();
                 setShowModal(true);
               }}
-              className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-md font-bold whitespace-nowrap"
+              className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-md font-medium whitespace-nowrap"
             >
               <UserPlus size={20} />
               Add New User
@@ -545,7 +545,7 @@ const UserManagement = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-6 py-2.5 rounded-lg transition-all text-sm font-bold whitespace-nowrap ${activeTab === tab.id
+                  className={`flex items-center gap-2 px-6 py-2.5 rounded-lg transition-all text-sm font-medium whitespace-nowrap ${activeTab === tab.id
                     ? `bg-${tab.color}-600 text-white shadow-md`
                     : 'text-gray-500 hover:bg-gray-50'
                     }`}
@@ -578,10 +578,10 @@ const UserManagement = () => {
               </div>
               {selectedUsers.length > 0 && (
                 <div className="flex items-center gap-2 p-1.5 bg-purple-50 rounded-xl border border-purple-100 shadow-sm animate-in zoom-in-95">
-                  <span className="text-xs font-bold text-purple-700 px-2 line-clamp-1">{selectedUsers.length} Selected</span>
+                  <span className="text-xs font-medium text-purple-700 px-2 line-clamp-1">{selectedUsers.length} Selected</span>
                   <button
                     onClick={() => setShowBulkActions(!showBulkActions)}
-                    className="px-4 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-xs font-bold transition"
+                    className="px-4 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-xs font-medium transition"
                   >
                     Bulk Actions
                   </button>
@@ -592,13 +592,13 @@ const UserManagement = () => {
             {/* Bulk Actions Menu Expanded */}
             {showBulkActions && selectedUsers.length > 0 && (
               <div className="p-4 bg-purple-50 rounded-xl border border-purple-200 shadow-inner flex flex-wrap items-center gap-3">
-                <span className="text-sm font-bold text-purple-900">Change Role:</span>
+                <span className="text-sm font-medium text-purple-900">Change Role:</span>
                 <div className="flex flex-wrap gap-1.5">
                   {ROLES_CONFIG.slice(0, 7).map(role => (
                     <button
                       key={role.value}
                       onClick={() => handleBulkRoleChange(role.value)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white border border-purple-100 text-purple-700 hover:bg-purple-600 hover:text-white shadow-sm`}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all bg-white border border-purple-100 text-purple-700 hover:bg-purple-600 hover:text-white shadow-sm`}
                     >
                       {role.label}
                     </button>
@@ -623,14 +623,14 @@ const UserManagement = () => {
               ) : activeTab === 'students' && filteredUsers.length === 0 ? (
                 <div className="p-12 text-center bg-orange-50/20">
                   <BookOpen size={48} className="mx-auto text-orange-200 mb-4" />
-                  <p className="text-gray-800 font-bold text-lg">Managing {learnerStats.total || 'All'} Students</p>
+                  <p className="text-gray-800 font-medium text-lg">Managing {learnerStats.total || 'All'} Students</p>
                   <p className="text-gray-500 text-sm mt-2 max-w-sm mx-auto">
                     Uploaded students appear here once they are assigned portal login accounts. To manage your full student database, use the Admissions page.
                   </p>
                   <div className="mt-8 flex justify-center gap-4">
                     <button 
                       onClick={() => window.location.href = '/learners/list'}
-                      className="px-6 py-2.5 bg-orange-600 text-white rounded-xl shadow-lg shadow-orange-600/20 font-bold hover:bg-orange-700 transition-all flex items-center gap-2"
+                      className="px-6 py-2.5 bg-orange-600 text-white rounded-xl shadow-lg shadow-orange-600/20 font-medium hover:bg-orange-700 transition-all flex items-center gap-2"
                     >
                       <Users size={18} />
                       Go to Full Student List
@@ -675,12 +675,12 @@ const UserManagement = () => {
                           </td>
                           <td className="px-4 py-4">
                             <div className="flex items-center gap-3">
-                              <div className={`w-10 h-10 rounded-xl transition-transform group-hover:scale-110 flex items-center justify-center text-white font-bold text-sm shadow-sm ${user.archived ? 'bg-gray-500' : 'bg-blue-600'
+                              <div className={`w-10 h-10 rounded-xl transition-transform group-hover:scale-110 flex items-center justify-center text-white font-medium text-sm shadow-sm ${user.archived ? 'bg-gray-500' : 'bg-blue-600'
                                 }`}>
                                 {user.firstName[0]}{user.lastName[0]}
                               </div>
                               <div>
-                                <div className="font-bold text-gray-900 group-hover:text-blue-700 transition-colors flex items-center gap-2">
+                                <div className="font-medium text-gray-900 group-hover:text-blue-700 transition-colors flex items-center gap-2">
                                   {user.firstName} {user.lastName}
                                   {user.staffId && <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded font-mono font-normal">{user.staffId}</span>}
                                 </div>
@@ -692,7 +692,7 @@ const UserManagement = () => {
                           </td>
                           <td className="px-4 py-4">
                             <div className="flex flex-col gap-1">
-                              <span className={`w-fit px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border shadow-sm ${user.role === 'SUPER_ADMIN' ? 'bg-red-50 text-red-700 border-red-100' :
+                              <span className={`w-fit px-2.5 py-1 rounded-lg text-[10px] font-semibold uppercase tracking-widest border shadow-sm ${user.role === 'SUPER_ADMIN' ? 'bg-red-50 text-red-700 border-red-100' :
                                 user.role === 'ADMIN' ? 'bg-purple-50 text-purple-700 border-purple-100' :
                                   user.role === 'PARENT' ? 'bg-green-50 text-green-700 border-green-100' :
                                     user.role === 'STUDENT' ? 'bg-orange-50 text-orange-700 border-orange-100' :
@@ -706,7 +706,7 @@ const UserManagement = () => {
                             </div>
                           </td>
                           <td className="px-4 py-4">
-                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold ${user.archived ? 'bg-gray-100 text-gray-400' :
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium ${user.archived ? 'bg-gray-100 text-gray-400' :
                               user.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' :
                                 'bg-amber-100 text-amber-700'
                               }`}>
@@ -773,8 +773,8 @@ const UserManagement = () => {
                   <div className={`w-12 h-12 rounded-lg bg-${role.color}-100 flex items-center justify-center mb-3`}>
                     <Shield className={`text-${role.color}-600`} size={24} />
                   </div>
-                  <h3 className="font-bold text-gray-900 text-sm mb-1">{role.label}</h3>
-                  <p className={`text-2xl font-bold text-${role.color}-600`}>{role.count}</p>
+                  <h3 className="font-medium text-gray-900 text-sm mb-1">{role.label}</h3>
+                  <p className={`text-2xl font-medium text-${role.color}-600`}>{role.count}</p>
                   <p className="text-xs text-gray-500 mt-1">users</p>
                 </div>
               ))}
@@ -783,7 +783,7 @@ const UserManagement = () => {
             {/* Permission Matrix */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
               <div className="bg-purple-600 px-6 py-4">
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <h2 className="text-xl font-medium text-white flex items-center gap-2">
                   <Lock size={24} />
                   Permission Matrix
                 </h2>
@@ -850,8 +850,8 @@ const UserManagement = () => {
                   <div key={role.value} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                     <div className={`bg-${role.color}-50 px-4 py-3 border-b border-${role.color}-100`}>
                       <div className="flex items-center justify-between">
-                        <h3 className={`font-bold text-${role.color}-900`}>{role.label}</h3>
-                        <span className={`px-3 py-1 bg-${role.color}-100 text-${role.color}-800 rounded-full text-sm font-bold`}>
+                        <h3 className={`font-medium text-${role.color}-900`}>{role.label}</h3>
+                        <span className={`px-3 py-1 bg-${role.color}-100 text-${role.color}-800 rounded-full text-sm font-medium`}>
                           {roleUsers.length}
                         </span>
                       </div>
@@ -862,7 +862,7 @@ const UserManagement = () => {
                           {roleUsers.map(user => (
                             <div key={user.id} className="flex items-center justify-between p-2 bg-gray-50 rounded hover:bg-gray-100">
                               <div className="flex items-center gap-3 flex-1 min-w-0">
-                                <div className="w-8 h-8 bg-blue-400 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                                <div className="w-8 h-8 bg-blue-400 rounded-full flex items-center justify-center text-white text-xs font-medium flex-shrink-0">
                                   {user.firstName[0]}{user.lastName[0]}
                                 </div>
                                 <div className="min-w-0 flex-1">
@@ -899,7 +899,7 @@ const UserManagement = () => {
         {viewMode === 'logs' && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <div className="bg-green-600 px-6 py-4">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <h2 className="text-xl font-medium text-white flex items-center gap-2">
                 <Activity size={24} />
                 Activity Log
               </h2>
@@ -980,7 +980,7 @@ const UserManagement = () => {
                                 </div>
                               </div>
                               <div className="text-right flex-shrink-0 min-w-fit">
-                                <p className="text-xs font-bold text-gray-700 bg-gray-200 px-2 py-1 rounded">
+                                <p className="text-xs font-medium text-gray-700 bg-gray-200 px-2 py-1 rounded">
                                   {log.userRole}
                                 </p>
                                 <p className="text-xs text-gray-600 mt-2">
@@ -1003,7 +1003,7 @@ const UserManagement = () => {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <div className="bg-blue-600 px-6 py-4 rounded-t-xl flex justify-between items-center sticky top-0">
-                <h3 className="text-xl font-bold text-white">
+                <h3 className="text-xl font-medium text-white">
                   {editingUser ? 'Edit User' : 'Add New User'}
                 </h3>
                 <button onClick={() => setShowModal(false)} className="text-white hover:bg-blue-800 rounded-lg p-1">

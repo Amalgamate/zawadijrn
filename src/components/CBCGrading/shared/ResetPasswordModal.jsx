@@ -63,7 +63,7 @@ const ResetPasswordModal = ({ isOpen, onClose, user, onResetSuccess }) => {
                 <div className="bg-brand-teal px-6 py-4 flex justify-between items-center">
                     <div className="flex items-center gap-2 text-white">
                         <Lock size={20} />
-                        <h3 className="text-lg font-bold">Issue New Password</h3>
+                        <h3 className="text-lg font-medium">Issue New Password</h3>
                     </div>
                     <button onClick={onClose} className="text-white/80 hover:text-white transition p-1 hover:bg-white/10 rounded-lg">
                         <X size={24} />
@@ -77,7 +77,7 @@ const ResetPasswordModal = ({ isOpen, onClose, user, onResetSuccess }) => {
                                 <Check size={48} className="animate-bounce" />
                             </div>
                             <div className="text-center space-y-2">
-                                <h4 className="text-xl font-bold text-gray-900">Password Reset Successfully!</h4>
+                                <h4 className="text-xl font-medium text-gray-900">Password Reset Successfully!</h4>
                                 <p className="text-sm text-gray-500">Credentials have been sent to {user.firstName}.</p>
                             </div>
                         </div>
@@ -85,11 +85,11 @@ const ResetPasswordModal = ({ isOpen, onClose, user, onResetSuccess }) => {
                         <>
                             {/* User Info */}
                             <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
-                                <div className="w-12 h-12 bg-brand-teal text-white rounded-full flex items-center justify-center font-bold text-lg shadow-sm">
+                                <div className="w-12 h-12 bg-brand-teal text-white rounded-full flex items-center justify-center font-medium text-lg shadow-sm">
                                     {user.firstName[0]}{user.lastName[0]}
                                 </div>
                                 <div>
-                                    <p className="font-bold text-gray-900">{user.firstName} {user.lastName}</p>
+                                    <p className="font-medium text-gray-900">{user.firstName} {user.lastName}</p>
                                     <p className="text-xs text-gray-500">{user.email}</p>
                                     {user.phone && <p className="text-[10px] text-brand-teal font-medium mt-0.5">{user.phone}</p>}
                                 </div>
@@ -98,7 +98,7 @@ const ResetPasswordModal = ({ isOpen, onClose, user, onResetSuccess }) => {
                             {/* Password Input */}
                             <div className="space-y-2">
                                 <div className="flex justify-between items-center">
-                                    <label className="text-sm font-bold text-gray-700">New Password</label>
+                                    <label className="text-sm font-medium text-gray-700">New Password</label>
                                     <button
                                         onClick={generatePassword}
                                         className="text-xs text-brand-teal font-medium hover:underline"
@@ -127,7 +127,7 @@ const ResetPasswordModal = ({ isOpen, onClose, user, onResetSuccess }) => {
 
                             {/* Notifications */}
                             <div className="space-y-3">
-                                <h4 className="text-sm font-bold text-gray-700">Send New Credentials Via:</h4>
+                                <h4 className="text-sm font-medium text-gray-700">Send New Credentials Via:</h4>
                                 <div className="grid grid-cols-2 gap-3">
                                     <button
                                         onClick={() => setSendWhatsApp(!sendWhatsApp)}
@@ -139,7 +139,7 @@ const ResetPasswordModal = ({ isOpen, onClose, user, onResetSuccess }) => {
                                     >
                                         <div className="flex items-center gap-2">
                                             <MessageCircle size={18} />
-                                            <span className="text-sm font-bold">WhatsApp</span>
+                                            <span className="text-sm font-medium">WhatsApp</span>
                                         </div>
                                         {sendWhatsApp && <div className="w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center text-white"><Check size={10} /></div>}
                                     </button>
@@ -154,7 +154,7 @@ const ResetPasswordModal = ({ isOpen, onClose, user, onResetSuccess }) => {
                                     >
                                         <div className="flex items-center gap-2">
                                             <Send size={18} />
-                                            <span className="text-sm font-bold">SMS</span>
+                                            <span className="text-sm font-medium">SMS</span>
                                         </div>
                                         {sendSms && <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center text-white"><Check size={10} /></div>}
                                     </button>
@@ -166,7 +166,7 @@ const ResetPasswordModal = ({ isOpen, onClose, user, onResetSuccess }) => {
                             <div className="flex gap-3 pt-2">
                                 <button
                                     onClick={onClose}
-                                    className="flex-1 px-6 py-3 border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 font-bold transition shadow-sm"
+                                    className="flex-1 px-6 py-3 border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 font-medium transition shadow-sm"
                                     disabled={loading}
                                 >
                                     Cancel
@@ -174,7 +174,7 @@ const ResetPasswordModal = ({ isOpen, onClose, user, onResetSuccess }) => {
                                 <button
                                     onClick={handleReset}
                                     disabled={loading || !newPassword}
-                                    className="flex-1 bg-brand-teal text-white px-6 py-3 rounded-xl hover:bg-brand-teal/90 font-bold transition shadow-md flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="flex-1 bg-brand-teal text-white px-6 py-3 rounded-xl hover:bg-brand-teal/90 font-medium transition shadow-md flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {loading ? (
                                         <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>

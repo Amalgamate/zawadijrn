@@ -224,7 +224,7 @@ const StudentStatementsPage = () => {
             <div className="relative">
               <button
                 onClick={() => setShowGlobalFilters(!showGlobalFilters)}
-                className={`px-5 py-2.5 border rounded-xl font-bold flex items-center gap-2 transition-all ${activeFilterCount > 0 ? 'bg-blue-50 border-blue-200 text-blue-700' : 'hover:bg-gray-50 text-gray-700 bg-white shadow-sm'}`}
+                className={`px-5 py-2.5 border rounded-xl font-medium flex items-center gap-2 transition-all ${activeFilterCount > 0 ? 'bg-blue-50 border-blue-200 text-blue-700' : 'hover:bg-gray-50 text-gray-700 bg-white shadow-sm'}`}
               >
                 <Filter size={18} className={activeFilterCount > 0 ? "text-blue-600" : "text-gray-500"} />
                 Filters
@@ -239,11 +239,11 @@ const StudentStatementsPage = () => {
               {showGlobalFilters && (
                 <div className="absolute right-0 top-full mt-2 w-[320px] bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden animate-fade-in origin-top-right">
                   <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-                    <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                    <h3 className="font-medium text-gray-800 flex items-center gap-2">
                       <Filter size={16} className="text-blue-600" /> Learner Filters
                     </h3>
                     {activeFilterCount > 0 && (
-                      <button onClick={clearAllFilters} className="text-[11px] font-bold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-md transition-colors">
+                      <button onClick={clearAllFilters} className="text-[11px] font-medium text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-md transition-colors">
                         Clear All
                       </button>
                     )}
@@ -251,7 +251,7 @@ const StudentStatementsPage = () => {
 
                   <div className="p-5 space-y-5 max-h-[60vh] overflow-y-auto custom-scrollbar">
                     <div>
-                      <h4 className="text-[11px] font-extrabold text-blue-500 uppercase tracking-widest mb-3">Academic Context</h4>
+                      <h4 className="text-[11px] font-semibold text-blue-500 uppercase tracking-widest mb-3">Academic Context</h4>
                       <div className="flex flex-col gap-1.5">
                         <label className="text-xs font-semibold text-gray-600">Grade Level</label>
                         <select value={filterGrade} onChange={(e) => setFilterGrade(e.target.value)} className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm w-full outline-blue-500">
@@ -263,7 +263,7 @@ const StudentStatementsPage = () => {
                   </div>
 
                   <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end">
-                    <button onClick={() => setShowGlobalFilters(false)} className="px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm">
+                    <button onClick={() => setShowGlobalFilters(false)} className="px-5 py-2 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm">
                       Apply & Close
                     </button>
                   </div>
@@ -284,10 +284,10 @@ const StudentStatementsPage = () => {
               <table className="w-full border-collapse">
                 <thead className="border-b border-[color:var(--table-border)]">
                   <tr>
-                    <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Student</th>
-                    <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Grade</th>
-                    <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Admission No.</th>
-                    <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Actions</th>
+                    <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Student</th>
+                    <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Grade</th>
+                    <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Admission No.</th>
+                    <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -392,7 +392,7 @@ const StudentStatementsPage = () => {
                   <img src={schoolInfo?.logoUrl || '/logo-new.png'} alt="School Logo" className="max-w-full max-h-full object-contain" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-black text-blue-900 uppercase tracking-tight">{schoolInfo?.name}</h1>
+                  <h1 className="text-3xl font-semibold text-blue-900 uppercase tracking-tight">{schoolInfo?.name}</h1>
                   {schoolInfo?.motto && <p className="text-blue-600 italic text-sm font-medium mt-1">"{schoolInfo.motto}"</p>}
                   <div className="mt-4 space-y-1 text-xs text-gray-500 font-semibold uppercase tracking-wider">
                     {schoolInfo?.address && <div className="flex items-center gap-2"><MapPin size={14} className="text-blue-500" /> {schoolInfo.address}</div>}
@@ -406,13 +406,13 @@ const StudentStatementsPage = () => {
               </div>
               <div className="text-right">
                 <div className="bg-blue-900 text-white px-4 py-2 rounded-lg inline-block mb-3">
-                  <h2 className="text-lg font-black uppercase tracking-widest">Fee Statement</h2>
+                  <h2 className="text-lg font-semibold uppercase tracking-widest">Fee Statement</h2>
                 </div>
                 <div className="space-y-0.5">
-                  <p className="text-[10px] text-gray-400 font-bold uppercase">Academic Year</p>
-                  <p className="font-black text-gray-800 text-sm tracking-tighter">{new Date().getFullYear()}</p>
-                  <p className="text-[10px] text-gray-400 font-bold uppercase mt-2">Statement Date</p>
-                  <p className="font-black text-gray-800 text-sm tracking-tighter">{new Date().toLocaleDateString()}</p>
+                  <p className="text-[10px] text-gray-400 font-medium uppercase">Academic Year</p>
+                  <p className="font-semibold text-gray-800 text-sm tracking-tighter">{new Date().getFullYear()}</p>
+                  <p className="text-[10px] text-gray-400 font-medium uppercase mt-2">Statement Date</p>
+                  <p className="font-semibold text-gray-800 text-sm tracking-tighter">{new Date().toLocaleDateString()}</p>
                 </div>
               </div>
             </div>
@@ -462,34 +462,34 @@ const StudentStatementsPage = () => {
             {/* Summary Cards with Premium Styling */}
             <div className="grid grid-cols-3 gap-6 mb-8">
               <div className="bg-gray-50 border-t-4 border-blue-600 rounded-xl p-4 shadow-sm">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 text-center">Total Invoiced</p>
-                <p className="text-2xl font-black text-blue-900 text-center">
-                  <span className="text-xs font-bold mr-1 italic text-blue-400">KES</span>
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1 text-center">Total Invoiced</p>
+                <p className="text-2xl font-semibold text-blue-900 text-center">
+                  <span className="text-xs font-medium mr-1 italic text-blue-400">KES</span>
                   {calculateTotals().totalAmount.toLocaleString()}
                 </p>
               </div>
               <div className="bg-gray-50 border-t-4 border-emerald-500 rounded-xl p-4 shadow-sm">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 text-center">Total Payments</p>
-                <p className="text-2xl font-black text-emerald-600 text-center">
-                  <span className="text-xs font-bold mr-1 italic text-emerald-400">KES</span>
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1 text-center">Total Payments</p>
+                <p className="text-2xl font-semibold text-emerald-600 text-center">
+                  <span className="text-xs font-medium mr-1 italic text-emerald-400">KES</span>
                   {calculateTotals().totalPaid.toLocaleString()}
                 </p>
               </div>
               <div className="bg-gray-50 border-t-4 border-rose-500 rounded-xl p-4 shadow-sm">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 text-center">Outstanding Balance</p>
-                <p className="text-2xl font-black text-rose-600 text-center">
-                  <span className="text-xs font-bold mr-1 italic text-rose-400">KES</span>
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1 text-center">Outstanding Balance</p>
+                <p className="text-2xl font-semibold text-rose-600 text-center">
+                  <span className="text-xs font-medium mr-1 italic text-rose-400">KES</span>
                   {calculateTotals().totalBalance.toLocaleString()}
                 </p>
                 {calculateTotals().totalBalance > 0 && (
-                  <p className="text-[9px] text-center text-rose-500 font-black uppercase mt-1">Payment Required</p>
+                  <p className="text-[9px] text-center text-rose-500 font-semibold uppercase mt-1">Payment Required</p>
                 )}
               </div>
             </div>
 
             {/* Invoices Table with Refined Styling */}
             <div className="mb-8">
-              <h3 className="text-xs font-black text-blue-900 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+              <h3 className="text-xs font-semibold text-blue-900 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
                 <div className="w-1.5 h-4 bg-blue-600 rounded-full"></div>
                 Fee Invoices Breakdown
               </h3>
@@ -497,35 +497,35 @@ const StudentStatementsPage = () => {
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-100">
-                      <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100">Inv #</th>
-                      <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100">Fee Type</th>
-                      <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100 text-center">Term</th>
-                      <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100 text-right">Amount</th>
-                      <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100 text-right">Paid</th>
-                      <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100 text-right">Balance</th>
-                      <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100 text-center">Status</th>
+                      <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100">Inv #</th>
+                      <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100">Fee Type</th>
+                      <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100 text-center">Term</th>
+                      <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100 text-right">Amount</th>
+                      <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100 text-right">Paid</th>
+                      <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100 text-right">Balance</th>
+                      <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100 text-center">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
                     {invoices.map((invoice, idx) => (
                       <tr key={invoice.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}>
                         <td className="px-3 py-1.5 border-r border-gray-100">
-                          <div className="text-xs font-black text-gray-900">{invoice.invoiceNumber}</div>
+                          <div className="text-xs font-semibold text-gray-900">{invoice.invoiceNumber}</div>
                           {invoice.etimsControlCode && (
-                            <div className="text-[9px] text-emerald-600 font-bold uppercase tracking-tighter mt-0.5 flex items-center gap-1">
+                            <div className="text-[9px] text-emerald-600 font-medium uppercase tracking-tighter mt-0.5 flex items-center gap-1">
                               <RefreshCw size={8} className="animate-spin-slow" /> eTIMS: {invoice.etimsControlCode}
                             </div>
                           )}
                         </td>
                         <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-medium text-gray-700">{invoice.feeStructure?.name}</td>
-                        <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-bold text-gray-500 text-center uppercase tracking-tighter">{invoice.feeStructure?.term}</td>
-                        <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-black text-gray-900 text-right">
+                        <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-medium text-gray-500 text-center uppercase tracking-tighter">{invoice.feeStructure?.term}</td>
+                        <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-semibold text-gray-900 text-right">
                           {Number(invoice.totalAmount).toLocaleString()}
                         </td>
-                        <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-black text-emerald-600 text-right">
+                        <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-semibold text-emerald-600 text-right">
                           {Number(invoice.paidAmount).toLocaleString()}
                         </td>
-                        <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-black text-rose-600 text-right bg-rose-50/20">
+                        <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-semibold text-rose-600 text-right bg-rose-50/20">
                           {Number(invoice.balance).toLocaleString()}
                         </td>
                         <td className="px-3 py-1.5 border-r border-gray-100 text-center">{getStatusBadge(invoice.status)}</td>
@@ -538,7 +538,7 @@ const StudentStatementsPage = () => {
 
             {/* Payment History Section */}
             <div>
-              <h3 className="text-xs font-black text-blue-900 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+              <h3 className="text-xs font-semibold text-blue-900 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
                 <div className="w-1.5 h-4 bg-emerald-500 rounded-full"></div>
                 Transaction Record
               </h3>
@@ -551,25 +551,25 @@ const StudentStatementsPage = () => {
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
                       <tr className="bg-gray-50 border-b border-gray-100">
-                        <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100">Date</th>
-                        <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100">Invoice</th>
-                        <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100 text-right">Amount</th>
-                        <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100 text-center">Method</th>
-                        <th className="px-3 py-1.5 text-left text-[11px] font-bold text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100">Reference No.</th>
+                        <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100">Date</th>
+                        <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100">Invoice</th>
+                        <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100 text-right">Amount</th>
+                        <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100 text-center">Method</th>
+                        <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase tracking-wider border-r border-gray-100">Reference No.</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
                       {payments.map((payment, idx) => (
                         <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}>
-                          <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-bold text-gray-600">
+                          <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-medium text-gray-600">
                             {new Date(payment.paymentDate).toLocaleDateString()}
                           </td>
-                          <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-black text-gray-800">{payment.invoiceNumber}</td>
-                          <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-black text-emerald-600 text-right bg-emerald-50/10">
+                          <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-semibold text-gray-800">{payment.invoiceNumber}</td>
+                          <td className="px-3 py-1.5 border-r border-gray-100 text-xs font-semibold text-emerald-600 text-right bg-emerald-50/10">
                             {Number(payment.amount).toLocaleString()}
                           </td>
                           <td className="px-3 py-1.5 border-r border-gray-100 text-center">
-                             <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 text-[10px] font-black uppercase tracking-tighter">
+                             <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 text-[10px] font-semibold uppercase tracking-tighter">
                                {payment.paymentMethod}
                              </span>
                           </td>

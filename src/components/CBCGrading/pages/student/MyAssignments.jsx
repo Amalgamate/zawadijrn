@@ -50,7 +50,7 @@ const MyAssignments = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-xl font-black text-gray-900 flex items-center gap-2">
+        <h1 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
           <ClipboardList size={22} className="text-purple-600" /> My Assignments
         </h1>
         <p className="text-sm text-gray-500 mt-0.5">{assignments.length} total assignment{assignments.length !== 1 ? 's' : ''} across your courses</p>
@@ -66,11 +66,11 @@ const MyAssignments = () => {
               <button
                 key={t.id}
                 onClick={() => setTab(t.id)}
-                className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-xs font-black uppercase tracking-wider transition-colors border-b-2 ${active ? 'border-purple-600 text-purple-700 bg-purple-50/50' : 'border-transparent text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}
+                className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-xs font-semibold uppercase tracking-wider transition-colors border-b-2 ${active ? 'border-purple-600 text-purple-700 bg-purple-50/50' : 'border-transparent text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}
               >
                 <Icon size={14} /> {t.label}
                 {counts[t.id] > 0 && (
-                  <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-black ${active ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                  <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-semibold ${active ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
                     {counts[t.id]}
                   </span>
                 )}
@@ -85,7 +85,7 @@ const MyAssignments = () => {
         ) : filtered.length === 0 ? (
           <div className="p-10 text-center">
             <ClipboardList size={36} className="mx-auto text-gray-300 mb-3" />
-            <p className="text-sm font-bold text-gray-500">
+            <p className="text-sm font-medium text-gray-500">
               {tab === 'active' ? 'No active assignments right now.' : tab === 'submitted' ? 'No submitted assignments awaiting grading.' : 'No graded assignments yet.'}
             </p>
           </div>
@@ -106,7 +106,7 @@ const MyAssignments = () => {
                 {filtered.map(a => (
                   <tr key={a.id} className="hover:bg-purple-50/20 transition-colors">
                     <td className="px-5 py-4">
-                      <p className="text-sm font-bold text-gray-800">{a.title}</p>
+                      <p className="text-sm font-medium text-gray-800">{a.title}</p>
                       {a.description && <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{a.description}</p>}
                     </td>
                     <td className="px-5 py-4">
@@ -115,31 +115,31 @@ const MyAssignments = () => {
                     </td>
                     <td className="px-5 py-4">
                       {a.dueDate ? (
-                        <span className={`text-xs font-bold flex items-center gap-1 ${isOverdue(a) ? 'text-red-500' : 'text-gray-600'}`}>
+                        <span className={`text-xs font-medium flex items-center gap-1 ${isOverdue(a) ? 'text-red-500' : 'text-gray-600'}`}>
                           <Calendar size={11} />
                           {new Date(a.dueDate).toLocaleDateString('en-KE', { month: 'short', day: 'numeric' })}
-                          {isOverdue(a) && <span className="ml-1 text-[9px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-black uppercase">Overdue</span>}
+                          {isOverdue(a) && <span className="ml-1 text-[9px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-semibold uppercase">Overdue</span>}
                         </span>
                       ) : <span className="text-xs text-gray-400">No deadline</span>}
                     </td>
                     <td className="px-5 py-4">
                       {tab === 'graded' && a.submission?.grade !== null ? (
-                        <span className="text-sm font-black text-purple-700">{a.submission.grade}/{a.totalPoints}</span>
+                        <span className="text-sm font-semibold text-purple-700">{a.submission.grade}/{a.totalPoints}</span>
                       ) : (
-                        <span className="text-sm font-bold text-gray-600">{a.totalPoints} pts</span>
+                        <span className="text-sm font-medium text-gray-600">{a.totalPoints} pts</span>
                       )}
                     </td>
                     <td className="px-5 py-4">
                       {!a.submission ? (
-                        <span className={`text-[10px] font-black px-2 py-1 rounded-full uppercase tracking-wider ${isOverdue(a) ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
+                        <span className={`text-[10px] font-semibold px-2 py-1 rounded-full uppercase tracking-wider ${isOverdue(a) ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
                           {isOverdue(a) ? 'Overdue' : 'Pending'}
                         </span>
                       ) : a.submission.grade !== null && a.submission.grade !== undefined ? (
-                        <span className="text-[10px] font-black px-2 py-1 rounded-full uppercase tracking-wider bg-emerald-100 text-emerald-700 flex items-center gap-1 w-fit">
+                        <span className="text-[10px] font-semibold px-2 py-1 rounded-full uppercase tracking-wider bg-emerald-100 text-emerald-700 flex items-center gap-1 w-fit">
                           <CheckCircle size={10} /> Graded
                         </span>
                       ) : (
-                        <span className="text-[10px] font-black px-2 py-1 rounded-full uppercase tracking-wider bg-amber-100 text-amber-700 w-fit block">
+                        <span className="text-[10px] font-semibold px-2 py-1 rounded-full uppercase tracking-wider bg-amber-100 text-amber-700 w-fit block">
                           Awaiting Grade
                         </span>
                       )}
@@ -148,7 +148,7 @@ const MyAssignments = () => {
                       {!a.submission && (
                         <button
                           onClick={() => setSubmitting(a)}
-                          className="px-3 py-1.5 bg-purple-600 text-white text-xs font-black rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-1"
+                          className="px-3 py-1.5 bg-purple-600 text-white text-xs font-semibold rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-1"
                         >
                           <Send size={11} /> Submit
                         </button>

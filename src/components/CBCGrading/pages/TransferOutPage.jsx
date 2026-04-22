@@ -96,7 +96,7 @@ const TransferOutPage = ({ learners = [], onTransferOut, showNotification }) => 
           <div className="mb-6">
             <div className="flex items-center gap-3 mb-2">
               <AlertCircle className="text-brand-purple" size={24} />
-              <h3 className="text-xl font-bold text-brand-purple">Transfer Information</h3>
+              <h3 className="text-xl font-medium text-brand-purple">Transfer Information</h3>
             </div>
             <p className="text-gray-600 text-sm">
               Complete all required fields to process the transfer
@@ -215,7 +215,7 @@ const TransferOutPage = ({ learners = [], onTransferOut, showNotification }) => 
             <div className="border-t pt-6 flex items-center gap-4">
               <button
                 type="submit"
-                className="flex items-center gap-2 px-6 py-3 bg-brand-purple text-white rounded-lg hover:opacity-90 transition font-bold"
+                className="flex items-center gap-2 px-6 py-3 bg-brand-purple text-white rounded-lg hover:opacity-90 transition font-medium"
               >
                 <CheckCircle size={20} />
                 Process Transfer
@@ -229,7 +229,7 @@ const TransferOutPage = ({ learners = [], onTransferOut, showNotification }) => 
               </button>
               <button
                 type="button"
-                className="flex items-center gap-2 px-6 py-3 bg-brand-teal text-white rounded-lg hover:bg-brand-teal/90 transition font-bold ml-auto"
+                className="flex items-center gap-2 px-6 py-3 bg-brand-teal text-white rounded-lg hover:bg-brand-teal/90 transition font-medium ml-auto"
               >
                 <FileText size={20} />
                 Generate Transfer Documents

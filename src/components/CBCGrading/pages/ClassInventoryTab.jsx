@@ -133,7 +133,7 @@ const ClassInventoryTab = ({ classData, onRefresh }) => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h3 className="text-lg font-bold">Class Inventory</h3>
+          <h3 className="text-lg font-medium">Class Inventory</h3>
           <p className="text-sm text-gray-500 mt-1">{filteredItems.length} items in class</p>
         </div>
         <Button
@@ -149,7 +149,7 @@ const ClassInventoryTab = ({ classData, onRefresh }) => {
       {/* Filters */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
-          <label className="text-xs font-bold text-gray-600 uppercase">Filter by Category</label>
+          <label className="text-xs font-medium text-gray-600 uppercase">Filter by Category</label>
           <select
             value={filterCategory}
             onChange={(e) => setFilterCategory(e.target.value)}
@@ -163,7 +163,7 @@ const ClassInventoryTab = ({ classData, onRefresh }) => {
         </div>
 
         <div>
-          <label className="text-xs font-bold text-gray-600 uppercase">Filter by Condition</label>
+          <label className="text-xs font-medium text-gray-600 uppercase">Filter by Condition</label>
           <select
             value={filterCondition}
             onChange={(e) => setFilterCondition(e.target.value)}
@@ -188,8 +188,8 @@ const ClassInventoryTab = ({ classData, onRefresh }) => {
                   <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-center">
                     {/* Item Name */}
                     <div>
-                      <p className="text-xs font-bold text-gray-600 uppercase">Item</p>
-                      <p className="font-bold text-gray-900 mt-1">{item.name}</p>
+                      <p className="text-xs font-medium text-gray-600 uppercase">Item</p>
+                      <p className="font-medium text-gray-900 mt-1">{item.name}</p>
                       {item.description && (
                         <p className="text-xs text-gray-500 mt-1">{item.description}</p>
                       )}
@@ -197,27 +197,27 @@ const ClassInventoryTab = ({ classData, onRefresh }) => {
 
                     {/* Category */}
                     <div>
-                      <p className="text-xs font-bold text-gray-600 uppercase">Category</p>
-                      <p className="font-bold text-gray-900 mt-1">{item.category}</p>
+                      <p className="text-xs font-medium text-gray-600 uppercase">Category</p>
+                      <p className="font-medium text-gray-900 mt-1">{item.category}</p>
                     </div>
 
                     {/* Quantity */}
                     <div>
-                      <p className="text-xs font-bold text-gray-600 uppercase">Quantity</p>
-                      <p className="font-bold text-blue-600 mt-1 text-lg">{item.quantity}</p>
+                      <p className="text-xs font-medium text-gray-600 uppercase">Quantity</p>
+                      <p className="font-medium text-blue-600 mt-1 text-lg">{item.quantity}</p>
                     </div>
 
                     {/* Condition */}
                     <div>
-                      <p className="text-xs font-bold text-gray-600 uppercase">Condition</p>
-                      <span className={`text-xs font-bold px-3 py-1 rounded mt-1 inline-block ${colors.bg} ${colors.text}`}>
+                      <p className="text-xs font-medium text-gray-600 uppercase">Condition</p>
+                      <span className={`text-xs font-medium px-3 py-1 rounded mt-1 inline-block ${colors.bg} ${colors.text}`}>
                         {CONDITIONS.find(c => c.value === item.condition)?.label}
                       </span>
                     </div>
 
                     {/* Cost & Location */}
                     <div>
-                      <p className="text-xs font-bold text-gray-600 uppercase">Details</p>
+                      <p className="text-xs font-medium text-gray-600 uppercase">Details</p>
                       <p className="text-sm mt-1">
                         {item.cost && <span className="block">Cost: ${item.cost.toFixed(2)}</span>}
                         {item.location && <span className="block text-xs text-gray-600">{item.location}</span>}
@@ -268,7 +268,7 @@ const ClassInventoryTab = ({ classData, onRefresh }) => {
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Name */}
               <div>
-                <label className="text-xs font-bold text-gray-600 uppercase">Item Name *</label>
+                <label className="text-xs font-medium text-gray-600 uppercase">Item Name *</label>
                 <input
                   type="text"
                   value={formData.name}
@@ -281,7 +281,7 @@ const ClassInventoryTab = ({ classData, onRefresh }) => {
 
               {/* Category */}
               <div>
-                <label className="text-xs font-bold text-gray-600 uppercase">Category *</label>
+                <label className="text-xs font-medium text-gray-600 uppercase">Category *</label>
                 <select
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
@@ -297,7 +297,7 @@ const ClassInventoryTab = ({ classData, onRefresh }) => {
 
               {/* Quantity */}
               <div>
-                <label className="text-xs font-bold text-gray-600 uppercase">Quantity *</label>
+                <label className="text-xs font-medium text-gray-600 uppercase">Quantity *</label>
                 <input
                   type="number"
                   value={formData.quantity}
@@ -310,7 +310,7 @@ const ClassInventoryTab = ({ classData, onRefresh }) => {
 
               {/* Condition */}
               <div>
-                <label className="text-xs font-bold text-gray-600 uppercase">Condition</label>
+                <label className="text-xs font-medium text-gray-600 uppercase">Condition</label>
                 <select
                   value={formData.condition}
                   onChange={(e) => setFormData({ ...formData, condition: e.target.value })}
@@ -324,7 +324,7 @@ const ClassInventoryTab = ({ classData, onRefresh }) => {
 
               {/* Cost */}
               <div>
-                <label className="text-xs font-bold text-gray-600 uppercase">Cost ($)</label>
+                <label className="text-xs font-medium text-gray-600 uppercase">Cost ($)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -337,7 +337,7 @@ const ClassInventoryTab = ({ classData, onRefresh }) => {
 
               {/* Location */}
               <div>
-                <label className="text-xs font-bold text-gray-600 uppercase">Location</label>
+                <label className="text-xs font-medium text-gray-600 uppercase">Location</label>
                 <input
                   type="text"
                   value={formData.location}
@@ -349,7 +349,7 @@ const ClassInventoryTab = ({ classData, onRefresh }) => {
 
               {/* Acquisition Date */}
               <div>
-                <label className="text-xs font-bold text-gray-600 uppercase">Acquisition Date</label>
+                <label className="text-xs font-medium text-gray-600 uppercase">Acquisition Date</label>
                 <input
                   type="date"
                   value={toInputDate(formData.acquisitionDate)}
@@ -360,7 +360,7 @@ const ClassInventoryTab = ({ classData, onRefresh }) => {
 
               {/* Description */}
               <div>
-                <label className="text-xs font-bold text-gray-600 uppercase">Description</label>
+                <label className="text-xs font-medium text-gray-600 uppercase">Description</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}

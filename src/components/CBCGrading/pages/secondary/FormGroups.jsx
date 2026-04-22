@@ -71,7 +71,7 @@ const FormGroups = () => {
     <div className="p-6 space-y-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-black text-gray-900">Grade Streams</h1>
+          <h1 className="text-2xl font-semibold text-gray-900">Grade Streams</h1>
           <p className="mt-1 text-sm font-medium text-gray-600">
             Senior School classes grouped by grade (Grade 10–12).
           </p>
@@ -80,7 +80,7 @@ const FormGroups = () => {
           <button
             type="button"
             onClick={seed}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-indigo-600 text-white text-xs font-black uppercase tracking-widest shadow hover:bg-indigo-700"
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold uppercase tracking-widest shadow hover:bg-indigo-700"
           >
             <Plus size={16} />
             Seed Classes
@@ -88,7 +88,7 @@ const FormGroups = () => {
           <button
             type="button"
             onClick={load}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border bg-white text-xs font-black text-gray-700 hover:bg-gray-50"
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border bg-white text-xs font-semibold text-gray-700 hover:bg-gray-50"
           >
             <RefreshCw size={16} />
             Refresh
@@ -99,25 +99,25 @@ const FormGroups = () => {
       {loading ? (
         <div className="rounded-2xl border bg-white p-6 text-sm font-medium text-gray-600">Loading…</div>
       ) : error ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm font-bold text-red-700">{error}</div>
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm font-medium text-red-700">{error}</div>
       ) : (
         <div className="space-y-4">
           {byGrade.map(([g, list]) => (
             <div key={g} className="rounded-2xl border bg-white overflow-hidden">
               <div className="px-4 py-3 bg-gray-50 border-b flex items-center justify-between">
-                <div className="text-sm font-black text-gray-900">{gradeLabel(g)}</div>
-                <div className="text-xs font-bold text-gray-600">{list.length} classes</div>
+                <div className="text-sm font-semibold text-gray-900">{gradeLabel(g)}</div>
+                <div className="text-xs font-medium text-gray-600">{list.length} classes</div>
               </div>
               <div className="divide-y">
                 {list.map((c) => (
                   <div key={c.id} className="px-4 py-3 flex items-center justify-between gap-3">
                     <div>
-                      <div className="font-black text-gray-900">{c.name}</div>
-                      <div className="mt-1 text-xs font-bold text-gray-600">
+                      <div className="font-semibold text-gray-900">{c.name}</div>
+                      <div className="mt-1 text-xs font-medium text-gray-600">
                         Stream: {c.stream || '—'}
                       </div>
                     </div>
-                    <div className="text-xs font-bold text-gray-500">{c.code || ''}</div>
+                    <div className="text-xs font-medium text-gray-500">{c.code || ''}</div>
                   </div>
                 ))}
                 {list.length === 0 && (
@@ -131,7 +131,7 @@ const FormGroups = () => {
 
           {byGrade.length === 0 && (
             <div className="rounded-2xl border bg-white p-10 text-center text-sm font-medium text-gray-600">
-              No Senior School classes found yet. Click <span className="font-black">Seed Classes</span>.
+              No Senior School classes found yet. Click <span className="font-semibold">Seed Classes</span>.
             </div>
           )}
         </div>

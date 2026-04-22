@@ -151,7 +151,7 @@ const CourseManager = () => {
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-1.5 flex-wrap">
-                        <h3 className="font-bold text-gray-800 text-base">{course.title}</h3>
+                        <h3 className="font-medium text-gray-800 text-base">{course.title}</h3>
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${statusColors[course.status] || statusColors.DRAFT}`}>
                           {course.status}
                         </span>
@@ -203,7 +203,7 @@ const CourseManager = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <h2 className="text-lg font-bold text-gray-800">{editing ? 'Edit Course' : 'Create New Course'}</h2>
+              <h2 className="text-lg font-medium text-gray-800">{editing ? 'Edit Course' : 'Create New Course'}</h2>
               <button onClick={() => setModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
             </div>
             <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">

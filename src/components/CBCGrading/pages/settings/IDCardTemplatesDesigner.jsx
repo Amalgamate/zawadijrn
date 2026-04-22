@@ -158,8 +158,8 @@ const IDCardTemplatesDesigner = () => {
     return (
       <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-3 relative group">
         <div className="flex items-center justify-between">
-          <h4 className="font-bold text-gray-800 text-sm">{label}</h4>
-          <label className="flex items-center gap-2 text-xs font-bold text-gray-500 cursor-pointer">
+          <h4 className="font-medium text-gray-800 text-sm">{label}</h4>
+          <label className="flex items-center gap-2 text-xs font-medium text-gray-500 cursor-pointer">
             <input 
               type="checkbox" 
               checked={config.show} 
@@ -215,7 +215,7 @@ const IDCardTemplatesDesigner = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-               <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+               <h2 className="text-xl font-medium text-gray-800 flex items-center gap-2">
                  <LayoutTemplate className="text-brand-purple" />
                  ID Card Template Designer
                </h2>
@@ -223,7 +223,7 @@ const IDCardTemplatesDesigner = () => {
             </div>
             <button 
               onClick={handleCreateNew}
-              className="flex items-center gap-2 px-4 py-2 bg-brand-purple/10 text-brand-purple font-bold text-sm rounded-lg hover:bg-brand-purple/20 transition"
+              className="flex items-center gap-2 px-4 py-2 bg-brand-purple/10 text-brand-purple font-medium text-sm rounded-lg hover:bg-brand-purple/20 transition"
             >
               <Plus size={16} /> New Template
             </button>
@@ -233,7 +233,7 @@ const IDCardTemplatesDesigner = () => {
       <div className="flex flex-col xl:flex-row gap-6">
          {/* Sidebar: Template List */}
          <div className="xl:w-1/4 bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-            <h3 className="font-bold text-gray-800 mb-4 px-2">Saved Templates</h3>
+            <h3 className="font-medium text-gray-800 mb-4 px-2">Saved Templates</h3>
             <div className="space-y-2">
               {templates.length === 0 ? (
                 <p className="text-sm text-gray-400 italic px-2">No templates yet. Create one.</p>
@@ -242,7 +242,7 @@ const IDCardTemplatesDesigner = () => {
                   <div 
                     key={t.id} 
                     onClick={() => handleSelectTemplate(t)}
-                    className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition border ${selectedTemplate === t.id ? 'bg-brand-purple/5 border-brand-purple/30 text-brand-purple font-bold' : 'border-transparent hover:bg-gray-50 text-gray-700'}`}
+                    className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition border ${selectedTemplate === t.id ? 'bg-brand-purple/5 border-brand-purple/30 text-brand-purple font-medium' : 'border-transparent hover:bg-gray-50 text-gray-700'}`}
                   >
                     <div className="flex items-center gap-2">
                        {t.isActive ? <CheckCircle size={14} className="text-brand-teal" /> : <div className="w-3.5" />}
@@ -270,10 +270,10 @@ const IDCardTemplatesDesigner = () => {
                       type="text" 
                       value={draft.templateName}
                       onChange={e => setDraft(prev => ({ ...prev, templateName: e.target.value }))}
-                      className="text-base font-bold bg-white border border-gray-300 rounded px-3 py-1.5 focus:ring-2 ring-brand-purple w-full sm:w-64"
+                      className="text-base font-medium bg-white border border-gray-300 rounded px-3 py-1.5 focus:ring-2 ring-brand-purple w-full sm:w-64"
                       placeholder="Template Name"
                     />
-                    <label className="flex items-center gap-2 text-sm font-bold text-gray-700 whitespace-nowrap bg-white border border-gray-300 px-3 py-1.5 rounded cursor-pointer hover:bg-gray-50">
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 whitespace-nowrap bg-white border border-gray-300 px-3 py-1.5 rounded cursor-pointer hover:bg-gray-50">
                        <input 
                          type="checkbox" 
                          checked={draft.isActive}
@@ -288,14 +288,14 @@ const IDCardTemplatesDesigner = () => {
                      <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleImageUpload} />
                      <button 
                        onClick={() => fileInputRef.current?.click()}
-                       className="flex-1 sm:flex-none flex justify-center items-center gap-1.5 px-4 py-2 border border-gray-300 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-50"
+                       className="flex-1 sm:flex-none flex justify-center items-center gap-1.5 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
                      >
                        <UploadCloud size={16} /> Background
                      </button>
                      <button 
                        onClick={handleSave}
                        disabled={saving}
-                       className="flex-1 sm:flex-none flex justify-center items-center gap-1.5 px-6 py-2 bg-brand-purple text-white rounded-lg text-sm font-bold hover:bg-brand-purple/90 shadow-sm disabled:opacity-50"
+                       className="flex-1 sm:flex-none flex justify-center items-center gap-1.5 px-6 py-2 bg-brand-purple text-white rounded-lg text-sm font-medium hover:bg-brand-purple/90 shadow-sm disabled:opacity-50"
                      >
                        <Save size={16} /> {saving ? 'Saving...' : 'Save Layout'}
                      </button>
@@ -305,7 +305,7 @@ const IDCardTemplatesDesigner = () => {
                {/* Live Preview Area */}
                <div className="p-8 bg-gray-100 flex justify-center items-center min-h-[300px] overflow-x-auto relative">
                   
-                  <p className="absolute top-4 left-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Live Preview</p>
+                  <p className="absolute top-4 left-4 text-xs font-medium text-gray-400 uppercase tracking-widest">Live Preview</p>
                   
                   <div 
                     className="relative shadow-2xl rounded-lg overflow-hidden flex-shrink-0"
