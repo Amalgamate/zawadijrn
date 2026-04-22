@@ -22,6 +22,12 @@ import prisma from '../config/database';
 export const requireApp = (slug: string) => {
   return async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
+      // Super admins always pass through
+      if (req.user?.role === 'SUPER_ADMIN') {
+        next();
+        return;
+      }
+
       // Resolve schoolId
       let schoolId: string | undefined =
         (req.user as any)?.schoolId ??
