@@ -1,4 +1,4 @@
-import { fetchWithAuth, fetchCached, cachedFetch, cacheDel, cacheDelPrefix, TTL } from './core';
+import { fetchWithAuth, cachedFetch, cacheDel, cacheDelPrefix, TTL } from './core';
 import axiosInstance from './axiosConfig';
 
 export const assessmentAPI = {

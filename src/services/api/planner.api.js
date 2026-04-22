@@ -1,4 +1,4 @@
-import { fetchWithAuth, fetchCached } from './core';
+import { fetchWithAuth } from './core';
 
 export const plannerAPI = {
     getEvents: async (params) => {

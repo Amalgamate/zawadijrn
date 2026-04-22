@@ -1,4 +1,4 @@
-import { fetchWithAuth, fetchCached, API_BASE_URL } from './core';
+import { fetchWithAuth, API_BASE_URL } from './core';
 import axiosInstance from './axiosConfig';
 
 export const feeAPI = {

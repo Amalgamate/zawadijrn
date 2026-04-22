@@ -1,4 +1,4 @@
-import { fetchWithAuth, fetchCached, cachedFetch, cacheDel, cacheDelPrefix, TTL } from './core';
+import { fetchWithAuth, cachedFetch, cacheDel, cacheDelPrefix, TTL } from './core';
 import axiosInstance from './axiosConfig';
 
 const institutionCacheKeySuffix = () => {
@@ -19,7 +19,7 @@ export const configAPI = {
   updateTermConfig: async (id, data) =>
     fetchWithAuth(`/config/term/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
 
-  getAggregationConfigs: async () => fetchCached('/config/aggregation'),
+  getAggregationConfigs: async () => cachedFetch('config:aggregation', () => fetchWithAuth('/config/aggregation'), TTL.LONG),
   createAggregationConfig: async (data) =>
     fetchWithAuth('/config/aggregation', { method: 'POST', body: JSON.stringify(data) }),
   updateAggregationConfig: async (id, data) =>

@@ -1,4 +1,4 @@
-import { fetchWithAuth, fetchCached } from './core';
+import { fetchWithAuth } from './core';
 import axiosInstance from './axiosConfig';
 import { authAPI } from './auth.api';
 
