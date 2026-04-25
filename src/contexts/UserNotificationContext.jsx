@@ -108,10 +108,11 @@ export const UserNotificationProvider = ({ children }) => {
       return;
     }
 
-    // Initialize Socket
-    const serverUrl = window.location.hostname === 'localhost' 
-      ? 'http://localhost:5000' 
-      : window.location.origin;
+    // Initialize Socket.
+    // In dev, the Vite proxy forwards /socket.io → http://localhost:5000,
+    // so we connect to the same origin (https://localhost:3000) rather than
+    // directly to http://localhost:5000 (which would be blocked as mixed content).
+    const serverUrl = window.location.origin;
 
     const newSocket = io(serverUrl, {
       withCredentials: true,
