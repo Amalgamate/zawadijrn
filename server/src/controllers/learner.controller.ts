@@ -81,6 +81,17 @@ export class LearnerController {
 
       res.json({ success: true, data: learners, pagination: { total, page: Number(page), limit: Number(limit), pages: Math.ceil(total / Number(limit)) } });
     } catch (error: any) {
+      logger.error('❌ [LEARNER] getAllLearners failed:', {
+        code: error.code,
+        message: error.message,
+        meta: error.meta,
+        where: whereClause
+      });
+
+      if (error.code === 'P2022') {
+        throw new ApiError(500, `Database Schema Mismatch: The column '${error.meta?.column}' is missing in learners table. Please run migrations.`);
+      }
+
       throw new ApiError(500, 'Server error fetching learners: ' + error.message);
     }
   }
@@ -88,22 +99,38 @@ export class LearnerController {
   async getLearnerStats(_req: AuthRequest, res: Response) {
     const institutionType = (_req.school?.institutionType || 'PRIMARY_CBC') as any;
     const whereClause: any = { archived: false, institutionType };
-    const [statusCounts, gradeCounts, genderCounts, total, active] = await Promise.all([
-      prisma.learner.groupBy({ by: ['status'], _count: true, where: whereClause }),
-      prisma.learner.groupBy({ by: ['grade'],  _count: true, where: { ...whereClause, status: 'ACTIVE' } }),
-      prisma.learner.groupBy({ by: ['gender'], _count: true, where: { ...whereClause, status: 'ACTIVE' } }),
-      prisma.learner.count({ where: whereClause }),
-      prisma.learner.count({ where: { ...whereClause, status: 'ACTIVE' } }),
-    ]);
-    res.json({
-      success: true,
-      data: {
-        total, active,
-        byStatus: statusCounts.reduce((a, i) => { a[i.status] = i._count; return a; }, {} as any),
-        byGrade:  gradeCounts.reduce((a, i)  => { a[i.grade]  = i._count; return a; }, {} as any),
-        byGender: genderCounts.reduce((a, i) => { a[i.gender] = i._count; return a; }, {} as any),
-      },
-    });
+    try {
+      const [statusCounts, gradeCounts, genderCounts, total, active] = await Promise.all([
+        prisma.learner.groupBy({ by: ['status'], _count: true, where: whereClause }),
+        prisma.learner.groupBy({ by: ['grade'],  _count: true, where: { ...whereClause, status: 'ACTIVE' } }),
+        prisma.learner.groupBy({ by: ['gender'], _count: true, where: { ...whereClause, status: 'ACTIVE' } }),
+        prisma.learner.count({ where: whereClause }),
+        prisma.learner.count({ where: { ...whereClause, status: 'ACTIVE' } }),
+      ]);
+
+      res.json({
+        success: true,
+        data: {
+          total,
+          active,
+          byStatus: statusCounts.reduce((a, i) => { a[i.status] = i._count; return a; }, {} as any),
+          byGrade:  gradeCounts.reduce((a, i)  => { a[i.grade]  = i._count; return a; }, {} as any),
+          byGender: genderCounts.reduce((a, i) => { a[i.gender] = i._count; return a; }, {} as any),
+        },
+      });
+    } catch (error: any) {
+      logger.error('❌ [LEARNER] getLearnerStats failed:', {
+        code: error.code,
+        message: error.message,
+        meta: error.meta
+      });
+
+      if (error.code === 'P2022') {
+        throw new ApiError(500, `Database Schema Mismatch: The column '${error.meta?.column}' is missing in learners table. Please run migrations.`);
+      }
+
+      throw new ApiError(500, 'Server error fetching learner statistics: ' + error.message);
+    }
   }
 
   async getLearnerById(req: AuthRequest, res: Response) {
