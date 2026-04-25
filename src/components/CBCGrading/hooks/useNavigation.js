@@ -38,34 +38,37 @@ export const allNavSections = [
         id: 'communications',
         label: 'Inbox',
         icon: Mail,
+        app: 'sms-notifications',
         permission: null,
         items: [
-            { id: 'comm-notices', label: 'Notices & Announcements', path: 'comm-notices', permission: null },
-            { id: 'comm-messages', label: 'Messages', path: 'comm-messages', permission: 'VIEW_INBOX' },
-            { id: 'comm-history', label: 'Message History', path: 'comm-history', permission: null }
+            { id: 'comm-notices', label: 'Notices & Announcements', path: 'comm-notices', permission: null, app: 'announcements' },
+            { id: 'comm-messages', label: 'Messages', path: 'comm-messages', permission: 'VIEW_INBOX', app: 'sms-notifications' },
+            { id: 'comm-history', label: 'Message History', path: 'comm-history', permission: null, app: 'sms-notifications' }
         ]
     },
     {
         id: 'planner',
         label: 'Planner',
         icon: Calendar,
+        app: 'academic-year',
         permission: null,
         items: [
             { id: 'planner-calendar', label: 'Calendar', path: 'planner-calendar', permission: null },
-            { id: 'planner-timetable', label: 'Timetable', path: 'planner-timetable', permission: 'ACCESS_TIMETABLE' },
-            { id: 'planner-schemes', label: 'Schemes of Work', path: 'planner-schemes', permission: null, icon: ClipboardList },
+            { id: 'planner-timetable', label: 'Timetable', path: 'planner-timetable', permission: 'ACCESS_TIMETABLE', app: 'timetable' },
+            { id: 'planner-schemes', label: 'Schemes of Work', path: 'planner-schemes', permission: null, icon: ClipboardList, app: 'curriculum' },
         ]
     },
     {
         id: 'learners',
         label: 'Scholars',
         icon: Users,
+        app: 'student-registry',
         permission: null,
         items: [
             { id: 'learners-list',       label: 'Students List',      path: 'learners-list',       permission: 'VIEW_ALL_LEARNERS' },
             { id: 'learners-admissions', label: 'Admissions',         path: 'learners-admissions', permission: 'CREATE_LEARNER'    },
-            { id: 'learners-promotion',  label: 'Promotion',          path: 'learners-promotion',  permission: 'PROMOTE_LEARNER'   },
-            { id: 'learners-uniform',    label: 'Uniform Allocation', path: 'learners-uniform',    permission: 'VIEW_ALL_LEARNERS', icon: Shirt },
+            { id: 'learners-promotion',  label: 'Promotion',          path: 'learners-promotion',  permission: 'PROMOTE_LEARNER', app: 'academic-year' },
+            { id: 'learners-uniform',    label: 'Uniform Allocation', path: 'learners-uniform',    permission: 'VIEW_ALL_LEARNERS', icon: Shirt, app: 'inventory' },
             { id: 'learners-id-print',  label: 'ID Card Printing',   path: 'learners-id-print',   permission: 'VIEW_ALL_LEARNERS', icon: CreditCard },
         ]
     },
@@ -91,6 +94,7 @@ export const allNavSections = [
         id: 'assessment',
         label: 'Assessment',
         icon: TrendingUp,
+        app: 'gradebook',
         permission: 'ACCESS_ASSESSMENT_MODULE',
         items: [
             {
@@ -142,19 +146,21 @@ export const allNavSections = [
         id: 'learning-hub',
         label: 'Resource Center',
         icon: BookOpen,
+        app: 'lms',
         permission: 'ACCESS_LEARNING_HUB',
         items: [
             { id: 'learning-hub-materials',    label: 'Class Materials',  path: 'learning-hub-materials',    permission: null },
             { id: 'learning-hub-assignments',  label: 'Assignments',      path: 'learning-hub-assignments',  permission: null },
             { id: 'learning-hub-lesson-plans', label: 'Lesson Plans',     path: 'learning-hub-lesson-plans', permission: 'ACCESS_LEARNING_HUB' },
             { id: 'coding-playground',         label: 'Coding Playground',path: 'coding-playground',         permission: null },
-            { id: 'learning-hub-library',      label: 'Resource Library', path: 'learning-hub-library',      permission: null }
+            { id: 'learning-hub-library',      label: 'Resource Library', path: 'learning-hub-library',      permission: null, app: 'library' }
         ]
     },
     {
         id: 'lms',
         label: 'Learning Management',
         icon: PlayCircle,
+        app: 'lms',
         permission: 'ACCESS_LMS',
         items: [
             { id: 'lms-courses',      label: 'Courses',           path: 'lms-courses',      permission: 'ACCESS_LMS' },
@@ -169,6 +175,7 @@ export const allNavSections = [
         id: 'attendance',
         label: 'Attendance',
         icon: CheckSquare,
+        app: 'attendance',
         permission: null,
         items: [
             { id: 'attendance-daily',   label: 'Daily Attendance',   path: 'attendance-daily',   permission: 'MARK_ATTENDANCE'               },
@@ -186,11 +193,12 @@ export const allNavSections = [
         id: 'hr',
         label: 'HR',
         icon: Users2,
+        app: 'staff-hr',
         permission: 'HR_MANAGEMENT',
         items: [
             { id: 'hr-portal',         label: 'HR Dashboard',      path: 'hr-portal',         permission: 'HR_MANAGEMENT' },
             { id: 'hr-staff-profiles', label: 'Staff Directory',   path: 'hr-staff-profiles', permission: 'HR_MANAGEMENT' },
-            { id: 'hr-payroll',        label: 'Payroll Processing', path: 'hr-payroll',       permission: 'HR_MANAGEMENT' },
+            { id: 'hr-payroll',        label: 'Payroll Processing', path: 'hr-payroll',       permission: 'HR_MANAGEMENT', app: 'payroll' },
             { id: 'hr-leave',          label: 'Leave Management',  path: 'hr-leave',          permission: 'HR_MANAGEMENT' },
             { id: 'hr-documents',      label: 'Staff Documents',   path: 'hr-documents',      permission: 'HR_MANAGEMENT' },
             { id: 'hr-performance',    label: 'Performance',       path: 'hr-performance',    permission: 'HR_MANAGEMENT' }
@@ -200,6 +208,7 @@ export const allNavSections = [
         id: 'library',
         label: 'Library Management',
         icon: BookOpen,
+        app: 'library',
         permission: null,
         items: [
             { id: 'library-catalog',     label: 'Book Catalog',           path: 'library-catalog',     permission: 'LIBRARY_MANAGEMENT' },
@@ -213,6 +222,7 @@ export const allNavSections = [
         id: 'transport',
         label: 'Transport',
         icon: Truck,
+        app: 'transport',
         permission: null,
         items: [
             { id: 'transport-routes',   label: 'Bus Routes & Roster',  path: 'transport-routes',   permission: 'TRANSPORT_MANAGEMENT' },
@@ -226,6 +236,7 @@ export const allNavSections = [
         id: 'finance',
         label: 'Finance',
         icon: CreditCard,
+        app: 'fee-management',
         permission: 'FEE_MANAGEMENT',
         items: [
             {
@@ -247,6 +258,7 @@ export const allNavSections = [
                 label: 'Accounting',
                 type: 'group',
                 icon: PieChart,
+                app: 'accounting',
                 permission: 'ACCOUNTING_MANAGEMENT',
                 items: [
                     { id: 'accounting-dashboard',      label: 'Accounting Dashboard', path: 'accounting-dashboard',      permission: 'ACCOUNTING_MANAGEMENT' },
@@ -274,6 +286,7 @@ export const allNavSections = [
         id: 'inventory',
         label: 'Inventory',
         icon: Package,
+        app: 'inventory',
         permission: 'SCHOOL_SETTINGS',
         items: [
             { id: 'inventory-items',            label: 'Items',             path: 'inventory-items',            permission: 'SCHOOL_SETTINGS' },
@@ -291,6 +304,7 @@ export const allNavSections = [
         id: 'biometric',
         label: 'Biometric Attendance',
         icon: Fingerprint,
+        app: 'biometric',
         permission: 'BIOMETRIC_ATTENDANCE',
         items: [
             { id: 'biometric-dashboard',  label: 'Biometric Authority',    path: 'biometric-dashboard',  permission: 'BIOMETRIC_ATTENDANCE' },
@@ -381,7 +395,19 @@ export const useNavigation = () => {
     // nav array and category groupings differ.
 
     const buildNav = (sourceSections) => {
-        const isItemVisible = (item) => !item.permission || can(item.permission);
+        const activeApps = user?.activeApps || [];
+        const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+
+        const isItemVisible = (item) => {
+            // 1. App Gating: if the item requires an app, it must be active
+            if (item.app && !activeApps.includes(item.app) && !isSuperAdmin) return false;
+            
+            // 2. Permission Gating: must have required permission
+            if (item.permission && !can(item.permission)) return false;
+            
+            return true;
+        };
+
         const processItems = (items) => items.reduce((acc, item) => {
             if (item.type === 'group') {
                 const visible = item.items.filter(isItemVisible);
@@ -393,7 +419,13 @@ export const useNavigation = () => {
         }, []);
 
         return sourceSections.filter(section => {
+            // 1. App Gating for whole section
+            if (section.app && !activeApps.includes(section.app) && !isSuperAdmin) return false;
+
+            // 2. Permission Gating for whole section
             if (section.permission && !can(section.permission)) return false;
+
+            // 3. Recursive check for children
             if (section.items.length > 0) {
                 return processItems(section.items).length > 0;
             }

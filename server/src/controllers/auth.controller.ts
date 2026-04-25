@@ -191,11 +191,23 @@ export class AuthController {
 
     const { password: _, passwordResetToken: __, ...userWithoutSensitive } = user;
 
+    const schoolId = (user as any).schoolId || (req as any).school?.id;
+    let activeApps: string[] = [];
+    
+    if (schoolId) {
+      const appConfigs = await prisma.schoolAppConfig.findMany({
+        where: { schoolId, isActive: true },
+        include: { app: { select: { slug: true } } }
+      });
+      activeApps = appConfigs.map(c => c.app.slug);
+    }
+
     res.json({
       success: true,
       user: {
         ...userWithoutSensitive,
-        institutionType: user.institutionType || (req as any).school?.institutionType || 'PRIMARY_CBC'
+        institutionType: user.institutionType || (req as any).school?.institutionType || 'PRIMARY_CBC',
+        activeApps
       },
       token: accessToken, // Return actual token for cross-domain headers fallback
       refreshToken: refreshToken,
@@ -336,6 +348,17 @@ export class AuthController {
 
     if (!user) throw new ApiError(404, 'User not found');
 
+    const schoolId = (user as any).schoolId || (req as any).school?.id;
+    let activeApps: string[] = [];
+    
+    if (schoolId) {
+      const appConfigs = await prisma.schoolAppConfig.findMany({
+        where: { schoolId, isActive: true },
+        include: { app: { select: { slug: true } } }
+      });
+      activeApps = appConfigs.map(c => c.app.slug);
+    }
+
     const { passwordResetToken, ...userPublic } = user;
     res.json({
       success: true,
@@ -343,6 +366,7 @@ export class AuthController {
         ...userPublic,
         institutionType: user.institutionType || (req as any).school?.institutionType || 'PRIMARY_CBC',
         mustChangePassword: !!passwordResetToken,
+        activeApps,
       }
     });
   }
