@@ -66,7 +66,14 @@ export const UserNotificationProvider = ({ children }) => {
       if (existing) return; // Already subscribed
 
       // Fetch VAPID public key from server
-      const resp = await api.userNotifications.getVapidPublicKey?.();
+      let resp;
+      try {
+        resp = await api.userNotifications.getVapidPublicKey?.();
+      } catch (keyErr) {
+        console.warn('VAPID public key fetch failed (server may be starting up or keys missing):', keyErr.message);
+        return; // Silent return, not a fatal error
+      }
+
       if (!resp?.data?.publicKey) {
         console.warn('VAPID public key not available — push subscriptions skipped');
         return;
