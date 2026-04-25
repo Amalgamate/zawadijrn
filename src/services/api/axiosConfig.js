@@ -20,9 +20,11 @@ const getApiBaseUrl = () => {
         return 'https://zawadijrn.onrender.com/api';
     }
 
-    // 4. Local Vite dev (port 3000): talk to API on 5000 unless .env overrides (see .env.example)
+    // 4. Local Vite dev: use same-origin /api so requests go through Vite's
+    // HTTPS proxy → http://localhost:5000. This avoids mixed-content blocks
+    // (HTTPS page → HTTP API) when the dev server runs with https:true.
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        return 'http://localhost:5000/api';
+        return '/api';
     }
 
     return 'https://zawadijrn.onrender.com/api';

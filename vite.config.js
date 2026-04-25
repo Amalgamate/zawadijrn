@@ -18,7 +18,25 @@ export default defineConfig({
     port: 3000,
     open: true,
     strictPort: true,
-    hmr: { protocol: 'ws', port: 3000, clientPort: 3000 },
+    https: true,
+    // With HTTPS, HMR must use wss (secure WebSocket) on the same port.
+    // Without this, Vite falls back to ws:// and HMR breaks in Chrome.
+    hmr: { protocol: 'wss', port: 3000, clientPort: 3000 },
+    // Proxy /api calls to the local Express server so the HTTPS frontend
+    // never makes mixed-content requests to http://localhost:5000.
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/socket.io': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+      },
+    },
   },
 
   build: {

@@ -4,21 +4,22 @@ import './index.css';
 import App from './App.jsx';
 import { AuthProvider } from './contexts/AuthContext.jsx';
 
-// Service workers cache same-origin GETs; in dev that breaks Vite HMR / module loading. Only enable in production.
+// Register the service worker in both dev (https://localhost) and production.
+// Push notification subscriptions require:
+//   (a) a registered service worker, and
+//   (b) a secure context (HTTPS) — localhost over HTTPS satisfies this in dev.
+// In plain http://localhost the browser will refuse to create a PushSubscription.
 if ('serviceWorker' in navigator) {
-  if (import.meta.env.PROD) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js').then(registration => {
-        console.log('SW registered: ', registration);
-      }).catch(registrationError => {
-        console.log('SW registration failed: ', registrationError);
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/sw.js')
+      .then(registration => {
+        console.log('[SW] Registered:', registration.scope);
+      })
+      .catch(err => {
+        console.warn('[SW] Registration failed:', err);
       });
-    });
-  } else {
-    navigator.serviceWorker.getRegistrations().then((regs) => {
-      regs.forEach((r) => r.unregister());
-    });
-  }
+  });
 }
 
 
