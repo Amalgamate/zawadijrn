@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { X, Upload, FileSpreadsheet, Loader2, RefreshCw, CreditCard, Download, Info, Gift, Bus } from 'lucide-react';
-import axiosInstance from '../../../services/api/index';
+import { API_BASE_URL } from '../../../services/api/index';
 import { downloadFeeTemplate, downloadBalanceTemplate, downloadWaiverTemplate, downloadTransportTemplate } from '../../../utils/feeTemplateGenerator';
 
 const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
@@ -65,7 +65,7 @@ const FeeImportModal = ({ isOpen, onClose, onComplete }) => {
     formData.append('term', term);
 
     try {
-      const baseUrl = axiosInstance.defaults.baseURL || '';
+      const baseUrl = API_BASE_URL || '';
       let endpoint = '/bulk/fees/upload-balances';
       if (importMode === 'payments') {
         endpoint = '/bulk/fees/upload-payments';
