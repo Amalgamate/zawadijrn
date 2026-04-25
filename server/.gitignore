@@ -31,3 +31,11 @@ whatsapp-auth/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Scratch / diagnostic files (local dev only, never commit)
+scratch_*.ts
+scratch_*.js
+scratch_*.cjs
+check_*.ts
+check_*.js
+check_*.cjs
