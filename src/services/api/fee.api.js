@@ -55,7 +55,7 @@ export const feeAPI = {
   },
   resetInvoices: async ({ academicYear, term, confirmToken } = {}) =>
     fetchWithAuth('/fees/invoices/reset', {
-      method: 'DELETE',
+      method: 'POST',
       body: JSON.stringify({ academicYear, term, confirmToken })
     }),
   sendReminder: async (id, data) =>

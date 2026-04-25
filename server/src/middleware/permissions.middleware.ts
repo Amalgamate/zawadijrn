@@ -58,6 +58,8 @@ export const requirePermission = (permission: Permission) => {
       const userRole = req.user?.role?.toUpperCase();
 
       if (!userRole) {
+
+
         res.status(401).json({ success: false, message: 'Authentication required' });
         return;
       }

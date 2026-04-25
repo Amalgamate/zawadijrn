@@ -207,6 +207,9 @@ export class FeeController {
     const { status, term, academicYear, grade, learnerId, startDate, endDate, paymentMethod } = req.query;
     const where: any = {};
 
+
+
+
     if (paymentMethod && paymentMethod !== 'all') {
       where.payments = {
         some: {

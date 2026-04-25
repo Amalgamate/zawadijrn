@@ -28,7 +28,7 @@ import { FeeController } from '../controllers/fee.controller';
 import { feeWaiverController } from '../controllers/feeWaiver.controller';
 import { feeCommentsController } from '../controllers/feeComments.controller';
 import { authenticate } from '../middleware/auth.middleware';
-import { requireRole, auditLog } from '../middleware/permissions.middleware';
+import { requirePermission, requireRole, auditLog } from '../middleware/permissions.middleware';
 import { requireSchoolContext } from '../middleware/school.middleware';
 import { asyncHandler } from '../utils/async.util';
 import { validate } from '../middleware/validation.middleware';
@@ -130,7 +130,7 @@ router.use('/types', rateLimit({ windowMs: 60_000, maxRequests: 50 }), feeTypeRo
 
 router.get(
   '/structures',
-  requireRole(['ACCOUNTANT', 'ADMIN', 'SUPER_ADMIN']),
+  requirePermission('FEE_MANAGEMENT'),
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   asyncHandler(feeController.getAllFeeStructures.bind(feeController))
 );
@@ -165,14 +165,14 @@ router.delete(
 
 router.get(
   '/invoices',
-  requireRole(['ACCOUNTANT', 'ADMIN', 'SUPER_ADMIN']),
+  requirePermission('FEE_MANAGEMENT'),
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   asyncHandler(feeController.getAllInvoices.bind(feeController))
 );
 
 router.get(
   '/invoices/export',
-  requireRole(['ACCOUNTANT', 'ADMIN', 'SUPER_ADMIN']),
+  requirePermission('FEE_MANAGEMENT'),
   rateLimit({ windowMs: 60_000, maxRequests: 20 }),
   auditLog('EXPORT_INVOICES'),
   asyncHandler(feeController.exportInvoices.bind(feeController))
@@ -180,7 +180,7 @@ router.get(
 
 router.get(
   '/invoices/learner/:learnerId',
-  requireRole(['ACCOUNTANT', 'ADMIN', 'SUPER_ADMIN', 'PARENT']),
+  requirePermission('FEE_MANAGEMENT'),
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   asyncHandler(feeController.getLearnerInvoices.bind(feeController))
 );
@@ -280,7 +280,7 @@ router.post(
 
 router.get(
   '/invoices/:id/comments',
-  requireRole(['ACCOUNTANT', 'ADMIN', 'SUPER_ADMIN']),
+  requirePermission('FEE_MANAGEMENT'),
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   asyncHandler(feeCommentsController.listComments.bind(feeCommentsController))
 );
@@ -340,7 +340,7 @@ router.patch(
 
 router.get(
   '/stats',
-  requireRole(['ACCOUNTANT', 'ADMIN', 'SUPER_ADMIN']),
+  requirePermission('FEE_MANAGEMENT'),
   rateLimit({ windowMs: 60_000, maxRequests: 50 }),
   asyncHandler(feeController.getPaymentStats.bind(feeController))
 );
@@ -358,14 +358,14 @@ router.post(
 
 router.get(
   '/waivers',
-  requireRole(['ACCOUNTANT', 'ADMIN', 'SUPER_ADMIN']),
+  requirePermission('FEE_MANAGEMENT'),
   rateLimit({ windowMs: 60_000, maxRequests: 50 }),
   asyncHandler(feeWaiverController.listWaivers.bind(feeWaiverController))
 );
 
 router.get(
   '/waivers/:id',
-  requireRole(['ACCOUNTANT', 'ADMIN', 'SUPER_ADMIN']),
+  requirePermission('FEE_MANAGEMENT'),
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   asyncHandler(feeWaiverController.getWaiverById.bind(feeWaiverController))
 );

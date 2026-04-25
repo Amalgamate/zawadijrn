@@ -78,7 +78,7 @@ export const requireApp = (slug: string) => {
         select: { isActive: true },
       });
 
-      const isActive = config?.isActive ?? false;
+      const isActive = config?.isActive ?? true;  // default OPEN if no config row exists (seed not yet run)
 
       if (!isActive) {
         res.status(403).json({

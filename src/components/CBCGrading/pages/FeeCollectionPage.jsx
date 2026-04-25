@@ -29,6 +29,7 @@ import { useFeeActions } from '../../../contexts/FeeActionsContext';
 import usePageNavigation from '../../../hooks/usePageNavigation';
 import { downloadFeeTemplate } from '../../../utils/feeTemplateGenerator';
 import UnmatchedPaymentsPanel from './fees/UnmatchedPaymentsPanel';
+import { useBootstrapStore } from '../../../store/useBootstrapStore';
 
 const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
   const navigateTo = usePageNavigation();
@@ -45,6 +46,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
   const [downloadingId, setDownloadingId] = useState(null);
   const [selectedInvoiceIds, setSelectedInvoiceIds] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [statsLoading, setStatsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('invoices'); // 'invoices' | 'unmatched'
   const [unmatchedCount, setUnmatchedCount] = useState(0);
   const [whatsappStatus, setWhatsappStatus] = useState({ status: 'fetching', qrCode: null });
@@ -105,6 +107,15 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
   const { showSuccess, showError, showToast, toastMessage, toastType, hideNotification } = useNotifications();
   const { user } = useAuth();
   const { registerFeeActions, clearFeeActions } = useFeeActions();
+  const bootstrapFeeStats = useBootstrapStore(s => s.feeStats);
+
+  // Seed stats from bootstrap cache immediately (eliminates the race for most users)
+  React.useEffect(() => {
+    if (bootstrapFeeStats?.invoices?.length) {
+      setStatsInvoices(bootstrapFeeStats.invoices);
+      setStatsLoading(false);
+    }
+  }, [bootstrapFeeStats]);
 
   // Sync grade filter if navigated here from the reports page
   useEffect(() => {
@@ -153,10 +164,13 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
   // Separate fetch — no filters — solely powers the metric cards
   const fetchStatsInvoices = React.useCallback(async () => {
     try {
+      setStatsLoading(true);
       const response = await api.fees.getAllInvoices({ limit: 'all' });
       setStatsInvoices(response.data || []);
     } catch (error) {
       console.error('Failed to load stats invoices:', error);
+    } finally {
+      setStatsLoading(false);
     }
   }, []);
 
@@ -778,7 +792,17 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
           <div
             className={`grid transition-all duration-500 ease-in-out ${showMetrics ? 'grid-rows-[1fr] opacity-100 mb-6' : 'grid-rows-[0fr] opacity-0 mb-0'}`}
           >
-            <div className="overflow-hidden space-y-6">
+            {statsLoading && showMetrics && (
+              <div className="overflow-hidden">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="rounded-2xl bg-gray-100 animate-pulse h-28" />
+                  ))}
+                </div>
+                <div className="rounded-2xl bg-gray-100 animate-pulse h-16" />
+              </div>
+            )}
+            <div className={`overflow-hidden space-y-6 ${statsLoading ? 'hidden' : ''}`}>
               {/* Stats Cards */}
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
 

@@ -33,6 +33,7 @@ export const useBootstrapStore = create(
       classes:   null,
       streams:   null,
       subjects:  null,
+      feeStats:  null,   // lightweight fee totals { totalBilled, totalPaid, totalBalance, totalWaived, totalOverpaid, count }
 
       // ── Meta ─────────────────────────────────────────────────────────────
       loadedAt:  null,
@@ -71,6 +72,7 @@ export const useBootstrapStore = create(
             apiFns.fetchClasses(),
             apiFns.fetchStreams(),
             apiFns.fetchSubjects(),
+            apiFns.fetchFeeStats ? apiFns.fetchFeeStats() : Promise.resolve(null),
           ]);
 
           const val = (r, fallback = []) =>
@@ -82,6 +84,7 @@ export const useBootstrapStore = create(
             classes:   val(results[2]),
             streams:   val(results[3]),
             subjects:  val(results[4]),
+            feeStats:  results[5].status === 'fulfilled' ? results[5].value : null,
             loadedAt:  Date.now(),
             loading:   false,
             ready:     true,
@@ -116,6 +119,7 @@ export const useBootstrapStore = create(
         classes:   null,
         streams:   null,
         subjects:  null,
+        feeStats:  null,
         loadedAt:  null,
         loading:   false,
         error:     null,
@@ -131,6 +135,7 @@ export const useBootstrapStore = create(
         classes:   s.classes,
         streams:   s.streams,
         subjects:  s.subjects,
+        feeStats:  s.feeStats,
         loadedAt:  s.loadedAt,
         ready:     s.ready,
       }),

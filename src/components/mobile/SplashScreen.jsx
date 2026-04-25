@@ -26,7 +26,7 @@ import axiosInstance from '../../services/api/axiosConfig';
 // ── Fetch helpers called by the bootstrap store ────────────────────────────
 //  These live outside the component so they never change identity.
 
-const buildApiFns = (institutionType = 'PRIMARY_CBC') => ({
+const buildApiFns = (institutionType = 'PRIMARY_CBC', role = '') => ({
   fetchLearners: async () => {
     const res = await axiosInstance.get('/learners', {
       params: { limit: 200, status: 'ACTIVE', institutionType },
@@ -55,6 +55,18 @@ const buildApiFns = (institutionType = 'PRIMARY_CBC') => ({
     const res = await axiosInstance.get('/learning-areas');
     return res.data?.data ?? [];
   },
+
+  // Only fetch fee stats for roles that actually use the fee module
+  // This pre-loads the metric-card data so FeeCollectionPage shows instantly
+  fetchFeeStats: ['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM', 'TEACHER', 'ACCOUNTANT', 'RECEPTIONIST'].includes(role)
+    ? async () => {
+        const res = await axiosInstance.get('/fees/invoices', { params: { limit: 'all' } });
+        return {
+          invoices: res.data?.data ?? [],
+          totals:   res.data?.totals ?? null,
+        };
+      }
+    : null,
 });
 
 // ── Component ──────────────────────────────────────────────────────────────
@@ -87,7 +99,7 @@ const SplashScreen = ({ isLoading, user, onReady }) => {
     setProgress(30);
     setLabel('Loading school data…');
 
-    const apiFns = buildApiFns(user.institutionType);
+    const apiFns = buildApiFns(user.institutionType, user.role ?? '');
     bootstrap(apiFns);
   }, [user, bootstrap]);
 
