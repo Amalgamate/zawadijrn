@@ -13,6 +13,18 @@ module.exports = {
                 NODE_ENV: 'production',
                 PORT: 5000
             }
+        },
+        {
+            name: 'zawadi-cron',
+            script: './dist/cron-worker.js',
+            cwd: './server',
+            instances: 1,
+            exec_mode: 'fork',
+            autorestart: true,
+            watch: false,
+            env_production: {
+                NODE_ENV: 'production'
+            }
         }
     ]
 };

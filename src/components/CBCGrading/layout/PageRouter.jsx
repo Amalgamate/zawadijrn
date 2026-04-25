@@ -59,6 +59,7 @@ const FeeStructurePage = lazy(() => import('../pages/FeeStructurePage'));
 const FeeReportsPage = lazy(() => import('../pages/FeeReportsPage'));
 const WaiversPage = lazy(() => import('../pages/WaiversPage'));
 const StudentStatementsPage = lazy(() => import('../pages/StudentStatementsPage'));
+const UnmatchedPaymentsPanel = lazy(() => import('../pages/fees/UnmatchedPaymentsPanel'));
 const DocumentCenter = lazy(() => import('../pages/DocumentCenter'));
 const SystemMaintenancePage = lazy(() => import('../pages/SystemMaintenancePage'));
 const LearnerProfile = lazy(() => import('../pages/profiles/LearnerProfile'));
@@ -211,10 +212,11 @@ const PageRouter = ({
 
           // Planner Module
           case 'planner-calendar':
+          case 'events-calendar':
           case 'planner-timetable':
           case 'planner-agenda':
           case 'planner-schemes':
-            return <PlannerLayout currentPage={currentPage} onNavigate={handleNavigate} />;
+            return <PlannerLayout currentPage={currentPage === 'events-calendar' ? 'planner-calendar' : currentPage} onNavigate={handleNavigate} />;
 
           // Learners Module
           case 'learners-list':
@@ -411,6 +413,7 @@ const PageRouter = ({
           case 'fees-waivers': return <WaiversPage />;
           case 'fees-reports': return <FeeReportsPage />;
           case 'fees-statements': return <StudentStatementsPage />;
+          case 'fees-unmatched': return <UnmatchedPaymentsPanel />;
 
           case 'help': return <SupportHub />;
 

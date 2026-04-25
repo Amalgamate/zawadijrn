@@ -48,7 +48,10 @@ export const createTicket = async (req: AuthRequest, res: Response) => {
             let userName = 'Guest';
 
             if (userId) {
-                const user = await prisma.user.findUnique({ where: { id: userId } });
+                const user = await prisma.user.findUnique({
+                    where: { id: userId },
+                    select: { id: true, firstName: true, lastName: true }
+                });
                 if (user) {
                     userName = `${user.firstName} ${user.lastName}`;
                 }

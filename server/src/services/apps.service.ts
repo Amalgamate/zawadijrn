@@ -203,6 +203,7 @@ export class AppsService {
       take: limit,
       include: {
         app: { select: { slug: true, name: true, icon: true } },
+        performer: { select: { firstName: true, lastName: true } },
       },
     });
   }
@@ -215,6 +216,7 @@ export class AppsService {
       take: limit,
       include: {
         app: { select: { slug: true, name: true, icon: true } },
+        performer: { select: { firstName: true, lastName: true } },
       },
     });
   }

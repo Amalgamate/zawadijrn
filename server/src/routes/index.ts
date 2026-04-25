@@ -50,6 +50,7 @@ import changelogRoutes from './changelog.routes';
 import tertiaryRoutes from './tertiary.routes';
 import mpesaRoutes from './mpesa.routes';
 import appsRoutes from './apps.routes';
+import secondaryRoutes from './secondary.routes';
 import { requireApp } from '../middleware/requireApp';
 import { issueCsrfToken } from '../middleware/csrf.middleware';
 import { authenticate } from '../middleware/auth.middleware';
@@ -115,7 +116,8 @@ router.use('/transport', requireApp('transport'), transportRoutes);
 router.use('/user-notifications', userNotificationRoutes);
 router.use('/changelogs', changelogRoutes);
 router.use('/lms', requireApp('lms'), lmsRoutes);
-router.use('/tertiary', tertiaryRoutes);
+router.use('/tertiary', requireApp('tertiary-modules'), tertiaryRoutes);
+router.use('/secondary', requireApp('exams'), secondaryRoutes);
 router.use('/settings/apps', appsRoutes);
 
 export default router;

@@ -178,7 +178,12 @@ const AuditRow = ({ log }) => {
           {log.action}
         </span>
       </td>
-      <td className="py-2 px-3 text-xs text-gray-500">{log.roleAtTime}</td>
+      <td className="py-2 px-3">
+        <div className="flex flex-col">
+          <span className="text-xs font-medium text-gray-700">{log.performer?.firstName} {log.performer?.lastName}</span>
+          <span className="text-[10px] text-gray-400 uppercase font-semibold">{log.roleAtTime}</span>
+        </div>
+      </td>
       <td className="py-2 px-3 text-xs text-gray-400">
         {new Date(log.createdAt).toLocaleString()}
       </td>
@@ -386,7 +391,7 @@ const AppsPage = () => {
                     <tr className="border-b border-gray-200">
                       <th className="pb-2 px-3 text-xs font-semibold text-gray-500">App</th>
                       <th className="pb-2 px-3 text-xs font-semibold text-gray-500">Action</th>
-                      <th className="pb-2 px-3 text-xs font-semibold text-gray-500">Role</th>
+                      <th className="pb-2 px-3 text-xs font-semibold text-gray-500">User / Role</th>
                       <th className="pb-2 px-3 text-xs font-semibold text-gray-500">Time</th>
                     </tr>
                   </thead>

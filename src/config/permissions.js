@@ -165,6 +165,13 @@ export const PERMISSIONS = {
   // TIMETABLE
   // ============================================
   ACCESS_TIMETABLE: ['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM', 'TEACHER'],
+
+  // ============================================
+  // TERTIARY MODULES
+  // ============================================
+  TERTIARY_MANAGEMENT: ['SUPER_ADMIN', 'ADMIN'],
+  VIEW_TERTIARY_DATA: ['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'TEACHER'],
+  MANAGE_TERTIARY_ACADEMICS: ['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER'],
 };
 
 /**

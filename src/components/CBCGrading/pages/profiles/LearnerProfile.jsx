@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     User, Calendar, MapPin, Users, Heart,
     GraduationCap, Receipt, FileText, Activity,
-    Download, AlertCircle, Camera, Plus, Bus
+    Download, AlertCircle, Camera, Plus, Bus, Zap, TrendingUp, Brain
 } from 'lucide-react';
 import api from '../../../../services/api';
 import StatusBadge from '../../shared/StatusBadge';
@@ -19,6 +19,7 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
     const [invoices, setInvoices] = useState([]);
     const [assessments, setAssessments] = useState([]);
     const [transportAssignments, setTransportAssignments] = useState([]);
+    const [aiData, setAiData] = useState({ feedback: '', risk: '', trend: null });
 
     const [showPhotoModal, setShowPhotoModal] = useState(false);
 
@@ -68,6 +69,17 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
             } else if (targetTab === 'transport') {
                 const res = await api.transport.getLearnerAssignments(currentLearner.id);
                 setTransportAssignments(res.success ? (res.data || []) : []);
+            } else if (targetTab === 'ai-insights') {
+                const [feedbackRes, riskRes, trendRes] = await Promise.all([
+                    api.ai.generateFeedback(currentLearner.id, 'TERM_1', 2026), // Mocking current term/year for now
+                    api.ai.analyzeRisk(currentLearner.id),
+                    api.ai.getTrend(currentLearner.id)
+                ]);
+                setAiData({
+                    feedback: feedbackRes.success ? feedbackRes.data : feedbackRes,
+                    risk: riskRes.success ? riskRes.data : riskRes,
+                    trend: trendRes.success ? trendRes.data : trendRes
+                });
             }
         } catch (error) {
             console.error('Error fetching tab data:', error);
@@ -112,6 +124,7 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
         { id: 'financials', label: 'Financials', icon: Receipt       },
         { id: 'academic',   label: 'Academic',   icon: GraduationCap },
         { id: 'transport',  label: 'Transport',  icon: Bus           },
+        { id: 'ai-insights', label: 'AI Insights', icon: Brain       },
         { id: 'medical',    label: 'Medical',    icon: Heart         },
         { id: 'documents',  label: 'Documents',  icon: FileText      },
     ];
@@ -507,6 +520,97 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                                     <FileText size={48} className="mb-4 text-gray-200" />
                                     <p className="font-medium">No documents uploaded yet</p>
                                     <p className="text-sm mt-1">Upload student documents to view them here</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* AI INSIGHTS TAB */}
+                        {activeTab === 'ai-insights' && (
+                            <div className="space-y-6 animate-fade-in">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {/* AI Performance Commentary */}
+                                    <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                                        <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
+                                            <Brain className="text-brand-purple" size={20} />
+                                            <h3 className="text-lg font-medium text-gray-800">AI Teacher Commentary</h3>
+                                        </div>
+                                        <div className="p-4 bg-purple-50 rounded-lg border border-purple-100 text-sm text-purple-900 leading-relaxed italic">
+                                            "{aiData.feedback || 'Analyzing performance data...'}"
+                                        </div>
+                                        <p className="mt-3 text-[10px] text-gray-400 uppercase font-semibold tracking-wider flex items-center gap-1">
+                                            <Zap size={10} className="text-amber-500" /> Powered by Zawadi AI Analysis Engine
+                                        </p>
+                                    </div>
+
+                                    {/* Risk Assessment */}
+                                    <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                                        <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
+                                            <AlertCircle className="text-rose-500" size={20} />
+                                            <h3 className="text-lg font-medium text-gray-800">Risk Assessment</h3>
+                                        </div>
+                                        <div className="whitespace-pre-line text-sm text-gray-700 bg-gray-50 p-4 rounded-lg border border-gray-100">
+                                            {aiData.risk || 'Calculating risk factors...'}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Longitudinal Performance Trend */}
+                                <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                                    <div className="flex items-center justify-between mb-6 pb-2 border-b border-gray-100">
+                                        <div className="flex items-center gap-2">
+                                            <TrendingUp className="text-brand-teal" size={20} />
+                                            <h3 className="text-lg font-medium text-gray-800">Longitudinal Performance Trend</h3>
+                                        </div>
+                                        {aiData.trend && (
+                                            <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest ${
+                                                aiData.trend.status === 'IMPROVING' ? 'bg-emerald-100 text-emerald-700' :
+                                                aiData.trend.status === 'DECLINING' ? 'bg-rose-100 text-rose-700' :
+                                                'bg-blue-100 text-blue-700'
+                                            }`}>
+                                                {aiData.trend.status}
+                                            </span>
+                                        )}
+                                    </div>
+                                    
+                                    {aiData.trend?.trend?.length > 0 ? (
+                                        <div className="space-y-4">
+                                            <div className="flex items-end gap-2 h-32 px-4 border-b border-gray-100">
+                                                {aiData.trend.trend.map((pt, i) => (
+                                                    <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
+                                                        <div 
+                                                            className="w-full bg-brand-purple/20 group-hover:bg-brand-purple/40 rounded-t-sm transition-all duration-500 relative"
+                                                            style={{ height: `${pt.percentage}%` }}
+                                                        >
+                                                            <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-bold text-brand-purple opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                                                {pt.percentage}%
+                                                            </span>
+                                                        </div>
+                                                        <span className="text-[9px] font-bold text-gray-400 uppercase whitespace-nowrap overflow-hidden text-ellipsis w-full text-center">
+                                                            {pt.period}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="flex justify-between items-center text-xs font-medium px-2">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <div className="w-2 h-2 rounded-full bg-brand-purple/40"></div>
+                                                        <span className="text-gray-500">Term Average %</span>
+                                                    </div>
+                                                </div>
+                                                <p className="text-gray-500">
+                                                    Term-over-term growth: <span className={aiData.trend.growth >= 0 ? 'text-emerald-600' : 'text-rose-600'}>
+                                                        {aiData.trend.growth >= 0 ? '+' : ''}{aiData.trend.growth}%
+                                                    </span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="py-12 text-center text-gray-400">
+                                            <TrendingUp size={48} className="mx-auto mb-3 opacity-20" />
+                                            <p>Insufficient historical data to plot performance trends.</p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}

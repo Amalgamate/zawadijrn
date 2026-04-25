@@ -54,7 +54,6 @@ export class HRService {
                 kraPin: true,
                 nhifNumber: true,
                 nssfNumber: true,
-                shifNumber: true,
                 bankName: true,
                 bankAccountNumber: true,
                 bankAccountName: true,
@@ -93,7 +92,6 @@ export class HRService {
                 kraPin: details.kraPin ?? undefined,
                 nhifNumber: details.nhifNumber ?? undefined,
                 nssfNumber: details.nssfNumber ?? undefined,
-                shifNumber: details.shifNumber ?? undefined,
                 bankName: details.bankName ?? undefined,
                 bankAccountName: details.bankAccountName ?? undefined,
                 bankAccountNumber: details.bankAccountNumber ?? undefined,
@@ -411,7 +409,7 @@ export class HRService {
     async confirmPayrollRecord(recordId: string) {
         const record = await prisma.payrollRecord.findUnique({
             where: { id: recordId },
-            include: { user: true }
+            include: { user: { select: { id: true, firstName: true, lastName: true, phone: true } } }
         });
         if (!record) throw new Error('Payroll record not found');
         if (record.status !== 'DRAFT') throw new Error('Record is not in DRAFT status');
@@ -557,7 +555,6 @@ export class HRService {
                         bankAccountName: true,
                         kraPin: true,
                         nssfNumber: true,
-                        shifNumber: true,
                         role: true
                     }
                 }
@@ -587,7 +584,6 @@ export class HRService {
                         bankAccountName: true,
                         kraPin: true,
                         nssfNumber: true,
-                        shifNumber: true,
                         employmentType: true,
                         joinedAt: true,
                         profilePicture: true

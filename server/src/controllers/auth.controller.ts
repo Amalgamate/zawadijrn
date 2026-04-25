@@ -94,8 +94,8 @@ export class AuthController {
         role: requestedRole, phone: phone || null, status: 'ACTIVE'
       },
       select: {
-        id: true, email: true, firstName: true, lastName: true,
-        role: true, phone: true, createdAt: true
+        id: true, email: true, firstName: true, lastName: true, 
+        role: true, phone: true, createdAt: true, institutionType: true
       }
     });
 
@@ -140,7 +140,7 @@ export class AuthController {
         select: {
           id: true, password: true, status: true, loginAttempts: true, lockedUntil: true,
           role: true, email: true, firstName: true, lastName: true,
-          phone: true, lastLogin: true,
+          phone: true, lastLogin: true, institutionType: true,
           // mustChangePassword indicator — set on auto-created parent/student accounts
           passwordResetToken: true,
         }
@@ -195,7 +195,7 @@ export class AuthController {
       success: true,
       user: {
         ...userWithoutSensitive,
-        institutionType: (req as any).school?.institutionType || 'PRIMARY_CBC'
+        institutionType: user.institutionType || (req as any).school?.institutionType || 'PRIMARY_CBC'
       },
       token: accessToken, // Return actual token for cross-domain headers fallback
       refreshToken: refreshToken,
@@ -330,7 +330,7 @@ export class AuthController {
       select: {
         id: true, email: true, firstName: true, lastName: true, phone: true,
         role: true, status: true, createdAt: true,
-        passwordResetToken: true,
+        passwordResetToken: true, institutionType: true,
       }
     });
 
@@ -341,7 +341,7 @@ export class AuthController {
       success: true,
       data: {
         ...userPublic,
-        institutionType: (req as any).school?.institutionType || 'PRIMARY_CBC',
+        institutionType: user.institutionType || (req as any).school?.institutionType || 'PRIMARY_CBC',
         mustChangePassword: !!passwordResetToken,
       }
     });

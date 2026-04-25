@@ -67,6 +67,7 @@ export class OnboardingController {
 
       const existingUser = await prisma.user.findFirst({
         where: { OR: [{ email }, { phone }] },
+        select: { id: true }
       });
       if (existingUser) {
         return res.status(400).json({ success: false, error: 'Email or phone already exists' });
@@ -182,6 +183,7 @@ export class OnboardingController {
       }
       const user = await prisma.user.findFirst({
         where: { emailVerificationToken: String(token) },
+        select: { id: true }
       });
       if (!user) {
         return res.status(404).json({ success: false, error: 'Invalid token' });
@@ -206,7 +208,10 @@ export class OnboardingController {
       if (!email || !code) {
         return res.status(400).json({ success: false, error: 'Missing email or code' });
       }
-      const user = await prisma.user.findUnique({ where: { email } });
+      const user = await prisma.user.findUnique({
+        where: { email },
+        select: { id: true, phoneVerificationCode: true }
+      });
       if (!user || user.phoneVerificationCode !== code) {
         return res.status(400).json({ success: false, error: 'Invalid code' });
       }

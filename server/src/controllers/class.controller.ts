@@ -155,7 +155,10 @@ export class ClassController {
     }
 
     if (teacherId) {
-      const teacher = await prisma.user.findUnique({ where: { id: teacherId } });
+      const teacher = await prisma.user.findUnique({
+        where: { id: teacherId },
+        select: { id: true, role: true, firstName: true, lastName: true }
+      });
       if (!teacher || (teacher.role !== 'TEACHER' && teacher.role !== 'HEAD_TEACHER')) throw new ApiError(400, 'Invalid teacher');
     }
 
@@ -296,7 +299,7 @@ export class ClassController {
     const updatedClass = await prisma.class.update({
       where: { id: finalClassId },
       data: { teacherId: null },
-      include: { teacher: true }
+      include: { teacher: { select: { id: true, firstName: true, lastName: true } } }
     });
     res.json({ success: true, data: updatedClass });
   }

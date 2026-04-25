@@ -17,6 +17,10 @@
  *   The DELETE pattern clashed with DELETE /invoices/:id if the router ever
  *   processed routes in a different order. POST makes the intent explicit and
  *   avoids the ambiguity entirely.
+ *
+ * FIX (Bug High): processPaymentSchema: amount changed from .min(0) to
+ *   .positive() — zero-amount payments were previously accepted, creating empty
+ *   FeePayment records and polluting the ledger.
  */
 
 import { Router } from 'express';
@@ -57,16 +61,25 @@ const createFeeStructureSchema = z.object({
 
 const updateFeeStructureSchema = createFeeStructureSchema.partial();
 
+// FIX (Bug High): amount must be positive — .min(0) allowed zero-amount
+// payments that pollute the ledger without changing invoice status.
 const processPaymentSchema = z.object({
   invoiceId: z.string().min(1).optional(),
   learnerId: z.string().min(1).optional(),
-  amount: z.number().min(0),
+  amount: z.number().positive('Payment amount must be greater than zero'),
   paymentMethod: z.enum(['CASH', 'BANK_TRANSFER', 'CHEQUE', 'MPESA', 'CARD', 'OTHER']),
   referenceNumber: z.string().min(1).nullable().optional(),
-  notes: z.string().nullable().optional()
+  notes: z.string().nullable().optional(),
+  allocatedTuition: z.number().nonnegative().optional(),
+  allocatedTransport: z.number().nonnegative().optional()
 }).superRefine((data, ctx) => {
   if (!data.invoiceId && !data.learnerId) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Either invoiceId or learnerId must be provided' });
+  }
+  if (data.allocatedTuition !== undefined && data.allocatedTransport !== undefined) {
+    if (data.allocatedTuition + data.allocatedTransport > data.amount + 0.01) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Allocated amounts cannot exceed total payment amount' });
+    }
   }
 });
 
@@ -219,8 +232,6 @@ router.patch(
 /**
  * @route   PATCH /api/fees/invoices/:id/cancel
  * @desc    Cancel an invoice (sets status → CANCELLED). Admin/Super Admin only.
- *          Cannot cancel an invoice with existing payments.
- *          Wires up the previously-unused CANCELLED PaymentStatus enum value.
  */
 router.patch(
   '/invoices/:id/cancel',
@@ -234,10 +245,6 @@ router.patch(
 /**
  * @route   POST /api/fees/invoices/reset
  * @desc    Reset all invoices for a given academicYear + term (SUPER_ADMIN only).
- *          FIX (Task 6 — P3): Changed from DELETE to POST. The old
- *          DELETE /invoices/reset pattern was ambiguous with DELETE /invoices/:id
- *          and could be misrouted if Express ever processed routes differently.
- *          POST /invoices/reset is explicit and unambiguous.
  */
 router.post(
   '/invoices/reset',

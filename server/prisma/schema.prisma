@@ -19,6 +19,7 @@ model User {
   phone                     String?
   role                      UserRole                 @default(TEACHER)
   status                    UserStatus               @default(ACTIVE)
+  institutionType           InstitutionType          @default(PRIMARY_CBC)
   archived                  Boolean                  @default(false)
   archivedAt                DateTime?
   archivedBy                String?
@@ -50,8 +51,8 @@ model User {
   nssfNumber                String?
   subject                   String?
   gender                    String?
+  // shifNumber removed to prevent P2022 conflicts. Use nhifNumber for insurance tracking.
 
-  shifNumber                String?
   housingLevyExempt         Boolean                  @default(false)
   createdAggregationConfigs AggregationConfig[]
   assignedAssets            AssetAssignment[]        @relation("AssetUser")
@@ -164,6 +165,10 @@ model School {
   vatNumber           String?
   etimsConfig         Json?
   nemisConfig         Json?
+  
+  tertiaryDepartments TertiaryDepartment[]
+  tertiaryPrograms    TertiaryProgram[]
+  tertiaryUnits       TertiaryUnit[]
 
   @@index([kraPin])
   @@index([county])
@@ -411,6 +416,9 @@ model Learner {
   summativeResults       SummativeResult[]
   reportComments         TermlyReportComment[]     @relation("LearnerReportComments")
   valuesAssessments      ValuesAssessment[]        @relation("LearnerValues")
+  meanGrades             MeanGrade[]
+  unitEnrollments        UnitEnrollment[]
+  unitResults            UnitResult[]
 
   @@index([admissionNumber])
   @@index([parentId])
@@ -2397,6 +2405,7 @@ enum CurriculumType {
 enum InstitutionType {
   PRIMARY_CBC
   SECONDARY
+  TERTIARY
 }
 
 enum AssessmentMode {
@@ -2488,6 +2497,25 @@ model PushSubscription {
 
   @@index([userId])
   @@map("push_subscriptions")
+}
+
+model MeanGrade {
+  id           String   @id @default(uuid())
+  learnerId    String
+  term         Term
+  academicYear Int
+  totalPoints  Int
+  meanGrade    String   // A–E
+  meanScore    Float
+  position     Int?
+  outOf        Int?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  learner      Learner  @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+
+  @@unique([learnerId, term, academicYear])
+  @@index([learnerId])
+  @@map("mean_grades")
 }
 
 enum PaymentStatus {
@@ -2787,6 +2815,7 @@ enum TertiaryLevel {
 
 model TertiaryDepartment {
   id          String   @id @default(uuid())
+  schoolId    String
   code        String   @unique
   name        String
   headOfDept  String?
@@ -2794,12 +2823,14 @@ model TertiaryDepartment {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
+  school      School            @relation(fields: [schoolId], references: [id])
   programs    TertiaryProgram[]
   units       TertiaryUnit[]
 }
 
 model TertiaryProgram {
   id           String             @id @default(uuid())
+  schoolId     String
   code         String             @unique
   name         String
   level        TertiaryLevel
@@ -2808,10 +2839,13 @@ model TertiaryProgram {
   durationYears Int               @default(4)
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
+
+  school       School             @relation(fields: [schoolId], references: [id])
 }
 
 model TertiaryUnit {
   id          String   @id @default(uuid())
+  schoolId    String
   code        String   @unique  // e.g. BIT 101
   name        String
   creditHours Int      @default(3)
@@ -2822,6 +2856,7 @@ model TertiaryUnit {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  school       School             @relation(fields: [schoolId], references: [id])
   enrollments  UnitEnrollment[]
   results      UnitResult[]
 }
@@ -2834,6 +2869,7 @@ model UnitEnrollment {
   year      Int
   createdAt DateTime @default(now())
   
+  student   Learner      @relation(fields: [studentId], references: [id], onDelete: Cascade)
   unit      TertiaryUnit @relation(fields: [unitId], references: [id])
 }
 
@@ -2851,6 +2887,7 @@ model UnitResult {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  student     Learner      @relation(fields: [studentId], references: [id], onDelete: Cascade)
   unit        TertiaryUnit @relation(fields: [unitId], references: [id])
 }
 

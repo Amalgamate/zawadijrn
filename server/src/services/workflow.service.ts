@@ -681,8 +681,8 @@ export class WorkflowService {
       const test = await prisma.summativeTest.findUnique({
         where: { id },
         include: {
-          submittedByUser: true,
-          approvedByUser: true
+          submittedByUser: { select: { id: true, firstName: true, lastName: true } },
+          approvedByUser: { select: { id: true, firstName: true, lastName: true } }
         }
       });
 
@@ -695,7 +695,7 @@ export class WorkflowService {
       const assessment = await prisma.formativeAssessment.findUnique({
         where: { id },
         include: {
-          teacher: true,
+          teacher: { select: { id: true, firstName: true, lastName: true } },
           learner: {
             select: {
               id: true
@@ -717,7 +717,8 @@ export class WorkflowService {
    */
   private async getUser(userId: string) {
     const user = await prisma.user.findUnique({
-      where: { id: userId }
+      where: { id: userId },
+      select: { id: true, firstName: true, lastName: true, role: true, email: true }
     });
 
     if (!user) {

@@ -35,6 +35,7 @@ export interface LearnerInfo {
     phone: string | null;
     email: string | null;
   } | null;
+  institutionType?: string;
 }
 
 export interface FormativeAssessmentData {
@@ -195,7 +196,8 @@ export async function generateTermlyReport(
 ): Promise<TermlyReportData> {
   const learner = await fetchLearnerInfo(learnerId);
 
-  const summativeSystem = await gradingService.getGradingSystem('SUMMATIVE');
+  const systemType = learner.institutionType === 'SECONDARY' ? 'SECONDARY' : 'SUMMATIVE';
+  const summativeSystem = await gradingService.getGradingSystem(systemType);
   const cbcSystem = await gradingService.getGradingSystem('CBC');
 
   const enrollment = await prisma.classEnrollment.findFirst({
@@ -351,6 +353,7 @@ async function fetchLearnerInfo(learnerId: string): Promise<LearnerInfo> {
       stream: true,
       dateOfBirth: true,
       gender: true,
+      institutionType: true,
       parent: {
         select: {
           firstName: true,

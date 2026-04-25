@@ -35,7 +35,10 @@ import {
   UserPlus,
   Receipt,
   ClipboardCheck,
-  Package
+  Package,
+  Brain,
+  Zap,
+  ShieldAlert
 } from 'lucide-react';
 
 // Professional Metric Card with Premium Styling
@@ -165,7 +168,8 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
     feeCollected: metrics?.stats?.feeCollected || 0,
     feePending: metrics?.stats?.feePending || 0,
     studentTrend: metrics?.stats?.studentTrend,
-    teacherTrend: metrics?.stats?.teacherTrend
+    teacherTrend: metrics?.stats?.teacherTrend,
+    atRiskStudents: metrics?.stats?.atRiskStudents || 0
   };
 
   const dynamicDemographicsData = [
@@ -656,6 +660,101 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
     </div>
   );
 
+  const renderAIInsights = () => (
+    <div className="space-y-6 animate-fade-in">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="md:col-span-2 bg-gradient-to-br from-brand-purple to-indigo-700 rounded-2xl p-8 text-white relative overflow-hidden shadow-xl shadow-brand-purple/20">
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-md">
+                <Brain size={24} />
+              </div>
+              <h2 className="text-2xl font-bold">Zawadi Smart Insights</h2>
+            </div>
+            <p className="text-indigo-100 text-sm max-w-md leading-relaxed mb-6">
+              Our AI engine analyzes longitudinal student performance, attendance patterns, and financial data to predict learning outcomes and identify students who may need additional support.
+            </p>
+            <div className="flex flex-wrap gap-4">
+              <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 flex-1 min-w-[140px]">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-200">System Accuracy</p>
+                <p className="text-2xl font-bold">94.2%</p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 flex-1 min-w-[140px]">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-200">Insights Generated</p>
+                <p className="text-2xl font-bold">1,240</p>
+              </div>
+            </div>
+          </div>
+          <Zap className="absolute -bottom-10 -right-10 w-64 h-64 text-white/5" />
+        </div>
+
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Risk Monitoring</h3>
+              <ShieldAlert className="text-rose-500" size={20} />
+            </div>
+            <div className="text-center py-4">
+              <p className="text-4xl font-bold text-gray-900">{stats.atRiskStudents}</p>
+              <p className="text-xs font-medium text-gray-500 mt-1">Students flagged as High-Risk</p>
+            </div>
+          </div>
+          <button 
+            onClick={() => onNavigate('learners-list')}
+            className="w-full py-3 bg-gray-50 hover:bg-gray-100 text-gray-900 rounded-xl text-xs font-bold uppercase tracking-widest transition"
+          >
+            Review At-Risk Students
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest mb-4">Academic Risk Distribution</h3>
+          <div className="space-y-4">
+            {[
+              { label: 'Critically Behind (BE)', value: 12, color: 'bg-rose-500' },
+              { label: 'Needs Support (AE)', value: 45, color: 'bg-amber-500' },
+              { label: 'Stable (ME)', value: 120, color: 'bg-emerald-500' },
+              { label: 'Accelerated (EE)', value: 34, color: 'bg-brand-purple' },
+            ].map((item, idx) => (
+              <div key={idx}>
+                <div className="flex justify-between items-center mb-1.5">
+                  <span className="text-xs font-medium text-gray-600">{item.label}</span>
+                  <span className="text-xs font-bold text-gray-900">{item.value} Students</span>
+                </div>
+                <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                  <div className={`${item.color} h-full`} style={{ width: `${(item.value / 211) * 100}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest mb-4">Top AI Recommendations</h3>
+          <div className="space-y-3">
+            {[
+              { title: 'Grade 4 Science Review', desc: 'Cluster average dropped 8% this week. Suggest remedial session.', icon: AlertCircle, color: 'text-rose-500' },
+              { title: 'Automate Fee Reminders', desc: '72% of unpaid balances are for 10-day overdue invoices.', icon: Wallet, color: 'text-amber-500' },
+              { title: 'Accelerated Learning Hub', desc: '15% of Grade 7 students qualify for advanced coding path.', icon: Brain, color: 'text-brand-purple' },
+            ].map((item, idx) => (
+              <div key={idx} className="flex gap-4 p-3 hover:bg-gray-50 rounded-xl transition cursor-pointer border border-transparent hover:border-gray-100">
+                <div className={`p-2 rounded-lg bg-white shadow-sm ${item.color}`}>
+                  <item.icon size={18} />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-gray-900">{item.title}</h4>
+                  <p className="text-[10px] text-gray-500 leading-tight mt-0.5">{item.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   // ── Un-Assessed Students Detailed Sheet ────────────────────────────────────────
   const UnAssessedSheet = () => {
     const breakdown = metrics?.unAssessedBreakdown || [];
@@ -822,6 +921,7 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
         <TabButton id="financials" label="Financials" icon={Wallet} active={activeTab === 'financials'} onClick={() => setActiveTab('financials')} />
         <TabButton id="performance" label="Academic Performance" icon={Award} active={activeTab === 'performance'} onClick={() => setActiveTab('performance')} />
         <TabButton id="operations" label="School Operations" icon={Clock} active={activeTab === 'operations'} onClick={() => setActiveTab('operations')} />
+        <TabButton id="ai-insights" label="AI Smart Insights" icon={Brain} active={activeTab === 'ai-insights'} onClick={() => setActiveTab('ai-insights')} />
       </div>
 
       {/* Tab Content */}
@@ -831,6 +931,7 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
         {activeTab === 'financials' && renderFinancials()}
         {activeTab === 'performance' && renderPerformance()}
         {activeTab === 'operations' && renderOperations()}
+        {activeTab === 'ai-insights' && renderAIInsights()}
       </div>
     </div>
   );

@@ -125,7 +125,9 @@ export const reportController = {
         throw new ApiError(404, 'Learner not found');
       }
 
-      const gradingSystem = await gradingService.getGradingSystem('SUMMATIVE');
+      const institutionType = (req.school?.institutionType || 'PRIMARY_CBC') as string;
+      const systemType = institutionType === 'SECONDARY' ? 'SECONDARY' : 'SUMMATIVE';
+      const gradingSystem = await gradingService.getGradingSystem(systemType);
       const ranges = gradingSystem?.ranges || [];
 
       const results = await prisma.summativeResult.findMany({

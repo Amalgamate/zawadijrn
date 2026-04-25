@@ -11,12 +11,14 @@ export const useAuthStore = create(
       user: null,
       isAuthenticated: false,
       token: null,
+      institutionType: 'PRIMARY_CBC',
       
       // Actions
       setAuth: (user, token) => set({ 
         user, 
         token, 
-        isAuthenticated: !!user 
+        isAuthenticated: !!user,
+        institutionType: user?.institutionType || 'PRIMARY_CBC'
       }),
       
       updateUser: (updates) => set((state) => ({

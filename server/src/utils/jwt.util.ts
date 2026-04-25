@@ -8,12 +8,14 @@ interface JWTPayload {
   userId: string;
   email: string;
   role: Role;
+  institutionType: InstitutionType;
 }
 
 interface User {
   id: string;
   email: string;
   role: UserRole;
+  institutionType: InstitutionType;
 }
 
 export const generateAccessToken = (user: User): string => {
@@ -21,6 +23,7 @@ export const generateAccessToken = (user: User): string => {
     userId: user.id,
     email: user.email,
     role: user.role as Role,
+    institutionType: user.institutionType,
   };
 
   return jwt.sign(

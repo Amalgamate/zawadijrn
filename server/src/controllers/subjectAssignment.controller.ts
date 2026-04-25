@@ -7,7 +7,10 @@ import { Response } from 'express';
 import prisma from '../config/database';
 import { ApiError } from '../utils/error.util';
 import { AuthRequest } from '../middleware/permissions.middleware';
-import { UserRole } from '@prisma/client';
+
+// Roles allowed for subject allocation — mirrors UserRole enum in Prisma schema
+const ALLOWED_TEACHER_ROLES = ['TEACHER', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM', 'ADMIN', 'SUPER_ADMIN'] as const;
+type AllowedTeacherRole = typeof ALLOWED_TEACHER_ROLES[number];
 
 export class SubjectAssignmentController {
 
@@ -47,12 +50,13 @@ export class SubjectAssignmentController {
             throw new ApiError(400, 'Teacher ID, Learning Area ID, and Grade are required');
         }
 
-        // Verify teacher exists and is a teacher
-        const teacher = await prisma.user.findUnique({ where: { id: teacherId } });
-        // Define roles allowed for subject allocation
-        const allowedRoles: UserRole[] = ['TEACHER', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM', 'ADMIN', 'SUPER_ADMIN'];
-        
-        if (!teacher || !allowedRoles.includes(teacher.role)) {
+        // Verify teacher exists and has an allowed role
+        const teacher = await prisma.user.findUnique({
+            where: { id: teacherId },
+            select: { id: true, role: true, firstName: true, lastName: true }
+        });
+
+        if (!teacher || !(ALLOWED_TEACHER_ROLES as readonly string[]).includes(teacher.role)) {
             throw new ApiError(400, 'Invalid teacher selected or role not allowed for allocation');
         }
 
@@ -116,7 +120,7 @@ export class SubjectAssignmentController {
             }
         });
 
-        const teachers = assignments.map(a => a.teacher);
+        const teachers = assignments.map((a: { teacher: { id: string; firstName: string; lastName: string } }) => a.teacher);
         res.json({ success: true, data: teachers });
     }
 }

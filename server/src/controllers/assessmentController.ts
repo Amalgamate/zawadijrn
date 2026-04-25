@@ -367,10 +367,10 @@ export const recordFormativeResultsBulk = async (req: AuthRequest, res: Response
       where: { id: { in: learnerIds } },
       select: { id: true, grade: true, institutionType: true },
     });
-    const learnerMap = new Map(learnerRows.map((l) => [l.id, l]));
+    const learnerMap = new Map(learnerRows.map((l: any) => [l.id, l]));
 
     for (const assessment of valid) {
-      const learnerCtx = learnerMap.get(String(assessment.learnerId));
+      const learnerCtx: any = learnerMap.get(String(assessment.learnerId));
       const resolvedArea = await resolveLearningAreaWithContext({
         learningAreaId: assessment.learningAreaId,
         learningArea: assessment.learningArea,
@@ -417,12 +417,12 @@ export const recordFormativeResultsBulk = async (req: AuthRequest, res: Response
         })
       : [];
 
-    const ownerMap = new Map(existingAssessments.map(a => [
+    const ownerMap = new Map(existingAssessments.map((a: any) => [
       `${a.learnerId}::${a.term}::${a.academicYear}::${a.learningArea}::${a.type}::${a.title}`,
       a.teacherId
     ]));
 
-    const lockedExisting = existingAssessments.filter(a => a.locked || a.status === 'LOCKED');
+    const lockedExisting = existingAssessments.filter((a: any) => a.locked || a.status === 'LOCKED');
     const lockBypassRoles = ['ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER'];
 
     if (lockedExisting.length > 0 && !lockBypassRoles.includes(req.user?.role || '')) {
@@ -819,7 +819,7 @@ export const generateTestsBulk = async (req: AuthRequest, res: Response) => {
 
       const resolvedScaleId: string | undefined =
         scaleByArea.get(areaKey) ??
-        gradingSystems.find(s =>
+        gradingSystems.find((s: any) =>
           s.learningArea && (
             s.learningArea.toLowerCase() === areaKey ||
             s.learningArea.toLowerCase().includes(areaKey) ||
@@ -975,17 +975,17 @@ export const getSummativeTests = async (req: AuthRequest, res: Response) => {
       `;
 
       tests = rawTests
-        .filter((t) => !term || t.term === term)
-        .filter((t) => !academicYear || Number(t.academicYear) === parseInt(academicYear as string))
-        .filter((t) => !grade || t.grade === grade)
-        .filter((t) => {
+        .filter((t: any) => !term || t.term === term)
+        .filter((t: any) => !academicYear || Number(t.academicYear) === parseInt(academicYear as string))
+        .filter((t: any) => !grade || t.grade === grade)
+        .filter((t: any) => {
           if (grade) return true;
           if (institutionType === 'SECONDARY') return SS_GRADES.has(normalizeGradeCode(t.grade));
           if (institutionType === 'PRIMARY_CBC') return JS_GRADES.has(normalizeGradeCode(t.grade));
           return true;
         })
-        .filter((t) => !learningArea || t.learningArea === learningArea)
-        .map((t) => ({
+        .filter((t: any) => !learningArea || t.learningArea === learningArea)
+        .map((t: any) => ({
           ...t,
           creator: null,
           _count: { results: 0 }
@@ -1272,8 +1272,12 @@ export const recordSummativeResult = async (req: AuthRequest, res: Response) => 
     if (test.scaleId) {
       gradingSystem = await gradingService.getGradingSystemById(test.scaleId);
     }
+    
+    const institutionType = (req.school?.institutionType || 'PRIMARY_CBC') as string;
+    
     if (!gradingSystem) {
-      gradingSystem = await gradingService.getGradingSystem('SUMMATIVE');
+      const systemType = institutionType === 'SECONDARY' ? 'SECONDARY' : 'SUMMATIVE';
+      gradingSystem = await gradingService.getGradingSystem(systemType);
     }
     const ranges = gradingSystem?.ranges;
 
@@ -1415,10 +1419,10 @@ export const getSummativeByLearner = async (req: AuthRequest, res: Response) => 
       data: results,
       count: results.length,
       communication: {
-        hasSentSms: communicationLogs.some(log => log.channel === 'SMS'),
-        hasSentWhatsApp: communicationLogs.some(log => log.channel === 'WHATSAPP'),
-        lastSmsAt: communicationLogs.find(log => log.channel === 'SMS')?.sentAt,
-        lastWhatsAppAt: communicationLogs.find(log => log.channel === 'WHATSAPP')?.sentAt
+        hasSentSms: communicationLogs.some((log: { channel: string }) => log.channel === 'SMS'),
+        hasSentWhatsApp: communicationLogs.some((log: { channel: string }) => log.channel === 'WHATSAPP'),
+        lastSmsAt: communicationLogs.find((log: { channel: string; sentAt: Date }) => log.channel === 'SMS')?.sentAt,
+        lastWhatsAppAt: communicationLogs.find((log: { channel: string; sentAt: Date }) => log.channel === 'WHATSAPP')?.sentAt
       }
     });
 
@@ -1491,7 +1495,7 @@ export const getTestResults = async (req: Request, res: Response) => {
         ORDER BY sr."marksObtained" DESC
       `);
 
-      results = rawRows.map((row) => ({
+      results = rawRows.map((row: any) => ({
         id: row.id,
         testId: row.testId,
         learnerId: row.learnerId,
@@ -1673,7 +1677,7 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
         ORDER BY l."firstName" ASC, st."learningArea" ASC, st."testDate" ASC
       `);
 
-      results = rawRows.map((row) => ({
+      results = rawRows.map((row: any) => ({
         id: row.id,
         testId: row.testId,
         learnerId: row.learnerId,
@@ -1730,14 +1734,14 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
       orderBy: { sentAt: 'desc' }
     });
 
-    const communications = learnerIds.map(id => {
-      const logs = communicationLogs.filter(l => l.learnerId === id);
+    const communications = learnerIds.map((id: string) => {
+      const logs = communicationLogs.filter((l: { learnerId: string; channel: string; sentAt: Date }) => l.learnerId === id);
       return {
         learnerId: id,
-        hasSentSms: logs.some(log => log.channel === 'SMS'),
-        hasSentWhatsApp: logs.some(log => log.channel === 'WHATSAPP'),
-        lastSmsAt: logs.find(log => log.channel === 'SMS')?.sentAt,
-        lastWhatsAppAt: logs.find(log => log.channel === 'WHATSAPP')?.sentAt
+        hasSentSms: logs.some((log: any) => log.channel === 'SMS'),
+        hasSentWhatsApp: logs.some((log: any) => log.channel === 'WHATSAPP'),
+        lastSmsAt: logs.find((log: any) => log.channel === 'SMS')?.sentAt,
+        lastWhatsAppAt: logs.find((log: any) => log.channel === 'WHATSAPP')?.sentAt
       };
     });
 
@@ -1750,7 +1754,7 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
         (predictions as any).__tooLarge = true;
         (predictions as any).__count = learnerIds.length;
       } else {
-        await Promise.all(learnerIds.slice(0, CAP).map(async (id) => {
+        await Promise.all(learnerIds.slice(0, CAP).map(async (id: string) => {
           try {
             predictions[id] = await aiAssistantService.generatePathwayPrediction(
               id,
@@ -1817,8 +1821,12 @@ export const recordSummativeResultsBulk = async (req: AuthRequest, res: Response
     if (test.scaleId) {
       gradingSystem = await gradingService.getGradingSystemById(test.scaleId);
     }
+    
+    const institutionType = (req.school?.institutionType || 'PRIMARY_CBC') as string;
+    
     if (!gradingSystem) {
-      gradingSystem = await gradingService.getGradingSystem('SUMMATIVE');
+      const systemType = institutionType === 'SECONDARY' ? 'SECONDARY' : 'SUMMATIVE';
+      gradingSystem = await gradingService.getGradingSystem(systemType);
     }
     const ranges = gradingSystem?.ranges;
 
@@ -1839,7 +1847,7 @@ export const recordSummativeResultsBulk = async (req: AuthRequest, res: Response
       where: { id: { in: learnerIds } },
       select: { id: true, grade: true, admissionNumber: true }
     });
-    const learnerGradeMap = new Map(learners.map(l => [l.id, l]));
+    const learnerGradeMap = new Map(learners.map((l: { id: string; grade: string; admissionNumber: string }) => [l.id, l]));
 
     // ── 3. Validate and build upsert payloads ─────────────────────────────────
     const skipped: Array<{ learnerId: string; reason: string }> = [];
@@ -1847,7 +1855,7 @@ export const recordSummativeResultsBulk = async (req: AuthRequest, res: Response
     const historyRows: any[] = [];
 
     for (const item of results) {
-      const learnerData = learnerGradeMap.get(item.learnerId);
+      const learnerData = learnerGradeMap.get(item.learnerId) as { id: string; grade: string; admissionNumber: string } | undefined;
       
       // Grade Match Guard: Ensure learner grade matches test grade
       if (learnerData && learnerData.grade !== test.grade) {
@@ -1947,7 +1955,7 @@ export const recordSummativeResultsBulk = async (req: AuthRequest, res: Response
       .filter(h => h.resultId);
 
     if (historyData.length > 0) {
-      prisma.summativeResultHistory.createMany({ data: historyData as any }).catch(e =>
+      prisma.summativeResultHistory.createMany({ data: historyData as any }).catch((e: any) =>
         logger.warn('[BulkSave] History write failed (non-critical):', e.message)
       );
     }

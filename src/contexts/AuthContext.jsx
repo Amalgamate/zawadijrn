@@ -22,9 +22,7 @@ export const AuthProvider = ({ children }) => {
 
   const normalizeUser = useCallback((u) => {
     if (!u) return u;
-    const email = String(u.email || '').toLowerCase();
-    const isSsDemo = email === 'admin.ss@local.test' || email === 'teacher.ss@local.test';
-    const institutionType = u.institutionType || (isSsDemo ? 'SECONDARY' : 'PRIMARY_CBC');
+    const institutionType = u.institutionType || 'PRIMARY_CBC';
     return { ...u, institutionType };
   }, []);
 

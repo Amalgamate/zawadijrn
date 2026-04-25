@@ -33,17 +33,12 @@ export class AccountingService {
     ];
 
     async initializeDefaultCoA() {
-        // 1. Check if already initialized
         const existing = await prisma.account.findFirst();
         if (existing) return;
 
         return await prisma.$transaction([
-            prisma.account.createMany({
-                data: this.defaultAccounts
-            }),
-            prisma.journal.createMany({
-                data: this.defaultJournals
-            })
+            prisma.account.createMany({ data: this.defaultAccounts }),
+            prisma.journal.createMany({ data: this.defaultJournals })
         ]);
     }
 
@@ -80,7 +75,6 @@ export class AccountingService {
 
         if (!includeBalances) return accounts;
 
-        // Calculate balances (simplified - today's total)
         const items = await prisma.journalItem.findMany({
             where: { entry: { status: 'POSTED' } }
         });
@@ -89,10 +83,8 @@ export class AccountingService {
             const accItems = items.filter(i => i.accountId === acc.id);
             const debits = accItems.reduce((sum, i) => sum + Number(i.debit), 0);
             const credits = accItems.reduce((sum, i) => sum + Number(i.credit), 0);
-            
             const isDebitNormal = acc.type.startsWith('ASSET') || acc.type === 'EXPENSE';
             const balance = isDebitNormal ? debits - credits : credits - debits;
-
             return { ...acc, balance };
         });
     }
@@ -139,10 +131,7 @@ export class AccountingService {
             where: {
                 journalId: filters?.journalId,
                 status: filters?.status,
-                date: {
-                    gte: startDate,
-                    lte: endDate
-                }
+                date: { gte: startDate, lte: endDate }
             },
             include: {
                 journal: true,
@@ -152,9 +141,6 @@ export class AccountingService {
         });
     }
 
-    /**
-     * Create a balanced journal entry
-     */
     async createJournalEntry(data: {
         date?: Date;
         reference?: string;
@@ -166,7 +152,6 @@ export class AccountingService {
             label?: string;
         }[];
     }) {
-        // 1. Validate Balance
         const totalDebit = data.items.reduce((sum, item) => sum + (item.debit || 0), 0);
         const totalCredit = data.items.reduce((sum, item) => sum + (item.credit || 0), 0);
 
@@ -174,7 +159,6 @@ export class AccountingService {
             throw new Error(`Unbalanced Journal Entry: Debits (${totalDebit}) do not equal Credits (${totalCredit})`);
         }
 
-        // 2. Create entry and items in transaction
         return prisma.journalEntry.create({
             data: {
                 date: data.date || new Date(),
@@ -190,11 +174,7 @@ export class AccountingService {
                     }))
                 }
             },
-            include: {
-                items: {
-                    include: { account: true }
-                }
-            }
+            include: { items: { include: { account: true } } }
         });
     }
 
@@ -213,36 +193,28 @@ export class AccountingService {
         });
     }
 
-    /**
-     * Helper to find an account by its code (with caching)
-     */
     async getAccountByCode(code: string) {
         if (this.accountByCodeCache.has(code)) {
             return this.accountByCodeCache.get(code);
         }
-        const account = await prisma.account.findUnique({
-            where: { code }
-        });
+        const account = await prisma.account.findUnique({ where: { code } });
         if (account) this.accountByCodeCache.set(code, account);
         return account;
     }
 
-    /**
-     * Helper to find a journal by its code (with caching)
-     */
     async getJournalByCode(code: string) {
         if (this.journalByCodeCache.has(code)) {
             return this.journalByCodeCache.get(code);
         }
-        const journal = await prisma.journal.findUnique({
-            where: { code }
-        });
+        const journal = await prisma.journal.findUnique({ where: { code } });
         if (journal) this.journalByCodeCache.set(code, journal);
         return journal;
     }
 
     /**
-     * Clear accounting caches
+     * Clear accounting caches.
+     * Call this after any account/journal create, update, or deactivation so
+     * the in-process singleton cache does not serve stale entries indefinitely.
      */
     clearCache() {
         this.accountByCodeCache.clear();
@@ -251,28 +223,28 @@ export class AccountingService {
 
     /**
      * Automatic Ledger Posting: Fee Invoice
-     * Dr: Accounts Receivable
-     * Cr: Revenue
+     * Dr: Accounts Receivable (1100)
+     * Cr: Tuition Revenue (4000)
      */
     async postFeeInvoiceToLedger(invoice: any) {
         const totalAmount = invoice.totalAmount;
         const invoiceNumber = invoice.invoiceNumber;
 
-        // Find required accounts and journal
-        let arAccount = await this.getAccountByCode('1100'); // AR
-        let revenueAccount = await this.getAccountByCode('4000'); // Tuition Revenue
+        let arAccount = await this.getAccountByCode('1100');
+        let revenueAccount = await this.getAccountByCode('4000');
         let salesJournal = await this.getJournalByCode('INV');
 
         if (!arAccount || !revenueAccount || !salesJournal) {
-            console.warn(`[Accounting] Missing accounting setup for fee invoice. Initializing defaults and retrying.`);
+            console.warn(`[Accounting] Missing setup for fee invoice — initializing defaults.`);
             await this.ensureDefaultAccountingSetup();
+            this.clearCache();
             arAccount = await this.getAccountByCode('1100');
             revenueAccount = await this.getAccountByCode('4000');
             salesJournal = await this.getJournalByCode('INV');
         }
 
         if (!arAccount || !revenueAccount || !salesJournal) {
-            console.warn(`[Accounting] Still missing required accounts/journal after initialization. Skipping auto-post.`);
+            console.warn(`[Accounting] Still missing required accounts/journal. Skipping auto-post.`);
             return;
         }
 
@@ -292,29 +264,47 @@ export class AccountingService {
 
     /**
      * Automatic Ledger Posting: Fee Payment
-     * Dr: Bank/Cash
-     * Cr: Accounts Receivable
+     * Dr: Bank (1210) or Cash (1200)
+     * Cr: Accounts Receivable (1100)
+     *
+     * FIX (Bug Medium): M-Pesa payments now correctly post to the Main Bank
+     * Account (1210) instead of Cash in Hand (1200). M-Pesa settlements are
+     * received into the school's bank account, not petty cash.
+     *
+     * Mapping:
+     *   BANK_TRANSFER → 1210 Main Bank Account  / BNK1 journal
+     *   MPESA         → 1210 Main Bank Account  / BNK1 journal  (was wrongly 1200/CSH1)
+     *   CARD          → 1210 Main Bank Account  / BNK1 journal
+     *   CASH          → 1200 Cash in Hand       / CSH1 journal
+     *   CHEQUE        → 1210 Main Bank Account  / BNK1 journal
+     *   OTHER         → 1200 Cash in Hand       / CSH1 journal
      */
     async postFeePaymentToLedger(payment: any, method: string) {
         const { amount, receiptNumber } = payment;
 
-        // Determine destination account (Bank or Cash)
-        const assetCode = method === 'BANK_TRANSFER' ? '1210' : '1200';
+        // FIX: MPESA, BANK_TRANSFER, CARD, and CHEQUE all go to the bank account.
+        // Only CASH and OTHER go to Cash in Hand.
+        const bankMethods = new Set(['BANK_TRANSFER', 'MPESA', 'CARD', 'CHEQUE']);
+        const isBank = bankMethods.has(method?.toUpperCase?.() ?? method);
+
+        const assetCode = isBank ? '1210' : '1200';
+        const journalCode = isBank ? 'BNK1' : 'CSH1';
+
         let assetAccount = await this.getAccountByCode(assetCode);
         let arAccount = await this.getAccountByCode('1100');
-        const journalCode = method === 'BANK_TRANSFER' ? 'BNK1' : 'CSH1';
         let journal = await this.getJournalByCode(journalCode);
 
         if (!assetAccount || !arAccount || !journal) {
-            console.warn(`[Accounting] Missing accounting setup for fee payment. Initializing defaults and retrying.`);
+            console.warn(`[Accounting] Missing setup for fee payment — initializing defaults.`);
             await this.ensureDefaultAccountingSetup();
+            this.clearCache();
             assetAccount = await this.getAccountByCode(assetCode);
             arAccount = await this.getAccountByCode('1100');
             journal = await this.getJournalByCode(journalCode);
         }
 
         if (!assetAccount || !arAccount || !journal) {
-            console.warn(`[Accounting] Still missing required accounts/journal after initialization. Skipping payment post.`);
+            console.warn(`[Accounting] Still missing required accounts/journal. Skipping payment post.`);
             return;
         }
 
@@ -334,33 +324,32 @@ export class AccountingService {
 
     /**
      * Automatic Ledger Posting: Fee Waiver
-     * Dr: Fee Waivers (Expense/Discount)
-     * Cr: Accounts Receivable
+     * Dr: Fee Waivers (5400)
+     * Cr: Accounts Receivable (1100)
      */
     async postFeeWaiverToLedger(waiver: any) {
         const { amountWaived, id } = waiver;
         const invoiceNumber = waiver.invoice?.invoiceNumber || 'N/A';
 
-        // Find required accounts and journal
-        let arAccount = await this.getAccountByCode('1100'); // AR
-        let waiverAccount = await this.getAccountByCode('5400'); // Fee Waivers (Expense)
+        let arAccount = await this.getAccountByCode('1100');
+        let waiverAccount = await this.getAccountByCode('5400');
         let miscJournal = await this.getJournalByCode('MISC');
 
         if (!arAccount || !waiverAccount || !miscJournal) {
-            console.warn(`[Accounting] Missing accounting setup for fee waiver. Ensuring defaults.`);
-            
-            // Ensure 5400 exists if missing
+            console.warn(`[Accounting] Missing setup for fee waiver. Ensuring defaults.`);
+
             if (!waiverAccount) {
                 await prisma.account.upsert({
                     where: { code: '5400' },
                     update: {},
                     create: { code: '5400', name: 'Fee Waivers & Discounts', type: AccountType.EXPENSE }
                 });
-                waiverAccount = await this.getAccountByCode('5400');
             }
 
             await this.ensureDefaultAccountingSetup();
+            this.clearCache();
             arAccount = await this.getAccountByCode('1100');
+            waiverAccount = await this.getAccountByCode('5400');
             miscJournal = await this.getJournalByCode('MISC');
         }
 
@@ -385,31 +374,27 @@ export class AccountingService {
     /**
      * Automatic Ledger Posting: Payroll Record
      *
-     * Two entries are created in a single transaction:
+     * Entry 1 — Payroll accrual:
+     *   Dr: Salaries Expense  5000
+     *   Cr: Salaries Payable  2110
      *
-     * Entry 1 — Payroll accrual (at payroll generation time)
-     *   Dr: Salaries Expense  5000  (gross/net cost to the school)
-     *   Cr: Salaries Payable  2110  (liability until disbursed)
-     *
-     * Entry 2 — Payroll disbursement (clears the payable against the bank)
-     *   Dr: Salaries Payable  2110  (removes the liability)
-     *   Cr: Main Bank Account 1210  (cash leaves the school account)
-     *
-     * Both entries are posted immediately so the ledger is balanced.
-     * If disbursement timing differs, split this into two separate calls.
+     * Entry 2 — Payroll disbursement:
+     *   Dr: Salaries Payable  2110
+     *   Cr: Main Bank Account 1210
      */
     async postPayrollToLedger(payroll: any) {
         const { netSalary, payrollNumber, month, year } = payroll;
         const ref = payrollNumber || `PAY/${year}/${month}`;
 
-        let expenseAccount = await this.getAccountByCode('5000'); // Salaries Expense
-        let payableAccount = await this.getAccountByCode('2110'); // Salaries Payable
-        let bankAccount    = await this.getAccountByCode('1210'); // Main Bank Account
+        let expenseAccount = await this.getAccountByCode('5000');
+        let payableAccount = await this.getAccountByCode('2110');
+        let bankAccount    = await this.getAccountByCode('1210');
         let journal        = await this.getJournalByCode('MISC');
 
         if (!expenseAccount || !payableAccount || !bankAccount || !journal) {
-            console.warn(`[Accounting] Missing payroll setup. Initializing defaults and retrying.`);
+            console.warn(`[Accounting] Missing payroll setup. Initializing defaults.`);
             await this.ensureDefaultAccountingSetup();
+            this.clearCache();
             expenseAccount = await this.getAccountByCode('5000');
             payableAccount = await this.getAccountByCode('2110');
             bankAccount    = await this.getAccountByCode('1210');
@@ -417,13 +402,12 @@ export class AccountingService {
         }
 
         if (!expenseAccount || !payableAccount || !bankAccount || !journal) {
-            console.warn(`[Accounting] Still missing required payroll accounts/journal after initialization. Skipping auto-post.`);
+            console.warn(`[Accounting] Still missing required payroll accounts/journal. Skipping auto-post.`);
             return;
         }
 
         const amount = Number(netSalary);
 
-        // Entry 1: Accrual — Expense recognised, liability created
         const accrualEntry = await this.createJournalEntry({
             journalId: journal.id,
             reference: `${ref}/ACCRUAL`,
@@ -435,7 +419,6 @@ export class AccountingService {
         });
         await this.postJournalEntry(accrualEntry.id);
 
-        // Entry 2: Disbursement — Liability cleared, cash leaves the bank
         const disbursementEntry = await this.createJournalEntry({
             journalId: journal.id,
             reference: `${ref}/DISBURSEMENT`,
@@ -449,17 +432,12 @@ export class AccountingService {
     }
 
     async getVendors() {
-        return prisma.vendor.findMany({
-            orderBy: { name: 'asc' }
-        });
+        return prisma.vendor.findMany({ orderBy: { name: 'asc' } });
     }
 
     async getExpenses() {
         return prisma.expense.findMany({
-            include: {
-                account: true,
-                vendor: true
-            },
+            include: { account: true, vendor: true },
             orderBy: { date: 'desc' }
         });
     }
@@ -473,8 +451,8 @@ export class AccountingService {
         amount: number;
         description: string;
         category: string;
-        accountId: string; // Expense Account (e.g., 5100)
-        paymentAccountId: string; // Asset Account (e.g., Bank/Cash)
+        accountId: string;
+        paymentAccountId: string;
         vendorId?: string;
         reference?: string;
     }) {
@@ -491,7 +469,6 @@ export class AccountingService {
             }
         });
 
-        // Automated Ledger Posting
         const journal = await this.getJournalByCode('MISC');
         if (journal) {
             const entry = await this.createJournalEntry({
@@ -511,9 +488,7 @@ export class AccountingService {
 
     async getBankStatements(accountId?: string) {
         return prisma.bankStatement.findMany({
-            where: {
-                accountId: accountId || undefined
-            },
+            where: { accountId: accountId || undefined },
             include: { lines: true },
             orderBy: { createdAt: 'desc' }
         });
@@ -546,27 +521,14 @@ export class AccountingService {
     async reconcileStatementLine(lineId: string, journalItemId: string) {
         return prisma.bankStatementLine.update({
             where: { id: lineId },
-            data: {
-                journalItemId,
-                status: 'RECONCILED'
-            }
+            data: { journalItemId, status: 'RECONCILED' }
         });
     }
 
-    /**
-     * Auto-match bank statement lines to journal items
-     */
     async suggestMatches(lineId: string) {
-        const line = await prisma.bankStatementLine.findUnique({
-            where: { id: lineId }
-        });
-
+        const line = await prisma.bankStatementLine.findUnique({ where: { id: lineId } });
         if (!line) throw new Error('Statement line not found');
 
-        // Look for journal items that:
-        // 1. Are not already reconciled (not linked to any BankStatementLine)
-        // 2. Match the amount (absolute value)
-        // 3. Are within a date range (e.g., +/- 7 days)
         const startDate = new Date(line.date);
         startDate.setDate(startDate.getDate() - 7);
         const endDate = new Date(line.date);
@@ -576,20 +538,14 @@ export class AccountingService {
 
         return prisma.journalItem.findMany({
             where: {
-                bankStatementLine: { is: null }, // Not reconciled
-                OR: [
-                    { debit: amount },
-                    { credit: amount }
-                ],
+                bankStatementLine: { is: null },
+                OR: [{ debit: amount }, { credit: amount }],
                 entry: {
                     date: { gte: startDate, lte: endDate },
                     status: 'POSTED'
                 }
             },
-            include: {
-                entry: true,
-                account: true
-            }
+            include: { entry: true, account: true }
         });
     }
 
@@ -597,19 +553,16 @@ export class AccountingService {
         const end = new Date(endDate);
         end.setHours(23, 59, 59, 999);
 
-        // 1. Fetch Trial Balance logic
         const accountsWithBalance = await prisma.account.findMany({
             include: {
                 journalItems: {
                     where: {
                         entry: {
                             status: 'POSTED',
-                            date: { lte: end } // Fetch all history up to endDate for perpetual balance sheets
+                            date: { lte: end }
                         }
                     },
-                    include: {
-                        entry: { select: { date: true } }
-                    }
+                    include: { entry: { select: { date: true } } }
                 }
             }
         });
@@ -617,8 +570,6 @@ export class AccountingService {
         const trialBalance = accountsWithBalance.map(acc => {
             const isPL = acc.type === 'REVENUE' || acc.type === 'EXPENSE';
 
-            // Filter P&L accounts strictly by the period [startDate, endDate]
-            // Balance Sheet accounts evaluate perpetually up to endDate
             const relevantItems = acc.journalItems.filter(item => {
                 if (isPL) {
                     return item.entry.date >= startDate && item.entry.date <= end;
@@ -628,8 +579,6 @@ export class AccountingService {
 
             const debits = relevantItems.reduce((sum, item) => sum + Number(item.debit), 0);
             const credits = relevantItems.reduce((sum, item) => sum + Number(item.credit), 0);
-
-            // Assets & Expenses increase with Debit
             const isDebitNormal = acc.type.startsWith('ASSET') || acc.type === 'EXPENSE';
 
             return {
@@ -640,12 +589,10 @@ export class AccountingService {
             };
         });
 
-        // 2. Simple Profit & Loss
         const income = trialBalance.filter(a => a.type === 'REVENUE').reduce((sum, a) => sum + a.balance, 0);
         const expenses = trialBalance.filter(a => a.type === 'EXPENSE').reduce((sum, a) => sum + a.balance, 0);
         const netProfit = income - expenses;
 
-        // 3. Balance Sheet
         const nonCurrentAssets = trialBalance.filter(a => a.type === 'ASSET_NON_CURRENT').reduce((sum, a) => sum + a.balance, 0);
         const currentAssets = trialBalance.filter(a => ['ASSET_RECEIVABLE', 'ASSET_CASH'].includes(a.type)).reduce((sum, a) => sum + a.balance, 0);
         const totalAssets = nonCurrentAssets + currentAssets;
@@ -658,39 +605,18 @@ export class AccountingService {
 
         return {
             trialBalance,
-            profitLoss: {
-                totalIncome: income,
-                totalExpenses: expenses,
-                netProfit
-            },
+            profitLoss: { totalIncome: income, totalExpenses: expenses, netProfit },
             balanceSheet: {
-                assets: {
-                    nonCurrent: nonCurrentAssets,
-                    current: currentAssets,
-                    total: totalAssets
-                },
-                liabilities: {
-                    current: currentLiabilities,
-                    nonCurrent: nonCurrentLiabilities,
-                    total: totalLiabilities
-                },
-                equity: {
-                    retainedEarnings: equity,
-                    currentYearProfit: netProfit,
-                    total: equity + netProfit
-                },
+                assets: { nonCurrent: nonCurrentAssets, current: currentAssets, total: totalAssets },
+                liabilities: { current: currentLiabilities, nonCurrent: nonCurrentLiabilities, total: totalLiabilities },
+                equity: { retainedEarnings: equity, currentYearProfit: netProfit, total: equity + netProfit },
                 totalLiabilitiesAndEquity: totalLiabilities + equity + netProfit
             }
         };
     }
 
-    /**
-     * Get summary stats for Accounting Dashboard
-     */
     async getDashboardStats() {
         const now = new Date();
-
-        // Year-to-date results for profit/loss, but use full ledger balances for cash/receivables/payables.
         const report = await this.getFinancialReport(new Date(now.getFullYear(), 0, 1), now);
         const accounts = await this.getAccounts(true) as Array<{ type: AccountType; balance?: number }>;
 
@@ -704,19 +630,14 @@ export class AccountingService {
             .filter(acc => acc.type === AccountType.LIABILITY_PAYABLE)
             .reduce((sum, acc) => sum + Number(acc.balance || 0), 0);
 
-        const feesCollectedResult = await prisma.feePayment.aggregate({
-            _sum: { amount: true }
-        });
+        const feesCollectedResult = await prisma.feePayment.aggregate({ _sum: { amount: true } });
         const feesCollected = Number(feesCollectedResult._sum.amount || 0);
 
         const recentEntries = await prisma.journalEntry.findMany({
             where: { status: 'POSTED' },
             take: 5,
             orderBy: { date: 'desc' },
-            include: {
-                journal: true,
-                items: { include: { account: true } }
-            }
+            include: { journal: true, items: { include: { account: true } } }
         });
 
         return {

@@ -8,10 +8,9 @@ interface ScoreItem {
 
 export const gradingService = {
   /**
-   * Get grading system for type.
    * Uses upsert-style logic to avoid duplicate creation under concurrent requests.
    */
-  async getGradingSystem(type: 'SUMMATIVE' | 'CBC') {
+  async getGradingSystem(type: 'SUMMATIVE' | 'CBC' | 'SECONDARY') {
     let system = await prisma.gradingSystem.findFirst({
       where: { type, active: true, isDefault: true },
       include: { ranges: true }
@@ -98,18 +97,44 @@ export const gradingService = {
   },
 
   /**
-   * Create default grading system.
    * FIX: uses findFirst-then-create with a double-check to avoid duplicate rows
    * under concurrent cold-starts. For true safety a DB unique constraint on
    * (type, isDefault) would be the production solution.
    */
-  async createDefaultSystem(type: 'SUMMATIVE' | 'CBC') {
+  async createDefaultSystem(type: 'SUMMATIVE' | 'CBC' | 'SECONDARY') {
     // Re-check inside the lock window — another request may have created it first
     const existing = await prisma.gradingSystem.findFirst({
       where: { type, isDefault: true },
       include: { ranges: true }
     });
     if (existing) return existing;
+
+    if (type === 'SECONDARY') {
+      return await prisma.gradingSystem.create({
+        data: {
+          name: 'Standard KCSE Secondary Grading',
+          type: 'SECONDARY',
+          isDefault: true,
+          ranges: {
+            create: [
+              { label: 'A',  minPercentage: 75, maxPercentage: 100, summativeGrade: 'A',  points: 12, color: '#10b981', description: 'Plain' },
+              { label: 'A-', minPercentage: 70, maxPercentage: 74,  summativeGrade: 'A-', points: 11, color: '#059669', description: 'Minus' },
+              { label: 'B+', minPercentage: 65, maxPercentage: 69,  summativeGrade: 'B+', points: 10, color: '#047857', description: 'Plus' },
+              { label: 'B',  minPercentage: 60, maxPercentage: 64,  summativeGrade: 'B',  points: 9,  color: '#3b82f6', description: 'Plain' },
+              { label: 'B-', minPercentage: 55, maxPercentage: 59,  summativeGrade: 'B-', points: 8,  color: '#2563eb', description: 'Minus' },
+              { label: 'C+', minPercentage: 50, maxPercentage: 54,  summativeGrade: 'C+', points: 7,  color: '#1d4ed8', description: 'Plus' },
+              { label: 'C',  minPercentage: 45, maxPercentage: 49,  summativeGrade: 'C',  points: 6,  color: '#f59e0b', description: 'Plain' },
+              { label: 'C-', minPercentage: 40, maxPercentage: 44,  summativeGrade: 'C-', points: 5,  color: '#d97706', description: 'Minus' },
+              { label: 'D+', minPercentage: 35, maxPercentage: 39,  summativeGrade: 'D+', points: 4,  color: '#ea580c', description: 'Plus' },
+              { label: 'D',  minPercentage: 30, maxPercentage: 34,  summativeGrade: 'D',  points: 3,  color: '#c2410c', description: 'Plain' },
+              { label: 'D-', minPercentage: 25, maxPercentage: 29,  summativeGrade: 'D-', points: 2,  color: '#dc2626', description: 'Minus' },
+              { label: 'E',  minPercentage: 0,  maxPercentage: 24,  summativeGrade: 'E',  points: 1,  color: '#991b1b', description: 'Plain' },
+            ]
+          }
+        },
+        include: { ranges: true }
+      });
+    }
 
     if (type === 'SUMMATIVE') {
       return await prisma.gradingSystem.create({
