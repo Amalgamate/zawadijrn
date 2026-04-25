@@ -4,6 +4,13 @@ import prisma from '../config/database';
 
 type InstitutionType = 'PRIMARY_CBC' | 'SECONDARY' | 'TERTIARY';
 
+export interface School {
+  id: string;
+  name: string;
+  institutionType: InstitutionType;
+  [key: string]: any;
+}
+
 // Globally augment Express Request to include user info
 declare global {
   namespace Express {
@@ -12,8 +19,8 @@ declare global {
         userId: string;
         email: string;
         role: Role;
-        institutionType?: InstitutionType;
       };
+      school?: School;
     }
   }
 }
@@ -26,8 +33,8 @@ export interface AuthRequest extends Request {
     userId: string;
     email: string;
     role: Role;
-    institutionType?: InstitutionType;
   };
+  school?: School;
   file?: any;
   files?: any;
   headers: any;

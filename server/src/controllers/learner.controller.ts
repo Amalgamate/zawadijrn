@@ -27,7 +27,7 @@ export class LearnerController {
   async getAllLearners(req: AuthRequest, res: Response) {
     const currentUserRole = req.user!.role;
     const currentUserId = req.user!.userId;
-    const institutionType = (req.user?.institutionType || 'PRIMARY_CBC') as any;
+    const institutionType = (req.school?.institutionType || 'PRIMARY_CBC') as any;
     const { grade, stream, status, search, page = 1, limit = 50 } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
 
@@ -86,7 +86,7 @@ export class LearnerController {
   }
 
   async getLearnerStats(_req: AuthRequest, res: Response) {
-    const institutionType = (_req.user?.institutionType || 'PRIMARY_CBC') as any;
+    const institutionType = (_req.school?.institutionType || 'PRIMARY_CBC') as any;
     const whereClause: any = { archived: false, institutionType };
     const [statusCounts, gradeCounts, genderCounts, total, active] = await Promise.all([
       prisma.learner.groupBy({ by: ['status'], _count: true, where: whereClause }),
@@ -108,7 +108,7 @@ export class LearnerController {
 
   async getLearnerById(req: AuthRequest, res: Response) {
     const { id } = req.params;
-    const institutionType = (req.user?.institutionType || 'PRIMARY_CBC') as any;
+    const institutionType = (req.school?.institutionType || 'PRIMARY_CBC') as any;
     const learner = await prisma.learner.findUnique({
       where: { id },
       include: { parent: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } } },
@@ -122,7 +122,7 @@ export class LearnerController {
   }
 
   async getLearnerByAdmissionNumber(req: AuthRequest, res: Response) {
-    const institutionType = (req.user?.institutionType || 'PRIMARY_CBC') as any;
+    const institutionType = (req.school?.institutionType || 'PRIMARY_CBC') as any;
     const learner = await prisma.learner.findUnique({
       where: { admissionNumber: req.params.admissionNumber },
       include: { parent: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } } },
@@ -134,7 +134,7 @@ export class LearnerController {
 
   async createLearner(req: AuthRequest, res: Response) {
     const currentUserId = req.user!.userId;
-    const institutionType = (req.user?.institutionType || 'PRIMARY_CBC') as any;
+    const institutionType = (req.school?.institutionType || 'PRIMARY_CBC') as any;
     let {
       admissionNumber, firstName, lastName, middleName, dateOfBirth, gender, grade, stream,
       parentId, guardianName, guardianPhone, guardianEmail, medicalConditions, allergies,

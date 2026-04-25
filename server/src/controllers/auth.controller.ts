@@ -139,7 +139,7 @@ export class AuthController {
         where: { email },
         select: {
           id: true, password: true, status: true, loginAttempts: true, lockedUntil: true,
-          role: true, institutionType: true, email: true, firstName: true, lastName: true,
+          role: true, email: true, firstName: true, lastName: true,
           phone: true, lastLogin: true,
           // mustChangePassword indicator — set on auto-created parent/student accounts
           passwordResetToken: true,
@@ -193,7 +193,10 @@ export class AuthController {
 
     res.json({
       success: true,
-      user: userWithoutSensitive,
+      user: {
+        ...userWithoutSensitive,
+        institutionType: (req as any).school?.institutionType || 'PRIMARY_CBC'
+      },
       token: accessToken, // Return actual token for cross-domain headers fallback
       refreshToken: refreshToken,
       mustChangePassword,
@@ -326,7 +329,7 @@ export class AuthController {
       where: { id: req.user!.userId },
       select: {
         id: true, email: true, firstName: true, lastName: true, phone: true,
-        role: true, status: true, institutionType: true, createdAt: true,
+        role: true, status: true, createdAt: true,
         passwordResetToken: true,
       }
     });
@@ -338,6 +341,7 @@ export class AuthController {
       success: true,
       data: {
         ...userPublic,
+        institutionType: (req as any).school?.institutionType || 'PRIMARY_CBC',
         mustChangePassword: !!passwordResetToken,
       }
     });

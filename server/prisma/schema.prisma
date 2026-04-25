@@ -50,7 +50,7 @@ model User {
   nssfNumber                String?
   subject                   String?
   gender                    String?
-  institutionType           InstitutionType          @default(PRIMARY_CBC)
+
   shifNumber                String?
   housingLevyExempt         Boolean                  @default(false)
   createdAggregationConfigs AggregationConfig[]
@@ -139,6 +139,7 @@ model School {
   branchSeparator     String              @default("-")
   active              Boolean             @default(true)
   status              String              @default("ACTIVE")
+  institutionType     InstitutionType     @default(PRIMARY_CBC)
   curriculumType      CurriculumType      @default(CBC_AND_EXAM)
   assessmentMode      AssessmentMode      @default(MIXED)
   customGradingScale  Json?

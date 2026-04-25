@@ -98,7 +98,7 @@ export const getFormativeAssessments = async (req: AuthRequest, res: Response) =
       const resolvedArea = await resolveLearningAreaWithContext({
         learningArea: String(learningArea),
         grade: grade ? String(grade) : undefined,
-        institutionType: (req.user?.institutionType as any) || 'PRIMARY_CBC',
+        institutionType: (req.school?.institutionType as any) || 'PRIMARY_CBC',
       });
       whereClause.OR = resolvedArea.id
         ? [{ learningAreaId: resolvedArea.id }, { learningArea: String(learningArea) }]
@@ -156,7 +156,7 @@ export const getBulkFormativeResults = async (req: AuthRequest, res: Response) =
       const resolvedArea = await resolveLearningAreaWithContext({
         learningArea: String(learningArea),
         grade: String(grade),
-        institutionType: (req.user?.institutionType as any) || 'PRIMARY_CBC',
+        institutionType: (req.school?.institutionType as any) || 'PRIMARY_CBC',
       });
       whereClause.OR = resolvedArea.id
         ? [{ learningAreaId: resolvedArea.id }, { learningArea: String(learningArea) }]
@@ -230,7 +230,7 @@ export const createFormativeAssessment = async (req: AuthRequest, res: Response)
       learningAreaId,
       learningArea,
       grade: learner?.grade || undefined,
-      institutionType: (learner?.institutionType as any) || (req.user?.institutionType as any) || 'PRIMARY_CBC',
+      institutionType: (learner?.institutionType as any) || (req.school?.institutionType as any) || 'PRIMARY_CBC',
     });
     const resolvedLearningArea = resolvedArea.name;
     const resolvedLearningAreaId = resolvedArea.id;
@@ -375,7 +375,7 @@ export const recordFormativeResultsBulk = async (req: AuthRequest, res: Response
         learningAreaId: assessment.learningAreaId,
         learningArea: assessment.learningArea,
         grade: learnerCtx?.grade || undefined,
-        institutionType: (learnerCtx?.institutionType as any) || (req.user?.institutionType as any) || 'PRIMARY_CBC',
+        institutionType: (learnerCtx?.institutionType as any) || (req.school?.institutionType as any) || 'PRIMARY_CBC',
       });
       assessment.learningArea = resolvedArea.name || assessment.learningArea;
       assessment.learningAreaId = resolvedArea.id || assessment.learningAreaId || null;
@@ -641,7 +641,7 @@ export const createSummativeTest = async (req: AuthRequest, res: Response) => {
     const testType = rawTestType || rawType;
 
     const teacherId = req.user?.userId;
-    const institutionType = (req.user?.institutionType || 'PRIMARY_CBC') as string;
+    const institutionType = (req.school?.institutionType || 'PRIMARY_CBC') as string;
     assertGradeAllowedForInstitution(institutionType, String(grade || ''), 'Create test');
 
     const normalizedTerm = String(term || '')
@@ -652,7 +652,7 @@ export const createSummativeTest = async (req: AuthRequest, res: Response) => {
       learningAreaId,
       learningArea,
       grade: grade ? String(grade) : undefined,
-      institutionType: (req.user?.institutionType as any) || 'PRIMARY_CBC',
+      institutionType: (req.school?.institutionType as any) || 'PRIMARY_CBC',
     });
     const resolvedLearningArea = resolvedArea.name;
     const resolvedLearningAreaId = resolvedArea.id;
@@ -770,7 +770,7 @@ export const generateTestsBulk = async (req: AuthRequest, res: Response) => {
     } = req.body;
 
     const teacherId = req.user?.userId;
-    const institutionType = (req.user?.institutionType || 'PRIMARY_CBC') as string;
+    const institutionType = (req.school?.institutionType || 'PRIMARY_CBC') as string;
     assertGradeAllowedForInstitution(institutionType, String(grade || ''), 'Bulk test generation');
 
     if (!learningAreas || !Array.isArray(learningAreas) || !grade || !term || !academicYear || !teacherId) {
@@ -808,7 +808,7 @@ export const generateTestsBulk = async (req: AuthRequest, res: Response) => {
     const scaleWarnings: string[] = [];
     let duplicateCount = 0;
 
-    const institutionScope = (req.user?.institutionType || 'PRIMARY_CBC') as 'PRIMARY_CBC' | 'SECONDARY' | 'TERTIARY';
+    const institutionScope = (req.school?.institutionType || 'PRIMARY_CBC') as 'PRIMARY_CBC' | 'SECONDARY' | 'TERTIARY';
     for (const area of learningAreas) {
       const areaKey = String(area).trim().toLowerCase();
       const resolvedArea = await resolveLearningAreaWithContext({
@@ -913,7 +913,7 @@ export const getSummativeTests = async (req: AuthRequest, res: Response) => {
 
     if (term) whereClause.term = term;
     if (academicYear) whereClause.academicYear = parseInt(academicYear as string);
-    const institutionType = String(req.user?.institutionType || 'PRIMARY_CBC').toUpperCase();
+    const institutionType = String(req.school?.institutionType || 'PRIMARY_CBC').toUpperCase();
     if (grade) {
       assertGradeAllowedForInstitution(institutionType, String(grade), 'List tests');
       whereClause.grade = grade;
@@ -928,7 +928,7 @@ export const getSummativeTests = async (req: AuthRequest, res: Response) => {
       const resolvedArea = await resolveLearningAreaWithContext({
         learningArea: String(learningArea),
         grade: grade ? String(grade) : undefined,
-        institutionType: (req.user?.institutionType as any) || 'PRIMARY_CBC',
+        institutionType: (req.school?.institutionType as any) || 'PRIMARY_CBC',
       });
       resolvedAreaIdForFilter = resolvedArea.id;
       whereClause.OR = resolvedArea.id

@@ -12,7 +12,7 @@ import logger from '../utils/logger';
 const router = Router();
 
 const resolveInstitutionType = (req: AuthRequest) => {
-  return (req.user?.institutionType || 'PRIMARY_CBC') as 'PRIMARY_CBC' | 'SECONDARY';
+  return (req.school?.institutionType || 'PRIMARY_CBC') as 'PRIMARY_CBC' | 'SECONDARY';
 };
 
 /**

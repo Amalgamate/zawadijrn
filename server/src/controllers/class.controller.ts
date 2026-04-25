@@ -54,7 +54,7 @@ export class ClassController {
 
   async getAllClasses(req: AuthRequest, res: Response) {
     const { grade, stream, academicYear, term, active = 'true' } = req.query;
-    const institutionType = (req.user?.institutionType || 'PRIMARY_CBC') as any;
+    const institutionType = (req.school?.institutionType || 'PRIMARY_CBC') as any;
     const whereClause: any = { institutionType };
 
     if (grade) whereClause.grade = grade as string;
@@ -110,7 +110,7 @@ export class ClassController {
 
   async getClassById(req: AuthRequest, res: Response) {
     const { id } = req.params;
-    const institutionType = (req.user?.institutionType || 'PRIMARY_CBC') as any;
+    const institutionType = (req.school?.institutionType || 'PRIMARY_CBC') as any;
 
     const classData = await prisma.class.findFirst({
       where: { id, institutionType },
@@ -142,7 +142,7 @@ export class ClassController {
 
   async createClass(req: AuthRequest, res: Response) {
     const { name, grade, stream, teacherId, academicYear, term, capacity = 40, room } = req.body;
-    const institutionType = (req.user?.institutionType || 'PRIMARY_CBC') as any;
+    const institutionType = (req.school?.institutionType || 'PRIMARY_CBC') as any;
 
     if (!grade) throw new ApiError(400, 'Grade is required');
 

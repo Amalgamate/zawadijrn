@@ -109,7 +109,7 @@ router.post(
         const testMap: Record<string, string> = {};
         const testPassMarkMap: Record<string, number> = {};
         const learningAreaIdMap: Record<string, string | null> = {};
-        const institutionType = (req.user?.institutionType || 'PRIMARY_CBC') as any;
+        const institutionType = (req.school?.institutionType || 'PRIMARY_CBC') as any;
         const summativeSystem = await gradingService.getGradingSystem('SUMMATIVE');
         const summativeRanges = summativeSystem.ranges || [];
 

@@ -9,11 +9,15 @@ import { ipRateLimit } from './middleware/enhanced-rateLimit.middleware';
 import pinoHttp from 'pino-http';
 import cookieParser from 'cookie-parser';
 import logger from './utils/logger';
+import { schoolContextMiddleware } from './middleware/schoolContext.middleware';
 
 const app: Application = express();
 
 // Use pino-http for structured request/response logging
 app.use(pinoHttp({ logger: logger.pino }));
+
+// Resolve school context globally
+app.use(schoolContextMiddleware);
 
 // Trust proxy
 app.set('trust proxy', 1);
