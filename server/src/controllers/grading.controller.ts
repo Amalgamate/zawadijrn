@@ -4,6 +4,7 @@ import { gradingService } from '../services/grading.service';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { ApiError } from '../utils/error.util';
 
+import logger from '../utils/logger';
 export const gradingController = {
   // Get all grading systems
   getGradingSystems: async (req: AuthRequest, res: Response) => {
@@ -19,7 +20,7 @@ export const gradingController = {
 
       res.json(systems);
     } catch (error) {
-      console.error('Error fetching grading systems:', error);
+      logger.error('Error fetching grading systems:', error);
       if (error instanceof ApiError) {
         res.status(error.statusCode).json({ error: error.message });
       } else {
@@ -62,7 +63,7 @@ export const gradingController = {
 
       res.json(system);
     } catch (error) {
-      console.error('Error creating grading system:', error);
+      logger.error('Error creating grading system:', error);
       res.status(500).json({
         error: 'Failed to create grading system',
         message: error instanceof Error ? error.message : 'Unknown error'
@@ -133,7 +134,7 @@ export const gradingController = {
 
       res.json(system);
     } catch (error) {
-      console.error('Error updating grading system:', error);
+      logger.error('Error updating grading system:', error);
       if (error instanceof ApiError) {
         res.status(error.statusCode).json({ error: error.message });
       } else {
@@ -169,7 +170,7 @@ export const gradingController = {
         res.json({ success: true, message: 'Grading system archived successfully' });
       }
     } catch (error) {
-      console.error('Error deleting grading system:', error);
+      logger.error('Error deleting grading system:', error);
       res.status(500).json({ error: 'Failed to delete grading system' });
     }
   },
@@ -196,7 +197,7 @@ export const gradingController = {
 
       res.json(updatedRange);
     } catch (error) {
-      console.error('Error updating grading range:', error);
+      logger.error('Error updating grading range:', error);
       res.status(500).json({ error: 'Failed to update grading range' });
     }
   },
@@ -222,7 +223,7 @@ export const gradingController = {
 
       res.json(range);
     } catch (error) {
-      console.error('Error creating grading range:', error);
+      logger.error('Error creating grading range:', error);
       res.status(500).json({ error: 'Failed to create grading range' });
     }
   },
@@ -234,7 +235,7 @@ export const gradingController = {
       await prisma.gradingRange.delete({ where: { id } });
       res.json({ success: true });
     } catch (error) {
-      console.error('Error deleting grading range:', error);
+      logger.error('Error deleting grading range:', error);
       res.status(500).json({ error: 'Failed to delete grading range' });
     }
   }

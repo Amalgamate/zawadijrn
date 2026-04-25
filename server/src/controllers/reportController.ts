@@ -11,6 +11,7 @@ import { ApiError } from '../utils/error.util';
 import { gradingService } from '../services/grading.service';
 import * as reportService from '../services/report.service';
 
+import logger from '../utils/logger';
 export const reportController = {
   /**
    * Get Comprehensive Formative Report for a Learner
@@ -85,7 +86,7 @@ export const reportController = {
       });
 
     } catch (error: any) {
-      console.error('Error generating formative report:', error);
+      logger.error('Error generating formative report:', error);
       res.status(error.statusCode || 500).json({
         success: false,
         message: error.message || 'Failed to generate formative report'
@@ -173,7 +174,7 @@ export const reportController = {
       });
 
     } catch (error: any) {
-      console.error('Error generating summative report:', error);
+      logger.error('Error generating summative report:', error);
       res.status(error.statusCode || 500).json({
         success: false,
         message: error.message || 'Failed to generate summative report'
@@ -205,7 +206,7 @@ export const reportController = {
       });
 
     } catch (error: any) {
-      console.error('Error generating termly report:', error);
+      logger.error('Error generating termly report:', error);
       res.status(error.statusCode || 500).json({
         success: false,
         message: error.message || 'Failed to generate termly report'
@@ -262,7 +263,7 @@ export const reportController = {
       });
 
     } catch (error: any) {
-      console.error('Error generating class analytics:', error);
+      logger.error('Error generating class analytics:', error);
       res.status(error.statusCode || 500).json({
         success: false,
         message: error.message || 'Failed to generate class analytics'

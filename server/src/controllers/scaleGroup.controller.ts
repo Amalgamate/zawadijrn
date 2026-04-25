@@ -7,6 +7,7 @@ import { Response } from 'express';
 import prisma from '../config/database'; // Using shared client
 import { AuthRequest } from '../middleware/permissions.middleware';
 
+import logger from '../utils/logger';
 // Official CBC Grade-Based Mapping
 const OFFICIAL_CBC_MAPPING: { [key: string]: string[] } = {
   'PLAYGROUP': ['Language Activities', 'Mathematical Activities', 'Environmental Activities', 'Creative Activities', 'Religious Activities', 'Pastoral Programme of Instruction (PPI)'],
@@ -58,7 +59,7 @@ export const getScaleGroups = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (error: any) {
-    console.error('Error fetching scale groups:', error);
+    logger.error('Error fetching scale groups:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch scale groups',
@@ -109,7 +110,7 @@ export const getScaleGroupById = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (error: any) {
-    console.error('Error fetching scale group:', error);
+    logger.error('Error fetching scale group:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch scale group',
@@ -163,7 +164,7 @@ export const createScaleGroup = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (error: any) {
-    console.error('Error creating scale group:', error);
+    logger.error('Error creating scale group:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to create scale group',
@@ -221,7 +222,7 @@ export const updateScaleGroup = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (error: any) {
-    console.error('Error updating scale group:', error);
+    logger.error('Error updating scale group:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to update scale group',
@@ -240,7 +241,7 @@ export const deleteScaleGroup = async (req: AuthRequest, res: Response) => {
     const { force } = req.query;
     const userId = req.user?.userId;
 
-    console.log(`\n🗑️  Delete request for scale group: ${id}${force === 'true' ? ' (FORCED)' : ''}`);
+    logger.info(`\n🗑️  Delete request for scale group: ${id}${force === 'true' ? ' (FORCED)' : ''}`);
 
     // Get details including grading systems
     const existing = await prisma.scaleGroup.findFirst({
@@ -259,15 +260,15 @@ export const deleteScaleGroup = async (req: AuthRequest, res: Response) => {
     });
 
     if (!existing) {
-      console.log('❌ Scale group not found or already deleted');
+      logger.info('❌ Scale group not found or already deleted');
       return res.status(404).json({
         success: false,
         message: 'Scale group not found or already deleted'
       });
     }
 
-    console.log(`📊 Found scale group: "${existing.name}"`);
-    console.log(`📝 Contains ${existing.gradingSystems.length} grading systems`);
+    logger.info(`📊 Found scale group: "${existing.name}"`);
+    logger.info(`📝 Contains ${existing.gradingSystems.length} grading systems`);
 
     // Check for tests using any of these grading systems
     if (force !== 'true') {
@@ -288,7 +289,7 @@ export const deleteScaleGroup = async (req: AuthRequest, res: Response) => {
         });
 
         if (testsUsingScales.length > 0) {
-          console.log(`⚠️  Warning: ${testsUsingScales.length} tests are using these scales`);
+          logger.info(`⚠️  Warning: ${testsUsingScales.length} tests are using these scales`);
           return res.status(409).json({
             success: false,
             message: `Cannot delete scale group "${existing.name}". ${testsUsingScales.length} test(s) are currently using these grading scales.`,
@@ -322,7 +323,7 @@ export const deleteScaleGroup = async (req: AuthRequest, res: Response) => {
             }
           });
           testsArchivedCount = testsResult.count;
-          console.log(`✅ Force Delete: Archived ${testsArchivedCount} tests`);
+          logger.info(`✅ Force Delete: Archived ${testsArchivedCount} tests`);
         }
 
         // 2. Archive grading ranges
@@ -375,7 +376,7 @@ export const deleteScaleGroup = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (error: any) {
-    console.error('❌ Error deleting scale group:', error);
+    logger.error('❌ Error deleting scale group:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to delete scale group',
@@ -511,7 +512,7 @@ export const generateGradesForScaleGroup = async (req: AuthRequest, res: Respons
     });
 
   } catch (error: any) {
-    console.error('Error generating grades for scale group:', error);
+    logger.error('Error generating grades for scale group:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to generate grading systems',
@@ -580,7 +581,7 @@ export const getScaleForTest = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (error: any) {
-    console.error('Error fetching scale for test:', error);
+    logger.error('Error fetching scale for test:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch grading scale',

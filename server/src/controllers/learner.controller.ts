@@ -16,6 +16,7 @@ import { EmailService } from '../services/email.service';
 import { parentService } from '../services/parent.service';
 import { v2 as cloudinary } from 'cloudinary';
 
+import logger from '../utils/logger';
 const SKIP_PARENT_PORTAL_NOTIFICATIONS = process.env.SKIP_PARENT_PORTAL_NOTIFICATIONS === 'true' || process.env.NODE_ENV === 'test';
 
 /**
@@ -30,7 +31,7 @@ export class LearnerController {
     const { grade, stream, status, search, page = 1, limit = 50 } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
 
-    console.log('📚 [LEARNER] getAllLearners called with filters:', { grade, stream, status, search, page, limit });
+    logger.info('📚 [LEARNER] getAllLearners called with filters:', { grade, stream, status, search, page, limit });
 
     let whereClause: any = { archived: false, institutionType };
     if (currentUserRole === 'PARENT') whereClause.parentId = currentUserId;
@@ -70,7 +71,7 @@ export class LearnerController {
         prisma.learner.count({ where: whereClause }),
       ]);
 
-      console.log('📚 [LEARNER] Query results:', {
+      logger.info('📚 [LEARNER] Query results:', {
         learnersCount: learners.length,
         total,
         whereClause,
@@ -181,10 +182,10 @@ export class LearnerController {
             const result = await cloudinary.uploader.upload(photo, { folder: 'zawadi/photos' });
             finalPhotoUrl = result.secure_url;
           } catch (uploadErr: any) {
-            console.warn('Cloudinary upload failed, skipping photo:', uploadErr.message);
+            logger.warn('Cloudinary upload failed, skipping photo:', uploadErr.message);
           }
         } else {
-          console.warn('[createLearner] Cloudinary not configured, photo skipped.');
+          logger.warn('[createLearner] Cloudinary not configured, photo skipped.');
         }
       }
 
@@ -231,7 +232,7 @@ export class LearnerController {
           });
         }
       } catch (userError) {
-        console.error('Failed to create student system user:', userError);
+        logger.error('Failed to create student system user:', userError);
       }
 
       // ── Generate Initial Fee Invoice ──────────────────────────────────────────
@@ -248,7 +249,7 @@ export class LearnerController {
           invoiceMessage = ` (⚠️ Note: Fee invoice not generated: ${invResult.error})`;
         }
       } catch (e: any) {
-        console.error('Invoice generation failed:', e);
+        logger.error('Invoice generation failed:', e);
         invoiceMessage = ` (⚠️ Error: Automated invoice failed: ${e.message})`;
       }
 
@@ -258,7 +259,7 @@ export class LearnerController {
         message: `Learner created successfully.${invoiceMessage}`
       });
     } catch (createError: any) {
-      console.error('[createLearner] Full error:', createError);
+      logger.error('[createLearner] Full error:', createError);
       throw new ApiError(500, `Creation failed: ${createError.message || JSON.stringify(createError)}`);
     }
   }
@@ -334,7 +335,7 @@ export class LearnerController {
               const result = await cloudinary.uploader.upload(req.body.photo, { folder: 'zawadi/photos' });
               finalPhotoUrl = result.secure_url;
             } catch (uploadErr: any) {
-              console.warn('Cloudinary upload failed, keeping base64:', uploadErr.message);
+              logger.warn('Cloudinary upload failed, keeping base64:', uploadErr.message);
             }
           }
         }
@@ -349,7 +350,7 @@ export class LearnerController {
 
       res.json({ success: true, data: updated });
     } catch (error: any) {
-      console.error('[updateLearner] error:', error?.message || error);
+      logger.error('[updateLearner] error:', error?.message || error);
       if (error instanceof ApiError) throw error;
       if (error?.code === 'P2002') throw new ApiError(409, 'A learner with that admission number already exists.');
       throw new ApiError(500, error?.message || 'Failed to update learner');

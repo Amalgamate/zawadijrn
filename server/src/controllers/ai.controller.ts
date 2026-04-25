@@ -9,6 +9,7 @@ import { aiAssistantService } from '../services/ai-assistant.service';
 import { performanceService } from '../services/performance.service';
 import { ApiError } from '../utils/error.util';
 
+import logger from '../utils/logger';
 export const aiController = {
     /**
      * Generate AI Feedback for a learner
@@ -33,7 +34,7 @@ export const aiController = {
                 data: feedback
             });
         } catch (error: any) {
-            console.error('AI Feedback Error:', error);
+            logger.error('AI Feedback Error:', error);
             res.status(error.statusCode || 500).json({
                 success: false,
                 message: error.message || 'Failed to generate AI feedback'

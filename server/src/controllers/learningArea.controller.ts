@@ -8,6 +8,7 @@ import { AuthRequest } from '../middleware/permissions.middleware';
 import prisma from '../config/database';
 import { seedSeniorPathways } from '../services/ss-pathways.seed';
 
+import logger from '../utils/logger';
 const router = Router();
 
 const resolveInstitutionType = (req: AuthRequest) => {
@@ -36,7 +37,7 @@ export const getLearningAreas = async (req: AuthRequest, res: Response) => {
 
     res.json({ success: true, data: learningAreas });
   } catch (error: any) {
-    console.error('Error fetching learning areas:', error);
+    logger.error('Error fetching learning areas:', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to fetch learning areas' });
   }
 };
@@ -59,7 +60,7 @@ export const getLearningArea = async (req: AuthRequest, res: Response) => {
 
     res.json({ success: true, data: learningArea });
   } catch (error: any) {
-    console.error('Error fetching learning area:', error);
+    logger.error('Error fetching learning area:', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to fetch learning area' });
   }
 };
@@ -104,7 +105,7 @@ export const createLearningArea = async (req: AuthRequest, res: Response) => {
 
     res.status(201).json({ success: true, data: learningArea });
   } catch (error: any) {
-    console.error('Error creating learning area:', error);
+    logger.error('Error creating learning area:', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to create learning area' });
   }
 };
@@ -157,7 +158,7 @@ export const updateLearningArea = async (req: AuthRequest, res: Response) => {
 
     res.json({ success: true, data: updated });
   } catch (error: any) {
-    console.error('Error updating learning area:', error);
+    logger.error('Error updating learning area:', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to update learning area' });
   }
 };
@@ -189,7 +190,7 @@ export const deleteLearningArea = async (req: AuthRequest, res: Response) => {
 
     res.json({ success: true, message: 'Learning area deleted successfully' });
   } catch (error: any) {
-    console.error('Error deleting learning area:', error);
+    logger.error('Error deleting learning area:', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to delete learning area' });
   }
 };
@@ -568,7 +569,7 @@ export const seedLearningAreas = async (req: AuthRequest, res: Response) => {
       skipped
     });
   } catch (error: any) {
-    console.error('Error seeding learning areas:', error);
+    logger.error('Error seeding learning areas:', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to seed learning areas' });
   }
 };

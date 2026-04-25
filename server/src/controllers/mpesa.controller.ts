@@ -4,6 +4,7 @@ import prisma from '../config/database';
 import messageService from '../services/message.service';
 import { resolveOrganicPayment, applyToSpecificInvoice, normalizePhone, applyAmountToInvoiceFields, resolveInvoiceStatus } from '../services/payment-resolver.service';
 
+import logger from '../utils/logger';
 export const initiatePayment = async (req: Request, res: Response) => {
     const { phoneNumber, amount, studentId, invoiceId } = req.body;
 
@@ -108,7 +109,7 @@ export const handleCallback = async (req: Request, res: Response) => {
         externalId = req.body.data.id;
     }
 
-    console.log(`[MpesaCallback] Provider: ${provider} | ID: ${checkoutRequestId || externalId}`);
+    logger.info(`[MpesaCallback] Provider: ${provider} | ID: ${checkoutRequestId || externalId}`);
 
     try {
         // ── 1. Try to find a pre-existing (STK-initiated) transaction ───────────
@@ -205,7 +206,7 @@ export const handleCallback = async (req: Request, res: Response) => {
                         });
                     } catch (err: any) {
                         if (err?.code === 'P2002') {
-                            console.warn(`[MpesaCallback] Duplicate receipt ${receipt} — already recorded.`);
+                            logger.warn(`[MpesaCallback] Duplicate receipt ${receipt} — already recorded.`);
                             updatedInvoice = await prisma.feeInvoice.findUnique({ where: { id: transaction.invoiceId! } });
                         } else {
                             throw err;
@@ -225,17 +226,17 @@ export const handleCallback = async (req: Request, res: Response) => {
                             messageType: 'SMS'
                         });
                     } catch (notifErr) {
-                        console.error('[MpesaCallback] SMS error:', notifErr);
+                        logger.error('[MpesaCallback] SMS error:', notifErr);
                     }
                 }
 
-                console.log(`[MpesaCallback] STK success: ${transaction.id} | receipt: ${receipt}`);
+                logger.info(`[MpesaCallback] STK success: ${transaction.id} | receipt: ${receipt}`);
             } else {
                 await prisma.mpesaTransaction.update({
                     where: { id: transaction.id },
                     data: { status: 'FAILED', resultCode, resultDesc }
                 });
-                console.log(`[MpesaCallback] STK failed: ${resultDesc}`);
+                logger.info(`[MpesaCallback] STK failed: ${resultDesc}`);
             }
 
             return res.json({ success: true });
@@ -243,7 +244,7 @@ export const handleCallback = async (req: Request, res: Response) => {
 
         // ── 4. Organic Buy Goods payment (no pre-existing transaction) ────────
         if (isSuccess && phone && amount > 0 && receipt) {
-            console.log(`[MpesaCallback] Organic Buy Goods payment detected: ${phone} → KES ${amount} (${receipt})`);
+            logger.info(`[MpesaCallback] Organic Buy Goods payment detected: ${phone} → KES ${amount} (${receipt})`);
 
             const { outcome, detail } = await resolveOrganicPayment({
                 rawPhone: phone,
@@ -252,13 +253,13 @@ export const handleCallback = async (req: Request, res: Response) => {
                 rawPayload: req.body
             });
 
-            console.log(`[MpesaCallback] Organic resolution: ${outcome} — ${detail}`);
+            logger.info(`[MpesaCallback] Organic resolution: ${outcome} — ${detail}`);
         }
 
         return res.json({ success: true });
 
     } catch (error: any) {
-        console.error('[MpesaCallback] Error:', error.message);
+        logger.error('[MpesaCallback] Error:', error.message);
         res.status(500).json({ success: false, error: error.message });
     }
 };
@@ -347,7 +348,7 @@ export const resolveUnmatchedPayment = async (req: Request, res: Response) => {
             });
         } catch (err: any) {
             if (err?.code === 'P2002') {
-                console.warn(`[ResolveUnmatched] Duplicate receipt ${unmatched.receiptNo} — already recorded.`);
+                logger.warn(`[ResolveUnmatched] Duplicate receipt ${unmatched.receiptNo} — already recorded.`);
                 updated = await prisma.feeInvoice.findUnique({ where: { id: invoiceId } });
             } else {
                 throw err;
@@ -381,7 +382,7 @@ export const resolveUnmatchedPayment = async (req: Request, res: Response) => {
                 messageType: 'SMS'
             });
         } catch (e) {
-            console.error('[ResolveUnmatched] SMS error:', e);
+            logger.error('[ResolveUnmatched] SMS error:', e);
         }
 
         res.json({ success: true, message: 'Payment resolved and applied to invoice' });

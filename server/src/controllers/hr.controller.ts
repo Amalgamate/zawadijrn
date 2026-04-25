@@ -4,6 +4,7 @@ import { hrService } from '../services/hr.service';
 import { ApiError } from '../utils/error.util';
 import { SmsService } from '../services/sms.service';
 
+import logger from '../utils/logger';
 export class HRController {
 
     // ─── Dashboard ────────────────────────────────────────────────────────────
@@ -15,7 +16,7 @@ export class HRController {
             const stats = await hrService.getDashboardStats(month, year);
             res.json({ success: true, data: stats });
         } catch (error: any) {
-            console.error('[HR] getDashboardStats:', error);
+            logger.error('[HR] getDashboardStats:', error);
             res.status(error.statusCode || 500).json({ success: false, message: error.message });
         }
     }
@@ -65,7 +66,7 @@ export class HRController {
             const staff = await hrService.getStaffDirectory();
             res.json({ success: true, data: staff });
         } catch (error: any) {
-            console.error('[HR] getStaffDirectory:', error);
+            logger.error('[HR] getStaffDirectory:', error);
             res.status(error.statusCode || 500).json({ success: false, message: error.message });
         }
     }
@@ -76,7 +77,7 @@ export class HRController {
             const updated = await hrService.updateStaffHRDetails(userId, req.body);
             res.json({ success: true, message: 'Staff HR details updated', data: updated });
         } catch (error: any) {
-            console.error('[HR] updateStaffHR:', error);
+            logger.error('[HR] updateStaffHR:', error);
             res.status(error.statusCode || 500).json({ success: false, message: error.message });
         }
     }

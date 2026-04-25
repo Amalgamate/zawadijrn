@@ -9,6 +9,7 @@ import { documentService } from '../services/document.service';
 import { default as prisma } from '../config/database'; // Fixed import
 import { ApiError } from '../utils/error.util'; // Fixed import
 
+import logger from '../utils/logger';
 export class DocumentController {
     /**
      * Upload a document
@@ -51,7 +52,7 @@ export class DocumentController {
                 data: document
             });
         } catch (error: any) {
-            console.error('[Document Controller] Upload error:', error);
+            logger.error('[Document Controller] Upload error:', error);
             if (error instanceof ApiError) {
                 res.status(error.statusCode).json({
                     success: false,
@@ -110,7 +111,7 @@ export class DocumentController {
                 data: documents
             });
         } catch (error: any) {
-            console.error('[Document Controller] Bulk upload error:', error);
+            logger.error('[Document Controller] Bulk upload error:', error);
             if (error instanceof ApiError) {
                 res.status(error.statusCode).json({
                     success: false,
@@ -182,7 +183,7 @@ export class DocumentController {
                 }
             });
         } catch (error: any) {
-            console.error('[Document Controller] Get documents error:', error);
+            logger.error('[Document Controller] Get documents error:', error);
             if (error instanceof ApiError) {
                 res.status(error.statusCode).json({
                     success: false,
@@ -229,7 +230,7 @@ export class DocumentController {
                 data: document
             });
         } catch (error: any) {
-            console.error('[Document Controller] Get document error:', error);
+            logger.error('[Document Controller] Get document error:', error);
             if (error instanceof ApiError) {
                 res.status(error.statusCode).json({
                     success: false,
@@ -276,7 +277,7 @@ export class DocumentController {
                 message: 'Document deleted successfully'
             });
         } catch (error: any) {
-            console.error('[Document Controller] Delete document error:', error);
+            logger.error('[Document Controller] Delete document error:', error);
             if (error instanceof ApiError) {
                 res.status(error.statusCode).json({
                     success: false,
@@ -323,7 +324,7 @@ export class DocumentController {
                 data: updatedDocument
             });
         } catch (error: any) {
-            console.error('[Document Controller] Update document error:', error);
+            logger.error('[Document Controller] Update document error:', error);
             if (error instanceof ApiError) {
                 res.status(error.statusCode).json({
                     success: false,
@@ -355,7 +356,7 @@ export class DocumentController {
                 data: categories.map((c: { category: string }) => c.category)
             });
         } catch (error: any) {
-            console.error('[Document Controller] Get categories error:', error);
+            logger.error('[Document Controller] Get categories error:', error);
             res.status(500).json({
                 success: false,
                 message: 'Failed to fetch categories'

@@ -5,6 +5,7 @@ import { AuthRequest } from '../middleware/permissions.middleware';
 import { redisCacheService } from '../services/redis-cache.service';
 import { configService } from '../services/config.service';
 
+import logger from '../utils/logger';
 // ─── TTL constants ─────────────────────────────────────────────────────────────
 // Dashboard stats are aggregates — they don't need sub-second freshness.
 // 5 min for admin covers multiple page loads within a work session.
@@ -81,7 +82,7 @@ export class DashboardController {
                         });
                     } catch (error: any) {
                         if (error?.code === 'P2022' && String(error?.message || '').includes('events.allDay')) {
-                            console.warn('[Dashboard] events.allDay missing — returning empty events until migration runs.');
+                            logger.warn('[Dashboard] events.allDay missing — returning empty events until migration runs.');
                             return [];
                         }
                         throw error;
@@ -308,7 +309,7 @@ export class DashboardController {
 
         } catch (error: any) {
             console.timeEnd('🚀 [DASHBOARD] getAdminMetrics');
-            console.error('Admin Dashboard Error:', error);
+            logger.error('Admin Dashboard Error:', error);
             throw new ApiError(500, error.message || 'Failed to fetch dashboard metrics');
         }
     }
@@ -360,7 +361,7 @@ export class DashboardController {
             res.json({ success: true, data: payload });
 
         } catch (error: any) {
-            console.error('Teacher Dashboard Error:', error);
+            logger.error('Teacher Dashboard Error:', error);
             throw new ApiError(500, error.message || 'Failed to fetch teacher dashboard metrics');
         }
     }
@@ -472,7 +473,7 @@ export class DashboardController {
             res.json({ success: true, data: payload });
 
         } catch (error: any) {
-            console.error('Parent Dashboard Error:', error);
+            logger.error('Parent Dashboard Error:', error);
             throw new ApiError(500, error.message || 'Failed to fetch parent dashboard metrics');
         }
     }

@@ -6,6 +6,7 @@ import * as path from 'path';
 import * as zlib from 'zlib';
 import { pipeline } from 'stream/promises';
 
+import logger from '../utils/logger';
 const execFileAsync = promisify(execFile);
 
 // ── Config ────────────────────────────────────────────────────────────────────
@@ -414,7 +415,7 @@ export class BackupController {
       const stderr =
         typeof e.stderr === 'string' ? e.stderr : e.stderr?.toString?.('utf8');
       const msg = (stderr && stderr.trim()) || e.message || 'Backup failed';
-      console.error('[backup] createBackup failed:', msg);
+      logger.error('[backup] createBackup failed:', msg);
       res.status(500).json({ success: false, error: msg });
     }
   }
@@ -528,7 +529,7 @@ export class BackupController {
       const stderr =
         typeof e.stderr === 'string' ? e.stderr : e.stderr?.toString?.('utf8');
       const msg = (stderr && stderr.trim()) || e.message || 'Restore failed';
-      console.error('[backup] restoreBackup failed:', msg);
+      logger.error('[backup] restoreBackup failed:', msg);
       res.status(500).json({ success: false, error: msg });
     }
   }

@@ -3,6 +3,7 @@ import prisma from '../config/database';
 import { AuthRequest } from '../middleware/permissions.middleware';
 import { ApiError } from '../utils/error.util';
 
+import logger from '../utils/logger';
 // Type cast for broadcast models (Prisma client includes these models at runtime)
 const broadcastPrisma = prisma as any;
 
@@ -73,13 +74,13 @@ export const saveBroadcastCampaign = async (req: AuthRequest, res: Response) => 
           sentAt: new Date(r.sentAt || Date.now()),
         })),
       });
-      console.log(`✅ Synced ${recipients.length} recipients to audit logs`);
+      logger.info(`✅ Synced ${recipients.length} recipients to audit logs`);
     }
   } catch (auditError) {
-    console.error('❌ Failed to sync broadcast to audit logs:', auditError);
+    logger.error('❌ Failed to sync broadcast to audit logs:', auditError);
   }
 
-  console.log(`✅ Broadcast campaign saved: ${campaign.id}`);
+  logger.info(`✅ Broadcast campaign saved: ${campaign.id}`);
 
   res.status(201).json({
     success: true,
@@ -241,7 +242,7 @@ export const deleteBroadcastCampaign = async (req: AuthRequest, res: Response) =
 
   await broadcastPrisma.broadcastCampaign.delete({ where: { id: campaignId } });
 
-  console.log(`✅ Broadcast campaign deleted: ${campaignId}`);
+  logger.info(`✅ Broadcast campaign deleted: ${campaignId}`);
 
   res.status(200).json({ success: true, message: 'Broadcast campaign deleted successfully' });
 };
@@ -264,7 +265,7 @@ export const sendBulkBroadcast = async (req: AuthRequest, res: Response) => {
     throw new ApiError(400, 'Recipients array is required');
   }
 
-  console.log(
+  logger.info(
     `🚀 [BroadcastController] Starting bulk ${channel} send to ${recipients.length} recipients`
   );
 
@@ -343,7 +344,7 @@ export const sendBulkBroadcast = async (req: AuthRequest, res: Response) => {
       }),
     });
   } catch (auditError) {
-    console.error('❌ Failed to sync bulk broadcast to audit logs:', auditError);
+    logger.error('❌ Failed to sync bulk broadcast to audit logs:', auditError);
   }
 
   res.status(200).json({

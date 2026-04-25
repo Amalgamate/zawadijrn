@@ -5,6 +5,7 @@ import { EmailService } from '../services/email.service';
 import { SmsService } from '../services/sms.service';
 import { z } from 'zod';
 
+import logger from '../utils/logger';
 // Schema for a single week row
 const weekSchema = z.object({
   weekNumber: z.number().int().min(1).max(20),
@@ -143,7 +144,7 @@ export class SchemeOfWorkController {
 
       res.json({ success: true, data: schemes });
     } catch (err: any) {
-      console.error('❌ Schemes Fetch Error:', err.message);
+      logger.error('❌ Schemes Fetch Error:', err.message);
       res.status(500).json({ 
         success: false, 
         message: 'Could not fetch schemes of work. Ensure the database is migrated and the server is restarted.',
@@ -358,7 +359,7 @@ export class SchemeOfWorkController {
           await SmsService.sendSms(teacher.phone, messageText);
         }
       } catch (notifyError) {
-        console.error('Failed to notify teacher of scheme review:', notifyError);
+        logger.error('Failed to notify teacher of scheme review:', notifyError);
       }
     })();
   }

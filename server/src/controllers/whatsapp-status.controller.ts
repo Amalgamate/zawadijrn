@@ -8,6 +8,7 @@ import { AuthRequest } from '../middleware/permissions.middleware';
 import { whatsappService } from '../services/whatsapp.service';
 import { ApiError } from '../utils/error.util';
 
+import logger from '../utils/logger';
 class WhatsAppStatusController {
     /**
      * Get WhatsApp connection status
@@ -25,7 +26,7 @@ class WhatsAppStatusController {
                 }
             });
         } catch (error: any) {
-            console.error('[WhatsApp Status] Error getting status:', error);
+            logger.error('[WhatsApp Status] Error getting status:', error);
             if (error instanceof ApiError) {
                 res.status(error.statusCode).json({
                     success: false,
@@ -64,7 +65,7 @@ class WhatsAppStatusController {
                 }
             });
         } catch (error: any) {
-            console.error('[WhatsApp Status] Error getting QR code:', error);
+            logger.error('[WhatsApp Status] Error getting QR code:', error);
             res.status(500).json({
                 success: false,
                 message: 'Failed to get QR code',
@@ -88,7 +89,7 @@ class WhatsAppStatusController {
                 data: { status: status.status }
             });
         } catch (error: any) {
-            console.error('[WhatsApp Status] Error initializing:', error);
+            logger.error('[WhatsApp Status] Error initializing:', error);
             res.status(500).json({
                 success: false,
                 message: 'Failed to initialize WhatsApp',
@@ -105,7 +106,7 @@ class WhatsAppStatusController {
             const result = await whatsappService.logout();
             res.json(result);
         } catch (error: any) {
-            console.error('[WhatsApp Status] Error logging out:', error);
+            logger.error('[WhatsApp Status] Error logging out:', error);
             res.status(500).json({
                 success: false,
                 message: 'Failed to logout WhatsApp',

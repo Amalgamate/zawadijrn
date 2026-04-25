@@ -3,6 +3,7 @@ import { OtpService } from '../services/otp.service';
 import { generateAccessToken } from '../utils/jwt.util';
 import fs from 'fs';
 
+import logger from '../utils/logger';
 /**
  * Send OTP to user's phone
  * POST /api/auth/otp/send
@@ -50,7 +51,7 @@ export const sendOTP = async (req: Request, res: Response) => {
         res.status(200).json(result);
 
     } catch (error: any) {
-        console.error('Send OTP Error:', error);
+        logger.error('Send OTP Error:', error);
         res.status(500).json({
             success: false,
             message: error.message || 'Failed to send OTP'
@@ -96,7 +97,7 @@ export const verifyOTP = async (req: Request, res: Response) => {
         });
 
     } catch (error: any) {
-        console.error('Verify OTP Error:', error);
+        logger.error('Verify OTP Error:', error);
         res.status(500).json({
             success: false,
             message: error.message || 'Failed to verify OTP'

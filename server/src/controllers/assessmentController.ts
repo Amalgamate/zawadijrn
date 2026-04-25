@@ -9,6 +9,7 @@ import { detailedToGeneralRating } from '../utils/rubric.util';
 import { redisCacheService } from '../services/redis-cache.service';
 import { ApiError } from '../utils/error.util';
 
+import logger from '../utils/logger';
 // ── Cache TTLs ────────────────────────────────────────────────────────────────
 const TESTS_CACHE_TTL   = 300;  // 5 min — published tests change rarely
 const RESULTS_CACHE_TTL = 30;   // 30 s  — results are written frequently
@@ -124,7 +125,7 @@ export const getFormativeAssessments = async (req: AuthRequest, res: Response) =
       count: assessments.length
     });
   } catch (error: any) {
-    console.error('Error fetching formative assessments:', error);
+    logger.error('Error fetching formative assessments:', error);
     throw new ApiError(500, 'Failed to fetch assessments: ' + error.message);
   }
 };
@@ -191,7 +192,7 @@ export const getBulkFormativeResults = async (req: AuthRequest, res: Response) =
       count: assessments.length
     });
   } catch (error: any) {
-    console.error('Error fetching bulk formative results:', error);
+    logger.error('Error fetching bulk formative results:', error);
     throw new ApiError(500, 'Failed to fetch bulk formative results: ' + error.message);
   }
 };
@@ -270,7 +271,7 @@ export const createFormativeAssessment = async (req: AuthRequest, res: Response)
     });
 
   } catch (error: any) {
-    console.error('Error creating formative assessment:', error);
+    logger.error('Error creating formative assessment:', error);
     throw new ApiError(500, 'Failed to create assessment: ' + error.message);
   }
 };
@@ -505,7 +506,7 @@ export const recordFormativeResultsBulk = async (req: AuthRequest, res: Response
     res.status(201).json(response);
 
   } catch (error: any) {
-    console.error('Error bulk recording formative assessments:', error);
+    logger.error('Error bulk recording formative assessments:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to record bulk assessments',
@@ -544,7 +545,7 @@ export const getFormativeByLearner = async (req: AuthRequest, res: Response) => 
       count: assessments.length
     });
   } catch (error: any) {
-    console.error('Error fetching learner formative assessments:', error);
+    logger.error('Error fetching learner formative assessments:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch results',
@@ -584,7 +585,7 @@ export const deleteFormativeAssessment = async (req: AuthRequest, res: Response)
     });
 
   } catch (error: any) {
-    console.error('Error deleting formative assessment:', error);
+    logger.error('Error deleting formative assessment:', error);
     throw new ApiError(500, 'Failed to delete assessment: ' + error.message);
   }
 };
@@ -726,7 +727,7 @@ export const createSummativeTest = async (req: AuthRequest, res: Response) => {
         });
       }
 
-      console.error('Error creating summative test:', error);
+      logger.error('Error creating summative test:', error);
       res.status(500).json({
         success: false,
         message: 'Failed to create test',
@@ -734,7 +735,7 @@ export const createSummativeTest = async (req: AuthRequest, res: Response) => {
       });
     }
   } catch (error: any) {
-    console.error('Error in createSummativeTest:', error);
+    logger.error('Error in createSummativeTest:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to create test',
@@ -880,7 +881,7 @@ export const generateTestsBulk = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (error: any) {
-    console.error('Error bulk generating tests:', error);
+    logger.error('Error bulk generating tests:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to bulk generate tests',
@@ -955,7 +956,7 @@ export const getSummativeTests = async (req: AuthRequest, res: Response) => {
         throw error;
       }
 
-      console.warn('[Assessments] Falling back to legacy summative_tests query due to schema drift:', error?.message);
+      logger.warn('[Assessments] Falling back to legacy summative_tests query due to schema drift:', error?.message);
       const rawTests = await prisma.$queryRaw<Array<any>>`
         SELECT
           st.id,
@@ -1003,7 +1004,7 @@ export const getSummativeTests = async (req: AuthRequest, res: Response) => {
       count: tests.length
     });
   } catch (error: any) {
-    console.error('Error fetching summative tests:', error);
+    logger.error('Error fetching summative tests:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch tests',
@@ -1049,7 +1050,7 @@ export const getSummativeTest = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (error: any) {
-    console.error('Error fetching summative test:', error);
+    logger.error('Error fetching summative test:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch test details',
@@ -1107,7 +1108,7 @@ export const updateSummativeTest = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (error: any) {
-    console.error('Error updating summative test:', error);
+    logger.error('Error updating summative test:', error);
     throw new ApiError(500, 'Failed to update test: ' + error.message);
   }
 };
@@ -1176,7 +1177,7 @@ export const deleteSummativeTest = async (req: AuthRequest, res: Response) => {
     }
 
   } catch (error: any) {
-    console.error('Error deleting summative test:', error);
+    logger.error('Error deleting summative test:', error);
     throw new ApiError(500, 'Failed to delete test: ' + error.message);
   }
 };
@@ -1227,7 +1228,7 @@ export const deleteSummativeTestsBulk = async (req: AuthRequest, res: Response) 
     await redisCacheService.deleteByPrefix('tests:');
 
   } catch (error: any) {
-    console.error('Error bulk deleting assessments:', error);
+    logger.error('Error bulk deleting assessments:', error);
     throw new ApiError(500, 'Failed to bulk delete assessments: ' + error.message);
   }
 };
@@ -1346,7 +1347,7 @@ export const recordSummativeResult = async (req: AuthRequest, res: Response) => 
     });
 
   } catch (error: any) {
-    console.error('Error recording summative result:', error);
+    logger.error('Error recording summative result:', error);
     throw new ApiError(500, 'Failed to record result: ' + error.message);
   }
 };
@@ -1422,7 +1423,7 @@ export const getSummativeByLearner = async (req: AuthRequest, res: Response) => 
     });
 
   } catch (error: any) {
-    console.error('Error fetching summative results for learner:', error);
+    logger.error('Error fetching summative results for learner:', error);
     throw new ApiError(500, 'Failed to fetch results for learner: ' + error.message);
   }
 };
@@ -1464,7 +1465,7 @@ export const getTestResults = async (req: Request, res: Response) => {
         throw error;
       }
 
-      console.warn('[Assessments] Falling back to raw test-results query due to legacy grade decode drift:', error?.message);
+      logger.warn('[Assessments] Falling back to raw test-results query due to legacy grade decode drift:', error?.message);
       const rawRows = await prisma.$queryRaw<Array<any>>(Prisma.sql`
         SELECT
           sr.id,
@@ -1522,7 +1523,7 @@ export const getTestResults = async (req: Request, res: Response) => {
     });
 
   } catch (error: any) {
-    console.error('Error fetching test results:', error);
+    logger.error('Error fetching test results:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch results',
@@ -1539,7 +1540,7 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
   try {
     const { grade, stream, academicYear, term, testType } = req.query;
 
-    console.log('━━━ 📊 [ASSESSMENT] getBulkSummativeResults STARTED', {
+    logger.info('━━━ 📊 [ASSESSMENT] getBulkSummativeResults STARTED', {
       grade, stream, academicYear, term, testType,
       timestamp: new Date().toISOString()
     });
@@ -1548,7 +1549,7 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
       return res.status(400).json({ success: false, message: 'Missing required filters: grade, academicYear, term' });
     }
 
-    console.log('[getBulkSummativeResults] Filters:', { grade, stream, academicYear, term, testType });
+    logger.info('[getBulkSummativeResults] Filters:', { grade, stream, academicYear, term, testType });
 
     const normalizedTerm = String(term || '')
       .toUpperCase()
@@ -1580,7 +1581,7 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
       }
     };
 
-    console.log('📋 [ASSESSMENT] Prisma whereClause:', JSON.stringify(whereClause, null, 2));
+    logger.info('📋 [ASSESSMENT] Prisma whereClause:', JSON.stringify(whereClause, null, 2));
 
     let results: any[] = [];
     try {
@@ -1616,7 +1617,7 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
         throw error;
       }
 
-      console.warn('[Assessments] Falling back to raw bulk results query due to enum drift:', error?.message);
+      logger.warn('[Assessments] Falling back to raw bulk results query due to enum drift:', error?.message);
 
       const conditions: Prisma.Sql[] = [
         Prisma.sql`sr.archived = false`,
@@ -1702,7 +1703,7 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
       }));
     }
 
-    console.log('📦 [ASSESSMENT] Results fetched:', {
+    logger.info('📦 [ASSESSMENT] Results fetched:', {
       resultsCount: results.length,
       filters: { grade, stream, academicYear, term, testType },
       uniqueLearnerStreams: Array.from(new Set(results.map(r => r.learner?.stream))),
@@ -1757,7 +1758,7 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
               parseInt(academicYear as string)
             );
           } catch (e) {
-            console.warn(`Failed to predict pathway for learner ${id}:`, e);
+            logger.warn(`Failed to predict pathway for learner ${id}:`, e);
           }
         }));
       }
@@ -1772,7 +1773,7 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
     });
 
   } catch (error: any) {
-    console.error('Error fetching bulk summative results:', error);
+    logger.error('Error fetching bulk summative results:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch bulk results',
@@ -1947,7 +1948,7 @@ export const recordSummativeResultsBulk = async (req: AuthRequest, res: Response
 
     if (historyData.length > 0) {
       prisma.summativeResultHistory.createMany({ data: historyData as any }).catch(e =>
-        console.warn('[BulkSave] History write failed (non-critical):', e.message)
+        logger.warn('[BulkSave] History write failed (non-critical):', e.message)
       );
     }
 
@@ -1969,7 +1970,7 @@ export const recordSummativeResultsBulk = async (req: AuthRequest, res: Response
     res.json(response);
 
   } catch (error: any) {
-    console.error('Error bulk recording summative results:', error);
+    logger.error('Error bulk recording summative results:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to record results',
@@ -1998,7 +1999,7 @@ function _rerankTestResultsAsync(testId: string) {
         WHERE sr.id = r.id
       `;
     } catch (e: any) {
-      console.warn('[Rerank] Background re-rank failed (non-critical):', e.message);
+      logger.warn('[Rerank] Background re-rank failed (non-critical):', e.message);
     }
   });
 }

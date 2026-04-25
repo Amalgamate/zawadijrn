@@ -8,6 +8,7 @@ import { AuthRequest } from '../middleware/auth.middleware';
 import { Term, DetailedRubricRating } from '@prisma/client';
 import prisma from '../config/database';
 
+import logger from '../utils/logger';
 // ============================================
 // CORE COMPETENCIES
 // ============================================
@@ -65,7 +66,7 @@ export const createOrUpdateCompetencies = async (req: AuthRequest, res: Response
     res.json({ success: true, message: 'Core competencies saved successfully', data: result });
 
   } catch (error: any) {
-    console.error('Error saving core competencies:', error);
+    logger.error('Error saving core competencies:', error);
     res.status(500).json({ success: false, message: 'Failed to save core competencies', error: error.message });
   }
 };
@@ -128,7 +129,7 @@ export const createOrUpdateCompetenciesBulk = async (req: AuthRequest, res: Resp
     res.json(response);
 
   } catch (error: any) {
-    console.error('Error bulk saving core competencies:', error);
+    logger.error('Error bulk saving core competencies:', error);
     res.status(500).json({ success: false, message: 'Failed to bulk save core competencies', error: error.message });
   }
 };
@@ -217,7 +218,7 @@ export const getCompetenciesByLearner = async (req: AuthRequest, res: Response) 
     res.json({ success: true, data: competencies });
 
   } catch (error: any) {
-    console.error('Error fetching core competencies:', error);
+    logger.error('Error fetching core competencies:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch core competencies', error: error.message });
   }
 };
@@ -250,7 +251,7 @@ export const createOrUpdateValues = async (req: AuthRequest, res: Response) => {
     res.json({ success: true, message: 'Values assessment saved successfully', data: result });
 
   } catch (error: any) {
-    console.error('Error saving values assessment:', error);
+    logger.error('Error saving values assessment:', error);
     res.status(500).json({ success: false, message: 'Failed to save values assessment', error: error.message });
   }
 };
@@ -309,7 +310,7 @@ export const createOrUpdateValuesBulk = async (req: AuthRequest, res: Response) 
     res.json(response);
 
   } catch (error: any) {
-    console.error('Error bulk saving values assessments:', error);
+    logger.error('Error bulk saving values assessments:', error);
     res.status(500).json({ success: false, message: 'Failed to bulk save values assessments', error: error.message });
   }
 };
@@ -381,7 +382,7 @@ export const getValuesByLearner = async (req: AuthRequest, res: Response) => {
     res.json({ success: true, data: values });
 
   } catch (error: any) {
-    console.error('Error fetching values assessment:', error);
+    logger.error('Error fetching values assessment:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch values assessment', error: error.message });
   }
 };
@@ -423,7 +424,7 @@ export const createCoCurricular = async (req: AuthRequest, res: Response) => {
     res.status(201).json({ success: true, message: 'Co-curricular activity created successfully', data: activity });
 
   } catch (error: any) {
-    console.error('Error creating co-curricular activity:', error);
+    logger.error('Error creating co-curricular activity:', error);
     res.status(500).json({ success: false, message: 'Failed to create co-curricular activity', error: error.message });
   }
 };
@@ -486,7 +487,7 @@ export const createCoCurricularBulk = async (req: AuthRequest, res: Response) =>
     res.status(201).json(response);
 
   } catch (error: any) {
-    console.error('Error bulk creating co-curricular activities:', error);
+    logger.error('Error bulk creating co-curricular activities:', error);
     res.status(500).json({ success: false, message: 'Failed to bulk create co-curricular activities', error: error.message });
   }
 };
@@ -517,7 +518,7 @@ export const getCoCurricularByLearner = async (req: AuthRequest, res: Response) 
     res.json({ success: true, data: activities, count: activities.length });
 
   } catch (error: any) {
-    console.error('Error fetching co-curricular activities:', error);
+    logger.error('Error fetching co-curricular activities:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch co-curricular activities', error: error.message });
   }
 };
@@ -566,7 +567,7 @@ export const updateCoCurricular = async (req: AuthRequest, res: Response) => {
     res.json({ success: true, message: 'Co-curricular activity updated successfully', data: activity });
 
   } catch (error: any) {
-    console.error('Error updating co-curricular activity:', error);
+    logger.error('Error updating co-curricular activity:', error);
     res.status(500).json({ success: false, message: 'Failed to update co-curricular activity', error: error.message });
   }
 };
@@ -592,7 +593,7 @@ export const deleteCoCurricular = async (req: AuthRequest, res: Response) => {
     }
 
   } catch (error: any) {
-    console.error('Error deleting co-curricular activity:', error);
+    logger.error('Error deleting co-curricular activity:', error);
     res.status(500).json({ success: false, message: 'Failed to process delete request', error: error.message });
   }
 };
@@ -672,7 +673,7 @@ export const saveReportComments = async (req: Request, res: Response) => {
     res.json({ success: true, message: 'Report comments saved successfully', data: result });
 
   } catch (error: any) {
-    console.error('Error saving report comments:', error);
+    logger.error('Error saving report comments:', error);
     res.status(500).json({ success: false, message: 'Failed to save report comments', error: error.message });
   }
 };
@@ -698,7 +699,7 @@ export const getCommentsByLearner = async (req: AuthRequest, res: Response) => {
     res.json({ success: true, data: comments });
 
   } catch (error: any) {
-    console.error('Error fetching report comments:', error);
+    logger.error('Error fetching report comments:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch report comments', error: error.message });
   }
 };

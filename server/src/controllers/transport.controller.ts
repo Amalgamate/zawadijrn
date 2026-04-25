@@ -3,6 +3,7 @@ import { AuthRequest } from '../middleware/auth.middleware';
 import prisma from '../config/database';
 import { ApiError } from '../utils/error.util';
 
+import logger from '../utils/logger';
 // ─── helpers ────────────────────────────────────────────────────────────────
 
 /** Resolve the active term + academic year from TermConfig (best-effort). */
@@ -28,7 +29,7 @@ export class TransportController {
             });
             res.json({ success: true, data: vehicles });
         } catch (error: any) {
-            console.error('[TransportController] getVehicles:', error);
+            logger.error('[TransportController] getVehicles:', error);
             res.status(500).json({ success: false, message: error.message });
         }
     }
@@ -57,7 +58,7 @@ export class TransportController {
 
             res.status(201).json({ success: true, data: vehicle });
         } catch (error: any) {
-            console.error('[TransportController] createVehicle:', error);
+            logger.error('[TransportController] createVehicle:', error);
             res.status(error.statusCode || 500).json({ success: false, message: error.message });
         }
     }
@@ -91,7 +92,7 @@ export class TransportController {
 
             res.json({ success: true, data: updated });
         } catch (error: any) {
-            console.error('[TransportController] updateVehicle:', error);
+            logger.error('[TransportController] updateVehicle:', error);
             res.status(error.statusCode || 500).json({ success: false, message: error.message });
         }
     }
@@ -125,7 +126,7 @@ export class TransportController {
             });
             res.json({ success: true, data: routes });
         } catch (error: any) {
-            console.error('[TransportController] getRoutes:', error);
+            logger.error('[TransportController] getRoutes:', error);
             res.status(500).json({ success: false, message: error.message });
         }
     }
@@ -154,7 +155,7 @@ export class TransportController {
 
             res.status(201).json({ success: true, data: route });
         } catch (error: any) {
-            console.error('[TransportController] createRoute:', error);
+            logger.error('[TransportController] createRoute:', error);
             res.status(error.statusCode || 500).json({ success: false, message: error.message });
         }
     }
@@ -186,7 +187,7 @@ export class TransportController {
 
             res.json({ success: true, data: updated });
         } catch (error: any) {
-            console.error('[TransportController] updateRoute:', error);
+            logger.error('[TransportController] updateRoute:', error);
             res.status(error.statusCode || 500).json({ success: false, message: error.message });
         }
     }
@@ -242,7 +243,7 @@ export class TransportController {
 
             res.json({ success: true, data });
         } catch (error: any) {
-            console.error('[TransportController] getAssignments:', error);
+            logger.error('[TransportController] getAssignments:', error);
             res.status(500).json({ success: false, message: error.message });
         }
     }
@@ -263,7 +264,7 @@ export class TransportController {
 
             res.json({ success: true, data: assignments });
         } catch (error: any) {
-            console.error('[TransportController] getLearnerAssignments:', error);
+            logger.error('[TransportController] getLearnerAssignments:', error);
             res.status(500).json({ success: false, message: error.message });
         }
     }
@@ -366,7 +367,7 @@ export class TransportController {
 
             res.status(201).json({ success: true, data: result });
         } catch (error: any) {
-            console.error('[TransportController] createAssignment:', error);
+            logger.error('[TransportController] createAssignment:', error);
             res.status(error.statusCode || 500).json({ success: false, message: error.message });
         }
     }
@@ -389,7 +390,7 @@ export class TransportController {
 
             res.json({ success: true, data: updated });
         } catch (error: any) {
-            console.error('[TransportController] updateAssignment:', error);
+            logger.error('[TransportController] updateAssignment:', error);
             res.status(error.statusCode || 500).json({ success: false, message: error.message });
         }
     }
@@ -425,7 +426,7 @@ export class TransportController {
 
             res.json({ success: true, message: 'Assignment removed' });
         } catch (error: any) {
-            console.error('[TransportController] deleteAssignment:', error);
+            logger.error('[TransportController] deleteAssignment:', error);
             res.status(error.statusCode || 500).json({ success: false, message: error.message });
         }
     }
@@ -471,7 +472,7 @@ export class TransportController {
                 }
             });
         } catch (error: any) {
-            console.error('[TransportController] getSummary:', error);
+            logger.error('[TransportController] getSummary:', error);
             res.status(500).json({ success: false, message: error.message });
         }
     }
@@ -646,7 +647,7 @@ export class TransportController {
                 }
             });
         } catch (error: any) {
-            console.error('[TransportController] getReports:', error);
+            logger.error('[TransportController] getReports:', error);
             res.status(500).json({ success: false, message: error.message });
         }
     }

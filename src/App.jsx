@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { lazy, Suspense } from 'react';
 import { HashRouter, Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
-import Auth from './pages/Auth';
-import CBCGradingSystem from './components/CBCGrading/CBCGradingSystem';
+
+const Auth = lazy(() => import('./pages/Auth'));
+const CBCGradingSystem = lazy(() => import('./components/CBCGrading/CBCGradingSystem'));
 import SplashScreen from './components/mobile/SplashScreen';
 import { Toaster } from 'react-hot-toast';
 import { SchoolDataProvider } from './contexts/SchoolDataContext';
@@ -159,45 +161,47 @@ function AppContent() {
       {/* App shell — rendered underneath once auth is confirmed.
           It won't be visible while the splash is on top. */}
       {!loading && (
-        isAuthenticated ? (
-          <Routes>
-            <Route
-              path="/app/*"
-              element={
-                <SchoolDataProvider>
-                  <FeeActionsProvider>
-                    <UserNotificationProvider>
-                      <CBCGradingSystem
-                        user={user}
-                        onLogout={handleLogout}
-                        brandingSettings={brandingSettings}
-                        setBrandingSettings={setBrandingSettings}
-                      />
-                    </UserNotificationProvider>
-                  </FeeActionsProvider>
-                </SchoolDataProvider>
-              }
-            />
-            <Route path="*" element={<Navigate to="/app" replace />} />
-          </Routes>
-        ) : (
-          <Routes>
-            <Route path="/" element={<Navigate to="/auth/login" replace />} />
-            <Route path="/auth/login"
-              element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} basePath="/auth" />} />
-            <Route path="/auth/register"
-              element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} basePath="/auth" />} />
-            <Route path="/auth/forgot-password"
-              element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} basePath="/auth" />} />
-            <Route path="/auth/reset-password"
-              element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} />} />
-            <Route path="/auth/verify-email"
-              element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} />} />
-            <Route path="/auth/welcome"
-              element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} />} />
-            <Route path="*" element={<Navigate to="/auth/login" replace />} />
-          </Routes>
-        )
+        <Suspense fallback={<SplashScreen isLoading={true} user={null} onReady={() => {}} />}>
+          {isAuthenticated ? (
+            <Routes>
+              <Route
+                path="/app/*"
+                element={
+                  <SchoolDataProvider>
+                    <FeeActionsProvider>
+                      <UserNotificationProvider>
+                        <CBCGradingSystem
+                          user={user}
+                          onLogout={handleLogout}
+                          brandingSettings={brandingSettings}
+                          setBrandingSettings={setBrandingSettings}
+                        />
+                      </UserNotificationProvider>
+                    </FeeActionsProvider>
+                  </SchoolDataProvider>
+                }
+              />
+              <Route path="*" element={<Navigate to="/app" replace />} />
+            </Routes>
+          ) : (
+            <Routes>
+              <Route path="/" element={<Navigate to="/auth/login" replace />} />
+              <Route path="/auth/login"
+                element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} basePath="/auth" />} />
+              <Route path="/auth/register"
+                element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} basePath="/auth" />} />
+              <Route path="/auth/forgot-password"
+                element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} basePath="/auth" />} />
+              <Route path="/auth/reset-password"
+                element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} />} />
+              <Route path="/auth/verify-email"
+                element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} />} />
+              <Route path="/auth/welcome"
+                element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} />} />
+              <Route path="*" element={<Navigate to="/auth/login" replace />} />
+            </Routes>
+          )}
+        </Suspense>
       )}
     </>
   );

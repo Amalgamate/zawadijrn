@@ -33,6 +33,7 @@ import { whatsappService } from '../services/whatsapp.service';
 import { accountingService } from '../services/accounting.service';
 import { NotificationService, NotificationType } from '../services/notification.service';
 
+import logger from '../utils/logger';
 export class FeeWaiverController {
 
   // ─── Create ──────────────────────────────────────────────────────────────
@@ -257,7 +258,7 @@ export class FeeWaiverController {
     try {
       await accountingService.postFeeWaiverToLedger(updatedWaiver);
     } catch (err) {
-      console.error('[FeeWaiver] Failed to post waiver to ledger:', err);
+      logger.error('[FeeWaiver] Failed to post waiver to ledger:', err);
     }
 
     setImmediate(() => this.notifyWaiverApproved(updatedWaiver, Number(updatedInvoice.balance)));
@@ -349,7 +350,7 @@ export class FeeWaiverController {
         link: '/finance/fees'
       });
     } catch (err) {
-      console.error('[FeeWaiver] Failed to notify waiver requested:', err);
+      logger.error('[FeeWaiver] Failed to notify waiver requested:', err);
     }
   }
 
@@ -392,7 +393,7 @@ export class FeeWaiverController {
         });
       }
     } catch (err) {
-      console.error('[FeeWaiver] Failed to notify waiver approved:', err);
+      logger.error('[FeeWaiver] Failed to notify waiver approved:', err);
     }
   }
 
@@ -436,7 +437,7 @@ export class FeeWaiverController {
         });
       }
     } catch (err) {
-      console.error('[FeeWaiver] Failed to notify waiver rejected:', err);
+      logger.error('[FeeWaiver] Failed to notify waiver rejected:', err);
     }
   }
 }

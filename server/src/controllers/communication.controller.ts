@@ -9,6 +9,7 @@ import { whatsappService } from '../services/whatsapp.service';
 import { ApiError } from '../utils/error.util';
 import { COMMUNICATION_CONFIG, ERROR_MESSAGES, SMS_MESSAGES } from '../config/communication.messages';
 
+import logger from '../utils/logger';
 /**
  * Get Communication Configuration
  * GET /api/communication/config
@@ -108,7 +109,7 @@ export const saveCommunicationConfig = async (req: AuthRequest, res: Response) =
     const data: any = {};
 
     if (sms) {
-        console.log(`[CommunicationController] SMS Config Update:`, {
+        logger.info(`[CommunicationController] SMS Config Update:`, {
             provider: sms.provider,
             hasApiKey: !!sms.apiKey,
             hasUsername: !!sms.username,
@@ -122,7 +123,7 @@ export const saveCommunicationConfig = async (req: AuthRequest, res: Response) =
         if (sms.senderId) data.smsSenderId = sms.senderId;
 
         if (sms.apiKey && sms.apiKey.trim()) {
-            console.log(`[CommunicationController] Encrypting SMS API Key for provider: ${sms.provider}`);
+            logger.info(`[CommunicationController] Encrypting SMS API Key for provider: ${sms.provider}`);
             data.smsApiKey = encrypt(sms.apiKey);
         }
 
@@ -178,7 +179,7 @@ export const saveCommunicationConfig = async (req: AuthRequest, res: Response) =
     // Clear SMS config cache so changes take effect immediately
     const { SmsService: SmsServiceImport } = await import('../services/sms.service');
     (SmsServiceImport as any).clearConfigCache();
-    console.log(`✅ Communication config saved and cache cleared`);
+    logger.info(`✅ Communication config saved and cache cleared`);
 
     res.status(200).json({
         success: true,

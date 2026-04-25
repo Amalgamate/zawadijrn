@@ -3,6 +3,7 @@ import prisma from '../config/database';
 import { ApiError } from '../utils/error.util';
 import { FeeCategory } from '@prisma/client';
 
+import logger from '../utils/logger';
 export class FeeTypeController {
     // Get all fee types for a school
     static async getAll(req: Request, res: Response) {
@@ -261,7 +262,7 @@ export class FeeTypeController {
                             // If the structure was created very recently, skip instead of
                             // deleting — a concurrent job might be using it right now.
                             if (existing.createdAt > safeDeleteCutoff) {
-                                console.warn(
+                                logger.warn(
                                     `[SeedStructures] Skipping ${grade} ${term} ${targetYear} — ` +
                                     `structure created ${Math.round((Date.now() - existing.createdAt.getTime()) / 1000)}s ago ` +
                                     `(within 60s safety window, possible concurrent bulk generation)`
@@ -314,7 +315,7 @@ export class FeeTypeController {
                         if (error.code === 'P2002') {
                             skippedCount++;
                         } else {
-                            console.error(`Error creating structure for ${grade} ${term}:`, error.message);
+                            logger.error(`Error creating structure for ${grade} ${term}:`, error.message);
                         }
                     }
                 }

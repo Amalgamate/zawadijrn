@@ -5,6 +5,7 @@ import { ApiError } from '../utils/error.util';
 import prisma from '../config/database';
 import { FeeController } from './fee.controller';
 
+import logger from '../utils/logger';
 const feeController = new FeeController();
 
 export class PaymentController {
@@ -143,7 +144,7 @@ export class PaymentController {
                     data: recordResult
                 });
             } catch (err: any) {
-                console.error('Error recording automated payment:', err);
+                logger.error('Error recording automated payment:', err);
                 throw new ApiError(500, 'Payment verified but failed to record. Please contact support.');
             }
         }

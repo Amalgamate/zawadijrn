@@ -5,6 +5,7 @@ import prisma from '../config/database';
 import { getIO } from '../services/socket.service';
 import { EmailService } from '../services/email-resend.service';
 
+import logger from '../utils/logger';
 export const createTicket = async (req: AuthRequest, res: Response) => {
     try {
         const { subject, message, priority, guestName, guestEmail } = req.body;
@@ -64,12 +65,12 @@ export const createTicket = async (req: AuthRequest, res: Response) => {
                 ticketId: ticket.id
             });
         } catch (emailError) {
-            console.error('Failed to send ticket email notification:', emailError);
+            logger.error('Failed to send ticket email notification:', emailError);
         }
 
         res.status(201).json(ticket);
     } catch (error) {
-        console.error('Error creating ticket:', error);
+        logger.error('Error creating ticket:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 };
@@ -102,7 +103,7 @@ export const getTickets = async (req: AuthRequest, res: Response) => {
 
         res.json(tickets);
     } catch (error) {
-        console.error('Error fetching tickets:', error);
+        logger.error('Error fetching tickets:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 };
@@ -140,7 +141,7 @@ export const getTicket = async (req: AuthRequest, res: Response) => {
 
         res.json(ticket);
     } catch (error) {
-        console.error('Error fetching ticket:', error);
+        logger.error('Error fetching ticket:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 };
@@ -182,12 +183,12 @@ export const addMessage = async (req: AuthRequest, res: Response) => {
             const io = getIO();
             io.to(id).emit('new_message', newMessage);
         } catch (e) {
-            console.warn('Socket emit failed (socket might not be init)', e);
+            logger.warn('Socket emit failed (socket might not be init)', e);
         }
 
         res.status(201).json(newMessage);
     } catch (error) {
-        console.error('Error adding message:', error);
+        logger.error('Error adding message:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 };
@@ -218,7 +219,7 @@ export const updateTicket = async (req: AuthRequest, res: Response) => {
 
         res.json(ticket);
     } catch (error) {
-        console.error("Error updating ticket", error);
+        logger.error("Error updating ticket", error);
         res.status(500).json({ message: "Internal server error" });
     }
 }

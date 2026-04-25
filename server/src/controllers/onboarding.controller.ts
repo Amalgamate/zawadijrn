@@ -7,6 +7,7 @@ import { EmailService } from '../services/email-resend.service';
 import { SmsService } from '../services/sms.service';
 import { encrypt } from '../utils/encryption.util';
 
+import logger from '../utils/logger';
 export class OnboardingController {
   /**
    * Full system registration — creates admin user, seeds defaults.
@@ -136,7 +137,7 @@ export class OnboardingController {
         await gradingService.getGradingSystem('SUMMATIVE');
         await gradingService.getGradingSystem('CBC');
       } catch (err) {
-        console.warn('Warning: Failed to initialise grading systems:', err);
+        logger.warn('Warning: Failed to initialise grading systems:', err);
       }
 
       // Welcome notifications (non-blocking)
@@ -147,11 +148,11 @@ export class OnboardingController {
         schoolName,
         adminName: `${result.user.firstName} ${result.user.lastName}`,
         loginUrl,
-      }).catch((err) => console.error('Failed to send onboarding email:', err));
+      }).catch((err) => logger.error('Failed to send onboarding email:', err));
 
       if (result.user.phone) {
         SmsService.sendWelcomeSms(result.user.phone, schoolName).catch((err) =>
-          console.error('Failed to send welcome SMS:', err)
+          logger.error('Failed to send welcome SMS:', err)
         );
       }
 
@@ -164,7 +165,7 @@ export class OnboardingController {
         },
       });
     } catch (error: any) {
-      console.error('Onboarding registerFull error:', error);
+      logger.error('Onboarding registerFull error:', error);
       res.status(500).json({ success: false, error: 'Failed to register' });
     }
   }

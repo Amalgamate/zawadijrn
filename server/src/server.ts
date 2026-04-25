@@ -13,7 +13,7 @@ import logger from './utils/logger';
 const app: Application = express();
 
 // Use pino-http for structured request/response logging
-app.use(pinoHttp({ logger }));
+app.use(pinoHttp({ logger: logger.pino }));
 
 // Trust proxy
 app.set('trust proxy', 1);

@@ -11,6 +11,7 @@ import { whatsappService } from '../services/whatsapp.service';
 import prisma from '../config/database';
 import { ApiError } from '../utils/error.util';
 
+import logger from '../utils/logger';
 export class NotificationController {
   /**
    * Send assessment completion notification to parent
@@ -773,7 +774,7 @@ export class NotificationController {
         }
       });
     } catch (error: any) {
-      console.error('[NotificationController] getAuditLogs error:', error);
+      logger.error('[NotificationController] getAuditLogs error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   }

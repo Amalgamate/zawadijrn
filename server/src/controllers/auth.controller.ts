@@ -12,6 +12,7 @@ import { EmailService } from '../services/email-resend.service';
 import { whatsappService } from '../services/whatsapp.service';
 import { redisCacheService } from '../services/redis-cache.service';
 
+import logger from '../utils/logger';
 /**
  * Redis key for a revoked refresh token.
  * TTL is set to the remaining lifetime of the token (7d), so Redis auto-cleans.
@@ -104,7 +105,7 @@ export class AuthController {
       schoolName: 'Zawadi SMS',
       adminName: `${firstName} ${lastName}`,
       loginUrl: `${frontendUrl}/login`
-    }).catch(err => console.error('Failed to send welcome email:', err));
+    }).catch(err => logger.error('Failed to send welcome email:', err));
 
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
@@ -280,7 +281,7 @@ export class AuthController {
         resetLink: resetUrl
       });
     } catch (error) {
-      console.error('Email failed:', error);
+      logger.error('Email failed:', error);
     }
 
     res.json({ success: true, message: 'Reset link sent if account exists' });

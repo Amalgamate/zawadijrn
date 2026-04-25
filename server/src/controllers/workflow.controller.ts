@@ -8,6 +8,7 @@ import { AuthRequest } from '../middleware/permissions.middleware';
 import { workflowService } from '../services/workflow.service';
 import { AssessmentStatus } from '@prisma/client';
 
+import logger from '../utils/logger';
 // ============================================
 // WORKFLOW ACTION ENDPOINTS
 // ============================================
@@ -66,7 +67,7 @@ export const submitForApproval = async (req: AuthRequest, res: Response) => {
       data: result
     });
   } catch (error: any) {
-    console.error('Error submitting for approval:', error);
+    logger.error('Error submitting for approval:', error);
 
     if (error.message.includes('Cannot submit')) {
       return res.status(400).json({
@@ -151,7 +152,7 @@ export const bulkSubmitForApproval = async (req: AuthRequest, res: Response) => 
       data: result
     });
   } catch (error: any) {
-    console.error('Error bulk submitting assessments:', error);
+    logger.error('Error bulk submitting assessments:', error);
 
     if (error.message.includes('not permitted')) {
       return res.status(403).json({
@@ -207,7 +208,7 @@ export const approveAssessment = async (req: AuthRequest, res: Response) => {
       data: result
     });
   } catch (error: any) {
-    console.error('Error approving assessment:', error);
+    logger.error('Error approving assessment:', error);
 
     if (error.message.includes('Cannot approve')) {
       return res.status(400).json({
@@ -283,7 +284,7 @@ export const rejectAssessment = async (req: AuthRequest, res: Response) => {
       data: result
     });
   } catch (error: any) {
-    console.error('Error rejecting assessment:', error);
+    logger.error('Error rejecting assessment:', error);
 
     if (error.message.includes('Cannot reject')) {
       return res.status(400).json({
@@ -349,7 +350,7 @@ export const publishAssessment = async (req: AuthRequest, res: Response) => {
       data: result
     });
   } catch (error: any) {
-    console.error('Error publishing assessment:', error);
+    logger.error('Error publishing assessment:', error);
 
     if (error.message.includes('Cannot publish')) {
       return res.status(400).json({
@@ -415,7 +416,7 @@ export const lockAssessment = async (req: AuthRequest, res: Response) => {
       data: result
     });
   } catch (error: any) {
-    console.error('Error locking assessment:', error);
+    logger.error('Error locking assessment:', error);
 
     if (error.message.includes('Cannot lock')) {
       return res.status(400).json({
@@ -492,7 +493,7 @@ export const unlockAssessment = async (req: AuthRequest, res: Response) => {
       warning: 'This is an emergency action. All changes will be logged.'
     });
   } catch (error: any) {
-    console.error('Error unlocking assessment:', error);
+    logger.error('Error unlocking assessment:', error);
 
     if (error.message.includes('Cannot unlock')) {
       return res.status(400).json({
@@ -553,7 +554,7 @@ export const getPendingApprovals = async (req: AuthRequest, res: Response) => {
       data: approvals
     });
   } catch (error: any) {
-    console.error('Error fetching pending approvals:', error);
+    logger.error('Error fetching pending approvals:', error);
     res.status(500).json({
       success: false,
       error: {
@@ -593,7 +594,7 @@ export const getWorkflowHistory = async (req: Request, res: Response) => {
       data: history
     });
   } catch (error: any) {
-    console.error('Error fetching workflow history:', error);
+    logger.error('Error fetching workflow history:', error);
     res.status(500).json({
       success: false,
       error: {
@@ -657,7 +658,7 @@ export const bulkApproveAssessments = async (req: AuthRequest, res: Response) =>
       data: result
     });
   } catch (error: any) {
-    console.error('Error bulk approving assessments:', error);
+    logger.error('Error bulk approving assessments:', error);
 
     if (error.message.includes('not permitted')) {
       return res.status(403).json({
@@ -723,7 +724,7 @@ export const bulkLockTermAssessments = async (req: AuthRequest, res: Response) =
       data: result
     });
   } catch (error: any) {
-    console.error('Error bulk locking assessments:', error);
+    logger.error('Error bulk locking assessments:', error);
 
     if (error.message.includes('not permitted')) {
       return res.status(403).json({

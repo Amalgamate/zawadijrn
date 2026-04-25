@@ -6,6 +6,7 @@ import { generateAdmissionNumber, getCurrentSequenceValue, resetSequence, getNex
 import { provisionNewSchool } from '../services/school-provisioning.service';
 import { deleteSchoolSafely } from '../services/school-deletion.service';
 
+import logger from '../utils/logger';
 // ============================================
 // SCHOOL MANAGEMENT ENDPOINTS (Single-Tenant)
 // ============================================
@@ -65,7 +66,7 @@ export const getPublicBranding = async (req: Request, res: Response) => {
 
     res.status(200).json({ success: true, data: branding });
   } catch (error) {
-    console.error('Error fetching public branding:', error);
+    logger.error('Error fetching public branding:', error);
     throw error;
   }
 };

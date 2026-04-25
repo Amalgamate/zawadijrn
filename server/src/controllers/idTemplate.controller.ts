@@ -4,6 +4,7 @@ import prisma from '../config/database';
 import { ApiError } from '../utils/error.util';
 import { v2 as cloudinary } from 'cloudinary';
 
+import logger from '../utils/logger';
 export class IdTemplateController {
     /**
      * Get all ID Card templates
@@ -92,7 +93,7 @@ export class IdTemplateController {
                     });
                     finalDesignUrl = result.secure_url;
                 } catch (uploadError) {
-                    console.warn("Cloudinary upload failed, using raw string (may be large)", uploadError);
+                    logger.warn("Cloudinary upload failed, using raw string (may be large)", uploadError);
                     // continue using the raw base64 string if upload fails or is not configured
                 }
             }
@@ -163,7 +164,7 @@ export class IdTemplateController {
                     });
                     finalDesignUrl = result.secure_url;
                 } catch (uploadError) {
-                    console.warn("Cloudinary upload failed", uploadError);
+                    logger.warn("Cloudinary upload failed", uploadError);
                 }
             }
 

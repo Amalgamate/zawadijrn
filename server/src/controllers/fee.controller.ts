@@ -30,6 +30,7 @@ import { complianceService } from '../services/compliance.service';
 import { EmailService } from '../services/email.service';
 import { resolveTransportAmount } from '../services/fee.service';
 
+import logger from '../utils/logger';
 function normalizeEnumValue(value?: string): string | undefined {
   if (!value) return undefined;
   const normalized = String(value).trim().toUpperCase().replace(/\s+/g, '_');
@@ -499,14 +500,14 @@ export class FeeController {
           ]);
         }
       } catch (err) {
-        console.error('Post-creation notification error:', err);
+        logger.error('Post-creation notification error:', err);
       }
 
       try {
         await accountingService.postFeeInvoiceToLedger(invoice);
         await complianceService.syncInvoiceToETIMS(invoice.id);
       } catch (err) {
-        console.error('Post-creation background tasks error:', err);
+        logger.error('Post-creation background tasks error:', err);
       }
     });
 
@@ -767,7 +768,7 @@ export class FeeController {
           ]);
         }
       } catch (err) {
-        console.error('Post-payment error:', err);
+        logger.error('Post-payment error:', err);
       }
     })();
 
@@ -840,7 +841,7 @@ export class FeeController {
       data: { status: 'CANCELLED' as PaymentStatus }
     });
 
-    console.log(
+    logger.info(
       `[FeeController] Invoice ${invoice.invoiceNumber} cancelled by user ${req.user!.userId}. Reason: ${reason || 'not specified'}`
     );
 
@@ -917,7 +918,7 @@ export class FeeController {
       return [archived, finalInv];
     });
 
-    console.log(`[FeeController] Payment ${payment.receiptNumber} reversed by ${userId}. Reason: ${reason}`);
+    logger.info(`[FeeController] Payment ${payment.receiptNumber} reversed by ${userId}. Reason: ${reason}`);
 
     res.json({
       success: true,
@@ -1169,13 +1170,13 @@ export class FeeController {
     if (!results!) throw lastError;
 
     setImmediate(async () => {
-      console.log(`[BulkCompliance] Starting background tasks for ${results.length} invoices...`);
+      logger.info(`[BulkCompliance] Starting background tasks for ${results.length} invoices...`);
       for (const inv of results) {
         try {
           await accountingService.postFeeInvoiceToLedger(inv);
           await complianceService.syncInvoiceToETIMS(inv.id);
         } catch (err) {
-          console.error(`[BulkCompliance] Failed for invoice ${inv.invoiceNumber}:`, err);
+          logger.error(`[BulkCompliance] Failed for invoice ${inv.invoiceNumber}:`, err);
         }
       }
     });
@@ -1305,7 +1306,7 @@ export class FeeController {
         o.skipped
       );
       if (failed.length > 0) {
-        console.warn(`[BulkReminders] ${failed.length}/${outcomes.length} reminders failed or skipped:`, JSON.stringify(failed));
+        logger.warn(`[BulkReminders] ${failed.length}/${outcomes.length} reminders failed or skipped:`, JSON.stringify(failed));
       }
     });
 
@@ -1394,7 +1395,7 @@ export class FeeController {
       throw new ApiError(403, 'Total financial reset is strictly disabled in the production environment.');
     }
 
-    console.log('[SystemMaintenance] Starting Total Financial Reset...');
+    logger.info('[SystemMaintenance] Starting Total Financial Reset...');
 
     try {
       await prisma.$transaction([
@@ -1416,10 +1417,10 @@ export class FeeController {
         prisma.bankStatement.deleteMany({})
       ]);
 
-      console.log('[SystemMaintenance] Total Reset Success.');
+      logger.info('[SystemMaintenance] Total Reset Success.');
       res.json({ success: true, message: 'All financial data has been reset to zero successfully.' });
     } catch (error: any) {
-      console.error('[SystemMaintenance] Total Reset Failed:', error);
+      logger.error('[SystemMaintenance] Total Reset Failed:', error);
       throw new ApiError(500, `Reset failed: ${error.message}`);
     }
   }
