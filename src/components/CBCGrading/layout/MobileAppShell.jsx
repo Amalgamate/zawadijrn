@@ -66,12 +66,12 @@ const MobileAppShell = ({ children, user, onLogout, onNavigate, currentPage, bra
   ];
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-white overflow-hidden relative font-sans">
+    <div className="flex flex-col h-[100dvh] bg-slate-50 overflow-hidden relative font-['Poppins',_sans-serif]">
       {/* Premium Mobile Top App Bar - Glassmorphism */}
-      <div className="bg-white/80 backdrop-blur-xl border-b border-gray-100 flex flex-col z-50 sticky top-0" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-      <div className="h-[64px] flex items-center justify-between px-5">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-[var(--brand-purple)] flex items-center justify-center p-2 shadow-lg shadow-purple-100 ring-4 ring-purple-50">
+      <div className="bg-white/90 backdrop-blur-2xl border-b border-slate-200/60 flex flex-col z-50 sticky top-0" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+      <div className="h-[72px] flex items-center justify-between px-6">
+        <div className="flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[var(--brand-purple)] to-purple-600 flex items-center justify-center p-2.5 shadow-xl shadow-purple-100 ring-4 ring-white transition-transform active:scale-95">
             {brandingSettings?.logoUrl ? (
               <img src={brandingSettings.logoUrl} alt="Logo" className="w-full h-full object-contain brightness-0 invert" />
             ) : (
@@ -79,30 +79,30 @@ const MobileAppShell = ({ children, user, onLogout, onNavigate, currentPage, bra
             )}
           </div>
           <div className="flex flex-col">
-            <span className="font-semibold text-sm text-gray-900 leading-tight tracking-tight">
-              {brandingSettings?.schoolName || 'ZAWADI JUNIOR ACADEMY'}
+            <span className="font-bold text-[13px] text-slate-900 leading-tight tracking-tight uppercase">
+              {brandingSettings?.schoolName || 'ZAWADI JUNIOR'}
             </span>
-            <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[10px] font-medium text-gray-400 uppercase tracking-widest">
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.1em]">
                 {role?.replace('_', ' ')}
               </span>
             </div>
           </div>
         </div>
         
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           {isInstallable && (
             <button
               onClick={installApp}
-              className="p-2.5 text-gray-400 hover:text-[var(--brand-purple)] transition-colors active:scale-90"
+              className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 hover:text-[var(--brand-purple)] transition-all active:scale-90 flex items-center justify-center border border-slate-100"
             >
               <Download size={20} />
             </button>
           )}
           <button
             onClick={onLogout}
-            className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center transition-all hover:bg-rose-100 active:scale-90 border border-rose-100"
+            className="w-10 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center transition-all hover:bg-rose-100 active:scale-90 border border-rose-100 shadow-sm shadow-rose-100"
           >
             <LogOut size={18} strokeWidth={2.5} />
           </button>
@@ -111,14 +111,17 @@ const MobileAppShell = ({ children, user, onLogout, onNavigate, currentPage, bra
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-auto custom-scrollbar relative z-10 w-full bg-white">
-        <div className="px-5 pt-7" style={{ paddingBottom: 'calc(5.5rem + env(safe-area-inset-bottom))' }}>
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-2xl font-semibold text-gray-900 tracking-tight">
-              {PAGE_TITLES[currentPage] || (currentPage?.includes('settings') ? 'Settings' : 'Portal')}
-            </h2>
-            <button className="p-2.5 bg-gray-50 rounded-xl text-gray-400 border border-gray-100 active:scale-95 transition-transform">
-              <Search size={18} strokeWidth={2.5} />
+      <div className="flex-1 overflow-auto custom-scrollbar relative z-10 w-full bg-slate-50/50">
+        <div className="px-6 pt-8" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}>
+          <div className="mb-8 flex items-center justify-between">
+            <div className="flex flex-col gap-1">
+               <p className="text-[10px] font-bold text-brand-purple uppercase tracking-[0.2em]">Current View</p>
+               <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+                {PAGE_TITLES[currentPage] || (currentPage?.includes('settings') ? 'Settings' : 'Portal')}
+              </h2>
+            </div>
+            <button className="w-12 h-12 bg-white rounded-2xl text-slate-400 border border-slate-200/60 shadow-sm active:scale-95 transition-all flex items-center justify-center">
+              <Search size={20} strokeWidth={2.5} />
             </button>
           </div>
           {children}

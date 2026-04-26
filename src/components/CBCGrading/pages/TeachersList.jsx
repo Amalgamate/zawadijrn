@@ -7,7 +7,9 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Upload, Eye, Edit, Trash2, GraduationCap, BookOpen, Search, RefreshCw, MoreVertical, Filter, X } from 'lucide-react';
 import StatusBadge from '../shared/StatusBadge';
 import EmptyState from '../shared/EmptyState';
+import { DataCard } from '../shared';
 import { useAuth } from '../../../hooks/useAuth';
+import { useMobile } from '../../../hooks/useMobileDetection';
 import BulkOperationsModal from '../shared/bulk/BulkOperationsModal';
 import TeacherClassAssignmentModal from '../shared/TeacherClassAssignmentModal';
 
@@ -27,6 +29,7 @@ const TeachersList = ({
   const [showGlobalFilters, setShowGlobalFilters] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
+  const isMobile = useMobile();
 
   const activeFilterCount = filterStatus !== 'all' ? 1 : 0;
   const [selectedTeacherForAssignment, setSelectedTeacherForAssignment] = useState(null);

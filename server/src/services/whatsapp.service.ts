@@ -42,6 +42,10 @@ class WhatsAppService {
   }
 
   async initialize(): Promise<void> {
+    if (process.env.DISABLE_WHATSAPP === 'true') {
+      console.log('[WhatsApp] Service disabled via environment variable.');
+      return;
+    }
     if (this.status === 'initializing' || this.status === 'authenticated') return;
 
     this.status = 'initializing';
@@ -73,55 +77,59 @@ class WhatsAppService {
       this.sock.ev.on('creds.update', saveCreds);
 
       this.sock.ev.on('connection.update', (update) => {
-        const { connection, lastDisconnect, qr } = update;
+        try {
+          const { connection, lastDisconnect, qr } = update;
 
-        if (qr) {
-          // QR code available — store as raw string, frontend renders it via qrserver API
-          this.qrCode = qr;
-          this.status = 'qr_needed';
-          console.log('[WhatsApp] QR code ready — waiting for scan...');
-        }
-
-        if (connection === 'close') {
-          this.status = 'disconnected';
-          this.qrCode = null;
-          
-          const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
-          const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
-
-          console.log('[WhatsApp] Connection closed. Status code:', statusCode, '| Reconnect:', shouldReconnect);
-          
-          if (lastDisconnect?.error) {
-            console.error('[WhatsApp] Disconnect error details:', lastDisconnect.error);
+          if (qr) {
+            // QR code available — store as raw string, frontend renders it via qrserver API
+            this.qrCode = qr;
+            this.status = 'qr_needed';
+            console.log('[WhatsApp] QR code ready — waiting for scan...');
           }
 
-          if (statusCode === DisconnectReason.loggedOut) {
-            console.log('[WhatsApp] Session invalid or logged out. Clearing auth data to generate a fresh QR code...');
-            if (fs.existsSync(AUTH_FOLDER)) {
-              fs.rmSync(AUTH_FOLDER, { recursive: true, force: true });
+          if (connection === 'close') {
+            this.status = 'disconnected';
+            this.qrCode = null;
+            
+            const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
+            const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+
+            console.log('[WhatsApp] Connection closed. Status code:', statusCode, '| Reconnect:', shouldReconnect);
+            
+            if (lastDisconnect?.error) {
+              console.error('[WhatsApp] Disconnect error details:', lastDisconnect.error);
+            }
+
+            if (statusCode === DisconnectReason.loggedOut) {
+              console.log('[WhatsApp] Session invalid or logged out. Clearing auth data to generate a fresh QR code...');
+              if (fs.existsSync(AUTH_FOLDER)) {
+                fs.rmSync(AUTH_FOLDER, { recursive: true, force: true });
+              }
+            }
+
+            if (shouldReconnect) {
+              console.log('[WhatsApp] Reconnecting in 3 seconds...');
+              // Reconnect after 3 seconds with disconnected status so initialize() bypasses the lock
+              this.status = 'disconnected';
+              this.reconnectTimeout = setTimeout(() => {
+                this.initialize().catch(err => console.error('[WhatsApp] Reconnect task failed:', err));
+              }, 3000);
             }
           }
 
-          if (shouldReconnect) {
-            console.log('[WhatsApp] Reconnecting in 3 seconds...');
-            // Reconnect after 3 seconds with disconnected status so initialize() bypasses the lock
-            this.status = 'disconnected';
-            this.reconnectTimeout = setTimeout(() => {
-              this.initialize().catch(console.error);
-            }, 3000);
+          if (connection === 'open') {
+            this.status = 'authenticated';
+            this.qrCode = null;
+            console.log('[WhatsApp] ✅ Connected and authenticated!');
           }
-        }
-
-        if (connection === 'open') {
-          this.status = 'authenticated';
-          this.qrCode = null;
-          console.log('[WhatsApp] ✅ Connected and authenticated!');
+        } catch (eventErr) {
+          console.error('[WhatsApp] Error in connection.update listener:', eventErr);
         }
       });
     } catch (err) {
       this.status = 'disconnected';
       console.error('[WhatsApp] Initialization error:', err);
-      throw err;
+      // Don't throw, just log it so the server doesn't crash
     }
   }
 

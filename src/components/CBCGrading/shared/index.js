@@ -6,3 +6,4 @@
 export { ContextHeader } from './ContextHeader';
 export { RatingInput } from './RatingInput';
 export { AssessmentStatsCard } from './AssessmentStatsCard';
+export { default as DataCard } from './DataCard';

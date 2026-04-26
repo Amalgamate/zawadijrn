@@ -9,14 +9,17 @@ import { Plus, Edit, Trash2, Users, Mail, Phone, Eye, MessageCircle, Archive, Se
 import { userAPI } from '../../../services/api/user.api';
 import StatusBadge from '../shared/StatusBadge';
 import EmptyState from '../shared/EmptyState';
+import { DataCard } from '../shared';
 import { usePermissions } from '../../../hooks/usePermissions';
 import { useAuth } from '../../../hooks/useAuth';
+import { useMobile } from '../../../hooks/useMobileDetection';
 import BulkOperationsModal from '../shared/bulk/BulkOperationsModal';
 
 const ParentsList = ({ parents = [], pagination, onFetchParents, onAddParent, onEditParent, onViewParent, onDeleteParent, onArchiveParent, onRefresh, loading = false }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showBulkModal, setShowBulkModal] = useState(false);
   const { can, isRole } = usePermissions();
+  const isMobile = useMobile();
   useAuth(); // Auth context
   const currentUserIsTeacher = isRole('TEACHER');
 

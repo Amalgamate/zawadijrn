@@ -30,8 +30,11 @@ import usePageNavigation from '../../../hooks/usePageNavigation';
 import { downloadFeeTemplate } from '../../../utils/feeTemplateGenerator';
 import UnmatchedPaymentsPanel from './fees/UnmatchedPaymentsPanel';
 import { useBootstrapStore } from '../../../store/useBootstrapStore';
+import { useMobile } from '../../../hooks/useMobileDetection';
+import { DataCard } from '../shared';
 
 const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
+  const isMobile = useMobile();
   const navigateTo = usePageNavigation();
   const [invoices, setInvoices] = useState([]);
   const [statsInvoices, setStatsInvoices] = useState([]); // unfiltered — drives the metric cards
@@ -1274,7 +1277,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
           </div>
 
 
-          {/* Invoices Table */}
+          {/* Invoices List/Table */}
           {invoices.length === 0 ? (
             <EmptyState
               icon={FileText}
@@ -1289,7 +1292,75 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                 </button>
               }
             />
+          ) : isMobile ? (
+            // ******************** MOBILE CARDS VIEW ********************
+            <div className="grid grid-cols-1 gap-4 pb-20">
+              {invoices.map((invoice) => {
+                const recentMode = (invoice.payments && invoice.payments.length > 0) ? invoice.payments[0].paymentMethod : 'MPESA';
+                return (
+                  <DataCard
+                    key={invoice.id}
+                    onClick={() => navigateTo('fees-invoice-detail', { invoice })}
+                    icon={
+                      <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center font-bold text-sm shadow-inner">
+                        {invoice.invoiceNumber?.substring(0, 2)}
+                      </div>
+                    }
+                    title={`${invoice.learner?.firstName} ${invoice.learner?.lastName}`}
+                    subtitle={`${invoice.invoiceNumber} • ${invoice.learner?.grade || ''}`}
+                    badges={getStatusBadge(invoice.status)}
+                    stats={{
+                      "Total Billed": `KES ${Number(invoice.totalAmount).toLocaleString()}`,
+                      "Current Balance": `KES ${Number(invoice.balance).toLocaleString()}`
+                    }}
+                    actions={
+                      <div className="flex items-center gap-2 w-full justify-between mt-2">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); navigateTo('fees-record-payment', { invoice, initialMode: 'MPESA' }); }}
+                            className="px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl shadow-lg shadow-emerald-100 active:scale-95 transition-transform"
+                          >
+                            MPESA
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); navigateTo('fees-record-payment', { invoice, initialMode: 'CASH' }); }}
+                            className="px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-xl shadow-lg shadow-blue-100 active:scale-95 transition-transform"
+                          >
+                            CASH
+                          </button>
+                        </div>
+                        <div className="flex gap-1">
+                          {invoice.status !== 'PAID' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedInvoice(invoice);
+                                setShowPledgeModal(true);
+                              }}
+                              className="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center active:scale-90"
+                            >
+                              <Clock size={18} />
+                            </button>
+                          )}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedInvoice(invoice);
+                              setShowWaiverModal(true);
+                            }}
+                            className="w-10 h-10 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center active:scale-90"
+                          >
+                            <Gift size={18} />
+                          </button>
+                        </div>
+                      </div>
+                    }
+                  />
+                );
+              })}
+            </div>
           ) : (
+            // ******************** DESKTOP TABLE VIEW ********************
             <div className="bg-white rounded-xl border-[0.5px] border-gray-200 shadow-sm overflow-auto max-h-[70vh] text-sm scrollbar-thin relative">
               <table className="w-full min-w-max border-collapse">
                 <thead className="sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm border-b-[0.5px] border-gray-200">

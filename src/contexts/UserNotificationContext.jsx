@@ -1,89 +1,160 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+/**
+ * UserNotificationContext
+ *
+ * Single source of truth for in-app notification state.
+ *
+ * ── Design principles ────────────────────────────────────────────────────────
+ *
+ * 1. SERVER RETURNS ALL RECORDS (not just unread).
+ *    The previous implementation fetched only `isRead:false` rows. On every
+ *    page refresh React state was destroyed, the merge ran against an empty
+ *    `prev`, and every returned row appeared unread — even ones already read
+ *    in a prior session. Returning all records means `isRead` from the DB is
+ *    the authoritative value; the frontend never has to guess.
+ *
+ * 2. DERIVED STATE ONLY.
+ *    `unreadNotifications` and `unreadCount` are always computed from
+ *    `notifications` via useMemo. There is no separate counter that can drift.
+ *
+ * 3. OPTIMISTIC UPDATES WITH REVERT.
+ *    markAsRead / markAllAsRead flip state immediately so the UI responds
+ *    instantly. If the API call fails the state is reverted and a re-fetch
+ *    restores the accurate server state.
+ *
+ * 4. SOCKET DEDUPLICATION.
+ *    Incoming real-time notifications are ignored if their ID already exists
+ *    in local state (prevents double-counting after a background re-fetch).
+ *
+ * 5. NO MARK-ALL-ON-BELL-OPEN.
+ *    The bell popover no longer marks everything read on open. Items are
+ *    marked read individually when clicked, or via an explicit "Mark all read"
+ *    button. This prevents the race where a mis-click would silently suppress
+ *    notifications before the user saw them.
+ */
+
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from 'react';
 import { io } from 'socket.io-client';
 import { useAuth } from '../hooks/useAuth';
 import api from '../services/api';
 
-const UserNotificationContext = createContext();
+const UserNotificationContext = createContext(null);
 
 export const UserNotificationProvider = ({ children }) => {
   const { user, isAuthenticated } = useAuth();
   const [notifications, setNotifications] = useState([]);
-  const [socket, setSocket] = useState(null);
-
-  // Derived — always computed from `notifications` so it never drifts out of sync.
-  const unreadNotifications = notifications.filter(n => !n.isRead);
-  const unreadCount = unreadNotifications.length;
   const audioRef = useRef(null);
 
-  // Sound Options (using base64 encoded short modern pings)
-  const SOUNDS = {
-    MODERN_PING: 'https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3', // Example external URL or local path
-    SOFT_CHIME: 'https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3',
-  };
+  // ── Derived state — always accurate, never drifts ────────────────────────
+  const unreadNotifications = useMemo(
+    () => notifications.filter((n) => !n.isRead),
+    [notifications]
+  );
+  const unreadCount = unreadNotifications.length;
 
+  // ── Audio ─────────────────────────────────────────────────────────────────
   const playBeep = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.play().catch(e => console.warn('Audio play failed:', e));
-    }
+    audioRef.current?.play().catch(() => {
+      // Autoplay policy — silent failure is acceptable
+    });
   }, []);
 
+  // ── Browser Notification ──────────────────────────────────────────────────
   const showBrowserNotification = useCallback((title, message) => {
-    if (!("Notification" in window)) return;
-
-    if (Notification.permission === "granted") {
-      new Notification(title, { body: message, icon: '/logo-zawadi.png' });
-    }
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    new Notification(title, { body: message, icon: '/logo-zawadi.png' });
   }, []);
 
+  // ── Fetch ─────────────────────────────────────────────────────────────────
+  // Server now returns ALL records for the user (both read and unread).
+  // We replace local state wholesale — the DB is the authoritative source.
   const fetchNotifications = useCallback(async () => {
     if (!isAuthenticated) return;
     try {
       const resp = await api.userNotifications.getAll();
-      if (resp.success) {
-        // Server only returns isRead:false records. Merge with local state
-        // so any notification already marked read locally stays read and
-        // never pops back as "new" on a refetch.
-        setNotifications(prev => {
-          const localReadIds = new Set(
-            prev.filter(n => n.isRead).map(n => n.id)
-          );
-          return resp.data.map(n =>
-            localReadIds.has(n.id) ? { ...n, isRead: true } : n
-          );
-        });
+      if (resp.success && Array.isArray(resp.data)) {
+        setNotifications(resp.data);
       }
     } catch (err) {
-      console.error('Failed to fetch user notifications:', err);
+      console.error('[Notifications] fetch failed:', err);
     }
   }, [isAuthenticated]);
 
-  // Defined BEFORE the useEffect that calls it so the reference is stable
+  // ── Socket + initial fetch ────────────────────────────────────────────────
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id) return;
+
+    const serverUrl = window.location.origin;
+    const socket = io(serverUrl, {
+      withCredentials: true,
+      auth: { token: localStorage.getItem('token') },
+    });
+
+    socket.on('connect', () => {
+      console.log('[Notifications] Socket connected');
+    });
+
+    socket.on('notification:new', (notification) => {
+      console.log('[Notifications] Real-time notification received:', notification.id);
+      setNotifications((prev) => {
+        // Deduplicate: skip if this ID already exists in state
+        if (prev.some((n) => n.id === notification.id)) return prev;
+        return [{ ...notification, isRead: false }, ...prev];
+      });
+      playBeep();
+      showBrowserNotification(notification.title, notification.message);
+    });
+
+    // Initial fetch on mount / auth change
+    fetchNotifications();
+
+    // Request browser notification permission
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().then((permission) => {
+        if (permission === 'granted') registerPushSubscription();
+      });
+    } else if ('Notification' in window && Notification.permission === 'granted') {
+      registerPushSubscription();
+    }
+
+    return () => {
+      socket.disconnect();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, user?.id]);
+
+  // ── Push subscription ─────────────────────────────────────────────────────
   const registerPushSubscription = useCallback(async () => {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
     try {
       const registration = await navigator.serviceWorker.ready;
       const existing = await registration.pushManager.getSubscription();
-      if (existing) return; // Already subscribed
+      if (existing) return;
 
-      // Fetch VAPID public key from server
       let resp;
       try {
         resp = await api.userNotifications.getVapidPublicKey?.();
-      } catch (keyErr) {
-        console.warn('VAPID public key fetch failed (server may be starting up or keys missing):', keyErr.message);
-        return; // Silent return, not a fatal error
-      }
-
-      if (!resp?.data?.publicKey) {
-        console.warn('VAPID public key not available — push subscriptions skipped');
+      } catch {
+        console.warn('[Notifications] VAPID key unavailable — push skipped');
         return;
       }
 
+      if (!resp?.data?.publicKey) return;
+
       const urlBase64ToUint8Array = (base64String) => {
-        const padding = '='.repeat((4 - base64String.length % 4) % 4);
-        const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+        const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+        const base64 = (base64String + padding)
+          .replace(/-/g, '+')
+          .replace(/_/g, '/');
         const rawData = atob(base64);
-        return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+        return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
       };
 
       const subscription = await registration.pushManager.subscribe({
@@ -91,123 +162,94 @@ export const UserNotificationProvider = ({ children }) => {
         applicationServerKey: urlBase64ToUint8Array(resp.data.publicKey),
       });
 
-      // Send subscription to server
       await api.userNotifications.savePushSubscription?.(subscription);
-      console.log('✅ Push subscription registered successfully');
+      console.log('[Notifications] Push subscription registered');
     } catch (err) {
-      console.warn('Push subscription failed:', err);
+      console.warn('[Notifications] Push subscription failed:', err);
     }
   }, []);
 
-  useEffect(() => {
-    if (!isAuthenticated || !user?.id) {
-      if (socket) {
-        socket.disconnect();
-        setSocket(null);
+  // ── Mark single as read ───────────────────────────────────────────────────
+  // Uses a functional setState updater for the optimistic change so the
+  // closure never holds a stale reference to `notifications`. The snapshot
+  // for revert is captured inside the updater via the `prev` argument and
+  // stored in a ref so the catch block can always access the pre-update state.
+  const markAsRead = useCallback(
+    async (id) => {
+      let snapshot = [];
+      setNotifications((prev) => {
+        snapshot = prev; // capture inside updater — always the current array, never stale
+        return prev.map((n) =>
+          n.id === id ? { ...n, isRead: true, readAt: new Date().toISOString() } : n
+        );
+      });
+      try {
+        await api.userNotifications.markAsRead(id);
+      } catch (err) {
+        console.error('[Notifications] markAsRead failed — reverting:', err);
+        setNotifications(snapshot);
+        fetchNotifications();
       }
-      return;
-    }
+    },
+    [fetchNotifications]
+  );
 
-    // Initialize Socket.
-    // In dev, the Vite proxy forwards /socket.io → http://localhost:5000,
-    // so we connect to the same origin (https://localhost:3000) rather than
-    // directly to http://localhost:5000 (which would be blocked as mixed content).
-    const serverUrl = window.location.origin;
-
-    const newSocket = io(serverUrl, {
-      withCredentials: true,
-      auth: { token: localStorage.getItem('token') }
-    });
-
-    newSocket.on('connect', () => {
-      console.log('🔌 Connected to notification socket');
-    });
-
-    newSocket.on('notification:new', (notification) => {
-      console.log('🔔 New notification received:', notification);
-      // Avoid duplicate: if this notification ID already exists locally, skip
-      setNotifications(prev => {
-        if (prev.some(n => n.id === notification.id)) return prev;
-        return [{ ...notification, isRead: false }, ...prev];
-      });
-      // unreadCount is derived — no manual increment needed.
-      
-      // Play sound
-      playBeep();
-      
-      // Browser notification
-      showBrowserNotification(notification.title, notification.message);
-    });
-
-    setSocket(newSocket);
-
-    // Initial fetch
-    fetchNotifications();
-
-    // Request browser notification permission and set up push subscription
-    if ("Notification" in window && Notification.permission === "default") {
-      Notification.requestPermission().then(permission => {
-        if (permission === 'granted') {
-          registerPushSubscription();
-        }
-      });
-    } else if ("Notification" in window && Notification.permission === 'granted') {
-      registerPushSubscription();
-    }
-
-    return () => {
-      newSocket.disconnect();
-    };
-  }, [isAuthenticated, user?.id, playBeep, showBrowserNotification, fetchNotifications, registerPushSubscription]);
-
-  const markAsRead = useCallback(async (id) => {
-    // Optimistically mark as read in local state immediately so it
-    // never reappears as "new" even if the API call is slow or fails.
-    setNotifications(prev =>
-      prev.map(n => n.id === id ? { ...n, isRead: true } : n)
-    );
-    // unreadCount is derived — no manual decrement needed.
-    try {
-      await api.userNotifications.markAsRead(id);
-    } catch (err) {
-      console.error('Failed to mark notification as read:', err);
-      // Revert on failure
-      setNotifications(prev =>
-        prev.map(n => n.id === id ? { ...n, isRead: false } : n)
-      );
-    }
-  }, []);
-
+  // ── Mark all as read ──────────────────────────────────────────────────────
   const markAllAsRead = useCallback(async () => {
-    // Optimistically mark all read in local state immediately.
-    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-    // unreadCount is derived — no manual reset needed.
+    const now = new Date().toISOString();
+    let snapshot = [];
+    setNotifications((prev) => {
+      snapshot = prev;
+      return prev.map((n) =>
+        n.isRead ? n : { ...n, isRead: true, readAt: now }
+      );
+    });
     try {
       await api.userNotifications.markAllAsRead();
     } catch (err) {
-      console.error('Failed to mark all as read:', err);
-      // On failure, re-fetch from server to restore accurate state
+      console.error('[Notifications] markAllAsRead failed — reverting:', err);
+      setNotifications(snapshot);
       fetchNotifications();
     }
   }, [fetchNotifications]);
 
-  return (
-    <UserNotificationContext.Provider value={{ 
+  const value = useMemo(
+    () => ({
       notifications,
-      unreadNotifications,   // only the unread ones — use this in the bell dropdown
-      unreadCount,           // derived count — always accurate
-      markAsRead, 
+      unreadNotifications,
+      unreadCount,
+      markAsRead,
       markAllAsRead,
-      fetchNotifications 
-    }}>
+      fetchNotifications,
+    }),
+    [
+      notifications,
+      unreadNotifications,
+      unreadCount,
+      markAsRead,
+      markAllAsRead,
+      fetchNotifications,
+    ]
+  );
+
+  return (
+    <UserNotificationContext.Provider value={value}>
       {children}
-      <audio ref={audioRef} src={SOUNDS.MODERN_PING} preload="auto" />
+      <audio
+        ref={audioRef}
+        src="https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3"
+        preload="auto"
+      />
     </UserNotificationContext.Provider>
   );
 };
 
 export const useUserNotifications = () => {
   const context = useContext(UserNotificationContext);
-  if (!context) throw new Error('useUserNotifications must be used within UserNotificationProvider');
+  if (!context) {
+    throw new Error(
+      'useUserNotifications must be used within UserNotificationProvider'
+    );
+  }
   return context;
 };

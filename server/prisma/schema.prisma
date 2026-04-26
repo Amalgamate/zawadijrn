@@ -2485,15 +2485,16 @@ enum FeePaymentStatus {
 }
 
 model PushSubscription {
-  id         String   @id @default(uuid())
-  userId     String
-  endpoint   String   @unique
-  p256dh     String
-  auth       String
-  userAgent  String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  user       User     @relation("UserPushSubscriptions", fields: [userId], references: [id], onDelete: Cascade)
+  id        String   @id @default(uuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation("UserPushSubscriptions", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("push_subscriptions")
@@ -2785,19 +2786,30 @@ model FeeWaiver {
   @@map("fee_waivers")
 }
 
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+  WAIVER
+}
+
 model UserNotification {
-  id        String   @id @default(uuid())
+  id        String           @id @default(uuid())
   userId    String
   title     String
   message   String
-  type      String   @default("INFO") // INFO, SUCCESS, WARNING, ERROR, WAIVER
-  link      String?
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType @default(INFO)
+  link      String?          // optional deep-link (e.g. '/app/fees-collection')
+  isRead    Boolean          @default(false)
+  readAt    DateTime?        // null until the user reads it; set alongside isRead
+  createdAt DateTime         @default(now())
 
-  @@index([userId, isRead])
+  user      User             @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isRead])  // composite: fastest path for unread count query
+  @@index([createdAt])
   @@map("user_notifications")
 }
 
@@ -3079,3 +3091,4 @@ enum ComplianceStatus {
   FAILED
   EXEMPT
 }
+

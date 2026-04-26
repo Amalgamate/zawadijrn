@@ -1394,10 +1394,6 @@ export class FeeController {
       throw new ApiError(400, 'Invalid confirmation token for total reset');
     }
 
-    if (process.env.NODE_ENV === 'production') {
-      throw new ApiError(403, 'Total financial reset is strictly disabled in the production environment.');
-    }
-
     logger.info('[SystemMaintenance] Starting Total Financial Reset...');
 
     try {

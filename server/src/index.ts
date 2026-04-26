@@ -61,4 +61,14 @@ process.on('SIGINT', async () => {
   process.exit(0);
 });
 
+// Global error handlers to prevent process crashes from unhandled library errors (e.g. Baileys)
+process.on('uncaughtException', (error) => {
+  logger.error(error, '🚨 Uncaught Exception detected');
+  // We don't exit here to keep the server alive despite background library errors
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error({ reason, promise }, '🚨 Unhandled Rejection detected');
+});
+
 startServer();

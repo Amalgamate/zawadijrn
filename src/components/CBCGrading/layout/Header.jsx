@@ -37,7 +37,12 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
   const sessionStartedAtRef = useRef(Date.now());
   const { role } = usePermissions();
 
-  const readStorageKey = `header_read_notifications_${user?.id || user?.email || 'unknown'}`;
+  // Key is scoped to the resolved user id. We wait until user.id is available
+  // before loading from localStorage so we never load from the 'unknown' key
+  // created during the brief null-user window on app boot.
+  const readStorageKey = user?.id
+    ? `header_read_notifications_${user.id}`
+    : null;
   const reminderStorageKey = `header_last_notification_reminder_${user?.id || user?.email || 'unknown'}`;
   const snoozeStorageKey = `header_notification_reminder_snooze_until_${user?.id || user?.email || 'unknown'}`;
 
@@ -203,7 +208,12 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
     return () => clearInterval(interval);
   }, []);
 
+  // Load persisted read-keys from localStorage. Only runs when readStorageKey
+  // resolves to a real user-scoped key (i.e. after user.id is available).
+  // This prevents loading from the 'unknown' fallback key and then immediately
+  // discarding it when the real key arrives.
   useEffect(() => {
+    if (!readStorageKey) return; // user not yet resolved — wait
     try {
       const raw = localStorage.getItem(readStorageKey);
       if (!raw) {
@@ -219,7 +229,10 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
     }
   }, [readStorageKey]);
 
+  // Persist read-keys back to localStorage whenever they change.
+  // Guard against null readStorageKey (user not yet resolved).
   useEffect(() => {
+    if (!readStorageKey) return;
     try {
       localStorage.setItem(readStorageKey, JSON.stringify(Array.from(readNotificationKeys)));
     } catch { }
@@ -395,9 +408,13 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
 
 
         {/* Notifications Popover */}
+        {/* Bell popover — does NOT auto-mark-all on open.
+            Items are marked read individually (on click) or via the
+            explicit "Mark all read" button. This prevents the race where
+            a mis-click would silently suppress notifications before the
+            user actually saw them. */}
         <Popover open={showNotifications} onOpenChange={(open) => {
           setShowNotifications(open);
-          if (open) markAllNotificationsAsRead();
         }}>
           <PopoverTrigger asChild>
             <Button
@@ -422,7 +439,14 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
           <PopoverContent className="w-96 p-0 overflow-hidden" align="end">
             <div className="p-4 border-b border-gray-50 bg-gray-50/50 flex justify-between items-center">
               <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-tight">Notifications</h3>
-              <Badge variant="purple" className="font-semibold">UPDATES</Badge>
+              {totalUnreadCount > 0 && (
+                <button
+                  onClick={markAllNotificationsAsRead}
+                  className="text-[10px] font-semibold uppercase tracking-widest text-brand-purple hover:underline"
+                >
+                  Mark all read
+                </button>
+              )}
             </div>
 
             <div className="max-h-[400px] overflow-y-auto custom-scrollbar">

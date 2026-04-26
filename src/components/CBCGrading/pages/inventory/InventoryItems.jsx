@@ -6,8 +6,11 @@ import {
 } from 'lucide-react';
 import api from '../../../../services/api';
 import { useNotifications } from '../../hooks/useNotifications';
+import { useMobile } from '../../../../hooks/useMobileDetection';
+import { DataCard } from '../../shared';
 
 const InventoryItems = () => {
+    const isMobile = useMobile();
     const { showSuccess, showError } = useNotifications();
     const [items, setItems] = useState([]);
     const [categories, setCategories] = useState([]);
@@ -138,36 +141,67 @@ const InventoryItems = () => {
                 </div>
             </div>
 
-            {/* Items Table */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <table className="w-full text-left">
-                    <thead className="border-b border-[color:var(--table-border)]">
-                        <tr>
-                            <th className="px-6 py-4 text-sm font-semibold text-[color:var(--table-header-fg)]">Item Name</th>
-                            <th className="px-6 py-4 text-sm font-semibold text-[color:var(--table-header-fg)]">SKU</th>
-                            <th className="px-6 py-4 text-sm font-semibold text-[color:var(--table-header-fg)]">Category</th>
-                            <th className="px-6 py-4 text-sm font-semibold text-[color:var(--table-header-fg)]">Type</th>
-                            <th className="px-6 py-4 text-sm font-semibold text-[color:var(--table-header-fg)] text-right">Stock Level</th>
-                            <th className="px-6 py-4 text-sm font-semibold text-[color:var(--table-header-fg)]">Status</th>
-                            <th className="px-6 py-4 text-sm font-semibold text-[color:var(--table-header-fg)]"></th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                        {loading ? (
-                            [1, 2, 3].map(i => (
-                                <tr key={i} className="animate-pulse">
-                                    <td colSpan={7} className="px-6 py-4 h-16 bg-gray-50/50"></td>
-                                </tr>
-                            ))
-                        ) : items.length === 0 ? (
+            {/* Items List/Table */}
+            {loading ? (
+                <div className="flex justify-center items-center h-64">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                </div>
+            ) : items.length === 0 ? (
+                <div className="bg-white p-12 rounded-xl shadow-sm border border-gray-100 text-center text-gray-500">
+                    <Package size={48} className="mx-auto mb-4 opacity-20" />
+                    <p>No inventory items found. Add your first item to get started.</p>
+                </div>
+            ) : isMobile ? (
+                // ******************** MOBILE CARDS VIEW ********************
+                <div className="grid grid-cols-1 gap-4 pb-10">
+                    {items.map((item) => (
+                        <DataCard
+                            key={item.id}
+                            icon={
+                                <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center font-bold text-sm shadow-inner">
+                                    <Package size={20} />
+                                </div>
+                            }
+                            title={item.name}
+                            subtitle={`${item.category?.name || 'Uncategorized'} • ${item.sku || 'No SKU'}`}
+                            badges={
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                    (item.quantity || 0) === 0 ? 'bg-red-50 text-red-600' :
+                                    (item.quantity || 0) <= (item.minimumStock || 5) ? 'bg-amber-50 text-amber-600' :
+                                    'bg-emerald-50 text-emerald-600'
+                                }`}>
+                                    {(item.quantity || 0) === 0 ? 'OUT' : (item.quantity || 0) <= (item.minimumStock || 5) ? 'LOW' : 'STOCK'}
+                                </span>
+                            }
+                            stats={{
+                                "Quantity": `${item.quantity || 0} ${item.unitOfMeasure || ''}`,
+                                "Unit Price": `KES ${item.unitPrice || 0}`
+                            }}
+                            actions={
+                                <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-all">
+                                    <MoreVertical size={18} />
+                                </button>
+                            }
+                        />
+                    ))}
+                </div>
+            ) : (
+                // ******************** DESKTOP TABLE VIEW ********************
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <table className="w-full text-left">
+                        <thead className="border-b border-[color:var(--table-border)]">
                             <tr>
-                                <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
-                                    <Package size={48} className="mx-auto mb-4 opacity-20" />
-                                    <p>No inventory items found. Add your first item to get started.</p>
-                                </td>
+                                <th className="px-6 py-4 text-sm font-semibold text-[color:var(--table-header-fg)]">Item Name</th>
+                                <th className="px-6 py-4 text-sm font-semibold text-[color:var(--table-header-fg)]">SKU</th>
+                                <th className="px-6 py-4 text-sm font-semibold text-[color:var(--table-header-fg)]">Category</th>
+                                <th className="px-6 py-4 text-sm font-semibold text-[color:var(--table-header-fg)]">Type</th>
+                                <th className="px-6 py-4 text-sm font-semibold text-[color:var(--table-header-fg)] text-right">Stock Level</th>
+                                <th className="px-6 py-4 text-sm font-semibold text-[color:var(--table-header-fg)]">Status</th>
+                                <th className="px-6 py-4 text-sm font-semibold text-[color:var(--table-header-fg)]"></th>
                             </tr>
-                        ) : (
-                            items.map((item) => (
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {items.map((item) => (
                                 <tr key={item.id} className="hover:bg-gray-50 transition-colors">
                                     <td className="px-6 py-4">
                                         <div className="font-medium text-gray-800">{item.name}</div>
@@ -209,11 +243,11 @@ const InventoryItems = () => {
                                         </button>
                                     </td>
                                 </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
-            </div>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
 
             {/* Add Item Modal */}
             {showModal && (
