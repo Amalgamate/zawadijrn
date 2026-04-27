@@ -59,13 +59,14 @@ export const validateEnvironmentConfig = (): EnvConfig => {
     errors.push('API_URL must start with http:// or https://');
   }
 
-  // In production, enforce HTTPS
-  if (process.env.NODE_ENV === 'production') {
+  // In production, enforce HTTPS only when HTTPS_ONLY=true
+  const httpsOnly = (process.env.HTTPS_ONLY || '').toLowerCase() === 'true';
+  if (process.env.NODE_ENV === 'production' && httpsOnly) {
     if (frontendUrl && !frontendUrl.startsWith('https://')) {
-      errors.push('FRONTEND_URL must use HTTPS in production');
+      errors.push('FRONTEND_URL must use HTTPS when HTTPS_ONLY=true in production');
     }
     if (apiUrl && !apiUrl.startsWith('https://')) {
-      errors.push('API_URL must use HTTPS in production');
+      errors.push('API_URL must use HTTPS when HTTPS_ONLY=true in production');
     }
   }
 
