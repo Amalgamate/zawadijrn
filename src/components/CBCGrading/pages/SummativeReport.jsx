@@ -299,18 +299,72 @@ const calculatePathwayInsights = (results) => {
   return { pathways, recommended };
 };
 
+const normalizeTestGroup = (rawType) => {
+  if (!rawType || !String(rawType).trim()) return null;
+
+  const normalized = String(rawType)
+    .trim()
+    .toUpperCase()
+    .replace(/[\s-]+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '');
+
+  if (normalized === 'MIDTERM' || normalized === 'MID_TERM') return 'MID_TERM';
+  if (normalized === 'END_OF_TERM' || normalized === 'END_TERM') return 'END_TERM';
+
+  return normalized;
+};
+
+const inferTestGroupFromTitle = (title) => {
+  if (!title || !String(title).trim()) return null;
+
+  const source = String(title).toUpperCase();
+  if (/\bMID[\s_-]*TERM\b/.test(source)) return 'MID_TERM';
+  if (/\bEND[\s_-]*(OF[\s_-]*)?TERM\b/.test(source)) return 'END_TERM';
+  if (/\bOPEN(ER|ING)?\b/.test(source)) return 'OPENER';
+  if (/\bCAT\b/.test(source)) return 'CAT';
+  if (/\bMONTH(LY)?\b/.test(source)) return 'MONTHLY';
+  if (/\bWEEK(LY)?\b/.test(source)) return 'WEEKLY';
+  if (/\bRANDOM\b/.test(source)) return 'RANDOM';
+  if (/\bASSESSMENT\b/.test(source)) return 'ASSESSMENT';
+
+  return null;
+};
+
+const formatTestName = (str) => {
+  if (!str) return '';
+  return str.replace(/_/g, ' ').toUpperCase();
+};
+
+const compareTestGroups = (a, b) => {
+  const priority = {
+    OPENER: 1,
+    MID_TERM: 2,
+    MIDTERM: 2,
+    END_TERM: 3,
+    END_OF_TERM: 3,
+    MONTHLY: 4,
+    WEEKLY: 5,
+    CAT: 6,
+    ASSESSMENT: 7,
+    RANDOM: 8
+  };
+
+  const pA = priority[String(a || '').toUpperCase()] || 99;
+  const pB = priority[String(b || '').toUpperCase()] || 99;
+
+  if (pA !== pB) return pA - pB;
+  return String(a || '').localeCompare(String(b || ''));
+};
+
 const resolveTestGroup = (item) => {
-  const explicitType = item?.testType;
-  if (explicitType && String(explicitType).trim()) return explicitType;
+  const explicitType = normalizeTestGroup(item?.testType);
+  if (explicitType) return explicitType;
 
-  const title = item?.title;
-  if (title && title.includes(' - ')) {
-    const prefix = title.split(' - ')[0]?.trim();
-    // Increase limit from 12 to 40 to accommodate longer exam names like "Term 1 2026 Opener Exam"
-    if (prefix && prefix.length < 40) return prefix;
-  }
+  const inferred = inferTestGroupFromTitle(item?.title);
+  if (inferred) return inferred;
 
-  return 'General';
+  return 'ASSESSMENT';
 };
 
 // ============================================================================
@@ -364,33 +418,16 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
 
   // Sort columns: Opener -> Midterm -> End Term -> Others by Date
   const testColumns = Array.from(testTypesFound).sort((a, b) => {
-    const priority = {
-      'OPENER': 1,
-      'MIDTERM': 2,
-      'END_TERM': 3,
-      'END OF TERM': 3,
-      'MONTHLY': 4,
-      'WEEKLY': 5,
-      'RANDOM': 6
-    };
-
-    const pA = priority[a.toUpperCase()] || 99;
-    const pB = priority[b.toUpperCase()] || 99;
-
-    if (pA !== pB) return pA - pB;
+    const byGroupPriority = compareTestGroups(a, b);
+    if (byGroupPriority !== 0) return byGroupPriority;
 
     // Fallback to date sorting if priorities are equal
     const dateA = colDates[a] || 0;
     const dateB = colDates[b] || 0;
     if (dateA && dateB) return dateA - dateB;
 
-    return a.localeCompare(b);
+    return String(a || '').localeCompare(String(b || ''));
   });
-  const formatTestName = (str) => {
-    if (!str) return '';
-    return str.replace(/_/g, ' ')
-      .toUpperCase();
-  };
 
   // Prepare row data
   const tableRows = areasToDisplay.map(area => {
@@ -537,7 +574,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
             letterSpacing: '0.5px'
           }}>
             <span>
-              {Array.from(testTypesFound).map(t => t.replace(/_/g, ' ')).join(', ')}
+              {Array.from(testTypesFound).map(formatTestName).join(', ')}
             </span>
             <span>{term ? (typeof term === 'string' ? term.replace(/_/g, ' ') : (term.label || '')) : 'TERM'} | {academicYear || new Date().getFullYear()}</span>
           </div>
@@ -1328,7 +1365,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
 
     const groups = Array.from(groupsSet);
     console.log('📊 Available test groups detected:', groups);
-    return groups.sort();
+    return groups.sort(compareTestGroups);
   }, [availableTests]);
 
   // Derive tests within the selected test group(s)
@@ -2775,7 +2812,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                           }}
                           className="rounded border-slate-300 text-brand-teal focus:ring-brand-teal"
                         />
-                        <span className="truncate">{group}</span>
+                        <span className="truncate">{formatTestName(group)}</span>
                       </label>
                     ))}
                   </>
