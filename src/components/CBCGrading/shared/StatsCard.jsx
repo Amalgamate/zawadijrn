@@ -15,30 +15,34 @@ const StatsCard = ({
   className = ''
 }) => {
   const colorClasses = {
-    blue: 'from-blue-500 to-blue-600',
-    green: 'from-green-500 to-green-600',
-    purple: 'from-purple-500 to-purple-600',
-    orange: 'from-orange-500 to-orange-600',
-    red: 'from-red-500 to-red-600',
-    indigo: 'from-indigo-500 to-indigo-600'
+    blue: 'bg-blue-50 text-blue-700 border-blue-100',
+    green: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+    purple: 'bg-brand-purple/10 text-brand-purple border-brand-purple/10',
+    orange: 'bg-amber-50 text-amber-700 border-amber-100',
+    red: 'bg-rose-50 text-rose-700 border-rose-100',
+    indigo: 'bg-indigo-50 text-indigo-700 border-indigo-100'
   };
 
-  const gradient = colorClasses[color] || colorClasses.blue;
+  const accentClass = colorClasses[color] || colorClasses.blue;
 
   return (
-    <div className={`bg-gradient-to-br ${gradient} rounded-xl p-6 text-white shadow-md hover:shadow-lg transition ${className}`}>
-      <div className="flex items-center justify-between mb-4">
-        {Icon && <Icon size={32} className="opacity-90" />}
-        <span className="text-4xl font-medium">{value}</span>
+    <div className={`surface-panel surface-panel-interactive p-5 ${className}`}>
+      <div className="mb-4 flex items-start justify-between gap-4">
+        {Icon && (
+          <div className={`flex h-11 w-11 items-center justify-center border ${accentClass}`}>
+            <Icon size={20} />
+          </div>
+        )}
+        <span className="text-3xl font-semibold text-slate-900">{value}</span>
       </div>
       
       <div>
-        <p className="text-white text-opacity-90 font-semibold">{title}</p>
+        <p className="font-semibold text-slate-900">{title}</p>
         {subtitle && (
-          <p className="text-white text-opacity-75 text-sm mt-1">{subtitle}</p>
+          <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
         )}
         {trend && (
-          <p className="text-white text-opacity-90 text-xs mt-2 font-medium">
+          <p className="mt-2 text-xs font-medium uppercase tracking-wider text-slate-500">
             {trend}
           </p>
         )}

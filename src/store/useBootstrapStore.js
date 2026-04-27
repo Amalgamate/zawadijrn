@@ -66,13 +66,14 @@ export const useBootstrapStore = create(
         set({ loading: true, error: null });
 
         try {
+          // Keep startup fast: wait only for core datasets required by the shell.
+          // Heavy fee stats hydrate asynchronously after the app becomes ready.
           const results = await Promise.allSettled([
             apiFns.fetchLearners(),
             apiFns.fetchTeachers(),
             apiFns.fetchClasses(),
             apiFns.fetchStreams(),
             apiFns.fetchSubjects(),
-            apiFns.fetchFeeStats ? apiFns.fetchFeeStats() : Promise.resolve(null),
           ]);
 
           const val = (r, fallback = []) =>
@@ -84,12 +85,21 @@ export const useBootstrapStore = create(
             classes:   val(results[2]),
             streams:   val(results[3]),
             subjects:  val(results[4]),
-            feeStats:  results[5].status === 'fulfilled' ? results[5].value : null,
             loadedAt:  Date.now(),
             loading:   false,
             ready:     true,
             error:     null,
           });
+
+          if (apiFns.fetchFeeStats) {
+            apiFns.fetchFeeStats()
+              .then((feeStats) => {
+                set({ feeStats: feeStats ?? null });
+              })
+              .catch(() => {
+                // Non-blocking by design: missing feeStats must never delay startup.
+              });
+          }
         } catch (err) {
           // Partial failure — still mark ready so the app doesn't hang
           set({ loading: false, error: err.message, ready: true });

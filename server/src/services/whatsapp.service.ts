@@ -27,6 +27,8 @@ class WhatsAppService {
   private status: ConnectionStatus = 'disconnected';
   private qrCode: string | null = null;
   private reconnectTimeout: NodeJS.Timeout | null = null;
+  private initializePromise: Promise<void> | null = null;
+  private manualLogout = false;
 
   constructor() {
     console.log('[WhatsApp] Baileys service ready. Call initialize() to connect.');
@@ -42,11 +44,44 @@ class WhatsAppService {
   }
 
   async initialize(): Promise<void> {
+    if (this.initializePromise) {
+      return this.initializePromise;
+    }
+
+    this.initializePromise = this.initializeInternal();
+    try {
+      await this.initializePromise;
+    } finally {
+      this.initializePromise = null;
+    }
+  }
+
+  private async initializeInternal(): Promise<void> {
     if (process.env.DISABLE_WHATSAPP === 'true') {
       console.log('[WhatsApp] Service disabled via environment variable.');
       return;
     }
     if (this.status === 'initializing' || this.status === 'authenticated') return;
+
+    // A user-initiated initialize should resume normal reconnect behavior.
+    this.manualLogout = false;
+
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
+
+    if (this.sock) {
+      try {
+        this.sock.ev.removeAllListeners('connection.update');
+        this.sock.ev.removeAllListeners('creds.update');
+        this.sock.end(undefined);
+      } catch (socketCleanupErr) {
+        console.error('[WhatsApp] Socket cleanup warning:', socketCleanupErr);
+      } finally {
+        this.sock = null;
+      }
+    }
 
     this.status = 'initializing';
     this.qrCode = null;
@@ -92,7 +127,7 @@ class WhatsAppService {
             this.qrCode = null;
             
             const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
-            const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+            const shouldReconnect = statusCode !== DisconnectReason.loggedOut && !this.manualLogout;
 
             console.log('[WhatsApp] Connection closed. Status code:', statusCode, '| Reconnect:', shouldReconnect);
             
@@ -108,18 +143,24 @@ class WhatsAppService {
             }
 
             if (shouldReconnect) {
-              console.log('[WhatsApp] Reconnecting in 3 seconds...');
-              // Reconnect after 3 seconds with disconnected status so initialize() bypasses the lock
+              if (this.reconnectTimeout) {
+                clearTimeout(this.reconnectTimeout);
+              }
+              const delayMs = statusCode === 408 ? 2000 : 3000;
+              console.log(`[WhatsApp] Reconnecting in ${Math.floor(delayMs / 1000)} seconds...`);
+              // Reconnect after a short delay with disconnected status so initialize() bypasses the lock
               this.status = 'disconnected';
               this.reconnectTimeout = setTimeout(() => {
+                this.reconnectTimeout = null;
                 this.initialize().catch(err => console.error('[WhatsApp] Reconnect task failed:', err));
-              }, 3000);
+              }, delayMs);
             }
           }
 
           if (connection === 'open') {
             this.status = 'authenticated';
             this.qrCode = null;
+            this.manualLogout = false;
             console.log('[WhatsApp] ✅ Connected and authenticated!');
           }
         } catch (eventErr) {
@@ -135,7 +176,14 @@ class WhatsAppService {
 
   async logout(): Promise<{ success: boolean; message: string }> {
     try {
+      this.manualLogout = true;
+      if (this.reconnectTimeout) {
+        clearTimeout(this.reconnectTimeout);
+        this.reconnectTimeout = null;
+      }
       if (this.sock) {
+        this.sock.ev.removeAllListeners('connection.update');
+        this.sock.ev.removeAllListeners('creds.update');
         await this.sock.logout();
         this.sock = null;
       }
@@ -147,13 +195,17 @@ class WhatsAppService {
       this.qrCode = null;
       return { success: true, message: 'Logged out and session cleared.' };
     } catch (err: any) {
+      this.manualLogout = false;
       return { success: false, message: err.message };
     }
   }
 
   async stopClient(): Promise<void> {
     if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
+    this.reconnectTimeout = null;
     if (this.sock) {
+      this.sock.ev.removeAllListeners('connection.update');
+      this.sock.ev.removeAllListeners('creds.update');
       this.sock.end(undefined);
       this.sock = null;
     }

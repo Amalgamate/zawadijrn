@@ -25,30 +25,45 @@ async function parseWorkbook(buffer: Buffer): Promise<Record<string, any>[]> {
 
   const rows: Record<string, any>[] = [];
   let headers: string[] = [];
+  const hasAdmissionHeader = (vals: any[]) =>
+    vals.some((v) => {
+      const s = String(v ?? '').trim().toLowerCase();
+      return s === 'adm no' || s === 'admission number';
+    });
 
   ws.eachRow((row: import('exceljs').Row, rowNumber: number) => {
     const values = (row.values as any[]).slice(1);
-    if (rowNumber === 1 || rowNumber === 2) {
-      if (headers.length === 0 || values.includes('Adm No') || values.includes('Admission Number')) {
-        headers = values.map((v: any) => (v == null ? '' : String(v).trim()));
-      }
-    } else {
-      const obj: Record<string, any> = {};
-      let hasData = false;
-      headers.forEach((h: string, i: number) => {
-        if (!h) return;
-        const cell = values[i];
-        const val = cell && typeof cell === 'object' && 'richText' in cell
-          ? cell.richText.map((r: any) => r.text).join('')
-          : cell ?? null;
-        
-        obj[h] = val;
-        if (val != null && val !== '') hasData = true;
-      });
-      
-      if (hasData) {
-        rows.push(obj);
-      }
+    const normalizedValues = values.map((v: any) => (v == null ? '' : String(v).trim()));
+
+    // Row 1 is the default header row.
+    if (rowNumber === 1) {
+      headers = normalizedValues;
+      return;
+    }
+
+    // Support files where row 1 is a title and row 2 has real headers.
+    // Only treat row 2 as headers when row 1 does not contain admission header
+    // but row 2 does.
+    if (rowNumber === 2 && !hasAdmissionHeader(headers) && hasAdmissionHeader(normalizedValues)) {
+      headers = normalizedValues;
+      return;
+    }
+
+    const obj: Record<string, any> = {};
+    let hasData = false;
+    headers.forEach((h: string, i: number) => {
+      if (!h) return;
+      const cell = values[i];
+      const val = cell && typeof cell === 'object' && 'richText' in cell
+        ? cell.richText.map((r: any) => r.text).join('')
+        : cell ?? null;
+
+      obj[h] = val;
+      if (val != null && val !== '') hasData = true;
+    });
+
+    if (hasData) {
+      rows.push(obj);
     }
   });
 

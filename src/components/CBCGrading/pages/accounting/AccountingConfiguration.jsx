@@ -131,8 +131,8 @@ const AccountsTab = () => {
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-xl border border-gray-200">
-        <table className="w-full text-sm">
+      <div className="overflow-x-auto rounded-xl">
+        <table className="w-full text-sm border-collapse">
           <thead className="bg-gray-50 text-gray-600 text-xs uppercase tracking-wide">
             <tr>
               <th className="px-4 py-3 text-left">Code</th>
@@ -142,7 +142,7 @@ const AccountsTab = () => {
               <th className="px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody>
             {loading ? (
               <tr>
                 <td colSpan={5} className="px-4 py-10 text-center">
@@ -324,8 +324,8 @@ const CategoriesTab = () => {
         </Button>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-gray-200">
-        <table className="w-full text-sm">
+      <div className="overflow-x-auto rounded-xl">
+        <table className="w-full text-sm border-collapse">
           <thead className="bg-gray-50 text-gray-600 text-xs uppercase tracking-wide">
             <tr>
               <th className="px-4 py-3 text-left">#</th>
@@ -333,32 +333,36 @@ const CategoriesTab = () => {
               <th className="px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody>
             {categories.length === 0 ? (
               <EmptyRow colSpan={3} message="No categories yet." />
             ) : (
               categories.map((cat, idx) => (
                 <tr key={cat} className="hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3 text-gray-400 text-xs">{idx + 1}</td>
-                  <td className="px-4 py-3 font-medium text-gray-800 flex items-center gap-2">
-                    <Tag className="h-3.5 w-3.5 text-orange-400" />
-                    {cat}
+                  <td className="px-4 py-3 font-medium text-gray-800">
+                    <div className="flex items-center gap-2">
+                      <Tag className="h-3.5 w-3.5 text-orange-400" />
+                      {cat}
+                    </div>
                   </td>
-                  <td className="px-4 py-3 text-right flex justify-end gap-1">
-                    <button
-                      onClick={() => openEdit(idx)}
-                      className="p-1.5 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
-                      title="Rename"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      onClick={() => setConfirmDelete(idx)}
-                      className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex justify-end gap-1">
+                      <button
+                        onClick={() => openEdit(idx)}
+                        className="p-1.5 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+                        title="Rename"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => setConfirmDelete(idx)}
+                        className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -515,8 +519,8 @@ const ExpenseTypesTab = () => {
                 <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{cat}</span>
                 <span className="ml-auto text-xs text-gray-400">{items.length} type{items.length !== 1 ? 's' : ''}</span>
               </div>
-              <table className="w-full text-sm">
-                <tbody className="divide-y divide-gray-100">
+              <table className="w-full text-sm border-collapse">
+                <tbody>
                   {items.map(item => (
                     <tr key={item.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-2.5 font-medium text-gray-800 w-1/3">{item.name}</td>
@@ -541,8 +545,8 @@ const ExpenseTypesTab = () => {
               <div className="bg-amber-50 px-4 py-2 flex items-center gap-2 border-b border-amber-200">
                 <span className="text-xs font-semibold text-amber-600 uppercase tracking-wide">Uncategorised</span>
               </div>
-              <table className="w-full text-sm">
-                <tbody className="divide-y divide-gray-100">
+              <table className="w-full text-sm border-collapse">
+                <tbody>
                   {uncategorised.map(item => (
                     <tr key={item.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-2.5 font-medium text-gray-800 w-1/3">{item.name}</td>

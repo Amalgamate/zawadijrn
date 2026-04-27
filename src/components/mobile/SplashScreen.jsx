@@ -23,11 +23,38 @@ import '../../styles/splashscreen.css';
 import { useBootstrapStore } from '../../store/useBootstrapStore';
 import axiosInstance from '../../services/api/axiosConfig';
 
+const ROLES_WITH_ALL_LEARNERS_ACCESS = new Set([
+  'SUPER_ADMIN',
+  'ADMIN',
+  'HEAD_TEACHER',
+  'HEAD_OF_CURRICULUM',
+  'TEACHER',
+  'ACCOUNTANT',
+  'RECEPTIONIST',
+  'LIBRARIAN',
+  'NURSE',
+  'SECURITY',
+  'DRIVER',
+  'COOK',
+  'CLEANER',
+  'GROUNDSKEEPER',
+  'IT_SUPPORT',
+]);
+
+const ROLES_WITH_ALL_USERS_ACCESS = new Set([
+  'SUPER_ADMIN',
+  'ADMIN',
+  'HEAD_TEACHER',
+  'HEAD_OF_CURRICULUM',
+  'TEACHER',
+]);
+
 // ── Fetch helpers called by the bootstrap store ────────────────────────────
 //  These live outside the component so they never change identity.
 
 const buildApiFns = (institutionType = 'PRIMARY_CBC', role = '') => ({
   fetchLearners: async () => {
+    if (!ROLES_WITH_ALL_LEARNERS_ACCESS.has(role)) return [];
     const res = await axiosInstance.get('/learners', {
       params: { limit: 200, status: 'ACTIVE', institutionType },
     });
@@ -35,6 +62,7 @@ const buildApiFns = (institutionType = 'PRIMARY_CBC', role = '') => ({
   },
 
   fetchTeachers: async () => {
+    if (!ROLES_WITH_ALL_USERS_ACCESS.has(role)) return [];
     const res = await axiosInstance.get('/users', {
       params: { role: 'TEACHER', limit: 200 },
     });
@@ -42,6 +70,7 @@ const buildApiFns = (institutionType = 'PRIMARY_CBC', role = '') => ({
   },
 
   fetchClasses: async () => {
+    if (!ROLES_WITH_ALL_LEARNERS_ACCESS.has(role)) return [];
     const res = await axiosInstance.get('/classes');
     return res.data?.data ?? [];
   },

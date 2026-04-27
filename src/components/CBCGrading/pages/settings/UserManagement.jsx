@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   UserPlus, Edit, Trash2, X, Save, Shield, Users, Search,
   Eye, EyeOff, Mail, Archive, ArchiveRestore,
-  Settings, Lock, Check, AlertCircle, Clock, Activity, BookOpen, MessageCircle, Key
+  Lock, Check, AlertCircle, Clock, Activity, BookOpen, MessageCircle, Key, RefreshCw
 } from 'lucide-react';
 import { userAPI, learnerAPI } from '../../../../services/api';
 import { getStoredUser } from '../../../../services/schoolContext';
@@ -197,6 +197,7 @@ const UserManagement = () => {
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetTargetUser, setResetTargetUser] = useState(null);
   const [learnerStats, setLearnerStats] = useState({ total: 0 });
+  const [syncingStudentUsers, setSyncingStudentUsers] = useState(false);
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -214,6 +215,9 @@ const UserManagement = () => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 3000);
   }, []);
+
+  const currentUserRole = getStoredUser()?.role;
+  const canSyncStudentUsers = ['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER'].includes(currentUserRole);
 
   const loadUsers = useCallback(async () => {
     try {
@@ -428,6 +432,30 @@ const UserManagement = () => {
     }
   };
 
+  const handleSyncStudentUsers = async () => {
+    if (!canSyncStudentUsers || syncingStudentUsers) return;
+
+    try {
+      setSyncingStudentUsers(true);
+      const response = await userAPI.syncMissingStudentAccounts();
+      const summary = response?.summary || {};
+      const created = summary.accountsCreated || 0;
+      const existing = summary.accountsAlreadyPresent || 0;
+      const failed = summary.failed || 0;
+
+      addActivityLog(
+        'SYNC_STUDENT_USERS',
+        `Created: ${created}, Existing: ${existing}, Failed: ${failed}`
+      );
+      showNotification(`Student sync complete: ${created} created, ${existing} existing, ${failed} failed.`);
+      await loadUsers();
+    } catch (error) {
+      showNotification(`Student sync failed: ${error.message}`, 'error');
+    } finally {
+      setSyncingStudentUsers(false);
+    }
+  };
+
   // User grouping functions
   const getAdminUsers = () => users.filter(u => ['SUPER_ADMIN', 'ADMIN'].includes(u.role) && !u.archived);
   const getTutorUsers = () => users.filter(u => ['TEACHER', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM'].includes(u.role) && !u.archived);
@@ -527,6 +555,20 @@ const UserManagement = () => {
               <UserPlus size={20} />
               Add New User
             </button>
+            {canSyncStudentUsers && (
+              <button
+                onClick={handleSyncStudentUsers}
+                disabled={syncingStudentUsers}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition shadow-md font-medium whitespace-nowrap ${
+                  syncingStudentUsers
+                    ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                    : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                }`}
+              >
+                <RefreshCw size={18} className={syncingStudentUsers ? 'animate-spin' : ''} />
+                {syncingStudentUsers ? 'Syncing Students...' : 'Sync Student Accounts'}
+              </button>
+            )}
           </div>
         </div>
 

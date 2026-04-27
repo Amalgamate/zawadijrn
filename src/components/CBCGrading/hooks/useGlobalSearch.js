@@ -55,7 +55,7 @@ export const useGlobalSearch = () => {
   // Static Navigation Filtering (Local)
   useEffect(() => {
     if (!query) {
-      setResults((prev) => ({ ...prev, nav: [] }));
+      setResults((prev) => (prev.nav.length === 0 ? prev : { ...prev, nav: [] }));
       return;
     }
 
@@ -71,7 +71,11 @@ export const useGlobalSearch = () => {
   // Dynamic Data Search (API-based with Debounce)
   useEffect(() => {
     if (query.length < 1) { // Changed from 2 to 1 for instant feel
-      setResults((prev) => ({ ...prev, learners: [], teachers: [] }));
+      setResults((prev) => (
+        prev.learners.length === 0 && prev.teachers.length === 0
+          ? prev
+          : { ...prev, learners: [], teachers: [] }
+      ));
       return;
     }
 

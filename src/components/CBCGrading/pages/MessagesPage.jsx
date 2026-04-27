@@ -6,6 +6,7 @@ import api from '../../../services/api';
 import { formatPhoneNumber, isValidPhoneNumber, getDisplayPhoneNumber } from '../../../utils/phoneFormatter';
 import BroadcastMessagesPage from './BroadcastMessagesPage';
 import { useSchoolData } from '../../../contexts/SchoolDataContext';
+import { usePermissions } from '../../../hooks/usePermissions';
 
 const MessagesPage = () => {
   // Debug logging
@@ -15,6 +16,8 @@ const MessagesPage = () => {
   }, []);
 
   const { showSuccess, showError } = useNotifications();
+  const { role } = usePermissions();
+  const isParent = role === 'PARENT';
   const [activeTab, setActiveTab] = useState('inbox'); // 'inbox' or 'broadcast'
 
   // Inbox & Compose State
@@ -162,6 +165,18 @@ const MessagesPage = () => {
   useEffect(() => {
     fetchInboxMessages();
   }, [fetchInboxMessages]);
+
+  useEffect(() => {
+    if (isParent && activeTab === 'broadcast') {
+      setActiveTab('inbox');
+    }
+  }, [isParent, activeTab]);
+
+  useEffect(() => {
+    if (isParent) {
+      setActiveTab('inbox');
+    }
+  }, [isParent]);
 
   const handleMarkMessageRead = async (receiptId) => {
     if (!receiptId) return;
@@ -510,38 +525,27 @@ const MessagesPage = () => {
 
   return (
     <div className="h-full flex flex-col bg-white rounded-xl shadow-lg overflow-hidden">
-      {/* Header Section */}
-      <div className="bg-brand-purple px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-white/20 rounded-lg">
-            <MessageSquare size={24} className="text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-medium text-white">Messages & Inbox</h1>
-            <p className="text-white/80 text-sm">Manage communications and broadcast messages</p>
-          </div>
-        </div>
-      </div>
-
       {/* Tabs Section */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-          <TabsList className="w-full rounded-none bg-white border-b border-gray-200 p-0 h-auto justify-start">
-            <TabsTrigger
-              value="inbox"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-brand-teal data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-4 flex items-center gap-2"
-            >
-              <MessageSquare size={16} />
-              <span className="font-medium">Inbox</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="broadcast"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-brand-purple data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-4 flex items-center gap-2"
-            >
-              <Send size={16} />
-              <span className="font-medium">Broadcast Messages</span>
-            </TabsTrigger>
-          </TabsList>
+          {!isParent && (
+            <TabsList className="w-full rounded-none bg-white border-b border-gray-200 p-0 h-auto justify-start">
+              <TabsTrigger
+                value="inbox"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-brand-teal data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-4 flex items-center gap-2"
+              >
+                <MessageSquare size={16} />
+                <span className="font-medium">Inbox</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="broadcast"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-brand-purple data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-4 flex items-center gap-2"
+              >
+                <Send size={16} />
+                <span className="font-medium">Broadcast Messages</span>
+              </TabsTrigger>
+            </TabsList>
+          )}
 
           {/* Inbox Tab */}
           <TabsContent value="inbox" className="flex-1 overflow-auto">
@@ -598,9 +602,11 @@ const MessagesPage = () => {
           </TabsContent>
 
           {/* Broadcast Tab */}
-          <TabsContent value="broadcast" className="flex-1 overflow-hidden">
-            <BroadcastMessagesPage />
-          </TabsContent>
+          {!isParent && (
+            <TabsContent value="broadcast" className="flex-1 overflow-hidden">
+              <BroadcastMessagesPage />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
 

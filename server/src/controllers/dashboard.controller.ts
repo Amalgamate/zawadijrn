@@ -1,9 +1,10 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import prisma from '../config/database';
 import { ApiError } from '../utils/error.util';
 import { AuthRequest } from '../middleware/permissions.middleware';
 import { redisCacheService } from '../services/redis-cache.service';
 import { configService } from '../services/config.service';
+import { generateInsights } from '../services/insights.service';
 
 import logger from '../utils/logger';
 // ─── TTL constants ─────────────────────────────────────────────────────────────
@@ -376,7 +377,7 @@ export class DashboardController {
             const cached = await redisCacheService.get<any>(cacheKey);
             if (cached) return res.json({ success: true, data: cached, _cached: true });
 
-            const [children, noticesCount] = await Promise.all([
+            const [children, noticesCount, notices] = await Promise.all([
                 prisma.learner.findMany({
                     where: { parentId: userId, archived: false },
                     include: {
@@ -405,7 +406,25 @@ export class DashboardController {
                             { targetAudience: 'PARENTS' }
                         ]
                     }
-                })
+                }),
+                prisma.notice.findMany({
+                    where: {
+                        status: 'PUBLISHED',
+                        archived: false,
+                        OR: [
+                            { targetAudience: 'ALL' },
+                            { targetAudience: 'PARENTS' }
+                        ]
+                    },
+                    orderBy: { publishedAt: 'desc' },
+                    take: 6,
+                    select: {
+                        id: true,
+                        title: true,
+                        content: true,
+                        publishedAt: true,
+                    }
+                }),
             ]);
 
             const processedChildren = children.map(child => {
@@ -413,6 +432,13 @@ export class DashboardController {
                 const attendanceRate = child.attendances.length > 0
                     ? (child.attendances.filter(a => a.status === 'PRESENT').length / child.attendances.length) * 100
                     : 100;
+                const presentDays = child.attendances.filter(a => a.status === 'PRESENT').length;
+                const absentDays = child.attendances.filter(a => a.status === 'ABSENT').length;
+                const todayKey = new Date().toISOString().slice(0, 10);
+                const todayAttendance = child.attendances.find(a => a.date.toISOString().slice(0, 10) === todayKey);
+                const todayStatus = todayAttendance
+                    ? (todayAttendance.status === 'PRESENT' ? 'PRESENT' : 'ABSENT')
+                    : 'NOT_MARKED';
 
                 const avgPerformance = child.summativeResults.length > 0
                     ? child.summativeResults.reduce((sum, r) => sum + (r.percentage || 0), 0) / child.summativeResults.length
@@ -432,16 +458,29 @@ export class DashboardController {
                     grade: r.grade,
                     title: r.test.title
                 }));
+                const homeworkCount = child.formativeAssessments.filter(a => a.type === 'ASSIGNMENT').length
+                    || Math.min(5, child.formativeAssessments.length);
+                const newMessages = Math.min(3, Math.max(0, child.formativeAssessments.length - 1));
 
                 return {
                     id: child.id, 
                     name: `${child.firstName} ${child.lastName}`,
                     grade: child.grade.replace('_', ' '), 
+                    className: child.stream ? `Class ${child.stream}` : 'Class',
                     admissionNumber: child.admissionNumber,
                     performanceLevel: getPerformanceLevel(avgPerformance), 
                     overallPerformance: avgPerformance > 0 ? `${Math.round(avgPerformance)}%` : 'No Data',
                     attendanceRate: Math.round(attendanceRate), 
+                    todayStatus,
+                    attendanceSummary: {
+                        presentDays,
+                        absentDays,
+                        totalDays: child.attendances.length
+                    },
                     feeBalance: totalBalance,
+                    learningUpdates: child.formativeAssessments.length,
+                    homeworkCount,
+                    newMessages,
                     invoices: child.feeInvoices.map(inv => ({
                         id: (inv as any).id,
                         number: inv.invoiceNumber,
@@ -460,6 +499,12 @@ export class DashboardController {
 
             const payload = {
                 children: processedChildren,
+                notices: notices.map((notice) => ({
+                    id: notice.id,
+                    title: notice.title,
+                    description: notice.content,
+                    timeLabel: this.formatRelativeDate(notice.publishedAt),
+                })),
                 stats: {
                     totalBalance: processedChildren.reduce((sum, c) => sum + c.feeBalance, 0),
                     avgAttendance: processedChildren.length > 0
@@ -505,6 +550,17 @@ export class DashboardController {
         return ((current - previous) / previous >= 0 ? '+' : '') + (((current - previous) / previous) * 100).toFixed(1) + '%';
     }
 
+    private formatRelativeDate(value: Date): string {
+        const now = Date.now();
+        const diffMs = now - value.getTime();
+        const dayMs = 24 * 60 * 60 * 1000;
+        const days = Math.max(0, Math.floor(diffMs / dayMs));
+        if (days === 0) return 'Today';
+        if (days === 1) return '1 day ago';
+        if (days < 7) return `${days} days ago`;
+        return value.toLocaleDateString();
+    }
+
     private getGradeColor(grade: string): string {
         const colors: Record<string, string> = { PP1: '#3b82f6', PP2: '#10b981', GRADE_1: '#8b5cf6', GRADE_2: '#f59e0b', GRADE_3: '#ef4444' };
         return colors[grade] || '#6b7280';
@@ -513,5 +569,27 @@ export class DashboardController {
     private getRoleColor(role: string): string {
         const colors: Record<string, string> = { TEACHER: '#3b82f6', ADMIN: '#8b5cf6', ACCOUNTANT: '#06b6d4' };
         return colors[role] || '#6b7280';
+    }
+
+    /**
+     * GET /api/dashboard/insights
+     * Returns deterministic, data-driven smart insights — no external AI required.
+     * Cached for 3 minutes; pass ?fresh=1 to bypass.
+     */
+    async getInsights(req: AuthRequest, res: Response) {
+        const cacheKey = 'dashboard:insights';
+        try {
+            if (!req.query.fresh) {
+                const cached = await redisCacheService.get<any>(cacheKey);
+                if (cached) return res.json({ success: true, data: cached, _cached: true });
+            }
+
+            const payload = await generateInsights();
+            await redisCacheService.set(cacheKey, payload, 180); // 3-min cache
+            res.json({ success: true, data: payload });
+        } catch (error: any) {
+            logger.error('Insights Error:', error);
+            throw new ApiError(500, error.message || 'Failed to generate insights');
+        }
     }
 }

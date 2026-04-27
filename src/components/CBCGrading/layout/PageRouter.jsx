@@ -2,6 +2,7 @@ import React, { lazy, Suspense } from 'react';
 import ErrorBoundary from '../shared/ErrorBoundary';
 import EmptyState from '../shared/EmptyState';
 import ComingSoon from '../shared/ComingSoon';
+import { hasPageAccess } from '../utils/appAccess';
 
 // ── Dashboard — EAGERLY imported: it's the first page every user sees after login.
 // Never lazy-load the default landing page — it forces a Suspense stall on every cold open.
@@ -66,6 +67,7 @@ const LearnerProfile = lazy(() => import('../pages/profiles/LearnerProfile'));
 const TeacherProfile = lazy(() => import('../pages/profiles/TeacherProfile'));
 const ParentProfile = lazy(() => import('../pages/profiles/ParentProfile'));
 const PlannerLayout = lazy(() => import('../pages/planner/PlannerLayout'));
+const ParentEventsPage = lazy(() => import('../pages/parent/ParentEventsPage'));
 const UniformAllocationPage = lazy(() => import('../pages/UniformAllocationPage'));
 const IDPrintingPage = lazy(() => import('../pages/IDPrintingPage'));
 const PathwaysHub = lazy(() => import('../pages/secondary/PathwaysHub'));
@@ -201,10 +203,21 @@ const PageRouter = ({
     showSuccess
   } = handlers;
 
+  const normalizedPage = currentPage?.split('?')[0] || 'dashboard';
+
+  if (!hasPageAccess(user, normalizedPage)) {
+    return (
+      <EmptyState
+        title="Module Disabled"
+        description="This module is not enabled for your school."
+      />
+    );
+  }
+
   return (
     <Suspense fallback={<LoadingOverlay />}>
       {(() => {
-        switch (currentPage?.split('?')[0]) {
+        switch (normalizedPage) {
           case 'dashboard':
             return user?.role === 'STUDENT'
               ? <StudentDashboardView user={user} onNavigate={handleNavigate} />
@@ -212,11 +225,14 @@ const PageRouter = ({
 
           // Planner Module
           case 'planner-calendar':
-          case 'events-calendar':
           case 'planner-timetable':
           case 'planner-agenda':
           case 'planner-schemes':
             return <PlannerLayout currentPage={currentPage === 'events-calendar' ? 'planner-calendar' : currentPage} onNavigate={handleNavigate} />;
+          case 'events-calendar':
+            return user?.role === 'PARENT'
+              ? <ParentEventsPage />
+              : <PlannerLayout currentPage="planner-calendar" onNavigate={handleNavigate} />;
 
           // Learners Module
           case 'learners-list':
@@ -362,6 +378,7 @@ const PageRouter = ({
           // Student Portal
           case 'student-courses': return <ErrorBoundary><MyCourses onNavigate={handleNavigate} /></ErrorBoundary>;
           case 'student-assignments': return <ErrorBoundary><MyAssignments onNavigate={handleNavigate} /></ErrorBoundary>;
+          case 'student-quizzes':
           case 'student-progress': return <ErrorBoundary><MyProgress onNavigate={handleNavigate} /></ErrorBoundary>;
           case 'student-course-view': return <ErrorBoundary><CourseViewer courseId={pageParams.courseId} onNavigate={handleNavigate} /></ErrorBoundary>;
 
@@ -390,9 +407,15 @@ const PageRouter = ({
           case 'biometric-dashboard':
             return <BiometricManager currentPage={currentPage} />;
 
-          case 'comm-notices': return <NoticesPage initialTab={pageParams.activeTab} />;
+          case 'comm-notices':
+            return user?.role === 'PARENT'
+              ? <MessagesPage />
+              : <NoticesPage initialTab={pageParams.activeTab} />;
           case 'comm-messages': return <MessagesPage />;
-          case 'comm-history': return <MessageHistoryPage />;
+          case 'comm-history':
+            return user?.role === 'PARENT'
+              ? <MessagesPage />
+              : <MessageHistoryPage />;
 
           case 'inventory-items': return <InventoryItems />;
           case 'inventory-categories': return <InventoryCategories />;

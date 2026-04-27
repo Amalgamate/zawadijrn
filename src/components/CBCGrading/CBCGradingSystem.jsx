@@ -16,6 +16,7 @@ import { useUIStore } from '../../store/useUIStore';
 
 // Bootstrap store — data pre-loaded during splash
 import { useBootstrapStore } from '../../store/useBootstrapStore';
+import { MOBILE_MEDIA_QUERY } from '../../constants/breakpoints';
 
 // Individual hooks kept for mutation operations (create/update/delete)
 // They no longer do the initial fetch — the bootstrap store owns the list.
@@ -27,6 +28,7 @@ import { useParents } from './hooks/useParents';
 import { clearAllSchoolData } from '../../utils/schoolDataCleanup';
 import { refreshBus } from '../../utils/refreshBus';
 import axiosInstance from '../../services/api/axiosConfig';
+import { hasPageAccess } from './utils/appAccess';
 
 /**
  * CBCGradingSystem — Orchestration Layer
@@ -39,9 +41,12 @@ import axiosInstance from '../../services/api/axiosConfig';
  *     refreshed in the background so subsequent navigations stay current.
  */
 export default function CBCGradingSystem({ user, onLogout, brandingSettings, setBrandingSettings }) {
-  const isMobile = useMediaQuery('(max-width: 767px)');
+  const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
   const mainContentRef = useRef(null);
   const parentPortal = user?.role === 'PARENT';
+  const getAllowedPage = useCallback((page) => (
+    hasPageAccess(user, page) ? page : 'dashboard'
+  ), [user]);
 
   // ── UI State ─────────────────────────────────────────────────────────────
   const {
@@ -145,16 +150,17 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
 
   // ── Navigation ────────────────────────────────────────────────────────────
   const handleNavigate = useCallback((page, params = {}) => {
+    const allowedPage = getAllowedPage(page);
     if (params.learner) setEditingLearner(params.learner);
     if (params.teacher) setEditingTeacher(params.teacher);
-    setCurrentPage(page, params);
+    setCurrentPage(allowedPage, allowedPage === page ? params : {});
     try {
-      const newUrl = `${window.location.pathname}${window.location.search}#/app#${page}`;
-      window.history.pushState({ appPage: page, appParams: params }, '', newUrl);
+      const newUrl = `${window.location.pathname}${window.location.search}#/app#${allowedPage}`;
+      window.history.pushState({ appPage: allowedPage, appParams: allowedPage === page ? params : {} }, '', newUrl);
     } catch (e) {
       console.error('History push failed:', e);
     }
-  }, [setCurrentPage]);
+  }, [getAllowedPage, setCurrentPage]);
 
   // Intercept browser back/forward
   useEffect(() => {
@@ -164,8 +170,9 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
     const handlePopState = (event) => {
       const state = event.state;
       if (state?.appPage) {
-        if (state.appParams?.learner) setEditingLearner(state.appParams.learner);
-        useUIStore.setState({ currentPage: state.appPage, pageParams: state.appParams || {} });
+        const allowedPage = getAllowedPage(state.appPage);
+        if (allowedPage === state.appPage && state.appParams?.learner) setEditingLearner(state.appParams.learner);
+        useUIStore.setState({ currentPage: allowedPage, pageParams: allowedPage === state.appPage ? (state.appParams || {}) : {} });
       } else {
         window.history.pushState({ appPage: 'dashboard', appParams: {} }, '', window.location.href);
         useUIStore.setState({ currentPage: 'dashboard', pageParams: {} });
@@ -173,7 +180,13 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [getAllowedPage]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!hasPageAccess(user, currentPage)) {
+      setCurrentPage('dashboard');
+    }
+  }, [currentPage, setCurrentPage, user]);
 
   // Lazy-load parents on first visit to a parents page
   const parentsLoaded = useRef(false);
@@ -504,8 +517,12 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
         onNavigate={handleNavigate}
       />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-        <Header user={user} onLogout={handleLogout} onNavigate={handleNavigate} />
-        <HorizontalSubmenu currentPage={currentPage} onNavigate={handleNavigate} />
+        {!(user?.role === 'PARENT' && currentPage === 'dashboard') && (
+          <>
+            <Header user={user} onLogout={handleLogout} onNavigate={handleNavigate} />
+            <HorizontalSubmenu currentPage={currentPage} onNavigate={handleNavigate} />
+          </>
+        )}
         <main ref={mainContentRef} className="flex-1 overflow-y-auto overflow-x-hidden bg-[#F8FAFC] p-6">
           <div className="max-w-screen-2xl mx-auto">
             <ErrorBoundary>

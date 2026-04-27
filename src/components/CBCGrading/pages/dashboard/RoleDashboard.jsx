@@ -14,6 +14,7 @@ import ReceptionistDashboard from './ReceptionistDashboard';
 import MobileDashboard from './MobileDashboard';
 import StudentDashboard from '../student/StudentDashboard';
 import useMediaQuery from '../../hooks/useMediaQuery';
+import { MOBILE_MEDIA_QUERY } from '../../../../constants/breakpoints';
 
 const Tile = ({ title, description, onClick, badge, tone = 'indigo' }) => {
   const toneClasses = tone === 'emerald'
@@ -45,7 +46,7 @@ const Tile = ({ title, description, onClick, badge, tone = 'indigo' }) => {
 
 const RoleDashboard = ({ learners, pagination, teachers, user, onNavigate, brandingSettings }) => {
   const { role } = usePermissions();
-  const isMobile = useMediaQuery('(max-width: 767px)');
+  const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
 
   // Senior School / Secondary placeholder portal.
   // This keeps the Junior (PRIMARY_CBC) dashboard unchanged while giving SS users

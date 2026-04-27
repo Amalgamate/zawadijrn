@@ -30,8 +30,7 @@ const DataCard = ({
     <div
       onClick={onClick}
       className={cn(
-        "bg-white p-5 rounded-[2rem] border-2 border-gray-100 transition-all active:scale-[0.98] cursor-pointer",
-        "shadow-lg shadow-gray-200/20 hover:border-brand-purple/20",
+        "surface-panel surface-panel-interactive p-5 cursor-pointer transition-transform active:scale-[0.99]",
         className
       )}
     >
@@ -49,7 +48,7 @@ const DataCard = ({
               {title}
             </h3>
             {subtitle && (
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mt-1 truncate">
+              <p className="mt-1 truncate text-[10px] font-semibold uppercase tracking-widest text-slate-400">
                 {subtitle}
               </p>
             )}
@@ -68,8 +67,8 @@ const DataCard = ({
         <div className="mt-5 pt-4 border-t border-gray-50 grid grid-cols-2 gap-4">
           {Object.entries(stats).map(([label, value]) => (
             <div key={label} className="flex flex-col">
-              <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">{label}</span>
-              <span className="text-xs font-semibold text-gray-700 truncate">{value}</span>
+              <span className="text-[9px] font-bold uppercase tracking-tighter text-slate-400">{label}</span>
+              <span className="truncate text-xs font-semibold text-slate-700">{value}</span>
             </div>
           ))}
         </div>

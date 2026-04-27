@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { BREAKPOINTS, getDeviceFlags, MOBILE_MEDIA_QUERY } from '../constants/breakpoints';
 
 /**
  * Custom Hook: useMobile
@@ -7,20 +8,29 @@ import { useState, useEffect } from 'react';
  */
 export const useMobile = () => {
     const [isMobile, setIsMobile] = useState(() => {
-        // SSR-safe: check if window exists before accessing
         if (typeof window === 'undefined') {
             return false;
         }
-        return window.innerWidth < 768;
+        return window.matchMedia(MOBILE_MEDIA_QUERY).matches;
     });
 
     useEffect(() => {
-        const handleResize = () => {
-            setIsMobile(window.innerWidth < 768);
+        if (typeof window === 'undefined') return;
+
+        const mediaQuery = window.matchMedia(MOBILE_MEDIA_QUERY);
+        const handleChange = (event) => {
+            setIsMobile(event.matches);
         };
 
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
+        setIsMobile(mediaQuery.matches);
+
+        if (mediaQuery.addEventListener) {
+            mediaQuery.addEventListener('change', handleChange);
+            return () => mediaQuery.removeEventListener('change', handleChange);
+        }
+
+        mediaQuery.addListener(handleChange);
+        return () => mediaQuery.removeListener(handleChange);
     }, []);
 
     return isMobile;
@@ -34,32 +44,17 @@ export const useMobile = () => {
 export const useDeviceType = () => {
     const [deviceInfo, setDeviceInfo] = useState(() => {
         if (typeof window === 'undefined') {
-            return {
-                isMobile: false,
-                isTablet: false,
-                isDesktop: true,
-                screenWidth: 1024
-            };
+            return getDeviceFlags(BREAKPOINTS.lg);
         }
 
-        const width = window.innerWidth;
-        return {
-            isMobile: width < 640,
-            isTablet: width >= 640 && width < 1024,
-            isDesktop: width >= 1024,
-            screenWidth: width
-        };
+        return getDeviceFlags(window.innerWidth);
     });
 
     useEffect(() => {
+        if (typeof window === 'undefined') return;
+
         const handleResize = () => {
-            const width = window.innerWidth;
-            setDeviceInfo({
-                isMobile: width < 640,
-                isTablet: width >= 640 && width < 1024,
-                isDesktop: width >= 1024,
-                screenWidth: width
-            });
+            setDeviceInfo(getDeviceFlags(window.innerWidth));
         };
 
         window.addEventListener('resize', handleResize);

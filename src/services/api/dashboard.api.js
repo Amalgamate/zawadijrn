@@ -8,4 +8,6 @@ export const dashboardAPI = {
     fetchWithAuth(`/dashboard/teacher?filter=${filter}`),
   getParentMetrics: async () =>
     fetchWithAuth('/dashboard/parent'),
+  getInsights: async (fresh = false) =>
+    fetchWithAuth(`/dashboard/insights${fresh ? '?fresh=1' : ''}`),
 };

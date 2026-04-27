@@ -11,11 +11,12 @@ import { configAPI, learnerAPI } from '../../../services/api';
 import { toInputDate } from '../utils/dateHelpers';
 import ParentGuardianStep from './steps/ParentGuardianStep';
 import { useMediaQuery } from '../hooks/useMediaQuery';
+import { MOBILE_MEDIA_QUERY } from '../../../constants/breakpoints';
 
 const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
   const { showSuccess, showError } = useNotifications();
   const { user } = useAuth();
-  const isMobile = useMediaQuery('(max-width: 767px)');
+  const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
   const isEdit = !!learner;
   const [currentStep, setCurrentStep] = useState(1);
   const [availableStreams, setAvailableStreams] = useState([]);

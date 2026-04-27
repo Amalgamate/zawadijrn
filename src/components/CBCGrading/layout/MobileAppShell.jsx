@@ -42,9 +42,10 @@ const MobileAppShell = ({ children, user, onLogout, onNavigate, currentPage, bra
     if (role === 'PARENT') {
       return [
         ...base,
+        { id: 'learners-list', label: 'Children', icon: Users, show: true },
         { id: 'accounting-invoices', label: 'Fees', icon: Wallet, show: true },
         { id: 'comm-notices', label: 'Notices', icon: Bell, show: true },
-        { id: 'settings-users', label: 'Account', icon: User, show: true },
+        { id: 'settings-users', label: 'More', icon: LayoutGrid, show: true },
       ];
     }
 
@@ -66,7 +67,7 @@ const MobileAppShell = ({ children, user, onLogout, onNavigate, currentPage, bra
   ];
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-slate-50 overflow-hidden relative font-['Poppins',_sans-serif]">
+    <div className="flex flex-col h-[100dvh] bg-white overflow-hidden relative font-['Poppins',_sans-serif]">
       {/* Premium Mobile Top App Bar - Glassmorphism */}
       <div className="bg-white/90 backdrop-blur-2xl border-b border-slate-200/60 flex flex-col z-50 sticky top-0" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       <div className="h-[72px] flex items-center justify-between px-6">
@@ -111,19 +112,21 @@ const MobileAppShell = ({ children, user, onLogout, onNavigate, currentPage, bra
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-auto custom-scrollbar relative z-10 w-full bg-slate-50/50">
+      <div className="flex-1 overflow-auto custom-scrollbar relative z-10 w-full bg-white">
         <div className="px-6 pt-8" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}>
-          <div className="mb-8 flex items-center justify-between">
-            <div className="flex flex-col gap-1">
-               <p className="text-[10px] font-bold text-brand-purple uppercase tracking-[0.2em]">Current View</p>
-               <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-                {PAGE_TITLES[currentPage] || (currentPage?.includes('settings') ? 'Settings' : 'Portal')}
-              </h2>
+          {!(role === 'PARENT' && currentPage === 'dashboard') && (
+            <div className="mb-8 flex items-center justify-between">
+              <div className="flex flex-col gap-1">
+                 <p className="text-[10px] font-bold text-brand-purple uppercase tracking-[0.2em]">Current View</p>
+                 <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+                  {PAGE_TITLES[currentPage] || (currentPage?.includes('settings') ? 'Settings' : 'Portal')}
+                </h2>
+              </div>
+              <button className="w-12 h-12 bg-white rounded-2xl text-slate-400 border border-slate-200/60 shadow-sm active:scale-95 transition-all flex items-center justify-center">
+                <Search size={20} strokeWidth={2.5} />
+              </button>
             </div>
-            <button className="w-12 h-12 bg-white rounded-2xl text-slate-400 border border-slate-200/60 shadow-sm active:scale-95 transition-all flex items-center justify-center">
-              <Search size={20} strokeWidth={2.5} />
-            </button>
-          </div>
+          )}
           {children}
         </div>
       </div>

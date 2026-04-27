@@ -47,4 +47,16 @@ router.get(
   asyncHandler(dashboardController.getParentMetrics.bind(dashboardController))
 );
 
+/**
+ * @route   GET /api/dashboard/insights
+ * @desc    Get deterministic smart insights derived from live school data
+ * @access  ADMIN, SUPER_ADMIN, HEAD_TEACHER
+ */
+router.get(
+  '/insights',
+  requireRole(['ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER']),
+  rateLimit({ windowMs: 60_000, maxRequests: 30 }),
+  asyncHandler(dashboardController.getInsights.bind(dashboardController))
+);
+
 export default router;

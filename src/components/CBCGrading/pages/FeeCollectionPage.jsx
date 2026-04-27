@@ -797,8 +797,8 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
           >
             {statsLoading && showMetrics && (
               <div className="overflow-hidden">
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-                  {[...Array(5)].map((_, i) => (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                  {[...Array(4)].map((_, i) => (
                     <div key={i} className="rounded-2xl bg-gray-100 animate-pulse h-28" />
                   ))}
                 </div>
@@ -807,7 +807,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
             )}
             <div className={`overflow-hidden space-y-6 ${statsLoading ? 'hidden' : ''}`}>
               {/* Stats Cards */}
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
 
                 {/* Total Invoices — Indigo */}
                 <div
@@ -886,26 +886,6 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                     </div>
                     <div className="p-2.5 bg-white/15 rounded-xl">
                       <CheckCircle size={22} className="text-white" />
-                    </div>
-                  </div>
-                  <div className="absolute -bottom-3 -right-3 w-20 h-20 bg-white/5 rounded-full" />
-                  <div className="absolute -bottom-6 -right-6 w-28 h-28 bg-white/5 rounded-full" />
-                </div>
-
-                {/* Overpaid — Purple */}
-                <div
-                  onClick={() => { setStatusFilter(prev => prev === 'overpaid' ? 'all' : 'overpaid'); setCurrentPage(1); }}
-                  className={`relative overflow-hidden rounded-2xl bg-purple-600 p-5 shadow-lg shadow-purple-500/20 text-white cursor-pointer transition-all duration-200 hover:scale-[1.03] hover:shadow-xl ${statusFilter === 'overpaid' ? 'ring-4 ring-white/50 scale-[1.03]' : 'opacity-80 hover:opacity-100'
-                    }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-xs font-medium uppercase tracking-widest text-purple-100 mb-1">Collected (Overpaid)</p>
-                      <p className="text-2xl font-medium">{stats.overpaidAmt}</p>
-                      <p className="text-lg font-semibold text-purple-200 mt-1">{stats.overpaidCount} Students</p>
-                    </div>
-                    <div className="p-2.5 bg-white/15 rounded-xl">
-                      <ShieldCheck size={22} className="text-white" />
                     </div>
                   </div>
                   <div className="absolute -bottom-3 -right-3 w-20 h-20 bg-white/5 rounded-full" />

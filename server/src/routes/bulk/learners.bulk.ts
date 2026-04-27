@@ -10,6 +10,7 @@ import csvParser from 'csv-parser';
 import { Parser } from 'json2csv';
 import { Readable } from 'stream';
 import { z } from 'zod';
+import { ensureStudentAccountForLearner } from '../../services/studentAccount.service';
 
 const router = Router();
 
@@ -129,6 +130,7 @@ router.post(
     const created: any[] = [];
     const updated: any[] = [];
     const failed: any[] = [];
+    let studentAccountsCreated = 0;
 
     for (const item of results) {
       try {
@@ -226,9 +228,17 @@ router.post(
                 parentId: parentId,
               }
             });
+            const studentAccount = await ensureStudentAccountForLearner({
+              admissionNumber: learner.admissionNumber,
+              firstName: learner.firstName,
+              lastName: learner.lastName,
+              middleName: learner.middleName || null,
+              phone: (learner.guardianPhone || null) as string | null
+            });
+            if (studentAccount.created) studentAccountsCreated += 1;
             created.push({ line: item.line, id: learner.id, admNo, name: rawName });
           } else {
-            await prisma.learner.update({
+            const updatedLearner = await prisma.learner.update({
               where: { id: existing.id },
               data: {
                 firstName,
@@ -242,6 +252,14 @@ router.post(
                 guardianPhone: csvData['Phone 1'] || undefined,
               }
             });
+            const studentAccount = await ensureStudentAccountForLearner({
+              admissionNumber: updatedLearner.admissionNumber,
+              firstName: updatedLearner.firstName,
+              lastName: updatedLearner.lastName,
+              middleName: updatedLearner.middleName || null,
+              phone: (updatedLearner.guardianPhone || null) as string | null
+            });
+            if (studentAccount.created) studentAccountsCreated += 1;
             updated.push({ line: item.line, id: existing.id, admNo, name: rawName });
           }
         } else {
@@ -261,6 +279,14 @@ router.post(
               parentId: parentId,
             }
           });
+          const studentAccount = await ensureStudentAccountForLearner({
+            admissionNumber: learner.admissionNumber,
+            firstName: learner.firstName,
+            lastName: learner.lastName,
+            middleName: learner.middleName || null,
+            phone: (learner.guardianPhone || null) as string | null
+          });
+          if (studentAccount.created) studentAccountsCreated += 1;
           created.push({ line: item.line, id: learner.id, admNo, name: rawName });
         }
       } catch (error) {
@@ -280,6 +306,7 @@ router.post(
         processed: results.length,
         created: created.length,
         updated: updated.length,
+        studentAccountsCreated,
         failed: failed.length + errors.length,
         validationErrors: errors.length
       },
@@ -290,6 +317,78 @@ router.post(
     res.status(500).json({ error: 'Failed to process upload', details: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
+
+/**
+ * POST /api/bulk/learners/sync-student-users
+ * Backfill student system accounts for existing learners missing accounts.
+ */
+router.post(
+  '/sync-student-users',
+  authenticate,
+  rateLimit({ windowMs: 60_000, maxRequests: 5 }),
+  auditLog('SYNC_STUDENT_USERS'),
+  async (req: AuthRequest, res: Response) => {
+    try {
+      if (!['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER'].includes(req.user?.role || '')) {
+        return res.status(403).json({ success: false, error: 'Forbidden' });
+      }
+
+      const learners = await prisma.learner.findMany({
+        where: { archived: false },
+        select: {
+          id: true,
+          admissionNumber: true,
+          firstName: true,
+          lastName: true,
+          middleName: true,
+          guardianPhone: true,
+          primaryContactPhone: true
+        }
+      });
+
+      let created = 0;
+      let existing = 0;
+      const failures: Array<{ learnerId: string; admissionNumber: string; reason: string }> = [];
+
+      for (const learner of learners) {
+        try {
+          const result = await ensureStudentAccountForLearner({
+            admissionNumber: learner.admissionNumber,
+            firstName: learner.firstName,
+            lastName: learner.lastName,
+            middleName: learner.middleName || null,
+            phone: (learner.guardianPhone || learner.primaryContactPhone || null) as string | null
+          });
+          if (result.created) created += 1;
+          else existing += 1;
+        } catch (error) {
+          failures.push({
+            learnerId: learner.id,
+            admissionNumber: learner.admissionNumber,
+            reason: error instanceof Error ? error.message : 'Unknown error'
+          });
+        }
+      }
+
+      return res.json({
+        success: true,
+        summary: {
+          learnersScanned: learners.length,
+          accountsCreated: created,
+          accountsAlreadyPresent: existing,
+          failed: failures.length
+        },
+        failures
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to sync student users',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+);
 
 /**
  * GET /api/bulk/learners/export

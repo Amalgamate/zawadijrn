@@ -3,26 +3,46 @@ import { appsApi } from '../services/api/apps.api';
 import { useAuth } from './useAuth';
 
 export const useApps = (schoolId) => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [apps, setApps]       = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
   const [toggling, setToggling] = useState({}); // slug -> bool
 
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const syncAuthApps = useCallback((nextApps) => {
+    if (!user || !Array.isArray(nextApps)) return;
+
+    const activeApps = nextApps
+      .filter(app => app.isActive)
+      .map(app => app.slug)
+      .sort();
+    const currentActiveApps = [...(user?.activeApps || [])].sort();
+
+    if (
+      activeApps.length === currentActiveApps.length &&
+      activeApps.every((slug, index) => slug === currentActiveApps[index])
+    ) {
+      return;
+    }
+
+    updateUser({ activeApps });
+  }, [updateUser, user]);
 
   const fetchApps = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       const res = await appsApi.list(schoolId);
-      setApps(res.data.data || []);
+      const nextApps = res.data.data || [];
+      setApps(nextApps);
+      syncAuthApps(nextApps);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load apps');
     } finally {
       setLoading(false);
     }
-  }, [schoolId]);
+  }, [schoolId, syncAuthApps]);
 
   useEffect(() => { fetchApps(); }, [fetchApps]);
 
@@ -32,26 +52,38 @@ export const useApps = (schoolId) => {
     setToggling(t => ({ ...t, [slug]: true }));
 
     // Optimistic
-    setApps(prev => prev.map(a =>
-      a.slug === slug ? { ...a, isActive: !a.isActive } : a
-    ));
+    setApps(prev => {
+      const nextApps = prev.map(a =>
+        a.slug === slug ? { ...a, isActive: !a.isActive } : a
+      );
+      syncAuthApps(nextApps);
+      return nextApps;
+    });
 
     try {
       const res = await appsApi.toggle(slug, schoolId);
       // Reconcile with server truth
-      setApps(prev => prev.map(a =>
-        a.slug === slug ? { ...a, isActive: res.data.data.isActive } : a
-      ));
+      setApps(prev => {
+        const nextApps = prev.map(a =>
+          a.slug === slug ? { ...a, isActive: res.data.data.isActive } : a
+        );
+        syncAuthApps(nextApps);
+        return nextApps;
+      });
     } catch (err) {
       // Revert optimistic update
-      setApps(prev => prev.map(a =>
-        a.slug === slug ? { ...a, isActive: !a.isActive } : a
-      ));
+      setApps(prev => {
+        const nextApps = prev.map(a =>
+          a.slug === slug ? { ...a, isActive: !a.isActive } : a
+        );
+        syncAuthApps(nextApps);
+        return nextApps;
+      });
       throw err;
     } finally {
       setToggling(t => ({ ...t, [slug]: false }));
     }
-  }, [schoolId]);
+  }, [schoolId, syncAuthApps]);
 
   /** Set mandatory (SUPER_ADMIN only) */
   const setMandatory = useCallback(async (slug, isMandatory) => {

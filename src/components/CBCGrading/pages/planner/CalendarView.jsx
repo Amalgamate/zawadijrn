@@ -175,7 +175,7 @@ const CalendarView = () => {
       }
     } catch (error) {
       console.error('Error fetching events:', error);
-      toast.error('Failed to load events');
+      toast.error('Calendar is temporarily unavailable. Please try again shortly.');
     } finally {
       setLoading(false);
     }
@@ -183,9 +183,8 @@ const CalendarView = () => {
 
   const fetchTermConfig = useCallback(async () => {
     try {
-      const response = await api.config.getTermConfigs();
-      const terms = response.data || response || [];
-      const active = terms.find((term) => term.isActive);
+      const response = await api.config.getActiveTermConfig();
+      const active = response?.data ?? response ?? null;
 
       if (active) {
         const termStart = safeDate(active.startDate);
@@ -208,9 +207,15 @@ const CalendarView = () => {
         await fetchEvents(range);
       }
     } catch (error) {
-      console.error('Error loading term configuration:', error);
-      toast.error('Failed to load academic term configuration');
-      await fetchEvents();
+      const message = String(error?.message || '').toLowerCase();
+      const isForbidden = message.includes('access denied') || message.includes('forbidden');
+      const range = getMonthRange(date);
+      setTermLabel('Current month');
+      if (!isForbidden) {
+        console.error('Error loading term configuration:', error);
+        toast.error('Failed to load academic term configuration');
+      }
+      await fetchEvents(range);
     }
   }, [date, fetchEvents]);
 

@@ -50,7 +50,7 @@ export const allNavSections = [
         id: 'planner',
         label: 'Planner',
         icon: Calendar,
-        app: 'academic-year',
+        app: 'planner',
         permission: null,
         items: [
             { id: 'planner-calendar', label: 'Calendar', path: 'planner-calendar', permission: null },
@@ -67,7 +67,7 @@ export const allNavSections = [
         items: [
             { id: 'learners-list',       label: 'Students List',      path: 'learners-list',       permission: 'VIEW_ALL_LEARNERS' },
             { id: 'learners-admissions', label: 'Admissions',         path: 'learners-admissions', permission: 'CREATE_LEARNER'    },
-            { id: 'learners-promotion',  label: 'Promotion',          path: 'learners-promotion',  permission: 'PROMOTE_LEARNER', app: 'academic-year' },
+            { id: 'learners-promotion',  label: 'Promotion',          path: 'learners-promotion',  permission: 'PROMOTE_LEARNER', app: 'planner' },
             { id: 'learners-uniform',    label: 'Uniform Allocation', path: 'learners-uniform',    permission: 'VIEW_ALL_LEARNERS', icon: Shirt, app: 'inventory' },
             { id: 'learners-id-print',  label: 'ID Card Printing',   path: 'learners-id-print',   permission: 'VIEW_ALL_LEARNERS', icon: CreditCard },
         ]
@@ -354,11 +354,21 @@ const PARENT_PORTAL_KEEP_EMPTY_SECTION_IDS = new Set(['dashboard', 'communicatio
 
 /** Remove Schemes of Work and full Timetable from nav; drop sections with no visible items. */
 function transformNavForParentRole(sections) {
-  const stripItems = (items) => {
+  const stripItems = (items, sectionId = null) => {
     if (!items?.length) return [];
+    if (sectionId === 'planner') {
+      return [
+        { id: 'events-calendar', label: 'Upcoming Events', path: 'events-calendar', permission: null }
+      ];
+    }
+    if (sectionId === 'communications') {
+      return items
+        .filter((item) => item.id === 'comm-messages')
+        .map((item) => ({ ...item, label: 'Inbox' }));
+    }
     return items.reduce((acc, item) => {
       if (item.type === 'group') {
-        const children = stripItems(item.items);
+        const children = stripItems(item.items, sectionId);
         if (children.length) acc.push({ ...item, items: children });
       } else if (item.path !== 'planner-schemes' && item.path !== 'planner-timetable') {
         acc.push(item);
@@ -368,7 +378,11 @@ function transformNavForParentRole(sections) {
   };
 
   return sections
-    .map((s) => ({ ...s, items: stripItems(s.items || []) }))
+    .map((s) => ({
+      ...s,
+      label: s.id === 'communications' ? 'Inbox' : s.id === 'planner' ? 'Events' : s.label,
+      items: stripItems(s.items || [], s.id),
+    }))
     .filter(
       (s) =>
         PARENT_PORTAL_KEEP_EMPTY_SECTION_IDS.has(s.id) ||
@@ -396,11 +410,12 @@ export const useNavigation = () => {
 
     const buildNav = (sourceSections) => {
         const activeApps = user?.activeApps || [];
+        const activeAppsLoaded = Array.isArray(user?.activeApps);
         const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
         const isItemVisible = (item) => {
             // 1. App Gating: if the item requires an app, it must be active
-            if (item.app && !activeApps.includes(item.app) && !isSuperAdmin) return false;
+            if (item.app && activeAppsLoaded && !activeApps.includes(item.app) && !isSuperAdmin) return false;
             
             // 2. Permission Gating: must have required permission
             if (item.permission && !can(item.permission)) return false;
@@ -420,7 +435,7 @@ export const useNavigation = () => {
 
         return sourceSections.filter(section => {
             // 1. App Gating for whole section
-            if (section.app && !activeApps.includes(section.app) && !isSuperAdmin) return false;
+            if (section.app && activeAppsLoaded && !activeApps.includes(section.app) && !isSuperAdmin) return false;
 
             // 2. Permission Gating for whole section
             if (section.permission && !can(section.permission)) return false;
@@ -439,6 +454,29 @@ export const useNavigation = () => {
         let nav = buildNav(secondaryNavSections);
         if (role === 'PARENT') nav = transformNavForParentRole(nav);
         const find = (id) => nav.find(s => s.id === id);
+        if (role === 'STUDENT') {
+            const dashboard = find('dashboard');
+            return {
+                navSections: dashboard ? [dashboard] : [],
+                dashboardSection: dashboard,
+                communicationSection: null,
+                schoolSections: [],
+                lmsSection: null,
+                studentLmsSection: {
+                    id: 'student-portal',
+                    label: 'Student Portal',
+                    icon: PlayCircle,
+                    items: [
+                        { id: 'student-courses', label: 'My Courses', path: 'student-courses', permission: null },
+                        { id: 'student-assignments', label: 'My Assignments', path: 'student-assignments', permission: null },
+                        { id: 'student-quizzes', label: 'Quizzes & Progress', path: 'student-quizzes', permission: null }
+                    ]
+                },
+                backOfficeSections: [],
+                docsCenterSection: null,
+                systemAdminSections: [],
+            };
+        }
         return {
             navSections: nav,
             dashboardSection:    find('dashboard'),
@@ -461,6 +499,29 @@ export const useNavigation = () => {
         let nav = buildNav(tertiaryNavSections);
         if (role === 'PARENT') nav = transformNavForParentRole(nav);
         const find = (id) => nav.find(s => s.id === id);
+        if (role === 'STUDENT') {
+            const dashboard = find('dashboard');
+            return {
+                navSections: dashboard ? [dashboard] : [],
+                dashboardSection: dashboard,
+                communicationSection: null,
+                schoolSections: [],
+                lmsSection: null,
+                studentLmsSection: {
+                    id: 'student-portal',
+                    label: 'Student Portal',
+                    icon: PlayCircle,
+                    items: [
+                        { id: 'student-courses', label: 'My Courses', path: 'student-courses', permission: null },
+                        { id: 'student-assignments', label: 'My Assignments', path: 'student-assignments', permission: null },
+                        { id: 'student-quizzes', label: 'Quizzes & Progress', path: 'student-quizzes', permission: null }
+                    ]
+                },
+                backOfficeSections: [],
+                docsCenterSection: null,
+                systemAdminSections: [],
+            };
+        }
         return {
             navSections: nav,
             dashboardSection:    find('dashboard'),
@@ -477,14 +538,17 @@ export const useNavigation = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [institutionType, can, role]);
 
-    // Return early for non-CBC institutions
-    if (institutionType === 'SECONDARY' && secondaryNav) return secondaryNav;
-    if (institutionType === 'TERTIARY'  && tertiaryNav)  return tertiaryNav;
-
     // ── CBC (default) ─────────────────────────────────────────────────────────
 
     const navSections = useMemo(() => {
-        const isItemVisible = (item) => !item.permission || can(item.permission);
+        const activeApps = user?.activeApps || [];
+        const activeAppsLoaded = Array.isArray(user?.activeApps);
+        const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+        const isItemVisible = (item) => {
+            if (item.app && activeAppsLoaded && !activeApps.includes(item.app) && !isSuperAdmin) return false;
+            if (item.permission && !can(item.permission)) return false;
+            return true;
+        };
 
         const processItems = (items) => {
             return items.reduce((acc, item) => {
@@ -502,10 +566,17 @@ export const useNavigation = () => {
             }, []);
         };
 
+        if (role === 'STUDENT') {
+            return allNavSections
+                .filter(section => section.id === 'dashboard')
+                .map(section => ({ ...section, items: [] }));
+        }
+
         let built = allNavSections.filter(section => {
             if (!focusModules.includes(section.id)) return false;
             if (section.id === 'settings') return false;
             if (role === 'STUDENT' && section.id === 'lms') return false;
+            if (section.app && activeAppsLoaded && !activeApps.includes(section.app) && !isSuperAdmin) return false;
             if (section.permission && !can(section.permission)) return false;
             if (section.items.length > 0) {
                 const visibleItems = processItems(section.items);
@@ -531,7 +602,7 @@ export const useNavigation = () => {
             built = transformNavForParentRole(built);
         }
         return built;
-    }, [can, role]);
+    }, [can, role, labels, user?.activeApps, user?.role]);
 
     const dashboardSection = navSections.find(s => s.id === 'dashboard');
     const lmsSection = navSections.find(s => s.id === 'lms');
@@ -543,8 +614,8 @@ export const useNavigation = () => {
             icon: PlayCircle,
             items: [
                 { id: 'student-courses', label: 'My Courses', path: 'student-courses', permission: null },
-                { id: 'student-assignments', label: 'Assignments', path: 'student-assignments', permission: null },
-                { id: 'student-progress', label: 'Progress', path: 'student-progress', permission: null }
+                { id: 'student-assignments', label: 'My Assignments', path: 'student-assignments', permission: null },
+                { id: 'student-quizzes', label: 'Quizzes & Progress', path: 'student-quizzes', permission: null }
             ]
         };
     }, [role]);
@@ -575,6 +646,15 @@ export const useNavigation = () => {
     const communicationSection = useMemo(() => {
         const section = navSections.find(s => s.id === 'communications');
         if (!section) return null;
+        if (role === 'PARENT') {
+            return {
+                ...section,
+                label: 'Inbox',
+                items: (section.items || [])
+                    .filter(item => item.id === 'comm-messages')
+                    .map(item => ({ ...item, label: 'Inbox' }))
+            };
+        }
         if (role === 'TEACHER') {
             return { ...section, items: section.items.filter(item => item.id === 'comm-messages') };
         }
@@ -599,17 +679,25 @@ export const useNavigation = () => {
         return built;
     }, [can, role]);
 
-    return useMemo(() => ({
-        navSections,
-        dashboardSection,
-        communicationSection,
-        schoolSections,
-        lmsSection,
-        studentLmsSection,
-        backOfficeSections,
-        docsCenterSection,
-        systemAdminSections
-    }), [
+    return useMemo(() => {
+        if (institutionType === 'SECONDARY' && secondaryNav) return secondaryNav;
+        if (institutionType === 'TERTIARY' && tertiaryNav) return tertiaryNav;
+
+        return {
+            navSections,
+            dashboardSection,
+            communicationSection,
+            schoolSections,
+            lmsSection,
+            studentLmsSection,
+            backOfficeSections,
+            docsCenterSection,
+            systemAdminSections
+        };
+    }, [
+        institutionType,
+        secondaryNav,
+        tertiaryNav,
         navSections,
         dashboardSection,
         communicationSection,

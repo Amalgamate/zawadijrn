@@ -1,7 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import svgr from 'vite-plugin-svgr';
-import basicSsl from '@vitejs/plugin-basic-ssl';
 
 export default defineConfig({
   base: '/',
@@ -9,7 +8,6 @@ export default defineConfig({
   plugins: [
     react(),
     svgr(),
-    basicSsl(),
   ],
 
   resolve: {
@@ -20,10 +18,6 @@ export default defineConfig({
     port: 3000,
     open: true,
     strictPort: true,
-    https: true,
-    // With HTTPS, HMR must use wss (secure WebSocket) on the same port.
-    // Without this, Vite falls back to ws:// and HMR breaks in Chrome.
-    hmr: { protocol: 'wss', port: 3000, clientPort: 3000 },
     // Proxy /api calls to the local Express server so the HTTPS frontend
     // never makes mixed-content requests to http://localhost:5000.
     proxy: {

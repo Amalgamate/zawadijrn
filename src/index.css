@@ -115,6 +115,22 @@
 
 /* App-wide data tables: Unified single-line grid */
 @layer components {
+  .surface-panel {
+    @apply bg-white border border-gray-200/80 rounded-lg shadow-sm;
+  }
+
+  .surface-panel-subtle {
+    @apply bg-slate-50/80 border border-slate-200/80 rounded-lg;
+  }
+
+  .surface-panel-interactive {
+    @apply transition-colors hover:border-brand-purple/20;
+  }
+
+  .surface-icon-accent {
+    @apply flex h-11 w-11 items-center justify-center rounded-lg border border-brand-purple/10 bg-brand-purple/5;
+  }
+
   body table {
     border-collapse: collapse;
     border: 1px solid var(--table-border);
@@ -482,4 +498,3 @@ code {
 .scroll-pb-nav {
   padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
 }
-

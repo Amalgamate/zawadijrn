@@ -2,7 +2,7 @@
  * Student Dashboard — Portal for STUDENT role
  */
 import React, { useState, useEffect } from 'react';
-import { BookOpen, ClipboardList, TrendingUp, Bell, ChevronRight, PlayCircle, Calendar, Clock, GraduationCap } from 'lucide-react';
+import { BookOpen, ClipboardList, TrendingUp, ChevronRight, PlayCircle, Calendar, Clock, GraduationCap } from 'lucide-react';
 import axiosInstance from '../../../../services/api/axiosConfig';
 
 const MetricCard = ({ title, value, subtitle, icon: Icon, colorClass = 'text-gray-400', onClick }) => (
@@ -61,7 +61,7 @@ const StudentDashboard = ({ user, onNavigate }) => {
         <MetricCard title="Courses Enrolled" value={loading ? '…' : courses.length} subtitle="Active courses" icon={BookOpen} colorClass="text-blue-500" onClick={() => onNavigate?.('student-courses')} />
         <MetricCard title="Due Soon" value={loading ? '…' : dueSoon.length} subtitle="Pending submissions" icon={ClipboardList} colorClass="text-amber-500" onClick={() => onNavigate?.('student-assignments')} />
         <MetricCard title="Overall Progress" value={loading ? '…' : `${overallProgress}%`} subtitle="Across all courses" icon={TrendingUp} colorClass="text-emerald-500" onClick={() => onNavigate?.('student-progress')} />
-        <MetricCard title="Notices" value="📢" subtitle="Tap to view" icon={Bell} colorClass="text-indigo-500" onClick={() => onNavigate?.('comm-notices')} />
+        <MetricCard title="Quizzes & Progress" value={loading ? '…' : `${overallProgress}%`} subtitle="Attempt and track" icon={PlayCircle} colorClass="text-indigo-500" onClick={() => onNavigate?.('student-quizzes')} />
       </div>
 
       {/* My Courses strip */}

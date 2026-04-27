@@ -7,6 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { schoolAPI, dashboardAPI } from '../../../../services/api';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, BarChart, Bar, Legend } from 'recharts';
 import CompactMetricBanner from './CompactMetricBanner';
+import { hasPageAccess } from '../../utils/appAccess';
 
 // --- Dashboard Data Visualizations are computed dynamically from Real API Metrics ---
 import {
@@ -88,8 +89,26 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
   const [timeFilter, setTimeFilter] = useState('term');
   const [metrics, setMetrics] = useState(null);
   const [apiError, setApiError] = useState(null);
+  const [insights, setInsights] = useState(null);
+  const [insightsLoading, setInsightsLoading] = useState(false);
+  const [insightsError, setInsightsError] = useState(null);
   // Stable user id — prevents re-fetch every time the user object reference changes
   const userId = user?.id || user?.userId;
+  const hasInstantData = learners.length > 0 || teachers.length > 0 || (pagination?.total || 0) > 0;
+  const visibleShortcuts = [
+    { label: 'Admissions', icon: UserPlus, color: 'bg-blue-500 text-white', path: 'learners-admissions' },
+    { label: 'Collect Fees', icon: Receipt, color: 'bg-emerald-500 text-white', path: 'fees-collection' },
+    { label: 'Attendance', icon: ClipboardCheck, color: 'bg-amber-500 text-white', path: 'attendance-daily' },
+    { label: 'Assessments', icon: BookOpen, color: 'bg-brand-purple text-white', path: 'assess-summative-assessment' },
+    { label: 'Inventory', icon: Package, color: 'bg-rose-500 text-white', path: 'inventory-items' },
+    { label: 'Settings', icon: Settings, color: 'bg-slate-700 text-white', path: 'settings-academic' },
+  ].filter((shortcut) => hasPageAccess(user, shortcut.path));
+  const visibleOperations = [
+    { label: 'Register New Student', icon: Users, page: 'learners-admissions' },
+    { label: 'Manage Staff Directory', icon: GraduationCap, page: 'teachers-list' },
+    { label: 'Academic Term Settings', icon: BookOpen, page: 'settings-academic' },
+    { label: 'Financial Statements', icon: FileText, page: 'accounting-reports' }
+  ].filter((action) => hasPageAccess(user, action.page));
 
   const loadMetrics = async (filter) => {
     try {
@@ -114,8 +133,33 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, timeFilter]);
 
-  // ── Loading state: show skeleton while first fetch is in progress ─────────────
-  if (refreshing && !metrics) {
+  const loadInsights = async (fresh = false) => {
+    try {
+      setInsightsLoading(true);
+      setInsightsError(null);
+      const response = await dashboardAPI.getInsights(fresh);
+      if (response.success) {
+        setInsights(response.data);
+      } else {
+        setInsightsError(response.message || 'Failed to load insights');
+      }
+    } catch (error) {
+      setInsightsError(error.message || 'Could not reach the server.');
+    } finally {
+      setInsightsLoading(false);
+    }
+  };
+
+  // Fetch insights only when the tab is first opened
+  useEffect(() => {
+    if (activeTab === 'ai-insights' && !insights && !insightsLoading) {
+      loadInsights();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
+
+  // ── Loading state: show skeleton only if we have absolutely no local data ─────
+  if (refreshing && !metrics && !hasInstantData) {
     return (
       <div className="space-y-6 animate-pulse">
         <div className="grid grid-cols-3 md:grid-cols-6 gap-2 lg:gap-4">
@@ -249,6 +293,20 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
         onClick: () => onNavigate('assess-summative-assessment')
       }
     ];
+
+    if (!metrics) {
+      return (
+        <div className="space-y-6">
+          <CompactMetricBanner metrics={bannerMetrics} />
+          <div className="rounded-xl border border-brand-teal/20 bg-brand-teal/5 px-4 py-3">
+            <p className="text-xs font-semibold text-brand-teal uppercase tracking-widest">Live Sync</p>
+            <p className="mt-1 text-xs text-gray-600">
+              Showing instant snapshot from local session data while full analytics load in the background.
+            </p>
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div className="space-y-6">
@@ -397,12 +455,7 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
             <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-5">
               <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-widest mb-4">Operations Hub</h3>
               <div className="grid grid-cols-1 gap-2">
-                {[
-                  { label: 'Register New Student', icon: Users, page: 'learners-admissions' },
-                  { label: 'Manage Staff Directory', icon: GraduationCap, page: 'teachers-list' },
-                  { label: 'Academic Term Settings', icon: BookOpen, page: 'settings-academic' },
-                  { label: 'Financial Statements', icon: FileText, page: 'accounting-reports' }
-                ].map((action, idx) => (
+                {visibleOperations.map((action, idx) => (
                   <button
                     key={idx}
                     onClick={() => onNavigate(action.page)}
@@ -663,29 +716,29 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
   const renderAIInsights = () => (
     <div className="space-y-6 animate-fade-in">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2 bg-gradient-to-br from-brand-purple to-indigo-700 rounded-2xl p-8 text-white relative overflow-hidden shadow-xl shadow-brand-purple/20">
-          <div className="relative z-10">
+        <div className="md:col-span-2 bg-white rounded-2xl p-8 border border-gray-200 shadow-sm relative overflow-hidden group">
+          <div className="relative z-10 h-full flex flex-col">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-md">
+              <div className="p-2 bg-brand-purple/10 text-brand-purple rounded-lg">
                 <Brain size={24} />
               </div>
-              <h2 className="text-2xl font-bold">Zawadi Smart Insights</h2>
+              <h2 className="text-2xl font-bold text-gray-900">Zawadi Smart Insights</h2>
             </div>
-            <p className="text-indigo-100 text-sm max-w-md leading-relaxed mb-6">
+            <p className="text-gray-500 text-sm max-w-md leading-relaxed mb-6">
               Our AI engine analyzes longitudinal student performance, attendance patterns, and financial data to predict learning outcomes and identify students who may need additional support.
             </p>
-            <div className="flex flex-wrap gap-4">
-              <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 flex-1 min-w-[140px]">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-200">System Accuracy</p>
-                <p className="text-2xl font-bold">94.2%</p>
+            <div className="flex flex-wrap gap-4 mt-auto">
+              <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 flex-1 min-w-[140px] hover:border-brand-purple/30 transition-colors">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">System Accuracy</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">94.2%</p>
               </div>
-              <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 flex-1 min-w-[140px]">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-200">Insights Generated</p>
-                <p className="text-2xl font-bold">1,240</p>
+              <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 flex-1 min-w-[140px] hover:border-brand-purple/30 transition-colors">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Insights Generated</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">1,240</p>
               </div>
             </div>
           </div>
-          <Zap className="absolute -bottom-10 -right-10 w-64 h-64 text-white/5" />
+          <Zap className="absolute -bottom-10 -right-10 w-64 h-64 text-brand-purple/[0.03] transform group-hover:scale-110 transition-transform duration-500" />
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col justify-between">
@@ -890,16 +943,17 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
+      {refreshing && (
+        <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-2">
+          <p className="text-[11px] font-semibold text-blue-700 uppercase tracking-widest">
+            Syncing fresh dashboard analytics...
+          </p>
+        </div>
+      )}
+
       {/* Quick Shortcuts */}
       <div className="grid grid-cols-3 md:grid-cols-6 gap-2 lg:gap-4 mb-2">
-        {[
-          { label: 'Admissions', icon: UserPlus, color: 'bg-blue-500 text-white', path: 'learners-admissions' },
-          { label: 'Collect Fees', icon: Receipt, color: 'bg-emerald-500 text-white', path: 'fees-collection' },
-          { label: 'Attendance', icon: ClipboardCheck, color: 'bg-amber-500 text-white', path: 'attendance-daily' },
-          { label: 'Assessments', icon: BookOpen, color: 'bg-brand-purple text-white', path: 'assess-summative-assessment' },
-          { label: 'Inventory', icon: Package, color: 'bg-rose-500 text-white', path: 'inventory-items' },
-          { label: 'Settings', icon: Settings, color: 'bg-slate-700 text-white', path: 'settings-academic' },
-        ].map((shortcut, idx) => (
+        {visibleShortcuts.map((shortcut, idx) => (
           <button
             key={idx}
             onClick={() => onNavigate(shortcut.path)}

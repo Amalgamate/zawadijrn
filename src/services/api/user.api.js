@@ -1,5 +1,4 @@
 import { fetchWithAuth } from './core';
-import axiosInstance from './axiosConfig';
 
 export const userAPI = {
   getAll: async (params = {}) => {
@@ -26,4 +25,6 @@ export const userAPI = {
     fetchWithAuth(`/users/${id}/reset-password`, { method: 'POST', body: JSON.stringify(data) }),
   sendCredentials: async (id) =>
     fetchWithAuth(`/users/${id}/credentials`, { method: 'POST' }),
+  syncMissingStudentAccounts: async () =>
+    fetchWithAuth('/bulk/learners/sync-student-users', { method: 'POST' }),
 };

@@ -23,7 +23,8 @@ export const AuthProvider = ({ children }) => {
   const normalizeUser = useCallback((u) => {
     if (!u) return u;
     const institutionType = u.institutionType || 'PRIMARY_CBC';
-    return { ...u, institutionType };
+    const activeApps = Array.isArray(u.activeApps) ? u.activeApps : undefined;
+    return { ...u, institutionType, activeApps };
   }, []);
 
   // Check for existing auth on mount
@@ -52,7 +53,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     checkAuth();
-  }, []);
+  }, [normalizeUser]);
 
   const login = useCallback((userData, token, refreshToken) => {
     try {

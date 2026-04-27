@@ -14,6 +14,7 @@ const institutionCacheKeySuffix = () => {
 
 export const configAPI = {
   getTermConfigs: async () => fetchWithAuth('/config/term'),
+  getActiveTermConfig: async () => fetchWithAuth('/config/term/active'),
   upsertTermConfig: async (data) =>
     fetchWithAuth('/config/term', { method: 'POST', body: JSON.stringify(data) }),
   updateTermConfig: async (id, data) =>

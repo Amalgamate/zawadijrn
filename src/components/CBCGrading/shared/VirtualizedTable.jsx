@@ -17,16 +17,26 @@ const VirtualizedTable = ({
     emptyComponent
 }) => {
     const containerRef = useRef(null);
+    const frameRef = useRef(null);
     const [scrollTop, setScrollTop] = useState(0);
 
-    // Log data changes
-    useEffect(() => {
-        console.log('✅ [VirtualizedTable] Data updated:', { dataLength: data.length, firstItem: data[0] });
-    }, [data]);
-
-    // Use passive scroll listener for better performance
     const onScroll = useCallback((e) => {
-        setScrollTop(e.target.scrollTop);
+        const nextScrollTop = e.target.scrollTop;
+
+        if (frameRef.current !== null) {
+            cancelAnimationFrame(frameRef.current);
+        }
+
+        frameRef.current = requestAnimationFrame(() => {
+            setScrollTop((prev) => (prev === nextScrollTop ? prev : nextScrollTop));
+            frameRef.current = null;
+        });
+    }, []);
+
+    useEffect(() => () => {
+        if (frameRef.current !== null) {
+            cancelAnimationFrame(frameRef.current);
+        }
     }, []);
 
     // Calculate visible range

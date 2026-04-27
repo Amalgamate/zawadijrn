@@ -4,12 +4,28 @@ import './index.css';
 import App from './App.jsx';
 import { AuthProvider } from './contexts/AuthContext.jsx';
 
-// Register the service worker in both dev (https://localhost) and production.
-// Push notification subscriptions require:
-//   (a) a registered service worker, and
-//   (b) a secure context (HTTPS) — localhost over HTTPS satisfies this in dev.
-// In plain http://localhost the browser will refuse to create a PushSubscription.
-if ('serviceWorker' in navigator) {
+const isLocalDevHost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+const shouldRegisterServiceWorker = import.meta.env.PROD && 'serviceWorker' in navigator;
+
+const clearDevelopmentServiceWorkers = async () => {
+  if (!('serviceWorker' in navigator) || !('caches' in window)) return;
+
+  try {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(registrations.map((registration) => registration.unregister()));
+
+    const cacheKeys = await caches.keys();
+    await Promise.all(cacheKeys.map((key) => caches.delete(key)));
+
+    console.info('[SW] Cleared local development service workers and caches.');
+  } catch (err) {
+    console.warn('[SW] Failed to clear local development service workers:', err);
+  }
+};
+
+// Keep the service worker for production only.
+// In local development it causes stale cached bundles and confusing UI drift.
+if (shouldRegisterServiceWorker) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
       .register('/sw.js')
@@ -19,6 +35,10 @@ if ('serviceWorker' in navigator) {
       .catch(err => {
         console.warn('[SW] Registration failed:', err);
       });
+  });
+} else if (isLocalDevHost) {
+  window.addEventListener('load', () => {
+    clearDevelopmentServiceWorkers();
   });
 }
 

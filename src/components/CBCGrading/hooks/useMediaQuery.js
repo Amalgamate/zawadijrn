@@ -6,27 +6,21 @@ import { useState, useEffect } from 'react';
  * Returns boolean indicating if media query matches
  */
 export const useMediaQuery = (query) => {
-    const [matches, setMatches] = useState(false);
-    const [mounted, setMounted] = useState(false);
+    const [matches, setMatches] = useState(() => {
+        if (typeof window === 'undefined') return false;
+        return window.matchMedia(query).matches;
+    });
 
     useEffect(() => {
-        setMounted(true);
-        
-        // Check if window is available (not SSR)
         if (typeof window === 'undefined') return;
 
-        // Create media query list
         const mediaQuery = window.matchMedia(query);
-        
-        // Set initial value
         setMatches(mediaQuery.matches);
 
-        // Create event listener
         const handleChange = (e) => {
             setMatches(e.matches);
         };
 
-        // Add listener with fallback for older browsers
         if (mediaQuery.addEventListener) {
             mediaQuery.addEventListener('change', handleChange);
             return () => mediaQuery.removeEventListener('change', handleChange);
@@ -36,8 +30,7 @@ export const useMediaQuery = (query) => {
         }
     }, [query]);
 
-    // Return false until mounted to prevent hydration mismatch
-    return mounted ? matches : false;
+    return matches;
 };
 
 export default useMediaQuery;

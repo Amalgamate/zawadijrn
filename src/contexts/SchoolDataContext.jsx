@@ -6,6 +6,23 @@ import { useBootstrapStore } from '../store/useBootstrapStore';
 import axiosInstance from '../services/api/axiosConfig';
 
 const SchoolDataContext = createContext();
+const ROLES_WITH_CLASS_ACCESS = new Set([
+  'SUPER_ADMIN',
+  'ADMIN',
+  'HEAD_TEACHER',
+  'HEAD_OF_CURRICULUM',
+  'TEACHER',
+  'ACCOUNTANT',
+  'RECEPTIONIST',
+  'LIBRARIAN',
+  'NURSE',
+  'SECURITY',
+  'DRIVER',
+  'COOK',
+  'CLEANER',
+  'GROUNDSKEEPER',
+  'IT_SUPPORT',
+]);
 
 const sortGrades = (gradeArray) => {
   if (!gradeArray || gradeArray.length === 0) return [];
@@ -63,7 +80,7 @@ export const SchoolDataProvider = ({ children }) => {
   // Fallback: if bootstrap never ran (e.g. user landed here without splashscreen),
   // fetch classes + streams directly. No artificial delay needed on local.
   const fetchSchoolData = useCallback(async () => {
-    if (user?.role === 'PARENT') {
+    if (!ROLES_WITH_CLASS_ACCESS.has(user?.role)) {
       setClasses([]); setGrades([]); setStreams([]);
       setLoading(false); return;
     }
@@ -94,7 +111,7 @@ export const SchoolDataProvider = ({ children }) => {
   useEffect(() => {
     if (bootstrapReady) return;           // bootstrap has the data — do nothing
     if (!user) return;
-    if (user.role === 'PARENT') {
+    if (!ROLES_WITH_CLASS_ACCESS.has(user.role)) {
       setClasses([]); setGrades([]); setStreams([]);
       setLoading(false); return;
     }

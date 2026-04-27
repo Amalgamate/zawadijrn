@@ -14,6 +14,8 @@ import VirtualizedTable from '../shared/VirtualizedTable';
 import { formatPhoneNumber } from '../../../utils/phoneFormatter';
 import { useSchoolData } from '../../../contexts/SchoolDataContext';
 import { useMediaQuery } from '../hooks/useMediaQuery';
+import { MOBILE_MEDIA_QUERY } from '../../../constants/breakpoints';
+import { buildLearnerQueryParams } from './learnersListQuery';
 
 const LearnersList = ({
   learners,
@@ -51,7 +53,7 @@ const LearnersList = ({
   const { can, isRole } = usePermissions();
   const { user } = useAuth();
   const { grades } = useSchoolData();
-  const isMobile = useMediaQuery('(max-width: 767px)');
+  const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
 
   const formatGradeLabel = (g) => {
     const s = String(g || '');
@@ -134,17 +136,14 @@ const LearnersList = ({
   useEffect(() => {
     const timer = setTimeout(() => {
       if (onFetchLearners) {
-        const params = {
+        onFetchLearners(buildLearnerQueryParams({
           page: 1,
-          search: searchTerm,
-          limit: pagination?.limit || 50
-        };
-
-        if (filterGrade !== 'all') params.grade = String(filterGrade).trim();
-        if (filterStatus !== 'all') params.status = filterStatus;
-        if (filterStream !== 'all') params.stream = filterStream;
-
-        onFetchLearners(params);
+          searchTerm,
+          paginationLimit: pagination?.limit || 50,
+          filterGrade,
+          filterStatus,
+          filterStream,
+        }));
       }
     }, 500);
     return () => clearTimeout(timer);
@@ -152,17 +151,14 @@ const LearnersList = ({
 
   const handlePageChange = (newPage) => {
     if (onFetchLearners) {
-      const params = {
+      onFetchLearners(buildLearnerQueryParams({
         page: newPage,
-        search: searchTerm,
-        limit: pagination?.limit || 50
-      };
-
-      if (filterGrade !== 'all') params.grade = String(filterGrade).trim();
-      if (filterStatus !== 'all') params.status = filterStatus;
-      if (filterStream !== 'all') params.stream = filterStream;
-
-      onFetchLearners(params);
+        searchTerm,
+        paginationLimit: pagination?.limit || 50,
+        filterGrade,
+        filterStatus,
+        filterStream,
+      }));
     }
   };
 
@@ -248,16 +244,14 @@ const LearnersList = ({
 
   const refreshData = () => {
     if (onFetchLearners) {
-      const params = {
+      onFetchLearners(buildLearnerQueryParams({
         page: pagination?.page || 1,
-        search: searchTerm,
-        limit: pagination?.limit || 50
-      };
-
-      if (filterGrade !== 'all') params.grade = String(filterGrade).trim();
-      if (filterStatus !== 'all') params.status = filterStatus;
-
-      onFetchLearners(params);
+        searchTerm,
+        paginationLimit: pagination?.limit || 50,
+        filterGrade,
+        filterStatus,
+        filterStream,
+      }));
     }
   };
 

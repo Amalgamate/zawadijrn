@@ -13,24 +13,24 @@ const PageHeader = ({
   className = ''
 }) => {
   return (
-    <div className={`bg-white rounded-xl shadow-md p-6 mb-6 ${className}`}>
-      <div className="flex items-center justify-between">
+    <div className={`surface-panel mb-6 p-6 ${className}`}>
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-4">
           {Icon && (
-            <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
-              <Icon size={24} className="text-white" />
+            <div className="surface-icon-accent">
+              <Icon size={22} className="text-brand-purple" />
             </div>
           )}
           <div>
-            <h1 className="text-3xl font-medium text-gray-800">{title}</h1>
+            <h1 className="text-2xl font-semibold text-slate-900">{title}</h1>
             {subtitle && (
-              <p className="text-gray-600 mt-1">{subtitle}</p>
+              <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
             )}
           </div>
         </div>
         
         {actions && (
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             {actions}
           </div>
         )}

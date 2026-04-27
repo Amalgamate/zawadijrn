@@ -4,8 +4,6 @@
 
 import { Response } from 'express';
 import prisma from '../config/database';
-import bcrypt from 'bcrypt';
-import { randomBytes } from 'crypto';
 import { ApiError } from '../utils/error.util';
 import { AuthRequest } from '../middleware/permissions.middleware';
 import { LearnerStatus, Gender } from '@prisma/client';
@@ -14,6 +12,7 @@ import { feeService } from '../services/fee.service';
 import { SmsService } from '../services/sms.service';
 import { EmailService } from '../services/email.service';
 import { parentService } from '../services/parent.service';
+import { ensureStudentAccountForLearner } from '../services/studentAccount.service';
 import { v2 as cloudinary } from 'cloudinary';
 
 import logger from '../utils/logger';
@@ -234,30 +233,15 @@ export class LearnerController {
         include: { parent: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } } },
       });
 
-      // ── Create student system user ────────────────────────────────────────────
+      // ── Create student system user by default ────────────────────────────────
       try {
-        const studentUsername = admissionNumber.replace(/\//g, '-').toUpperCase();
-        const existingUser = await prisma.user.findFirst({
-          where: { OR: [{ username: studentUsername }, { email: `${studentUsername}@zawadisms.com` }] }
+        await ensureStudentAccountForLearner({
+          admissionNumber,
+          firstName,
+          lastName,
+          middleName: middleName || null,
+          phone: guardianPhone || null
         });
-        if (!existingUser) {
-          // ── C1 fix: random password + force-reset token ──────────────────────
-          const studentPassword = parentService.generateTemporaryPassword();
-          const forceResetToken = randomBytes(32).toString('hex');
-          const forceResetExpiry = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
-
-          await prisma.user.create({
-            data: {
-              username: studentUsername,
-              email: `${studentUsername}@zawadisms.com`,
-              password: await bcrypt.hash(studentPassword, 11),
-              firstName, lastName, middleName, phone: guardianPhone || null,
-              role: 'STUDENT', status: 'ACTIVE',
-              passwordResetToken: forceResetToken,
-              passwordResetExpiry: forceResetExpiry,
-            },
-          });
-        }
       } catch (userError) {
         logger.error('Failed to create student system user:', userError);
       }
@@ -374,6 +358,19 @@ export class LearnerController {
         data: updateData,
         include: { parent: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } } },
       });
+
+      // Keep student portal account in sync (and backfill if missing).
+      try {
+        await ensureStudentAccountForLearner({
+          admissionNumber: updated.admissionNumber,
+          firstName: updated.firstName,
+          lastName: updated.lastName,
+          middleName: updated.middleName || null,
+          phone: (updated.guardianPhone || updated.primaryContactPhone || null) as string | null
+        });
+      } catch (userError) {
+        logger.error('Failed to sync student system user:', userError);
+      }
 
       res.json({ success: true, data: updated });
     } catch (error: any) {

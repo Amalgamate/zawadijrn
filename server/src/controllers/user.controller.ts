@@ -23,7 +23,7 @@ export class UserController {
   async getAllUsers(req: AuthRequest, res: Response) {
     const currentUserRole = req.user!.role;
     const includeArchived = req.query.includeArchived === 'true';
-    const { search } = req.query;
+    const { search, role } = req.query;
 
     let whereClause: any = {};
     if (!includeArchived) {
@@ -32,6 +32,10 @@ export class UserController {
 
     if (currentUserRole === 'HEAD_TEACHER' || currentUserRole === 'HEAD_OF_CURRICULUM') {
       whereClause.role = { in: ['TEACHER', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM'] };
+    }
+
+    if (role && typeof role === 'string' && !['HEAD_TEACHER', 'HEAD_OF_CURRICULUM'].includes(currentUserRole)) {
+      whereClause.role = role.toUpperCase();
     }
 
     if (search) {
@@ -54,6 +58,7 @@ export class UserController {
         phone: true,
         role: true,
         status: true,
+        archived: true,
         createdAt: true,
         lastLogin: true,
         staffId: true,
@@ -121,7 +126,25 @@ export class UserController {
       throw new ApiError(400, 'Missing required fields');
     }
 
-    const validRoles: Role[] = ['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM', 'TEACHER', 'PARENT', 'ACCOUNTANT', 'RECEPTIONIST'];
+    const validRoles: Role[] = [
+      'SUPER_ADMIN',
+      'ADMIN',
+      'HEAD_TEACHER',
+      'HEAD_OF_CURRICULUM',
+      'TEACHER',
+      'PARENT',
+      'ACCOUNTANT',
+      'RECEPTIONIST',
+      'LIBRARIAN',
+      'NURSE',
+      'SECURITY',
+      'DRIVER',
+      'COOK',
+      'CLEANER',
+      'GROUNDSKEEPER',
+      'IT_SUPPORT',
+      'STUDENT'
+    ];
     if (!validRoles.includes(role as Role)) {
       throw new ApiError(400, `Invalid role`);
     }
