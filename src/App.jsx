@@ -17,18 +17,39 @@ import { useBootstrapStore } from './store/useBootstrapStore';
 import useSubjectStore from './store/useSubjectStore';
 import ErrorBoundary from './components/common/ErrorBoundary';
 
+const APP_DISPLAY_NAME = 'Trends CORE V1.0';
+const LEGACY_BRAND_NAMES = new Set([
+  'zawadi sms',
+  'edu core',
+]);
+
+const normalizeSchoolName = (name) => {
+  const trimmed = String(name || '').trim();
+  if (!trimmed) return APP_DISPLAY_NAME;
+  const lower = trimmed.toLowerCase();
+  if (LEGACY_BRAND_NAMES.has(lower)) return APP_DISPLAY_NAME;
+  return trimmed;
+};
+
+const pickBrandingValue = (incoming, fallback) => {
+  if (incoming === null || incoming === undefined) return fallback;
+  if (typeof incoming === 'string' && incoming.trim() === '') return fallback;
+  return incoming;
+};
+
 const DEFAULT_BRANDING = {
-  logoUrl: '/logo-zawadi.png',
-  faviconUrl: '/favicon.png',
-  stampUrl: '/ZawadiStamp.svg',
+  logoUrl: '/branding/logo.png',
+  faviconUrl: '/branding/favicon.png',
+  stampUrl: '/branding/stamp.svg',
   brandColor: '#520050',
   primaryColor: '#520050',
   secondaryColor: '#0D9488',
   accentColor1: '#3b82f6',
   accentColor2: '#e11d48',
-  welcomeTitle: 'Welcome to Zawadi',
+  welcomeTitle: `Welcome to ${APP_DISPLAY_NAME}`,
   welcomeMessage: 'Sign in to access your school portal.',
-  schoolName: 'ZAWADI JUNIOR ACADEMY',
+  schoolName: APP_DISPLAY_NAME,
+  motto: 'School Management System',
 };
 
 function AppContent() {
@@ -57,7 +78,10 @@ function AppContent() {
           setBrandingSettings(prev => ({
             ...prev,
             ...branding,
-            schoolName: branding.name || branding.schoolName || 'Zawadi Junior Academy',
+            logoUrl: pickBrandingValue(branding.logoUrl, prev.logoUrl),
+            faviconUrl: pickBrandingValue(branding.faviconUrl, prev.faviconUrl),
+            stampUrl: pickBrandingValue(branding.stampUrl, prev.stampUrl),
+            schoolName: normalizeSchoolName(branding.name || branding.schoolName),
           }));
         }
       } catch (err) {
@@ -77,7 +101,7 @@ function AppContent() {
       document.head.appendChild(link);
     }
     const url = brandingSettings.faviconUrl;
-    if (!url) { link.href = '/favicon.png'; return; }
+    if (!url) { link.href = '/branding/favicon.png'; return; }
     link.href = url.startsWith('data:') ? url : `${url}${url.includes('?') ? '&' : '?'}v=${Date.now()}`;
   }, [brandingSettings.faviconUrl]);
 

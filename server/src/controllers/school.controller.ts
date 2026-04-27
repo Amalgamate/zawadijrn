@@ -30,6 +30,8 @@ export const getPublicBranding = async (req: Request, res: Response) => {
         onboardingMessage: true,
         phone: true,
         email: true,
+        motto: true,
+        address: true,
         vision: true,
         mission: true,
         latitude: true,
@@ -41,9 +43,9 @@ export const getPublicBranding = async (req: Request, res: Response) => {
     // Return defaults when no school record exists yet (single-tenant, not yet provisioned)
     const branding = school ?? {
       id: null,
-      name: 'Zawadi Junior Academy',
-      logoUrl: '/logo-new.png',
-      faviconUrl: null,
+      name: 'Trends CORE V1.0',
+      logoUrl: '/branding/logo.png',
+      faviconUrl: '/branding/favicon.png',
       brandColor: '#5D0057',
       primaryColor: '#520050',
       secondaryColor: '#0D9488',
@@ -53,7 +55,7 @@ export const getPublicBranding = async (req: Request, res: Response) => {
       welcomeMessage: 'Sign in to access your dashboard.',
       onboardingTitle: 'Join Our Community',
       onboardingMessage: 'Create an account to start managing your school today.',
-      motto: 'Empowering Excellence',
+      motto: 'School Management System',
       address: 'Nairobi, Kenya',
       phone: '+254700000000',
       email: 'info@zawadijunioracademy.co.ke',
@@ -61,7 +63,7 @@ export const getPublicBranding = async (req: Request, res: Response) => {
       mission: 'To provide quality education through modern technology.',
       latitude: -1.2921,
       longitude: 36.8219,
-      stampUrl: '/stamp.svg'
+      stampUrl: '/branding/stamp.svg'
     };
 
     res.status(200).json({ success: true, data: branding });
@@ -85,7 +87,11 @@ export const updateSchool = async (req: AuthRequest, res: Response) => {
     const created = await prisma.school.create({
       data: {
         ...req.body,
-        name: req.body.name || 'Zawadi Junior Academy', // Ensure a name exists
+        name: req.body.name || 'Trends CORE V1.0', // Ensure a name exists
+        motto: req.body.motto || 'School Management System',
+        logoUrl: req.body.logoUrl || '/branding/logo.png',
+        faviconUrl: req.body.faviconUrl || '/branding/favicon.png',
+        stampUrl: req.body.stampUrl || '/branding/stamp.svg',
       },
     });
     return res.status(201).json({ success: true, message: 'School settings initialized', data: created });

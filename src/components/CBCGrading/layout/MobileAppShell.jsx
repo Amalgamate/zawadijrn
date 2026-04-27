@@ -76,7 +76,7 @@ const MobileAppShell = ({ children, user, onLogout, onNavigate, currentPage, bra
             {brandingSettings?.logoUrl ? (
               <img src={brandingSettings.logoUrl} alt="Logo" className="w-full h-full object-contain brightness-0 invert" />
             ) : (
-              <img src="/logo-zawadi.png" alt="Logo" className="w-full h-full object-contain brightness-0 invert" />
+              <img src="/branding/logo.png" alt="Logo" className="w-full h-full object-contain brightness-0 invert" />
             )}
           </div>
           <div className="flex flex-col">

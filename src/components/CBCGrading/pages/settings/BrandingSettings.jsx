@@ -64,7 +64,7 @@ const BrandingSettings = ({ brandingSettings, setBrandingSettings }) => {
 
   const handleReset = () => {
     setLocalSettings({
-      welcomeTitle: `Welcome to ${brandingSettings?.schoolName || 'Zawadi SMS'}`,
+      welcomeTitle: `Welcome to ${brandingSettings?.schoolName || 'Trends CORE V1.0'}`,
       welcomeMessage: 'Empowering education through innovative learning management.',
       onboardingTitle: 'Join Our Community',
       onboardingMessage: 'Start your journey with us today. Create an account to access powerful tools for managing learning and assessment with ease.'
@@ -184,10 +184,10 @@ const BrandingSettings = ({ brandingSettings, setBrandingSettings }) => {
             >
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
               <img
-                src={brandingSettings?.logoUrl || '/logo-new.png'}
+                src={brandingSettings?.logoUrl || '/branding/logo.png'}
                 alt="Logo"
                 className="w-20 h-20 object-contain mb-6 drop-shadow-lg"
-                onError={(e) => e.target.src = '/logo-new.png'}
+                onError={(e) => e.target.src = '/branding/logo.png'}
               />
               <h3 className="text-xl font-semibold mb-2 tracking-tight">{localSettings.welcomeTitle || 'Welcome'}</h3>
               <p className="text-sm text-blue-50/80 leading-relaxed max-w-xs">{localSettings.welcomeMessage}</p>
@@ -206,10 +206,10 @@ const BrandingSettings = ({ brandingSettings, setBrandingSettings }) => {
             >
               <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2"></div>
               <img
-                src={brandingSettings?.logoUrl || '/logo-new.png'}
+                src={brandingSettings?.logoUrl || '/branding/logo.png'}
                 alt="Logo"
                 className="w-20 h-20 object-contain mb-6 drop-shadow-lg"
-                onError={(e) => e.target.src = '/logo-new.png'}
+                onError={(e) => e.target.src = '/branding/logo.png'}
               />
               <h3 className="text-xl font-semibold mb-2 tracking-tight">{localSettings.onboardingTitle || 'Get Started'}</h3>
               <p className="text-sm text-blue-50/80 leading-relaxed max-w-xs">{localSettings.onboardingMessage}</p>

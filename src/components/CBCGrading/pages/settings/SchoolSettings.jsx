@@ -19,11 +19,11 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
 
   // State for school settings - Unified Hub
   const [settings, setSettings] = useState({
-    schoolName: brandingSettings?.schoolName || '',
+    schoolName: brandingSettings?.schoolName || 'Trends CORE V1.0',
     address: brandingSettings?.address || '',
     phone: brandingSettings?.phone || '',
     email: brandingSettings?.email || '',
-    motto: brandingSettings?.motto || '',
+    motto: brandingSettings?.motto || 'School Management System',
     vision: '',
     mission: '',
     latitude: null,
@@ -33,9 +33,9 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
     secondaryColor: brandingSettings?.secondaryColor || '#0D9488',
     accentColor1: brandingSettings?.accentColor1 || '#3b82f6',
     accentColor2: brandingSettings?.accentColor2 || '#e11d48',
-    logoUrl: brandingSettings?.logoUrl || '/logo-new.png',
-    faviconUrl: brandingSettings?.faviconUrl || '/favicon.png',
-    stampUrl: brandingSettings?.stampUrl || '/stamp.svg',
+    logoUrl: brandingSettings?.logoUrl || '/branding/logo.png',
+    faviconUrl: brandingSettings?.faviconUrl || '/branding/favicon.png',
+    stampUrl: brandingSettings?.stampUrl || '/branding/stamp.svg',
     welcomeTitle: brandingSettings?.welcomeTitle || '',
     welcomeMessage: brandingSettings?.welcomeMessage || '',
     onboardingTitle: brandingSettings?.onboardingTitle || '',
@@ -43,9 +43,9 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
   });
 
   const [previews, setPreviews] = useState({
-    logo: brandingSettings?.logoUrl || '/logo-new.png',
-    favicon: brandingSettings?.faviconUrl || '/favicon.png',
-    stamp: brandingSettings?.stampUrl || '/stamp.svg'
+    logo: brandingSettings?.logoUrl || '/branding/logo.png',
+    favicon: brandingSettings?.faviconUrl || '/branding/favicon.png',
+    stamp: brandingSettings?.stampUrl || '/branding/stamp.svg'
   });
 
   const [loading, setLoading] = useState(true);
@@ -54,11 +54,11 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
   // Track initial state for dirty checking
   const [savedState, setSavedState] = useState({
     settings: {
-      schoolName: brandingSettings?.schoolName || '',
+      schoolName: brandingSettings?.schoolName || 'Trends CORE V1.0',
       address: brandingSettings?.address || '',
       phone: brandingSettings?.phone || '',
       email: brandingSettings?.email || '',
-      motto: brandingSettings?.motto || '',
+      motto: brandingSettings?.motto || 'School Management System',
       vision: '',
       mission: '',
       latitude: null,
@@ -68,18 +68,18 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
       secondaryColor: brandingSettings?.secondaryColor || '#0D9488',
       accentColor1: brandingSettings?.accentColor1 || '#3b82f6',
       accentColor2: brandingSettings?.accentColor2 || '#e11d48',
-      logoUrl: brandingSettings?.logoUrl || '/logo-new.png',
-      faviconUrl: brandingSettings?.faviconUrl || '/favicon.png',
-      stampUrl: brandingSettings?.stampUrl || '/stamp.svg',
+      logoUrl: brandingSettings?.logoUrl || '/branding/logo.png',
+      faviconUrl: brandingSettings?.faviconUrl || '/branding/favicon.png',
+      stampUrl: brandingSettings?.stampUrl || '/branding/stamp.svg',
       welcomeTitle: brandingSettings?.welcomeTitle || '',
       welcomeMessage: brandingSettings?.welcomeMessage || '',
       onboardingTitle: brandingSettings?.onboardingTitle || '',
       onboardingMessage: brandingSettings?.onboardingMessage || ''
     },
     previews: {
-      logo: brandingSettings?.logoUrl || '/logo-new.png',
-      favicon: brandingSettings?.faviconUrl || '/favicon.png',
-      stamp: brandingSettings?.stampUrl || '/stamp.svg'
+      logo: brandingSettings?.logoUrl || '/branding/logo.png',
+      favicon: brandingSettings?.faviconUrl || '/branding/favicon.png',
+      stamp: brandingSettings?.stampUrl || '/branding/stamp.svg'
     }
   });
 
@@ -110,11 +110,11 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
 
         if (school) {
           const fetchedSettings = {
-            schoolName: school.name || school.schoolName || '',
+            schoolName: school.name || school.schoolName || 'Trends CORE V1.0',
             address: school.address || '',
             phone: school.phone || '',
             email: school.email || '',
-            motto: school.motto || '',
+            motto: school.motto || 'School Management System',
             vision: school.vision || '',
             mission: school.mission || '',
             latitude: school.latitude || null,
@@ -124,9 +124,9 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
             secondaryColor: school.secondaryColor || '#0D9488',
             accentColor1: school.accentColor1 || '#3b82f6',
             accentColor2: school.accentColor2 || '#e11d48',
-            logoUrl: school.logoUrl || '/logo-new.png',
-            faviconUrl: school.faviconUrl || '/favicon.png',
-            stampUrl: school.stampUrl || '/stamp.svg',
+            logoUrl: school.logoUrl || '/branding/logo.png',
+            faviconUrl: school.faviconUrl || '/branding/favicon.png',
+            stampUrl: school.stampUrl || '/branding/stamp.svg',
             welcomeTitle: school.welcomeTitle || '',
             welcomeMessage: school.welcomeMessage || '',
             onboardingTitle: school.onboardingTitle || '',
@@ -396,7 +396,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
                     value={settings.schoolName}
                     onChange={(e) => handleChange('schoolName', e.target.value)}
                     className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition"
-                    placeholder="e.g. Zawadi SMS Academy"
+                    placeholder="e.g. Trends CORE V1.0 Academy"
                   />
                 </div>
 
@@ -610,9 +610,9 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
                 <div className="text-center group">
                   <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-4">School Logo</label>
                   <div className="relative mx-auto w-40 h-40 border-2 border-dashed border-gray-200 rounded-2xl flex items-center justify-center bg-gray-50 overflow-hidden transition-colors hover:border-blue-400 group-hover:bg-white shadow-inner">
-                    <img src={previews.logo} alt="Logo" className="max-w-[85%] max-h-[85%] object-contain drop-shadow-sm" onError={(e) => e.target.src = '/logo-new.png'} />
-                    {previews.logo !== '/logo-new.png' && (
-                      <button onClick={() => handleRemoveImage('logo', '/logo-new.png')} className="absolute top-2 right-2 w-7 h-7 bg-red-100 text-red-600 rounded-lg opacity-0 group-hover:opacity-100 transition shadow-sm flex items-center justify-center">
+                    <img src={previews.logo} alt="Logo" className="max-w-[85%] max-h-[85%] object-contain drop-shadow-sm" onError={(e) => e.target.src = '/branding/logo.png'} />
+                    {previews.logo !== '/branding/logo.png' && (
+                      <button onClick={() => handleRemoveImage('logo', '/branding/logo.png')} className="absolute top-2 right-2 w-7 h-7 bg-red-100 text-red-600 rounded-lg opacity-0 group-hover:opacity-100 transition shadow-sm flex items-center justify-center">
                         <X size={16} />
                       </button>
                     )}
@@ -628,9 +628,9 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
                 <div className="text-center group">
                   <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-4">Page Favicon</label>
                   <div className="relative mx-auto w-24 h-24 border-2 border-dashed border-gray-200 rounded-2xl flex items-center justify-center bg-gray-50 overflow-hidden transition-colors hover:border-blue-400 group-hover:bg-white shadow-inner mt-8">
-                    <img src={previews.favicon} alt="Favicon" className="w-12 h-12 object-contain" onError={(e) => e.target.src = '/favicon.png'} />
-                    {previews.favicon !== '/favicon.png' && (
-                      <button onClick={() => handleRemoveImage('favicon', '/favicon.png')} className="absolute top-1 right-1 w-6 h-6 bg-red-100 text-red-600 rounded-md opacity-0 group-hover:opacity-100 transition shadow-sm flex items-center justify-center">
+                    <img src={previews.favicon} alt="Favicon" className="w-12 h-12 object-contain" onError={(e) => e.target.src = '/branding/favicon.png'} />
+                    {previews.favicon !== '/branding/favicon.png' && (
+                      <button onClick={() => handleRemoveImage('favicon', '/branding/favicon.png')} className="absolute top-1 right-1 w-6 h-6 bg-red-100 text-red-600 rounded-md opacity-0 group-hover:opacity-100 transition shadow-sm flex items-center justify-center">
                         <X size={14} />
                       </button>
                     )}
@@ -647,9 +647,9 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
                 <div className="text-center group">
                   <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-4">Official Stamp</label>
                   <div className="relative mx-auto w-40 h-40 border-2 border-dashed border-gray-200 rounded-2xl flex items-center justify-center bg-gray-50 overflow-hidden transition-colors hover:border-blue-400 group-hover:bg-white shadow-inner">
-                    <img src={previews.stamp} alt="Stamp" className="max-w-[85%] max-h-[85%] object-contain" onError={(e) => e.target.src = '/stamp.svg'} />
-                    {previews.stamp !== '/stamp.svg' && (
-                      <button onClick={() => handleRemoveImage('stamp', '/stamp.svg')} className="absolute top-2 right-2 w-7 h-7 bg-red-100 text-red-600 rounded-lg opacity-0 group-hover:opacity-100 transition shadow-sm flex items-center justify-center">
+                    <img src={previews.stamp} alt="Stamp" className="max-w-[85%] max-h-[85%] object-contain" onError={(e) => e.target.src = '/branding/stamp.svg'} />
+                    {previews.stamp !== '/branding/stamp.svg' && (
+                      <button onClick={() => handleRemoveImage('stamp', '/branding/stamp.svg')} className="absolute top-2 right-2 w-7 h-7 bg-red-100 text-red-600 rounded-lg opacity-0 group-hover:opacity-100 transition shadow-sm flex items-center justify-center">
                         <X size={16} />
                       </button>
                     )}
@@ -677,7 +677,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
                     value={settings.welcomeTitle}
                     onChange={(e) => handleChange('welcomeTitle', e.target.value)}
                     className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition"
-                    placeholder="e.g. Welcome to Zawadi SMS"
+                    placeholder="e.g. Welcome to Trends CORE V1.0"
                   />
                 </div>
                 <div>
@@ -750,4 +750,3 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
 };
 
 export default SchoolSettings;
-

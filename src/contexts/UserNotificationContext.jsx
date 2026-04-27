@@ -69,7 +69,7 @@ export const UserNotificationProvider = ({ children }) => {
   // ── Browser Notification ──────────────────────────────────────────────────
   const showBrowserNotification = useCallback((title, message) => {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
-    new Notification(title, { body: message, icon: '/logo-zawadi.png' });
+    new Notification(title, { body: message, icon: '/branding/logo.png' });
   }, []);
 
   // ── Fetch ─────────────────────────────────────────────────────────────────
