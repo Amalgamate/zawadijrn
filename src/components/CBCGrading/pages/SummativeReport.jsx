@@ -466,6 +466,19 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
       points
     };
   }).filter(row => row.testCount > 0);
+  const totalsByTestColumn = testColumns.reduce((acc, col) => {
+    acc[col] = 0;
+    return acc;
+  }, {});
+
+  tableRows.forEach(row => {
+    testColumns.forEach(col => {
+      const score = row.scoresByCol[col];
+      if (typeof score === 'number' && Number.isFinite(score)) {
+        totalsByTestColumn[col] += score;
+      }
+    });
+  });
 
   const isJSS = /\b(GRADE_7|GRADE_8|GRADE_9|7|8|9)\b/.test((learner.grade || '').toUpperCase());
   const pdfTypeWeight = {
@@ -637,48 +650,71 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', marginBottom: '6px' }}>
           <thead>
             <tr style={{ color: '#000000' }}>
-              <th style={{ padding: '7px 10px', textAlign: 'left', fontWeight: pdfTypeWeight.title, border: '1.5px solid #dbe4ee', letterSpacing: '0.3px', backgroundColor: '#ffffff' }}>SUBJECT</th>
+              <th style={{ padding: '5px 10px', textAlign: 'left', fontWeight: pdfTypeWeight.title, border: '1.5px solid #dbe4ee', letterSpacing: '0.3px', backgroundColor: '#ffffff' }}>SUBJECT</th>
               {testColumns.map(col => (
-                <th key={col} style={{ padding: '7px 6px', textAlign: 'center', fontWeight: pdfTypeWeight.title, border: '1.5px solid #dbe4ee', minWidth: '76px', whiteSpace: 'nowrap', letterSpacing: '0.3px', backgroundColor: '#ffffff' }}>
+                <th key={col} style={{ padding: '5px 6px', textAlign: 'center', fontWeight: pdfTypeWeight.title, border: '1.5px solid #dbe4ee', minWidth: '76px', whiteSpace: 'nowrap', letterSpacing: '0.3px', backgroundColor: '#ffffff' }}>
                   {formatTestName(col)}
                 </th>
               ))}
               {testColumns.length > 1 && (
-                <th style={{ padding: '7px 6px', textAlign: 'center', fontWeight: pdfTypeWeight.title, border: '1.5px solid #dbe4ee', minWidth: '64px', letterSpacing: '0.3px', backgroundColor: '#ffffff' }}>AVG %</th>
+                <th style={{ padding: '5px 6px', textAlign: 'center', fontWeight: pdfTypeWeight.title, border: '1.5px solid #dbe4ee', minWidth: '64px', letterSpacing: '0.3px', backgroundColor: '#ffffff' }}>AVG %</th>
               )}
-              <th style={{ padding: '7px 6px', textAlign: 'left', fontWeight: pdfTypeWeight.title, border: '1.5px solid #dbe4ee', minWidth: '64px', letterSpacing: '0.3px', backgroundColor: '#ffffff' }}>GRADE</th>
-              <th style={{ padding: '7px 6px', textAlign: 'center', fontWeight: pdfTypeWeight.title, border: '1.5px solid #dbe4ee', minWidth: '44px', letterSpacing: '0.3px', backgroundColor: '#ffffff' }}>PTS</th>
+              <th style={{ padding: '5px 6px', textAlign: 'left', fontWeight: pdfTypeWeight.title, border: '1.5px solid #dbe4ee', minWidth: '64px', letterSpacing: '0.3px', backgroundColor: '#ffffff' }}>GRADE</th>
+              <th style={{ padding: '5px 6px', textAlign: 'center', fontWeight: pdfTypeWeight.title, border: '1.5px solid #dbe4ee', minWidth: '44px', letterSpacing: '0.3px', backgroundColor: '#ffffff' }}>PTS</th>
 
             </tr>
           </thead>
           <tbody>
             {tableRows.map((row, idx) => (
               <tr key={row.area} style={{ backgroundColor: 'white', borderBottom: '1.5px solid #e2e8f0' }}>
-                <td style={{ padding: '8px 10px', fontWeight: pdfTypeWeight.bold, fontSize: '12.5px', color: '#0f172a', letterSpacing: '-0.1px', border: '1.5px solid #e2e8f0' }}>{row.area}</td>
+                <td style={{ padding: '6px 10px', fontWeight: pdfTypeWeight.bold, fontSize: '12px', color: '#0f172a', letterSpacing: '-0.1px', border: '1.5px solid #e2e8f0' }}>{row.area}</td>
                 {testColumns.map(col => {
                   const score = row.scoresByCol[col];
                   const colGrade = score !== null && row.totalMarks > 0
                     ? getGrade((score / (row.totalMarks / (row.testCount || 1))) * 100).grade
                     : null;
                   return (
-                    <td key={col} style={{ padding: '8px 6px', textAlign: 'center', border: '1.5px solid #e2e8f0' }}>
-                      <div style={{ fontSize: '15px', fontWeight: pdfTypeWeight.bold, lineHeight: '1.1', color: '#0f172a' }}>
+                    <td key={col} style={{ padding: '6px 6px', textAlign: 'center', border: '1.5px solid #e2e8f0' }}>
+                      <div style={{ fontSize: '13.5px', fontWeight: pdfTypeWeight.bold, lineHeight: '1.1', color: '#0f172a' }}>
                         {score !== null ? score : '—'}
                       </div>
                       {colGrade && (
-                        <div style={{ fontSize: '8.5px', fontWeight: pdfTypeWeight.semibold, color: '#64748b', lineHeight: '1', marginTop: '2px', textTransform: 'uppercase' }}>{colGrade}</div>
+                        <div style={{ fontSize: '8px', fontWeight: pdfTypeWeight.semibold, color: '#64748b', lineHeight: '1', marginTop: '1px', textTransform: 'uppercase' }}>{colGrade}</div>
                       )}
                     </td>
                   );
                 })}
                 {testColumns.length > 1 && (
-                  <td style={{ padding: '8px 6px', textAlign: 'center', fontWeight: pdfTypeWeight.bold, fontSize: '14px', color: '#0f172a', border: '1.5px solid #e2e8f0' }}>{row.percentage}%</td>
+                  <td style={{ padding: '6px 6px', textAlign: 'center', fontWeight: pdfTypeWeight.bold, fontSize: '13px', color: '#0f172a', border: '1.5px solid #e2e8f0' }}>{row.percentage}%</td>
                 )}
-                <td style={{ padding: '8px 6px', textAlign: 'left', fontWeight: pdfTypeWeight.bold, fontSize: '14px', color: row.color, border: '1.5px solid #e2e8f0' }}>{row.grade}</td>
-                <td style={{ padding: '8px 6px', textAlign: 'center', fontWeight: pdfTypeWeight.bold, fontSize: '14px', color: '#0f172a', border: '1.5px solid #e2e8f0' }}>{row.points || '—'}</td>
+                <td style={{ padding: '6px 6px', textAlign: 'left', fontWeight: pdfTypeWeight.bold, fontSize: '13px', color: row.color, border: '1.5px solid #e2e8f0' }}>{row.grade}</td>
+                <td style={{ padding: '6px 6px', textAlign: 'center', fontWeight: pdfTypeWeight.bold, fontSize: '13px', color: '#0f172a', border: '1.5px solid #e2e8f0' }}>{row.points || '—'}</td>
 
               </tr>
             ))}
+            {tableRows.length > 0 && (
+              <tr style={{ backgroundColor: '#f8fafc' }}>
+                <td style={{ padding: '6px 10px', fontWeight: pdfTypeWeight.title, fontSize: '12px', color: '#0f172a', border: '1.5px solid #e2e8f0' }}>
+                  TOTAL
+                </td>
+                {testColumns.map(col => (
+                  <td key={`total-${col}`} style={{ padding: '6px 6px', textAlign: 'center', fontWeight: pdfTypeWeight.title, fontSize: '13px', color: '#0f172a', border: '1.5px solid #e2e8f0' }}>
+                    {totalsByTestColumn[col]}
+                  </td>
+                ))}
+                {testColumns.length > 1 && (
+                  <td style={{ padding: '6px 6px', textAlign: 'center', fontWeight: pdfTypeWeight.bold, fontSize: '13px', color: '#64748b', border: '1.5px solid #e2e8f0' }}>
+                    —
+                  </td>
+                )}
+                <td style={{ padding: '6px 6px', textAlign: 'left', fontWeight: pdfTypeWeight.bold, fontSize: '13px', color: '#64748b', border: '1.5px solid #e2e8f0' }}>
+                  —
+                </td>
+                <td style={{ padding: '6px 6px', textAlign: 'center', fontWeight: pdfTypeWeight.bold, fontSize: '13px', color: '#64748b', border: '1.5px solid #e2e8f0' }}>
+                  —
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
 
