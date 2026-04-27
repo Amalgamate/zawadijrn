@@ -20,22 +20,9 @@ import { reportAPI } from '../../../services/api/report.api';
 import { getAcademicYearOptions, getCurrentAcademicYear } from '../utils/academicYear';
 import Toast from '../shared/Toast';
 import {
-  captureSingleReport,
-  captureBulkReports,
   captureElement,
   printWindow as pdfPrintWindow,
 } from '../../../utils/simplePdfGenerator';
-
-// ── Local aliases kept so call-sites below don't need to change ─────────────
-const generateVectorPDF = (elementId, filename, opts) =>
-  typeof opts === 'function'
-    ? captureSingleReport(elementId, filename, { onProgress: opts })
-    : captureSingleReport(elementId, filename, opts);
-
-const generateBulkPDF = (elementId, filename, opts) =>
-  typeof opts === 'function'
-    ? captureBulkReports(elementId, filename, { onProgress: opts })
-    : captureBulkReports(elementId, filename, opts);
 
 // Capture as JPEG/PNG remains frontend-only (routed via captureElement)
 const generateJPEG = async (elementId, filename, onProgress) => {
@@ -481,6 +468,17 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
   }).filter(row => row.testCount > 0);
 
   const isJSS = /\b(GRADE_7|GRADE_8|GRADE_9|7|8|9)\b/.test((learner.grade || '').toUpperCase());
+  const pdfTypeWeight = {
+    regular: 500,
+    semibold: 600,
+    bold: 700,
+    title: 800
+  };
+  const schoolName = (user?.school?.name || brandingSettings?.schoolName || 'ACADEMIC SCHOOL').toUpperCase();
+  const schoolNameLength = schoolName.length;
+  const schoolNameFontSize = Math.max(22, Math.min(34, Math.round(980 / Math.max(schoolNameLength, 1))));
+  const schoolNameLetterSpacing =
+    schoolNameLength <= 18 ? '0.8px' : schoolNameLength <= 28 ? '0.5px' : '0.2px';
 
   // commentData is now passed in as a prop from the parent (pre-fetched before bulk render)
 
@@ -532,21 +530,24 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
           {/* School Name */}
           <div style={{ width: '100%' }}>
             <h1 style={{
-              fontSize: '24px',
-              fontWeight: '1000',
+              fontSize: `${schoolNameFontSize}px`,
+              fontWeight: pdfTypeWeight.title,
               fontFamily: "'Raleway', sans-serif",
               color: brandingSettings?.brandColor || '#1e3a8a',
               textTransform: 'uppercase',
               margin: 0,
               lineHeight: '1',
-              letterSpacing: '0.5px'
+              letterSpacing: schoolNameLetterSpacing,
+              whiteSpace: 'nowrap',
+              display: 'block',
+              width: '100%'
             }}>
-              {user?.school?.name || brandingSettings?.schoolName || 'ACADEMIC SCHOOL'}
+              {schoolName}
             </h1>
           </div>
 
           {/* Motto & Location Stack */}
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', fontSize: '9.5px', color: '#64748b', fontWeight: '800', textTransform: 'uppercase' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', fontSize: '9.5px', color: '#64748b', fontWeight: pdfTypeWeight.semibold, textTransform: 'uppercase' }}>
             {user?.school?.motto && <span style={{ fontStyle: 'italic' }}>"{user.school.motto}"</span>}
             {user?.school?.location && (
               <>
@@ -558,14 +559,14 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
           </div>
 
           {/* Report Title */}
-          <h2 style={{ fontSize: '15px', fontWeight: '1000', color: '#000', margin: '4px 0 1px 0', textTransform: 'uppercase', letterSpacing: '1px', lineHeight: '1' }}>
+          <h2 style={{ fontSize: '15px', fontWeight: pdfTypeWeight.bold, color: '#0f172a', margin: '4px 0 1px 0', textTransform: 'uppercase', letterSpacing: '0.7px', lineHeight: '1' }}>
             Summative Assessment Report
           </h2>
 
           {/* Exam Name / Termly Details Inline Row */}
           <div style={{
             fontSize: '9.5px',
-            fontWeight: '900',
+            fontWeight: pdfTypeWeight.semibold,
             color: brandingSettings?.brandColor || '#1E3A8A',
             textTransform: 'uppercase',
             display: 'flex',
@@ -590,38 +591,38 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
         const avgPct = totalMax > 0 ? (tableRows.reduce((acc, r) => acc + r.totalScore, 0) / totalMax * 100).toFixed(0) : 0;
         const overallGrade = getGrade(parseFloat(avgPct)).grade;
         return (
-          <div className="mb-3" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 0.8fr)', border: '1.2px solid #e2e8f0', borderRadius: '4px', overflow: 'hidden', fontSize: '12.5px', lineHeight: '1.2' }}>
+          <div className="mb-3" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 0.8fr)', border: '1px solid #dbe4ee', borderRadius: '4px', overflow: 'hidden', fontSize: '12px', lineHeight: '1.25' }}>
             {/* LEFT: Learner Info */}
             <div style={{ padding: '8px 14px', display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '2px 10px', alignContent: 'center', borderRight: '1px solid #e2e8f0' }}>
-              <div style={{ fontWeight: '900', color: '#64748b', fontSize: '11px' }}>NAME:</div>
-              <div style={{ fontWeight: '1000', color: '#000', textTransform: 'uppercase' }}>{learner.firstName} {learner.lastName}</div>
-              <div style={{ fontWeight: '900', color: '#64748b', fontSize: '11px' }}>ADM NO:</div>
-              <div style={{ fontWeight: '1000', color: '#000' }}>{learner.admissionNumber || '—'}</div>
-              <div style={{ fontWeight: '900', color: '#64748b', fontSize: '11px' }}>GRADE:</div>
-              <div style={{ fontWeight: '1000', textTransform: 'uppercase', color: '#1e40af' }}>{learner.grade?.replace(/_/g, ' ')}</div>
-              <div style={{ fontWeight: '900', color: '#64748b', fontSize: '11px' }}>STREAM:</div>
-              <div style={{ fontWeight: '1000', color: '#000' }}>{learner.stream || 'A'}</div>
+              <div style={{ fontWeight: pdfTypeWeight.semibold, color: '#64748b', fontSize: '10.5px' }}>NAME:</div>
+              <div style={{ fontWeight: pdfTypeWeight.bold, color: '#0f172a', textTransform: 'uppercase' }}>{learner.firstName} {learner.lastName}</div>
+              <div style={{ fontWeight: pdfTypeWeight.semibold, color: '#64748b', fontSize: '10.5px' }}>ADM NO:</div>
+              <div style={{ fontWeight: pdfTypeWeight.bold, color: '#0f172a' }}>{learner.admissionNumber || '—'}</div>
+              <div style={{ fontWeight: pdfTypeWeight.semibold, color: '#64748b', fontSize: '10.5px' }}>GRADE:</div>
+              <div style={{ fontWeight: pdfTypeWeight.bold, textTransform: 'uppercase', color: '#1e40af' }}>{learner.grade?.replace(/_/g, ' ')}</div>
+              <div style={{ fontWeight: pdfTypeWeight.semibold, color: '#64748b', fontSize: '10.5px' }}>STREAM:</div>
+              <div style={{ fontWeight: pdfTypeWeight.bold, color: '#0f172a' }}>{learner.stream || 'A'}</div>
             </div>
             {/* RIGHT: Assessment Summary */}
             <div style={{ display: 'grid', gridTemplateRows: '1fr 1fr', height: '100%' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
                 <div style={{ padding: '8px 4px', textAlign: 'center', borderRight: '1.2px solid #e2e8f0', borderBottom: '1.2px solid #e2e8f0', display: 'flex', flexDirection: 'column', justifyContent: 'center', backgroundColor: '#f8fafc', gap: '2px' }}>
-                  <div style={{ fontSize: '8px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Subjects</div>
-                  <div style={{ fontSize: '16px', fontWeight: '1000', color: '#0f172a' }}>{tableRows.length}</div>
+                  <div style={{ fontSize: '8px', fontWeight: pdfTypeWeight.semibold, color: '#64748b', textTransform: 'uppercase' }}>Subjects</div>
+                  <div style={{ fontSize: '16px', fontWeight: pdfTypeWeight.bold, color: '#0f172a' }}>{tableRows.length}</div>
                 </div>
                 <div style={{ padding: '8px 4px', textAlign: 'center', borderBottom: '1.2px solid #e2e8f0', display: 'flex', flexDirection: 'column', justifyContent: 'center', backgroundColor: '#f8fafc', gap: '2px' }}>
-                  <div style={{ fontSize: '8px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Points</div>
-                  <div style={{ fontSize: '16px', fontWeight: '1000', color: '#0f172a' }}>{totalPoints}</div>
+                  <div style={{ fontSize: '8px', fontWeight: pdfTypeWeight.semibold, color: '#64748b', textTransform: 'uppercase' }}>Points</div>
+                  <div style={{ fontSize: '16px', fontWeight: pdfTypeWeight.bold, color: '#0f172a' }}>{totalPoints}</div>
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
                 <div style={{ padding: '8px 4px', textAlign: 'center', borderRight: '1.2px solid #e2e8f0', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '2px' }}>
-                  <div style={{ fontSize: '8px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase' }}>Average</div>
-                  <div style={{ fontSize: '16px', fontWeight: '1000', color: '#0f172a' }}>{avgPct}%</div>
+                  <div style={{ fontSize: '8px', fontWeight: pdfTypeWeight.semibold, color: '#64748b', textTransform: 'uppercase' }}>Average</div>
+                  <div style={{ fontSize: '16px', fontWeight: pdfTypeWeight.bold, color: '#0f172a' }}>{avgPct}%</div>
                 </div>
                 <div style={{ padding: '8px 4px', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', backgroundColor: '#f1f5f9', gap: '2px' }}>
-                  <div style={{ fontSize: '8px', fontWeight: '900', color: '#1e40af', textTransform: 'uppercase' }}>Grade</div>
-                  <div style={{ fontSize: '16px', fontWeight: '1000', color: '#1e40af' }}>{overallGrade}</div>
+                  <div style={{ fontSize: '8px', fontWeight: pdfTypeWeight.semibold, color: '#1e40af', textTransform: 'uppercase' }}>Grade</div>
+                  <div style={{ fontSize: '16px', fontWeight: pdfTypeWeight.bold, color: '#1e40af' }}>{overallGrade}</div>
                 </div>
               </div>
             </div>
@@ -633,27 +634,27 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
 
 
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px', marginBottom: '6px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', marginBottom: '6px' }}>
           <thead>
-            <tr style={{ backgroundColor: '#1e3a8a', color: 'white' }}>
-              <th style={{ padding: '8px 10px', textAlign: 'left', fontWeight: '900', border: '1.5px solid rgba(255,255,255,0.3)' }}>SUBJECT</th>
+            <tr style={{ color: '#000000' }}>
+              <th style={{ padding: '7px 10px', textAlign: 'left', fontWeight: pdfTypeWeight.title, border: '1.5px solid #dbe4ee', letterSpacing: '0.3px', backgroundColor: '#ffffff' }}>SUBJECT</th>
               {testColumns.map(col => (
-                <th key={col} style={{ padding: '8px 6px', textAlign: 'center', fontWeight: '1000', border: '1.5px solid rgba(255,255,255,0.3)', minWidth: '76px', whiteSpace: 'nowrap' }}>
+                <th key={col} style={{ padding: '7px 6px', textAlign: 'center', fontWeight: pdfTypeWeight.title, border: '1.5px solid #dbe4ee', minWidth: '76px', whiteSpace: 'nowrap', letterSpacing: '0.3px', backgroundColor: '#ffffff' }}>
                   {formatTestName(col)}
                 </th>
               ))}
               {testColumns.length > 1 && (
-                <th style={{ padding: '8px 6px', textAlign: 'center', fontWeight: '1000', border: '1.5px solid rgba(255,255,255,0.3)', minWidth: '64px' }}>AVG %</th>
+                <th style={{ padding: '7px 6px', textAlign: 'center', fontWeight: pdfTypeWeight.title, border: '1.5px solid #dbe4ee', minWidth: '64px', letterSpacing: '0.3px', backgroundColor: '#ffffff' }}>AVG %</th>
               )}
-              <th style={{ padding: '8px 6px', textAlign: 'left', fontWeight: '1000', border: '1.5px solid rgba(255,255,255,0.3)', minWidth: '64px' }}>GRADE</th>
-              <th style={{ padding: '8px 6px', textAlign: 'center', fontWeight: '1000', border: '1.5px solid rgba(255,255,255,0.3)', minWidth: '44px' }}>PTS</th>
+              <th style={{ padding: '7px 6px', textAlign: 'left', fontWeight: pdfTypeWeight.title, border: '1.5px solid #dbe4ee', minWidth: '64px', letterSpacing: '0.3px', backgroundColor: '#ffffff' }}>GRADE</th>
+              <th style={{ padding: '7px 6px', textAlign: 'center', fontWeight: pdfTypeWeight.title, border: '1.5px solid #dbe4ee', minWidth: '44px', letterSpacing: '0.3px', backgroundColor: '#ffffff' }}>PTS</th>
 
             </tr>
           </thead>
           <tbody>
             {tableRows.map((row, idx) => (
-              <tr key={row.area} style={{ backgroundColor: 'white', borderBottom: '1.5px solid #cbd5e1' }}>
-                <td style={{ padding: '8px 10px', fontWeight: '1000', fontSize: '13px', color: '#000', letterSpacing: '-0.2px', border: '1.5px solid #e2e8f0' }}>{row.area}</td>
+              <tr key={row.area} style={{ backgroundColor: 'white', borderBottom: '1.5px solid #e2e8f0' }}>
+                <td style={{ padding: '8px 10px', fontWeight: pdfTypeWeight.bold, fontSize: '12.5px', color: '#0f172a', letterSpacing: '-0.1px', border: '1.5px solid #e2e8f0' }}>{row.area}</td>
                 {testColumns.map(col => {
                   const score = row.scoresByCol[col];
                   const colGrade = score !== null && row.totalMarks > 0
@@ -661,20 +662,20 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
                     : null;
                   return (
                     <td key={col} style={{ padding: '8px 6px', textAlign: 'center', border: '1.5px solid #e2e8f0' }}>
-                      <div style={{ fontSize: '16px', fontWeight: '1000', lineHeight: '1.1', color: '#0f172a' }}>
+                      <div style={{ fontSize: '15px', fontWeight: pdfTypeWeight.bold, lineHeight: '1.1', color: '#0f172a' }}>
                         {score !== null ? score : '—'}
                       </div>
                       {colGrade && (
-                        <div style={{ fontSize: '9px', fontWeight: '1000', color: '#64748b', lineHeight: '1', marginTop: '2px', textTransform: 'uppercase' }}>{colGrade}</div>
+                        <div style={{ fontSize: '8.5px', fontWeight: pdfTypeWeight.semibold, color: '#64748b', lineHeight: '1', marginTop: '2px', textTransform: 'uppercase' }}>{colGrade}</div>
                       )}
                     </td>
                   );
                 })}
                 {testColumns.length > 1 && (
-                  <td style={{ padding: '8px 6px', textAlign: 'center', fontWeight: '1000', fontSize: '15px', color: '#0f172a', border: '1.5px solid #e2e8f0' }}>{row.percentage}%</td>
+                  <td style={{ padding: '8px 6px', textAlign: 'center', fontWeight: pdfTypeWeight.bold, fontSize: '14px', color: '#0f172a', border: '1.5px solid #e2e8f0' }}>{row.percentage}%</td>
                 )}
-                <td style={{ padding: '8px 6px', textAlign: 'left', fontWeight: '1000', fontSize: '15px', color: row.color, border: '1.5px solid #e2e8f0' }}>{row.grade}</td>
-                <td style={{ padding: '8px 6px', textAlign: 'center', fontWeight: '1000', fontSize: '15px', color: '#0f172a', border: '1.5px solid #e2e8f0' }}>{row.points || '—'}</td>
+                <td style={{ padding: '8px 6px', textAlign: 'left', fontWeight: pdfTypeWeight.bold, fontSize: '14px', color: row.color, border: '1.5px solid #e2e8f0' }}>{row.grade}</td>
+                <td style={{ padding: '8px 6px', textAlign: 'center', fontWeight: pdfTypeWeight.bold, fontSize: '14px', color: '#0f172a', border: '1.5px solid #e2e8f0' }}>{row.points || '—'}</td>
 
               </tr>
             ))}
@@ -932,7 +933,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
       </div>
 
       {/* Footer Disclaimer - Absolute Bottom */}
-      <div style={{ position: 'absolute', bottom: '6mm', left: '8mm', right: '8mm', textAlign: 'center', fontSize: '10px', color: '#64748b', fontWeight: '400' }}>
+      <div className="report-footer-note" style={{ position: 'absolute', bottom: '6mm', left: '8mm', right: '8mm', textAlign: 'center', fontSize: '10px', color: '#64748b', fontWeight: '400' }}>
         This is an official summative assessment report. Verified by School Administration System. © {new Date().getFullYear()} {brandingSettings?.schoolName || user?.school?.name || 'Academic Institution'}.
       </div>
     </div >
@@ -1479,16 +1480,25 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
 
 
 
-      const result = await generateVectorPDF(
-        'single-print-content',
-        filename,
-        (msg) => { setPdfProgress(msg); console.log(`📑 PDF: ${msg}`); }
-      );
+      const reportType = reportData?.type;
+      const isSingleLearnerReport =
+        reportType === 'LEARNER_REPORT' ||
+        reportType === 'LEARNER_TERMLY_REPORT' ||
+        Boolean(reportData?.learner) ||
+        (Array.isArray(reportData?.rows) && reportData.rows.length === 1);
+
+      const targetId = isSingleLearnerReport ? 'single-print-content' : 'summative-report-content';
+      const result = await pdfPrintWindow(targetId, {
+        title: filename,
+        autoPrint: true,
+        fitToSinglePage: isSingleLearnerReport,
+        onProgress: (msg) => { setPdfProgress(msg); console.log(`🖨️ PRINT: ${msg}`); }
+      });
 
       if (result?.success) {
-        showSuccess('High-quality report downloaded successfully!');
+        showSuccess('Print dialog opened. Choose "Save as PDF" for best quality.');
       } else {
-        showError(result?.error || 'High-fidelity PDF generation failed');
+        showError(result?.error || 'Unable to open print preview');
       }
     } catch (err) {
       console.error('PDF export error:', err);
@@ -1504,13 +1514,12 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
     setIsExporting(true);
     try {
       setPdfProgress('Opening print preview...');
-      // CRITICAL FIX: Use pdfPrintWindow (printWindow) for a real browser print preview
       const result = await pdfPrintWindow(
         'summative-report-content',
-        { onProgress: (msg) => setPdfProgress(msg) }
+        { onProgress: (msg) => setPdfProgress(msg), autoPrint: true }
       );
       if (result?.success) {
-        showSuccess('High-quality print preview opened!');
+        showSuccess('Print dialog opened. Use Save as PDF for a crisp copy.');
       } else {
         showError(result?.error || 'Failed to open print preview');
       }
@@ -1927,20 +1936,19 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
       const timestamp = new Date().toISOString().split('T')[0];
       const filename = `${(reportData?.title || 'Report').replace(/[^a-zA-Z0-9]/g, '_')}_Detailed_Reports_${timestamp}.pdf`;
 
-      setPdfProgress('📄 Capturing report layouts...');
+      if (abortController.signal.aborted) {
+        throw new Error('Bulk PDF generation cancelled');
+      }
 
-      // generateBulkPDF captures the DOM directly via html2canvas — no HTML serialisation needed.
-      const result = await generateBulkPDF(
-        'bulk-print-content',
-        filename,
-        {
-          onProgress: (msg) => { setPdfProgress(msg); console.log(`PDF: ${msg}`); },
-          signal: abortController.signal,
-        }
-      );
+      setPdfProgress('📄 Opening bulk print preview...');
+      const result = await pdfPrintWindow('bulk-print-content', {
+        title: filename,
+        autoPrint: true,
+        onProgress: (msg) => { setPdfProgress(msg); console.log(`🖨️ BULK PRINT: ${msg}`); }
+      });
 
       if (result.success) {
-        showSuccess('✅ Bulk reports generated and downloaded successfully');
+        showSuccess('Print dialog opened. Choose Save as PDF for a clean combined file.');
       } else if (result.error === 'Bulk PDF generation cancelled') {
         showInfo('Bulk PDF generation cancelled');
       } else {
@@ -1984,12 +1992,17 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
       await new Promise(resolve => requestAnimationFrame(resolve));
 
       const filename = `${row.learner.firstName}_${row.learner.lastName}_Summative_Report.pdf`;
-      const result = await generateVectorPDF('single-print-content', filename, (msg) => console.log(`PDF Progress: ${msg}`));
+      const result = await pdfPrintWindow('single-print-content', {
+        title: filename,
+        autoPrint: true,
+        fitToSinglePage: true,
+        onProgress: (msg) => console.log(`🖨️ SINGLE PRINT: ${msg}`)
+      });
 
       if (result.success) {
-        showSuccess(`Report for ${row.learner.firstName} downloaded`);
+        showSuccess(`Print dialog opened for ${row.learner.firstName}. Choose Save as PDF.`);
       } else {
-        throw new Error(result.error || 'Failed to generate PDF');
+        throw new Error(result.error || 'Failed to open print preview');
       }
     } catch (err) {
       console.error('❌ Individual download error:', err);
@@ -2913,7 +2926,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                     className="px-6 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 text-sm font-semibold transition flex items-center gap-2 shadow-md shadow-emerald-100"
                   >
                     {isExporting ? <Loader size={18} className="animate-spin" /> : <Download size={18} />}
-                    Download PDF
+                    Print / Save PDF
                   </button>
                   <button
                     onClick={handleExportJPEG}
@@ -3042,9 +3055,9 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                           <button
                             onClick={() => handleSingleDownload(row)}
                             className="p-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded transition shadow-sm flex-1 md:flex-none flex justify-center items-center gap-1 text-[10px] font-medium uppercase"
-                            title="Download PDF"
+                            title="Print / Save PDF"
                           >
-                            <Download size={12} /> <span className="md:hidden">PDF</span>
+                            <Download size={12} /> <span className="md:hidden">Save PDF</span>
                           </button>
                           <button
                             disabled={isSendingSMS}
@@ -3314,7 +3327,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                     className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition shadow-sm font-semibold text-sm"
                   >
                     {isExporting ? <Loader size={16} className="animate-spin" /> : <Download size={16} />}
-                    {isExporting ? 'Exporting...' : 'Export Broadsheet'}
+                    {isExporting ? 'Opening...' : 'Print / Save Broadsheet'}
                   </button>
 
                   {(bulkProgress.active || isSendingWhatsApp) && (
@@ -3458,7 +3471,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                   className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm font-semibold transition flex items-center gap-2"
                 >
                   {isExporting ? <Loader size={18} className="animate-spin" /> : <Download size={18} />}
-                  {isExporting ? 'Exporting...' : 'Export Analysis PDF'}
+                  {isExporting ? 'Opening...' : 'Print / Save Analysis PDF'}
                 </button>
               </div>
             </div>
@@ -3877,8 +3890,8 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                   </div>
                 </div>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Generating High-Quality Report</h3>
-              <p className="text-sm text-gray-500 mb-4">Please wait while we render your professional vector PDF. This may take a few seconds.</p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Preparing Print Preview</h3>
+              <p className="text-sm text-gray-500 mb-4">Please wait while we open a clean print view. Choose "Save as PDF" in the print dialog.</p>
               <div className="flex items-center justify-center gap-2 text-blue-600 font-semibold text-sm">
                 <Loader className="animate-spin" size={14} />
                 <span>{pdfProgress || 'Initializing...'}</span>

@@ -394,16 +394,29 @@ export const captureBulkReports = async (elementId, filename, opts = {}) => {
 };
 
 /**
- * Open the report in a new browser tab and trigger the system print dialog.
- * The tab renders PNG images of the captured pages at full A4 resolution.
+ * Open report HTML in a new browser tab and trigger the system print dialog.
+ * This keeps text/vector content sharp (no html2canvas rasterisation).
  *
  * @param {string} elementId
  * @param {Object} opts
  * @param {Function} [opts.onProgress]
+ * @param {string} [opts.title]
+ * @param {boolean} [opts.autoPrint=true]
+ * @param {boolean} [opts.fitToSinglePage=false]
  * @returns {Promise<{ success: boolean, error?: string }>}
  */
 export const printWindow = async (elementId, opts = {}) => {
-  const { onProgress } = opts;
+  const {
+    onProgress,
+    title = 'Report Print Preview',
+    autoPrint = true,
+    fitToSinglePage = false
+  } = opts;
+  const pageMarginTopMm = fitToSinglePage ? 5 : 8;
+  const pageMarginBottomMm = fitToSinglePage ? 5 : 8;
+  const pageMarginSideMm = fitToSinglePage ? 8 : 10;
+  const pageContentWidthMm = 210 - (pageMarginSideMm * 2);
+  const pageContentHeightMm = 297 - pageMarginTopMm - pageMarginBottomMm;
   const el = document.getElementById(elementId);
   if (!el) return { success: false, error: `Element #${elementId} not found` };
 
@@ -414,48 +427,129 @@ export const printWindow = async (elementId, opts = {}) => {
 
     const pages = Array.from(el.querySelectorAll('.pdf-report-page'));
     const targets = pages.length > 0 ? pages : [el];
+    const headStyles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+      .map(node => node.outerHTML)
+      .join('\n');
 
-    const canvases = await runWithConcurrency(
-      targets.map(t => () => html2canvas(t, captureOptions())),
-      BULK_CONCURRENCY
-    );
-
-    const imgs = canvases
-      .flatMap((canvas) => {
-        const pages = sliceCanvasToPages(canvas);
-        return pages.map(pageCanvas =>
-          `<img src="${pageCanvas.toDataURL('image/png')}" style="width:210mm;height:auto;display:block;page-break-after:always;" />`
-        );
+    const bodyHtml = targets
+      .map((target, index) => {
+        const clone = target.cloneNode(true);
+        if (clone.querySelectorAll) {
+          clone.querySelectorAll('.no-print, script').forEach(node => node.remove());
+        }
+        return `<section class="print-page ${index === targets.length - 1 ? 'last-page' : ''}">${clone.outerHTML}</section>`;
       })
-      .join('');
+      .join('\n');
 
     const printHtml = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Print Report</title>
+  <title>${title}</title>
+  ${headStyles}
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #fff; }
-    img { display: block; page-break-after: always; width: 210mm; height: auto; }
-    @page { size: A4 portrait; margin: 0; }
+    @page {
+      size: A4 portrait;
+      margin: ${pageMarginTopMm}mm ${pageMarginSideMm}mm ${pageMarginBottomMm}mm ${pageMarginSideMm}mm;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: #fff; }
+    body {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .print-page {
+      width: ${pageContentWidthMm}mm;
+      min-height: ${pageContentHeightMm}mm;
+      margin: 0 auto;
+      position: relative;
+      break-after: page;
+      page-break-after: always;
+    }
+    .print-page.last-page {
+      break-after: auto;
+      page-break-after: auto;
+    }
+    body.fit-single-page .print-page {
+      height: ${pageContentHeightMm}mm;
+      min-height: ${pageContentHeightMm}mm;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+    .print-page .report-card {
+      margin: 0 auto !important;
+      box-shadow: none !important;
+      width: 100% !important;
+      min-height: auto !important;
+    }
+    .no-print { display: none !important; }
   </style>
 </head>
-<body>${imgs}</body>
+<body class="${fitToSinglePage ? 'fit-single-page' : ''}">${bodyHtml}</body>
 </html>`;
 
-    const blob = new Blob([printHtml], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const win = window.open(url, '_blank');
+    const win = window.open('', '_blank');
 
     if (win) {
+      win.document.open();
+      win.document.write(printHtml);
+      win.document.close();
       win.onload = () => {
+        if (fitToSinglePage) {
+          const pagesInPrint = Array.from(win.document.querySelectorAll('.print-page'));
+
+          pagesInPrint.forEach((page) => {
+            const card = page.querySelector('.report-card');
+            if (!card) return;
+
+            // Move disclaimer footer out of content flow and pin it to page bottom.
+            const footer = card.querySelector('.report-footer-note');
+            if (footer) {
+              page.appendChild(footer);
+              footer.style.position = 'absolute';
+              footer.style.left = '0';
+              footer.style.right = '0';
+              footer.style.bottom = '2.5mm';
+              footer.style.margin = '0 auto';
+              footer.style.textAlign = 'center';
+              footer.style.fontSize = '9px';
+              footer.style.lineHeight = '1.2';
+              footer.style.color = '#64748b';
+              footer.style.fontWeight = '400';
+              footer.style.zIndex = '3';
+            }
+
+            // Reset before measurement in case browser preserved prior transform state.
+            card.style.transform = 'none';
+            card.style.width = '100%';
+            card.style.transformOrigin = 'top left';
+            card.style.paddingBottom = footer ? '12mm' : '0';
+
+            const pageRect = page.getBoundingClientRect();
+            const pageWidthPx = pageRect.width;
+            const pageHeightPx = pageRect.height;
+            const naturalHeight = card.scrollHeight;
+            const naturalWidth = card.scrollWidth;
+            const widthScale = pageWidthPx / naturalWidth;
+            const heightScale = pageHeightPx / naturalHeight;
+            const scale = Math.min(1, widthScale, heightScale) * 0.97;
+
+            if (scale < 0.999) {
+              card.style.display = 'block';
+              card.style.margin = '0 auto';
+              card.style.transformOrigin = 'center center';
+              card.style.transform = `scale(${scale})`;
+              card.style.width = `${naturalWidth}px`;
+            }
+          });
+        }
+
         win.focus();
-        win.print();
-        setTimeout(() => URL.revokeObjectURL(url), 60000);
+        if (autoPrint) win.print();
       };
     } else {
-      URL.revokeObjectURL(url);
       return { success: false, error: 'Popup blocked — allow popups for this site.' };
     }
 
