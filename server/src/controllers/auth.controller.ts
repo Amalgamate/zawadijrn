@@ -200,6 +200,7 @@ export class AuthController {
     const resolvedSchoolId: string | undefined = schoolId || schoolConfig?.id;
 
     const requiresInstitutionSetup = user.role === 'SUPER_ADMIN' && !(schoolConfig?.institutionTypeLocked === true);
+    const requiresOtp = !['SUPER_ADMIN', 'STUDENT'].includes(user.role);
     let activeApps: string[] = [];
     
     if (resolvedSchoolId) {
@@ -222,6 +223,7 @@ export class AuthController {
       },
       token: accessToken, // Return actual token for cross-domain headers fallback
       refreshToken: refreshToken,
+      requiresOtp,
       mustChangePassword,
       message: mustChangePassword ? 'Login successful — please set a new password' : 'Login successful'
     });
