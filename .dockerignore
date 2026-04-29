@@ -14,6 +14,7 @@ scratch
 backups
 _archive
 _local_docs
+platform-console
 
 .env
 .env.*

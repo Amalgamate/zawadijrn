@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Zawadi Platform Console</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Console navigation">
+        <div class="brand-block">
+          <div class="brand-mark">Z</div>
+          <div>
+            <p class="brand-name">Zawadi</p>
+            <p class="brand-subtitle">Platform Console</p>
+          </div>
+        </div>
+
+        <nav class="nav-list">
+          <a class="nav-item active" href="#overview">
+            <span class="nav-icon">01</span>
+            Overview
+          </a>
+          <a class="nav-item" href="#instances">
+            <span class="nav-icon">02</span>
+            Instances
+          </a>
+          <a class="nav-item" href="#storage">
+            <span class="nav-icon">03</span>
+            Storage
+          </a>
+          <a class="nav-item" href="#deployments">
+            <span class="nav-icon">04</span>
+            Deployments
+          </a>
+        </nav>
+
+        <div class="sidebar-footer">
+          <p class="footer-label">Console Port</p>
+          <p class="footer-value">3100</p>
+        </div>
+      </aside>
+
+      <main class="main-panel">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Standalone SaaS Operations</p>
+            <h1>Super Admin Control Center</h1>
+          </div>
+          <div class="topbar-actions">
+            <div class="sync-pill">
+              <span class="status-dot"></span>
+              <span id="lastUpdated">Loading metrics</span>
+            </div>
+            <button class="primary-button" id="refreshButton" type="button">Refresh</button>
+          </div>
+        </header>
+
+        <section class="metric-grid" id="overview" aria-label="Platform metrics">
+          <article class="metric-card">
+            <p class="metric-label">Live Schools</p>
+            <p class="metric-value" id="schoolCount">0</p>
+            <p class="metric-detail">Instances under management</p>
+          </article>
+          <article class="metric-card">
+            <p class="metric-label">Healthy Containers</p>
+            <p class="metric-value" id="healthyContainers">0</p>
+            <p class="metric-detail">Frontend, backend, database</p>
+          </article>
+          <article class="metric-card">
+            <p class="metric-label">Storage Used</p>
+            <p class="metric-value" id="storageUsed">0 GB</p>
+            <p class="metric-detail">Database, uploads, backups</p>
+          </article>
+          <article class="metric-card">
+            <p class="metric-label">Last Deploy</p>
+            <p class="metric-value small" id="lastDeploy">-</p>
+            <p class="metric-detail">GitHub automated pipeline</p>
+          </article>
+        </section>
+
+        <section class="content-grid">
+          <section class="panel" id="instances">
+            <div class="panel-header">
+              <div>
+                <h2>School Instances</h2>
+                <p>Demo inventory for the platform console.</p>
+              </div>
+              <button class="secondary-button" type="button" id="createSchoolButton">Create School</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>School</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Version</th>
+                    <th>Ports</th>
+                    <th>Storage</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="instanceTable"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <aside class="panel side-panel" id="storage">
+            <div class="panel-header compact">
+              <div>
+                <h2>Server Capacity</h2>
+                <p>Storage and deployment readiness.</p>
+              </div>
+            </div>
+
+            <div class="capacity-block">
+              <div class="capacity-row">
+                <span>Total disk</span>
+                <strong>80 GB</strong>
+              </div>
+              <div class="meter" aria-label="Disk usage">
+                <span style="width: 46%"></span>
+              </div>
+              <div class="capacity-row muted">
+                <span>Used by app stack</span>
+                <span>36.8 GB</span>
+              </div>
+            </div>
+
+            <div class="storage-list" id="storageList"></div>
+          </aside>
+        </section>
+
+        <section class="content-grid lower-grid">
+          <section class="panel" id="deployments">
+            <div class="panel-header">
+              <div>
+                <h2>Deployment Timeline</h2>
+                <p>Recent automated release events.</p>
+              </div>
+            </div>
+            <div class="timeline" id="timeline"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header compact">
+              <div>
+                <h2>Planned Controls</h2>
+                <p>Next implementation stage.</p>
+              </div>
+            </div>
+            <div class="control-grid">
+              <button class="control-button" type="button">Start Instance</button>
+              <button class="control-button" type="button">Stop Instance</button>
+              <button class="control-button" type="button">Restart Containers</button>
+              <button class="control-button" type="button">Redeploy Latest</button>
+              <button class="control-button" type="button">View Logs</button>
+              <button class="control-button" type="button">Create Backup</button>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="./app.js"></script>
+  </body>
+</html>

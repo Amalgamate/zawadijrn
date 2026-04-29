@@ -16,6 +16,7 @@ env:
   REGISTRY: ghcr.io
   FRONTEND_IMAGE: ghcr.io/amalgamate/zawadi-frontend
   BACKEND_IMAGE: ghcr.io/amalgamate/zawadi-backend
+  CONSOLE_IMAGE: ghcr.io/amalgamate/zawadi-console
 
 jobs:
   publish:
@@ -54,6 +55,16 @@ jobs:
             type=sha,prefix=sha-
             type=ref,event=tag
 
+      - name: Console image metadata
+        id: console_meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.CONSOLE_IMAGE }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix=sha-
+            type=ref,event=tag
+
       - name: Build and publish frontend
         uses: docker/build-push-action@v6
         with:
@@ -75,6 +86,17 @@ jobs:
           labels: ${{ steps.backend_meta.outputs.labels }}
           cache-from: type=gha,scope=backend
           cache-to: type=gha,mode=max,scope=backend
+
+      - name: Build and publish console
+        uses: docker/build-push-action@v6
+        with:
+          context: ./platform-console
+          file: ./platform-console/Dockerfile
+          push: true
+          tags: ${{ steps.console_meta.outputs.tags }}
+          labels: ${{ steps.console_meta.outputs.labels }}
+          cache-from: type=gha,scope=console
+          cache-to: type=gha,mode=max,scope=console
 
   deploy:
     runs-on: ubuntu-latest

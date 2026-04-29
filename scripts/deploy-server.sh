@@ -9,16 +9,20 @@ set -euo pipefail
 #   SERVER_USER=deploy
 #   APPS_DIR=/srv/zawadi/apps
 #   MAIN_DIR=/srv/zawadi/apps/zawadijrn
+#   CONSOLE_IMAGE=ghcr.io/amalgamate/zawadi-console:latest
+#   CONSOLE_PORT=3100
 
 SERVER_HOST="${SERVER_HOST:-185.127.16.124}"
 SERVER_USER="${SERVER_USER:-deploy}"
 APPS_DIR="${APPS_DIR:-/srv/zawadi/apps}"
 MAIN_DIR="${MAIN_DIR:-/srv/zawadi/apps/zawadijrn}"
+CONSOLE_IMAGE="${CONSOLE_IMAGE:-ghcr.io/amalgamate/zawadi-console:latest}"
+CONSOLE_PORT="${CONSOLE_PORT:-3100}"
 
 echo "[deploy] Host: ${SERVER_USER}@${SERVER_HOST}"
-echo "[deploy] Images: ghcr.io/amalgamate/zawadi-frontend:latest, ghcr.io/amalgamate/zawadi-backend:latest"
+echo "[deploy] Images: ghcr.io/amalgamate/zawadi-frontend:latest, ghcr.io/amalgamate/zawadi-backend:latest, ${CONSOLE_IMAGE}"
 
-ssh "${SERVER_USER}@${SERVER_HOST}" "APPS_DIR='${APPS_DIR}' MAIN_DIR='${MAIN_DIR}' bash -s" <<'REMOTE'
+ssh "${SERVER_USER}@${SERVER_HOST}" "APPS_DIR='${APPS_DIR}' MAIN_DIR='${MAIN_DIR}' CONSOLE_IMAGE='${CONSOLE_IMAGE}' CONSOLE_PORT='${CONSOLE_PORT}' bash -s" <<'REMOTE'
 set -euo pipefail
 
 deploy_main() {
@@ -48,6 +52,20 @@ deploy_school_stack() {
   sudo docker compose --env-file "${env_file}" -p "${project}" -f docker-compose.stack.yml up -d --pull always --force-recreate backend frontend
 }
 
+deploy_console() {
+  echo "[deploy] Platform console: pull image"
+  sudo docker pull "${CONSOLE_IMAGE}"
+
+  echo "[deploy] Platform console: recreate container on :${CONSOLE_PORT}"
+  sudo docker rm -f zawadi-console >/dev/null 2>&1 || true
+  sudo docker run -d \
+    --name zawadi-console \
+    --restart always \
+    --label com.zawadi.service=platform-console \
+    -p "${CONSOLE_PORT}:80" \
+    "${CONSOLE_IMAGE}"
+}
+
 healthcheck() {
   local port="$1"
   echo "[deploy] Health check :${port}"
@@ -62,9 +80,24 @@ healthcheck() {
   curl -fsS "http://185.127.16.124:${port}/api/health" >/dev/null
 }
 
+site_healthcheck() {
+  local port="$1"
+  echo "[deploy] Site health check :${port}"
+  for attempt in {1..30}; do
+    if curl -fsS "http://185.127.16.124:${port}/health" >/dev/null; then
+      return 0
+    fi
+    echo "[deploy] Site health check :${port} waiting (${attempt}/30)"
+    sleep 2
+  done
+
+  curl -fsS "http://185.127.16.124:${port}/health" >/dev/null
+}
+
 deploy_main
 deploy_school_stack "schoolb" "${APPS_DIR}/.env.school-b"
 deploy_school_stack "schoolc" "${APPS_DIR}/.env.school-c"
+deploy_console
 
 echo "[deploy] Container status"
 sudo docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}'
@@ -72,6 +105,7 @@ sudo docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}'
 healthcheck 5000
 healthcheck 5001
 healthcheck 5002
+site_healthcheck "${CONSOLE_PORT}"
 
 echo "[deploy] Done."
 REMOTE
