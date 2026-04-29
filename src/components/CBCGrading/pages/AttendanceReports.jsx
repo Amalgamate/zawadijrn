@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Download, FileText, CheckCircle, XCircle, Clock, Users, Search, Filter, ArrowUpRight, ArrowDownRight, Printer } from 'lucide-react';
+import { Calendar, Download, FileText, CheckCircle, XCircle, Search, Filter, ArrowUpRight, Printer } from 'lucide-react';
 import { useAttendance } from '../hooks/useAttendanceAPI';
 import { getCurrentDate, toInputDate } from '../utils/dateHelpers';
 import SmartLearnerSearch from '../shared/SmartLearnerSearch';
@@ -76,6 +76,13 @@ const AttendanceReports = ({ learners }) => {
       return sameGrade && learnerStream === classStream;
     });
   }, [isTeacher, assignedClass, learners]);
+
+  const availableGrades = React.useMemo(() => {
+    const learnerGrades = [...new Set((teacherScopedLearners || []).map((l) => l.grade).filter(Boolean))];
+    const classGrades = [...new Set((classes || []).map((c) => c.grade).filter(Boolean))];
+    const contextGrades = Array.isArray(grades) ? grades.filter(Boolean) : [];
+    return [...new Set([...learnerGrades, ...classGrades, ...contextGrades])];
+  }, [teacherScopedLearners, classes, grades]);
 
   React.useEffect(() => {
     if (!isTeacher || !assignedClass) return;
@@ -165,32 +172,32 @@ const AttendanceReports = ({ learners }) => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50/50">
+    <div className="space-y-6">
       {/* Sticky Top Section */}
-      <div className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-sm">
+      <div className="sticky top-0 z-40 bg-white border border-slate-200 rounded-lg overflow-hidden">
         {/* Header: Title & Actions */}
-        <div className="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="px-5 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-900 rounded-xl text-white shadow-lg">
-              <FileText size={24} />
+            <div className="h-11 w-11 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
+              <FileText size={20} />
             </div>
             <div>
-              <h1 className="text-xl font-medium text-gray-900 tracking-tight">Attendance Analytics</h1>
-              <p className="text-xs text-gray-500 font-medium italic uppercase tracking-widest">Intelligence Synthesis</p>
+              <h1 className="text-xl font-semibold text-slate-900">Attendance Reports</h1>
+              <p className="text-sm text-slate-600">Review trends, print summaries, and export attendance records.</p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
             <button
               onClick={() => printWindow('attendance-report-content')}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 transition font-medium text-xs shadow-sm"
+              className="h-10 px-4 bg-white border border-slate-300 text-slate-700 rounded-md hover:bg-slate-50 transition-colors font-medium text-sm flex items-center gap-2"
             >
               <Printer size={16} />
               Print
             </button>
             <button
               onClick={() => exportAttendanceCSV(filteredRecords, teacherScopedLearners, activeReport)}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-medium text-xs shadow-lg shadow-indigo-600/20"
+              className="h-10 px-4 bg-brand-teal text-white rounded-md hover:bg-brand-teal/90 transition-colors font-medium text-sm flex items-center gap-2"
             >
               <Download size={16} />
               Export
@@ -199,19 +206,19 @@ const AttendanceReports = ({ learners }) => {
         </div>
 
         {/* Filter Bar (Aligned with SummativeAssessment) */}
-        <div className="px-6 py-3 border-t border-slate-100 flex flex-wrap items-center gap-3 bg-slate-50/80 backdrop-blur-md">
-          <div className="flex bg-white p-1 rounded-xl border border-slate-200 shadow-sm mr-2">
+        <div className="px-5 py-3 border-t border-slate-200 flex flex-wrap items-center gap-3 bg-slate-50">
+          <div className="flex bg-white p-1 rounded-md border border-slate-300 mr-2">
             <button
               disabled={isTeacher}
               onClick={() => setReportType('grade')}
-              className={`px-4 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-widest transition-all ${reportType === 'grade' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'} disabled:opacity-50`}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${reportType === 'grade' ? 'bg-brand-purple text-white' : 'text-slate-600 hover:bg-slate-50'} disabled:opacity-50`}
             >
               Grade
             </button>
             <button
               disabled={isTeacher}
               onClick={() => setReportType('learner')}
-              className={`px-4 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-widest transition-all ${reportType === 'learner' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'} disabled:opacity-50`}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${reportType === 'learner' ? 'bg-brand-purple text-white' : 'text-slate-600 hover:bg-slate-50'} disabled:opacity-50`}
             >
               Learner
             </button>
@@ -222,15 +229,15 @@ const AttendanceReports = ({ learners }) => {
               value={stagedGrade}
               onChange={(e) => setStagedGrade(e.target.value)}
               disabled={isTeacher}
-              className="h-9 px-3 border border-slate-300 rounded-lg text-xs font-semibold bg-white focus:ring-2 focus:ring-indigo-500/20 outline-none w-48"
+              className="h-10 px-3 border border-slate-300 rounded-md text-sm bg-white focus:ring-2 focus:ring-brand-teal/20 outline-none w-52"
             >
               <option value="all">Consolidated (All Grades)</option>
-              {grades.map(g => (
+              {availableGrades.map(g => (
                 <option key={g} value={g}>{g.replace(/_/g, ' ')}</option>
               ))}
             </select>
           ) : (
-            <div className="w-64 h-9">
+            <div className="w-64 h-10">
               <SmartLearnerSearch
                 learners={teacherScopedLearners}
                 selectedLearnerId={stagedLearnerId}
@@ -240,28 +247,28 @@ const AttendanceReports = ({ learners }) => {
             </div>
           )}
 
-          <div className="flex items-center gap-2 h-9 px-3 border border-slate-300 rounded-lg bg-white">
+          <div className="flex items-center gap-2 h-10 px-3 border border-slate-300 rounded-md bg-white">
             <input
               type="date"
               value={toInputDate(stagedStartDate)}
               onChange={(e) => setStagedStartDate(e.target.value)}
-              className="bg-transparent border-none text-[10px] font-medium text-slate-600 focus:ring-0 outline-none w-24"
+              className="bg-transparent border-none text-xs text-slate-700 focus:ring-0 outline-none w-24"
             />
             <span className="text-slate-300">→</span>
             <input
               type="date"
               value={toInputDate(stagedEndDate)}
               onChange={(e) => setStagedEndDate(e.target.value)}
-              className="bg-transparent border-none text-[10px] font-medium text-slate-600 focus:ring-0 outline-none w-24"
+              className="bg-transparent border-none text-xs text-slate-700 focus:ring-0 outline-none w-24"
             />
           </div>
 
           <button
             onClick={handleLoadReport}
-            className="h-9 px-4 bg-brand-teal hover:bg-brand-teal/90 text-white rounded-lg text-xs font-medium flex items-center gap-2 transition-all"
+            className="h-10 px-4 bg-brand-purple hover:bg-brand-purple/90 text-white rounded-md text-sm font-medium flex items-center gap-2 transition-colors"
           >
             <Filter size={14} />
-            Run Analysis
+            Apply Filters
           </button>
 
           <div className="flex-1 flex justify-end">
@@ -272,36 +279,36 @@ const AttendanceReports = ({ learners }) => {
                 placeholder="Filter results..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-4 h-9 bg-white border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                className="w-full pl-9 pr-4 h-10 bg-white border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-brand-teal/20 outline-none"
               />
             </div>
           </div>
         </div>
       </div>
 
-      <div className="p-6 space-y-6">
+      <div className="space-y-4">
         {/* Modern Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in duration-700">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 animate-in fade-in duration-700">
           {stats.map((stat, i) => (
-            <div key={i} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-all">
+            <div key={i} className="bg-white p-4 rounded-lg border border-slate-200">
               <div className="flex justify-between items-start mb-4">
-                <div className={`p-3 rounded-2xl ${stat.bg} ${stat.color}`}>
-                  <stat.icon size={20} />
+                <div className={`p-2 rounded-md ${stat.bg} ${stat.color}`}>
+                  <stat.icon size={16} />
                 </div>
-                <span className={`text-[10px] font-semibold uppercase tracking-widest ${stat.color} opacity-70`}>{stat.trend}</span>
+                <span className={`text-[10px] font-semibold uppercase tracking-wide ${stat.color} opacity-70`}>{stat.trend}</span>
               </div>
-              <p className="text-slate-400 text-[10px] font-semibold uppercase tracking-widest mb-1">{stat.title}</p>
-              <p className="text-3xl font-semibold text-slate-900">{stat.value}</p>
+              <p className="text-slate-500 text-xs font-semibold uppercase tracking-wide mb-1">{stat.title}</p>
+              <p className="text-2xl font-semibold text-slate-900">{stat.value}</p>
             </div>
           ))}
         </div>
 
         {/* Data Presentation */}
-        <div id="attendance-report-content" className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
-          <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-slate-800 uppercase tracking-tight">Observation Matrix</h3>
+        <div id="attendance-report-content" className="bg-white rounded-lg border border-slate-200 overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
+          <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+            <h3 className="text-base font-semibold text-slate-900">Attendance Records</h3>
             {activeReport && (
-              <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">
+              <span className="text-xs font-medium text-slate-500">
                 Showing data from {new Date(activeReport.startDate).toLocaleDateString()} to {new Date(activeReport.endDate).toLocaleDateString()}
               </span>
             )}
@@ -325,10 +332,10 @@ const AttendanceReports = ({ learners }) => {
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="bg-slate-50/50">
-                      <th className="px-6 py-4 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Temporal Node</th>
-                      <th className="px-6 py-4 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Learner Matrix</th>
-                      <th className="px-6 py-4 text-center text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Status Byte</th>
-                      <th className="px-6 py-4 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Remarks & Metadata</th>
+                      <th className="px-6 py-4 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Date</th>
+                      <th className="px-6 py-4 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Learner</th>
+                      <th className="px-6 py-4 text-center text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Status</th>
+                      <th className="px-6 py-4 text-left text-[10px] font-semibold text-[color:var(--table-header-fg)] uppercase tracking-widest">Remarks</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -347,7 +354,7 @@ const AttendanceReports = ({ learners }) => {
                       return (
                         <tr key={record.id} className="hover:bg-slate-50/50 transition-colors group">
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <p className="text-xs font-semibold text-slate-900 font-mono">
+                            <p className="text-xs font-semibold text-slate-900">
                               {new Date(record.date).toLocaleDateString('en-GB').replace(/\//g, ' . ')}
                             </p>
                           </td>
@@ -369,8 +376,8 @@ const AttendanceReports = ({ learners }) => {
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <p className="text-[10px] text-slate-500 italic font-medium max-w-[200px] truncate">
-                              {record.remarks || 'No override remarks recorded'}
+                            <p className="text-[10px] text-slate-500 italic font-medium max-w-[220px] truncate">
+                              {record.remarks || 'No remarks'}
                             </p>
                           </td>
                         </tr>

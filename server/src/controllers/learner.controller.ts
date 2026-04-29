@@ -19,7 +19,7 @@ import logger from '../utils/logger';
 const SKIP_PARENT_PORTAL_NOTIFICATIONS = process.env.SKIP_PARENT_PORTAL_NOTIFICATIONS === 'true' || process.env.NODE_ENV === 'test';
 
 /**
- * LearnerController handles learner operations in Zawadi SMS.
+ * LearnerController handles learner operations in Trends CORE V1.0.
  */
 
 export class LearnerController {
@@ -168,6 +168,7 @@ export class LearnerController {
       religion, specialNeeds, isTransportStudent, photo, fatherName, fatherPhone, fatherEmail, fatherDeceased,
       motherName, motherPhone, motherEmail, motherDeceased, guardianRelation,
       primaryContactType, primaryContactName, primaryContactPhone, primaryContactEmail,
+      generateInvoice, isScholarshipStudent, scholarshipType, scholarshipAmount,
     } = req.body;
 
     if (!admissionNumber) {
@@ -181,7 +182,10 @@ export class LearnerController {
       throw new ApiError(400, 'Missing required fields');
     }
     const existing = await prisma.learner.findUnique({ where: { admissionNumber } });
-    if (existing) throw new ApiError(400, `Admission number ${admissionNumber} already exists`);
+    if (existing) {
+      // Harden create path: if client sent a stale preview, auto-reserve a fresh number.
+      admissionNumber = await generateAdmissionNumber(stream || 'A', new Date().getFullYear());
+    }
 
     try {
       // ── Automatic Parent Account Registration ────────────────────────────────
@@ -215,23 +219,78 @@ export class LearnerController {
         }
       }
 
-      const learner = await prisma.learner.create({
-        data: {
-          admissionNumber, firstName, lastName, middleName,
-          dateOfBirth: new Date(dateOfBirth), gender: gender as Gender, grade: String(grade) as any,
-          institutionType,
-          stream: stream || 'A', parentId, guardianName, guardianPhone, guardianEmail,
-          medicalConditions, allergies, emergencyContact, emergencyPhone, bloodGroup,
-          address, county, subCounty, previousSchool, religion, specialNeeds,
-          isTransportStudent: isTransportStudent === true || isTransportStudent === 'true',
-          photoUrl: finalPhotoUrl,
-          fatherName, fatherPhone, fatherEmail, fatherDeceased: fatherDeceased || false,
-          motherName, motherPhone, motherEmail, motherDeceased: motherDeceased || false,
-          guardianRelation, primaryContactType, primaryContactName, primaryContactPhone, primaryContactEmail,
-          status: 'ACTIVE', createdBy: currentUserId,
-        },
-        include: { parent: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } } },
+      const scholarshipSelected = isScholarshipStudent === true || isScholarshipStudent === 'true';
+      const normalizedScholarshipType = scholarshipSelected
+        ? (scholarshipType === 'PARTIAL' ? 'PARTIAL' : 'FULL')
+        : null;
+      const normalizedScholarshipAmount = scholarshipSelected && normalizedScholarshipType === 'PARTIAL' && scholarshipAmount !== undefined && scholarshipAmount !== null && scholarshipAmount !== ''
+        ? Number(scholarshipAmount)
+        : null;
+
+      const buildLearnerCreateData = (admNo: string, includeScholarshipFields: boolean) => ({
+        admissionNumber: admNo, firstName, lastName, middleName,
+        dateOfBirth: new Date(dateOfBirth), gender: gender as Gender, grade: String(grade) as any,
+        institutionType,
+        stream: stream || 'A', guardianName, guardianPhone, guardianEmail,
+        medicalConditions, allergies, emergencyContact, emergencyPhone, bloodGroup,
+        address, county, subCounty, previousSchool, religion, specialNeeds,
+        isTransportStudent: isTransportStudent === true || isTransportStudent === 'true',
+        ...(includeScholarshipFields ? {
+          isScholarshipStudent: scholarshipSelected,
+          scholarshipType: normalizedScholarshipType,
+          scholarshipAmount: normalizedScholarshipAmount,
+        } : {}),
+        photoUrl: finalPhotoUrl,
+        fatherName, fatherPhone, fatherEmail, fatherDeceased: fatherDeceased || false,
+        motherName, motherPhone, motherEmail, motherDeceased: motherDeceased || false,
+        guardianRelation, primaryContactType, primaryContactName, primaryContactPhone, primaryContactEmail,
+        parent: parentId ? { connect: { id: parentId } } : undefined,
+        status: 'ACTIVE', createdBy: currentUserId,
       });
+
+      const isScholarshipFieldError = (err: any) => {
+        const msg = String(err?.message || '');
+        return (
+          msg.includes('isScholarshipStudent') ||
+          msg.includes('scholarshipType') ||
+          msg.includes('scholarshipAmount')
+        );
+      };
+
+      let learner;
+      try {
+        learner = await prisma.learner.create({
+          data: buildLearnerCreateData(admissionNumber, true),
+          include: { parent: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } } },
+        });
+      } catch (createErr: any) {
+        if (isScholarshipFieldError(createErr)) {
+          logger.warn('[createLearner] Scholarship fields not supported by runtime Prisma client/schema; retrying create without scholarship columns');
+          learner = await prisma.learner.create({
+            data: buildLearnerCreateData(admissionNumber, false),
+            include: { parent: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } } },
+          });
+        } else if (createErr?.code === 'P2002') {
+          // Last-line protection for race conditions: regenerate and retry once.
+          const retryAdmissionNumber = await generateAdmissionNumber(stream || 'A', new Date().getFullYear());
+          try {
+            learner = await prisma.learner.create({
+              data: buildLearnerCreateData(retryAdmissionNumber, true),
+              include: { parent: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } } },
+            });
+          } catch (retryErr: any) {
+            if (!isScholarshipFieldError(retryErr)) throw retryErr;
+            logger.warn('[createLearner] Scholarship fields not supported on duplicate-retry path; retrying without scholarship columns');
+            learner = await prisma.learner.create({
+              data: buildLearnerCreateData(retryAdmissionNumber, false),
+              include: { parent: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } } },
+            });
+          }
+          admissionNumber = retryAdmissionNumber;
+        } else {
+          throw createErr;
+        }
+      }
 
       // ── Create student system user by default ────────────────────────────────
       try {
@@ -246,22 +305,31 @@ export class LearnerController {
         logger.error('Failed to create student system user:', userError);
       }
 
+      const shouldGenerateInvoice = generateInvoice !== false && generateInvoice !== 'false' && !scholarshipSelected;
+
       // ── Generate Initial Fee Invoice ──────────────────────────────────────────
       let invoiceMessage = '';
-      try {
-        const invResult = await feeService.generateInvoiceForLearner(learner.id);
-        if (invResult.success) {
-          if (invResult.created) {
-            invoiceMessage = ` Invoice ${invResult.invoice.invoiceNumber} generated for ${invResult.invoice.term} ${invResult.invoice.academicYear}.`;
+      if (shouldGenerateInvoice) {
+        try {
+          const invResult = await feeService.generateInvoiceForLearner(learner.id);
+          if (invResult.success) {
+            if (invResult.created) {
+              invoiceMessage = ` Invoice ${invResult.invoice.invoiceNumber} generated for ${invResult.invoice.term} ${invResult.invoice.academicYear}.`;
+            } else {
+              invoiceMessage = ' (Invoice already exists for this term).';
+            }
           } else {
-            invoiceMessage = ' (Invoice already exists for this term).';
+            invoiceMessage = ` (⚠️ Note: Fee invoice not generated: ${invResult.error})`;
           }
-        } else {
-          invoiceMessage = ` (⚠️ Note: Fee invoice not generated: ${invResult.error})`;
+        } catch (e: any) {
+          logger.error('Invoice generation failed:', e);
+          invoiceMessage = ` (⚠️ Error: Automated invoice failed: ${e.message})`;
         }
-      } catch (e: any) {
-        logger.error('Invoice generation failed:', e);
-        invoiceMessage = ` (⚠️ Error: Automated invoice failed: ${e.message})`;
+      } else if (scholarshipSelected) {
+        const scholarshipLabel = scholarshipType === 'PARTIAL' ? 'Partial scholarship' : 'Full scholarship';
+        invoiceMessage = ` (${scholarshipLabel}: automatic invoice skipped).`;
+      } else {
+        invoiceMessage = ' (Automatic invoice disabled).';
       }
 
       res.status(201).json({
@@ -294,6 +362,7 @@ export class LearnerController {
         'medicalConditions', 'allergies', 'emergencyContact', 'emergencyPhone',
         'bloodGroup', 'address', 'county', 'subCounty',
         'previousSchool', 'religion', 'specialNeeds', 'isTransportStudent',
+        'isScholarshipStudent', 'scholarshipType', 'scholarshipAmount',
         'status', 'exitDate', 'exitReason',
       ];
 
@@ -307,11 +376,20 @@ export class LearnerController {
         if (field === 'grade')  { if (val && val !== '') updateData.grade = String(val); continue; }
         if (field === 'status') { if (val && val !== '') updateData.status = val as LearnerStatus; continue; }
 
-        if (field === 'fatherDeceased' || field === 'motherDeceased' || field === 'isTransportStudent') {
+        if (field === 'fatherDeceased' || field === 'motherDeceased' || field === 'isTransportStudent' || field === 'isScholarshipStudent') {
           updateData[field] = val === true || val === 'true'; continue;
         }
 
         updateData[field] = val === '' ? null : val;
+      }
+
+      if (updateData.isScholarshipStudent === false) {
+        updateData.scholarshipType = null;
+        updateData.scholarshipAmount = null;
+      } else if (updateData.scholarshipType === 'FULL') {
+        updateData.scholarshipAmount = null;
+      } else if (updateData.scholarshipAmount !== undefined && updateData.scholarshipAmount !== null && updateData.scholarshipAmount !== '') {
+        updateData.scholarshipAmount = Number(updateData.scholarshipAmount);
       }
 
       // ── Auto-create parent account on update if still missing ─────────────────

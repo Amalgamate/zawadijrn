@@ -1,7 +1,7 @@
 /**
  * CBC Performance Level Scale (Rubric System)
  *
- * Zawadi SMS uses an 8-level rubric that sub-divides each of the four
+ * Trends CORE V1.0 uses an 8-level rubric that sub-divides each of the four
  * official KICD CBC bands (EE, ME, AE, BE) into two levels for finer
  * differentiation. The 4-level parent entries are kept for any legacy
  * callers that still reference them (e.g. broadsheet summary counters).

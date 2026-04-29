@@ -83,7 +83,7 @@ const ParentsList = ({ parents = [], pagination, onFetchParents, onAddParent, on
 
     // Default message template
     const message = encodeURIComponent(
-      `Dear ${parent.name},\n\nGreetings from Zawadi SMS Academy.\n\n`
+      `Dear ${parent.name},\n\nGreetings from Trends CORE V1.0 Academy.\n\n`
     );
 
     // Open WhatsApp with pre-filled message

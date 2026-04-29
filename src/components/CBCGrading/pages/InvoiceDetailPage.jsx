@@ -260,7 +260,7 @@ const InvoiceDetailPage = ({ invoice }) => {
       <div className="bg-[#002C60] rounded-2xl px-8 py-6 text-white flex justify-between items-start shadow-lg">
         <div className="space-y-1">
           <h1 className="text-2xl font-medium tracking-tight">Invoice Details</h1>
-          <p className="text-blue-200 text-sm font-medium uppercase tracking-widest">{invoice.invoiceNumber}</p>
+          <p className="text-white text-sm font-semibold uppercase tracking-widest">{invoice.invoiceNumber}</p>
           {activePledges.length > 0 && (
             <span className="inline-flex items-center gap-1 bg-amber-400 text-amber-900 text-xs font-medium px-2 py-0.5 rounded-full mt-1">
               <Bookmark size={11} /> {activePledges.length} Active Pledge{activePledges.length > 1 ? 's' : ''}
@@ -601,7 +601,7 @@ const InvoiceDetailPage = ({ invoice }) => {
 
       {/* Footer */}
       <p className="text-center text-[10px] text-gray-400 font-medium uppercase tracking-widest pt-4">
-        Official Financial Document — Zawadi SMS Core Unit
+        Official Financial Document — Trends CORE V1.0 Core Unit
       </p>
 
       {/* ── Pledge Modal ────────────────────────────────────────────────── */}

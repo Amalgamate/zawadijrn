@@ -10,48 +10,12 @@ import prisma from '../config/database';
  * - BRANCH_PREFIX_END:   ADM-{YEAR}-{SEQUENCE}-{BRANCH_CODE}
  */
 export async function generateAdmissionNumber(
-  branchCode: string = 'MC',
-  academicYear: number = new Date().getFullYear()
+  _branchCode: string = 'MC',
+  _academicYear: number = new Date().getFullYear()
 ): Promise<string> {
   try {
-    const school = await prisma.school.findFirst();
-    const separator = school?.branchSeparator || '-';
-    const formatType = school?.admissionFormatType || 'NO_BRANCH';
-
-    const buildAdmissionNumber = (sequenceValue: number) => {
-      const paddedNumber = String(sequenceValue).padStart(3, '0');
-      switch (formatType) {
-        case 'NO_BRANCH':
-          return `ADM${separator}${academicYear}${separator}${paddedNumber}`;
-        case 'BRANCH_PREFIX_START':
-          return `${branchCode}${separator}ADM${separator}${academicYear}${separator}${paddedNumber}`;
-        case 'BRANCH_PREFIX_MIDDLE':
-          return `ADM${separator}${branchCode}${separator}${academicYear}${separator}${paddedNumber}`;
-        case 'BRANCH_PREFIX_END':
-          return `ADM${separator}${academicYear}${separator}${paddedNumber}${separator}${branchCode}`;
-        default:
-          return `ADM${separator}${academicYear}${separator}${paddedNumber}`;
-      }
-    };
-
     const admissionNumber = await prisma.$transaction(async (tx) => {
-      let sequence = await tx.admissionSequence.findUnique({ where: { academicYear } });
-      if (!sequence) {
-        sequence = await tx.admissionSequence.create({ data: { academicYear, currentValue: 0 } });
-      }
-
-      while (true) {
-        const updatedSequence = await tx.admissionSequence.update({
-          where: { academicYear },
-          data: { currentValue: { increment: 1 } }
-        });
-
-        const candidate = buildAdmissionNumber(updatedSequence.currentValue);
-        const existingLearner = await tx.learner.findUnique({ where: { admissionNumber: candidate } });
-        if (!existingLearner) {
-          return candidate;
-        }
-      }
+      return await findNextAvailableAdmissionNumber(tx);
     });
 
     return admissionNumber;
@@ -67,29 +31,10 @@ export async function getCurrentSequenceValue(academicYear: number): Promise<num
 }
 
 export async function getNextAdmissionNumberPreview(
-  branchCode: string = 'MC',
-  academicYear: number = new Date().getFullYear()
+  _branchCode: string = 'MC',
+  _academicYear: number = new Date().getFullYear()
 ): Promise<string | null> {
-  const school = await prisma.school.findFirst();
-  if (!school) return null;
-
-  const sequence = await prisma.admissionSequence.findUnique({ where: { academicYear } });
-  const nextValue = sequence ? sequence.currentValue + 1 : 1;
-  const paddedNumber = String(nextValue).padStart(3, '0');
-  const separator = school.branchSeparator || '-';
-
-  switch (school.admissionFormatType) {
-    case 'NO_BRANCH':
-      return `ADM${separator}${academicYear}${separator}${paddedNumber}`;
-    case 'BRANCH_PREFIX_START':
-      return `${branchCode}${separator}ADM${separator}${academicYear}${separator}${paddedNumber}`;
-    case 'BRANCH_PREFIX_MIDDLE':
-      return `ADM${separator}${branchCode}${separator}${academicYear}${separator}${paddedNumber}`;
-    case 'BRANCH_PREFIX_END':
-      return `ADM${separator}${academicYear}${separator}${paddedNumber}${separator}${branchCode}`;
-    default:
-      return `ADM${separator}${academicYear}${separator}${paddedNumber}`;
-  }
+  return await findNextAvailableAdmissionNumber(prisma);
 }
 
 export async function resetSequence(academicYear: number, newValue: number = 0): Promise<void> {
@@ -127,4 +72,41 @@ export function extractSequenceNumber(
 
   const match = admissionNumber.match(pattern);
   return match ? parseInt(match[1], 10) : null;
+}
+
+function defaultAdmissionStart(): string {
+  return '1000';
+}
+
+function incrementAdmissionNumber(admissionNumber: string, increment: number = 1): string {
+  const match = admissionNumber.match(/^(.*?)(\d+)$/);
+  if (!match) {
+    return `${admissionNumber}${increment}`;
+  }
+
+  const prefix = match[1] ?? '';
+  const numericPart = match[2] ?? '0';
+  const width = numericPart.length;
+  const nextNumber = Number.parseInt(numericPart, 10) + increment;
+  const nextNumericPart = String(nextNumber).padStart(width, '0');
+  return `${prefix}${nextNumericPart}`;
+}
+
+async function findNextAvailableAdmissionNumber(db: any): Promise<string> {
+  const lastLearner = await db.learner.findFirst({
+    where: { admissionNumber: { not: null } },
+    orderBy: { createdAt: 'desc' },
+    select: { admissionNumber: true }
+  });
+
+  const seed = lastLearner?.admissionNumber || defaultAdmissionStart();
+  let candidate = lastLearner?.admissionNumber ? incrementAdmissionNumber(seed) : seed;
+
+  // Always validate against DB and move forward until we find a free key.
+  // This prevents stale preview collisions and out-of-order historical numbering issues.
+  while (true) {
+    const exists = await db.learner.findUnique({ where: { admissionNumber: candidate } });
+    if (!exists) return candidate;
+    candidate = incrementAdmissionNumber(candidate);
+  }
 }

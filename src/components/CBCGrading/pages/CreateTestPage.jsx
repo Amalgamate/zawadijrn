@@ -2,11 +2,12 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { ArrowLeft, Save } from 'lucide-react';
 import { gradingAPI } from '../../../services/api';
 import { getLearningAreasByGrade } from '../../../constants/learningAreas';
+import { CANONICAL_TEST_TYPE_OPTIONS, normalizeTestType } from '../utils/testType';
 
 const CreateTestPage = ({ onSave, onCancel, initialData, availableGrades }) => {
   const [formData, setFormData] = useState({
     title: '',
-    testType: 'Monthly Test', // Default from screenshot options
+    testType: 'MONTHLY',
     month: new Date().toLocaleString('default', { month: 'long' }),
     grade: '',
     term: 'Term 1',
@@ -48,7 +49,10 @@ const CreateTestPage = ({ onSave, onCancel, initialData, availableGrades }) => {
     console.log('Validation passed, calling onSave...');
 
     try {
-      await onSave(formData);
+      await onSave({
+        ...formData,
+        testType: normalizeTestType(formData.testType) || 'ASSESSMENT',
+      });
       console.log('✅ Save successful!');
     } catch (error) {
       console.error('❌ Save failed:', error);
@@ -110,12 +114,9 @@ const CreateTestPage = ({ onSave, onCancel, initialData, availableGrades }) => {
                     onChange={(e) => handleChange('testType', e.target.value)}
                     className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-semibold text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all appearance-none cursor-pointer"
                   >
-                    <option value="Opener">Opener</option>
-                    <option value="Midterm">Midterm</option>
-                    <option value="End Term">End Term</option>
-                    <option value="Monthly">Monthly</option>
-                    <option value="Weekly">Weekly</option>
-                    <option value="Random">Random</option>
+                    {CANONICAL_TEST_TYPE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
                   </select>
                   <div className="absolute right-3 top-3 pointer-events-none text-gray-400">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -124,7 +125,7 @@ const CreateTestPage = ({ onSave, onCancel, initialData, availableGrades }) => {
               </div>
 
               {/* Month (Conditional) */}
-              {formData.testType === 'Monthly Test' && (
+              {normalizeTestType(formData.testType) === 'MONTHLY' && (
                 <div className="space-y-1">
                   <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Month

@@ -181,7 +181,7 @@ const PromotionPage = ({ onPromote, showNotification }) => {
 
       {/* Step 1: Select Source Class */}
       <div className="bg-white rounded-xl shadow-md p-6">
-        <h3 className="text-lg font-semibold mb-4 text-brand-purple uppercase tracking-widest">Step 1: Select Source Class</h3>
+        <h3 className="text-base font-semibold mb-4 text-brand-purple uppercase tracking-[0.12em]">Step 1: Select Source Class</h3>
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
           <div className="md:col-span-4">
             <label className="block text-sm font-semibold text-gray-700 mb-2">Grade Level</label>
@@ -192,7 +192,7 @@ const PromotionPage = ({ onPromote, showNotification }) => {
                   setSourceGrade(e.target.value);
                   setSelectedLearners([]);
                 }}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-purple focus:border-transparent transition bg-white appearance-none"
+                className="w-full px-3.5 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-purple focus:border-transparent transition bg-white appearance-none"
               >
                 {!availableGrades.length && <option value="">Loading grades...</option>}
                 {availableGrades.map(g => (
@@ -214,7 +214,7 @@ const PromotionPage = ({ onPromote, showNotification }) => {
                   setSourceStream(e.target.value);
                   setSelectedLearners([]);
                 }}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-purple focus:border-transparent transition bg-white appearance-none"
+                className="w-full px-3.5 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-purple focus:border-transparent transition bg-white appearance-none"
               >
                 <option value="all">All Streams</option>
                 {availableStreams.map(stream => (
@@ -233,7 +233,7 @@ const PromotionPage = ({ onPromote, showNotification }) => {
             <button
               onClick={selectAll}
               disabled={classLearners.length === 0}
-              className={`flex-1 px-4 py-3 rounded-lg transition shadow-md font-medium text-sm uppercase tracking-wide ${classLearners.length === 0 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' :
+              className={`flex-1 px-4 py-2.5 rounded-lg transition shadow-md font-medium text-sm ${classLearners.length === 0 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' :
                 selectedLearners.length === classLearners.length ? 'bg-gray-600 text-white' : 'bg-brand-teal text-white hover:bg-brand-teal/90'
                 }`}
             >
@@ -242,7 +242,7 @@ const PromotionPage = ({ onPromote, showNotification }) => {
             <button
               onClick={clearSelection}
               disabled={selectedLearners.length === 0}
-              className="px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium shadow-sm disabled:opacity-50"
+              className="px-6 py-2.5 text-sm bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium shadow-sm disabled:opacity-50"
             >
               Clear
             </button>
@@ -252,9 +252,9 @@ const PromotionPage = ({ onPromote, showNotification }) => {
 
       {/* Step 2: Select Learners */}
       <div className="bg-white rounded-xl shadow-md p-6">
-        <h3 className="text-lg font-semibold mb-4 text-brand-purple uppercase tracking-widest flex justify-between items-center">
+        <h3 className="text-base font-semibold mb-4 text-brand-purple uppercase tracking-[0.12em] flex justify-between items-center">
           <span>Step 2: Select Learners to Promote</span>
-          <span className="text-sm bg-brand-purple/10 text-brand-purple px-3 py-1 rounded-full">
+          <span className="text-xs bg-brand-purple/10 text-brand-purple px-2.5 py-0.5 rounded-full">
             {selectedLearners.length} / {classLearners.length} Selected
           </span>
         </h3>
@@ -317,9 +317,9 @@ const PromotionPage = ({ onPromote, showNotification }) => {
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-10 md:static md:bg-transparent md:border-t-0 md:shadow-none md:p-0 flex justify-end">
           <button
             onClick={handlePromote}
-            className="w-full md:w-auto flex items-center justify-center gap-2 px-8 py-3 bg-brand-teal text-white rounded-xl hover:bg-brand-teal/90 transition shadow-lg hover:shadow-xl font-medium text-lg transform active:scale-95 duration-150"
+            className="w-full md:w-auto flex items-center justify-center gap-2 px-7 py-2.5 bg-brand-teal text-white rounded-xl hover:bg-brand-teal/90 transition shadow-lg hover:shadow-xl font-medium text-sm transform active:scale-95 duration-150"
           >
-            <CheckCircle size={24} />
+            <CheckCircle size={18} />
             <span>Promote {selectedLearners.length} Learner{selectedLearners.length !== 1 ? 's' : ''}</span>
           </button>
         </div>

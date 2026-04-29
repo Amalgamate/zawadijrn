@@ -29,10 +29,10 @@ const TermlyReportTemplate = ({ reportData, id = "termly-report-content" }) => {
                 <div className="flex justify-between items-start mb-6 border-b-2 pb-6" style={{ borderColor: brandColor }}>
                     <div className="flex items-center gap-5">
                         <div className="w-24 h-24 flex items-center justify-center rounded bg-white shadow-sm border border-gray-100 overflow-hidden">
-                            {reportData.logoUrl && reportData.logoUrl !== '/logo-new.png' ? (
+                            {reportData.logoUrl && reportData.logoUrl !== '/branding/logo.png' ? (
                                 <img src={reportData.logoUrl} alt="Logo" className="max-w-full max-h-full object-contain" />
                             ) : (
-                                <img src="/logo-new.png" alt="Logo" className="max-w-full max-h-full object-contain" />
+                                <img src="/branding/logo.png" alt="Logo" className="max-w-full max-h-full object-contain" />
                             )}
                         </div>
                         <div className="text-left">
@@ -172,7 +172,7 @@ const TermlyReportTemplate = ({ reportData, id = "termly-report-content" }) => {
                             {reportData.schoolSlogan || 'Excellence in Knowledge and Character'}
                         </p>
                         <p className="text-[8px] font-medium opacity-60">
-                            Valid only with official school stamp and signatures. Generated via Zawadi SMS on {new Date().toLocaleDateString()}.
+                            Valid only with official school stamp and signatures. Generated via Trends CORE V1.0 on {new Date().toLocaleDateString()}.
                         </p>
                     </div>
                 </div>

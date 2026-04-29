@@ -132,13 +132,15 @@ const ChartOfAccounts = () => {
                     <td className="px-6 py-4 text-sm font-mono text-gray-500" style={{ paddingLeft: `${depth * 2 + 1.5}rem` }}>
                         {account.code}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-800 flex items-center gap-2">
-                        {hasChildren ? (
-                            <button onClick={() => toggleExpand(account.id)}>
-                                {isExpanded ? <ChevronDown size={16} className="text-gray-400" /> : <ChevronRight size={16} className="text-gray-400" />}
-                            </button>
-                        ) : depth > 0 ? <div className="w-4"></div> : null}
-                        {account.name}
+                    <td className="px-6 py-4 text-sm text-gray-800">
+                        <div className="flex items-center gap-2">
+                            {hasChildren ? (
+                                <button onClick={() => toggleExpand(account.id)}>
+                                    {isExpanded ? <ChevronDown size={16} className="text-gray-400" /> : <ChevronRight size={16} className="text-gray-400" />}
+                                </button>
+                            ) : depth > 0 ? <div className="w-4"></div> : null}
+                            {account.name}
+                        </div>
                     </td>
                     <td className="px-6 py-4 text-sm">
                         <span className={`px-2 py-0.5 rounded text-[10px] font-medium border ${getTypeStyle(account.type)}`}>

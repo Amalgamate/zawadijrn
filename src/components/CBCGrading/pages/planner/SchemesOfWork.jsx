@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   FileText, Plus, Search, Filter, 
-  MoreVertical, CheckCircle, Clock, 
+  CheckCircle, Clock, 
   XOctagon, FileEdit, Trash2, Eye 
 } from 'lucide-react';
 import { useAuth } from '../../../../hooks/useAuth';
@@ -28,7 +28,7 @@ const StatusBadge = ({ status }) => {
   return (
     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${styles[status]}`}>
       {icons[status]}
-      {status}
+      {status === 'SUBMITTED' ? 'PENDING APPROVAL' : status}
     </span>
   );
 };
@@ -123,7 +123,7 @@ const SchemesOfWork = ({ onNavigate }) => {
           <p className="text-gray-500 text-sm">Manage teaching plans and termly schemes</p>
         </div>
         
-        {(role === 'TEACHER' || role === 'HEAD_TEACHER') && (
+        {(role === 'TEACHER' || role === 'HEAD_TEACHER' || role === 'ADMIN' || role === 'SUPER_ADMIN') && (
           <button
             onClick={handleCreateNew}
             className="flex items-center gap-2 px-4 py-2 bg-brand-teal text-white rounded-lg hover:bg-teal-700 transition"
@@ -132,6 +132,20 @@ const SchemesOfWork = ({ onNavigate }) => {
             <span>New Scheme</span>
           </button>
         )}
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {['DRAFT', 'SUBMITTED', 'APPROVED', 'REJECTED'].map((status) => {
+          const count = schemes.filter((s) => s.status === status).length;
+          return (
+            <div key={status} className="bg-white border border-gray-200 rounded-lg px-3 py-2">
+              <p className="text-[11px] text-gray-500 uppercase tracking-wider">
+                {status === 'SUBMITTED' ? 'Pending Approval' : status}
+              </p>
+              <p className="text-lg font-semibold text-gray-800">{count}</p>
+            </div>
+          );
+        })}
       </div>
 
       <Card className="p-4">

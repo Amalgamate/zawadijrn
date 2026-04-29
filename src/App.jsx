@@ -5,7 +5,7 @@ import { useAuth } from './hooks/useAuth';
 
 const Auth = lazy(() => import('./pages/Auth'));
 const CBCGradingSystem = lazy(() => import('./components/CBCGrading/CBCGradingSystem'));
-import SplashScreen from './components/mobile/SplashScreen';
+import SplashScreen from './components/common/SplashScreen';
 import { Toaster } from 'react-hot-toast';
 import { SchoolDataProvider } from './contexts/SchoolDataContext';
 import { FeeActionsProvider } from './contexts/FeeActionsContext';
@@ -41,8 +41,8 @@ const DEFAULT_BRANDING = {
   logoUrl: '/branding/logo.png',
   faviconUrl: '/branding/favicon.png',
   stampUrl: '/branding/stamp.svg',
-  brandColor: '#520050',
-  primaryColor: '#520050',
+  brandColor: '#030b82',
+  primaryColor: '#030b82',
   secondaryColor: '#0D9488',
   accentColor1: '#3b82f6',
   accentColor2: '#e11d48',
@@ -108,7 +108,7 @@ function AppContent() {
   // CSS variables
   useEffect(() => {
     const root = document.documentElement;
-    const color = brandingSettings?.primaryColor || brandingSettings?.brandColor || '#520050';
+    const color = brandingSettings?.primaryColor || brandingSettings?.brandColor || '#030b82';
     root.style.setProperty('--brand-purple', color);
     if (brandingSettings?.secondaryColor)
       root.style.setProperty('--brand-teal', brandingSettings.secondaryColor);
@@ -155,6 +155,10 @@ function AppContent() {
 
     if (userData.mustChangePassword) {
       navigate('/auth/reset-password?token=INITIAL_SETUP_REQUIRED', { replace: true });
+    } else if (userData.requiresInstitutionSetup) {
+      // After a whole institution reset the admin must configure the institution
+      // type before entering the app. The backend signals this via requiresInstitutionSetup.
+      navigate('/auth/setup-institution', { replace: true });
     } else {
       navigate('/app', { replace: true });
     }
@@ -221,6 +225,8 @@ function AppContent() {
               <Route path="/auth/verify-email"
                 element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} />} />
               <Route path="/auth/welcome"
+                element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} />} />
+              <Route path="/auth/setup-institution"
                 element={<Auth onAuthSuccess={handleAuthSuccess} brandingSettings={brandingSettings} />} />
               <Route path="*" element={<Navigate to="/auth/login" replace />} />
             </Routes>

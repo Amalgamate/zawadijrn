@@ -21,7 +21,7 @@ export const WelcomeEmail = ({
 }: WelcomeEmailProps) => {
     return (
         <EmailLayout
-            previewText={`Welcome to Zawadi SMS, ${schoolName}!`}
+            previewText={`Welcome to Trends CORE V1.0, ${schoolName}!`}
             schoolName={schoolName}
             heading={customHeading || "Welcome to your new School Management System"}
         >
@@ -31,13 +31,13 @@ export const WelcomeEmail = ({
                 <Text style={text} dangerouslySetInnerHTML={{ __html: customBody.replace(/\n/g, '<br/>') }} />
             ) : (
                 <Text style={text}>
-                    Congratulations! Your school, <strong>{schoolName}</strong>, has been successfully registered on Zawadi SMS.
+                    Congratulations! Your school, <strong>{schoolName}</strong>, has been successfully registered on Trends CORE V1.0.
                     We are thrilled to have you on board.
                 </Text>
             )}
 
             <Text style={text}>
-                Zawadi SMS is designed to simplify your administrative tasks, from CBC assessment tracking to generating complex report cards instantly.
+                Trends CORE V1.0 is designed to simplify your administrative tasks, from CBC assessment tracking to generating complex report cards instantly.
             </Text>
 
             <Section style={btnContainer}>

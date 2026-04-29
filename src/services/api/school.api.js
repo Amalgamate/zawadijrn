@@ -1,5 +1,4 @@
 import { fetchWithAuth } from './core';
-import axiosInstance from './axiosConfig';
 
 export const schoolAPI = {
   getAll: async () => fetchWithAuth('/schools'),
@@ -16,4 +15,19 @@ export const schoolAPI = {
     fetchWithAuth('/schools/provision', { method: 'POST', body: JSON.stringify(data) }),
   getAdmissionNumberPreview: async (academicYear) =>
     fetchWithAuth(`/schools/admission-number-preview/${academicYear}`),
+  lockInstitutionType: async (institutionType) =>
+    fetchWithAuth('/schools/institution-type/lock', {
+      method: 'POST',
+      body: JSON.stringify({ institutionType }),
+    }),
+  getInstitutionSetupProgress: async (institutionType, authToken) =>
+    fetchWithAuth(`/schools/institution-setup/progress/${institutionType}`, {
+      method: 'GET',
+      headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
+    }),
+  resetWholeInstitution: async (confirmToken) =>
+    fetchWithAuth('/schools/maintenance/reset-whole-institution', {
+      method: 'POST',
+      body: JSON.stringify({ confirmToken }),
+    }),
 };

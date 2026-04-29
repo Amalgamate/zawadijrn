@@ -3,7 +3,13 @@ import { useAuth } from '../../../../hooks/useAuth';
 import { usePermissions } from '../../../../hooks/usePermissions';
 import api from '../../../../services/api';
 import { Card } from '../../../../components/ui/card';
-import { ArrowLeft, Save, Send, AlertCircle, Plus, Trash2, Printer, CheckCircle, XOctagon, FileText } from 'lucide-react'; // Force re-compile
+import { ArrowLeft, Save, Send, AlertCircle, Plus, Trash2, Printer, CheckCircle, XOctagon, FileText, Upload, FileSpreadsheet, FileType2, FileImage, Sparkles } from 'lucide-react';
+import {
+  parseExcelScheme,
+  parseDocxSchemeText,
+  parsePdfSchemeText,
+  buildWeeksFromUnstructuredText,
+} from '../../../../utils/schemeImportParser';
 
 const WEEKS_IN_TERM = 14; 
 // Pre-populate empty rows up to the standard 14 weeks. Additional can be added if needed.
@@ -54,12 +60,25 @@ const SchemeOfWorkForm = ({ schemeId, onBack }) => {
 
   // Review states (For Head Teacher/Admin)
   const [reviewComment, setReviewComment] = useState('');
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState('');
+  const [importPreview, setImportPreview] = useState({
+    fileName: '',
+    fileType: '',
+    rawText: '',
+    previewRows: [],
+    warning: ''
+  });
 
   const isTeacher = role === 'TEACHER';
   const isCreatorOrNew = !schemeId || (schemeData.teacherId === user.id);
   const isEditable = isTeacher && isCreatorOrNew && ['DRAFT', 'REJECTED'].includes(schemeData.status);
   const isReviewable = !isTeacher && schemeId && schemeData.status === 'SUBMITTED';
   const isViewOnly = !isEditable && !isReviewable;
+
+  const STATUS_STEPS = ['DRAFT', 'SUBMITTED', 'APPROVED'];
+  const statusIndex = STATUS_STEPS.indexOf(schemeData.status);
+  const isRejected = schemeData.status === 'REJECTED';
 
   useEffect(() => {
     fetchFormDependencies();
@@ -152,6 +171,87 @@ const SchemeOfWorkForm = ({ schemeId, onBack }) => {
       newWeeks.forEach((w, i) => w.weekNumber = i + 1);
       return { ...prev, weeks: newWeeks };
     });
+  };
+
+  const handleImportFile = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setImportError('');
+    setImporting(true);
+    try {
+      const fileName = file.name || 'Uploaded file';
+      const lowerName = fileName.toLowerCase();
+      const mime = String(file.type || '').toLowerCase();
+
+      if (
+        lowerName.endsWith('.xlsx') ||
+        lowerName.endsWith('.xls') ||
+        lowerName.endsWith('.csv') ||
+        mime.includes('spreadsheet') ||
+        mime.includes('excel') ||
+        mime.includes('csv')
+      ) {
+        const parsed = await parseExcelScheme(file);
+        setImportPreview({
+          fileName,
+          fileType: 'excel',
+          rawText: parsed.rawText,
+          previewRows: parsed.previewRows || [],
+          warning: parsed.warning || '',
+        });
+
+        if (parsed.rows?.length) {
+          setSchemeData((prev) => ({ ...prev, weeks: parsed.rows }));
+        }
+        return;
+      }
+
+      if (
+        lowerName.endsWith('.docx') ||
+        lowerName.endsWith('.doc') ||
+        mime.includes('wordprocessingml') ||
+        mime.includes('msword')
+      ) {
+        const rawText = await parseDocxSchemeText(file);
+        setImportPreview({
+          fileName,
+          fileType: 'word',
+          rawText,
+          previewRows: [],
+          warning: '',
+        });
+        setSchemeData((prev) => ({ ...prev, weeks: buildWeeksFromUnstructuredText(rawText) }));
+        return;
+      }
+
+      if (lowerName.endsWith('.pdf') || mime.includes('pdf')) {
+        const rawText = await parsePdfSchemeText(file);
+        setImportPreview({
+          fileName,
+          fileType: 'pdf',
+          rawText,
+          previewRows: [],
+          warning: '',
+        });
+        setSchemeData((prev) => ({ ...prev, weeks: buildWeeksFromUnstructuredText(rawText) }));
+        return;
+      }
+
+      throw new Error('Unsupported file type. Use Word, PDF, or Excel files.');
+    } catch (err) {
+      setImportError(err?.message || 'Unable to import this file.');
+    } finally {
+      setImporting(false);
+      event.target.value = '';
+    }
+  };
+
+  const getImportIcon = () => {
+    if (importPreview.fileType === 'excel') return <FileSpreadsheet size={16} className="text-emerald-600" />;
+    if (importPreview.fileType === 'pdf') return <FileImage size={16} className="text-rose-600" />;
+    if (importPreview.fileType === 'word') return <FileType2 size={16} className="text-blue-600" />;
+    return <Upload size={16} className="text-brand-teal" />;
   };
 
   const handleSave = async (submit = false) => {
@@ -299,6 +399,43 @@ const SchemeOfWorkForm = ({ schemeId, onBack }) => {
         </div>
       )}
 
+      <div className="px-6 print:hidden">
+        <Card className="p-4 border border-gray-200">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-xs uppercase tracking-widest font-semibold text-gray-500">Approval Progress</span>
+            {STATUS_STEPS.map((step, index) => {
+              const isActive = !isRejected && statusIndex >= index;
+              return (
+                <React.Fragment key={step}>
+                  <span
+                    className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${
+                      isActive
+                        ? 'bg-brand-teal/10 text-brand-teal border-brand-teal/30'
+                        : 'bg-gray-100 text-gray-500 border-gray-200'
+                    }`}
+                  >
+                    {step === 'SUBMITTED' ? 'PENDING APPROVAL' : step}
+                  </span>
+                  {index < STATUS_STEPS.length - 1 && (
+                    <span className="text-gray-300 text-xs">-&gt;</span>
+                  )}
+                </React.Fragment>
+              );
+            })}
+            {isRejected && (
+              <span className="px-2.5 py-1 rounded-full text-xs font-semibold border bg-red-100 text-red-700 border-red-200">
+                REJECTED (ACTION REQUIRED)
+              </span>
+            )}
+          </div>
+          {schemeData.reviewedAt && (
+            <p className="mt-2 text-xs text-gray-500">
+              Last review: {new Date(schemeData.reviewedAt).toLocaleString()}
+            </p>
+          )}
+        </Card>
+      </div>
+
       {/* --- Print Header --- */}
       <div className="hidden print:block text-center border-b-2 border-gray-800 pb-4 mb-8">
         <h1 className="text-2xl font-medium uppercase tracking-wider mb-2">Scheme of Work</h1>
@@ -387,6 +524,90 @@ const SchemeOfWorkForm = ({ schemeId, onBack }) => {
               />
             </div>
 
+          </div>
+        </Card>
+
+        {isEditable && (
+          <Card className="p-6 mb-8 print:hidden border border-gray-200">
+            <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                  <Upload size={18} className="text-brand-teal" />
+                  Import Existing Scheme
+                </h3>
+                <p className="text-sm text-gray-500">
+                  Import from Word, PDF, or Excel. Parsed content is previewed and mapped into weekly rows.
+                </p>
+              </div>
+              <label className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-teal text-white hover:bg-teal-700 transition cursor-pointer">
+                <Upload size={16} />
+                {importing ? 'Reading File...' : 'Import File'}
+                <input
+                  type="file"
+                  accept=".doc,.docx,.pdf,.xls,.xlsx,.csv"
+                  onChange={handleImportFile}
+                  className="hidden"
+                  disabled={importing}
+                />
+              </label>
+            </div>
+
+            {importError && (
+              <div className="mb-4 p-3 rounded-lg border border-red-200 bg-red-50 text-sm text-red-700">
+                {importError}
+              </div>
+            )}
+
+            {importPreview.fileName && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                  {getImportIcon()}
+                  Preview: {importPreview.fileName}
+                </div>
+                {importPreview.warning && (
+                  <div className="p-3 rounded-lg border border-amber-200 bg-amber-50 text-xs text-amber-800">
+                    {importPreview.warning}
+                  </div>
+                )}
+
+                {importPreview.previewRows?.length > 0 ? (
+                  <div className="overflow-auto border border-gray-200 rounded-lg">
+                    <table className="w-full text-xs">
+                      <tbody>
+                        {importPreview.previewRows.map((row, rowIdx) => (
+                          <tr key={`preview-row-${rowIdx}`}>
+                            {row.map((cell, cellIdx) => (
+                              <td key={`preview-cell-${rowIdx}-${cellIdx}`} className="px-2 py-1 text-gray-700">
+                                {cell || '-'}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <pre className="max-h-56 overflow-auto text-xs whitespace-pre-wrap bg-gray-50 border border-gray-200 rounded-lg p-3 text-gray-700">
+                    {importPreview.rawText || 'No text extracted from this file.'}
+                  </pre>
+                )}
+              </div>
+            )}
+          </Card>
+        )}
+
+        <Card className="p-6 mb-8 print:hidden border border-blue-200 bg-blue-50/60">
+          <h3 className="text-lg font-semibold text-blue-900 flex items-center gap-2 mb-2">
+            <Sparkles size={18} />
+            Recommended Scheme Template (Institution Standard)
+          </h3>
+          <p className="text-sm text-blue-800 mb-3">
+            Common institutional template includes: Week, Strand, Sub-strand, Specific Learning Outcomes, Key Inquiry Questions,
+            Learning Experiences, Learning Resources, Assessment, and Reflection/Remarks. CBC institutions also include Core Competencies,
+            Values, and Pertinent & Contemporary Issues (PCIs).
+          </p>
+          <div className="text-xs text-blue-900 font-medium">
+            Tip: Use clear week-by-week rows in your source file for best import accuracy.
           </div>
         </Card>
 

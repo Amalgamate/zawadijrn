@@ -3,13 +3,13 @@
  * Full-page payment recording — replaces the former modal.
  *
  * CHANGES FROM ORIGINAL:
- *  - notes is no longer required (was crashing with null validation)
- *  - success toast now tells staff if note was saved and where to find it
+ *  - Payment date is explicitly selectable for back-posting
+ *  - Notes field removed from payment form
  *  - after success, navigates to invoice detail so they can see the history
  */
 
 import React, { useState } from 'react';
-import { ArrowLeft, Loader2, CheckCircle2, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
 import usePageNavigation from '../../../hooks/usePageNavigation';
 import { useNotifications } from '../hooks/useNotifications';
 import Toast from '../shared/Toast';
@@ -25,7 +25,7 @@ const RecordPaymentPage = ({ invoice, initialMode }) => {
     amount: invoice?.balance ?? '',
     paymentMethod: initialMode || 'CASH',
     referenceNumber: '',
-    notes: ''
+    paymentDate: new Date().toISOString().split('T')[0]
   });
   
   const hasTransport = Number(invoice?.transportBalance || 0) > 0;
@@ -79,8 +79,6 @@ const RecordPaymentPage = ({ invoice, initialMode }) => {
       return;
     }
 
-    const noteSaved = paymentData.notes && paymentData.notes.trim().length > 0;
-
     try {
       setLoading(true);
 
@@ -101,11 +99,11 @@ const RecordPaymentPage = ({ invoice, initialMode }) => {
         amount: parseFloat(paymentData.amount),
         paymentMethod: paymentData.paymentMethod,
         referenceNumber: paymentData.referenceNumber || null,
-        notes: paymentData.notes?.trim() || null,
+        paymentDate: paymentData.paymentDate,
         ...finalAllocation
       });
 
-      setSuccessResult({ data: result.data, noteSaved });
+      setSuccessResult({ data: result.data });
       // Removed auto-navigate to allow for printing
     } catch (error) {
       showError(error.message || 'Failed to record payment');
@@ -143,21 +141,6 @@ const RecordPaymentPage = ({ invoice, initialMode }) => {
               Print Thermal
             </button>
           </div>
-
-          {successResult.noteSaved ? (
-            <div className="flex items-start gap-2 bg-white border border-green-200 rounded-xl px-4 py-3 text-left w-full mt-2">
-              <MessageSquare size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-green-800">Note saved ✓</p>
-                <p className="text-xs text-gray-600 mt-0.5">
-                  Your note was saved with this payment. You can view it in the{' '}
-                  <span className="font-semibold">Invoice Detail → Activity</span> section.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <p className="text-xs text-gray-400 italic">No note was added for this payment.</p>
-          )}
 
           <div className="flex flex-col items-center gap-3 mt-6">
             <button
@@ -290,6 +273,16 @@ const RecordPaymentPage = ({ invoice, initialMode }) => {
         <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wider">Payment Information</h2>
 
         <div className="space-y-2">
+          <label className="block text-sm font-semibold text-gray-700">Payment Date *</label>
+          <input
+            type="date"
+            value={paymentData.paymentDate}
+            onChange={(e) => setPaymentData({ ...paymentData, paymentDate: e.target.value })}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
+          />
+        </div>
+
+        <div className="space-y-2">
           <label className="block text-sm font-semibold text-gray-700">Amount to Pay *</label>
           <input
             type="number"
@@ -397,31 +390,6 @@ const RecordPaymentPage = ({ invoice, initialMode }) => {
             />
           </div>
         )}
-
-        {/* Notes — clearly optional, with helper text */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <label className="block text-sm font-semibold text-gray-700">
-              Notes
-              <span className="ml-2 text-xs font-normal text-gray-400">(optional)</span>
-            </label>
-            {paymentData.notes?.trim() && (
-              <span className="text-xs text-green-600 font-semibold flex items-center gap-1">
-                <MessageSquare size={12} /> Will be saved with payment
-              </span>
-            )}
-          </div>
-          <textarea
-            value={paymentData.notes}
-            onChange={(e) => setPaymentData({ ...paymentData, notes: e.target.value })}
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition resize-none"
-            rows={3}
-            placeholder="e.g. Parent paid in two instalments, partial for term 1..."
-          />
-          <p className="text-xs text-gray-400">
-            Notes are saved with the payment receipt. View them in the invoice Activity tab.
-          </p>
-        </div>
 
         {/* Actions */}
         <div className="flex gap-3 pt-2">

@@ -22,7 +22,12 @@ export const AuthProvider = ({ children }) => {
 
   const normalizeUser = useCallback((u) => {
     if (!u) return u;
-    const institutionType = u.institutionType || 'PRIMARY_CBC';
+    // Don't force PRIMARY_CBC default when the backend has signalled that institution
+    // setup is still required (post-reset). The wizard will lock the type and then
+    // call updateUser() to patch this value in memory.
+    const institutionType = u.requiresInstitutionSetup
+      ? (u.institutionType ?? null)
+      : (u.institutionType || 'PRIMARY_CBC');
     const activeApps = Array.isArray(u.activeApps) ? u.activeApps : undefined;
     return { ...u, institutionType, activeApps };
   }, []);

@@ -4,6 +4,9 @@ import {
   createSchoolWithProvisioning,
   getSchool,
   updateSchool,
+  configureInstitutionTypeLock,
+  getInstitutionSetupProgress,
+  resetWholeInstitution,
   deleteSchool,
   deactivateSchool,
   getAdmissionSequence,
@@ -42,6 +45,14 @@ const updateSchoolSchema = z.object({
   onboardingMessage: z.string().max(2000).optional().nullable()
 });
 
+const configureInstitutionSchema = z.object({
+  institutionType: z.enum(['PRIMARY_CBC', 'SECONDARY', 'TERTIARY'])
+});
+
+const resetWholeInstitutionSchema = z.object({
+  confirmToken: z.literal('RESET_WHOLE_INSTITUTION')
+});
+
 // Public branding route (no auth)
 router.get('/public/branding', rateLimit({ windowMs: 60_000, maxRequests: 100 }), asyncHandler(getPublicBranding));
 
@@ -75,6 +86,28 @@ router.put('/',
   express.json({ limit: '10mb' }),   // logo/favicon/stamp are base64 — needs a higher limit
   validate(updateSchoolSchema),
   asyncHandler(updateSchool)
+);
+
+router.post('/institution-type/lock',
+  authorize('SUPER_ADMIN'),
+  rateLimit({ windowMs: 60_000, maxRequests: 10 }),
+  express.json(),
+  validate(configureInstitutionSchema),
+  asyncHandler(configureInstitutionTypeLock)
+);
+
+router.get('/institution-setup/progress/:institutionType',
+  authorize('SUPER_ADMIN'),
+  rateLimit({ windowMs: 60_000, maxRequests: 60 }),
+  asyncHandler(getInstitutionSetupProgress)
+);
+
+router.post('/maintenance/reset-whole-institution',
+  authorize('SUPER_ADMIN'),
+  rateLimit({ windowMs: 60_000, maxRequests: 2 }),
+  express.json(),
+  validate(resetWholeInstitutionSchema),
+  asyncHandler(resetWholeInstitution)
 );
 
 router.delete('/',

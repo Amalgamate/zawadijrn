@@ -22,7 +22,7 @@ async function main() {
     console.log(`✅ School ready: ${school.name} (ID: ${school.id})`);
 
     // 2. Ensure SuperAdmin exists
-    const email = process.env.SUPER_ADMIN_EMAIL || 'admin@zawadijunioracademy.co.ke';
+    const email = process.env.SUPER_ADMIN_EMAIL || 'admin@trendscore.app';
     const password = process.env.SUPER_ADMIN_PASSWORD || 'Admin@123!';
     console.log(`👤 Ensuring SuperAdmin exists: ${email}...`);
 

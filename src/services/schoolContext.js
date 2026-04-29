@@ -4,6 +4,7 @@
  */
 
 export const getCurrentSchoolId = () => null;
+const INSTITUTION_KEY = 'selectedInstitutionType';
 
 export const getStoredUser = () => {
     try {
@@ -21,6 +22,31 @@ export const isSuperAdminUser = () => {
 };
 
 export const resolveCurrentSchoolId = () => null;
+
+export const getSelectedInstitutionType = () => {
+    try {
+        return localStorage.getItem(INSTITUTION_KEY);
+    } catch (_err) {
+        return null;
+    }
+};
+
+export const setSelectedInstitutionType = (institutionType) => {
+    try {
+        if (!institutionType) return;
+        localStorage.setItem(INSTITUTION_KEY, institutionType);
+    } catch (_err) {
+        // no-op
+    }
+};
+
+export const clearSelectedInstitutionType = () => {
+    try {
+        localStorage.removeItem(INSTITUTION_KEY);
+    } catch (_err) {
+        // no-op
+    }
+};
 
 export const setCurrentSchoolId = (id) => { };
 export const setBranchId = (id) => { };

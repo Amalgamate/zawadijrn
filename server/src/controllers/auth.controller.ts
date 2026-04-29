@@ -102,7 +102,7 @@ export class AuthController {
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     EmailService.sendWelcomeEmail({
       to: email,
-      schoolName: 'Zawadi SMS',
+      schoolName: 'Trends CORE V1.0',
       adminName: `${firstName} ${lastName}`,
       loginUrl: `${frontendUrl}/login`
     }).catch(err => logger.error('Failed to send welcome email:', err));
@@ -192,11 +192,19 @@ export class AuthController {
     const { password: _, passwordResetToken: __, ...userWithoutSensitive } = user;
 
     const schoolId = (user as any).schoolId || (req as any).school?.id;
+    const schoolConfig = await prisma.school.findFirst({
+      select: { id: true, institutionType: true, institutionTypeLocked: true }
+    });
+    // Single-tenant fallback: the user record has no schoolId column, so we
+    // resolve the one-and-only school from the DB.
+    const resolvedSchoolId: string | undefined = schoolId || schoolConfig?.id;
+
+    const requiresInstitutionSetup = user.role === 'SUPER_ADMIN' && !(schoolConfig?.institutionTypeLocked === true);
     let activeApps: string[] = [];
     
-    if (schoolId) {
+    if (resolvedSchoolId) {
       const appConfigs = await prisma.schoolAppConfig.findMany({
-        where: { schoolId, isActive: true },
+        where: { schoolId: resolvedSchoolId, isActive: true },
         include: { app: { select: { slug: true } } }
       });
       activeApps = appConfigs.map(c => c.app.slug);
@@ -206,7 +214,10 @@ export class AuthController {
       success: true,
       user: {
         ...userWithoutSensitive,
-        institutionType: user.institutionType || (req as any).school?.institutionType || 'PRIMARY_CBC',
+        institutionType: user.institutionType || schoolConfig?.institutionType || (req as any).school?.institutionType || 'PRIMARY_CBC',
+        institutionTypeLocked: schoolConfig?.institutionTypeLocked === true,
+        requiresInstitutionSetup,
+        availableInstitutionTypes: ['PRIMARY_CBC', 'SECONDARY', 'TERTIARY'],
         activeApps
       },
       token: accessToken, // Return actual token for cross-domain headers fallback
@@ -230,7 +241,7 @@ export class AuthController {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const result = await whatsappService.sendMessage({
       to: phone,
-      message: `Your Zawadi SMS verification code is: ${otp}`
+      message: `Your Trends CORE V1.0 verification code is: ${otp}`
     });
     if (!result.success) throw new ApiError(500, result.message || 'Failed to send WhatsApp verification');
     res.json({ success: true, message: 'Verification code sent via WhatsApp' });
@@ -292,7 +303,7 @@ export class AuthController {
       await EmailService.sendPasswordReset({
         to: user.email,
         userName: `${user.firstName} ${user.lastName}`,
-        schoolName: 'Zawadi SMS',
+        schoolName: 'Trends CORE V1.0',
         resetLink: resetUrl
       });
     } catch (error) {

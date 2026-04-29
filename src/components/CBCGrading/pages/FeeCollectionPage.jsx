@@ -136,24 +136,76 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
   const fetchInvoices = React.useCallback(async () => {
     try {
       setLoading(true);
-      const params = {
-        page: currentPage,
-        limit: 50,
-        ...(statusFilter !== 'all' && { status: statusFilter.toUpperCase() }),
-        ...(termFilter !== 'all' && { term: termFilter }),
-        ...(startDate && { startDate }),
-        ...(endDate && { endDate }),
-        ...(gradeFilter !== 'all' && { grade: gradeFilter }),
-        ...(searchLearnerId && { learnerId: searchLearnerId }),
-        ...(paymentMethodFilter !== 'all' && { paymentMethod: paymentMethodFilter }),
-        sortBy: sortConfig.key,
-        sortOrder: sortConfig.direction
-      };
-      const response = await api.fees.getAllInvoices(params);
-      setInvoices(response.data || []);
-      setTotalPages(response.pagination?.pages || 1);
-      if (response.totals) {
-        setListTotals(response.totals);
+      let rows = [];
+      let pages = 1;
+      let totals = null;
+
+      if (searchLearnerId) {
+        // Deterministic learner filtering path.
+        const learnerRes = await api.fees.getLearnerInvoices(searchLearnerId);
+        const learnerRows = Array.isArray(learnerRes?.data) ? learnerRes.data : [];
+        rows = learnerRows;
+      } else {
+        const params = {
+          page: currentPage,
+          limit: 50,
+          ...(statusFilter !== 'all' && { status: statusFilter.toUpperCase() }),
+          ...(termFilter !== 'all' && { term: termFilter }),
+          ...(startDate && { startDate }),
+          ...(endDate && { endDate }),
+          ...(gradeFilter !== 'all' && { grade: gradeFilter }),
+          ...(paymentMethodFilter !== 'all' && { paymentMethod: paymentMethodFilter }),
+          sortBy: sortConfig.key,
+          sortOrder: sortConfig.direction
+        };
+        const response = await api.fees.getAllInvoices(params);
+        rows = response.data || [];
+        pages = response.pagination?.pages || 1;
+        totals = response.totals;
+      }
+
+      // Apply same filters to learner-search and list-path results for consistency.
+      rows = rows.filter((inv) => {
+        const matchGrade = gradeFilter === 'all' || String(inv?.learner?.grade || '') === gradeFilter;
+        const matchStatus = statusFilter === 'all' || String(inv.status || '').toUpperCase() === statusFilter.toUpperCase();
+        const matchTerm = termFilter === 'all' || String(inv.term || '') === termFilter;
+        const paymentMode = String(inv.paymentMethod || (inv.payments?.[0]?.paymentMethod || '')).toUpperCase();
+        const matchPayment = paymentMethodFilter === 'all' || paymentMode === paymentMethodFilter.toUpperCase();
+        const invDate = inv.createdAt ? new Date(inv.createdAt) : null;
+        const matchStart = !startDate || (invDate && invDate >= new Date(startDate));
+        const matchEnd = !endDate || (invDate && invDate <= new Date(endDate));
+        return matchGrade && matchStatus && matchTerm && matchPayment && matchStart && matchEnd;
+      });
+
+      rows = [...rows].sort((a, b) => {
+        const key = sortConfig.key;
+        const dir = sortConfig.direction === 'asc' ? 1 : -1;
+        const av = a?.[key];
+        const bv = b?.[key];
+        if (key.toLowerCase().includes('date') || key === 'createdAt') {
+          return ((new Date(av).getTime() || 0) - (new Date(bv).getTime() || 0)) * dir;
+        }
+        if (typeof av === 'number' || typeof bv === 'number') {
+          return ((Number(av) || 0) - (Number(bv) || 0)) * dir;
+        }
+        return String(av || '').localeCompare(String(bv || '')) * dir;
+      });
+
+      if (searchLearnerId) {
+        pages = 1;
+        totals = {
+          totalBilled: rows.reduce((s, i) => s + Number(i.totalAmount || 0), 0),
+          totalPaid: rows.reduce((s, i) => s + Number(i.paidAmount || 0), 0),
+          totalBalance: rows.reduce((s, i) => s + Number(i.balance || 0), 0),
+          totalWaived: rows.reduce((s, i) => s + (i.waivers || []).filter(w => w.status === 'APPROVED').reduce((acc, w) => acc + Number(w.amountWaived || 0), 0), 0),
+          totalOverpaid: rows.reduce((s, i) => s + Math.max(0, Number(i.paidAmount || 0) - Number(i.totalAmount || 0)), 0)
+        };
+      }
+
+      setInvoices(rows);
+      setTotalPages(pages);
+      if (totals) {
+        setListTotals(totals);
       }
     } catch (error) {
       showError('Failed to load invoices');
@@ -440,7 +492,32 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
     if (showCreateModal) {
       const loadFeeStructures = async () => {
         try {
-          const response = await api.fees.getAllFeeStructures({ status: 'ACTIVE' });
+          let activeTerm = 'TERM_1';
+          let activeAcademicYear = new Date().getFullYear();
+
+          try {
+            const termResp = await api.config.getActiveTermConfig();
+            const payload = termResp?.data ?? termResp ?? null;
+            if (payload?.term && payload?.academicYear) {
+              activeTerm = payload.term;
+              activeAcademicYear = Number(payload.academicYear) || activeAcademicYear;
+            }
+          } catch (termError) {
+            console.warn('Using fallback term/year for invoice defaults:', termError);
+          }
+
+          setNewInvoice(prev => ({
+            ...prev,
+            term: activeTerm,
+            academicYear: activeAcademicYear,
+            feeStructureId: ''
+          }));
+
+          const response = await api.fees.getAllFeeStructures({
+            status: 'ACTIVE',
+            term: activeTerm,
+            academicYear: activeAcademicYear
+          });
           setFeeStructures(response.data || []);
         } catch (error) {
           console.error('Failed to load fee structures:', error);
@@ -657,7 +734,11 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
       searchProps: {
         learners: allLearners,
         selectedLearnerId: searchLearnerId,
-        onSelect: (id) => { setSearchLearnerId(id); setCurrentPage(1); }
+        onSelect: (id) => {
+          setActiveTab('invoices');
+          setSearchLearnerId(id || null);
+          setCurrentPage(1);
+        }
       },
       metricsProps: {
         show: showMetrics,
@@ -1793,18 +1874,14 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                   <div className="space-y-2">
                     <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider">Student *</label>
                     {!searchLearnerId ? (
-                      <select
-                        value={newInvoice.learnerId}
-                        onChange={(e) => setNewInvoice({ ...newInvoice, learnerId: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00A09D] focus:border-transparent transition-all"
-                      >
-                        <option value="">Select Student</option>
-                        {allLearners.map(l => (
-                          <option key={l.id} value={l.id}>
-                            {l.firstName} {l.lastName} ({l.admissionNumber})
-                          </option>
-                        ))}
-                      </select>
+                      <SmartLearnerSearch
+                        learners={allLearners}
+                        selectedLearnerId={newInvoice.learnerId}
+                        onSelect={(id) => setNewInvoice({ ...newInvoice, learnerId: id || '' })}
+                        placeholder="Search student by name, adm no..."
+                        compact
+                        className="w-full"
+                      />
                     ) : (
                       <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg flex justify-between items-center group">
                         <div className="flex flex-col">
@@ -1838,7 +1915,10 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                         .filter(fs => {
                           const lId = newInvoice.learnerId || searchLearnerId;
                           const learner = allLearners.find(l => l.id === lId);
-                          return !learner || fs.grade === learner.grade;
+                          const matchGrade = !learner || fs.grade === learner.grade;
+                          const matchTerm = fs.term === newInvoice.term;
+                          const matchYear = Number(fs.academicYear) === Number(newInvoice.academicYear);
+                          return matchGrade && matchTerm && matchYear;
                         })
                         .map(fs => (
                           <option key={fs.id} value={fs.id}>
@@ -1849,10 +1929,13 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                     {feeStructures.filter(fs => {
                       const lId = newInvoice.learnerId || searchLearnerId;
                       const learner = allLearners.find(l => l.id === lId);
-                      return learner && fs.grade === learner.grade;
+                      const matchGrade = learner && fs.grade === learner.grade;
+                      const matchTerm = fs.term === newInvoice.term;
+                      const matchYear = Number(fs.academicYear) === Number(newInvoice.academicYear);
+                      return matchGrade && matchTerm && matchYear;
                     }).length === 0 && (newInvoice.learnerId || searchLearnerId) && (
                         <p className="text-[10px] font-medium text-rose-500 mt-1 uppercase">
-                          No matching fee structure found for student grade.
+                          No active-term fee structure found for student grade.
                         </p>
                       )}
                   </div>
@@ -1866,7 +1949,8 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                       <select
                         value={newInvoice.term}
                         onChange={(e) => setNewInvoice({ ...newInvoice, term: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00A09D] text-sm"
+                        disabled
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 text-sm cursor-not-allowed"
                       >
                         <option value="TERM_1">Term 1</option>
                         <option value="TERM_2">Term 2</option>
@@ -1879,7 +1963,8 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                         type="number"
                         value={newInvoice.academicYear}
                         onChange={(e) => setNewInvoice({ ...newInvoice, academicYear: parseInt(e.target.value) })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00A09D] text-sm"
+                        readOnly
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 text-sm cursor-not-allowed"
                       />
                     </div>
                     <div className="col-span-2 space-y-2">

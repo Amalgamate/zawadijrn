@@ -21,6 +21,8 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
   const [reminderCycle, setReminderCycle] = useState(0);
   const [clockInState, setClockInState] = useState(() => getCurrentUserClockInStatus(user));
   const [smsBalance, setSmsBalance] = useState(null);
+  const [activeTermLabel, setActiveTermLabel] = useState('');
+  const [activeTermMeta, setActiveTermMeta] = useState({ isFallback: false });
   
   // Real-time notifications from our new context.
   // `unreadNotifications` is pre-filtered to isRead:false so the bell
@@ -82,6 +84,59 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
         return 'bg-slate-50 text-slate-800 border-slate-200';
     }
   };
+
+  const formatToday = () => {
+    try {
+      return new Intl.DateTimeFormat('en-GB', {
+        weekday: 'short',
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      }).format(new Date());
+    } catch {
+      return new Date().toDateString();
+    }
+  };
+
+  const termToLabel = (termVal) => {
+    const t = String(termVal || '').toUpperCase();
+    if (t === 'TERM_1') return 'Term 1';
+    if (t === 'TERM_2') return 'Term 2';
+    if (t === 'TERM_3') return 'Term 3';
+    // Fallback for unexpected values
+    return t ? t.replace(/_/g, ' ') : '';
+  };
+
+  // Fetch active term config for the appbar pill.
+  // Date always renders immediately; term pill appears when fetch completes.
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchActiveTerm = async () => {
+      try {
+        const resp = await api.config.getActiveTermConfig();
+        const payload = resp?.data ?? resp ?? null;
+        if (cancelled) return;
+
+        if (payload?.term && payload?.academicYear) {
+          setActiveTermLabel(`${termToLabel(payload.term)} · ${payload.academicYear}`);
+          setActiveTermMeta({ isFallback: !!payload.isFallback });
+          return;
+        }
+
+        // No active term configured — hide pill (date still shows)
+        setActiveTermLabel('');
+        setActiveTermMeta({ isFallback: false });
+      } catch {
+        if (cancelled) return;
+        setActiveTermLabel('');
+        setActiveTermMeta({ isFallback: false });
+      }
+    };
+
+    fetchActiveTerm();
+    return () => { cancelled = true; };
+  }, [user?.id, user?.institutionType]);
 
   const birthdayNotificationItemsRaw = birthdays.map((b) => ({
     ...b,
@@ -349,7 +404,8 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
   const brandColor = brandingSettings?.brandColor || 'var(--brand-purple)';
 
   return (
-    <header className="h-20 bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm px-4 lg:px-8 flex items-center justify-between sticky top-0 z-50">
+    <header className="h-20 bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm sticky top-0 z-50">
+      <div className="app-layout-row h-full flex items-center justify-between">
       <div className="flex items-center gap-4 group cursor-pointer" onClick={() => onNavigate?.('dashboard')}>
         <div className="relative">
           {brandingSettings?.logoUrl && (
@@ -365,7 +421,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
         <div className="hidden sm:block">
           <div className="flex items-center gap-2">
             <h1 className="text-base lg:text-lg font-semibold text-gray-900 leading-none tracking-tight uppercase">
-              {title || brandingSettings?.schoolName || 'ZAWADI SMS'}
+              {title || brandingSettings?.schoolName || 'Trends CORE V1.0'}
             </h1>
             <span
               className={cn(
@@ -376,20 +432,26 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
               )}
               title={user?.institutionType === 'SECONDARY' ? 'Senior School portal' : 'Junior School portal'}
             >
-              {user?.institutionType === 'SECONDARY' ? 'Senior' : 'Junior'}
+              {user?.institutionType === 'SECONDARY' ? 'Senior School' : 'Junior School'}
             </span>
-            <span
-              className={cn(
-                "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest leading-none shadow-sm",
-                portalPillClass(user?.role)
+            <span className="hidden md:inline-block h-4 w-px bg-gray-200 mx-1" aria-hidden="true" />
+            <span className="hidden md:inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-gray-500">
+              <span className="text-gray-800 font-bold">{formatToday()}</span>
+              {activeTermLabel && (
+                <span
+                  className={cn(
+                    "text-gray-800 font-bold",
+                    activeTermMeta.isFallback && "text-gray-600"
+                  )}
+                  title={activeTermMeta.isFallback ? 'Using system fallback (no active term set)' : 'Active academic term'}
+                >
+                  {activeTermLabel}
+                </span>
               )}
-              title="Portal type"
-            >
-              {portalLabel(user?.role)}
             </span>
           </div>
           <p className="text-[9px] text-gray-400 font-medium uppercase tracking-[0.2em] mt-1">
-            {title ? (brandingSettings?.schoolName || 'Zawadi SMS') : 'School Management System'}
+            {title ? (brandingSettings?.schoolName || 'Trends CORE V1.0') : 'School Management System'}
           </p>
         </div>
       </div>
@@ -614,6 +676,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
           </div>
         </div>
       )}
+      </div>
     </header>
   );
 });

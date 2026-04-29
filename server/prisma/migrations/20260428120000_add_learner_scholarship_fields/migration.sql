@@ -1,0 +1,4 @@
+ALTER TABLE "learners"
+ADD COLUMN IF NOT EXISTS "isScholarshipStudent" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN IF NOT EXISTS "scholarshipType" TEXT,
+ADD COLUMN IF NOT EXISTS "scholarshipAmount" DECIMAL(12,2);

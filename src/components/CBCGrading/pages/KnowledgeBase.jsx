@@ -11,7 +11,7 @@ const KnowledgeBase = () => {
         {
             title: "Getting Started",
             icon: PlayCircle,
-            description: "New to Zawadi SMS? Start here for a quick tour.",
+            description: "New to Trends CORE V1.0? Start here for a quick tour.",
             articles: [
                 "Dashboard Overview",
                 "Navigating the System",
@@ -41,7 +41,7 @@ const KnowledgeBase = () => {
         {
             title: "Advanced Features",
             icon: Lightbulb,
-            description: "Master the power-user tools of Zawadi SMS.",
+            description: "Master the power-user tools of Trends CORE V1.0.",
             articles: [
                 "Custom Assessment Scales",
                 "Bulk Student Promotion",
@@ -118,7 +118,8 @@ const KnowledgeBase = () => {
                                             <PlayCircle size={32} className="text-brand-teal ml-1" />
                                         </div>
                                     </div>
-                                    <div className="absolute bottom-0 inset-x-0 p-4 bg-black/60                                        <p className="text-white text-sm font-medium">Video Tutorial {i}: System Basics</p>
+                                    <div className="absolute bottom-0 inset-x-0 p-4 bg-black/60">
+                                        <p className="text-white text-sm font-medium">Video Tutorial {i}: System Basics</p>
                                     </div>
                                 </div>
                             ))}

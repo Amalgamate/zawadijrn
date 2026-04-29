@@ -283,101 +283,116 @@ const PerformanceLevelManager = () => {
 
   if (viewMode === 'create') {
     return (
-      <div className="space-y-8 animate-in fade-in duration-300">
-        <div className="flex items-center justify-between border-b pb-4">
+      <div className="space-y-6 animate-in fade-in duration-300">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-gray-200 pb-4">
           <div className="flex items-center gap-4">
-            <Button variant="outline" size="icon" onClick={() => setViewMode('list')} className="rounded-full">
+            <Button variant="outline" size="icon" onClick={() => setViewMode('list')} className="rounded-full border-gray-300">
               <Plus className="rotate-45" size={18} />
             </Button>
             <div>
-              <h3 className="text-xl font-medium">Configure Scale Group</h3>
-              <p className="text-sm text-gray-500">Define standardized performance levels</p>
+              <h3 className="text-xl font-semibold text-gray-900">Configure Scale Group</h3>
+              <p className="text-sm text-gray-600">Set one school-wide rubric and apply it to selected grades.</p>
             </div>
           </div>
           <Button 
             onClick={handleCreateScale} 
             disabled={saving || creatingTests || !scaleName.trim() || selectedGrades.length === 0}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white h-10 px-4"
           >
             {saving || creatingTests ? <RefreshCw className="animate-spin mr-2" size={14} /> : <Zap className="mr-2" size={14} />}
             Deploy Scale Group
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-           <div className="space-y-6">
-              <section className="space-y-3">
-                <Label className="font-medium text-gray-700">1. Scale Name</Label>
+        <div className="grid grid-cols-1 xl:grid-cols-[1.05fr_1fr] gap-6">
+           <div className="space-y-5">
+              <section className="space-y-3 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <Label className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">1. Scale Name</Label>
                 <Input 
                   placeholder="e.g., Standard 8-Point Rubric" 
                   value={scaleName} 
                   onChange={(e) => setScaleName(e.target.value)}
-                  className="h-12 text-lg font-semibold"
+                  className="h-11 text-base font-semibold border-gray-300 focus-visible:ring-indigo-200"
                 />
+                <p className="text-xs text-gray-500">Use a clear name that staff can recognize at a glance.</p>
               </section>
 
-              <section className="space-y-3">
+              <section className="space-y-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                 <div className="flex items-center justify-between">
-                  <Label className="font-medium text-gray-700">2. Target Grades</Label>
-                  <Button variant="ghost" size="sm" onClick={handleSelectAllGrades} className="text-xs text-indigo-600">
+                  <Label className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">2. Target Grades</Label>
+                  <Button variant="ghost" size="sm" onClick={handleSelectAllGrades} className="text-xs font-semibold text-indigo-600 hover:bg-indigo-50">
                     {selectedGrades.length === GRADES_FLAT.length ? 'Deselect All' : 'Select All'}
                   </Button>
                 </div>
-                <div className="bg-gray-50 p-4 rounded-xl space-y-4">
-                   {GRADE_GROUPS.map(group => (
-                     <div key={group.id} className="space-y-2">
-                        <div className="flex items-center justify-between text-[10px] uppercase font-medium text-gray-400">
-                          <span>{group.name}</span>
-                          <button onClick={() => handleSelectGroup(group.grades)} className="text-indigo-500 hover:underline">Group</button>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {group.grades.map(grade => (
-                            <button
-                              key={grade}
-                              onClick={() => handleGradeToggle(grade)}
-                              className={`px-3 py-1.5 rounded-lg text-xs font-medium border-2 transition-all ${
-                                selectedGrades.includes(grade) ? 'bg-indigo-600 border-indigo-600 text-white shadow-md' : 'bg-white border-gray-100 text-gray-400'
-                              }`}
-                            >
-                              {formatGradeDisplay(grade)}
-                            </button>
-                          ))}
-                        </div>
-                     </div>
-                   ))}
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200">{selectedGrades.length} grade{selectedGrades.length === 1 ? '' : 's'} selected</Badge>
+                  <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">{totalImpactedAreas} learning areas impacted</Badge>
+                </div>
+                <div className="space-y-3">
+                  {GRADE_GROUPS.map(group => (
+                    <div key={group.id} className="space-y-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5">
+                      <div className="flex items-center justify-between text-[10px] uppercase font-semibold tracking-wide text-gray-500">
+                        <span>{group.name}</span>
+                        <button
+                          onClick={() => handleSelectGroup(group.grades)}
+                          className="text-indigo-600 hover:text-indigo-700"
+                        >
+                          {group.grades.every(grade => selectedGrades.includes(grade)) ? 'Clear Group' : 'Select Group'}
+                        </button>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {group.grades.map(grade => (
+                          <button
+                            key={grade}
+                            onClick={() => handleGradeToggle(grade)}
+                            className={`px-3 py-1.5 rounded-md text-xs font-semibold border transition-all ${
+                              selectedGrades.includes(grade)
+                                ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm'
+                                : 'bg-white border-gray-300 text-gray-700 hover:border-indigo-300 hover:text-indigo-700'
+                            }`}
+                          >
+                            {formatGradeDisplay(grade)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </section>
            </div>
 
-           <div className="space-y-6">
-              <Label className="font-medium text-gray-700">3. Level Calibration</Label>
-              <div className="border rounded-2xl overflow-hidden shadow-sm bg-white">
+           <div className="space-y-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <Label className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">3. Level Calibration</Label>
+                <span className="text-xs text-gray-500">Higher min % should map to higher points.</span>
+              </div>
+              <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
                 <table className="w-full text-left">
-                  <thead className="border-b border-[color:var(--table-border)] text-[10px] uppercase">
+                  <thead className="border-b border-slate-200 text-[10px] uppercase bg-slate-50">
                     <tr>
-                      <th className="px-4 py-3 font-semibold text-[color:var(--table-header-fg)]">Min %</th>
-                      <th className="px-4 py-3 font-semibold text-[color:var(--table-header-fg)]">Pts</th>
-                      <th className="px-4 py-3 font-semibold text-[color:var(--table-header-fg)]">Rating</th>
+                      <th className="px-4 py-3 font-semibold text-gray-600">Min %</th>
+                      <th className="px-4 py-3 font-semibold text-gray-600">Pts</th>
+                      <th className="px-4 py-3 font-semibold text-gray-600">Rating</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y">
+                  <tbody className="divide-y divide-slate-100">
                     {ranges.map((range, idx) => (
-                      <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                      <tr key={idx} className="hover:bg-slate-50 transition-colors">
                         <td className="p-2"><Input type="number" value={range.mark} onChange={(e) => {
                           const n = [...ranges]; n[idx].mark = e.target.value; setRanges(n);
-                        }} className="h-8 text-center text-xs w-16" /></td>
-                        <td className="p-2 text-center text-xs font-semibold text-indigo-600">{range.score}</td>
+                        }} className="h-9 text-center text-sm w-20 border-slate-300" /></td>
+                        <td className="p-2 text-center text-sm font-semibold text-indigo-700">{range.score}</td>
                         <td className="p-2"><Input value={range.title} onChange={(e) => {
                           const n = [...ranges]; n[idx].title = e.target.value; setRanges(n);
-                        }} className="h-8 text-xs font-medium" /></td>
+                        }} className="h-9 text-sm font-medium border-slate-300" /></td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-              <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 flex gap-3 items-start">
+              <div className="bg-amber-50 p-4 rounded-xl border border-amber-200 flex gap-3 items-start">
                 <AlertCircle className="text-amber-500 shrink-0" size={18} />
-                <p className="text-xs text-amber-800 leading-relaxed font-medium">Standard school-wide rubric. Deployed scales will automatically update all linked assessment areas for the selected grades.</p>
+                <p className="text-xs text-amber-800 leading-relaxed font-medium">Standard school-wide rubric. Deploying this will update linked assessment areas for selected grades.</p>
               </div>
            </div>
         </div>

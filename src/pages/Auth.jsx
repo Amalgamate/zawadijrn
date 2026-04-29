@@ -6,9 +6,10 @@ import ForgotPasswordForm from '../components/auth/ForgotPasswordForm';
 import ResetPasswordForm from '../components/auth/ResetPasswordForm';
 import EmailVerificationForm from '../components/auth/EmailVerificationForm';
 import WelcomeScreen from '../components/auth/WelcomeScreen';
+import InstitutionSetupWizard from '../components/auth/InstitutionSetupWizard';
 
-const AUTH_VIEWS = ['login', 'register', 'forgot-password', 'reset-password', 'verify-email', 'welcome'];
-const FULL_VIEWS = ['login', 'register', 'verify-email', 'welcome', 'forgot-password'];
+const AUTH_VIEWS = ['login', 'register', 'forgot-password', 'reset-password', 'verify-email', 'welcome', 'setup-institution'];
+const FULL_VIEWS = ['login', 'register', 'verify-email', 'welcome', 'forgot-password', 'setup-institution'];
 
 function showBlobBackground(view) {
   return !FULL_VIEWS.includes(view);
@@ -121,6 +122,17 @@ function Auth({ onAuthSuccess, brandingSettings, basePath = '/auth' }) {
           <WelcomeScreen
             user={userData}
             onGetStarted={handleGetStarted}
+            brandingSettings={brandingSettings}
+          />
+        )}
+        {view === 'setup-institution' && (
+          <InstitutionSetupWizard
+            onComplete={(institutionType) => {
+              // Navigate into the app after the institution type has been locked
+              onAuthSuccess && onAuthSuccess.__goToApp
+                ? onAuthSuccess.__goToApp()
+                : navigate('/app', { replace: true });
+            }}
             brandingSettings={brandingSettings}
           />
         )}

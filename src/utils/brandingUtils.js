@@ -14,14 +14,14 @@ export const getSchoolBranding = () => {
             const user = JSON.parse(userString);
             if (user.school) {
                 return {
-                    name: user.school.name || 'ZAWADI JUNIOR ACADEMY',
+    name: user.school.name || 'Trends CORE V1.0',
                     phone: user.school.phone || '',
                     email: user.school.email || '',
                     address: user.school.address || '',
                     motto: user.school.motto || '',
                     logo: user.school.logoUrl || user.school.logo || '/logo.png',
                     brandColor: user.school.brandColor || '#1a3668',
-                    stamp: user.school.stampUrl || '/stamp.svg'
+                    stamp: user.school.stampUrl || '/branding/stamp.svg'
                 };
             }
         }
@@ -31,14 +31,14 @@ export const getSchoolBranding = () => {
 
     // Robust Defaults
     return {
-        name: 'ZAWADI JUNIOR ACADEMY',
+    name: 'Trends CORE V1.0',
         phone: '+254712345000',
         email: 'template@zawadisms.com',
         address: 'Isiolo Central, Kenya',
         motto: 'Rise & Shine',
         logo: '/logo.png',
         brandColor: '#1a3668',
-        stamp: '/stamp.svg'
+        stamp: '/branding/stamp.svg'
     };
 };
 

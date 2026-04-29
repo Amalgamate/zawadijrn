@@ -60,7 +60,7 @@ export class EmailService {
         return {
           apiKey: decrypt(config.emailApiKey),
           from: config.emailFrom || this.defaultFrom,
-          fromName: config.emailFromName || 'Zawadi SMS',
+          fromName: config.emailFromName || 'Trends CORE V1.0',
           emailTemplates: config.emailTemplates as any
         };
       }
@@ -76,7 +76,7 @@ export class EmailService {
     const config = await this.getGlobalConfig();
     const client = this.getResendClient(config?.apiKey);
     const fromEmail = config?.from || this.defaultFrom;
-    const fromName = config?.fromName || 'Zawadi SMS';
+    const fromName = config?.fromName || 'Trends CORE V1.0';
 
     if (!client) {
       console.warn(`⚠️ Skipped Welcome Email to ${to}: No Resend API Key configured.`);
@@ -98,7 +98,7 @@ export class EmailService {
       const response = await client.emails.send({
         from: fromName ? `${fromName} <${fromEmail}>` : fromEmail,
         to: [to],
-        subject: `Welcome to ${schoolName} on Zawadi SMS!`,
+        subject: `Welcome to ${schoolName} on Trends CORE V1.0!`,
         html,
       });
 
@@ -118,7 +118,7 @@ export class EmailService {
     const config = await this.getGlobalConfig();
     const client = this.getResendClient(config?.apiKey);
     const fromEmail = config?.from || this.defaultFrom;
-    const fromName = config?.fromName || 'Zawadi SMS';
+    const fromName = config?.fromName || 'Trends CORE V1.0';
 
     if (!client) {
       console.warn(`⚠️ Skipped Onboarding Email to ${to}: No Resend API Key configured.`);
@@ -160,7 +160,7 @@ export class EmailService {
     const config = await this.getGlobalConfig();
     const client = this.getResendClient(config?.apiKey);
     const fromEmail = config?.from || this.defaultFrom;
-    const fromName = config?.fromName || 'Zawadi SMS';
+    const fromName = config?.fromName || 'Trends CORE V1.0';
 
     if (!client) {
       console.warn(`⚠️ Skipped Password Reset Email to ${to}: No Resend API Key configured.`);
@@ -217,7 +217,7 @@ export class EmailService {
       );
 
       const response = await client.emails.send({
-        from: `Zawadi SMS Support <${fromEmail}>`,
+        from: `Trends CORE V1.0 Support <${fromEmail}>`,
         to: [toEmail],
         subject: `[${data.ticketPriority}] New Ticket: ${data.ticketSubject}`,
         html,

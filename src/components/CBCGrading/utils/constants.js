@@ -208,11 +208,11 @@ export const PAGE_TITLES = {
   'help': 'Help & Support',
 
   // Settings
-  'settings-school': 'School Settings',
+  'settings-school': 'School Settings & Branding',
   'settings-academic': 'Academic Settings',
   'settings-users': 'System Users',
-  'settings-branding': 'Branding & Customization',
-  'settings-backup': 'Backup & Restore',
+  'settings-branding': 'School Settings & Branding',
+  'settings-backup': 'System Maintenance',
   'settings-communication': 'Message Settings',
   'settings-payment': 'Payment Settings',
   'settings-profile': 'My Profile'

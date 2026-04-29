@@ -13,6 +13,7 @@ import BulkCreateTest from './BulkCreateTest';
 import ResetUtility from '../../../pages/assessments/ResetUtility';
 import ConfirmDialog from '../shared/ConfirmDialog';
 import EmptyState from '../shared/EmptyState';
+import { normalizeTestType, formatTestTypeLabel } from '../utils/testType';
 
 // Shadcn UI components
 import { Button } from '../../ui/button';
@@ -218,14 +219,12 @@ const SummativeTests = ({ onNavigate }) => {
 
       // Group key: testType + term + academicYear — this is the "series"
       // e.g. all OPENER tests for TERM_1 2026 form one series row
-      const seriesKey = `${test.testType || 'ASSESSMENT'}__${test.term || ''}__${test.academicYear || ''}`;
+      const canonicalTestType = normalizeTestType(test.testType) || 'ASSESSMENT';
+      const seriesKey = `${canonicalTestType}__${test.term || ''}__${test.academicYear || ''}`;
 
       if (!grouped[gradeKey][seriesKey]) {
-        // Human-readable type: OPENER → Opener, END_TERM → End Term
-        const displayType = (test.testType || 'Assessment')
-          .replace(/_/g, ' ')
-          .toLowerCase()
-          .replace(/\b\w/g, l => l.toUpperCase());
+        // Human-readable type from canonical mapping
+        const displayType = formatTestTypeLabel(canonicalTestType);
         // Human-readable term: TERM_1 → Term 1
         const displayTerm = (test.term || '')
           .replace(/_/g, ' ')
@@ -243,7 +242,7 @@ const SummativeTests = ({ onNavigate }) => {
       grouped[gradeKey][seriesKey].tests.push(test);
     });
     return grouped;
-  }, [tests]);
+  }, [filteredTests]);
 
   // Approval workflow removed — no unapproved groups tracking needed.
 
@@ -257,6 +256,7 @@ const SummativeTests = ({ onNavigate }) => {
       // Ensure testDate is present (backend expects testDate, frontend uses date)
       const payload = {
         ...formData,
+        testType: normalizeTestType(formData.testType) || 'ASSESSMENT',
         testDate: formData.date || formData.testDate || new Date().toISOString(),
         id: viewMode === 'create' ? Date.now().toString() : selectedTest?.id,
         createdAt: viewMode === 'create' ? new Date().toISOString() : selectedTest?.createdAt,
@@ -598,7 +598,7 @@ const SummativeTests = ({ onNavigate }) => {
                                           <div>
                                             <p className="text-[11px] font-medium text-slate-800">{test.learningArea}</p>
                                             <div className="flex items-center gap-2 mt-0.5">
-                                              <span className="text-[8px] text-slate-400 font-semibold uppercase tracking-widest">{test.testType || 'General Assessment'}</span>
+                                              <span className="text-[8px] text-slate-400 font-semibold uppercase tracking-widest">{formatTestTypeLabel(test.testType || 'ASSESSMENT')}</span>
                                               <span className="w-1 h-1 rounded-full bg-slate-200" />
                                               <span className="text-[8px] text-slate-500 font-medium uppercase tracking-tight">{test.totalMarks} Marks</span>
                                               {test.weight !== 1 && (

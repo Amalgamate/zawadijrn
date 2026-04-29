@@ -30,7 +30,7 @@ self.addEventListener('activate', event => {
 // Push Notifications
 // ---------------------------------------------------------------------------
 self.addEventListener('push', event => {
-  let data = { title: 'Zawadi SMS', body: 'You have a new notification.' };
+  let data = { title: 'Trends CORE V1.0', body: 'You have a new notification.' };
   try {
     data = event.data?.json() ?? data;
   } catch {

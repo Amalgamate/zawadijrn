@@ -320,7 +320,7 @@ const PaymentSettings = () => {
                 {/* Info Footer */}
                 <div className="bg-gray-50 border-t p-6 text-center">
                     <p className="text-xs text-gray-500 font-medium max-w-2xl mx-auto">
-                        Zawadi SMS uses industry-standard 256-bit encryption to protect your sensitive API credentials. 
+                        Trends CORE V1.0 uses industry-standard 256-bit encryption to protect your sensitive API credentials. 
                         Ensure your callback URL is correctly configured in your provider's portal to receive real-time payment updates.
                     </p>
                 </div>

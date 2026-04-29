@@ -9,6 +9,7 @@ import { useNotifications } from '../hooks/useNotifications';
 import { useAuth } from '../../../hooks/useAuth';
 import { getLearningAreasByGrade } from '../../../constants/learningAreas';
 import { Button } from '../../ui/button';
+import { CANONICAL_TEST_TYPE_OPTIONS, normalizeTestType } from '../utils/testType';
 
 const PRIMARY_GRADE_GROUPS = [
     { id: 'early_years', name: 'Early Years', grades: ['PLAYGROUP', 'PP1', 'PP2'] },
@@ -21,14 +22,7 @@ const SECONDARY_GRADE_GROUPS = [
     { id: 'senior_secondary', name: 'Senior School', grades: ['GRADE10', 'GRADE11', 'GRADE12'] },
 ];
 
-const TEST_TYPES = [
-    { value: 'OPENER', label: 'Opener Exam' },
-    { value: 'MIDTERM', label: 'Midterm Assessment' },
-    { value: 'END_TERM', label: 'End of Term Exam' },
-    { value: 'MONTHLY', label: 'Monthly Assessment' },
-    { value: 'WEEKLY', label: 'Weekly Test' },
-    { value: 'RANDOM', label: 'Random Assessment' },
-];
+const TEST_TYPES = CANONICAL_TEST_TYPE_OPTIONS.filter((t) => t.value !== 'CAT');
 
 const TERMS = [
     { value: 'TERM_1', label: 'Term 1' },
@@ -125,7 +119,7 @@ const BulkCreateTest = ({ onBack, onSuccess }) => {
 
                 const payload = {
                     title: formData.title,
-                    testType: formData.testType,
+                    testType: normalizeTestType(formData.testType) || 'ASSESSMENT',
                     term: formData.term,
                     academicYear: formData.academicYear,
                     testDate: formData.testDate,

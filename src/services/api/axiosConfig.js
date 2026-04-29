@@ -6,21 +6,12 @@ const getApiBaseUrl = () => {
     const viteApiUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
     if (viteApiUrl) return viteApiUrl;
 
-    // 2. Capacitor / native shell (no dev server port)
-    const isNative =
-        window.location.protocol === 'capacitor:' ||
-        (window.location.hostname === 'localhost' && window.location.port === '');
-
-    // 3. Deployed web app: same-origin /api (reverse proxy)
-    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' && !isNative) {
+    // 2. Deployed web app: same-origin /api (reverse proxy)
+    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
         return `${window.location.origin}/api`;
     }
 
-    if (isNative) {
-        return 'https://zawadijrn.onrender.com/api';
-    }
-
-    // 4. Local Vite dev: use same-origin /api so requests go through Vite's
+    // 3. Local Vite dev: use same-origin /api so requests go through Vite's
     // HTTPS proxy → http://localhost:5000. This avoids mixed-content blocks
     // (HTTPS page → HTTP API) when the dev server runs with https:true.
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
@@ -32,17 +23,10 @@ const getApiBaseUrl = () => {
 
 export const API_BASE_URL = getApiBaseUrl();
 
-// In a Capacitor/native shell, cookies are not shared cross-origin so
-// withCredentials would trigger a failed CORS pre-flight. Use Bearer tokens only.
-const isNativeApp =
-    typeof window !== 'undefined' &&
-    (window.location.protocol === 'capacitor:' ||
-     (window.location.hostname === 'localhost' && window.location.port === ''));
-
 export const axiosInstance = axios.create({
     baseURL: API_BASE_URL,
     headers: {},
-    withCredentials: !isNativeApp, // cookies only work in browser, not native APK
+    withCredentials: true,
     timeout: 60_000,
 });
 
@@ -55,6 +39,16 @@ axiosInstance.interceptors.request.use(
         // If we have a real JWT (starts with ey), send it as Header fallback
         if (token && token.startsWith('ey')) {
             config.headers['Authorization'] = `Bearer ${token}`;
+        }
+        try {
+            const selectedInstitutionType = localStorage.getItem('selectedInstitutionType');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            const institutionType = selectedInstitutionType || user?.institutionType;
+            if (institutionType) {
+                config.headers['x-institution-type'] = institutionType;
+            }
+        } catch (_err) {
+            // Ignore malformed local storage and proceed without context override.
         }
         return config;
     },

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Save, BookOpen, Edit3, ArrowRight, Sparkles, ChevronLeft, BarChart2, Star, Target, CheckCircle, Check, Users, Loader2 } from 'lucide-react';
+import { Save, BookOpen, Edit3, ArrowRight, Sparkles, ChevronLeft, BarChart2, Star, Target, CheckCircle, Check, Users, Loader2, ShieldCheck } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
 import api from '../../../services/api';
 import SmartLearnerSearch from '../shared/SmartLearnerSearch';

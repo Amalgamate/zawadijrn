@@ -226,7 +226,6 @@ export const tertiaryNavSections = [
       { id: 'settings-academic',      label: 'Academic Settings',      path: 'settings-academic',      permission: 'ACADEMIC_SETTINGS' },
       { id: 'settings-communication', label: 'Communication Settings', path: 'settings-communication', permission: 'SCHOOL_SETTINGS'   },
       { id: 'settings-users',         label: 'User Management',        path: 'settings-users',         permission: 'EDIT_USER'         },
-      { id: 'settings-branding',      label: 'Branding',               path: 'settings-branding',      permission: 'BRANDING_SETTINGS' },
     ],
   },
   {

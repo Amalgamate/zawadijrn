@@ -6,8 +6,8 @@ import ExcelJS from 'exceljs';
  */
 export const downloadFeeTemplate = async () => {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'Zawadi SMS';
-  workbook.lastModifiedBy = 'Zawadi SMS';
+  workbook.creator = 'Trends CORE V1.0';
+  workbook.lastModifiedBy = 'Trends CORE V1.0';
   workbook.created = new Date();
   workbook.modified = new Date();
 
@@ -88,8 +88,8 @@ export const downloadFeeTemplate = async () => {
  */
 export const downloadBalanceTemplate = async () => {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'Zawadi SMS';
-  workbook.lastModifiedBy = 'Zawadi SMS';
+  workbook.creator = 'Trends CORE V1.0';
+  workbook.lastModifiedBy = 'Trends CORE V1.0';
   workbook.created = new Date();
   workbook.modified = new Date();
 
@@ -164,8 +164,8 @@ export const downloadBalanceTemplate = async () => {
  */
 export const downloadWaiverTemplate = async () => {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'Zawadi SMS';
-  workbook.lastModifiedBy = 'Zawadi SMS';
+  workbook.creator = 'Trends CORE V1.0';
+  workbook.lastModifiedBy = 'Trends CORE V1.0';
   workbook.created = new Date();
   workbook.modified = new Date();
 
@@ -238,8 +238,8 @@ export const downloadWaiverTemplate = async () => {
  */
 export const downloadTransportTemplate = async () => {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'Zawadi SMS';
-  workbook.lastModifiedBy = 'Zawadi SMS';
+  workbook.creator = 'Trends CORE V1.0';
+  workbook.lastModifiedBy = 'Trends CORE V1.0';
   workbook.created = new Date();
   workbook.modified = new Date();
 

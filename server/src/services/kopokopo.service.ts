@@ -85,7 +85,7 @@ class KopoKopoService {
             metadata: {
                 student_id: params.studentId,
                 invoice_id: params.invoiceId,
-                system: 'Zawadi SMS'
+                system: 'Trends CORE V1.0'
             },
             _links: {
                 callback_url: process.env.KOPOKOPO_WEBHOOK_URL || 'https://yourdomain.com/api/mpesa/callback'

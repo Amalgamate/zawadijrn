@@ -971,8 +971,7 @@ const AcademicSettings = () => {
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-medium">Manage Classes</h3>
             <div className="flex gap-2">
-              {/* Hiding seeding buttons for now
-               <button
+              <button
                 onClick={handleSeedClasses}
                 disabled={seedingClasses}
                 className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
@@ -990,7 +989,6 @@ const AcademicSettings = () => {
                   </>
                 )}
               </button>
-              */}
               <button
                 onClick={() => openClassModal()}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold"
@@ -1046,9 +1044,11 @@ const AcademicSettings = () => {
                             {classItem.active ? 'Active' : 'Inactive'}
                           </span>
                         </td>
-                        <td className="p-4 flex gap-2">
-                          <button onClick={() => openClassModal(classItem)} className="text-blue-600 hover:text-blue-800"><Edit size={16} /></button>
-                          <button onClick={() => handleDeleteClass(classItem.id)} className="text-red-600 hover:text-red-800"><Trash2 size={16} /></button>
+                        <td className="p-4">
+                          <div className="flex gap-2">
+                            <button onClick={() => openClassModal(classItem)} className="text-blue-600 hover:text-blue-800"><Edit size={16} /></button>
+                            <button onClick={() => handleDeleteClass(classItem.id)} className="text-red-600 hover:text-red-800"><Trash2 size={16} /></button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -1121,9 +1121,11 @@ const AcademicSettings = () => {
                           {stream.active !== false ? 'Active' : 'Inactive'}
                         </span>
                       </td>
-                      <td className="p-4 flex gap-2">
-                        <button onClick={() => openStreamModal(stream)} className="text-blue-600 hover:text-blue-800"><Edit size={16} /></button>
-                        <button onClick={() => handleDeleteStream(stream.id)} className="text-red-600 hover:text-red-800"><Trash2 size={16} /></button>
+                      <td className="p-4">
+                        <div className="flex gap-2">
+                          <button onClick={() => openStreamModal(stream)} className="text-blue-600 hover:text-blue-800"><Edit size={16} /></button>
+                          <button onClick={() => handleDeleteStream(stream.id)} className="text-red-600 hover:text-red-800"><Trash2 size={16} /></button>
+                        </div>
                       </td>
                     </tr>
                   ))

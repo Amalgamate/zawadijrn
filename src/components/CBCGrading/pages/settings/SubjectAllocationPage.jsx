@@ -3,7 +3,6 @@ import { UserPlus, Search, GraduationCap, X, CheckCircle2, AlertCircle, Loader2 
 import {
   Button,
   Input,
-  Badge,
   Dialog,
   DialogContent,
   DialogHeader,
@@ -12,9 +11,8 @@ import {
 } from '../../../../components/ui';
 import api from '../../../../services/api';
 import { useNotifications } from '../../hooks/useNotifications';
-import { getCurrentSchoolId, getStoredUser } from '../../../../services/schoolContext';
 import { getGradeLabel, GRADES } from '../../../../constants/grades';
-const ACTIVE_GRADE_VALUES = GRADES.map(g => g.value);
+import { useSchoolData } from '../../../../contexts/SchoolDataContext';
 
 const dayAlias = {
   MONDAY: 'MONDAY',
@@ -58,6 +56,19 @@ const SubjectAllocationPage = () => {
   const [submitting, setSubmitting] = useState(false);
 
   const { showSuccess, showError } = useNotifications();
+  const { grades: dynamicGrades } = useSchoolData();
+
+  const activeGradeValues = useMemo(() => {
+    // Prefer runtime grades (PRIMARY_CBC vs SECONDARY) to avoid filtering out everything.
+    if (Array.isArray(dynamicGrades) && dynamicGrades.length > 0) return dynamicGrades;
+    return GRADES.map((g) => g.value);
+  }, [dynamicGrades]);
+
+  const activeGradeLabelsUpper = useMemo(() => {
+    // Labels for fallback matching when backend returns "Grade 1" style values.
+    // For dynamic grades, we don't have labels here, so we rely on value matches.
+    return new Set(GRADES.map((g) => String(g.label || '').toUpperCase()));
+  }, []);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -78,10 +89,13 @@ const SubjectAllocationPage = () => {
           : [];
 
       // Filter out legacy grades (Creche, Reception, Transition)
-      const areasData = allAreas.filter(area =>
-        ACTIVE_GRADE_VALUES.includes(area.gradeLevel) ||
-        GRADES.some(g => (g.label || '').toUpperCase() === (area.gradeLevel || '').toUpperCase())
-      );
+      const areasData = allAreas.filter((area) => {
+        const gradeLevel = String(area?.gradeLevel || '').trim();
+        if (!gradeLevel) return false;
+        if (activeGradeValues.includes(gradeLevel)) return true;
+        // Backwards compat: some datasets store grade as a label (e.g. "Grade 1")
+        return activeGradeLabelsUpper.has(gradeLevel.toUpperCase());
+      });
       const assignmentsData = Array.isArray(assignmentsResp?.data) ? assignmentsResp.data : [];
       const classesData = Array.isArray(classesResp?.data) ? classesResp.data : [];
 
@@ -116,7 +130,7 @@ const SubjectAllocationPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [showError]);
+  }, [showError, activeGradeValues, activeGradeLabelsUpper]);
 
   useEffect(() => {
     fetchData();

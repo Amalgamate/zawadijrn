@@ -40,7 +40,7 @@ async function startServer() {
         env: process.env.NODE_ENV || 'development',
         apiUrl,
         healthUrl
-      }, '🚀 Zawadi SMS server started');
+      }, '🚀 Trends CORE V1.0 server started');
     });
   } catch (error) {
     logger.error(error, '❌ Failed to start server');

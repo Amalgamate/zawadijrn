@@ -1,4 +1,4 @@
-name: Zawadi SMS CI Pipeline
+name: Trends CORE V1.0 CI Pipeline
 on: [push, pull_request]
 jobs:
   verify:

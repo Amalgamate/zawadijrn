@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Save, X, ArrowRight, ArrowLeft, CheckCircle, User, Users as UsersIcon, Heart, Trash2, Loader } from 'lucide-react';
+import { Save, X, ArrowRight, ArrowLeft, CheckCircle, User, Users as UsersIcon, Trash2, Loader } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
 import { useAuth } from '../../../hooks/useAuth';
 import { configAPI, learnerAPI } from '../../../services/api';
@@ -74,7 +74,10 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
       bloodGroup: '', allergies: '', medicalConditions: '',
       doctorName: '', doctorPhone: '', specialNeeds: '', photo: null,
       emergencyContact: '', emergencyPhone: '',
-      isTransportStudent: false
+      isTransportStudent: false,
+      isScholarshipStudent: false,
+      scholarshipType: '',
+      scholarshipAmount: ''
     };
   }, []);
 
@@ -163,9 +166,9 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
 
       // Check if field is now valid based on current step
       if (currentStep === 1) {
-        if (name === 'firstName' && value.trim()) {
+        if (name === 'firstName' && value.trim().length >= 2) {
           delete newErrors.firstName;
-        } else if (name === 'lastName' && value.trim()) {
+        } else if (name === 'lastName' && value.trim().length >= 2) {
           delete newErrors.lastName;
         } else if (name === 'gender' && value) {
           delete newErrors.gender;
@@ -259,7 +262,9 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
     if (step === 1) {
       // Step 1: Student Information validation
       if (!formData.firstName?.trim()) errors.firstName = 'First name is required';
+      else if (formData.firstName.trim().length < 2) errors.firstName = 'First name must be at least 2 characters';
       if (!formData.lastName?.trim()) errors.lastName = 'Last name is required';
+      else if (formData.lastName.trim().length < 2) errors.lastName = 'Last name must be at least 2 characters';
       if (!formData.gender) errors.gender = 'Gender is required';
       if (!formData.dateOfBirth) errors.dateOfBirth = 'Date of birth is required';
       if (!formData.grade) errors.grade = 'Grade is required';
@@ -282,8 +287,7 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
         errors.parentPhone = 'Please provide at least one parent/guardian with a phone number';
       }
     }
-    // Step 3 (Medical) has no required fields
-    // Step 4 (Review) has no required fields
+    // Step 3 (Review) has no required fields
 
     setStepErrors(errors);
     return Object.keys(errors).length === 0;
@@ -308,7 +312,7 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
 
   const handleNext = () => {
     if (validateStep(currentStep)) {
-      if (currentStep < 4) {
+      if (currentStep < 3) {
         setStepErrors({}); // Clear errors when moving to next step
         setCurrentStep(currentStep + 1);
       }
@@ -325,6 +329,31 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
 
   // Helper: Compute primary contact based on parent hierarchy
   const computePrimaryContact = (data) => {
+    if (data.primaryContactType === 'FATHER' && data.fatherName && data.fatherPhone) {
+      return {
+        primaryContactType: 'FATHER',
+        primaryContactName: data.fatherName,
+        primaryContactPhone: data.fatherPhone,
+        primaryContactEmail: data.fatherEmail || ''
+      };
+    }
+    if (data.primaryContactType === 'MOTHER' && data.motherName && data.motherPhone) {
+      return {
+        primaryContactType: 'MOTHER',
+        primaryContactName: data.motherName,
+        primaryContactPhone: data.motherPhone,
+        primaryContactEmail: data.motherEmail || ''
+      };
+    }
+    if (data.primaryContactType === 'GUARDIAN' && data.guardianName && data.guardianPhone) {
+      return {
+        primaryContactType: 'GUARDIAN',
+        primaryContactName: data.guardianName,
+        primaryContactPhone: data.guardianPhone,
+        primaryContactEmail: data.guardianEmail || ''
+      };
+    }
+
     if (!data.fatherDeceased && data.fatherName && data.fatherPhone) {
       return {
         primaryContactType: 'FATHER',
@@ -363,6 +392,15 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
       showError('Please fill in all required fields'); setCurrentStep(1); return;
     }
 
+    if (formData.isScholarshipStudent && formData.scholarshipType === 'PARTIAL') {
+      const amount = Number(formData.scholarshipAmount);
+      if (!formData.scholarshipAmount || Number.isNaN(amount) || amount <= 0) {
+        showError('Enter a valid fee-to-pay amount for partial scholarship');
+        setCurrentStep(1);
+        return;
+      }
+    }
+
     // Validate that at least one parent/guardian is provided with phone
     const primaryContact = computePrimaryContact(formData);
     if (!primaryContact.primaryContactPhone) {
@@ -380,38 +418,43 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
     // Success logic managed by onSave handler
     if (onSave) {
       setIsSaving(true);
-      const result = await onSave(finalFormData);
-      console.log('📥 Save result:', result);
+      try {
+        const result = await onSave(finalFormData);
+        console.log('📥 Save result:', result);
 
-      if (result?.success) {
-        console.log('✅ Save successful, showing success message...');
-        showSuccess('Student admission successful!');
+        if (result?.success) {
+          console.log('✅ Save successful, showing success message...');
+          showSuccess('Student admission successful!');
 
-        localStorage.removeItem('admission-form-draft');
-        if (!isEdit) {
-          // Clear form with fresh date
-          const now = new Date();
-          const iso = now.toISOString().split('T')[0];
-          const clearedForm = { ...initialFormData, dateOfAdmission: iso };
-          setFormData(clearedForm);
-          setIsDraft(false);
-          setLastSaved(null);
-          setCurrentStep(1);
+          localStorage.removeItem('admission-form-draft');
+          if (!isEdit) {
+            // Clear form with fresh date
+            const now = new Date();
+            const iso = now.toISOString().split('T')[0];
+            const clearedForm = { ...initialFormData, dateOfAdmission: iso };
+            setFormData(clearedForm);
+            setIsDraft(false);
+            setLastSaved(null);
+            setCurrentStep(1);
+          }
+          if (onCancel) onCancel(); // Go back to list
+        } else {
+          console.log('❌ Save failed:', result?.error);
+          showError('Failed to create student: ' + (result?.error || 'Unknown error'));
         }
-        if (onCancel) onCancel(); // Go back to list
-      } else {
-        console.log('❌ Save failed:', result?.error);
-        showError('Failed to create student: ' + (result?.error || 'Unknown error'));
+      } catch (error) {
+        console.error('❌ Error during save:', error);
+        showError('Failed to create student: ' + (error?.message || 'Unknown error'));
+      } finally {
+        setIsSaving(false);
       }
-      setIsSaving(false);
     }
   };
 
   const steps = [
     { number: 1, title: 'Students Info', icon: User },
     { number: 2, title: 'Guardian Info', icon: UsersIcon },
-    { number: 3, title: 'Medical Info', icon: Heart },
-    { number: 4, title: 'Review', icon: CheckCircle }
+    { number: 3, title: 'Review', icon: CheckCircle }
   ];
 
   return (
@@ -565,43 +608,6 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
                   </div>
                 </div>
 
-                {/* Photo Upload */}
-                <div className="border-t pt-6 mt-6">
-                  <h4 className="text-lg font-medium text-gray-800 mb-4">Student Photo</h4>
-                  <div className="flex items-start gap-6">
-                    {photoPreview ? (
-                      <div className="relative">
-                        <img
-                          src={photoPreview}
-                          alt="Student preview"
-                          className="w-32 h-32 object-cover rounded-lg border-2 border-gray-200 shadow-sm"
-                        />
-                        <button
-                          type="button"
-                          onClick={handleRemovePhoto}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors shadow-md"
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
-                        <User size={48} className="text-gray-300" />
-                      </div>
-                    )}
-                    <div className="flex-1">
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Upload Photo</label>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handlePhotoChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-purple"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">Accepted formats: JPG, PNG. Max size: 5MB</p>
-                    </div>
-                  </div>
-                </div>
-
                 <div className="border-t pt-6 mt-6">
                   <h4 className="text-lg font-medium text-gray-800 mb-4">Academic Information</h4>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -672,32 +678,73 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
                         </label>
                       </div>
                     </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 border-t pt-6">
-                    <h4 className="md:col-span-2 text-lg font-medium text-gray-800 mb-2">Location & Contact</h4>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 uppercase tracking-tight mb-1">County</label>
-                      <input type="text" name="county" value={formData.county} onChange={handleInputChange} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md text-sm shadow-sm focus:border-brand-purple focus:ring-1 focus:ring-brand-purple" placeholder="e.g., Nairobi" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 uppercase tracking-tight mb-1">Residential Address</label>
-                      <input type="text" name="address" value={formData.address} onChange={handleInputChange} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md text-sm shadow-sm focus:border-brand-purple focus:ring-1 focus:ring-brand-purple" placeholder="e.g., Westlands, Estate name" />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 uppercase tracking-tight mb-1">Date of Admission</label>
-                      <input type="date" name="dateOfAdmission" value={toInputDate(formData.dateOfAdmission)} disabled={true} className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm shadow-sm cursor-not-allowed font-mono text-gray-600" />
-                      <p className="text-[10px] text-gray-400 mt-1 font-medium">✨ Automatically set to today</p>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 uppercase tracking-tight mb-1">Previous School</label>
-                      <input type="text" name="previousSchool" value={formData.previousSchool} onChange={handleInputChange} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md text-sm shadow-sm focus:border-brand-purple focus:ring-1 focus:ring-brand-purple" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 uppercase tracking-tight mb-1">Previous Class</label>
-                      <input type="text" name="previousClass" value={formData.previousClass} onChange={handleInputChange} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md text-sm shadow-sm focus:border-brand-purple focus:ring-1 focus:ring-brand-purple" placeholder="e.g., Grade 2" />
+                    <div className="md:col-span-3">
+                      <div className="space-y-3 p-3 bg-amber-50/70 border border-amber-200 rounded-md transition-all hover:bg-amber-50">
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            id="isScholarshipStudent"
+                            name="isScholarshipStudent"
+                            checked={!!formData.isScholarshipStudent}
+                                onChange={(e) => {
+                                  const checked = e.target.checked;
+                                  setFormData({
+                                    ...formData,
+                                    isScholarshipStudent: checked,
+                                    scholarshipType: checked ? (formData.scholarshipType || 'FULL') : '',
+                                    scholarshipAmount: checked ? formData.scholarshipAmount : ''
+                                  });
+                                  if (checked) setGenerateInvoice(false);
+                                }}
+                            className="w-4 h-4 text-amber-600 border-gray-300 rounded focus:ring-amber-500 cursor-pointer"
+                          />
+                          <label htmlFor="isScholarshipStudent" className="flex flex-col cursor-pointer">
+                            <span className="text-sm font-medium text-amber-800">Scholarship Student</span>
+                            <span className="text-[10px] text-amber-700 uppercase tracking-widest font-semibold font-mono">Optional. Scholarship learners are not invoiced automatically.</span>
+                          </label>
+                        </div>
+                        {formData.isScholarshipStudent && (
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 pl-7">
+                            <label className="inline-flex items-center gap-2 text-sm text-amber-900">
+                              <input
+                                type="radio"
+                                name="scholarshipType"
+                                value="FULL"
+                                checked={formData.scholarshipType === 'FULL'}
+                                onChange={handleInputChange}
+                                className="text-amber-600 focus:ring-amber-500"
+                              />
+                              Fully Scholarship
+                            </label>
+                            <label className="inline-flex items-center gap-2 text-sm text-amber-900">
+                              <input
+                                type="radio"
+                                name="scholarshipType"
+                                value="PARTIAL"
+                                checked={formData.scholarshipType === 'PARTIAL'}
+                                onChange={handleInputChange}
+                                className="text-amber-600 focus:ring-amber-500"
+                              />
+                              Partial Scholarship
+                            </label>
+                            {formData.scholarshipType === 'PARTIAL' && (
+                              <div className="w-full sm:w-72">
+                                <label className="block text-xs font-medium text-amber-800 mb-1 uppercase tracking-wide">Fee To Pay</label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  name="scholarshipAmount"
+                                  value={formData.scholarshipAmount || ''}
+                                  onChange={handleInputChange}
+                                  placeholder="e.g. 15000"
+                                  className="w-full px-3 py-2 bg-white border border-amber-300 rounded-md text-sm focus:ring-1 focus:ring-amber-500 focus:border-amber-500"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -718,49 +765,8 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
               </>
             )}
 
-            {/* Step 3: Medical Information */}
+            {/* Step 3: Review */}
             {currentStep === 3 && (
-              <div className="space-y-6">
-                <h3 className="text-xl font-medium text-gray-800 mb-4">Medical Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-tight mb-1">Blood Group</label>
-                    <select name="bloodGroup" value={formData.bloodGroup} onChange={handleInputChange} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md text-sm focus:border-brand-purple focus:ring-1 focus:ring-brand-purple">
-                      <option value="">Select Blood Group</option>
-                      {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(bg => <option key={bg} value={bg}>{bg}</option>)}
-                    </select>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-tight mb-1">Known Allergies</label>
-                  <textarea name="allergies" value={formData.allergies} onChange={handleInputChange} rows="2" className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md text-sm focus:border-brand-purple focus:ring-1 focus:ring-brand-purple" placeholder="List any allergies" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-tight mb-1">Medical Conditions</label>
-                  <textarea name="medicalConditions" value={formData.medicalConditions} onChange={handleInputChange} rows="2" className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md text-sm focus:border-brand-purple focus:ring-1 focus:ring-brand-purple" placeholder="List any medical conditions" />
-                </div>
-                <div className="pt-4 mt-4 border-t border-gray-100">
-                  <h4 className="text-sm font-medium text-gray-400 uppercase tracking-widest mb-4">Doctor Information</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 uppercase tracking-tight mb-1">Doctor Name</label>
-                      <input type="text" name="doctorName" value={formData.doctorName} onChange={handleInputChange} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md text-sm focus:border-brand-purple focus:ring-1 focus:ring-brand-purple" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 uppercase tracking-tight mb-1">Doctor Phone</label>
-                      <input type="tel" name="doctorPhone" value={formData.doctorPhone} onChange={handleInputChange} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md text-sm focus:border-brand-purple focus:ring-1 focus:ring-brand-purple" />
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-tight mb-1">Special Needs</label>
-                  <textarea name="specialNeeds" value={formData.specialNeeds} onChange={handleInputChange} rows="2" className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md text-sm focus:border-brand-purple focus:ring-1 focus:ring-brand-purple" placeholder="Any special needs" />
-                </div>
-              </div>
-            )}
-
-            {/* Step 4: Review */}
-            {currentStep === 4 && (
               <div className="space-y-6">
                 <div className="border-b border-gray-100 pb-2 mb-4">
                   <h3 className="text-lg font-medium text-gray-800">Review Admission Details</h3>
@@ -799,19 +805,14 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
                     </div>
                   </div>
                   <div className="border border-gray-100 rounded-md p-3 bg-gray-50/30">
-                    <h4 className="text-xs font-medium text-brand-purple uppercase tracking-widest mb-2 border-b border-brand-purple/10 pb-1">Medical & Extras</h4>
-                    <div className="space-y-2 text-sm">
-                      <p className="flex justify-between"><span className="text-gray-500">Blood Group:</span> <span className="font-semibold text-gray-800">{formData.bloodGroup || 'N/A'}</span></p>
-                      <p className="flex justify-between"><span className="text-gray-500">Allergies:</span> <span className="font-semibold text-gray-800 truncate max-w-[150px]">{formData.allergies || 'None'}</span></p>
-                    </div>
-                  </div>
-                  <div className="border border-gray-100 rounded-md p-3 bg-gray-50/30">
                     <h4 className="text-xs font-medium text-orange-600 uppercase tracking-widest mb-2 border-b border-orange-50 pb-1">Admin Info</h4>
                     <div className="space-y-2 text-sm">
                       <p className="flex justify-between"><span className="text-gray-500">Adm No:</span> <span className="font-semibold text-gray-800">{formData.admissionNumber || 'Auto-generated'}</span></p>
                       <p className="flex justify-between"><span className="text-gray-500">UPI (NEMIS):</span> <span className="font-semibold text-emerald-600 font-mono">{formData.upiNumber || 'N/A'}</span></p>
-                      <p className="flex justify-between"><span className="text-gray-500">Adm Date:</span> <span className="font-semibold text-gray-800">{formData.dateOfAdmission}</span></p>
-                      <p className="flex justify-between"><span className="text-gray-500">Prev School:</span> <span className="font-semibold text-gray-800 truncate max-w-[150px]">{formData.previousSchool || 'N/A'}</span></p>
+                      <p className="flex justify-between"><span className="text-gray-500">Scholarship:</span> <span className="font-semibold text-gray-800">{formData.isScholarshipStudent ? (formData.scholarshipType === 'PARTIAL' ? 'Partial' : 'Full') : 'No'}</span></p>
+                      {formData.isScholarshipStudent && formData.scholarshipType === 'PARTIAL' && (
+                        <p className="flex justify-between"><span className="text-gray-500">Fee To Pay:</span> <span className="font-semibold text-gray-800">{formData.scholarshipAmount || 'N/A'}</span></p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -819,6 +820,42 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
                   <CheckCircle className="text-brand-purple shrink-0 mt-0.5" size={16} />
                   <p className="text-xs text-brand-purple leading-relaxed font-medium">Please verify all information above before completing the admission. You can edit these details later in student management.</p>
 
+                </div>
+
+                <div className="border border-gray-200 rounded-lg p-4 bg-gray-50/40 mt-4">
+                  <h4 className="text-lg font-medium text-gray-800 mb-4">Student Photo (Optional)</h4>
+                  <div className="flex items-start gap-6">
+                    {photoPreview ? (
+                      <div className="relative">
+                        <img
+                          src={photoPreview}
+                          alt="Student preview"
+                          className="w-32 h-32 object-cover rounded-lg border-2 border-gray-200 shadow-sm"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleRemovePhoto}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors shadow-md"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-white">
+                        <User size={48} className="text-gray-300" />
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Upload Photo</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePhotoChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-purple"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Accepted formats: JPG, PNG. Max size: 5MB</p>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="mt-6 flex items-center gap-3 p-4 bg-gray-50 border border-gray-200 rounded-lg">
@@ -850,7 +887,7 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
                 <button type="button" onClick={() => { setFormData(initialFormData); setCurrentStep(1); }} className="flex items-center gap-2 px-3 md:px-5 py-2.5 bg-gray-50 text-gray-600 rounded-md hover:bg-gray-100 transition-all text-sm font-medium border border-gray-200">
                   <X size={16} /> <span className="hidden sm:inline">Clear</span>
                 </button>
-                {currentStep < 4 ? (
+                {currentStep < 3 ? (
                   <button type="button" onClick={handleNext} disabled={Object.keys(stepErrors).length > 0} className={`flex items-center gap-2 px-4 md:px-5 py-2.5 rounded-md transition-all shadow-sm text-sm font-medium ${Object.keys(stepErrors).length > 0
                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                     : 'bg-brand-teal text-white hover:bg-brand-teal/90'

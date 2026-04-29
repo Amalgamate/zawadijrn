@@ -208,8 +208,8 @@ const HorizontalSubmenu = ({ currentPage, onNavigate }) => {
   if (!hasGroups && !flatItems.length) return null;
 
   return (
-    <div className="border-b border-gray-200 bg-gray-100/95 backdrop-blur-md px-6">
-      <div className="max-w-screen-2xl mx-auto flex items-center gap-1 overflow-x-auto custom-scrollbar whitespace-nowrap py-2">
+    <div className="border-b border-gray-200 bg-gray-100/95 backdrop-blur-md">
+      <div className="app-layout-row flex items-center gap-1 overflow-x-auto custom-scrollbar whitespace-nowrap py-2">
         <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mr-2">
           {activeSection.label}
         </span>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layers, Plus, Search, MoreVertical, ChevronRight, Folder, X } from 'lucide-react';
+import { Layers, Plus, Search, MoreVertical, ChevronRight, Folder, X, Info } from 'lucide-react';
 import api from '../../../../services/api';
 import { useNotifications } from '../../hooks/useNotifications';
 
@@ -125,17 +125,24 @@ const InventoryCategories = () => {
                     <div className="bg-blue-600 rounded-2xl p-8 text-white shadow-xl shadow-blue-200 flex flex-col relative overflow-hidden">
                         <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
                         <Layers className="mb-6 opacity-80" size={40} />
-                        <h2 className="text-xl font-medium mb-3">Category Management</h2>
-                        <p className="text-blue-100/90 text-sm leading-relaxed mb-6">
+                        <div className="flex items-center justify-between mb-3">
+                            <h2 className="text-xl font-medium text-white">Category Management</h2>
+                            <div className="relative group">
+                                <button
+                                    type="button"
+                                    className="inline-flex items-center justify-center w-7 h-7 rounded-full border border-white/30 bg-white/10 text-white/90 hover:bg-white/20 transition-colors"
+                                    aria-label="Category tip"
+                                >
+                                    <Info size={14} />
+                                </button>
+                                <div className="pointer-events-none absolute right-0 top-9 z-20 w-72 rounded-lg border border-white/20 bg-slate-900/95 p-3 text-xs leading-relaxed text-white opacity-0 shadow-xl transition-opacity duration-150 group-hover:opacity-100">
+                                    Use unique categories for assets to track depreciation and assignments separately from consumables.
+                                </div>
+                            </div>
+                        </div>
+                        <p className="text-white/90 text-sm leading-relaxed mb-6">
                             Categories help you group items for easier searching and reporting. You can even create sub-categories for laboratory equipment, sports gear, or office stationery.
                         </p>
-                        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-xs border border-white/20">
-                            <p className="font-medium text-white mb-2 flex items-center gap-2">
-                                <span className="w-1.5 h-1.5 rounded-full bg-yellow-400"></span>
-                                PRO TIP:
-                            </p>
-                            Use unique categories for assets to track depreciation and assignments separately from consumables.
-                        </div>
                     </div>
                 </div>
             </div>

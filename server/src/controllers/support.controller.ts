@@ -44,7 +44,7 @@ export const createTicket = async (req: AuthRequest, res: Response) => {
 
         // Send Email Notification to Support Team
         try {
-            const schoolName = 'Zawadi SMS';
+            const schoolName = 'Trends CORE V1.0';
             let userName = 'Guest';
 
             if (userId) {

@@ -128,7 +128,7 @@ export default function ForgotPasswordForm({ onSwitchToLogin, brandingSettings }
               />
             )}
             <CardTitle className="text-xl font-semibold tracking-tighter text-gray-900 uppercase">
-              {brandingSettings?.schoolName || 'ZAWADI JUNIOR ACADEMY'}
+                {brandingSettings?.schoolName || 'Trends CORE V1.0'}
             </CardTitle>
           </div>
           <CardTitle className="text-2xl font-medium text-gray-900 mt-2">Forgot Password?</CardTitle>

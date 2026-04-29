@@ -5,7 +5,7 @@
 ![Curriculum](https://img.shields.io/badge/Focus-CBC--Learning-green)
 
 ## 🌟 Mission & Vision
-Zawadi SMS is a modern School Management System specifically engineered to meet the dynamic needs of the **Competency Based Curriculum (CBC)**. This project is currently in active development, evolving to provide seamless digital tools for learning assessment, student progression tracking, and administrative excellence.
+Trends CORE V1.0 is a modern School Management System specifically engineered to meet the dynamic needs of the **Competency Based Curriculum (CBC)**. This project is currently in active development, evolving to provide seamless digital tools for learning assessment, student progression tracking, and administrative excellence.
 
 > [!IMPORTANT]
 > This is an **active project** and is currently a **Work in Progress**. Features are being rapidly iterated to stay at the forefront of CBC learning requirements.
@@ -13,7 +13,7 @@ Zawadi SMS is a modern School Management System specifically engineered to meet 
 ## � First Time Login (Superadmin)
 To ensure immediate access upon deployment, the system automatically creates/updates a Superadmin account during server startup.
 
-- **Email**: `admin@zawadijunioracademy.co.ke`
+- **Email**: `admin@trendscore.app`
 - **Password**: `Admin@123!`
 
 > [!TIP]
@@ -26,7 +26,7 @@ To ensure immediate access upon deployment, the system automatically creates/upd
 - **Parent-Teacher Connectivity**: Real-time communication for shared learner support.
 
 ## 🌐 System Portals & Roadmap (WIP)
-The Zawadi SMS ecosystem is designed to provide tailored experiences for every stakeholder. The following portals are currently under active development:
+The Trends CORE V1.0 ecosystem is designed to provide tailored experiences for every stakeholder. The following portals are currently under active development:
 
 ### 🏢 Admin Portal (Active WIP)
 The centralized command center for school owners and principals.
@@ -44,7 +44,7 @@ An interactive space for learners to engage with their digital portfolios.
 - **Status**: Planning & Design.
 
 ### 📱 Mobile Applications (Future Horizon)
-We are building cross-platform mobile apps (iOS & Android) to bring Zawadi SMS to your fingertips.
+We are building cross-platform mobile apps (iOS & Android) to bring Trends CORE V1.0 to your fingertips.
 - **Parent App**: Instant push notifications for attendance and performance.
 - **Teacher App**: Quick classroom management and real-time attendance marking.
 - **Status**: Concept & Architecture phase.
@@ -86,7 +86,7 @@ To save time during the initial school setup, the system features **"Seed Button
 ---
 
 ## � Formative vs. Summative Assessments
-Zawadi SMS handles both assessment types as defined by CBC standards:
+Trends CORE V1.0 handles both assessment types as defined by CBC standards:
 
 | Feature | Formative Assessment | Summative Assessment |
 | :--- | :--- | :--- |

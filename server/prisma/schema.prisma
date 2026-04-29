@@ -141,6 +141,7 @@ model School {
   active              Boolean             @default(true)
   status              String              @default("ACTIVE")
   institutionType     InstitutionType     @default(PRIMARY_CBC)
+  institutionTypeLocked Boolean           @default(false)
   curriculumType      CurriculumType      @default(CBC_AND_EXAM)
   assessmentMode      AssessmentMode      @default(MIXED)
   customGradingScale  Json?
@@ -375,6 +376,9 @@ model Learner {
   religion               String?
   specialNeeds           String?
   isTransportStudent     Boolean                   @default(false)
+  isScholarshipStudent   Boolean                   @default(false)
+  scholarshipType        String?
+  scholarshipAmount      Decimal?                  @db.Decimal(12, 2)
   idCardIssued           DateTime?
   idCardExpiry           DateTime?
   idCardNumber           String?
@@ -3091,4 +3095,3 @@ enum ComplianceStatus {
   FAILED
   EXEMPT
 }
-

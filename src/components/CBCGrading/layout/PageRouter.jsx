@@ -48,8 +48,6 @@ const AppsPage = lazy(() => import('../pages/settings/AppsPage'));
 const SchoolSettings = lazy(() => import('../pages/settings/SchoolSettings'));
 const AcademicSettings = lazy(() => import('../pages/settings/AcademicSettings'));
 const UserManagement = lazy(() => import('../pages/settings/UserManagement'));
-const BrandingSettings = lazy(() => import('../pages/settings/BrandingSettings'));
-const BackupSettings = lazy(() => import('../pages/settings/BackupSettings'));
 const CommunicationSettings = lazy(() => import('../pages/settings/CommunicationSettings'));
 const PaymentSettings = lazy(() => import('../pages/settings/PaymentSettings'));
 const IDCardTemplatesDesigner = lazy(() => import('../pages/settings/IDCardTemplatesDesigner'));
@@ -451,8 +449,9 @@ const PageRouter = ({
           case 'settings-school': return <SchoolSettings brandingSettings={brandingSettings} setBrandingSettings={handlers.setBrandingSettings} />;
           case 'settings-academic': return <AcademicSettings />;
           case 'settings-users': return <UserManagement />;
-          case 'settings-branding': return <BrandingSettings brandingSettings={brandingSettings} setBrandingSettings={handlers.setBrandingSettings} />;
-          case 'settings-backup': return <BackupSettings />;
+          case 'settings-branding':
+            return <SchoolSettings brandingSettings={brandingSettings} setBrandingSettings={handlers.setBrandingSettings} />;
+          case 'settings-backup': return <SystemMaintenancePage />;
           case 'settings-communication': return <ErrorBoundary><CommunicationSettings /></ErrorBoundary>;
           case 'settings-payment': return <PaymentSettings />;
           case 'settings-id-templates': return <ErrorBoundary><IDCardTemplatesDesigner /></ErrorBoundary>;
@@ -496,7 +495,7 @@ const PageRouter = ({
             return (
               <EmptyState
                 title="Application Portal"
-                description="Use the sidebar to explore Zawadi SMS modules."
+                description="Use the sidebar to explore Trends CORE V1.0 modules."
               />
             );
         }

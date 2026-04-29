@@ -41,6 +41,7 @@ const LearnersList = ({
   const [selectAllDatabase, setSelectAllDatabase] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [showGlobalFilters, setShowGlobalFilters] = useState(false);
+  const [totalStudentsCount, setTotalStudentsCount] = useState(null);
 
   const activeFilterCount = (filterGrade !== 'all' ? 1 : 0) + (filterStatus !== 'all' ? 1 : 0) + (filterStream !== 'all' ? 1 : 0);
   const clearAllFiltersLearners = () => { setFilterGrade('all'); setFilterStatus('all'); setFilterStream('all'); };
@@ -131,6 +132,25 @@ const LearnersList = ({
     };
     loadFallbackGrades();
   }, [grades, user?.institutionType]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadTotalStudents = async () => {
+      try {
+        const stats = await learnerAPI.getStats();
+        const total = stats?.data?.totalActive ?? stats?.data?.total;
+        if (isMounted && Number.isFinite(total)) {
+          setTotalStudentsCount(total);
+        }
+      } catch (error) {
+        // Keep fallback to pagination total when stats endpoint is unavailable.
+      }
+    };
+    loadTotalStudents();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Server-side filtering effect
   useEffect(() => {
@@ -395,7 +415,7 @@ const LearnersList = ({
             <div className="hidden lg:flex items-center gap-4 mr-2 border-r pr-4 border-gray-200 h-10">
               <div className="text-right">
                 <p className="text-[10px] text-gray-500 uppercase font-medium tracking-wider">Total Students</p>
-                <p className="text-xl font-medium text-gray-800 leading-none">{pagination?.total || 0}</p>
+                <p className="text-xl font-medium text-gray-800 leading-none">{totalStudentsCount ?? pagination?.total ?? 0}</p>
               </div>
             </div>
 

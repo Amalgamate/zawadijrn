@@ -18,6 +18,7 @@ import { getLearningAreasByGrade, getAllLearningAreas } from '../../../constants
 import { useSchoolData } from '../../../contexts/SchoolDataContext';
 import { reportAPI } from '../../../services/api/report.api';
 import { getAcademicYearOptions, getCurrentAcademicYear } from '../utils/academicYear';
+import { resolveTestType, formatTestTypeLabel, compareTestTypes } from '../utils/testType';
 import Toast from '../shared/Toast';
 import {
   captureElement,
@@ -286,73 +287,9 @@ const calculatePathwayInsights = (results) => {
   return { pathways, recommended };
 };
 
-const normalizeTestGroup = (rawType) => {
-  if (!rawType || !String(rawType).trim()) return null;
-
-  const normalized = String(rawType)
-    .trim()
-    .toUpperCase()
-    .replace(/[\s-]+/g, '_')
-    .replace(/_+/g, '_')
-    .replace(/^_+|_+$/g, '');
-
-  if (normalized === 'MIDTERM' || normalized === 'MID_TERM') return 'MID_TERM';
-  if (normalized === 'END_OF_TERM' || normalized === 'END_TERM') return 'END_TERM';
-
-  return normalized;
-};
-
-const inferTestGroupFromTitle = (title) => {
-  if (!title || !String(title).trim()) return null;
-
-  const source = String(title).toUpperCase();
-  if (/\bMID[\s_-]*TERM\b/.test(source)) return 'MID_TERM';
-  if (/\bEND[\s_-]*(OF[\s_-]*)?TERM\b/.test(source)) return 'END_TERM';
-  if (/\bOPEN(ER|ING)?\b/.test(source)) return 'OPENER';
-  if (/\bCAT\b/.test(source)) return 'CAT';
-  if (/\bMONTH(LY)?\b/.test(source)) return 'MONTHLY';
-  if (/\bWEEK(LY)?\b/.test(source)) return 'WEEKLY';
-  if (/\bRANDOM\b/.test(source)) return 'RANDOM';
-  if (/\bASSESSMENT\b/.test(source)) return 'ASSESSMENT';
-
-  return null;
-};
-
-const formatTestName = (str) => {
-  if (!str) return '';
-  return str.replace(/_/g, ' ').toUpperCase();
-};
-
-const compareTestGroups = (a, b) => {
-  const priority = {
-    OPENER: 1,
-    MID_TERM: 2,
-    MIDTERM: 2,
-    END_TERM: 3,
-    END_OF_TERM: 3,
-    MONTHLY: 4,
-    WEEKLY: 5,
-    CAT: 6,
-    ASSESSMENT: 7,
-    RANDOM: 8
-  };
-
-  const pA = priority[String(a || '').toUpperCase()] || 99;
-  const pB = priority[String(b || '').toUpperCase()] || 99;
-
-  if (pA !== pB) return pA - pB;
-  return String(a || '').localeCompare(String(b || ''));
-};
-
-const resolveTestGroup = (item) => {
-  const explicitType = normalizeTestGroup(item?.testType);
-  if (explicitType) return explicitType;
-
-  const inferred = inferTestGroupFromTitle(item?.title);
-  if (inferred) return inferred;
-
-  return 'ASSESSMENT';
-};
+const formatTestName = (str) => (formatTestTypeLabel(str) || '').toUpperCase();
+const resolveTestGroup = (item) => resolveTestType(item);
+const compareTestGroups = (a, b) => compareTestTypes(a, b);
 
 // ============================================================================
 // LEARNER REPORT TEMPLATE COMPONENT (Reusable for Bulk Print)
@@ -422,12 +359,14 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
 
     // Map scores by test column
     const scoresByCol = {};
+    const maxByCol = {};
     testColumns.forEach(col => {
       const match = areaResults.find(r => resolveTestGroup({
         testType: r.test?.testType || r.testType,
         title: r.test?.title || r.title
       }) === col);
       scoresByCol[col] = match ? (match.score || 0) : null;
+      maxByCol[col] = match ? (match.totalMarks || 0) : null;
     });
 
     const testCount = areaResults.length;
@@ -456,6 +395,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
     return {
       area: displayArea,
       scoresByCol,
+      maxByCol,
       testCount,
       totalScore,
       totalMarks,
@@ -467,18 +407,41 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
     };
   }).filter(row => row.testCount > 0);
   const totalsByTestColumn = testColumns.reduce((acc, col) => {
-    acc[col] = 0;
+    acc[col] = { score: 0, max: 0 };
     return acc;
   }, {});
 
   tableRows.forEach(row => {
     testColumns.forEach(col => {
       const score = row.scoresByCol[col];
+      const max = row.maxByCol[col];
       if (typeof score === 'number' && Number.isFinite(score)) {
-        totalsByTestColumn[col] += score;
+        totalsByTestColumn[col].score += score;
+      }
+      if (typeof max === 'number' && Number.isFinite(max)) {
+        totalsByTestColumn[col].max += max;
       }
     });
   });
+
+  const pointRows = tableRows.filter((r) => typeof r.points === 'number' && Number.isFinite(r.points));
+  const meanPoints = pointRows.length > 0
+    ? (pointRows.reduce((acc, r) => acc + r.points, 0) / pointRows.length)
+    : 0;
+
+  const roundedMeanPoints = Math.max(1, Math.min(8, Math.round(meanPoints)));
+  const rangesWithPoints = (gradingRanges || []).filter(
+    (r) => Number.isFinite(Number(r?.points ?? r?.point))
+  );
+  const pointBand = rangesWithPoints.find((r) => Number(r?.points ?? r?.point) === roundedMeanPoints);
+  const meanPointsPct = (meanPoints / 8) * 100;
+  const gradeByPct = getGrade(meanPointsPct);
+  const gradeFromMeanPoints = pointRows.length > 0
+    ? (pointBand?.grade || pointBand?.label || gradeByPct?.grade || '—')
+    : '—';
+  const gradeFromMeanPointsColor = pointRows.length > 0
+    ? (pointBand?.color || gradeByPct?.color || '#64748b')
+    : '#64748b';
 
   const isJSS = /\b(GRADE_7|GRADE_8|GRADE_9|7|8|9)\b/.test((learner.grade || '').toUpperCase());
   const pdfTypeWeight = {
@@ -523,7 +486,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
         {/* LEFT: Logo */}
         <div style={{ flexShrink: 0 }}>
           {(() => {
-            const logoSrc = brandingSettings?.logoUrl || user?.school?.logoUrl || user?.school?.logo || user?.schoolLogo || user?.logoUrl || '/logo-new.png';
+            const logoSrc = brandingSettings?.logoUrl || user?.school?.logoUrl || user?.school?.logo || user?.schoolLogo || user?.logoUrl || '/branding/logo.png';
             return (
               <img
                 src={logoSrc}
@@ -598,10 +561,9 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
 
       {/* Student Info + Summary Stats — 2-col header */}
       {(() => {
-        const totalTests = tableRows.reduce((acc, r) => acc + r.testCount, 0);
-        const totalPoints = tableRows.reduce((acc, r) => acc + (r.points || 0), 0);
+        const totalScore = tableRows.reduce((acc, r) => acc + r.totalScore, 0);
         const totalMax = tableRows.reduce((acc, r) => acc + r.totalMarks, 0);
-        const avgPct = totalMax > 0 ? (tableRows.reduce((acc, r) => acc + r.totalScore, 0) / totalMax * 100).toFixed(0) : 0;
+        const avgPct = totalMax > 0 ? (totalScore / totalMax * 100).toFixed(0) : 0;
         const overallGrade = getGrade(parseFloat(avgPct)).grade;
         return (
           <div className="mb-3" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 0.8fr)', border: '1px solid #dbe4ee', borderRadius: '4px', overflow: 'hidden', fontSize: '12px', lineHeight: '1.25' }}>
@@ -625,7 +587,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
                 </div>
                 <div style={{ padding: '8px 4px', textAlign: 'center', borderBottom: '1.2px solid #e2e8f0', display: 'flex', flexDirection: 'column', justifyContent: 'center', backgroundColor: '#f8fafc', gap: '2px' }}>
                   <div style={{ fontSize: '8px', fontWeight: pdfTypeWeight.semibold, color: '#64748b', textTransform: 'uppercase' }}>Points</div>
-                  <div style={{ fontSize: '16px', fontWeight: pdfTypeWeight.bold, color: '#0f172a' }}>{totalPoints}</div>
+                  <div style={{ fontSize: '16px', fontWeight: pdfTypeWeight.bold, color: '#0f172a' }}>{meanPoints.toFixed(1)}/8</div>
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
@@ -670,8 +632,9 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
                 <td style={{ padding: '6px 10px', fontWeight: pdfTypeWeight.bold, fontSize: '12px', color: '#0f172a', letterSpacing: '-0.1px', border: '1.5px solid #e2e8f0' }}>{row.area}</td>
                 {testColumns.map(col => {
                   const score = row.scoresByCol[col];
-                  const colGrade = score !== null && row.totalMarks > 0
-                    ? getGrade((score / (row.totalMarks / (row.testCount || 1))) * 100).grade
+                  const maxForCol = row.maxByCol[col];
+                  const colGrade = score !== null && typeof maxForCol === 'number' && maxForCol > 0
+                    ? getGrade((score / maxForCol) * 100).grade
                     : null;
                   return (
                     <td key={col} style={{ padding: '6px 6px', textAlign: 'center', border: '1.5px solid #e2e8f0' }}>
@@ -694,24 +657,26 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
             ))}
             {tableRows.length > 0 && (
               <tr style={{ backgroundColor: '#f8fafc' }}>
-                <td style={{ padding: '6px 10px', fontWeight: pdfTypeWeight.title, fontSize: '12px', color: '#0f172a', border: '1.5px solid #e2e8f0' }}>
+                <td style={{ padding: '6px 10px', fontWeight: 900, fontSize: '14px', color: '#0f172a', border: '1.5px solid #e2e8f0' }}>
                   TOTAL
                 </td>
                 {testColumns.map(col => (
-                  <td key={`total-${col}`} style={{ padding: '6px 6px', textAlign: 'center', fontWeight: pdfTypeWeight.title, fontSize: '13px', color: '#0f172a', border: '1.5px solid #e2e8f0' }}>
-                    {totalsByTestColumn[col]}
+                  <td key={`total-${col}`} style={{ padding: '6px 6px', textAlign: 'center', fontWeight: 900, fontSize: '15px', color: '#0f172a', border: '1.5px solid #e2e8f0' }}>
+                    {totalsByTestColumn[col].max > 0
+                      ? `${totalsByTestColumn[col].score}/${totalsByTestColumn[col].max}`
+                      : totalsByTestColumn[col].score}
                   </td>
                 ))}
                 {testColumns.length > 1 && (
-                  <td style={{ padding: '6px 6px', textAlign: 'center', fontWeight: pdfTypeWeight.bold, fontSize: '13px', color: '#64748b', border: '1.5px solid #e2e8f0' }}>
+                  <td style={{ padding: '6px 6px', textAlign: 'center', fontWeight: 900, fontSize: '15px', color: '#64748b', border: '1.5px solid #e2e8f0' }}>
                     —
                   </td>
                 )}
-                <td style={{ padding: '6px 6px', textAlign: 'left', fontWeight: pdfTypeWeight.bold, fontSize: '13px', color: '#64748b', border: '1.5px solid #e2e8f0' }}>
-                  —
+                <td style={{ padding: '6px 6px', textAlign: 'left', fontWeight: 900, fontSize: '15px', color: gradeFromMeanPointsColor, border: '1.5px solid #e2e8f0' }}>
+                  {gradeFromMeanPoints}
                 </td>
-                <td style={{ padding: '6px 6px', textAlign: 'center', fontWeight: pdfTypeWeight.bold, fontSize: '13px', color: '#64748b', border: '1.5px solid #e2e8f0' }}>
-                  —
+                <td style={{ padding: '6px 6px', textAlign: 'center', fontWeight: 900, fontSize: '15px', color: '#64748b', border: '1.5px solid #e2e8f0' }}>
+                  {pointRows.length > 0 ? `${meanPoints.toFixed(1)}/8` : '—'}
                 </td>
               </tr>
             )}
@@ -719,9 +684,9 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
         </table>
 
         {/* Chart + Pathway Insight Section */}
-        <div style={{ display: 'flex', gap: '30px', marginTop: '16px', marginBottom: '8px', alignItems: 'start' }}>
+        <div style={{ display: 'flex', gap: '30px', marginTop: '16px', marginBottom: '8px', alignItems: 'start', justifyContent: 'flex-start' }}>
           {/* LEFT: Bar Chart — Show for ALL grades */}
-          <div style={{ width: isJSS ? '420px' : '100%' }}>
+          <div style={{ width: isJSS ? '420px' : '50%', minWidth: '360px', maxWidth: '460px' }}>
             <h3 style={{ fontSize: '10px', fontWeight: '800', color: '#111827', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', marginBottom: '6px', paddingBottom: '2px' }}>Subject Performance</h3>
             <div style={{ width: '100%' }}>
               {tableRows && tableRows.length > 0 ? (
@@ -3212,10 +3177,10 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                   {/* Logo Middle */}
                   <div className="mb-4">
                     <img
-                      src={brandingSettings?.logoUrl || user?.school?.logo || "/logo-new.png"}
+                      src={brandingSettings?.logoUrl || user?.school?.logo || "/branding/logo.png"}
                       alt="Logo"
                       style={{ height: '100px', width: 'auto', objectFit: 'contain' }}
-                      onError={(e) => { e.target.src = '/logo-new.png'; }}
+                      onError={(e) => { e.target.src = '/branding/logo.png'; }}
                     />
                   </div>
 

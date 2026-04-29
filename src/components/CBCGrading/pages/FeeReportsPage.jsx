@@ -558,9 +558,11 @@ const FeeReportsPage = () => {
                   className="hover:bg-blue-50 cursor-pointer transition-colors group"
                   title={`View ${grade.grade} fee records`}
                 >
-                  <td className="px-3 py-1.5 border-r border-gray-100 font-semibold text-blue-700 text-xs group-hover:underline flex items-center gap-1">
-                    {grade.grade}
-                    <ArrowRight size={10} className="opacity-0 group-hover:opacity-60 transition-opacity" />
+                  <td className="px-3 py-1.5 border-r border-gray-100 font-semibold text-blue-700 text-xs group-hover:underline">
+                    <div className="flex items-center gap-1">
+                      {grade.grade}
+                      <ArrowRight size={10} className="opacity-0 group-hover:opacity-60 transition-opacity" />
+                    </div>
                   </td>
                   <td className="px-3 py-1.5 border-r border-gray-100 text-gray-600 text-xs">{grade.studentCount}</td>
                   <td className="px-3 py-1.5 border-r border-gray-100 text-gray-900 text-xs">{fmtKES(grade.expected)}</td>

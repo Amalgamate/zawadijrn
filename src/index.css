@@ -7,8 +7,8 @@
   --card-foreground: 222.2 84% 4.9%;
   --popover: 0 0% 100%;
   --popover-foreground: 222.2 84% 4.9%;
-  --primary: 301 100% 16%;
-  /* #520050 */
+  --primary: 236 95% 26%;
+  /* #030b82 */
   --primary-foreground: 210 40% 98%;
   --secondary: 210 40% 96.1%;
   --secondary-foreground: 222.2 47.4% 11.2%;
@@ -20,23 +20,26 @@
   --destructive-foreground: 210 40% 98%;
   --border: 214.3 31.8% 91.4%;
   --input: 214.3 31.8% 91.4%;
-  --ring: 301 100% 16%;
+  --ring: 236 95% 26%;
   /* 0 = flat panels; bump if you want subtle rounding app-wide */
   --radius: 0;
 
-  --brand-purple: #520050;
-  --brand-purple-dark: #3d003b;
-  --brand-purple-light: #6d0066;
+  --brand-purple: #030b82;
+  --brand-purple-dark: #02075e;
+  --brand-purple-light: #1e26a1;
   --brand-teal: #0D9488;
-  /* Replaced color-mix with static hex for html2canvas compatibility */
-  --table-border: #b1a0b0; 
-  --table-header-bg: #f8f1f7;
+  /* Unified premium table palette (Fee Collection-inspired) */
+  --table-border: #d1d5db;
+  --table-header-bg: #f9fafb;
   --table-header-fg: var(--brand-purple-dark);
   --bg-primary: #ffffff;
   --bg-secondary: #f8fafc;
-  --text-primary: #1a1a1a;
+  --text-primary: #000000;
   --text-secondary: #4b5563;
   --border-color: #e5e7eb;
+  --app-max-width: 1536px;
+  --app-gutter-x: 1.5rem;
+  --app-gutter-y: 1.5rem;
 }
 
 .dark {
@@ -67,12 +70,14 @@
 
 @layer base {
   body {
-    @apply text-slate-900 antialiased leading-relaxed;
+    @apply antialiased leading-relaxed;
+    color: #000000;
     font-family: 'Inter', sans-serif;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply leading-tight font-semibold tracking-tight text-slate-900;
+    @apply leading-tight font-semibold tracking-tight;
+    color: #000000;
   }
 
   p {
@@ -115,6 +120,21 @@
 
 /* App-wide data tables: Unified single-line grid */
 @layer components {
+  .app-layout-row {
+    max-width: var(--app-max-width);
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: var(--app-gutter-x);
+    padding-right: var(--app-gutter-x);
+  }
+
+  .app-layout-content {
+    max-width: var(--app-max-width);
+    margin-left: auto;
+    margin-right: auto;
+    padding: var(--app-gutter-y) var(--app-gutter-x);
+  }
+
   .surface-panel {
     @apply bg-white border border-gray-200/80 rounded-lg shadow-sm;
   }
@@ -132,13 +152,32 @@
   }
 
   body table {
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
     border: 1px solid var(--table-border);
+    background-color: #fff;
   }
 
+  /* Single-line grid system (Excel-like): draw only right/bottom edges per cell */
   body table th,
   body table td {
-    border: 1px solid var(--table-border);
+    border: 0 !important;
+    border-right: 1px solid var(--table-border);
+    border-bottom: 1px solid var(--table-border);
+    padding: 0.625rem 0.75rem;
+    vertical-align: middle;
+  }
+
+  body table th:last-child,
+  body table td:last-child {
+    border-right: 0 !important;
+  }
+
+  body table tbody tr:last-child td,
+  body table tfoot tr:last-child td,
+  body table tfoot tr:last-child th {
+    border-bottom: 0 !important;
   }
 
   /* VirtualizedTable spacer rows: no grid lines on height-padding cells */
@@ -156,7 +195,14 @@
     background-color: var(--table-header-bg);
     font-weight: 600;
     color: var(--table-header-fg);
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
     vertical-align: middle;
+  }
+
+  body table tbody tr:hover td {
+    background-color: #f8fbff;
   }
 
   /* Solid bar headers (white text on brand) — e.g. summative marks grid */
@@ -232,8 +278,17 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--bg-primary);
-  color: var(--text-primary);
+  color: #000000;
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Enforce pure-black for neutral text utility classes app-wide */
+[class*="text-gray-"],
+[class*="text-slate-"],
+[class*="text-zinc-"],
+[class*="text-neutral-"],
+[class*="text-stone-"] {
+  color: #000000 !important;
 }
 
 code {
@@ -362,11 +417,11 @@ code {
 
 @layer utilities {
   .odoo-purple {
-    @apply text-[#520050];
+    @apply text-[#030b82];
   }
 
   .bg-odoo-purple {
-    @apply bg-[#520050];
+    @apply bg-[#030b82];
   }
 
 

@@ -48,12 +48,12 @@ const StudentStatementsPage = () => {
           const schoolData = schoolRes.data?.data || schoolRes.data?.[0] || schoolRes.data || schoolRes;
           if (schoolData) {
             setSchoolInfo({
-              name: schoolData.name || schoolData.schoolName || 'Zawadi SMS Academy',
+              name: schoolData.name || schoolData.schoolName || 'Trends CORE V1.0 Academy',
               motto: schoolData.motto || '',
               address: schoolData.address || '',
               phone: schoolData.phone || '',
               email: schoolData.email || '',
-              logoUrl: schoolData.logoUrl || '/logo-new.png'
+              logoUrl: schoolData.logoUrl || '/branding/logo.png'
             });
           }
         } catch (schoolErr) {
@@ -389,7 +389,7 @@ const StudentStatementsPage = () => {
             <div className="flex justify-between items-start border-b-2 border-blue-900 pb-6 mb-8">
               <div className="flex gap-6 items-center">
                 <div className="w-36 h-36 bg-gray-50 rounded-xl p-3 flex items-center justify-center border border-gray-100 shadow-sm">
-                  <img src={schoolInfo?.logoUrl || '/logo-new.png'} alt="School Logo" className="max-w-full max-h-full object-contain" />
+                  <img src={schoolInfo?.logoUrl || '/branding/logo.png'} alt="School Logo" className="max-w-full max-h-full object-contain" />
                 </div>
                 <div>
                   <h1 className="text-3xl font-semibold text-blue-900 uppercase tracking-tight">{schoolInfo?.name}</h1>

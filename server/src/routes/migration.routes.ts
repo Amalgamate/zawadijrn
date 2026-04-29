@@ -70,7 +70,7 @@ router.post('/create-admin', async (_req: Request, res: Response) => {
     
     const user = await prisma.user.create({
       data: {
-        email: 'admin@zawadijunioracademy.co.ke',
+        email: 'admin@trendscore.app',
         password: '$2a$10$P.gWdFVLw7H7bQZJ8H5y6OQhUx8XJ9k2nLv0n5Z3w5K9mM2L0q5Be',
         firstName: 'Admin',
         lastName: 'User',

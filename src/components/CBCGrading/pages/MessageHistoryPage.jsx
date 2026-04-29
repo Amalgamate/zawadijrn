@@ -145,24 +145,24 @@ const MessageHistoryPage = () => {
     };
 
     return (
-        <div className="h-full flex flex-col bg-white rounded-xl shadow-lg overflow-hidden">
+        <div className="h-full flex flex-col bg-white border border-slate-200 overflow-hidden">
 
             {/* Header */}
-            <div className="bg-brand-teal px-6 py-4 flex items-center justify-between">
+            <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 bg-white/20 rounded-lg">
-                        <MessageSquare size={24} className="text-white" />
+                    <div className="p-2 bg-slate-100 rounded-lg">
+                        <MessageSquare size={24} className="text-slate-700" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-medium text-white">Message History</h1>
-                        <p className="text-white/80 text-sm">Track all communications sent to parents and guardians</p>
+                        <h1 className="text-2xl font-semibold text-slate-900">Message History</h1>
+                        <p className="text-sm text-slate-600">Track all communications sent to parents and guardians</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <Button
                         onClick={handleExportCSV}
                         disabled={logs.length === 0}
-                        className="bg-white text-brand-teal hover:bg-gray-100 font-medium gap-2"
+                        className="bg-brand-teal text-white hover:bg-brand-teal/90 font-medium gap-2"
                     >
                         <Download size={18} />
                         Export CSV
@@ -172,7 +172,7 @@ const MessageHistoryPage = () => {
                         size="sm"
                         onClick={handleRefresh}
                         disabled={loading}
-                        className="border-white/30 text-white hover:bg-white/10"
+                        className="border-slate-300 text-slate-700 hover:bg-slate-100"
                     >
                         <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
                     </Button>

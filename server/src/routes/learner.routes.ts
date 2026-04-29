@@ -45,7 +45,7 @@ router.get('/next-admission-number',
   asyncHandler(async (_req, res) => {
     const year = new Date().getFullYear();
     const preview = await getNextAdmissionNumberPreview('MC', year);
-    res.json({ success: true, data: { nextAdmissionNumber: preview || `ADM-${year}-001` } });
+    res.json({ success: true, data: { nextAdmissionNumber: preview || '1000' } });
   })
 );
 

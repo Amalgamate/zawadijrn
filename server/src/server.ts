@@ -65,7 +65,9 @@ app.use(cors({
     'Accept', 
     'Origin',
     'x-branch-id',
-    'x-school-id'
+    'x-school-id',
+    'x-institution-type',
+    'X-Institution-Type'
   ],
   exposedHeaders: ['X-Total-Count', 'X-Page-Count'],
   maxAge: 86400, // 24 hours

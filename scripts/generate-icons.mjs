@@ -186,8 +186,8 @@ function updateManifest() {
   console.log('\n📄 Updating manifest.json');
 
   const manifest = {
-    short_name: 'Zawadi SMS',
-    name: 'Zawadi SMS - School Management & CBC Grading',
+    short_name: 'Trends CORE V1.0',
+    name: 'Trends CORE V1.0 - School Management & CBC Grading',
     description: 'Complete CBC School Management & Grading System for Kenyan schools',
     icons: [
       { src: 'favicon-16x16.png', sizes: '16x16', type: 'image/png' },
@@ -214,7 +214,7 @@ function updateManifest() {
 
 // ── main ──────────────────────────────────────────────────────────────────────
 async function main() {
-  console.log('🎨 Zawadi SMS — Icon Generator');
+  console.log('🎨 Trends CORE V1.0 — Icon Generator');
   console.log(`   Source: ${SOURCE}`);
 
   if (!fs.existsSync(SOURCE)) {

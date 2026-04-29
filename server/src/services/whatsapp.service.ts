@@ -312,7 +312,7 @@ class WhatsAppService {
       subjectsText +
       averageText +
       `Please find the detailed report attached below.\n\n` +
-      `_Sent via Zawadi SMS System_`;
+      `_Sent via Trends CORE V1.0 System_`;
 
     return this.sendMessage({
       to: data.parentPhone,
@@ -360,7 +360,7 @@ class WhatsAppService {
       `*Status:* ${params.status}\n` +
       `*Current Balance:* KES ${params.balance.toLocaleString()}\n\n` +
       `Thank you for your payment.\n` +
-      `_Zawadi SMS_`;
+      `_Trends CORE V1.0_`;
 
     return this.sendMessage({ to: params.parentPhone, message });
   }

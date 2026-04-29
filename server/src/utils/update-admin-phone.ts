@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function updateAdminPhone() {
-    const email = 'admin@zawadijunioracademy.co.ke';
+    const email = 'admin@trendscore.app';
     const phone = '0713612141';
 
     try {

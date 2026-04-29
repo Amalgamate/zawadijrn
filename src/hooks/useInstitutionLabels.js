@@ -18,7 +18,7 @@ export const useInstitutionLabels = () => {
       class: 'Class',
       classes: 'Classes',
       subject: 'Learning Area',
-      subjects: 'Learning Areas',
+  subjects: 'Learner Analytics',
       grade: 'Grade',
       grades: 'Grades',
       term: 'Term',

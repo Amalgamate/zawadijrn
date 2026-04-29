@@ -179,21 +179,21 @@ const AccountingManager = ({ user }) => {
                 <div className="space-y-6">
                     <div className="bg-[var(--brand-purple)] rounded-xl p-6 text-white shadow-xl shadow-brand-purple/20 relative overflow-hidden group">
                         <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all duration-700"></div>
-                        <h3 className="text-lg font-medium mb-2 flex items-center gap-2">
+                        <h3 className="text-lg font-medium text-white mb-2 flex items-center gap-2">
                             <BarChart3 size={20} className="text-brand-teal" />
                             Fiscal Year Summary
                         </h3>
-                        <p className="text-brand-purple/10 text-xs mb-4">Academic Year 2026</p>
+                        <p className="text-white/70 text-xs mb-4">Academic Year 2026</p>
                         <div className="space-y-4">
                             <div className="flex justify-between items-end">
-                                <span className="text-sm opacity-80">Collection Target</span>
-                                <span className="font-medium">85%</span>
+                                <span className="text-sm text-white/80">Collection Target</span>
+                                <span className="font-medium text-white">85%</span>
                             </div>
                             <div className="w-full bg-white/20 rounded-full h-2">
                                 <div className="bg-brand-teal h-full rounded-full transition-all duration-1000" style={{ width: '85%' }}></div>
                             </div>
                             <div className="pt-2">
-                                <button className="w-full py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-sm font-medium transition-all">
+                                <button className="w-full py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-sm font-medium text-white transition-all">
                                     Generate Balance Sheet
                                 </button>
                             </div>

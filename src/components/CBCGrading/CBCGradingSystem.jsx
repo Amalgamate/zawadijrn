@@ -30,6 +30,19 @@ import { refreshBus } from '../../utils/refreshBus';
 import axiosInstance from '../../services/api/axiosConfig';
 import { hasPageAccess } from './utils/appAccess';
 
+const extractApiErrorMessage = (err, fallback = 'Request failed') => {
+  const data = err?.response?.data;
+  if (typeof data?.error?.message === 'string' && data.error.message.trim()) return data.error.message;
+  if (typeof data?.message === 'string' && data.message.trim()) return data.message;
+  if (Array.isArray(data?.errors) && data.errors.length > 0) {
+    const first = data.errors[0];
+    if (typeof first === 'string') return first;
+    if (typeof first?.message === 'string') return first.message;
+  }
+  if (typeof err?.message === 'string' && err.message.trim()) return err.message;
+  return fallback;
+};
+
 /**
  * CBCGradingSystem — Orchestration Layer
  *
@@ -95,7 +108,7 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
   const fetchLearnersFromApi = useCallback(async (params = {}) => {
     setLearnersLoading(true);
     try {
-      const qs = new URLSearchParams({ limit: 200, status: 'ACTIVE', ...params }).toString();
+      const qs = new URLSearchParams({ limit: 200, ...params }).toString();
       const res = await axiosInstance.get(`/learners?${qs}`);
       const data = res.data?.data ?? [];
       setLearners(data);
@@ -105,11 +118,11 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
       return data;
     } catch (err) {
       console.error('fetchLearners error:', err);
-      return learners;
+      return [];
     } finally {
       setLearnersLoading(false);
     }
-  }, [learners, storeRefreshLearners]);
+  }, [storeRefreshLearners]);
 
   const fetchTeachersFromApi = useCallback(async () => {
     try {
@@ -208,7 +221,9 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
       }
       return { success: false, error: res.data?.message || 'Failed to create learner' };
     } catch (err) {
-      return { success: false, error: err.response?.data?.message || err.message };
+      const message = extractApiErrorMessage(err, 'Failed to create learner');
+      console.error('❌ createLearner failed:', message, err?.response?.data || err);
+      return { success: false, error: message };
     }
   }, [fetchLearnersFromApi]);
 
@@ -262,6 +277,19 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
       return { success: false, error: res.data?.message };
     } catch (err) {
       return { success: false, error: err.message };
+    }
+  }, [fetchLearnersFromApi]);
+
+  const transferOutLearner = useCallback(async (transferData) => {
+    try {
+      const res = await axiosInstance.post('/learners/transfer-out', transferData);
+      if (res.data?.success) {
+        await fetchLearnersFromApi();
+        return { success: true };
+      }
+      return { success: false, error: res.data?.message || 'Failed to process transfer out' };
+    } catch (err) {
+      return { success: false, error: err.response?.data?.message || err.message };
     }
   }, [fetchLearnersFromApi]);
 
@@ -388,6 +416,12 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
   // ── Learner actions (mark-exited, transfer-out, etc.) ─────────────────────
   const learnerActionData = useLearnerActions({
     learners,
+    updateLearner,
+    createLearner,
+    deleteLearner,
+    bulkDeleteLearners,
+    promoteLearners,
+    transferOutLearner,
     showSuccess: notify.showSuccess,
     showError:   notify.showError,
     setEditingLearner,
@@ -523,8 +557,8 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
             <HorizontalSubmenu currentPage={currentPage} onNavigate={handleNavigate} />
           </>
         )}
-        <main ref={mainContentRef} className="flex-1 overflow-y-auto overflow-x-hidden bg-[#F8FAFC] p-6">
-          <div className="max-w-screen-2xl mx-auto">
+        <main ref={mainContentRef} className="flex-1 overflow-y-auto overflow-x-hidden bg-[#F8FAFC]">
+          <div className="app-layout-content">
             <ErrorBoundary>
               <PageRouter
                 currentPage={currentPage}

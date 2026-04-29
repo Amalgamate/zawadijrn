@@ -493,23 +493,23 @@ const BroadcastMessagesPage = () => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-white rounded-xl shadow-lg overflow-hidden">
+    <div className="h-full flex flex-col bg-white border border-slate-200 overflow-hidden">
       {/* Header */}
-      <div className="bg-brand-purple px-6 py-4">
+      <div className="bg-white border-b border-slate-200 px-6 py-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/20 rounded-lg">
-              <Send size={24} className="text-white" />
+            <div className="p-2 bg-slate-100 rounded-lg">
+              <Send size={24} className="text-slate-700" />
             </div>
             <div>
-              <h1 className="text-2xl font-medium text-white">Broadcast Messages</h1>
-              <p className="text-white/80 text-sm">Send messages to multiple recipients</p>
+              <h1 className="text-2xl font-semibold text-slate-900">Broadcast Messages</h1>
+              <p className="text-sm text-slate-600">Send messages to multiple recipients</p>
             </div>
           </div>
           {messageHistory.length > 0 && (
             <Button
               onClick={handleOpenHistory}
-              className="bg-white/20 hover:bg-white/30 text-white font-medium gap-2"
+              className="bg-brand-teal hover:bg-brand-teal/90 text-white font-medium gap-2"
             >
               <Download size={16} />
               History ({messageHistory.length})

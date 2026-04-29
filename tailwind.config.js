@@ -47,7 +47,7 @@ export default {
         brand: {
           dark: '#111827',
           teal: '#0D9488',
-          purple: '#520050',
+          purple: '#030b82',
           yellow: '#F59E0B',
           light: '#F9FAFB',
         }

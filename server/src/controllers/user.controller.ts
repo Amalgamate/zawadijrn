@@ -441,7 +441,7 @@ export class UserController {
     });
 
     const school = await prisma.school.findFirst({ select: { name: true } });
-    const schoolName = school?.name || 'Zawadi SMS';
+    const schoolName = school?.name || 'Trends CORE V1.0';
     const frontendUrl = process.env.FRONTEND_URL || 'https://app.zawadi.com';
     
     const message = `Welcome to ${schoolName}! Your parent portal account is ready.\n\nLogin URL: ${frontendUrl}\nUsername: ${targetUser.email}\nTemp Password: ${tempPassword}\n\nPlease change your password immediately after logging in.`;

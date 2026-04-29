@@ -77,7 +77,10 @@ const SmartLearnerSearch = ({
   // Handle outside click to close dropdown
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+      const clickedInsideWrapper = wrapperRef.current?.contains(event.target);
+      const clickedInsideDropdown = listRef.current?.contains(event.target);
+
+      if (!clickedInsideWrapper && !clickedInsideDropdown) {
         setIsOpen(false);
         // Reset search term to selected learner if any, otherwise clear
         if (selectedLearner) {

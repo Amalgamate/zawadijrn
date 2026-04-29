@@ -402,7 +402,7 @@ const CommunicationSettings = () => {
                     value={emailSettings.fromName}
                     onChange={(e) => setEmailSettings({ ...emailSettings, fromName: e.target.value })}
                     className="w-full px-4 py-2 border rounded-lg"
-                    placeholder="Zawadi SMS / Your School Name"
+                    placeholder="Trends CORE V1.0 / Your School Name"
                   />
                 </div>
               </div>

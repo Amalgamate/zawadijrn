@@ -38,8 +38,30 @@ export const getSpecificTermConfig = async (req: Request, res: Response) => {
 
 export const getActiveTermConfig = async (req: Request, res: Response) => {
   const config = await configService.getActiveTermConfig();
-  if (!config) throw new ApiError(404, 'No active term');
-  res.json({ success: true, data: config });
+  if (!config) {
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const inferredTerm: Term = month <= 4 ? 'TERM_1' : month <= 8 ? 'TERM_2' : 'TERM_3';
+    const startDate = new Date(now.getFullYear(), 0, 1);
+    const endDate = new Date(now.getFullYear(), 11, 31);
+
+    return res.json({
+      success: true,
+      data: {
+        id: null,
+        term: inferredTerm,
+        academicYear: now.getFullYear(),
+        startDate,
+        endDate,
+        formativeWeight: 30,
+        summativeWeight: 70,
+        isActive: false,
+        isFallback: true,
+        message: 'No active term configuration found. Using system fallback.'
+      }
+    });
+  }
+  res.json({ success: true, data: { ...config, isFallback: false } });
 };
 
 export const upsertTermConfig = async (req: AuthRequest, res: Response) => {

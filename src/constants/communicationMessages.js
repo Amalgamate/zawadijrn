@@ -31,10 +31,10 @@ export const COMMUNICATION_DEFAULTS = {
 };
 
 export const TEST_MESSAGES = {
-  sms: import.meta.env.VITE_TEST_SMS_MESSAGE || 'This is a test message from Zawadi SMS.',
+  sms: import.meta.env.VITE_TEST_SMS_MESSAGE || 'This is a test message from Trends CORE V1.0.',
   email: {
     welcome: {
-      subject: 'Welcome to Zawadi SMS',
+      subject: 'Welcome to Trends CORE V1.0',
       preview: 'Welcome email template'
     },
     onboarding: {
@@ -45,7 +45,7 @@ export const TEST_MESSAGES = {
 };
 
 export const SMS_MESSAGES = {
-  welcome: (schoolName) => `Welcome to Zawadi SMS! Your school ${schoolName} is set up. Log in to your dashboard to get started.`,
+  welcome: (schoolName) => `Welcome to Trends CORE V1.0! Your school ${schoolName} is set up. Log in to your dashboard to get started.`,
 
   assessmentReport: {
     header: (schoolName) => `FROM ${schoolName}`,
@@ -66,7 +66,7 @@ TOTAL MARKS: ${totalMarks || 0} / ${maxPossibleMarks || 0}`)
   },
 
   otp: (otpCode, expiryMinutes = 10) =>
-    `Your Zawadi SMS login OTP is: ${otpCode}. Valid for ${expiryMinutes} minutes. Do not share this code.`,
+    `Your Trends CORE V1.0 login OTP is: ${otpCode}. Valid for ${expiryMinutes} minutes. Do not share this code.`,
 
   birthday: {
     standard: (learnerName, schoolName, gradeName, ageOrdinal, bdayDate) =>
@@ -78,11 +78,11 @@ TOTAL MARKS: ${totalMarks || 0} / ${maxPossibleMarks || 0}`)
 
 export const EMAIL_TEMPLATES = {
   welcome: {
-    subject: 'Welcome to Zawadi SMS!',
+    subject: 'Welcome to Trends CORE V1.0!',
     preheader: 'Your school is set up and ready to go'
   },
   onboarding: {
-    subject: 'Get Started with Zawadi SMS',
+    subject: 'Get Started with Trends CORE V1.0',
     preheader: 'Your onboarding guide is here'
   },
   assessmentReport: {
@@ -139,7 +139,7 @@ export const SUCCESS_MESSAGES = {
 
 // Brand/Organization Info
 export const BRAND = {
-  name: 'Zawadi SMS',
+  name: 'Trends CORE V1.0',
   email: import.meta.env.VITE_BRAND_EMAIL || 'hello@zawadisms.com',
   phone: import.meta.env.VITE_BRAND_PHONE || '+254 712 345 678',
   website: import.meta.env.VITE_BRAND_WEBSITE || 'zawadisms.com',

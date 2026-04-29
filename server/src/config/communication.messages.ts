@@ -28,7 +28,7 @@ export const COMMUNICATION_CONFIG = {
 // SMS Message Templates
 export const SMS_MESSAGES = {
   welcome: (schoolName: string): string =>
-    `Welcome to Zawadi SMS! Your school ${schoolName} is set up. Log in to your dashboard to get started.`,
+    `Welcome to Trends CORE V1.0! Your school ${schoolName} is set up. Log in to your dashboard to get started.`,
 
   assessmentReportHeader: (schoolName: string): string =>
     `FROM ${schoolName}`,
@@ -76,7 +76,7 @@ export const SMS_MESSAGES = {
   },
 
   otp: (otpCode: string, expiryMinutes: number = 10): string =>
-    `Your Zawadi SMS login OTP is: ${otpCode}. Valid for ${expiryMinutes} minutes. Do not share this code.`,
+    `Your Trends CORE V1.0 login OTP is: ${otpCode}. Valid for ${expiryMinutes} minutes. Do not share this code.`,
 
   birthdayStandard: (learnerName: string, schoolName: string, gradeName: string): string =>
     `Happy Birthday ${learnerName}! Best wishes from ${schoolName}. We are proud of your progress in ${gradeName}. Have a wonderful day!`,
@@ -127,23 +127,23 @@ export const SMS_MESSAGES = {
 export const EMAIL_MESSAGES = {
   welcome: {
     welcome: {
-      subject: (schoolName: string): string => `Welcome to ${schoolName} on Zawadi SMS!`,
+      subject: (schoolName: string): string => `Welcome to ${schoolName} on Trends CORE V1.0!`,
       preheader: 'Your school is set up and ready to go',
-      headingText: 'Welcome to Zawadi SMS!',
+      headingText: 'Welcome to Trends CORE V1.0!',
       mainText: (schoolName: string): string =>
-        `Congratulations! Your school, <strong>${schoolName}</strong>, has been successfully registered on Zawadi SMS.`
+        `Congratulations! Your school, <strong>${schoolName}</strong>, has been successfully registered on Trends CORE V1.0.`
     },
 
     onboarding: {
-      subject: 'Get Started with Zawadi SMS',
+      subject: 'Get Started with Trends CORE V1.0',
       preheader: 'Your onboarding guide is here',
       headingText: 'Welcome Aboard!',
       mainText: (schoolName: string): string =>
-        `Here's everything you need to know to get started with Zawadi SMS at ${schoolName}.`
+        `Here's everything you need to know to get started with Trends CORE V1.0 at ${schoolName}.`
     },
 
     footer: (schoolName: string, year: number): string =>
-      `&copy; ${year} ${schoolName} via Zawadi SMS. All rights reserved.<br/>You received this email because you signed up for an Zawadi SMS account.`
+      `&copy; ${year} ${schoolName} via Trends CORE V1.0. All rights reserved.<br/>You received this email because you signed up for an Trends CORE V1.0 account.`
   }
 };
 
@@ -209,7 +209,7 @@ export const SUCCESS_MESSAGES = {
 
 // Brand Information
 export const BRAND = {
-  name: 'Zawadi SMS',
+  name: 'Trends CORE V1.0',
   email: process.env.BRAND_EMAIL || 'hello@school-academy.app',
   phone: process.env.BRAND_PHONE || '+254700000000',
   website: process.env.BRAND_WEBSITE || 'school-academy.app',

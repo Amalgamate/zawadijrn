@@ -9,6 +9,47 @@ import { useSchoolData } from '../../../contexts/SchoolDataContext';
 import { useAuth } from '../../../hooks/useAuth';
 import toast from 'react-hot-toast';
 
+const normalizeId = (value) => String(value ?? '').trim();
+
+const getClassId = (classItem) => classItem?.id || classItem?._id || classItem?.classId || '';
+
+const getClassGrade = (classItem) =>
+  classItem?.grade ||
+  classItem?.classGrade ||
+  classItem?.level ||
+  classItem?.gradeLevel ||
+  classItem?.classLevel ||
+  '';
+
+const getStreamName = (value) => {
+  if (!value) return '';
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'object') {
+    return (
+      value.name ||
+      value.stream ||
+      value.label ||
+      value.streamName ||
+      value.value ||
+      value.title ||
+      value.code ||
+      ''
+    ).toString().trim();
+  }
+  return String(value).trim();
+};
+
+const getClassStream = (classItem) =>
+  getStreamName(
+    classItem?.stream ||
+    classItem?.classStream ||
+    classItem?.streamName ||
+    classItem?.streamLabel ||
+    classItem?.streamValue ||
+    classItem?.streamConfig ||
+    classItem?.streamObj
+  );
+
 export const useAttendance = () => {
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -17,7 +58,13 @@ export const useAttendance = () => {
   const [selectedClass, setSelectedClass] = useState('');
   const [classes, setClasses] = useState([]);
   const [grades, setGrades] = useState([]);
-  const { classes: contextClasses, grades: contextGrades, loading: schoolDataLoading } = useSchoolData();
+  const [streams, setStreams] = useState([]);
+  const {
+    classes: contextClasses,
+    grades: contextGrades,
+    streams: contextStreams,
+    loading: schoolDataLoading,
+  } = useSchoolData();
   const { user } = useAuth();
 
   const isTeacher = user?.role === 'TEACHER';
@@ -30,26 +77,55 @@ export const useAttendance = () => {
     if (!schoolDataLoading) {
       const resolvedClasses = isTeacher
         ? (contextClasses || []).filter((classItem) => {
-          const assignedTeacherId = classItem?.teacherId || classItem?.teacher?.id;
-          return assignedTeacherId && currentUserId && assignedTeacherId === currentUserId;
+          if (!currentUserId) return true;
+          const assignedTeacherIds = [
+            classItem?.teacherId,
+            classItem?.teacher?.id,
+            classItem?.teacher?.userId,
+            classItem?.classTeacherId,
+            classItem?.classTeacher?.id,
+            classItem?.classTeacher?.userId,
+            classItem?.teacherUserId,
+            classItem?.classTeacherUserId,
+          ]
+            .map(normalizeId)
+            .filter(Boolean);
+          return assignedTeacherIds.includes(normalizeId(currentUserId));
         })
         : (contextClasses || []);
 
+      const classDerivedGrades = [...new Set(resolvedClasses.map((classItem) => getClassGrade(classItem)).filter(Boolean))];
+      const contextDerivedGrades = Array.isArray(contextGrades) ? contextGrades.filter(Boolean) : [];
       const resolvedGrades = isTeacher
-        ? [...new Set(resolvedClasses.map((classItem) => classItem.grade).filter(Boolean))]
-        : (contextGrades || []);
+        ? classDerivedGrades
+        : [...new Set([...(contextDerivedGrades || []), ...(classDerivedGrades || [])])];
+
+      const classDerivedStreams = [...new Set(
+        resolvedClasses
+          .map((classItem) => getClassStream(classItem))
+          .filter(Boolean)
+      )];
+      const contextDerivedStreams = Array.isArray(contextStreams)
+        ? contextStreams
+            .map((streamItem) => {
+              return getStreamName(streamItem);
+            })
+            .filter(Boolean)
+        : [];
+      const resolvedStreams = [...new Set([...(contextDerivedStreams || []), ...(classDerivedStreams || [])])];
 
       setClasses(resolvedClasses);
       setGrades(resolvedGrades);
+      setStreams(resolvedStreams);
 
       if (isTeacher) {
-        const selectedClassExists = resolvedClasses.some((classItem) => classItem.id === selectedClass);
+        const selectedClassExists = resolvedClasses.some((classItem) => getClassId(classItem) === selectedClass);
         if (!selectedClassExists) {
-          setSelectedClass(resolvedClasses[0]?.id || '');
+          setSelectedClass(getClassId(resolvedClasses[0]) || '');
         }
       }
     }
-  }, [contextClasses, contextGrades, schoolDataLoading, isTeacher, currentUserId, selectedClass]);
+  }, [contextClasses, contextGrades, contextStreams, schoolDataLoading, isTeacher, currentUserId, selectedClass]);
 
   /**
    * Fetch attendance records
@@ -257,6 +333,7 @@ export const useAttendance = () => {
     selectedClass,
     classes,
     grades,
+    streams,
 
     // Setters
     setSelectedDate,

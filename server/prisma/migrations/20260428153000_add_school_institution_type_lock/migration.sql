@@ -1,0 +1,2 @@
+ALTER TABLE "schools"
+ADD COLUMN IF NOT EXISTS "institutionTypeLocked" BOOLEAN NOT NULL DEFAULT false;

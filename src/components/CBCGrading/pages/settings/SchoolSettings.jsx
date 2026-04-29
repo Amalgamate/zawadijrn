@@ -6,7 +6,17 @@ import React, { useState, useRef, useEffect } from 'react';
 import { School, Save, Upload, X, AlertTriangle, MapPin, Loader2, Palette, Image as ImageIcon, Info, Phone, Mail, MessageSquare } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useNotifications } from '../../hooks/useNotifications';
-import axiosInstance, { API_BASE_URL } from '../../../../services/api/axiosConfig';
+import axiosInstance from '../../../../services/api/axiosConfig';
+
+const normalizeHexColor = (value, fallback = '#030b82') => {
+  if (typeof value !== 'string') return fallback;
+  const trimmed = value.trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(trimmed)) return trimmed;
+  if (/^#[0-9a-fA-F]{3}$/.test(trimmed)) {
+    return `#${trimmed[1]}${trimmed[1]}${trimmed[2]}${trimmed[2]}${trimmed[3]}${trimmed[3]}`;
+  }
+  return fallback;
+};
 
 const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
   const { showSuccess } = useNotifications();
@@ -28,11 +38,11 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
     mission: '',
     latitude: null,
     longitude: null,
-    brandColor: brandingSettings?.brandColor || 'var(--brand-purple)',
-    primaryColor: brandingSettings?.primaryColor || '#520050',
-    secondaryColor: brandingSettings?.secondaryColor || '#0D9488',
-    accentColor1: brandingSettings?.accentColor1 || '#3b82f6',
-    accentColor2: brandingSettings?.accentColor2 || '#e11d48',
+    brandColor: normalizeHexColor(brandingSettings?.brandColor, '#030b82'),
+    primaryColor: normalizeHexColor(brandingSettings?.primaryColor, '#030b82'),
+    secondaryColor: normalizeHexColor(brandingSettings?.secondaryColor, '#0D9488'),
+    accentColor1: normalizeHexColor(brandingSettings?.accentColor1, '#3b82f6'),
+    accentColor2: normalizeHexColor(brandingSettings?.accentColor2, '#e11d48'),
     logoUrl: brandingSettings?.logoUrl || '/branding/logo.png',
     faviconUrl: brandingSettings?.faviconUrl || '/branding/favicon.png',
     stampUrl: brandingSettings?.stampUrl || '/branding/stamp.svg',
@@ -63,11 +73,11 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
       mission: '',
       latitude: null,
       longitude: null,
-      brandColor: brandingSettings?.brandColor || 'var(--brand-purple)',
-      primaryColor: brandingSettings?.primaryColor || '#520050',
-      secondaryColor: brandingSettings?.secondaryColor || '#0D9488',
-      accentColor1: brandingSettings?.accentColor1 || '#3b82f6',
-      accentColor2: brandingSettings?.accentColor2 || '#e11d48',
+      brandColor: normalizeHexColor(brandingSettings?.brandColor, '#030b82'),
+      primaryColor: normalizeHexColor(brandingSettings?.primaryColor, '#030b82'),
+      secondaryColor: normalizeHexColor(brandingSettings?.secondaryColor, '#0D9488'),
+      accentColor1: normalizeHexColor(brandingSettings?.accentColor1, '#3b82f6'),
+      accentColor2: normalizeHexColor(brandingSettings?.accentColor2, '#e11d48'),
       logoUrl: brandingSettings?.logoUrl || '/branding/logo.png',
       faviconUrl: brandingSettings?.faviconUrl || '/branding/favicon.png',
       stampUrl: brandingSettings?.stampUrl || '/branding/stamp.svg',
@@ -119,11 +129,11 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
             mission: school.mission || '',
             latitude: school.latitude || null,
             longitude: school.longitude || null,
-            brandColor: school.brandColor || 'var(--brand-purple)',
-            primaryColor: school.primaryColor || '#520050',
-            secondaryColor: school.secondaryColor || '#0D9488',
-            accentColor1: school.accentColor1 || '#3b82f6',
-            accentColor2: school.accentColor2 || '#e11d48',
+            brandColor: normalizeHexColor(school.brandColor, '#030b82'),
+            primaryColor: normalizeHexColor(school.primaryColor, '#030b82'),
+            secondaryColor: normalizeHexColor(school.secondaryColor, '#0D9488'),
+            accentColor1: normalizeHexColor(school.accentColor1, '#3b82f6'),
+            accentColor2: normalizeHexColor(school.accentColor2, '#e11d48'),
             logoUrl: school.logoUrl || '/branding/logo.png',
             faviconUrl: school.faviconUrl || '/branding/favicon.png',
             stampUrl: school.stampUrl || '/branding/stamp.svg',

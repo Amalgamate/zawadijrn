@@ -6,6 +6,7 @@ import logger from '../utils/logger';
 let cachedSchool: School | null = null;
 let lastFetch = 0;
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const VALID_INSTITUTION_TYPES = new Set(['PRIMARY_CBC', 'SECONDARY', 'TERTIARY']);
 
 /**
  * Middleware to fetch and cache the school context.
@@ -18,6 +19,12 @@ export const schoolContextMiddleware = async (
   next: NextFunction
 ) => {
   try {
+    const userRole = req.user?.role;
+    const requestedInstitutionTypeRaw = req.headers['x-institution-type'];
+    const requestedInstitutionType = Array.isArray(requestedInstitutionTypeRaw)
+      ? requestedInstitutionTypeRaw[0]
+      : requestedInstitutionTypeRaw;
+
     const now = Date.now();
     
     // Refresh cache if expired or not set
@@ -37,6 +44,19 @@ export const schoolContextMiddleware = async (
     // Attach to request
     if (cachedSchool) {
       req.school = cachedSchool;
+      // SUPER_ADMIN can temporarily switch institution context per request.
+      // This is intentionally server-side enforced and ignores override for other roles.
+      if (
+        cachedSchool.institutionTypeLocked !== true &&
+        userRole === 'SUPER_ADMIN' &&
+        typeof requestedInstitutionType === 'string' &&
+        VALID_INSTITUTION_TYPES.has(requestedInstitutionType)
+      ) {
+        req.school = {
+          ...cachedSchool,
+          institutionType: requestedInstitutionType as any,
+        } as unknown as School;
+      }
     }
     
     next();

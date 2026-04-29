@@ -588,19 +588,19 @@ const NoticesPage = ({ initialTab }) => {
   return (
     <div className="h-full flex flex-col bg-white border border-slate-200 overflow-hidden">
       {/* Header Section */}
-      <div className="bg-brand-purple px-6 py-4 flex items-center justify-between">
+      <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-white/20 rounded-lg">
-            <Bell size={24} className="text-white" />
+          <div className="p-2 bg-slate-100 rounded-lg">
+            <Bell size={24} className="text-slate-700" />
           </div>
           <div>
-            <h1 className="text-2xl font-medium text-white">Notices & Announcements</h1>
-            <p className="text-white/80 text-sm">Manage school communications and announcements</p>
+            <h1 className="text-2xl font-semibold text-slate-900">Notices & Announcements</h1>
+            <p className="text-sm text-slate-600">Manage school communications and announcements</p>
           </div>
         </div>
         <button
           onClick={handleRefresh}
-          className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors text-white"
+          className="p-2 border border-slate-300 hover:bg-slate-100 rounded-lg transition-colors text-slate-700"
           title="Refresh"
         >
           <RefreshCw size={20} />

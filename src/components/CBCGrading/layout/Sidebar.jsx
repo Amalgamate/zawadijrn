@@ -59,17 +59,13 @@ const getCollapsedIconColor = (id, isActive) => {
     case 'transport': return 'text-rose-500 drop-shadow-[0_0_6px_rgba(244,63,94,0.7)] group-hover:text-rose-400 group-hover:drop-shadow-[0_0_10px_rgba(244,63,94,0.9)]';
     case 'inventory': return 'text-yellow-500 drop-shadow-[0_0_6px_rgba(234,179,8,0.7)] group-hover:text-yellow-400 group-hover:drop-shadow-[0_0_10px_rgba(234,179,8,0.9)]';
     case 'biometric': return 'text-emerald-400 drop-shadow-[0_0_6px_rgba(52,211,153,0.7)] group-hover:text-emerald-300 group-hover:drop-shadow-[0_0_10px_rgba(52,211,153,0.9)]';
-    case 'settings': return 'text-slate-400 drop-shadow-[0_0_6px_rgba(148,163,184,0.7)] group-hover:text-slate-300 group-hover:drop-shadow-[0_0_10px_rgba(148,163,184,0.9)]';
+    case 'settings': return 'text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.7)] group-hover:text-white group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.9)]';
     case 'dashboard': return 'text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.7)] group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.9)]';
     default: return 'text-white/60 group-hover:text-white group-hover:drop-shadow-md';
   }
 };
 
 // ─── Route → chunk prefetch map ──────────────────────────────────────────────
-// Each entry maps a page key to its lazy import. Hovering a sidebar link
-// triggers the import() so the chunk is already in the browser cache by
-// the time the user clicks. Vite deduplicates the network request if the
-// same chunk is already loading or loaded.
 const PREFETCH_MAP = {
   'learners-list':            () => import('../pages/LearnersList'),
   'teachers-list':            () => import('../pages/TeachersList'),
@@ -94,7 +90,6 @@ const PREFETCH_MAP = {
 
 const prefetch = (path) => {
   if (!path || !PREFETCH_MAP[path]) return;
-  // Fire-and-forget — we don't care about the result, just want the browser to cache it
   PREFETCH_MAP[path]().catch(() => {});
 };
 
@@ -110,7 +105,6 @@ const Sidebar = React.memo(({
   const labels = useInstitutionLabels();
   const { role } = usePermissions();
 
-  // ── category labels (static; flyout + expanded sidebar use flat item lists) ──
   const {
     navSections,
     dashboardSection,
@@ -123,7 +117,6 @@ const Sidebar = React.memo(({
     systemAdminSections,
   } = useNavigation();
 
-  // Collapsed rail: jump to first child route, or expand sidebar if none
   const handleSectionClick = useCallback((section) => {
     const path = findDefaultPath(section.items);
     if (path) onNavigate(path);
@@ -141,7 +134,6 @@ const Sidebar = React.memo(({
 
   return (
     <>
-      {/* ── Sidebar panel ─────────────────────────────────────────────────── */}
       <aside
         style={{ width: sidebarW }}
         className="relative flex flex-col h-full bg-[var(--brand-purple)] text-white transition-[width] duration-300 ease-in-out border-r border-white/10 shadow-xl flex-shrink-0 z-30"
@@ -190,7 +182,7 @@ const Sidebar = React.memo(({
 
           {/* ── School group ─────────────────────────────────────── */}
           {schoolSections.length > 0 && (
-            <CategoryGroup label={labels.schoolGroup || "School"} icon={School} sidebarOpen={sidebarOpen}>
+            <CategoryGroup label={labels.schoolGroup || "School"} sidebarOpen={sidebarOpen}>
               {schoolSections.map(s => <NavSection key={s.id} section={s} {...sharedNavProps} />)}
             </CategoryGroup>
           )}
@@ -203,13 +195,17 @@ const Sidebar = React.memo(({
 
           {/* ── Back Office group ─────────────────────────────────── */}
           {backOfficeSections.length > 0 && (
-            <CategoryGroup label={labels.backOfficeGroup || "Back Office"} icon={Boxes} sidebarOpen={sidebarOpen}>
+            <CategoryGroup label={labels.backOfficeGroup || "Back Office"} sidebarOpen={sidebarOpen}>
               {backOfficeSections.map(s => <NavSection key={s.id} section={s} {...sharedNavProps} />)}
             </CategoryGroup>
           )}
 
           {/* Document Center */}
-          {docsCenterSection && <NavSection key={docsCenterSection.id} section={docsCenterSection} {...sharedNavProps} />}
+          {docsCenterSection && (
+            <div className="mt-2 pt-2 border-t border-white/10 -mx-2 px-2">
+              <NavSection key={docsCenterSection.id} section={docsCenterSection} {...sharedNavProps} />
+            </div>
+          )}
         </nav>
 
         {/* Footer — System Admin + collapse toggle */}
@@ -222,6 +218,7 @@ const Sidebar = React.memo(({
                    role === 'PARENT' ? 'Parent' : 
                    role === 'ADMIN' ? 'Administrator' : 
                    role === 'HEAD_TEACHER' ? (labels.headLabel || 'Principal') : 
+                   role === 'SUPER_ADMIN' ? 'Administrator' : 
                    (user?.role || 'Guest')}
                 </p>
               )}
@@ -245,22 +242,25 @@ const Sidebar = React.memo(({
           </button>
         </footer>
       </aside>
-
     </>
   );
 });
 
 // ─── CategoryGroup ─────────────────────────────────────────────────────────────
-/** Section label only — items stay visible (no accordion); collapsed rail still lists icons. */
-const CategoryGroup = ({ label, icon: Icon, sidebarOpen, children }) => (
-  <div className="mt-1">
+/**
+ * Section label only — no icon, no underline, no background tint.
+ * Items stay visible (no accordion); collapsed rail still lists icons.
+ */
+const CategoryGroup = ({ label, sidebarOpen, children }) => (
+  <div className="mt-2 pt-2 border-t border-white/10 -mx-2 px-2">
     {sidebarOpen && (
       <div
-        className="w-full flex items-center gap-2 px-3 text-white/40 pointer-events-none"
-        style={{ height: 34 }}
+        className="w-full flex items-center px-3 pointer-events-none"
+        style={{ height: 36 }}
       >
-        <Icon size={13} className="flex-shrink-0" />
-        <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-brand-teal">{label}</span>
+        <span className="text-[12px] font-extrabold uppercase tracking-[0.14em] text-white/60">
+          {label}
+        </span>
       </div>
     )}
     <div className="space-y-0.5 pt-0.5">
@@ -327,7 +327,6 @@ const NavSection = React.memo(({
 
   const [isExpanded, setIsExpanded] = useState(isActive);
 
-  // Auto-expand if a child becomes active (e.g. via direct URL navigation)
   useEffect(() => {
     if (isChildActive && isSettings) {
       setIsExpanded(true);
@@ -363,10 +362,23 @@ const NavSection = React.memo(({
     <div className={`ml-[11px] mt-1 border-l border-white/10 pl-3 space-y-0.5 ${isBottom ? 'mb-2' : 'mb-1'}`}>
       {section.items.map(item => {
         if (item.type === 'group') {
+          const isAssessmentPrimaryGroup =
+            section.id === 'assessment' && (item.id === 'group-summative' || item.id === 'group-formative');
           return (
             <div key={item.id} className="mb-2 last:mb-0">
-              <div className="flex items-center gap-1.5 px-2 py-1 text-[9px] font-semibold uppercase tracking-wide text-white/45">
-                {item.icon && <item.icon size={11} className="opacity-70 flex-shrink-0" />}
+              <div
+                className={`flex items-center gap-1.5 px-2 py-1 tracking-wide ${
+                  isAssessmentPrimaryGroup
+                    ? 'text-[11px] font-semibold text-amber-400 tracking-normal'
+                    : 'text-[9px] font-semibold text-white/45 uppercase'
+                }`}
+              >
+                {item.icon && (
+                  <item.icon
+                    size={11}
+                    className={`${isAssessmentPrimaryGroup ? 'text-amber-400' : 'opacity-70'} flex-shrink-0`}
+                  />
+                )}
                 <span>{item.label}</span>
               </div>
               <div className="ml-1 border-l border-white/10 pl-2 space-y-0.5 pt-0.5">
@@ -410,7 +422,7 @@ const NavSection = React.memo(({
             )}
             <div className="flex items-center gap-3 flex-1 min-w-0">
               <span className="flex-shrink-0 flex items-center justify-center" style={{ width: 20 }}>
-                <section.icon size={18} />
+                <section.icon size={18} className={isSettings ? 'text-white' : undefined} />
               </span>
               <span className="text-sm font-semibold truncate text-left flex-1">{section.label}</span>
               

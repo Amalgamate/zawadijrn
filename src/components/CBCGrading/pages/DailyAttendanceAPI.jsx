@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, Save, CheckCircle, Clock, XCircle, AlertCircle, RefreshCw, ChevronRight, Search, Calendar as CalendarIcon, Filter, Target, ChevronLeft, Check } from 'lucide-react';
+import { Users, Save, CheckCircle, Clock, XCircle, AlertCircle, RefreshCw, Search, ChevronLeft, Check, Loader2 } from 'lucide-react';
 import { useAttendance } from '../hooks/useAttendanceAPI';
 import { useNotifications } from '../hooks/useNotifications';
 import { toInputDate } from '../utils/dateHelpers';
@@ -44,11 +44,50 @@ const DailyAttendance = () => {
   // Hooks
   const {
     classes,
+    grades,
+    streams,
     loading,
-    error,
     getDailyClassReport,
     markBulkAttendance,
   } = useAttendance();
+
+  const getClassGrade = React.useCallback((classItem) => {
+    return classItem?.grade || classItem?.classGrade || classItem?.level || classItem?.gradeLevel || classItem?.classLevel || '';
+  }, []);
+
+  const normalizeStreamName = React.useCallback((value) => {
+    if (!value) return '';
+    if (typeof value === 'string') return value.trim();
+    if (typeof value === 'object') {
+      return (
+        value.name ||
+        value.stream ||
+        value.label ||
+        value.streamName ||
+        value.value ||
+        value.title ||
+        value.code ||
+        ''
+      ).toString().trim();
+    }
+    return String(value).trim();
+  }, []);
+
+  const getClassStream = React.useCallback((classItem) => {
+    return normalizeStreamName(
+      classItem?.stream ||
+      classItem?.classStream ||
+      classItem?.streamName ||
+      classItem?.streamLabel ||
+      classItem?.streamValue ||
+      classItem?.streamConfig ||
+      classItem?.streamObj
+    );
+  }, [normalizeStreamName]);
+
+  const getClassId = React.useCallback((classItem) => {
+    return classItem?.id || classItem?._id || classItem?.classId || '';
+  }, []);
 
   const assignedClass = React.useMemo(() => {
     if (!isTeacher || classes.length === 0) return null;
@@ -57,16 +96,20 @@ const DailyAttendance = () => {
 
   React.useEffect(() => {
     if (!isTeacher || !assignedClass) return;
-    const assignedGrade = assignedClass.grade || '';
-    const assignedStream = assignedClass.stream || '';
+    const assignedGrade = getClassGrade(assignedClass);
+    const assignedStream = getClassStream(assignedClass);
     if (stagedGrade !== assignedGrade) setStagedGrade(assignedGrade);
     if (stagedStream !== assignedStream) setStagedStream(assignedStream);
-  }, [isTeacher, assignedClass, stagedGrade, stagedStream]);
+  }, [isTeacher, assignedClass, stagedGrade, stagedStream, getClassGrade, getClassStream]);
 
   const handleLoadWorkspace = React.useCallback(async () => {
     const targetClass = isTeacher
       ? assignedClass
-      : classes.find(c => c.grade === stagedGrade && (stagedStream ? c.stream === stagedStream : true));
+      : classes.find((c) => {
+        const classGrade = getClassGrade(c);
+        const classStream = getClassStream(c);
+        return classGrade === stagedGrade && (stagedStream ? classStream === stagedStream : true);
+      });
 
     if (!targetClass) {
       showError(isTeacher ? `No ${labels.class.toLowerCase()} assigned to your account.` : `No active ${labels.class.toLowerCase()} found.`);
@@ -75,15 +118,16 @@ const DailyAttendance = () => {
 
     setIsSyncing(true);
     try {
-      const report = await getDailyClassReport(targetClass.id, stagedDate);
+      const targetClassId = getClassId(targetClass);
+      const report = await getDailyClassReport(targetClassId, stagedDate);
       if (report) {
         setDailyReport(report);
         setActiveContext({
-          classId: targetClass.id,
+          classId: targetClassId,
           className: targetClass.name,
           date: stagedDate,
-          grade: targetClass.grade,
-          stream: targetClass.stream || ''
+          grade: getClassGrade(targetClass),
+          stream: getClassStream(targetClass)
         });
 
         const initialChanges = {};
@@ -102,7 +146,7 @@ const DailyAttendance = () => {
     } finally {
       setIsSyncing(false);
     }
-  }, [isTeacher, assignedClass, stagedGrade, stagedStream, stagedDate, classes, getDailyClassReport, showError, labels]);
+  }, [isTeacher, assignedClass, stagedGrade, stagedStream, stagedDate, classes, getDailyClassReport, showError, labels, getClassGrade, getClassStream, getClassId]);
 
   // Auto-restore
   React.useEffect(() => {
@@ -172,195 +216,225 @@ const DailyAttendance = () => {
   const stats = React.useMemo(() => {
     const total = dailyReport?.learners.length || 0;
     const present = Object.values(pendingChanges).filter(p => p.status === 'PRESENT').length;
+    const absent = Object.values(pendingChanges).filter(p => p.status === 'ABSENT').length;
     const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
-    return { present, total, percentage };
+    return { present, absent, total, percentage };
   }, [pendingChanges, dailyReport]);
 
-  const availableGrades = [...new Set(classes.map(c => c.grade))].sort();
-  const availableStreams = [...new Set(classes.filter(c => c.grade === stagedGrade).map(c => c.stream))].filter(Boolean).sort();
+  const availableGrades = React.useMemo(() => {
+    const classGrades = classes.map((c) => getClassGrade(c)).filter(Boolean);
+    const hookGrades = Array.isArray(grades) ? grades.filter(Boolean) : [];
+    return [...new Set([...hookGrades, ...classGrades])].sort();
+  }, [classes, grades, getClassGrade]);
+
+  const availableStreams = React.useMemo(() => {
+    const classStreams = classes
+      .filter((c) => (stagedGrade ? getClassGrade(c) === stagedGrade : true))
+      .map((c) => getClassStream(c))
+      .filter(Boolean);
+    const hookStreams = Array.isArray(streams) ? streams.map((s) => normalizeStreamName(s)).filter(Boolean) : [];
+    return [...new Set([...(hookStreams || []), ...(classStreams || [])])].sort();
+  }, [classes, streams, stagedGrade, getClassGrade, getClassStream, normalizeStreamName]);
 
   return (
-    <div className="pb-24 font-sans">
-      {/* ── Header ── */}
-      <div className="flex items-center justify-between mb-8 px-5 pt-4">
+    <div className="space-y-6">
+      <div className="bg-white border border-slate-200 rounded-lg p-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-3">
-           <div className="w-10 h-10 rounded-2xl bg-teal-50 flex items-center justify-center text-teal-600">
-              <Users size={22} />
-           </div>
-           <div>
-              <h2 className="text-xl font-semibold text-gray-900 tracking-tight leading-none">Attendance</h2>
-              <p className="text-[10px] font-medium text-gray-400 uppercase tracking-widest mt-1">Daily Register</p>
-           </div>
+          <div className="h-11 w-11 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
+            <Users size={20} />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-slate-900">Daily Attendance</h2>
+            <p className="text-sm text-slate-600">Capture and synchronize class register records.</p>
+          </div>
         </div>
         {activeContext && (
-           <button
-             onClick={handleSaveAttendance}
-             disabled={isSyncing}
-             className="w-11 h-11 flex items-center justify-center bg-[var(--brand-teal)] text-white rounded-2xl shadow-lg shadow-teal-50 active:scale-90 transition-all disabled:opacity-30"
-           >
-              {isSyncing ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
-           </button>
+          <button
+            onClick={handleSaveAttendance}
+            disabled={isSyncing}
+            className="h-10 px-4 bg-brand-teal text-white rounded-md hover:bg-brand-teal/90 transition-colors flex items-center gap-2 font-medium disabled:opacity-50"
+          >
+            {isSyncing ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+            Save Register
+          </button>
         )}
       </div>
 
       {!activeContext ? (
-        /* ── SETUP VIEW ── */
-        <div className="px-5 space-y-6 animate-in fade-in slide-in-from-bottom-4">
-          <div className="bg-white rounded-[2.5rem] border border-transparent shadow-xl shadow-teal-50 p-6 space-y-6">
-            <div className="space-y-1">
-               <span className="text-[10px] font-semibold text-[var(--brand-purple)] uppercase tracking-widest">Stage 01</span>
-               <h3 className="text-lg font-semibold text-gray-900">Select Register</h3>
+        <div className="bg-white border border-slate-200 rounded-lg p-6 space-y-5">
+          <div>
+            <h3 className="text-base font-semibold text-slate-900">Load Register</h3>
+            <p className="text-sm text-slate-600">Select class context and date to begin marking attendance.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">{labels.grade}</label>
+              <select
+                value={stagedGrade}
+                onChange={(e) => { setStagedGrade(e.target.value); setStagedStream(''); }}
+                disabled={isTeacher}
+                className="w-full h-10 px-3 border border-slate-300 rounded-md bg-white text-sm focus:ring-2 focus:ring-brand-teal/20 outline-none disabled:opacity-60"
+              >
+                <option value="">Choose {labels.grade}</option>
+                {availableGrades.map(g => <option key={g} value={g}>{g.replace(/_/g, ' ')}</option>)}
+              </select>
             </div>
 
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest ml-1">{labels.grade}</label>
-                <select
-                  value={stagedGrade}
-                  onChange={(e) => { setStagedGrade(e.target.value); setStagedStream(''); }}
-                  disabled={isTeacher}
-                  className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-medium focus:ring-2 focus:ring-teal-100 outline-none disabled:opacity-60"
-                >
-                  <option value="">Choose {labels.grade}</option>
-                  {availableGrades.map(g => <option key={g} value={g}>{g.replace(/_/g, ' ')}</option>)}
-                </select>
-              </div>
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Stream</label>
+              <select
+                value={stagedStream}
+                onChange={(e) => setStagedStream(e.target.value)}
+                disabled={isTeacher}
+                className="w-full h-10 px-3 border border-slate-300 rounded-md bg-white text-sm focus:ring-2 focus:ring-brand-teal/20 outline-none disabled:opacity-60"
+              >
+                <option value="">All Streams</option>
+                {availableStreams.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest ml-1">Stream</label>
-                <select
-                  value={stagedStream}
-                  onChange={(e) => setStagedStream(e.target.value)}
-                  disabled={!stagedGrade || isTeacher}
-                  className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-medium focus:ring-2 focus:ring-teal-100 outline-none disabled:opacity-60"
-                >
-                  <option value="">All Streams</option>
-                  {availableStreams.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest ml-1">Date</label>
-                <input
-                  type="date"
-                  value={stagedDate}
-                  onChange={(e) => setStagedDate(e.target.value)}
-                  max={new Date().toISOString().split('T')[0]}
-                  className="w-full h-14 px-4 bg-gray-50 border-none rounded-2xl text-xs font-medium focus:ring-2 focus:ring-teal-100 outline-none"
-                />
-              </div>
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Date</label>
+              <input
+                type="date"
+                value={stagedDate}
+                onChange={(e) => setStagedDate(e.target.value)}
+                max={new Date().toISOString().split('T')[0]}
+                className="w-full h-10 px-3 border border-slate-300 rounded-md bg-white text-sm focus:ring-2 focus:ring-brand-teal/20 outline-none"
+              />
             </div>
           </div>
 
-          <button
-            onClick={handleLoadWorkspace}
-            disabled={isSyncing || (!stagedGrade && !isTeacher)}
-            className="w-full h-16 bg-teal-600 text-white rounded-[2rem] flex items-center justify-center gap-3 shadow-xl shadow-teal-200 active:scale-95 transition-all outline-none disabled:opacity-30"
-          >
-            <span className="text-xs font-semibold uppercase tracking-[0.2em] ml-2">Load Register</span>
-            <RefreshCw size={20} className={cn(isSyncing && "animate-spin")} />
-          </button>
+          <div className="flex justify-end">
+            <button
+              onClick={handleLoadWorkspace}
+              disabled={isSyncing || (!stagedGrade && !isTeacher)}
+              className="h-10 px-4 bg-brand-purple text-white rounded-md hover:bg-brand-purple/90 transition-colors flex items-center gap-2 font-medium disabled:opacity-50"
+            >
+              <RefreshCw size={16} className={cn(isSyncing && "animate-spin")} />
+              Load Register
+            </button>
+          </div>
         </div>
       ) : (
-        /* ── REGISTRY VIEW ── */
-        <div className="space-y-6 px-5 animate-in fade-in slide-in-from-bottom-4">
-          {/* Context Header */}
-          <div className="bg-white border-b border-gray-100 py-4 -mx-1 flex items-center justify-between sticky top-0 z-10 transition-all">
-             <button onClick={() => setActiveContext(null)} className="p-3 border border-gray-100 rounded-2xl active:scale-90 transition-all">
-                <ChevronLeft size={20} className="text-gray-900" />
-             </button>
-             <div className="text-center flex-1">
-                <h4 className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">{activeContext.grade.replace(/_/g, ' ')} {activeContext.stream}</h4>
-                <p className="text-xs font-semibold text-gray-900">{new Date(activeContext.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</p>
-             </div>
-             <button onClick={handleMarkAllPresent} className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl active:scale-90 transition-all">
-                <Check size={20} strokeWidth={3} />
-             </button>
+        <div className="space-y-4">
+          <div className="bg-white border border-slate-200 rounded-lg p-4 flex items-center justify-between gap-3">
+            <button
+              onClick={() => setActiveContext(null)}
+              className="h-9 px-3 border border-slate-300 rounded-md text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-1"
+            >
+              <ChevronLeft size={16} />
+              Back
+            </button>
+            <div className="text-center">
+              <p className="text-sm font-semibold text-slate-900">
+                {activeContext.grade.replace(/_/g, ' ')}{activeContext.stream ? ` • ${activeContext.stream}` : ''}
+              </p>
+              <p className="text-xs text-slate-600">
+                {new Date(activeContext.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+              </p>
+            </div>
+            <button
+              onClick={handleMarkAllPresent}
+              className="h-9 px-3 border border-emerald-200 text-emerald-700 rounded-md hover:bg-emerald-50 transition-colors flex items-center gap-1"
+            >
+              <Check size={15} />
+              Mark All Present
+            </button>
           </div>
 
-          {/* Stats Bar */}
-          <div className="grid grid-cols-3 gap-3">
-             <div className="bg-gray-50 p-4 rounded-[2rem] text-center border border-gray-100">
-                <p className="text-[8px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Present</p>
-                <p className="text-xl font-semibold text-emerald-600">{stats.present}</p>
-             </div>
-             <div className="bg-gray-50 p-4 rounded-[2rem] text-center border border-gray-100">
-                <p className="text-[8px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Total</p>
-                <p className="text-xl font-semibold text-gray-900">{stats.total}</p>
-             </div>
-             <div className="bg-gray-50 p-4 rounded-[2rem] text-center border border-gray-100">
-                <p className="text-[8px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Rate</p>
-                <p className="text-xl font-semibold text-teal-600">{stats.percentage}%</p>
-             </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="bg-white border border-slate-200 rounded-lg p-4">
+              <p className="text-xs text-slate-500 uppercase tracking-wide font-semibold">Present</p>
+              <p className="text-2xl font-semibold text-emerald-600">{stats.present}</p>
+            </div>
+            <div className="bg-white border border-slate-200 rounded-lg p-4">
+              <p className="text-xs text-slate-500 uppercase tracking-wide font-semibold">Absent</p>
+              <p className="text-2xl font-semibold text-rose-600">{stats.absent}</p>
+            </div>
+            <div className="bg-white border border-slate-200 rounded-lg p-4">
+              <p className="text-xs text-slate-500 uppercase tracking-wide font-semibold">Total</p>
+              <p className="text-2xl font-semibold text-slate-900">{stats.total}</p>
+            </div>
+            <div className="bg-white border border-slate-200 rounded-lg p-4">
+              <p className="text-xs text-slate-500 uppercase tracking-wide font-semibold">Rate</p>
+              <p className="text-2xl font-semibold text-brand-teal">{stats.percentage}%</p>
+            </div>
           </div>
 
-          {/* Search */}
           <div className="relative">
-             <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
-             <input
-               type="text"
-               placeholder={`Search ${labels.learners.toLowerCase()}...`}
-               value={searchTerm}
-               onChange={(e) => setSearchTerm(e.target.value)}
-               className="w-full h-14 pl-12 pr-4 bg-gray-50 border-none rounded-[1.5rem] text-xs font-medium outline-none focus:ring-2 focus:ring-teal-100"
-             />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder={`Search ${labels.learners.toLowerCase()}...`}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full h-10 pl-9 pr-3 border border-slate-300 rounded-md text-sm bg-white outline-none focus:ring-2 focus:ring-brand-teal/20"
+            />
           </div>
 
-          {/* Learner List */}
-          <div className="space-y-4 py-2">
-             {filteredLearners.map(learner => {
+          {loading || isSyncing ? (
+            <div className="bg-white border border-slate-200 rounded-lg py-14 flex justify-center">
+              <LoadingSpinner />
+            </div>
+          ) : filteredLearners.length === 0 ? (
+            <div className="bg-white border border-slate-200 rounded-lg py-14 text-center text-slate-500">
+              No learners found for this context.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredLearners.map((learner) => {
                 const currentStatus = pendingChanges[learner.id]?.status;
                 return (
-                   <div key={learner.id} className="bg-white rounded-[2.5rem] border border-gray-50 p-6 shadow-sm space-y-5">
-                      <div className="flex items-center gap-4">
-                         <div className={cn(
-                            "w-12 h-12 rounded-2xl flex items-center justify-center font-semibold text-xs transition-colors",
-                            currentStatus ? statusConfig[currentStatus].lightColor : "bg-gray-100 text-gray-400"
-                         )}>
-                            {learner.firstName[0]}{learner.lastName[0]}
-                         </div>
-                         <div>
-                            <h5 className="text-sm font-semibold text-gray-900 leading-tight">{learner.firstName} {learner.lastName}</h5>
-                            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-tighter mt-0.5">{learner.admissionNumber}</p>
-                         </div>
+                  <div key={learner.id} className="bg-white border border-slate-200 rounded-lg p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <h5 className="text-sm font-semibold text-slate-900">{learner.firstName} {learner.lastName}</h5>
+                        <p className="text-xs text-slate-500">{learner.admissionNumber}</p>
                       </div>
-
-                      <div className="grid grid-cols-4 gap-2">
-                         {Object.entries(statusConfig).map(([key, config]) => (
-                            <button
-                              key={key}
-                              onClick={() => handleStatusChange(learner.id, key)}
-                              className={cn(
-                                 "flex flex-col items-center gap-1.5 py-3 rounded-2xl border transition-all duration-300",
-                                 currentStatus === key 
-                                    ? `${config.color} text-white border-transparent shadow-lg shadow-${config.color.split('-')[1]}-100 scale-105` 
-                                    : "bg-white text-gray-400 border-gray-100 hover:border-gray-200"
-                              )}
-                            >
-                               <config.icon size={16} strokeWidth={currentStatus === key ? 3 : 2} />
-                               <span className="text-[8px] font-semibold uppercase tracking-widest">{config.label}</span>
-                            </button>
-                         ))}
-                      </div>
-
                       {currentStatus && (
-                         <div className="pt-2 animate-in fade-in slide-in-from-top-1">
-                            <input
-                               type="text"
-                               placeholder="Add remark..."
-                               value={pendingChanges[learner.id]?.remarks || ''}
-                               onChange={(e) => setPendingChanges(prev => ({
-                                  ...prev,
-                                  [learner.id]: { ...prev[learner_id], remarks: e.target.value }
-                               }))}
-                               className="w-full bg-transparent text-[10px] font-medium text-gray-500 placeholder:text-gray-300 outline-none border-b border-gray-50 focus:border-teal-200 pb-1"
-                            />
-                         </div>
+                        <span className={cn("text-xs font-semibold px-2 py-1 rounded-md", statusConfig[currentStatus].lightColor)}>
+                          {statusConfig[currentStatus].label}
+                        </span>
                       )}
-                   </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      {Object.entries(statusConfig).map(([key, config]) => (
+                        <button
+                          key={key}
+                          onClick={() => handleStatusChange(learner.id, key)}
+                          className={cn(
+                            "h-9 rounded-md border text-xs font-semibold transition-colors flex items-center justify-center gap-1",
+                            currentStatus === key
+                              ? `${config.color} text-white border-transparent`
+                              : "bg-white text-slate-600 border-slate-300 hover:bg-slate-50"
+                          )}
+                        >
+                          <config.icon size={14} />
+                          {config.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {currentStatus && (
+                      <input
+                        type="text"
+                        placeholder="Add remark (optional)"
+                        value={pendingChanges[learner.id]?.remarks || ''}
+                        onChange={(e) => setPendingChanges(prev => ({
+                          ...prev,
+                          [learner.id]: { ...(prev[learner.id] || { status: currentStatus, remarks: '' }), remarks: e.target.value }
+                        }))}
+                        className="w-full h-9 px-3 border border-slate-300 rounded-md text-sm bg-white outline-none focus:ring-2 focus:ring-brand-teal/20"
+                      />
+                    )}
+                  </div>
                 );
-             })}
-          </div>
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>

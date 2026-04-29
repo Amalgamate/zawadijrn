@@ -76,7 +76,7 @@ const FormativeReport = ({ learners, brandingSettings, user }) => {
         phone: user?.school?.phone || brandingSettings?.phone || '+254 700 000000',
         email: user?.school?.email || brandingSettings?.email || 'info@school.ac.ke',
         website: user?.school?.website || brandingSettings?.website || 'www.school.ac.ke',
-        logoUrl: brandingSettings?.logoUrl || user?.school?.logo || '/logo-new.png',
+        logoUrl: brandingSettings?.logoUrl || user?.school?.logo || '/branding/logo.png',
         brandColor: brandingSettings?.brandColor || '#1e3a8a'
       };
 

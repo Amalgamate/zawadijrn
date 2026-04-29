@@ -162,7 +162,7 @@ const MobileDashboard = ({ onNavigate, brandingSettings, user }) => {
                         {user?.name?.split(' ')[0] || 'Member'}
                     </h2>
                     <p className="text-sm font-medium text-white/70 tracking-tight">
-                        <span className="text-white">{brandingSettings?.schoolName || 'ZAWADI JUNIOR ACADEMY'}</span> Performance Hub
+                <span className="text-white">{brandingSettings?.schoolName || 'Trends CORE V1.0'}</span> Performance Hub
                     </p>
                 </div>
             </div>

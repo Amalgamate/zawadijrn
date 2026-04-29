@@ -109,14 +109,21 @@ export const SchoolDataProvider = ({ children }) => {
 
   // Only run the fallback fetch if bootstrap data never arrived
   useEffect(() => {
-    if (bootstrapReady) return;           // bootstrap has the data — do nothing
     if (!user) return;
     if (!ROLES_WITH_CLASS_ACCESS.has(user.role)) {
       setClasses([]); setGrades([]); setStreams([]);
       setLoading(false); return;
     }
+
+    // If bootstrap is ready but both datasets are empty, recover with a direct fetch.
+    const hasAnyBootstrapSchoolData =
+      (Array.isArray(bootstrapClasses) && bootstrapClasses.length > 0) ||
+      (Array.isArray(bootstrapStreams) && bootstrapStreams.length > 0);
+
+    if (bootstrapReady && hasAnyBootstrapSchoolData) return;
+
     fetchSchoolData();
-  }, [bootstrapReady, user, fetchSchoolData]);
+  }, [bootstrapReady, user, fetchSchoolData, bootstrapClasses, bootstrapStreams]);
 
   useRefreshListener('classes', fetchSchoolData);
   useRefreshListener('streams', fetchSchoolData);

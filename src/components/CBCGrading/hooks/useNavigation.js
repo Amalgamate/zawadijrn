@@ -343,8 +343,6 @@ export const allNavSections = [
             { id: 'settings-communication',  label: 'Communication Settings',  path: 'settings-communication',  permission: 'SCHOOL_SETTINGS'   },
             { id: 'settings-payment',        label: 'Payment Settings',        path: 'settings-payment',        permission: 'SCHOOL_SETTINGS'   },
             { id: 'settings-users',          label: 'User Management',         path: 'settings-users',          permission: 'EDIT_USER'         },
-            { id: 'settings-branding',       label: 'Branding',                path: 'settings-branding',       permission: 'BRANDING_SETTINGS' },
-            { id: 'settings-backup',         label: 'Backup & Restore',        path: 'settings-backup',         permission: 'BACKUP_SETTINGS'   },
             { id: 'system-maintenance',      label: 'System Maintenance',      path: 'system-maintenance',      permission: 'SYSTEM_SETTINGS', icon: Wrench }
         ]
     }
@@ -589,7 +587,7 @@ export const useNavigation = () => {
             if (section.id === 'learners') label = labels.students;
             if (section.id === 'teachers') label = labels.teachers;
             if (section.id === 'parents')  label = labels.parents || 'Guardians';
-            if (section.id === 'assessment') label = labels.subjects || 'Assessment';
+      if (section.id === 'assessment') label = labels.subjects || 'Learner Analytics';
 
             return {
                 ...section,

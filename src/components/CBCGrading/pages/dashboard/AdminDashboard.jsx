@@ -243,6 +243,44 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
     be: row.be || 0
   }));
 
+  const calendarEvents = metrics?.upcomingEvents || [];
+  const eventsByCategory = Object.entries(
+    calendarEvents.reduce((acc, evt) => {
+      const key = evt?.category || 'General';
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {})
+  ).map(([name, value], index) => ({
+    name,
+    value,
+    color: ['#0ea5e9', '#14b8a6', '#8b5cf6', '#f59e0b', '#f43f5e'][index % 5]
+  }));
+
+  const eventsByMonth = Object.entries(
+    calendarEvents.reduce((acc, evt) => {
+      const d = evt?.date ? new Date(evt.date) : null;
+      if (d && !Number.isNaN(d.getTime())) {
+        const month = d.toLocaleDateString('en-US', { month: 'short' });
+        acc[month] = (acc[month] || 0) + 1;
+      }
+      return acc;
+    }, {})
+  ).map(([month, count]) => ({ month, count }));
+
+  const hrStatusData = [
+    { name: 'Active', value: stats.activeTeachers || 0, color: '#14b8a6' },
+    { name: 'Inactive', value: Math.max(0, (stats.totalTeachers || 0) - (stats.activeTeachers || 0)), color: '#f43f5e' }
+  ];
+  const hrGenderData = [
+    { name: 'Male Learners', value: stats.males || 0, color: '#3b82f6' },
+    { name: 'Female Learners', value: stats.females || 0, color: '#ec4899' }
+  ];
+  const hrOpsData = [
+    { name: 'Staff', value: stats.totalTeachers || 0 },
+    { name: 'Students', value: stats.totalStudents || 0 },
+    { name: 'Open HR Actions', value: visibleOperations.length || 0 }
+  ];
+
   const renderOverview = () => {
     const bannerMetrics = [
       {
@@ -381,8 +419,8 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-5 hover:shadow-md transition-shadow">
             <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-widest mb-4">Uncollected Balances</h3>
             <div className="h-48">
-              <ResponsiveContainer width="100%" height="100%">
-                {dynamicFinanceData.length > 0 ? (
+              {dynamicFinanceData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={dynamicFinanceData} margin={{ top: 10, right: 0, left: -25, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} dy={10} />
@@ -392,10 +430,10 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
                     <Bar dataKey="collected" name="Collected" fill="#8b5cf6" radius={0} barSize={12} stackId="a" />
                     <Bar dataKey="pending" name="Pending (Danger)" fill="#f43f5e" radius={0} barSize={12} stackId="a" />
                   </BarChart>
-                ) : (
-                  <div className="h-full w-full flex items-center justify-center text-xs text-gray-400 italic">No Financial Data</div>
-                )}
-              </ResponsiveContainer>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full w-full flex items-center justify-center text-center text-xs text-gray-400 italic">No Financial Data</div>
+              )}
             </div>
           </div>
         </div>
@@ -506,8 +544,8 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
            {stats.feePending > 0 && <span className="text-[9px] font-semibold uppercase text-rose-500 bg-rose-50 px-2 py-0.5 rounded border border-rose-100">Action Required</span>}
          </h3>
          <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                {dynamicFinanceData.length > 0 ? (
+              {dynamicFinanceData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={dynamicFinanceData} margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} dy={10} />
@@ -517,10 +555,10 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
                     <Bar dataKey="collected" name="Collected Revenue" fill="#8b5cf6" radius={0} stackId="a" />
                     <Bar dataKey="pending" name="High Risk Pending" fill="#f43f5e" radius={0} stackId="a" />
                   </BarChart>
-                ) : (
-                   <div className="h-full w-full flex items-center justify-center text-xs text-gray-400 italic">No Financial Data Available</div>
-                )}
-              </ResponsiveContainer>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full w-full flex items-center justify-center text-center text-xs text-gray-400 italic">No Financial Data Available</div>
+              )}
          </div>
       </div>
 
@@ -604,8 +642,8 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
           <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-widest mb-6 border-b border-gray-100 pb-2">Subject Proficiency Distribution</h3>
           <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                {dynamicProficiencyData.length > 0 ? (
+              {dynamicProficiencyData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={dynamicProficiencyData} margin={{ top: 10, right: 20, left: -10, bottom: 0 }} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
                     <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} />
@@ -616,10 +654,10 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
                     <Bar dataKey="me" name="Meeting" fill="#14b8a6" stackId="a" radius={[0, 0, 0, 0]} />
                     <Bar dataKey="be" name="Below Expectation (Warning)" fill="#f43f5e" stackId="a" radius={[0, 4, 4, 0]} />
                   </BarChart>
-                ) : (
-                  <div className="h-full w-full flex items-center justify-center text-xs text-gray-400 italic">No Proficiency Data Logged</div>
-                )}
-              </ResponsiveContainer>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full w-full flex items-center justify-center text-center text-xs text-gray-400 italic">No Proficiency Data Logged</div>
+              )}
           </div>
         </div>
       </div>
@@ -708,6 +746,164 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
               <p className="text-[10px] text-gray-400 font-medium uppercase mt-1">Within optimal standard</p>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderSchoolCalendar = () => (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <MetricCard title="Upcoming Events" value={calendarEvents.length} icon={Calendar} subtitle="Scheduled activities" />
+        <MetricCard title="Event Categories" value={eventsByCategory.length} icon={Filter} subtitle="Calendar groupings" />
+        <MetricCard title="This Term" value={timeFilter === 'term' ? 'Active' : 'Custom'} icon={CheckCircle} subtitle="Current filter scope" />
+        <MetricCard title="Navigations" value={visibleOperations.length} icon={ChevronRight} subtitle="Linked workflows" />
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+          <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-widest mb-4">Events by Category</h3>
+          <div className="h-64">
+            {eventsByCategory.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={eventsByCategory} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" paddingAngle={4} stroke="none">
+                    {eventsByCategory.map((entry, idx) => <Cell key={`evt-cat-${idx}`} fill={entry.color} />)}
+                  </Pie>
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Legend verticalAlign="bottom" height={20} iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: '500' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full w-full flex items-center justify-center text-center text-xs text-gray-400 italic">No calendar category data</div>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+          <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-widest mb-4">Monthly Event Distribution</h3>
+          <div className="h-64">
+            {eventsByMonth.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={eventsByMonth} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} />
+                  <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} />
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Area type="monotone" dataKey="count" stroke="#0ea5e9" fill="#0ea5e9" fillOpacity={0.18} strokeWidth={2} />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full w-full flex items-center justify-center text-center text-xs text-gray-400 italic">No monthly calendar trend available</div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-widest">School Calendar</h3>
+          <button
+            onClick={() => onNavigate('events-calendar')}
+            className="px-3 py-1 bg-white border border-gray-200 rounded text-[10px] font-medium uppercase hover:bg-gray-50 flex items-center gap-1"
+          >
+            <Calendar size={12} /> Open Calendar
+          </button>
+        </div>
+        <div className="p-0">
+          {(metrics?.upcomingEvents?.length > 0 ? metrics.upcomingEvents : []).map((evt, idx) => (
+            <div key={idx} className="px-6 py-4 flex items-center justify-between border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors">
+              <div className="flex items-center gap-4">
+                <div className="text-center p-2 min-w-[60px] bg-gray-100 rounded-md">
+                  <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-widest">{new Date(evt.date).toLocaleDateString('en-US', { month: 'short' })}</p>
+                  <p className="text-sm font-semibold text-gray-900">{new Date(evt.date).getDate()}</p>
+                </div>
+                <div>
+                  <h4 className="text-xs font-semibold text-gray-900">{evt.title}</h4>
+                  <p className="text-[10px] font-medium text-gray-500 uppercase tracking-widest mt-0.5">{evt.category} • Lead: {evt.responsible}</p>
+                </div>
+              </div>
+              <span className="text-[10px] uppercase tracking-widest text-gray-400 font-semibold">{new Date(evt.date).toLocaleDateString()}</span>
+            </div>
+          ))}
+          {!metrics?.upcomingEvents?.length && (
+            <div className="px-6 py-16 text-center text-gray-400 text-xs italic">No calendar events scheduled</div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderHROverview = () => (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <MetricCard title="Total Staff" value={stats.totalTeachers} icon={Briefcase} subtitle="All departments" />
+        <MetricCard title="Active Staff" value={stats.activeTeachers} icon={UserCheck} subtitle="Currently active" />
+        <MetricCard title="Open HR Actions" value={visibleOperations.length} icon={Clock} subtitle="Pending workflows" />
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+          <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-widest mb-4">Staff Status</h3>
+          <div className="h-56">
+            {hrStatusData.some((item) => item.value > 0) ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={hrStatusData} cx="50%" cy="50%" innerRadius={45} outerRadius={72} dataKey="value" paddingAngle={5} stroke="none">
+                    {hrStatusData.map((entry, idx) => <Cell key={`hr-status-${idx}`} fill={entry.color} />)}
+                  </Pie>
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Legend verticalAlign="bottom" height={20} iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: '500' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full w-full flex items-center justify-center text-center text-xs text-gray-400 italic">No staff status data</div>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+          <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-widest mb-4">Learner Gender Profile</h3>
+          <div className="h-56">
+            {hrGenderData.some((item) => item.value > 0) ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={hrGenderData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} />
+                  <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} />
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Bar dataKey="value" name="Count" fill="#3b82f6" radius={0} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full w-full flex items-center justify-center text-center text-xs text-gray-400 italic">No learner demographic data</div>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+          <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-widest mb-4">HR Workload Snapshot</h3>
+          <div className="h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={hrOpsData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} />
+                <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} />
+                <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                <Area type="monotone" dataKey="value" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.18} strokeWidth={2} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+          <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-widest">HR Overview</h3>
+        </div>
+        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-3">
+          <button onClick={() => onNavigate('teachers-list')} className="px-4 py-3 bg-white border border-gray-200 rounded text-xs font-semibold uppercase tracking-widest text-left hover:bg-gray-50">Manage Staff Directory</button>
+          <button onClick={() => onNavigate('settings-academic')} className="px-4 py-3 bg-white border border-gray-200 rounded text-xs font-semibold uppercase tracking-widest text-left hover:bg-gray-50">Staff & Term Settings</button>
         </div>
       </div>
     </div>
@@ -970,12 +1166,14 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
       </div>
 
       {/* Tabs Navigation */}
-      <div className="flex items-center border-b border-gray-200 bg-white px-2 rounded-lg shadow-md border border-gray-200">
+      <div className="flex items-center overflow-x-auto border-b border-gray-200 bg-white px-2 rounded-lg shadow-md border border-gray-200">
         <TabButton id="overview" label="General Overview" icon={Activity} active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
         <TabButton id="financials" label="Financials" icon={Wallet} active={activeTab === 'financials'} onClick={() => setActiveTab('financials')} />
         <TabButton id="performance" label="Academic Performance" icon={Award} active={activeTab === 'performance'} onClick={() => setActiveTab('performance')} />
         <TabButton id="operations" label="School Operations" icon={Clock} active={activeTab === 'operations'} onClick={() => setActiveTab('operations')} />
+        <TabButton id="calendar" label="School Calendar" icon={Calendar} active={activeTab === 'calendar'} onClick={() => setActiveTab('calendar')} />
         <TabButton id="ai-insights" label="AI Smart Insights" icon={Brain} active={activeTab === 'ai-insights'} onClick={() => setActiveTab('ai-insights')} />
+        <TabButton id="hr-overview" label="HR Overview" icon={Briefcase} active={activeTab === 'hr-overview'} onClick={() => setActiveTab('hr-overview')} />
       </div>
 
       {/* Tab Content */}
@@ -985,7 +1183,9 @@ const AdminDashboard = ({ learners = [], pagination, teachers = [], user, onNavi
         {activeTab === 'financials' && renderFinancials()}
         {activeTab === 'performance' && renderPerformance()}
         {activeTab === 'operations' && renderOperations()}
+        {activeTab === 'calendar' && renderSchoolCalendar()}
         {activeTab === 'ai-insights' && renderAIInsights()}
+        {activeTab === 'hr-overview' && renderHROverview()}
       </div>
     </div>
   );

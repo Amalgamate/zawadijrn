@@ -242,9 +242,11 @@ const StockTransfers = () => {
                                         <td className="p-4 text-gray-600 whitespace-nowrap">
                                             {new Date(transfer.createdAt).toLocaleDateString()}
                                         </td>
-                                        <td className="p-4 font-medium text-gray-800 flex items-center gap-2">
-                                            <Box size={16} className="text-gray-400" />
-                                            {transfer.item?.name || 'Unknown Item'}
+                                        <td className="p-4 font-medium text-gray-800">
+                                            <div className="flex items-center gap-2">
+                                                <Box size={16} className="text-gray-400" />
+                                                {transfer.item?.name || 'Unknown Item'}
+                                            </div>
                                         </td>
                                         <td className="p-4 font-medium text-gray-700">
                                             {Number(transfer.quantity)}

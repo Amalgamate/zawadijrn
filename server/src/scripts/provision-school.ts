@@ -33,7 +33,7 @@ async function main() {
 
   const school = await prisma.school.create({
     data: {
-      name: 'Zawadi SMS Academy',
+      name: 'Trends CORE V1.0 Academy',
       admissionFormatType: 'NO_BRANCH',
       branchSeparator: '-',
       curriculumType: 'CBC_AND_EXAM',

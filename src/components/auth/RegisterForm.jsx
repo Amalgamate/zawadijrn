@@ -432,7 +432,7 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess, brand
               />
             )}
             <CardTitle className="text-xl md:text-2xl font-semibold tracking-tighter text-gray-900 uppercase">
-              {brandingSettings?.schoolName || 'ZAWADI SMS ACADEMY'}
+                {brandingSettings?.schoolName || 'Trends CORE V1.0'}
             </CardTitle>
           </div>
           <CardTitle className="text-2xl font-medium text-gray-900 mt-2">

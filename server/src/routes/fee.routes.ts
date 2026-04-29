@@ -68,6 +68,7 @@ const processPaymentSchema = z.object({
   learnerId: z.string().min(1).optional(),
   amount: z.number().positive('Payment amount must be greater than zero'),
   paymentMethod: z.enum(['CASH', 'BANK_TRANSFER', 'CHEQUE', 'MPESA', 'CARD', 'OTHER']),
+  paymentDate: z.string().min(1).optional(),
   referenceNumber: z.string().min(1).nullable().optional(),
   notes: z.string().nullable().optional(),
   allocatedTuition: z.number().nonnegative().optional(),

@@ -594,7 +594,7 @@ export class FeeController {
    * html2canvas / jsPDF with this data.
    */
   async recordPayment(req: AuthRequest, res: Response) {
-    const { invoiceId, learnerId, amount: rawAmount, paymentMethod, referenceNumber, notes, allocatedTuition, allocatedTransport } = req.body;
+    const { invoiceId, learnerId, amount: rawAmount, paymentMethod, paymentDate, referenceNumber, notes, allocatedTuition, allocatedTransport } = req.body;
     const userId = req.user!.userId;
 
     if ((!invoiceId && !learnerId) || rawAmount === undefined || rawAmount === null || !paymentMethod) {
@@ -677,6 +677,7 @@ export class FeeController {
                invoiceId: actualInvoiceId, 
                amount, 
                transportAmount: transportChunk,
+               paymentDate: paymentDate ? new Date(paymentDate) : new Date(),
                paymentMethod, 
                referenceNumber, 
                notes, 
