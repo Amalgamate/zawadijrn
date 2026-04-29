@@ -15,9 +15,7 @@ services:
       - zawadi-network
 
   backend:
-    build:
-      context: ./server
-      dockerfile: Dockerfile
+    image: ${BACKEND_IMAGE:-ghcr.io/amalgamate/zawadi-backend:latest}
     container_name: zawadi-backend
     restart: always
     ports:
@@ -39,9 +37,7 @@ services:
       - zawadi-network
 
   frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ${FRONTEND_IMAGE:-ghcr.io/amalgamate/zawadi-frontend:latest}
     container_name: zawadi-frontend
     restart: always
     ports:
