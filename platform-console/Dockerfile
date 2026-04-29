@@ -1,6 +1,14 @@
-FROM nginx:stable-alpine
+FROM node:22-alpine
 
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY index.html styles.css app.js /usr/share/nginx/html/
+WORKDIR /app
+ENV NODE_ENV=production
 
-EXPOSE 80
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+COPY auth-config.js server.js ./
+COPY index.html styles.css app.js login.css login.js ./
+
+EXPOSE 3100
+
+CMD ["node", "server.js"]

@@ -2,4 +2,7 @@
 .github
 node_modules
 *.log
+*.err
+.env
+.env.*
 README.md

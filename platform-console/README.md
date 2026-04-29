@@ -1,45 +1,98 @@
 # Zawadi Platform Console
 
-Standalone dummy UI for the SaaS control panel.
+Standalone control panel for the Zawadi SaaS platform.
 
-## Local Docker Preview
+## Running with Auth (Recommended)
+
+The console now ships with a lightweight Express auth server. Install dependencies once:
 
 ```bash
-docker build -t zawadi-console:local platform-console
-docker run --rm -p 3100:80 zawadi-console:local
+cd platform-console
+npm install
 ```
 
-Open:
+Then start it:
 
-```text
-http://localhost:3100
+```bash
+node server.js
 ```
+
+Open: **http://localhost:3100**
+
+The login overlay will appear over the blurred dashboard.
+
+### Auth environment
+
+Create a local `.env` file or pass these environment variables when starting the server:
+
+```bash
+CONSOLE_JWT_SECRET=replace-with-a-long-random-secret
+CONSOLE_SUPER_ADMIN_EMAIL=admin@example.com
+CONSOLE_SUPER_ADMIN_PASSWORD=replace-with-a-strong-password
+CONSOLE_PLATFORM_OWNER_EMAIL=owner@example.com
+CONSOLE_PLATFORM_OWNER_PASSWORD=replace-with-a-strong-password
+CONSOLE_JWT_EXPIRES_IN=8h
+CONSOLE_COOKIE_SECURE=false
+```
+
+Do not commit real console passwords or JWT secrets to GitHub.
+
+### Session behaviour
+- JWT stored in an httpOnly cookie (not accessible via JS)
+- Sessions expire after 8 hours
+- On reload, the page silently checks `/api/me` — if the cookie is still valid, login is skipped
+- Super Admin: full access to all sections including Controls
+- Platform Owner: read-only access; Controls section is locked
+
+---
+
+## Running with Docker
+
+```bash
+docker build -t zawadi-console:local .
+docker run --rm --env-file .env -p 3100:3100 zawadi-console:local
+```
+
+---
 
 ## Live Deployment
 
-The GitHub workflow builds and publishes:
+The GitHub workflow builds `ghcr.io/amalgamate/zawadi-console:latest`.
+The deployment script runs it on port `3100` using this server-side env file:
 
-```text
-ghcr.io/amalgamate/zawadi-console:latest
+```bash
+/srv/zawadi/apps/.env.console
 ```
 
-The server deploy script runs it as:
+Point `console.elimucrown.co.ke` via NGINX Proxy Manager when ready:
 
-```text
-http://185.127.16.124:3100
 ```
-
-Later, point `console.elimucrown.co.ke` to the same server in Nginx Proxy Manager:
-
-```text
 Forward host: 185.127.16.124
 Forward port: 3100
 Scheme: http
 ```
 
+After HTTPS is enabled in NGINX Proxy Manager, set `CONSOLE_COOKIE_SECURE=true`
+in `/srv/zawadi/apps/.env.console`.
+
+---
+
+## File structure
+
+```
+platform-console/
+  server.js        ← Express auth server (JWT + cookie)
+  auth-config.js   ← Reads users, roles, JWT secret from env vars
+  login.js         ← Client-side login overlay logic
+  login.css        ← Glass overlay styles
+  index.html       ← Console shell + login overlay markup
+  styles.css       ← Dashboard styles
+  app.js           ← Dashboard data + navigation logic
+```
+
 ## Next Phase
 
-- Add secure login for platform owner accounts.
-- Replace demo data with a console backend API.
-- Connect Docker status, storage metrics, and deploy history.
-- Add audited start, stop, restart, backup, and redeploy controls.
+- Replace demo data with a live console backend API
+- Connect Docker status, real storage metrics, deploy history
+- Audited start, stop, restart, backup, redeploy controls
+- NGINX Proxy Manager at console.elimucrown.co.ke

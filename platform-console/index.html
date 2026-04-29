@@ -1,170 +1,755 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Zawadi Platform Console</title>
-    <link rel="stylesheet" href="./styles.css" />
-  </head>
-  <body>
-    <div class="app-shell">
-      <aside class="sidebar" aria-label="Console navigation">
-        <div class="brand-block">
-          <div class="brand-mark">Z</div>
-          <div>
-            <p class="brand-name">Zawadi</p>
-            <p class="brand-subtitle">Platform Console</p>
-          </div>
-        </div>
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Trends CORE — Control Panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="./styles.css"/>
+<link rel="stylesheet" href="./login.css"/>
+</head>
+<body>
 
-        <nav class="nav-list">
-          <a class="nav-item active" href="#overview">
-            <span class="nav-icon">01</span>
-            Overview
-          </a>
-          <a class="nav-item" href="#instances">
-            <span class="nav-icon">02</span>
-            Instances
-          </a>
-          <a class="nav-item" href="#storage">
-            <span class="nav-icon">03</span>
-            Storage
-          </a>
-          <a class="nav-item" href="#deployments">
-            <span class="nav-icon">04</span>
-            Deployments
-          </a>
-        </nav>
+<!-- ══ LOGIN OVERLAY ══════════════════════════════════════════════════════ -->
+<div id="login-overlay" aria-modal="true" role="dialog" aria-label="Sign in to Trends CORE Control Panel">
+  <div class="login-glass">
 
-        <div class="sidebar-footer">
-          <p class="footer-label">Console Port</p>
-          <p class="footer-value">3100</p>
-        </div>
-      </aside>
-
-      <main class="main-panel">
-        <header class="topbar">
-          <div>
-            <p class="eyebrow">Standalone SaaS Operations</p>
-            <h1>Super Admin Control Center</h1>
-          </div>
-          <div class="topbar-actions">
-            <div class="sync-pill">
-              <span class="status-dot"></span>
-              <span id="lastUpdated">Loading metrics</span>
-            </div>
-            <button class="primary-button" id="refreshButton" type="button">Refresh</button>
-          </div>
-        </header>
-
-        <section class="metric-grid" id="overview" aria-label="Platform metrics">
-          <article class="metric-card">
-            <p class="metric-label">Live Schools</p>
-            <p class="metric-value" id="schoolCount">0</p>
-            <p class="metric-detail">Instances under management</p>
-          </article>
-          <article class="metric-card">
-            <p class="metric-label">Healthy Containers</p>
-            <p class="metric-value" id="healthyContainers">0</p>
-            <p class="metric-detail">Frontend, backend, database</p>
-          </article>
-          <article class="metric-card">
-            <p class="metric-label">Storage Used</p>
-            <p class="metric-value" id="storageUsed">0 GB</p>
-            <p class="metric-detail">Database, uploads, backups</p>
-          </article>
-          <article class="metric-card">
-            <p class="metric-label">Last Deploy</p>
-            <p class="metric-value small" id="lastDeploy">-</p>
-            <p class="metric-detail">GitHub automated pipeline</p>
-          </article>
-        </section>
-
-        <section class="content-grid">
-          <section class="panel" id="instances">
-            <div class="panel-header">
-              <div>
-                <h2>School Instances</h2>
-                <p>Demo inventory for the platform console.</p>
-              </div>
-              <button class="secondary-button" type="button" id="createSchoolButton">Create School</button>
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>School</th>
-                    <th>Status</th>
-                    <th>Created</th>
-                    <th>Version</th>
-                    <th>Ports</th>
-                    <th>Storage</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="instanceTable"></tbody>
-              </table>
-            </div>
-          </section>
-
-          <aside class="panel side-panel" id="storage">
-            <div class="panel-header compact">
-              <div>
-                <h2>Server Capacity</h2>
-                <p>Storage and deployment readiness.</p>
-              </div>
-            </div>
-
-            <div class="capacity-block">
-              <div class="capacity-row">
-                <span>Total disk</span>
-                <strong>80 GB</strong>
-              </div>
-              <div class="meter" aria-label="Disk usage">
-                <span style="width: 46%"></span>
-              </div>
-              <div class="capacity-row muted">
-                <span>Used by app stack</span>
-                <span>36.8 GB</span>
-              </div>
-            </div>
-
-            <div class="storage-list" id="storageList"></div>
-          </aside>
-        </section>
-
-        <section class="content-grid lower-grid">
-          <section class="panel" id="deployments">
-            <div class="panel-header">
-              <div>
-                <h2>Deployment Timeline</h2>
-                <p>Recent automated release events.</p>
-              </div>
-            </div>
-            <div class="timeline" id="timeline"></div>
-          </section>
-
-          <section class="panel">
-            <div class="panel-header compact">
-              <div>
-                <h2>Planned Controls</h2>
-                <p>Next implementation stage.</p>
-              </div>
-            </div>
-            <div class="control-grid">
-              <button class="control-button" type="button">Start Instance</button>
-              <button class="control-button" type="button">Stop Instance</button>
-              <button class="control-button" type="button">Restart Containers</button>
-              <button class="control-button" type="button">Redeploy Latest</button>
-              <button class="control-button" type="button">View Logs</button>
-              <button class="control-button" type="button">Create Backup</button>
-            </div>
-          </section>
-        </section>
-      </main>
+    <div class="lg-header">
+      <div class="lg-mark">TC</div>
+      <div>
+        <div class="lg-title">Trends CORE</div>
+        <div class="lg-sub">Control Panel · v1 · Restricted access</div>
+      </div>
     </div>
 
-    <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script src="./app.js"></script>
-  </body>
+    <div class="lg-body">
+      <div class="lg-error" id="lg-error"></div>
+
+      <div class="lg-row">
+        <label class="lg-label" for="lg-email">Email address</label>
+        <input class="lg-input" id="lg-email" type="email" placeholder="admin@elimucrown.co.ke" autocomplete="email"/>
+      </div>
+
+      <div class="lg-row">
+        <label class="lg-label" for="lg-password">Password</label>
+        <input class="lg-input" id="lg-password" type="password" placeholder="••••••••••••" autocomplete="current-password"/>
+      </div>
+
+      <div style="margin-bottom:20px">
+        <div class="lg-label" style="margin-bottom:8px">Signing in as</div>
+        <div class="lg-roles">
+          <button class="lg-role-btn active" data-role="super_admin" type="button">Super admin</button>
+          <button class="lg-role-btn" data-role="platform_owner" type="button">Platform owner</button>
+        </div>
+      </div>
+
+      <button class="lg-submit" id="lg-submit" type="button">Sign in to control panel</button>
+    </div>
+
+    <div class="lg-footer">
+      <span>Trends CORE v1 · Production</span>
+      <a class="lg-footer-link" href="mailto:admin@elimucrown.co.ke">Need access? →</a>
+    </div>
+
+  </div>
+</div>
+<!-- ══ END LOGIN OVERLAY ═════════════════════════════════════════════════ -->
+
+<div class="shell" id="app-shell">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sb-logo">
+      <div class="logo-mark">TC</div>
+      <div>
+        <div class="logo-text">Trends CORE</div>
+        <div class="logo-sub">Control Panel · v1</div>
+      </div>
+    </div>
+
+    <div class="nav-section-label">Operations</div>
+    <a class="nav-item active" data-section="overview" href="#">
+      <span class="nav-icon">📊</span> Overview
+    </a>
+    <a class="nav-item" data-section="instances" href="#">
+      <span class="nav-icon">🏫</span> Instances
+    </a>
+    <a class="nav-item" data-section="storage" href="#">
+      <span class="nav-icon">💾</span> Storage
+    </a>
+    <a class="nav-item" data-section="deployments" href="#">
+      <span class="nav-icon">🚀</span> Deployments
+    </a>
+
+    <div class="nav-section-label">Platform</div>
+    <a class="nav-item" data-section="controls" href="#">
+      <span class="nav-icon">⚙️</span> Controls
+    </a>
+    <a class="nav-item" data-section="pricing" href="#">
+      <span class="nav-icon">💳</span> Pricing Plans
+    </a>
+    <a class="nav-item" data-section="logs" href="#">
+      <span class="nav-icon">📋</span> Audit Log
+    </a>
+
+    <div class="sb-footer">
+      <div class="sb-footer-row">
+        <span class="sb-footer-label">Console Port</span>
+        <span class="sb-footer-val">3100</span>
+      </div>
+      <div class="sb-footer-row">
+        <span class="sb-footer-label">Server</span>
+        <span class="sb-footer-val">185.127.16.124</span>
+      </div>
+      <div class="env-badge">
+        <span class="env-dot"></span>
+        Production · elimucrown.co.ke
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-title">Trends CORE — Super Admin</div>
+        <div class="breadcrumb">
+          <span>Trends CORE</span>
+          <span>›</span>
+          <b id="breadcrumb-active">Overview</b>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="pill">
+          <span class="pill-dot"></span>
+          <span id="last-updated">Loading…</span>
+        </div>
+        <div class="pill session-timer-pill" id="session-timer-pill" style="display:none">
+          <span class="session-timer-icon">⏱</span>
+          <span id="session-timer-label">8h 00m</span>
+        </div>
+        <div id="user-chip">
+          <span class="user-role-dot"></span>
+          <span id="user-chip-label">—</span>
+        </div>
+        <button class="btn btn-signout" id="btn-logout" type="button">Sign out</button>
+        <button class="btn" id="btn-refresh" type="button">↺ Refresh</button>
+        <button class="btn primary" id="btn-create" type="button">+ New Instance</button>
+      </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content">
+
+      <!-- ── OVERVIEW section ── -->
+      <div id="section-overview" class="section-visible">
+        <div class="page-header">
+          <div>
+            <div class="page-eyebrow">Trends CORE · v1</div>
+            <div class="page-title">Platform Overview</div>
+            <div class="page-sub">Live snapshot of all managed school instances · Demo mode</div>
+          </div>
+        </div>
+
+        <div class="metric-row">
+          <div class="metric-card">
+            <div class="m-label">Live Schools</div>
+            <div class="m-value" id="m-schools">3</div>
+            <div class="m-sub">Instances under management</div>
+            <div class="m-badge up">↑ Active</div>
+          </div>
+          <div class="metric-card teal">
+            <div class="m-label">Healthy Containers</div>
+            <div class="m-value" id="m-containers">9/9</div>
+            <div class="m-sub">Frontend · Backend · Database</div>
+            <div class="m-badge up">All green</div>
+          </div>
+          <div class="metric-card green">
+            <div class="m-label">Storage Used</div>
+            <div class="m-value" id="m-storage">5.0 GB</div>
+            <div class="m-sub">DB · Uploads · Backups</div>
+            <div class="m-badge up">+1.2 GB</div>
+          </div>
+          <div class="metric-card amber">
+            <div class="m-label">Last Deploy</div>
+            <div class="m-value mono" id="m-deploy">91a4982</div>
+            <div class="m-sub">GitHub automated pipeline</div>
+            <div class="m-badge warn">Today 10:47</div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-bottom:14px">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">School Instances</div>
+              <div class="panel-sub">All active deployments on this server</div>
+            </div>
+            <button class="btn teal" id="btn-create2" type="button">+ New Instance</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>School</th><th>Status</th><th>Created</th>
+                  <th>Version</th><th>Ports</th><th>Storage</th><th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="instance-table"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div class="panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-title">Server Capacity</div>
+                <div class="panel-sub">VPS disk allocation · 80 GB total</div>
+              </div>
+            </div>
+            <div id="capacity-items"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-title">Recent Deployments</div>
+                <div class="panel-sub">Automated release events</div>
+              </div>
+            </div>
+            <div class="timeline" id="timeline-mini"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── INSTANCES section ── -->
+      <div id="section-instances" class="section-hidden">
+        <div class="page-header">
+          <div>
+            <div class="page-eyebrow">Trends CORE · v1</div>
+            <div class="page-title">School Instances</div>
+            <div class="page-sub">Full management view for all deployed instances</div>
+          </div>
+          <div class="page-actions">
+            <button class="btn teal" id="btn-create3" type="button">+ New Instance</button>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>School</th><th>Status</th><th>Institution Type</th><th>Pricing Plan</th><th>Created</th>
+                  <th>Version</th><th>Ports</th><th>Storage</th><th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="instance-table-full"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── STORAGE section ── -->
+      <div id="section-storage" class="section-hidden">
+        <div class="page-header">
+          <div>
+            <div class="page-eyebrow">Trends CORE · v1</div>
+            <div class="page-title">Storage</div>
+            <div class="page-sub">Per-instance and total server storage breakdown</div>
+          </div>
+        </div>
+        <div class="metric-row" style="grid-template-columns:repeat(3,1fr)">
+          <div class="metric-card">
+            <div class="m-label">Total VPS Disk</div>
+            <div class="m-value">80 GB</div>
+            <div class="m-sub">Root volume provisioned</div>
+          </div>
+          <div class="metric-card teal">
+            <div class="m-label">App Stack Used</div>
+            <div class="m-value">36.8 GB</div>
+            <div class="m-sub">Docker images + volumes</div>
+          </div>
+          <div class="metric-card green">
+            <div class="m-label">School Data</div>
+            <div class="m-value" id="s-total">5.0 GB</div>
+            <div class="m-sub">DB + uploads + backups</div>
+          </div>
+        </div>
+        <div class="two-col">
+          <div class="panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-title">Disk Allocation</div>
+                <div class="panel-sub">80 GB root volume breakdown</div>
+              </div>
+            </div>
+            <div id="disk-breakdown"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-title">Per-Instance Storage</div>
+                <div class="panel-sub">Database · Uploads · Backups</div>
+              </div>
+            </div>
+            <div class="panel-body" id="per-instance-storage"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── DEPLOYMENTS section ── -->
+      <div id="section-deployments" class="section-hidden">
+        <div class="page-header">
+          <div>
+            <div class="page-eyebrow">Trends CORE · v1</div>
+            <div class="page-title">Deployment Timeline</div>
+            <div class="page-sub">Automated GitHub Actions pipeline history</div>
+          </div>
+        </div>
+        <div class="two-col-lower">
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">Release Events</div></div>
+            <div class="timeline" id="timeline-full"></div>
+          </div>
+          <div class="panel" style="align-self:start">
+            <div class="panel-header"><div class="panel-title">Pipeline Info</div></div>
+            <div class="panel-body">
+              <div style="margin-bottom:14px">
+                <div class="m-label" style="margin-bottom:4px">Registry</div>
+                <div class="code-block">ghcr.io/amalgamate/zawadi-console:latest</div>
+              </div>
+              <div style="margin-bottom:14px">
+                <div class="m-label" style="margin-bottom:4px">Deploy script</div>
+                <div class="code-block">scripts/deploy-server.sh</div>
+              </div>
+              <div>
+                <div class="m-label" style="margin-bottom:4px">Trigger</div>
+                <div style="font-size:13px;color:var(--muted)">Push to <b style="color:var(--brand)">main</b> branch triggers build → publish → rolling restart</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── CONTROLS section ── -->
+      <div id="section-controls" class="section-hidden">
+        <div class="page-header">
+          <div>
+            <div class="page-eyebrow">Trends CORE · v1</div>
+            <div class="page-title">Instance Controls</div>
+            <div class="page-sub">Select an instance and run audited operations</div>
+          </div>
+        </div>
+
+        <!-- Instance selector -->
+        <div class="panel" style="margin-bottom:14px">
+          <div class="panel-header">
+            <div class="panel-title">Select Instance</div>
+            <div class="ctrl-instance-tabs" id="ctrl-instance-tabs"></div>
+          </div>
+          <div class="ctrl-instance-info" id="ctrl-instance-info"></div>
+        </div>
+
+        <!-- Main controls grid -->
+        <div class="controls-layout">
+
+          <!-- Quick Actions -->
+          <div class="panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-title">Quick Actions</div>
+                <div class="panel-sub">Targeted at selected instance</div>
+              </div>
+            </div>
+            <div class="ctrl-grid">
+              <button class="ctrl-btn primary" type="button" data-ctrl="start" data-label="Start Instance"><span class="ctrl-icon">▶️</span>Start Instance</button>
+              <button class="ctrl-btn warn-ctrl" type="button" data-ctrl="stop" data-label="Stop Instance"><span class="ctrl-icon">⏹️</span>Stop Instance</button>
+              <button class="ctrl-btn" type="button" data-ctrl="restart" data-label="Restart Containers"><span class="ctrl-icon">🔄</span>Restart Containers</button>
+              <button class="ctrl-btn teal-ctrl" type="button" data-ctrl="redeploy" data-label="Redeploy Latest"><span class="ctrl-icon">🚀</span>Redeploy Latest</button>
+              <button class="ctrl-btn" type="button" data-ctrl="health" data-label="Health Check"><span class="ctrl-icon">❤️</span>Health Check</button>
+              <button class="ctrl-btn" type="button" data-ctrl="backup" data-label="Create Backup"><span class="ctrl-icon">💾</span>Create Backup</button>
+              <button class="ctrl-btn" type="button" data-ctrl="restore" data-label="Restore Backup"><span class="ctrl-icon">📦</span>Restore Backup…</button>
+              <button class="ctrl-btn danger-ctrl" type="button" data-ctrl="reset" data-label="Factory Reset"><span class="ctrl-icon">⚠️</span>Factory Reset…</button>
+            </div>
+          </div>
+
+          <!-- Global Actions -->
+          <div class="panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-title">Global Actions</div>
+                <div class="panel-sub">Applied to all instances</div>
+              </div>
+            </div>
+            <div class="ctrl-grid" style="grid-template-columns:1fr">
+              <button class="ctrl-btn primary" type="button" data-ctrl="start-all" data-label="Start All Instances"><span class="ctrl-icon">▶️</span>Start All Instances</button>
+              <button class="ctrl-btn warn-ctrl" type="button" data-ctrl="stop-all" data-label="Stop All Instances"><span class="ctrl-icon">⏹️</span>Stop All Instances</button>
+              <button class="ctrl-btn teal-ctrl" type="button" data-ctrl="redeploy-all" data-label="Redeploy All Instances"><span class="ctrl-icon">🚀</span>Redeploy All Instances</button>
+              <button class="ctrl-btn" type="button" data-ctrl="backup-all" data-label="Backup All Instances"><span class="ctrl-icon">💾</span>Backup All Instances</button>
+              <button class="ctrl-btn" type="button" data-ctrl="health-all" data-label="Global Health Check"><span class="ctrl-icon">❤️</span>Global Health Check</button>
+            </div>
+          </div>
+
+          <!-- Module Toggles -->
+          <div class="panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-title">Module Toggles</div>
+                <div class="panel-sub">Enable / disable features per instance</div>
+              </div>
+            </div>
+            <div class="module-toggle-list" id="module-toggle-list"></div>
+          </div>
+
+          <!-- Logs viewer -->
+          <div class="panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-title">Live Logs</div>
+                <div class="panel-sub">Streamed container output</div>
+              </div>
+              <div style="display:flex;gap:6px">
+                <button class="btn" type="button" id="btn-clear-logs">Clear</button>
+                <button class="btn teal" type="button" data-ctrl="logs" data-label="Fetch Logs">Fetch Logs</button>
+              </div>
+            </div>
+            <div class="log-viewer" id="log-viewer"><span class="log-placeholder">Select an instance and click Fetch Logs →</span></div>
+          </div>
+
+        </div><!-- /controls-layout -->
+
+        <!-- Danger zone -->
+        <div class="panel danger-zone" style="margin-top:14px">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title" style="color:var(--red)">⚠️ Danger Zone</div>
+              <div class="panel-sub">These actions are irreversible. Requires confirmation.</div>
+            </div>
+          </div>
+          <div class="danger-grid">
+            <div class="danger-item">
+              <div>
+                <div class="danger-item-title">Purge Instance Data</div>
+                <div class="danger-item-sub">Delete all database records and uploaded files for the selected instance. Containers remain.</div>
+              </div>
+              <button class="btn danger-btn" type="button" data-ctrl="purge" data-label="Purge Instance Data">Purge Data…</button>
+            </div>
+            <div class="danger-item">
+              <div>
+                <div class="danger-item-title">Remove Instance</div>
+                <div class="danger-item-sub">Stop containers, delete volumes, and remove the instance from the platform entirely.</div>
+              </div>
+              <button class="btn danger-btn" type="button" data-ctrl="remove" data-label="Remove Instance">Remove…</button>
+            </div>
+            <div class="danger-item">
+              <div>
+                <div class="danger-item-title">Factory Reset Instance</div>
+                <div class="danger-item-sub">Wipe data and reconfigure from scratch. Super admin credentials are reset.</div>
+              </div>
+              <button class="btn danger-btn" type="button" data-ctrl="reset" data-label="Factory Reset Instance">Reset…</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <!-- ── END CONTROLS ── -->
+
+      <!-- ── PRICING PLANS section ── -->
+      <div id="section-pricing" class="section-hidden">
+        <div class="page-header">
+          <div>
+            <div class="page-eyebrow">Trends CORE · v1</div>
+            <div class="page-title">Pricing Plans</div>
+            <div class="page-sub">Define, manage and assign billing plans for school instances</div>
+          </div>
+          <div class="page-actions">
+            <button class="btn teal" id="btn-new-plan" type="button">+ New Plan</button>
+          </div>
+        </div>
+
+        <!-- Plan summary metrics -->
+        <div class="metric-row" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px">
+          <div class="metric-card">
+            <div class="m-label">Active Plans</div>
+            <div class="m-value" id="p-active-plans">4</div>
+            <div class="m-sub">Published pricing tiers</div>
+            <div class="m-badge up">↑ Live</div>
+          </div>
+          <div class="metric-card teal">
+            <div class="m-label">Assigned Instances</div>
+            <div class="m-value" id="p-assigned">3</div>
+            <div class="m-sub">Schools on a billing plan</div>
+            <div class="m-badge up">All assigned</div>
+          </div>
+          <div class="metric-card green">
+            <div class="m-label">Monthly Revenue</div>
+            <div class="m-value" id="p-revenue">KES 47K</div>
+            <div class="m-sub">Across all active subscriptions</div>
+            <div class="m-badge up">↑ This month</div>
+          </div>
+          <div class="metric-card amber">
+            <div class="m-label">Renewals Due</div>
+            <div class="m-value" id="p-renewals">1</div>
+            <div class="m-sub">Within next 30 days</div>
+            <div class="m-badge warn">Action needed</div>
+          </div>
+        </div>
+
+        <!-- Plans cards grid -->
+        <div class="plans-section-label">Defined Plans</div>
+        <div class="plans-grid" id="plans-grid"></div>
+
+        <!-- Instance Plan Assignment table -->
+        <div class="panel" style="margin-top:20px">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Instance Plan Assignments</div>
+              <div class="panel-sub">Which billing plan each school instance is on</div>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>School Instance</th><th>Assigned Plan</th><th>Billing Cycle</th>
+                  <th>Amount (KES)</th><th>Next Renewal</th><th>Status</th><th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="plan-assignment-table"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Feature matrix -->
+        <div class="panel" style="margin-top:14px">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Plan Feature Matrix</div>
+              <div class="panel-sub">What each tier includes at a glance</div>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table id="feature-matrix-table" style="min-width:700px">
+              <thead id="feature-matrix-head"></thead>
+              <tbody id="feature-matrix-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+      <!-- ── END PRICING PLANS ── -->
+
+      <!-- ── LOGS section ── -->
+      <div id="section-logs" class="section-hidden">
+        <div class="page-header">
+          <div>
+            <div class="page-eyebrow">Trends CORE · v1</div>
+            <div class="page-title">Audit Log</div>
+            <div class="page-sub">All platform-level actions are recorded here</div>
+          </div>
+          <div class="page-actions">
+            <button class="btn" id="btn-export-logs" type="button">↓ Export CSV</button>
+            <button class="btn" id="btn-filter-logs" type="button">Filter</button>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Activity Log</div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input class="form-input" id="log-search" placeholder="Search logs…" style="width:200px;padding:5px 10px;font-size:12px" type="text"/>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Time</th><th>Action</th><th>Instance</th><th>Performed By</th><th>Details</th><th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="audit-table"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /shell -->
+
+<!-- CREATE SCHOOL MODAL -->
+<div class="overlay" id="modal-overlay" aria-modal="true" role="dialog">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Provision New Instance</div>
+      <button class="modal-close" id="modal-close" type="button" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label class="form-label" for="f-name">School Name</label>
+        <input class="form-input" id="f-name" placeholder="e.g. Sunshine Academy" type="text"/>
+      </div>
+      <div class="form-row">
+        <label class="form-label" for="f-domain">Subdomain</label>
+        <input class="form-input" id="f-domain" placeholder="e.g. sunshine → sunshine.elimucrown.co.ke" type="text"/>
+      </div>
+      <div class="form-row">
+        <label class="form-label" for="f-type">Institution Type</label>
+        <select class="form-select" id="f-type">
+          <option value="">Select type…</option>
+          <option value="PRIMARY_CBC">Junior School (CBC)</option>
+          <option value="SECONDARY">Senior School (CBC Senior)</option>
+          <option value="TERTIARY">Tertiary / College</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label class="form-label" for="f-plan">Pricing Plan</label>
+        <select class="form-select" id="f-plan">
+          <option value="">Select plan…</option>
+          <option value="starter">Starter</option>
+          <option value="standard">Standard</option>
+          <option value="professional">Professional</option>
+          <option value="enterprise">Enterprise</option>
+        </select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-row" style="margin-bottom:0">
+          <label class="form-label" for="f-port-fe">Frontend Port</label>
+          <input class="form-input" id="f-port-fe" placeholder="e.g. 3003" type="number"/>
+        </div>
+        <div class="form-row" style="margin-bottom:0">
+          <label class="form-label" for="f-port-be">Backend Port</label>
+          <input class="form-input" id="f-port-be" placeholder="e.g. 5003" type="number"/>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" id="modal-cancel" type="button">Cancel</button>
+      <button class="btn primary" id="modal-submit" type="button">Provision Instance</button>
+    </div>
+  </div>
+</div>
+
+<!-- PLAN MODAL -->
+<div class="overlay" id="plan-modal-overlay" aria-modal="true" role="dialog">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <div class="modal-title" id="plan-modal-title">New Pricing Plan</div>
+      <button class="modal-close" id="plan-modal-close" type="button" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-row">
+          <label class="form-label" for="p-name">Plan Name</label>
+          <input class="form-input" id="p-name" placeholder="e.g. Professional" type="text"/>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="p-badge">Badge Label</label>
+          <input class="form-input" id="p-badge" placeholder="e.g. Most Popular" type="text"/>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+        <div class="form-row">
+          <label class="form-label" for="p-monthly">Monthly (KES)</label>
+          <input class="form-input" id="p-monthly" placeholder="e.g. 15000" type="number"/>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="p-termly">Termly (KES)</label>
+          <input class="form-input" id="p-termly" placeholder="e.g. 40000" type="number"/>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="p-annual">Annual (KES)</label>
+          <input class="form-input" id="p-annual" placeholder="e.g. 140000" type="number"/>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-row">
+          <label class="form-label" for="p-students">Max Students</label>
+          <input class="form-input" id="p-students" placeholder="e.g. 500 or Unlimited" type="text"/>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="p-storage">Storage Limit</label>
+          <input class="form-input" id="p-storage-limit" placeholder="e.g. 10 GB" type="text"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Included Features (one per line)</label>
+        <textarea class="form-input" id="p-features" rows="5" placeholder="SMS notifications&#10;Exam management&#10;Parent portal&#10;Custom domain&#10;Priority support" style="resize:vertical;font-family:var(--sans)"></textarea>
+      </div>
+      <div class="form-row" style="margin-bottom:0">
+        <label class="form-label" for="p-status">Plan Status</label>
+        <select class="form-select" id="p-status">
+          <option value="active">Active (available to assign)</option>
+          <option value="draft">Draft (hidden from assignment)</option>
+          <option value="deprecated">Deprecated (existing only)</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" id="plan-modal-cancel" type="button">Cancel</button>
+      <button class="btn primary" id="plan-modal-submit" type="button">Save Plan</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="overlay" id="confirm-overlay" aria-modal="true" role="dialog">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <div class="modal-title" id="confirm-title">Confirm Action</div>
+      <button class="modal-close" id="confirm-close" type="button">×</button>
+    </div>
+    <div class="modal-body">
+      <p id="confirm-body" style="font-size:14px;color:var(--muted);line-height:1.6"></p>
+      <div class="form-row" style="margin-top:16px;margin-bottom:0" id="confirm-input-row">
+        <label class="form-label" for="confirm-input">Type the instance name to confirm</label>
+        <input class="form-input" id="confirm-input" type="text" placeholder=""/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" id="confirm-cancel" type="button">Cancel</button>
+      <button class="btn danger-btn" id="confirm-ok" type="button">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- LOGOUT CONFIRMATION MODAL -->
+<div class="overlay" id="logout-overlay" aria-modal="true" role="dialog">
+  <div class="modal logout-modal">
+    <div class="modal-header logout-modal-header">
+      <div class="logout-modal-icon">🔒</div>
+      <div>
+        <div class="modal-title">Sign out of Trends CORE?</div>
+        <div class="logout-modal-sub">Your session will be terminated and you'll need to sign in again.</div>
+      </div>
+    </div>
+    <div class="modal-body logout-modal-body">
+      <div class="logout-session-info" id="logout-session-info">
+        <div class="logout-info-row">
+          <span class="logout-info-label">Signed in as</span>
+          <span class="logout-info-val" id="logout-user-display">—</span>
+        </div>
+        <div class="logout-info-row">
+          <span class="logout-info-label">Role</span>
+          <span class="logout-info-val" id="logout-role-display">—</span>
+        </div>
+        <div class="logout-info-row">
+          <span class="logout-info-label">Session expires</span>
+          <span class="logout-info-val" id="logout-timer-display">—</span>
+        </div>
+      </div>
+      <p class="logout-warn-text">Any unsaved changes in the control panel will be lost.</p>
+    </div>
+    <div class="modal-footer logout-modal-footer">
+      <button class="btn" id="logout-cancel-btn" type="button">Stay signed in</button>
+      <button class="btn btn-signout-confirm" id="logout-confirm-btn" type="button">🔒 Sign out now</button>
+    </div>
+  </div>
+</div>
+<!-- END LOGOUT MODAL -->
+
+<script src="./app.js"></script>
+<script src="./login.js"></script>
+</body>
 </html>

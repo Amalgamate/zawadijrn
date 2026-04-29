@@ -11,6 +11,7 @@ set -euo pipefail
 #   MAIN_DIR=/srv/zawadi/apps/zawadijrn
 #   CONSOLE_IMAGE=ghcr.io/amalgamate/zawadi-console:latest
 #   CONSOLE_PORT=3100
+#   CONSOLE_ENV_FILE=/srv/zawadi/apps/.env.console
 
 SERVER_HOST="${SERVER_HOST:-185.127.16.124}"
 SERVER_USER="${SERVER_USER:-deploy}"
@@ -18,11 +19,12 @@ APPS_DIR="${APPS_DIR:-/srv/zawadi/apps}"
 MAIN_DIR="${MAIN_DIR:-/srv/zawadi/apps/zawadijrn}"
 CONSOLE_IMAGE="${CONSOLE_IMAGE:-ghcr.io/amalgamate/zawadi-console:latest}"
 CONSOLE_PORT="${CONSOLE_PORT:-3100}"
+CONSOLE_ENV_FILE="${CONSOLE_ENV_FILE:-${APPS_DIR}/.env.console}"
 
 echo "[deploy] Host: ${SERVER_USER}@${SERVER_HOST}"
 echo "[deploy] Images: ghcr.io/amalgamate/zawadi-frontend:latest, ghcr.io/amalgamate/zawadi-backend:latest, ${CONSOLE_IMAGE}"
 
-ssh "${SERVER_USER}@${SERVER_HOST}" "APPS_DIR='${APPS_DIR}' MAIN_DIR='${MAIN_DIR}' CONSOLE_IMAGE='${CONSOLE_IMAGE}' CONSOLE_PORT='${CONSOLE_PORT}' bash -s" <<'REMOTE'
+ssh "${SERVER_USER}@${SERVER_HOST}" "APPS_DIR='${APPS_DIR}' MAIN_DIR='${MAIN_DIR}' CONSOLE_IMAGE='${CONSOLE_IMAGE}' CONSOLE_PORT='${CONSOLE_PORT}' CONSOLE_ENV_FILE='${CONSOLE_ENV_FILE}' bash -s" <<'REMOTE'
 set -euo pipefail
 
 deploy_main() {
@@ -56,13 +58,20 @@ deploy_console() {
   echo "[deploy] Platform console: pull image"
   sudo docker pull "${CONSOLE_IMAGE}"
 
+  if ! sudo test -f "${CONSOLE_ENV_FILE}"; then
+    echo "[deploy] Missing console environment file: ${CONSOLE_ENV_FILE}" >&2
+    echo "[deploy] Create it with CONSOLE_JWT_SECRET and at least one console user before deploying." >&2
+    exit 1
+  fi
+
   echo "[deploy] Platform console: recreate container on :${CONSOLE_PORT}"
   sudo docker rm -f zawadi-console >/dev/null 2>&1 || true
   sudo docker run -d \
     --name zawadi-console \
     --restart always \
     --label com.zawadi.service=platform-console \
-    -p "${CONSOLE_PORT}:80" \
+    --env-file "${CONSOLE_ENV_FILE}" \
+    -p "${CONSOLE_PORT}:3100" \
     "${CONSOLE_IMAGE}"
 }
 
