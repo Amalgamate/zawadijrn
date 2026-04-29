@@ -30,7 +30,7 @@ deploy_main() {
   sudo docker compose run --rm backend npx prisma db push --skip-generate
 
   echo "[deploy] Main instance: recreate app containers"
-  sudo docker compose up -d --pull always
+  sudo docker compose up -d --pull always --force-recreate backend frontend
 }
 
 deploy_school_stack() {
@@ -45,7 +45,7 @@ deploy_school_stack() {
   sudo docker compose --env-file "${env_file}" -p "${project}" -f docker-compose.stack.yml run --rm backend npx prisma db push --skip-generate
 
   echo "[deploy] ${project}: recreate app containers"
-  sudo docker compose --env-file "${env_file}" -p "${project}" -f docker-compose.stack.yml up -d --pull always
+  sudo docker compose --env-file "${env_file}" -p "${project}" -f docker-compose.stack.yml up -d --pull always --force-recreate backend frontend
 }
 
 healthcheck() {
