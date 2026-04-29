@@ -27,7 +27,7 @@ deploy_main() {
   sudo docker compose pull backend frontend
 
   echo "[deploy] Main instance: sync database schema"
-  sudo docker compose run --rm backend npx prisma db push --skip-generate
+  sudo docker compose run -T --rm backend npx prisma db push --skip-generate < /dev/null
 
   echo "[deploy] Main instance: recreate app containers"
   sudo docker compose up -d --pull always --force-recreate backend frontend
@@ -42,7 +42,7 @@ deploy_school_stack() {
   sudo docker compose --env-file "${env_file}" -p "${project}" -f docker-compose.stack.yml pull backend frontend
 
   echo "[deploy] ${project}: sync database schema"
-  sudo docker compose --env-file "${env_file}" -p "${project}" -f docker-compose.stack.yml run --rm backend npx prisma db push --skip-generate
+  sudo docker compose --env-file "${env_file}" -p "${project}" -f docker-compose.stack.yml run -T --rm backend npx prisma db push --skip-generate < /dev/null
 
   echo "[deploy] ${project}: recreate app containers"
   sudo docker compose --env-file "${env_file}" -p "${project}" -f docker-compose.stack.yml up -d --pull always --force-recreate backend frontend
