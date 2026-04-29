@@ -20,6 +20,10 @@ export class OtpService {
     private static readonly OTP_LENGTH = 6;
     private static readonly OTP_EXPIRY_MINUTES = 10;
 
+    private static shouldSkipOtp(): boolean {
+        return process.env.NODE_ENV !== 'production' && process.env.SKIP_OTP === 'true';
+    }
+
     /**
      * Generate a 6-digit OTP code
      */
@@ -56,6 +60,16 @@ export class OtpService {
                 return { success: false, message: 'Account is not active' };
             }
 
+            // Skip OTP for super admins
+            if (user.role === 'SUPER_ADMIN') {
+                console.log(`\n🔑 OTP bypassed for super admin: ${user.email}\n`);
+                return {
+                    success: true,
+                    message: 'OTP not required for super admins',
+                    expiresAt: new Date()
+                };
+            }
+
             if (!user.phone) {
                 return { success: false, message: 'No phone number registered' };
             }
@@ -64,7 +78,22 @@ export class OtpService {
             const otpCode = this.generateOTP();
             const expiresAt = new Date(Date.now() + OTP_CONFIG.expiryMinutes * 60 * 1000);
 
-            // OTP generated — not logged for security
+            if (this.shouldSkipOtp()) {
+                console.log(`\n🔑 DEV SKIP OTP enabled for ${user.email}. No SMS will be sent.\n`);
+                return {
+                    success: true,
+                    message: 'OTP skipped in development environment',
+                    expiresAt
+                };
+            }
+
+            // Dev-mode safety valve: print OTP to console when SMS may not be configured
+            if (process.env.NODE_ENV !== 'production') {
+                console.log(`\n🔑 ============================================`);
+                console.log(`   DEV MODE OTP for ${user.email}: ${otpCode}`);
+                console.log(`   Phone: ${user.phone} | Expires in ${OTP_CONFIG.expiryMinutes}min`);
+                console.log(`🔑 ============================================\n`);
+            }
 
             // 3. Store OTP in database
             await prisma.user.update({
@@ -75,7 +104,7 @@ export class OtpService {
                 }
             });
 
-            // 4. Send SMS (async)
+            // 4. Send SMS (async — failure does NOT fail the request)
             const message = SMS_MESSAGES.otp(otpCode, OTP_CONFIG.expiryMinutes);
 
             SmsService.sendSms(
@@ -108,6 +137,40 @@ export class OtpService {
             });
 
             if (!user) return { success: false, message: 'User not found' };
+
+            // Skip OTP verification for super admins
+            if (user.role === 'SUPER_ADMIN') {
+                console.log(`\n🔑 OTP verification bypassed for super admin: ${user.email}\n`);
+                return {
+                    success: true,
+                    message: 'OTP verification not required for super admins',
+                    user: {
+                        id: user.id,
+                        email: user.email,
+                        firstName: user.firstName,
+                        lastName: user.lastName,
+                        role: user.role,
+                        status: user.status,
+                        phone: user.phone
+                    }
+                };
+            }
+
+            if (this.shouldSkipOtp()) {
+                return {
+                    success: true,
+                    message: 'OTP skipped in development environment',
+                    user: {
+                        id: user.id,
+                        email: user.email,
+                        firstName: user.firstName,
+                        lastName: user.lastName,
+                        role: user.role,
+                        status: user.status,
+                        phone: user.phone
+                    }
+                };
+            }
 
             // 2. Check if OTP exists
             if (!user.phoneVerificationCode || !user.phoneVerificationSentAt) {
