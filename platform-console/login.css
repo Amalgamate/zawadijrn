@@ -110,6 +110,59 @@
   background: rgba(255, 255, 255, 0.14);
 }
 
+.lg-password-wrap {
+  position: relative;
+}
+
+.lg-password-wrap .lg-input {
+  padding-right: 44px;
+}
+
+.lg-password-toggle {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  width: 28px;
+  height: 28px;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.68);
+  cursor: pointer;
+}
+
+.lg-password-toggle:hover,
+.lg-password-toggle:focus-visible {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.08);
+  outline: none;
+}
+
+.lg-password-toggle svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.lg-password-toggle .icon-eye-off {
+  display: none;
+}
+
+.lg-password-toggle.is-visible .icon-eye {
+  display: none;
+}
+
+.lg-password-toggle.is-visible .icon-eye-off {
+  display: block;
+}
+
 /* Role toggle */
 .lg-roles {
   display: flex;

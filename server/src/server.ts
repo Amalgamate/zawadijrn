@@ -25,9 +25,8 @@ app.set('trust proxy', 1);
 // Security middleware
 app.use(helmet());
 
-// CORS — allow specific origins including Vercel and local development
+// CORS - allow configured origins and local development
 const allowedOrigins = [
-  'https://zawadijrn.vercel.app',
   'http://localhost:3000',
   'http://localhost:5173',
   'http://localhost',          // Capacitor Android WebView

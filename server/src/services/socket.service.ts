@@ -15,7 +15,6 @@ export const initializeSocket = (httpServer: any) => {
                 const allowedOrigins = [
                     'http://localhost:3000',
                     'http://localhost:5173',
-                    'https://zawadijrn.vercel.app',
                     process.env.FRONTEND_URL
                 ].filter(Boolean);
                 

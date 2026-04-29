@@ -39,7 +39,7 @@ export const errorHandler = (
   
   // Ensure CORS headers are present even on crash
   const origin = req.headers.origin;
-  if (origin && (origin.includes('vercel.app') || origin.includes('localhost'))) {
+  if (origin && origin.includes('localhost')) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Credentials', 'true');
   }

@@ -20,6 +20,7 @@
   const shell      = document.getElementById('app-shell');
   const emailInput = document.getElementById('lg-email');
   const passInput  = document.getElementById('lg-password');
+  const passToggle = document.getElementById('lg-password-toggle');
   const submitBtn  = document.getElementById('lg-submit');
   const errorBox   = document.getElementById('lg-error');
   const userChip   = document.getElementById('user-chip');
@@ -63,6 +64,17 @@
     const m = totalMin % 60;
     if (h > 0) return `${h}h ${String(m).padStart(2, '0')}m`;
     return `${m}m remaining`;
+  }
+
+  if (passToggle && passInput) {
+    passToggle.addEventListener('click', () => {
+      const isVisible = passInput.type === 'text';
+      passInput.type = isVisible ? 'password' : 'text';
+      passToggle.classList.toggle('is-visible', !isVisible);
+      passToggle.setAttribute('aria-pressed', String(!isVisible));
+      passToggle.setAttribute('aria-label', isVisible ? 'Show password' : 'Hide password');
+      passInput.focus();
+    });
   }
 
   // ── Session countdown timer ──────────────────────────────────────────────

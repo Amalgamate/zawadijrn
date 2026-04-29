@@ -10,7 +10,6 @@ import { Toaster } from 'react-hot-toast';
 import { SchoolDataProvider } from './contexts/SchoolDataContext';
 import { FeeActionsProvider } from './contexts/FeeActionsContext';
 import { UserNotificationProvider } from './contexts/UserNotificationContext';
-import { SpeedInsights } from '@vercel/speed-insights/react';
 import axiosInstance from './services/api/axiosConfig';
 import { useBootstrapStore } from './store/useBootstrapStore';
 
@@ -243,7 +242,6 @@ export default function App() {
       <HashRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AppContent />
         <Toaster position="top-right" reverseOrder={false} />
-        <SpeedInsights />
       </HashRouter>
     </ErrorBoundary>
   );
