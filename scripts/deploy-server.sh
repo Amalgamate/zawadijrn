@@ -51,6 +51,14 @@ deploy_school_stack() {
 healthcheck() {
   local port="$1"
   echo "[deploy] Health check :${port}"
+  for attempt in {1..30}; do
+    if curl -fsS "http://185.127.16.124:${port}/api/health" >/dev/null; then
+      return 0
+    fi
+    echo "[deploy] Health check :${port} waiting (${attempt}/30)"
+    sleep 2
+  done
+
   curl -fsS "http://185.127.16.124:${port}/api/health" >/dev/null
 }
 
