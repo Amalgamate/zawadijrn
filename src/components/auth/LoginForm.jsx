@@ -85,8 +85,9 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
         password: formData.password,
       });
 
-      if (skipOtp) {
-        const { token, refreshToken, user } = credentialsData;
+      const userRole = credentialsData?.user?.role;
+      if (skipOtp || credentialsData?.requiresOtp === false || userRole === 'SUPER_ADMIN' || userRole === 'STUDENT') {
+        const { token, refreshToken, user, mustChangePassword } = credentialsData;
         if (token) localStorage.setItem('token', token);
         if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
         if (formData.rememberMe) localStorage.setItem('authToken', token);
@@ -102,7 +103,8 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
           schoolId: null,
           branchId: user.branchId || user.branch?.id || null,
           school: user.school || null,
-          branch: user.branch || null
+          branch: user.branch || null,
+          mustChangePassword
         };
 
         const bid = user.branchId || user.branch?.id || '';
