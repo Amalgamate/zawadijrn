@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { Eye, EyeOff, AlertCircle } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Eye, EyeOff, AlertCircle, Check } from 'lucide-react';
 import { authAPI, schoolAPI } from '../../services/api';
-import { setCurrentSchoolId, setBranchId } from '../../services/schoolContext';
+import { setBranchId, setSelectedInstitutionType } from '../../services/schoolContext';
 import OTPVerificationForm from './OTPVerificationForm';
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -11,17 +11,25 @@ import { cn } from "../../utils/cn";
 
 // Helper: School fetching removed for single-tenant mode
 
-const DEMO_ACCOUNTS = [
-  { id: 'admin',      label: 'Admin',       email: 'admin@local.test',                password: 'Admin123!',  color: 'bg-purple-100 text-purple-700 border-purple-300 hover:bg-purple-600 hover:text-white hover:border-purple-600' },
-  { id: 'teacher',    label: 'Teacher',     email: 'teacher@local.test',              password: 'Teacher123!', color: 'bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-600 hover:text-white hover:border-emerald-600' },
-  { id: 'admin_ss',   label: 'SS Admin',    email: 'admin.ss@local.test',             password: 'Admin123!',  color: 'bg-indigo-100 text-indigo-700 border-indigo-300 hover:bg-indigo-600 hover:text-white hover:border-indigo-600' },
-  { id: 'teacher_ss', label: 'SS Teacher',  email: 'teacher.ss@local.test',           password: 'Teacher123!', color: 'bg-cyan-100 text-cyan-700 border-cyan-300 hover:bg-cyan-600 hover:text-white hover:border-cyan-600' },
-];
-
-// Senior School (SS) one-click accounts (seeded by `server/prisma/seed.ts`)
-const SS_DEMO_ACCOUNTS = [
-  { id: 'ss-admin',   label: 'SS Admin',   email: 'admin.ss@local.test',   password: 'Admin123!',   color: 'bg-sky-100 text-sky-700 border-sky-300 hover:bg-sky-600 hover:text-white hover:border-sky-600' },
-  { id: 'ss-teacher', label: 'SS Teacher', email: 'teacher.ss@local.test', password: 'Teacher123!', color: 'bg-indigo-100 text-indigo-700 border-indigo-300 hover:bg-indigo-600 hover:text-white hover:border-indigo-600' },
+const INSTITUTION_OPTIONS = [
+  {
+    value: 'PRIMARY_CBC',
+    label: 'Primary CBC',
+    subtitle: 'Junior School',
+    description: 'Use CBC structure for lower and upper primary workflows.',
+  },
+  {
+    value: 'SECONDARY',
+    label: 'Secondary',
+    subtitle: 'High School',
+    description: 'Enable secondary classes, subjects, and reporting structure.',
+  },
+  {
+    value: 'TERTIARY',
+    label: 'Tertiary',
+    subtitle: 'College / University',
+    description: 'Use tertiary departments, programs, and unit-based setup.',
+  },
 ];
 
 export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword, onLoginSuccess, brandingSettings }) {
@@ -31,7 +39,19 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
   const [isLoading, setIsLoading] = useState(false);
   const [showOTPVerification, setShowOTPVerification] = useState(false);
   const [pendingUserData, setPendingUserData] = useState(null);
+  const [showInstitutionSetupModal, setShowInstitutionSetupModal] = useState(false);
+  const [institutionChoice, setInstitutionChoice] = useState('PRIMARY_CBC');
+  const [pendingCredentialsData, setPendingCredentialsData] = useState(null);
+  const [institutionSetupError, setInstitutionSetupError] = useState('');
+  const [isLockingInstitution, setIsLockingInstitution] = useState(false);
+  const [institutionSetupSuccess, setInstitutionSetupSuccess] = useState('');
+  const [institutionSetupProgress, setInstitutionSetupProgress] = useState(null);
+  const [isLoadingInstitutionSetupProgress, setIsLoadingInstitutionSetupProgress] = useState(false);
   const skipOtp = import.meta.env.VITE_SKIP_OTP === 'true';
+  const institutionOptionMap = useMemo(
+    () => INSTITUTION_OPTIONS.reduce((acc, item) => ({ ...acc, [item.value]: item }), {}),
+    []
+  );
 
   const resolveInstitutionType = (email, apiUser) => {
     // Junior remains default. Only force SECONDARY for SS demo accounts.
@@ -47,14 +67,28 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
     return !!flag;
   });
 
-  const handleDemoClick = (account) => {
-    setFormData(prev => ({
-      ...prev,
-      email: account.email,
-      password: account.password,
-    }));
-    setErrors({});
-  };
+  useEffect(() => {
+    let alive = true;
+    const loadInstitutionProgress = async () => {
+      if (!showInstitutionSetupModal || !pendingCredentialsData?.token || !institutionChoice) return;
+      setIsLoadingInstitutionSetupProgress(true);
+      try {
+        const response = await schoolAPI.getInstitutionSetupProgress(institutionChoice, pendingCredentialsData.token);
+        if (alive) {
+          setInstitutionSetupProgress(response?.data || null);
+        }
+      } catch (_error) {
+        if (alive) setInstitutionSetupProgress(null);
+      } finally {
+        if (alive) setIsLoadingInstitutionSetupProgress(false);
+      }
+    };
+
+    loadInstitutionProgress();
+    return () => {
+      alive = false;
+    };
+  }, [showInstitutionSetupModal, pendingCredentialsData, institutionChoice]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -72,6 +106,69 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
+  const completeBypassLogin = async (credentialsData) => {
+    const { token, refreshToken, user, mustChangePassword } = credentialsData;
+    if (token) localStorage.setItem('token', token);
+    if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+    if (formData.rememberMe) localStorage.setItem('authToken', token);
+
+    const resolvedInstitutionType = resolveInstitutionType(formData.email, user);
+    const loginUserData = {
+      email: user.email,
+      name: `${user.firstName} ${user.lastName}`,
+      role: user.role,
+      id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      institutionType: resolvedInstitutionType,
+      schoolId: null,
+      branchId: user.branchId || user.branch?.id || null,
+      school: user.school || null,
+      branch: user.branch || null,
+      mustChangePassword
+    };
+
+    const bid = user.branchId || user.branch?.id || '';
+    if (bid) setBranchId(bid);
+    setSelectedInstitutionType(resolvedInstitutionType);
+
+    onLoginSuccess(loginUserData, token, refreshToken);
+  };
+
+  const handleConfirmInstitutionSetup = async () => {
+    if (!pendingCredentialsData?.user) return;
+    setInstitutionSetupError('');
+    setIsLockingInstitution(true);
+    try {
+      await schoolAPI.lockInstitutionType(institutionChoice);
+      const nextCredentialsData = {
+        ...pendingCredentialsData,
+        user: {
+          ...pendingCredentialsData.user,
+          institutionType: institutionChoice,
+          institutionTypeLocked: true,
+          requiresInstitutionSetup: false,
+        },
+      };
+      setPendingCredentialsData(nextCredentialsData);
+      setInstitutionSetupSuccess(`Institution type "${institutionOptionMap[institutionChoice]?.label || institutionChoice}" configured successfully.`);
+    } catch (error) {
+      setInstitutionSetupError(error?.message || 'Failed to lock institution type. Please try again.');
+    } finally {
+      setIsLockingInstitution(false);
+    }
+  };
+
+  const handleContinueAfterInstitutionSetup = async () => {
+    if (!pendingCredentialsData) return;
+    setShowInstitutionSetupModal(false);
+    setInstitutionSetupSuccess('');
+    setInstitutionSetupError('');
+    const credentials = pendingCredentialsData;
+    setPendingCredentialsData(null);
+    await completeBypassLogin(credentials);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -86,31 +183,23 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
       });
 
       const userRole = credentialsData?.user?.role;
-      if (skipOtp || credentialsData?.requiresOtp === false || userRole === 'SUPER_ADMIN' || userRole === 'STUDENT') {
-        const { token, refreshToken, user, mustChangePassword } = credentialsData;
-        if (token) localStorage.setItem('token', token);
-        if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
-        if (formData.rememberMe) localStorage.setItem('authToken', token);
+      const shouldUseOtp = credentialsData?.requiresOtp !== false;
+      const isStudent = userRole === 'STUDENT';
+      const isSuperAdmin = userRole === 'SUPER_ADMIN';
+      const shouldBypassOtp = skipOtp || !shouldUseOtp || isStudent || isSuperAdmin;
 
-        const loginUserData = {
-          email: user.email,
-          name: `${user.firstName} ${user.lastName}`,
-          role: user.role,
-          id: user.id,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          institutionType: resolveInstitutionType(formData.email, user),
-          schoolId: null,
-          branchId: user.branchId || user.branch?.id || null,
-          school: user.school || null,
-          branch: user.branch || null,
-          mustChangePassword
-        };
+      if (userRole === 'SUPER_ADMIN' && credentialsData?.user?.requiresInstitutionSetup) {
+        setPendingCredentialsData(credentialsData);
+        setInstitutionChoice(credentialsData?.user?.institutionType || 'PRIMARY_CBC');
+        setInstitutionSetupError('');
+        setInstitutionSetupSuccess('');
+        setInstitutionSetupProgress(null);
+        setShowInstitutionSetupModal(true);
+        return;
+      }
 
-        const bid = user.branchId || user.branch?.id || '';
-        if (bid) setBranchId(bid);
-
-        onLoginSuccess(loginUserData, token, refreshToken);
+      if (shouldBypassOtp) {
+        await completeBypassLogin(credentialsData);
         return;
       }
 
@@ -124,6 +213,7 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
           user: credentialsData.user,
           token: credentialsData.token,
           refreshToken: credentialsData.refreshToken,
+          mustChangePassword: credentialsData.mustChangePassword,
           institutionType: resolveInstitutionType(formData.email, credentialsData.user),
         });
         setShowOTPVerification(true);
@@ -145,9 +235,9 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
     }
 
     // Unified single-tenant mode
-    let schoolId = null;
     let school = pendingUserData.user.school || null;
 
+    const resolvedInstitutionType = pendingUserData.institutionType || resolveInstitutionType(pendingUserData.email, pendingUserData.user);
     const loginUserData = {
       email: pendingUserData.user.email,
       name: `${pendingUserData.user.firstName} ${pendingUserData.user.lastName}`,
@@ -155,16 +245,18 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
       id: pendingUserData.user.id,
       firstName: pendingUserData.user.firstName,
       lastName: pendingUserData.user.lastName,
-      institutionType: pendingUserData.institutionType || resolveInstitutionType(pendingUserData.email, pendingUserData.user),
+      institutionType: resolvedInstitutionType,
       schoolId: null,
       branchId: pendingUserData.user.branchId || pendingUserData.user.branch?.id || null,
       school: school,
-      branch: pendingUserData.user.branch || null
+      branch: pendingUserData.user.branch || null,
+      mustChangePassword: pendingUserData.mustChangePassword
     };
 
     // setCurrentSchoolId removed for single-tenant mode
     const bid = pendingUserData.user.branchId || pendingUserData.user.branch?.id || '';
     if (bid) setBranchId(bid);
+    setSelectedInstitutionType(resolvedInstitutionType);
 
     onLoginSuccess(loginUserData, pendingUserData.token, pendingUserData.refreshToken);
   };
@@ -200,7 +292,7 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
                 src={brandingSettings.logoUrl}
                 alt="Logo"
                 className="w-24 h-24 object-contain mx-auto transition-transform duration-500 group-hover:scale-110 drop-shadow-xl"
-                onError={(e) => { e.target.style.display = 'none'; }}
+                onError={(e) => { e.currentTarget.src = '/branding/logo.png'; }}
               />
             )}
           </div>
@@ -226,11 +318,11 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
           ) : (
             <>
               <div className="text-center mb-6">
-                <h1 className="text-2xl font-black text-gray-900 leading-tight">
+                <h1 className="text-2xl font-semibold text-gray-900 leading-tight">
                   {brandingSettings?.welcomeTitle || 'Welcome Back!'}
                 </h1>
                 {brandingSettings?.welcomeMessage && (
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-2 px-4">
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-widest mt-2 px-4">
                     {brandingSettings.welcomeMessage}
                   </p>
                 )}
@@ -243,7 +335,7 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
                     key={acc.id}
                     type="button"
                     onClick={() => handleDemoClick(acc)}
-                    className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full border transition-all duration-150 transform active:scale-95 ${acc.color}`}
+                    className={`px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider rounded-full border transition-all duration-150 transform active:scale-95 ${acc.color}`}
                   >
                     {acc.label}
                   </button>
@@ -256,7 +348,7 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
                     key={acc.id}
                     type="button"
                     onClick={() => handleDemoClick(acc)}
-                    className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full border transition-all duration-150 transform active:scale-95 ${acc.color}`}
+                    className={`px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider rounded-full border transition-all duration-150 transform active:scale-95 ${acc.color}`}
                   >
                     {acc.label}
                   </button>
@@ -265,7 +357,7 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
               */}
 
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-gray-700 font-bold ml-1">Email</Label>
+                <Label htmlFor="email" className="text-gray-700 font-medium ml-1">Email</Label>
                 <Input
                   id="email"
                   type="email"
@@ -279,16 +371,16 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
                   placeholder="you@school.com"
                   autoComplete="email"
                 />
-                {errors.email && <p className="text-red-600 text-[10px] font-bold uppercase ml-1">{errors.email}</p>}
+                {errors.email && <p className="text-red-600 text-[10px] font-medium uppercase ml-1">{errors.email}</p>}
               </div>
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between ml-1">
-                  <Label htmlFor="password" className="text-gray-700 font-bold">Password</Label>
+                  <Label htmlFor="password" className="text-gray-700 font-medium">Password</Label>
                   <button
                     type="button"
                     onClick={onSwitchToForgotPassword}
-                    className="text-[10px] text-brand-purple hover:underline font-bold"
+                    className="text-[10px] text-brand-purple hover:underline font-medium"
                   >
                     Forgot?
                   </button>
@@ -315,7 +407,7 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
-                {errors.password && <p className="text-red-600 text-[10px] font-bold uppercase ml-1">{errors.password}</p>}
+                {errors.password && <p className="text-red-600 text-[10px] font-medium uppercase ml-1">{errors.password}</p>}
               </div>
 
               <div className="pt-2">
@@ -327,14 +419,14 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
                     onChange={handleChange}
                     className="w-4 h-4 rounded border-gray-300 text-brand-purple focus:ring-brand-purple accent-brand-purple cursor-pointer transition-transform group-active:scale-90"
                   />
-                  <span className="text-sm text-gray-600 font-bold transition-colors group-hover:text-gray-950">Remember me</span>
+                  <span className="text-sm text-gray-600 font-medium transition-colors group-hover:text-gray-950">Remember me</span>
                 </label>
               </div>
 
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full h-12 text-sm font-bold shadow-xl transition-all duration-300 transform active:scale-95 bg-brand-purple hover:bg-brand-purple/90"
+                className="w-full h-12 text-sm font-medium shadow-xl transition-all duration-300 transform active:scale-95 bg-brand-purple hover:bg-brand-purple/90"
               >
                 {isLoading ? (
                   <div className="flex items-center gap-2">
@@ -352,7 +444,7 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
                   <button
                     type="button"
                     onClick={onSwitchToRegister}
-                    className="text-brand-purple hover:underline font-bold ml-1"
+                    className="text-brand-purple hover:underline font-medium ml-1"
                   >
                     Create account
                   </button>
@@ -363,6 +455,126 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
           )}
         </CardContent>
       </Card>
+
+      {showInstitutionSetupModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-2xl rounded-2xl overflow-hidden border border-white/20 shadow-2xl bg-white">
+            <div className="px-6 py-5 bg-gradient-to-r from-[#030b82] to-[#1f3ce1] text-white">
+              <p className="text-[11px] uppercase tracking-[0.22em] font-semibold text-white/80">First-Time Configuration</p>
+              <h2 className="mt-2 text-2xl font-bold text-white">Set Institution Type</h2>
+              <p className="mt-1 text-sm text-white/85">
+                Choose the active institution for this system. After saving, this is locked for data safety.
+              </p>
+            </div>
+
+            <div className="px-6 py-6">
+              {institutionSetupSuccess && (
+                <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
+                  {institutionSetupSuccess}
+                </div>
+              )}
+
+              <div className="grid gap-3">
+                {INSTITUTION_OPTIONS.map((option) => {
+                  const selected = institutionChoice === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setInstitutionChoice(option.value)}
+                      className={cn(
+                        "w-full text-left rounded-xl border p-4 transition-all duration-150",
+                        selected
+                          ? "border-[#030b82] bg-[#eef2ff] shadow-sm"
+                          : "border-gray-200 bg-white hover:border-[#7f90ff] hover:bg-[#f8f9ff]"
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-base font-bold text-black">{option.label}</p>
+                          <p className="text-xs uppercase tracking-wider font-semibold text-[#030b82]">{option.subtitle}</p>
+                          <p className="mt-1 text-sm text-black/75">{option.description}</p>
+                        </div>
+                        <div className={cn(
+                          "mt-0.5 h-6 w-6 rounded-full border flex items-center justify-center",
+                          selected ? "border-[#030b82] bg-[#030b82] text-white" : "border-gray-300 text-transparent"
+                        )}>
+                          <Check size={14} />
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-black">Institution Setup Readiness</p>
+                  {institutionSetupProgress?.summary && (
+                    <p className="text-xs font-bold text-[#030b82]">
+                      {institutionSetupProgress.summary.completed}/{institutionSetupProgress.summary.total}
+                    </p>
+                  )}
+                </div>
+                <div className="mt-2 h-2.5 w-full rounded-full bg-slate-200 overflow-hidden">
+                  <div
+                    className="h-full bg-[#030b82] transition-all duration-300"
+                    style={{ width: `${institutionSetupProgress?.summary?.percent || 0}%` }}
+                  />
+                </div>
+                <p className="mt-2 text-xs font-medium text-slate-700">
+                  {isLoadingInstitutionSetupProgress
+                    ? 'Checking current setup...'
+                    : `${institutionSetupProgress?.summary?.percent || 0}% pre-configured for ${institutionOptionMap[institutionChoice]?.label || institutionChoice}.`}
+                </p>
+                {!isLoadingInstitutionSetupProgress && Array.isArray(institutionSetupProgress?.items) && (
+                  <div className="mt-3 grid gap-2">
+                    {institutionSetupProgress.items.map((item) => (
+                      <div key={item.key} className="flex items-start justify-between text-xs gap-3">
+                        <p className={cn("font-medium", item.completed ? 'text-emerald-700' : 'text-slate-800')}>
+                          {item.completed ? 'Done' : 'Pending'}: {item.label}
+                        </p>
+                        <p className="text-slate-600 whitespace-nowrap">{item.current}/{item.target}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {institutionSetupError && (
+                <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+                  {institutionSetupError}
+                </div>
+              )}
+
+              <div className="mt-6 flex items-center justify-end gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-gray-300 text-black"
+                  onClick={() => {
+                    setShowInstitutionSetupModal(false);
+                    setPendingCredentialsData(null);
+                    setInstitutionSetupError('');
+                    setInstitutionSetupSuccess('');
+                  }}
+                  disabled={isLockingInstitution}
+                >
+                  Cancel Login
+                </Button>
+                <Button
+                  type="button"
+                  className="bg-[#030b82] hover:bg-[#02075f] text-white min-w-[180px]"
+                  onClick={institutionSetupSuccess ? handleContinueAfterInstitutionSetup : handleConfirmInstitutionSetup}
+                  disabled={isLockingInstitution}
+                >
+                  {isLockingInstitution ? 'Saving Configuration...' : institutionSetupSuccess ? 'Continue to Dashboard' : 'Confirm & Continue'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

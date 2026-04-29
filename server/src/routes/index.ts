@@ -61,8 +61,6 @@ const router = Router();
 // PUBLIC ROUTES
 // ============================================
 router.use('/health', healthRoutes);
-router.use('/diagnostics', diagnosticsRoutes);
-router.use('/migrations', migrationRoutes);
 router.use('/auth', authRoutes);
 router.use('/onboarding', onboardingRoutes);
 router.use('/books', bookRoutes);
@@ -119,5 +117,7 @@ router.use('/lms', requireApp('lms'), lmsRoutes);
 router.use('/tertiary', requireApp('tertiary-modules'), tertiaryRoutes);
 router.use('/secondary', requireApp('exams'), secondaryRoutes);
 router.use('/settings/apps', appsRoutes);
+router.use('/diagnostics', diagnosticsRoutes);
+router.use('/migrations', migrationRoutes);
 
 export default router;

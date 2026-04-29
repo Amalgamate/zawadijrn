@@ -93,6 +93,12 @@ const REQUIREMENTS: EnvRequirement[] = [
         validation: (val) => ['true', 'false'].includes(val.toLowerCase()) || 'SECURE_COOKIES must be true or false'
     },
     {
+        key: 'SKIP_OTP',
+        required: false,
+        description: 'Skip OTP verification in development (true/false)',
+        validation: (val) => ['true', 'false'].includes(val.toLowerCase()) || 'SKIP_OTP must be true or false'
+    },
+    {
         key: 'ENCRYPTION_KEY',
         required: true,
         description: 'Key for sensitive data encryption (32 chars hex)',
@@ -127,13 +133,16 @@ export function validateEnvironment(): void {
         }
     }
 
+    const httpsOnly =
+        (process.env.HTTPS_ONLY || '').toLowerCase() === 'true';
+
     // Security checks for production
     if (process.env.NODE_ENV === 'production') {
-        if (process.env.FRONTEND_URL && !process.env.FRONTEND_URL.startsWith('https://')) {
-            invalid.push('   ❌ FRONTEND_URL must use HTTPS in production');
+        if (httpsOnly && process.env.FRONTEND_URL && !process.env.FRONTEND_URL.startsWith('https://')) {
+            invalid.push('   ❌ FRONTEND_URL must use HTTPS when HTTPS_ONLY=true in production');
         }
-        if (process.env.API_URL && !process.env.API_URL.startsWith('https://')) {
-            invalid.push('   ❌ API_URL must use HTTPS in production');
+        if (httpsOnly && process.env.API_URL && !process.env.API_URL.startsWith('https://')) {
+            invalid.push('   ❌ API_URL must use HTTPS when HTTPS_ONLY=true in production');
         }
         if (!process.env.SECURE_COOKIES || process.env.SECURE_COOKIES !== 'true') {
             warnings.push('   ⚠️ SECURE_COOKIES should be true in production');
