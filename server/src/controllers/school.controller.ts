@@ -215,7 +215,7 @@ export const getInstitutionSetupProgress = async (req: AuthRequest, res: Respons
     prisma.user.count({ where: { role: { not: 'SUPER_ADMIN' }, archived: false } as any }),
     prisma.stream.count({ where: { archived: false } }),
     prisma.class.count({ where: { archived: false, institutionType: institutionType as any } }),
-    prisma.learningArea.count({ where: { active: true, institutionType: institutionType as any } }),
+    prisma.learningArea.count({ where: { institutionType: institutionType as any } }),
     prisma.gradingRange.count({ where: { active: true } as any }),
     prisma.tertiaryDepartment.count(),
     prisma.tertiaryProgram.count(),

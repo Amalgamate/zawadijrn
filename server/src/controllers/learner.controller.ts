@@ -245,7 +245,7 @@ export class LearnerController {
         motherName, motherPhone, motherEmail, motherDeceased: motherDeceased || false,
         guardianRelation, primaryContactType, primaryContactName, primaryContactPhone, primaryContactEmail,
         parent: parentId ? { connect: { id: parentId } } : undefined,
-        status: 'ACTIVE', createdBy: currentUserId,
+        status: LearnerStatus.ACTIVE, createdBy: currentUserId,
       });
 
       const isScholarshipFieldError = (err: any) => {
