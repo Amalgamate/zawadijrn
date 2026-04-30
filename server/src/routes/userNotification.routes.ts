@@ -5,6 +5,9 @@ import { asyncHandler } from '../utils/async.util';
 
 const router = Router();
 
+// Public route: UI may request this before auth is fully established.
+router.get('/vapid-public-key', asyncHandler(userNotificationController.getVapidPublicKey.bind(userNotificationController)));
+
 router.use(authenticate);
 
 // In-app notifications
@@ -13,7 +16,6 @@ router.patch('/:id/read',   asyncHandler(userNotificationController.markAsRead.b
 router.patch('/read-all',   asyncHandler(userNotificationController.markAllRead.bind(userNotificationController)));
 
 // Web Push
-router.get('/vapid-public-key',    asyncHandler(userNotificationController.getVapidPublicKey.bind(userNotificationController)));
 router.post('/push-subscription',  asyncHandler(userNotificationController.savePushSubscription.bind(userNotificationController)));
 
 export default router;
