@@ -59,7 +59,7 @@ function buildPgToolEnv(conn: ReturnType<typeof parseConnectionString>, base: No
 }
 
 /**
- * pg_dump needs a real server session — not PgBouncer transaction pooler (e.g. Supabase :6543).
+ * pg_dump needs a real server session, not a transaction pooler.
  * Prefer DIRECT_URL (Prisma directUrl); if only DATABASE_URL is pooled, fail with a clear message.
  */
 function resolveBackupDatabaseUrl():
@@ -75,7 +75,6 @@ function resolveBackupDatabaseUrl():
 
   const lower = database.toLowerCase();
   const looksPooled =
-    lower.includes('pooler.supabase.com') ||
     lower.includes('pgbouncer=true') ||
     /:6543(\/|\?|$)/.test(lower);
 
@@ -84,7 +83,7 @@ function resolveBackupDatabaseUrl():
       ok: false,
       status: 400,
       error:
-        'Backups require a direct Postgres URL. DATABASE_URL points at a pooler (often port 6543 or pgbouncer=true). Add DIRECT_URL in server/.env using your host’s direct or session connection string (e.g. Supabase: Project Settings → Database → URI, use port 5432 / direct).',
+        'Backups require a direct Postgres URL. DATABASE_URL points at a pooler (often port 6543 or pgbouncer=true). Add DIRECT_URL in server/.env using your host direct or session connection string.',
     };
   }
 

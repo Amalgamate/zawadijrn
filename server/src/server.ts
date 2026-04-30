@@ -13,8 +13,18 @@ import { schoolContextMiddleware } from './middleware/schoolContext.middleware';
 
 const app: Application = express();
 
-// Use pino-http for structured request/response logging
-app.use(pinoHttp({ logger: logger.pino }));
+// Use lightweight request logging in dev to keep local UI snappy.
+// Only log errors and slow requests instead of every request payload.
+const isDev = process.env.NODE_ENV !== 'production';
+app.use(pinoHttp({
+  logger: logger.pino,
+  customLogLevel: (_req, res, err) => {
+    if (err || res.statusCode >= 500) return 'error';
+    if (res.statusCode >= 400) return 'warn';
+    if (isDev) return 'silent';
+    return 'info';
+  }
+}));
 
 // Resolve school context globally
 app.use(schoolContextMiddleware);

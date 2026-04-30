@@ -65,10 +65,11 @@ if (document.body) {
 }
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
+const AppWrapper = import.meta.env.DEV ? React.Fragment : React.StrictMode;
 root.render(
-  <React.StrictMode>
+  <AppWrapper>
     <AuthProvider>
       <App />
     </AuthProvider>
-  </React.StrictMode>
+  </AppWrapper>
 );

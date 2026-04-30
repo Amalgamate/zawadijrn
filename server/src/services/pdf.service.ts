@@ -3,8 +3,7 @@ import { ApiError } from '../utils/error.util';
 /**
  * PDF Service (Frontend-Only Policy)
  * 
- * Server-side PDF generation via Puppeteer is deprecated and unsupported 
- * on the current production environment (Render Native Node).
+ * Server-side PDF generation is deprecated and unsupported.
  * 
  * All report generation should now be handled on the frontend using 
  * html2canvas and jsPDF.
@@ -26,5 +25,4 @@ export const pdfService = {
         throw new ApiError(501, 'Server-side screenshot generation is not supported on this environment. Please use the frontend export feature.');
     }
 };
-
 

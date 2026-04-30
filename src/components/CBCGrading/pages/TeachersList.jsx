@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Upload, Eye, Edit, Trash2, GraduationCap, BookOpen, Search, RefreshCw, MoreVertical, Filter, X } from 'lucide-react';
+import { Plus, Upload, Eye, Edit, Trash2, GraduationCap, BookOpen, Search, RefreshCw, MoreVertical, Filter, X, MessageCircle, MessageSquare, Loader2, Send } from 'lucide-react';
 import StatusBadge from '../shared/StatusBadge';
 import EmptyState from '../shared/EmptyState';
 import { DataCard } from '../shared';
@@ -12,6 +12,8 @@ import { useAuth } from '../../../hooks/useAuth';
 import { useMobile } from '../../../hooks/useMobileDetection';
 import BulkOperationsModal from '../shared/bulk/BulkOperationsModal';
 import TeacherClassAssignmentModal from '../shared/TeacherClassAssignmentModal';
+import { communicationAPI } from '../../../services/api';
+import { formatPhoneNumber } from '../../../utils/phoneFormatter';
 
 const TeachersList = ({
   teachers,
@@ -29,6 +31,11 @@ const TeachersList = ({
   const [showGlobalFilters, setShowGlobalFilters] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
+  const [selectedTeacherIds, setSelectedTeacherIds] = useState([]);
+  const [showQuickCommunication, setShowQuickCommunication] = useState(false);
+  const [bulkChannel, setBulkChannel] = useState('sms');
+  const [bulkMessage, setBulkMessage] = useState('');
+  const [isSendingBulkMessage, setIsSendingBulkMessage] = useState(false);
   const isMobile = useMobile();
 
   const activeFilterCount = filterStatus !== 'all' ? 1 : 0;
@@ -74,6 +81,74 @@ const TeachersList = ({
 
   const getInitials = (firstName, lastName) => {
     return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
+  };
+
+  const allVisibleSelected = teachers.length > 0 && teachers.every((t) => selectedTeacherIds.includes(t.id));
+
+  const handleToggleSelectAll = (checked) => {
+    if (checked) {
+      setSelectedTeacherIds(teachers.map((t) => t.id));
+      return;
+    }
+    setSelectedTeacherIds([]);
+  };
+
+  const handleToggleTeacherSelection = (teacherId, checked) => {
+    setSelectedTeacherIds((prev) => {
+      if (checked) return [...new Set([...prev, teacherId])];
+      return prev.filter((id) => id !== teacherId);
+    });
+  };
+
+  const selectedTeachers = teachers.filter((t) => selectedTeacherIds.includes(t.id));
+  const selectedTeachersWithPhone = selectedTeachers.filter((t) => String(t.phone || '').trim().length > 0);
+
+  const openBulkCommunicationModal = (channel) => {
+    setBulkChannel(channel);
+    setBulkMessage('');
+    setShowQuickCommunication(true);
+  };
+
+  const handleSendBulkCommunication = async () => {
+    if (!bulkMessage.trim()) {
+      alert('Please type a message first.');
+      return;
+    }
+    if (selectedTeachersWithPhone.length === 0) {
+      alert('No selected tutors have phone numbers.');
+      return;
+    }
+
+    setIsSendingBulkMessage(true);
+    try {
+      if (bulkChannel === 'whatsapp') {
+        selectedTeachersWithPhone.forEach((teacher) => {
+          const formatted = formatPhoneNumber(teacher.phone).replace(/\D/g, '');
+          const encodedMessage = encodeURIComponent(bulkMessage);
+          window.open(`https://wa.me/${formatted}?text=${encodedMessage}`, '_blank');
+        });
+        alert(`Opened WhatsApp chats for ${selectedTeachersWithPhone.length} tutors.`);
+      } else {
+        const results = await Promise.allSettled(
+          selectedTeachersWithPhone.map((teacher) =>
+            communicationAPI.sendTestSMS({
+              phoneNumber: formatPhoneNumber(teacher.phone),
+              message: bulkMessage
+            })
+          )
+        );
+        const successCount = results.filter((r) => r.status === 'fulfilled').length;
+        const failedCount = results.length - successCount;
+        alert(`SMS sent: ${successCount} successful, ${failedCount} failed.`);
+      }
+
+      setShowQuickCommunication(false);
+      setBulkMessage('');
+    } catch (error) {
+      alert(`Failed to send message: ${error.message || 'Unknown error'}`);
+    } finally {
+      setIsSendingBulkMessage(false);
+    }
   };
 
   return (
@@ -204,6 +279,15 @@ const TeachersList = ({
           <table className="w-full border-collapse text-xs">
             <thead className="border-b border-[color:var(--table-border)]">
               <tr>
+                <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100 w-10">
+                  <input
+                    type="checkbox"
+                    checked={allVisibleSelected}
+                    onChange={(e) => handleToggleSelectAll(e.target.checked)}
+                    aria-label="Select all tutors"
+                    className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                  />
+                </th>
                 <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Teacher</th>
                 <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Employee No</th>
                 <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Role</th>
@@ -216,6 +300,15 @@ const TeachersList = ({
             <tbody className="divide-y divide-gray-200">
               {teachers.map((teacher) => (
                 <tr key={teacher.id} onClick={() => onViewTeacher(teacher)} className="hover:bg-gray-50 cursor-pointer transition">
+                  <td className="px-3 py-1.5 border-r border-gray-100" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      checked={selectedTeacherIds.includes(teacher.id)}
+                      onChange={(e) => handleToggleTeacherSelection(teacher.id, e.target.checked)}
+                      aria-label={`Select ${teacher.firstName || ''} ${teacher.lastName || ''}`.trim()}
+                      className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                  </td>
                   <td className="px-3 py-1.5 border-r border-gray-100">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-full bg-brand-purple/10 text-brand-purple flex items-center justify-center text-xs font-medium">
@@ -330,6 +423,114 @@ const TeachersList = ({
           if (onRefresh) onRefresh();
         }}
       />
+
+      {/* Bulk Communication Action Bar */}
+      {selectedTeacherIds.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-5 z-50">
+          <span className="font-semibold text-sm">{selectedTeacherIds.length} tutors selected</span>
+          <div className="h-6 w-px bg-gray-700" />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => openBulkCommunicationModal('sms')}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 px-4 py-1.5 rounded-full text-sm font-medium transition-all"
+            >
+              <MessageCircle size={16} /> SMS
+            </button>
+            <button
+              onClick={() => openBulkCommunicationModal('whatsapp')}
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-500 px-4 py-1.5 rounded-full text-sm font-medium transition-all"
+            >
+              <MessageSquare size={16} /> WhatsApp
+            </button>
+          </div>
+          <button
+            onClick={() => setSelectedTeacherIds([])}
+            className="text-gray-400 hover:text-white transition-colors"
+            title="Clear selection"
+          >
+            <X size={18} />
+          </button>
+        </div>
+      )}
+
+      {/* Quick Bulk Communication Modal */}
+      {showQuickCommunication && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
+            <div className="bg-brand-purple/10 px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Quick Communication</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  {selectedTeachersWithPhone.length} with phone numbers out of {selectedTeacherIds.length} selected
+                </p>
+              </div>
+              <button
+                onClick={() => setShowQuickCommunication(false)}
+                className="p-1.5 hover:bg-gray-100 rounded-lg transition"
+              >
+                <X size={20} className="text-gray-500" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="flex gap-2 border-b border-gray-200">
+                <button
+                  onClick={() => setBulkChannel('sms')}
+                  className={`flex items-center gap-2 px-4 py-2 pb-3 font-semibold border-b-2 transition ${bulkChannel === 'sms' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                >
+                  <MessageCircle size={16} />
+                  SMS
+                </button>
+                <button
+                  onClick={() => setBulkChannel('whatsapp')}
+                  className={`flex items-center gap-2 px-4 py-2 pb-3 font-semibold border-b-2 transition ${bulkChannel === 'whatsapp' ? 'border-green-500 text-green-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                >
+                  <MessageSquare size={16} />
+                  WhatsApp
+                </button>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 uppercase mb-2">Message</label>
+                <textarea
+                  value={bulkMessage}
+                  onChange={(e) => setBulkMessage(e.target.value)}
+                  placeholder="Type your bulk message..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-teal focus:border-transparent text-sm resize-none"
+                  rows={5}
+                />
+                <p className="text-xs text-gray-500 mt-1">{bulkMessage.length} characters</p>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex gap-2 justify-end">
+              <button
+                onClick={() => setShowQuickCommunication(false)}
+                className="px-4 py-2 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-100 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSendBulkCommunication}
+                disabled={isSendingBulkMessage || !bulkMessage.trim() || selectedTeachersWithPhone.length === 0}
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              >
+                {isSendingBulkMessage ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Send size={16} />
+                    Send
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

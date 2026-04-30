@@ -410,7 +410,7 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
     const finalFormData = {
       ...formData,
       ...primaryContact,
-      generateInvoice // Include the toggle state
+      generateInvoice: formData.isScholarshipStudent ? false : generateInvoice
     };
 
     console.log('📤 Submitting form data:', finalFormData);
@@ -424,7 +424,7 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
 
         if (result?.success) {
           console.log('✅ Save successful, showing success message...');
-          showSuccess('Student admission successful!');
+          showSuccess(result?.message || 'Student admission successful!');
 
           localStorage.removeItem('admission-form-draft');
           if (!isEdit) {

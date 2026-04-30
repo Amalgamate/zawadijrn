@@ -9,6 +9,7 @@ import { hasPageAccess } from '../utils/appAccess';
 import RoleDashboard from '../pages/dashboard/RoleDashboard';
 // Student dashboard also eager — it's the default page for STUDENT role
 import StudentDashboardView from '../pages/student/StudentDashboard';
+import FeeCollectionPage from '../pages/FeeCollectionPage';
 const LearnersList = lazy(() => import('../pages/LearnersList'));
 const TeachersList = lazy(() => import('../pages/TeachersList'));
 const AddEditTeacherPage = lazy(() => import('../pages/AddEditTeacherPage'));
@@ -51,9 +52,9 @@ const UserManagement = lazy(() => import('../pages/settings/UserManagement'));
 const CommunicationSettings = lazy(() => import('../pages/settings/CommunicationSettings'));
 const PaymentSettings = lazy(() => import('../pages/settings/PaymentSettings'));
 const IDCardTemplatesDesigner = lazy(() => import('../pages/settings/IDCardTemplatesDesigner'));
-const FeeCollectionPage = lazy(() => import('../pages/FeeCollectionPage'));
 const InvoiceDetailPage = lazy(() => import('../pages/InvoiceDetailPage'));
 const RecordPaymentPage = lazy(() => import('../pages/RecordPaymentPage'));
+const FeeTypesPage = lazy(() => import('../pages/FeeTypesPage'));
 const FeeStructurePage = lazy(() => import('../pages/FeeStructurePage'));
 const FeeReportsPage = lazy(() => import('../pages/FeeReportsPage'));
 const WaiversPage = lazy(() => import('../pages/WaiversPage'));
@@ -428,6 +429,7 @@ const PageRouter = ({
           case 'docs-center': return <DocumentCenter />;
 
           case 'fees-structure': return <FeeStructurePage />;
+          case 'fees-types': return <FeeTypesPage />;
           case 'fees-collection': return <FeeCollectionPage learnerId={pageParams.learnerId} grade={pageParams.grade} />;
           case 'fees-invoice-detail': return <InvoiceDetailPage invoice={pageParams.invoice} />;
           case 'fees-record-payment': return <RecordPaymentPage invoice={pageParams.invoice} initialMode={pageParams.initialMode} />;

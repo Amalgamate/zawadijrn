@@ -18,7 +18,7 @@ const getApiBaseUrl = () => {
         return '/api';
     }
 
-    return 'https://zawadijrn.onrender.com/api';
+    return '/api';
 };
 
 export const API_BASE_URL = getApiBaseUrl();

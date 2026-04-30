@@ -3,7 +3,7 @@ require('dotenv').config({ path: '../.env' });
 
 /**
  * This script forces a schema sync to the production database.
- * Use this only if Render is stuck with 500 Internal Server Errors.
+ * Use this only for emergency production database repair.
  */
 async function syncProd() {
   console.log("🚀 Starting Emergency Production DB Sync...");
@@ -14,7 +14,7 @@ async function syncProd() {
     process.exit(1);
   }
 
-  if (!dbUrl.includes('render.com') && !dbUrl.includes('supabase') && !dbUrl.includes('postgres')) {
+  if (!dbUrl.includes('postgres')) {
     console.warn("⚠️ Warning: Your DATABASE_URL looks like a local database.");
     console.warn("Make sure you have your Production DB URL in the .env file.");
   }
@@ -29,7 +29,7 @@ async function syncProd() {
     });
 
     console.log("\n✅ Production Database Synced! Senior School columns added.");
-    console.log("🚀 Now, go to Render and Redeploy. The 500 errors should be GONE.");
+    console.log("Redeploy the production stack after the schema sync completes.");
   } catch (error) {
     console.error("\n❌ Sync Failed. Check your internet and DATABASE_URL.");
     process.exit(1);

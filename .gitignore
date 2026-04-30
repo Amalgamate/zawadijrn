@@ -71,8 +71,6 @@ desktop.ini
 *~
 
 # Test Scripts
-test-puppeteer*.js
-server/test-puppeteer*.js
 verify-restoration.js
 debug_zamzam.js
 

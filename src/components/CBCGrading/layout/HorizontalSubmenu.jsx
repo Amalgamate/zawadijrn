@@ -2,7 +2,7 @@ import React, { useMemo, useState, useRef, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { useNavigation } from '../hooks/useNavigation';
 import { useFeeActions } from '../../../contexts/FeeActionsContext';
-import { Plus, Upload, Download, Search, ChevronDown, BarChart3 } from 'lucide-react';
+import { Plus, Upload, Download, Search, ChevronDown, BarChart3, Users } from 'lucide-react';
 import SmartLearnerSearch from '../shared/SmartLearnerSearch';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -182,7 +182,7 @@ const HorizontalSubmenu = ({ currentPage, onNavigate }) => {
   const { feeActions } = useFeeActions();
 
   // Show fee action links only while on the fee collection page
-  const showFeeActions = currentPage === 'fees-collection' && feeActions;
+  const showFeeActions = (currentPage === 'fees-collection' || currentPage === 'fees-structure') && feeActions;
 
   const activeSection = useMemo(() => {
     const byPage = (navSections || []).find((section) => {
@@ -296,31 +296,81 @@ const HorizontalSubmenu = ({ currentPage, onNavigate }) => {
               New Invoice
             </button>
 
+            {feeActions.onBulkCreate && (
+              <>
+                <span className="h-4 w-px bg-gray-200" />
+                <button
+                  type="button"
+                  onClick={feeActions.onBulkCreate}
+                  className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-md text-indigo-600 hover:bg-indigo-50 transition-colors"
+                  title="Bulk Create Invoices"
+                >
+                  <Users size={13} strokeWidth={2.5} />
+                  Bulk Invoices
+                </button>
+              </>
+            )}
+
             <span className="h-4 w-px bg-gray-200" />
 
-            {/* Import Fees */}
-            <button
-              type="button"
-              onClick={feeActions.onImport}
-              className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-md text-emerald-600 hover:bg-emerald-50 transition-colors"
-              title="Import Fees"
-            >
-              <Upload size={13} strokeWidth={2.5} />
-              Import
-            </button>
-
-            <span className="h-4 w-px bg-gray-200" />
+            {feeActions.onImport && (
+              <>
+                {/* Import Fees */}
+                <button
+                  type="button"
+                  onClick={feeActions.onImport}
+                  className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-md text-emerald-600 hover:bg-emerald-50 transition-colors"
+                  title="Import Fees"
+                >
+                  <Upload size={13} strokeWidth={2.5} />
+                  Import
+                </button>
+                <span className="h-4 w-px bg-gray-200" />
+              </>
+            )}
 
             {/* Export Data */}
-            <button
-              type="button"
-              onClick={feeActions.onExport}
-              className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-md text-blue-600 hover:bg-blue-50 transition-colors"
-              title="Export Data to Excel"
-            >
-              <Download size={13} strokeWidth={2.5} />
-              Export
-            </button>
+            {feeActions.onExport && (
+              <button
+                type="button"
+                onClick={feeActions.onExport}
+                className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-md text-blue-600 hover:bg-blue-50 transition-colors"
+                title="Export Data to Excel"
+              >
+                <Download size={13} strokeWidth={2.5} />
+                Export
+              </button>
+            )}
+
+            {feeActions.onExportPdf && (
+              <>
+                <span className="h-4 w-px bg-gray-200" />
+                <button
+                  type="button"
+                  onClick={feeActions.onExportPdf}
+                  className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-md text-gray-700 hover:bg-gray-100 transition-colors"
+                  title="Download PDF"
+                >
+                  <Download size={13} strokeWidth={2.5} />
+                  PDF
+                </button>
+              </>
+            )}
+
+            {feeActions.onExportExcel && (
+              <>
+                <span className="h-4 w-px bg-gray-200" />
+                <button
+                  type="button"
+                  onClick={feeActions.onExportExcel}
+                  className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-md text-emerald-700 hover:bg-emerald-50 transition-colors"
+                  title="Download Excel"
+                >
+                  <Download size={13} strokeWidth={2.5} />
+                  Excel
+                </button>
+              </>
+            )}
           </>
         )}
       </div>

@@ -1,5 +1,4 @@
 import { useCallback } from 'react';
-import { feeAPI, configAPI } from '../../../services/api';
 import { refreshBus } from '../../../utils/refreshBus';
 
 /**
@@ -23,14 +22,11 @@ export const useLearnerActions = ({
 }) => {
 
   const handleSaveLearner = useCallback(async (learnerData) => {
-    // Extract custom flags
-    const { generateInvoice, ...dataToSave } = learnerData;
-
     // Use learnerData.id as the source of truth for edit vs create.
     const learnerId = learnerData.id;
 
     if (learnerId) {
-      const result = await updateLearner(learnerId, dataToSave);
+      const result = await updateLearner(learnerId, learnerData);
       if (result?.success) {
         showSuccess('Student updated successfully!');
         setEditingLearner(null);
@@ -40,73 +36,11 @@ export const useLearnerActions = ({
       }
       return result;
     } else {
-      const result = await createLearner(dataToSave);
+      const result = await createLearner(learnerData);
 
       if (result.success) {
         showSuccess('Student added successfully!');
         refreshBus.emit('learners');
-
-        // Handle Automatic Invoice Generation
-        if (generateInvoice) {
-          try {
-            console.log('🔄 Starting automatic invoice generation for new learner...');
-            const newLearner = result.data;
-
-            let term = 'TERM_1';
-            let academicYear = new Date().getFullYear();
-
-            try {
-              const termResp = await configAPI.getTermConfigs();
-              const activeConfig = termResp.data?.find(t => t.isCurrent) || termResp.data?.[0];
-              if (activeConfig) {
-                term = activeConfig.term;
-                academicYear = activeConfig.year;
-              }
-            } catch (err) {
-              console.warn('Failed to fetch term config, using defaults', err);
-            }
-
-            const grade = newLearner.grade;
-            const feeStructsResp = await feeAPI.getAllFeeStructures({
-              grade,
-              term,
-              academicYear
-            });
-
-            let targetFeeStructureId = null;
-
-            if (feeStructsResp.success && feeStructsResp.data && feeStructsResp.data.length > 0) {
-              targetFeeStructureId = feeStructsResp.data[0].id;
-            } else {
-              console.log('🌱 No fee structure found. Seeding defaults...');
-              showSuccess(`Seeding default fee structures for ${grade}...`);
-
-              await feeAPI.seedDefaultFeeStructures();
-
-              const retryResp = await feeAPI.getAllFeeStructures({ grade, term, academicYear });
-              if (retryResp.success && retryResp.data?.length > 0) {
-                targetFeeStructureId = retryResp.data[0].id;
-              }
-            }
-
-            if (targetFeeStructureId) {
-              const dueDate = new Date();
-              dueDate.setDate(dueDate.getDate() + 30);
-
-              await feeAPI.createInvoice({
-                learnerId: newLearner.id,
-                feeStructureId: targetFeeStructureId,
-                term,
-                academicYear,
-                dueDate: dueDate.toISOString()
-              });
-
-              showSuccess('✅ Invoice generated automatically!');
-            }
-          } catch (invoiceError) {
-            console.error('Failed to auto-generate invoice:', invoiceError);
-          }
-        }
       } else {
         const errorMsg = typeof result?.error === 'object' ? JSON.stringify(result?.error) : result?.error;
         showError('Error creating student: ' + errorMsg);

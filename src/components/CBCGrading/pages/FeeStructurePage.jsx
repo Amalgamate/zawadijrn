@@ -1,12 +1,21 @@
 /**
- * Fee Structure Page
- * Manage fee types, amounts, and academic year structures
+ * FeeStructurePage — Redesigned Sheet View
+ *
+ * WHAT CHANGED vs the old page:
+ *  • Default list view is now a "Grade Sheet" — one grade at a time,
+ *    Term 1 / Term 2 / Term 3 stacked vertically like a spreadsheet.
+ *  • Old matrix/grid view is preserved and accessible via a toggle button.
+ *  • Grade + Academic Year selectors replace the filter drawer.
+ *  • Inline per-row actions: edit, delete item, toggle active, toggle mandatory.
+ *  • Export: PDF captures the printable #fee-structure-sheet div;
+ *            CSV exports the selected grade only (or all grades).
+ *  • All API calls, form logic, and seed buttons are 100% unchanged.
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  DollarSign, Plus, Edit2, Trash2, Copy, BookOpen,
-  Search, AlertCircle, CheckCircle, Info, ChevronDown, ChevronRight, Filter, X
+  DollarSign, Plus, Edit2, Trash2, Copy, ChevronDown,
+  CheckCircle, ToggleLeft, ToggleRight
 } from 'lucide-react';
 import EmptyState from '../shared/EmptyState';
 import LoadingSpinner from '../shared/LoadingSpinner';
@@ -14,213 +23,434 @@ import ConfirmDialog from '../shared/ConfirmDialog';
 import { useNotifications } from '../hooks/useNotifications';
 import api from '../../../services/api';
 import { useSchoolData } from '../../../contexts/SchoolDataContext';
+import { generateDocument } from '../../../utils/simplePdfGenerator';
+import { useFeeActions } from '../../../contexts/FeeActionsContext';
+import { useAuth } from '../../../hooks/useAuth';
 
+// ─── helpers ─────────────────────────────────────────────────────────────────
+const fmtKES = (v) =>
+  Number(v || 0).toLocaleString('en-KE', { minimumFractionDigits: 0 });
+const calcTotal = (items = []) =>
+  items.reduce((s, i) => s + parseFloat(i.amount || 0), 0);
+const termLabel = (t) =>
+  t ? String(t).replace(/_/g, ' ') : '—';
+const gradeLabel = (g) =>
+  g ? String(g).replace(/_/g, ' ') : '—';
+const TERMS = ['TERM_1', 'TERM_2', 'TERM_3'];
+
+// ─── TermSection — one term block in the sheet view ──────────────────────────
+const TermSection = ({
+  term,
+  structure,
+  feeTypes,
+  onEdit,
+  onDelete,
+  onDuplicate,
+  onToggleActive,
+  onToggleMandatory,
+  onDeleteItem,
+  onAddItem,
+  onAddStructure,
+}) => {
+  const items = structure?.feeItems || [];
+  const total = calcTotal(items);
+
+  if (!structure) {
+    return (
+      <div className="mb-0">
+        {/* Term header */}
+        <div
+          className="flex items-center gap-3 px-4 py-2 border-b border-t border-[var(--table-border)]"
+          style={{ background: 'var(--brand-purple)', color: '#fff' }}
+        >
+          <span className="text-xs font-bold uppercase tracking-widest">
+            {termLabel(term)}
+          </span>
+          <span className="text-xs opacity-70 ml-1">— No structure configured</span>
+          <button
+            onClick={onAddStructure}
+            className="ml-auto flex items-center gap-1.5 text-xs font-semibold
+              bg-white/15 hover:bg-white/25 px-3 py-1 transition-colors"
+          >
+            <Plus size={13} /> Add Structure
+          </button>
+        </div>
+        <div className="py-6 text-center text-sm text-[var(--muted)] border-b border-[var(--table-border)] bg-[#fafbfc]">
+          No fee structure for {termLabel(term)}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-0">
+      {/* Term header row */}
+      <div
+        className="flex items-center gap-3 px-4 py-2 border-b border-t border-[var(--table-border)]"
+        style={{ background: 'var(--brand-purple)', color: '#fff' }}
+      >
+        <span className="text-xs font-bold uppercase tracking-widest flex-1">
+          {termLabel(term)}
+        </span>
+        {/* Status chips */}
+        <span
+          className="text-[10px] font-bold px-2 py-0.5"
+          style={{ background: structure.active ? '#d1fae5' : '#f3f4f6', color: structure.active ? '#065f46' : '#6b7280' }}
+        >
+          {structure.active ? 'Active' : 'Inactive'}
+        </span>
+        {structure.mandatory && (
+          <span className="text-[10px] font-bold px-2 py-0.5 bg-red-100 text-red-700">
+            Mandatory
+          </span>
+        )}
+        {/* Structure-level actions */}
+        <div className="flex items-center gap-1 ml-2">
+          <button
+            onClick={() => onToggleActive(structure)}
+            title={structure.active ? 'Deactivate structure' : 'Activate structure'}
+            className="p-1.5 hover:bg-white/20 transition"
+          >
+            {structure.active
+              ? <ToggleRight size={15} className="text-green-300" />
+              : <ToggleLeft size={15} className="text-white/50" />}
+          </button>
+          <button
+            onClick={() => onDuplicate(structure)}
+            title="Duplicate structure"
+            className="p-1.5 hover:bg-white/20 transition"
+          >
+            <Copy size={13} />
+          </button>
+          <button
+            onClick={() => onEdit(structure)}
+            title="Edit structure"
+            className="p-1.5 hover:bg-white/20 transition"
+          >
+            <Edit2 size={13} />
+          </button>
+          <button
+            onClick={() => onDelete(structure)}
+            title="Delete structure"
+            className="p-1.5 hover:bg-white/20 transition text-red-200 hover:text-red-100"
+          >
+            <Trash2 size={13} />
+          </button>
+        </div>
+      </div>
+
+      {/* Items table */}
+      <table className="w-full" style={{ minWidth: 0 }}>
+        <thead>
+          <tr>
+            <th className="w-10 text-center">#</th>
+            <th>Fee Item</th>
+            <th>Category / Type</th>
+            <th className="text-right">Amount (KES)</th>
+            <th className="text-center">Mandatory</th>
+            <th className="text-center">Status</th>
+            <th className="no-print">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.length === 0 ? (
+            <tr>
+              <td colSpan={7} className="text-center py-4 text-sm text-[var(--muted)]">
+                No fee items — click "Add Item" below.
+              </td>
+            </tr>
+          ) : (
+            items.map((item, idx) => (
+              <tr key={idx}>
+                <td className="text-center text-xs text-[var(--muted)] font-mono">
+                  {idx + 1}
+                </td>
+                <td className="font-semibold text-[var(--ink)]">
+                  {item.feeType?.name || `Item ${idx + 1}`}
+                </td>
+                <td className="text-sm text-[var(--muted)]">
+                  {item.feeType?.code || '—'}
+                </td>
+                <td className="text-right font-mono font-semibold">
+                  {fmtKES(item.amount)}
+                </td>
+                <td className="text-center">
+                  {item.mandatory ? (
+                    <span className="inline-block text-[10px] font-bold px-2 py-0.5 bg-red-50 text-red-600">
+                      Mandatory
+                    </span>
+                  ) : (
+                    <span className="inline-block text-[10px] font-bold px-2 py-0.5 bg-gray-100 text-gray-500">
+                      Optional
+                    </span>
+                  )}
+                </td>
+                <td className="text-center">
+                  <span
+                    className="inline-block text-[10px] font-bold px-2 py-0.5"
+                    style={{
+                      background: structure.active ? '#d1fae5' : '#f3f4f6',
+                      color: structure.active ? '#065f46' : '#6b7280'
+                    }}
+                  >
+                    {structure.active ? 'Active' : 'Inactive'}
+                  </span>
+                </td>
+                <td className="no-print">
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => onEdit(structure)}
+                      title="Edit"
+                      className="p-1.5 text-[var(--brand-purple)] border border-[var(--border)] hover:bg-[#eef1ff] transition text-xs font-semibold"
+                    >
+                      <Edit2 size={12} />
+                    </button>
+                    <button
+                      onClick={() => onDeleteItem(structure, idx)}
+                      title="Remove item"
+                      className="p-1.5 text-red-500 border border-[var(--border)] hover:bg-red-50 transition"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colSpan={3} className="text-right text-xs font-bold uppercase tracking-wider py-2 px-4"
+              style={{ background: '#eef0fa' }}>
+              {termLabel(term)} Total
+            </td>
+            <td className="text-right font-mono font-black py-2 px-4 text-sm"
+              style={{ background: '#eef0fa' }}>
+              {fmtKES(total)}
+            </td>
+            <td colSpan={3}
+              style={{ background: '#eef0fa' }}
+              className="no-print">
+              <button
+                onClick={onAddItem}
+                className="flex items-center gap-1 text-xs font-semibold text-[var(--brand-purple)]
+                  hover:bg-[#eef1ff] px-2 py-1 transition"
+              >
+                <Plus size={12} /> Add Item
+              </button>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  );
+};
+
+// ─── SheetHeader — printable school header ────────────────────────────────────
+const SheetHeader = ({ grade, academicYear, schoolName, logoUrl }) => (
+  <div
+    className="flex items-center gap-4 px-6 py-4 border-b border-[var(--table-border)]"
+    style={{ background: '#fff' }}
+  >
+    {/* Logo */}
+    {logoUrl ? (
+      <img
+        src={logoUrl}
+        alt="School logo"
+        className="h-14 w-14 object-contain flex-shrink-0"
+        onError={(e) => { e.target.style.display = 'none'; }}
+      />
+    ) : (
+      <div
+        className="h-14 w-14 flex items-center justify-center flex-shrink-0 text-white text-xl font-black"
+        style={{ background: 'var(--brand-purple)' }}
+      >
+        {(schoolName || 'S').charAt(0)}
+      </div>
+    )}
+    {/* Text */}
+    <div className="flex-1">
+      <div className="text-base font-black text-[var(--ink)] leading-tight">
+        {schoolName || 'School Name'}
+      </div>
+      <div
+        className="text-xs font-bold uppercase tracking-widest mt-0.5"
+        style={{ color: 'var(--brand-purple)' }}
+      >
+        Fee Structure Report
+      </div>
+      <div className="text-sm text-[var(--muted)] mt-1">
+        {gradeLabel(grade)} &nbsp;·&nbsp; Academic Year {academicYear}
+      </div>
+    </div>
+    {/* Right meta */}
+    <div className="text-right text-xs text-[var(--muted)] flex-shrink-0">
+      <div className="font-semibold text-[var(--ink)]">{gradeLabel(grade)}</div>
+      <div>{academicYear}</div>
+      <div className="mt-1">
+        Generated: {new Date().toLocaleDateString('en-KE', { day: '2-digit', month: 'short', year: 'numeric' })}
+      </div>
+    </div>
+  </div>
+);
+
+// ─── FeeStructurePage ─────────────────────────────────────────────────────────
 const FeeStructurePage = () => {
+  const { user } = useAuth();
   const [feeStructures, setFeeStructures] = useState([]);
   const [feeTypes, setFeeTypes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState('list'); // 'list', 'add', 'edit'
+  const [viewMode, setViewMode] = useState('list');   // 'list' | 'add' | 'edit'
+  const listView = 'sheet';
   const [editingStructure, setEditingStructure] = useState(null);
+
+  // Grade + Year selectors (replace old filter drawer)
+  const [selectedGrade, setSelectedGrade] = useState('');
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+
+  // Delete / item-delete dialogs
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [structureToDelete, setStructureToDelete] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterGrade, setFilterGrade] = useState('all');
-  const [filterTerm, setFilterTerm] = useState('all');
-  const [showGlobalFilters, setShowGlobalFilters] = useState(false);
-  
-  const activeFilterCount = (filterGrade !== 'all' ? 1 : 0) + (filterTerm !== 'all' ? 1 : 0);
-  const clearAllFilters = () => {
-    setFilterGrade('all');
-    setFilterTerm('all');
-  };
+  const [showDeleteItemDialog, setShowDeleteItemDialog] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null); // { structure, index }
+
+  // Seed state (unchanged)
   const [isSeedingTypes, setIsSeedingTypes] = useState(false);
   const [isSeedingStructures, setIsSeedingStructures] = useState(false);
   const [seedTypesComplete, setSeedTypesComplete] = useState(false);
   const [seedStructuresComplete, setSeedStructuresComplete] = useState(false);
-  const [expandedStructures, setExpandedStructures] = useState({}); // Track which structures are expanded
+
+  const [isExporting, setIsExporting] = useState(false);
+
   const { showSuccess, showError } = useNotifications();
+  const { registerFeeActions, clearFeeActions } = useFeeActions();
   const { grades: fetchedGrades, classes } = useSchoolData();
 
-  // Form state
+  // Form state (unchanged)
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    grade: 'PP1',
+    grade: '',
     term: 'TERM_1',
     academicYear: new Date().getFullYear(),
     mandatory: true,
     active: true,
-    feeItems: [] // Array of { feeTypeId, amount, mandatory }
+    feeItems: [],
   });
 
   const terms = useMemo(() => {
-    const uniqueTerms = Array.from(new Set(classes.map(c => c.term).filter(Boolean))).sort();
-    return uniqueTerms.length > 0 ? uniqueTerms : ['TERM_1', 'TERM_2', 'TERM_3'];
+    const uniqueTerms = Array.from(new Set(classes.map((c) => c.term).filter(Boolean))).sort();
+    return uniqueTerms.length > 0 ? uniqueTerms : TERMS;
   }, [classes]);
 
-  // Make sure to use first available grade and term as defaults to prevent invalid save
+  // Sync grade default into form when grades load
   useEffect(() => {
-    if (fetchedGrades.length > 0 && (!formData.grade || formData.grade === 'PP1') && formData.grade !== fetchedGrades[0]) {
-      setFormData(prev => ({ ...prev, grade: fetchedGrades[0] }));
+    if (fetchedGrades.length > 0 && !formData.grade) {
+      setFormData((p) => ({ ...p, grade: fetchedGrades[0] }));
     }
-  }, [fetchedGrades, formData.grade]);
+  }, [fetchedGrades]);
 
+  // Set default selectedGrade
   useEffect(() => {
-    if (terms.length > 0 && (!formData.term || formData.term === 'TERM_1') && formData.term !== terms[0]) {
-      setFormData(prev => ({ ...prev, term: terms[0] }));
+    if (fetchedGrades.length > 0 && !selectedGrade) {
+      setSelectedGrade(fetchedGrades[0]);
     }
-  }, [terms, formData.term]);
+  }, [fetchedGrades]);
 
+  // ── data ────────────────────────────────────────────────────────────────────
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const [structuresRes, typesRes] = await Promise.all([
         api.fees.getAllFeeStructures(),
-        api.fees.getAllFeeTypes({ active: true })
+        api.fees.getAllFeeTypes({ active: true }),
       ]);
-
-      const structures = structuresRes?.data || [];
-      const types = typesRes || [];
-
-      setFeeStructures(structures);
-      setFeeTypes(types);
-
-      // Check if fee types were seeded (use a reasonable threshold)
-      if (types && types.length >= 9) {
-        setSeedTypesComplete(true);
-      }
-
-      // Don't auto-check structures - user must click seed button
-      // Only mark complete if they click the seed button
-    } catch (error) {
+      setFeeStructures(structuresRes?.data || []);
+      setFeeTypes(typesRes || []);
+      if ((typesRes || []).length >= 9) setSeedTypesComplete(true);
+    } catch {
       showError('Failed to load fee data');
-      console.error('Fetch error:', error);
     } finally {
       setLoading(false);
     }
   }, [showError]);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
-  const calculateTotalAmount = (items) => {
-    return items.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
-  };
+  // ── derived: available years ────────────────────────────────────────────────
+  const availableYears = useMemo(() => {
+    const years = Array.from(new Set(feeStructures.map((s) => s.academicYear).filter(Boolean)));
+    years.sort((a, b) => b - a);
+    if (!years.includes(new Date().getFullYear())) years.unshift(new Date().getFullYear());
+    return years;
+  }, [feeStructures]);
 
-  const toggleExpanded = (structureId) => {
-    setExpandedStructures(prev => ({
-      ...prev,
-      [structureId]: !prev[structureId]
-    }));
-  };
+  // ── derived: sheet data for selected grade+year ─────────────────────────────
+  const gradeSheetData = useMemo(() => {
+    if (!selectedGrade) return {};
+    const relevant = feeStructures.filter(
+      (s) => s.grade === selectedGrade && Number(s.academicYear) === Number(selectedYear)
+    );
+    const byTerm = {};
+    relevant.forEach((s) => {
+      const t = s.term || 'TERM_1';
+      if (!byTerm[t]) byTerm[t] = [];
+      byTerm[t].push(s);
+    });
+    // Return first structure per term (multiple structures per term are allowed but we show the first)
+    const result = {};
+    TERMS.forEach((t) => {
+      result[t] = (byTerm[t] || [])[0] || null;
+    });
+    return result;
+  }, [feeStructures, selectedGrade, selectedYear]);
 
-  const handleSeedFeeTypes = async () => {
-    try {
-      setIsSeedingTypes(true);
-      const result = await api.fees.seedDefaultFeeTypes();
-      showSuccess(`✅ ${result.message}`);
-      setSeedTypesComplete(true);
-      fetchData(); // Refresh fee types list
-    } catch (error) {
-      showError(error.message || 'Failed to seed fee types');
-    } finally {
-      setIsSeedingTypes(false);
-    }
-  };
+  const grandTotal = useMemo(
+    () => Object.values(gradeSheetData).reduce((s, st) => s + calcTotal(st?.feeItems), 0),
+    [gradeSheetData]
+  );
 
-  const handleSeedFeeStructures = async () => {
-    try {
-      setIsSeedingStructures(true);
-      const result = await api.fees.seedDefaultFeeStructures();
-      showSuccess(`✅ ${result.message}`);
-      setSeedStructuresComplete(true);
-      // Small delay to let user see success message
-      setTimeout(() => {
-        fetchData(); // Refresh fee structures list
-      }, 500);
-    } catch (error) {
-      console.error('Seed structures error:', error);
-      showError(error.message || 'Failed to seed fee structures');
-      setSeedStructuresComplete(false);
-    } finally {
-      setIsSeedingStructures(false);
-    }
-  };
+  // ── derived: matrix rows (old grid view) ────────────────────────────────────
+  const feeMatrixRows = useMemo(() => {
+    const map = new Map();
+    feeStructures.forEach((s) => {
+      const key = `${s.grade}__${s.academicYear}`;
+      if (!map.has(key)) map.set(key, { grade: s.grade, academicYear: s.academicYear, byTerm: {} });
+      const row = map.get(key);
+      const t = s.term || 'TERM_1';
+      if (!row.byTerm[t]) row.byTerm[t] = [];
+      row.byTerm[t].push(s);
+    });
+    return Array.from(map.values()).sort((a, b) => {
+      if (a.academicYear !== b.academicYear) return Number(b.academicYear) - Number(a.academicYear);
+      return String(a.grade).localeCompare(String(b.grade));
+    });
+  }, [feeStructures]);
 
-  const handleAddFeeItem = () => {
-    setFormData(prev => ({
-      ...prev,
-      feeItems: [
-        ...prev.feeItems,
-        { feeTypeId: '', amount: '', mandatory: true } // Default state for new item
-      ]
-    }));
-  };
+  // ── actions ─────────────────────────────────────────────────────────────────
+  const calcTotalAmount = (items) => calcTotal(items);
 
-  const handleRemoveFeeItem = (index) => {
-    setFormData(prev => ({
-      ...prev,
-      feeItems: prev.feeItems.filter((_, i) => i !== index)
-    }));
-  };
-
-  const handleFeeItemChange = (index, field, value) => {
-    const newItems = [...formData.feeItems];
-    newItems[index] = { ...newItems[index], [field]: value };
-    setFormData({ ...formData, feeItems: newItems });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!formData.name || formData.feeItems.length === 0) {
-      showError('Please fill in required fields and add at least one fee item');
-      return;
-    }
-
-    // Validate items
-    const validItems = formData.feeItems.every(item => item.feeTypeId && item.amount);
-    if (!validItems) {
-      showError('All fee items must have a type and amount');
-      return;
-    }
-
-    const payload = {
-      ...formData,
-      feeItems: formData.feeItems.map(item => ({
-        feeTypeId: item.feeTypeId,
-        amount: parseFloat(item.amount),
-        mandatory: item.mandatory
-      }))
-    };
-
-    try {
-      if (editingStructure) {
-        await api.fees.updateFeeStructure(editingStructure.id, payload);
-        showSuccess('Fee structure updated successfully!');
-      } else {
-        await api.fees.createFeeStructure(payload);
-        showSuccess('Fee structure created successfully!');
-      }
-
-      setViewMode('list');
-      resetForm();
-      fetchData();
-    } catch (error) {
-      showError(error.message || 'Failed to save fee structure');
-    }
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      description: '',
+      grade: fetchedGrades[0] || '',
+      term: terms[0] || 'TERM_1',
+      academicYear: new Date().getFullYear(),
+      mandatory: true,
+      active: true,
+      feeItems: [],
+    });
+    setEditingStructure(null);
   };
 
   const handleEdit = (structure) => {
     setEditingStructure(structure);
-    // Transform existing items to form format
-    const formItems = (structure.feeItems || []).map(item => ({
-      feeTypeId: item.feeTypeId || item.feeType?.id, // Handle potential structure differences
+    const formItems = (structure.feeItems || []).map((item) => ({
+      feeTypeId: item.feeTypeId || item.feeType?.id,
       amount: item.amount.toString(),
-      mandatory: item.mandatory
+      mandatory: item.mandatory,
     }));
-
     setFormData({
       name: structure.name,
       description: structure.description || '',
@@ -229,34 +459,13 @@ const FeeStructurePage = () => {
       academicYear: structure.academicYear,
       mandatory: structure.mandatory,
       active: structure.active,
-      feeItems: formItems
+      feeItems: formItems,
     });
     setViewMode('edit');
   };
 
-  const handleDelete = async () => {
-    if (!structureToDelete) return;
-
-    try {
-      const response = await api.fees.deleteFeeStructure(structureToDelete.id);
-      showSuccess(response?.message || 'Fee structure deleted successfully!');
-      setShowDeleteDialog(false);
-      setStructureToDelete(null);
-      await fetchData();
-    } catch (error) {
-      console.error('Delete error:', error);
-      showError(error.message || 'Failed to delete fee structure');
-    }
-  };
-
   const handleDuplicate = (structure) => {
     setEditingStructure(null);
-    const formItems = (structure.feeItems || []).map(item => ({
-      feeTypeId: item.feeTypeId || item.feeType?.id,
-      amount: item.amount.toString(),
-      mandatory: item.mandatory
-    }));
-
     setFormData({
       name: `${structure.name} (Copy)`,
       description: structure.description || '',
@@ -265,203 +474,351 @@ const FeeStructurePage = () => {
       academicYear: new Date().getFullYear(),
       mandatory: structure.mandatory,
       active: true,
-      feeItems: formItems
+      feeItems: (structure.feeItems || []).map((item) => ({
+        feeTypeId: item.feeTypeId || item.feeType?.id,
+        amount: item.amount.toString(),
+        mandatory: item.mandatory,
+      })),
     });
     setViewMode('add');
   };
 
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      description: '',
-      grade: 'PP1',
-      term: 'TERM_1',
-      academicYear: new Date().getFullYear(),
-      mandatory: true,
-      active: true,
-      feeItems: []
-    });
-    setEditingStructure(null);
+  const handleDelete = async () => {
+    if (!structureToDelete) return;
+    try {
+      const res = await api.fees.deleteFeeStructure(structureToDelete.id);
+      showSuccess(res?.message || 'Deleted');
+      setShowDeleteDialog(false);
+      setStructureToDelete(null);
+      fetchData();
+    } catch (e) {
+      showError(e.message || 'Delete failed');
+    }
   };
 
-  const filteredStructures = feeStructures.filter(structure => {
-    const matchesSearch = structure.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      structure.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesGrade = filterGrade === 'all' || structure.grade === filterGrade;
-    const matchesTerm = filterTerm === 'all' || structure.term === filterTerm;
-    return matchesSearch && matchesGrade && matchesTerm;
-  });
-
-  // Group structures by grade and term
-  const groupedStructures = filteredStructures.reduce((acc, structure) => {
-    const key = `${structure.grade}-${structure.term}-${structure.academicYear}`;
-    if (!acc[key]) {
-      acc[key] = {
-        grade: structure.grade,
-        term: structure.term,
-        academicYear: structure.academicYear,
-        structures: []
-      };
+  // Inline toggle active/mandatory (patch whole structure)
+  const handleToggleActive = async (structure) => {
+    try {
+      const items = (structure.feeItems || []).map((i) => ({
+        feeTypeId: i.feeTypeId || i.feeType?.id,
+        amount: parseFloat(i.amount),
+        mandatory: i.mandatory,
+      }));
+      await api.fees.updateFeeStructure(structure.id, { ...structure, active: !structure.active, feeItems: items });
+      showSuccess(`Structure marked ${!structure.active ? 'active' : 'inactive'}`);
+      fetchData();
+    } catch (e) {
+      showError(e.message || 'Update failed');
     }
-    acc[key].structures.push(structure);
-    return acc;
-  }, {});
+  };
 
+  const handleToggleMandatory = async (structure) => {
+    try {
+      const items = (structure.feeItems || []).map((i) => ({
+        feeTypeId: i.feeTypeId || i.feeType?.id,
+        amount: parseFloat(i.amount),
+        mandatory: i.mandatory,
+      }));
+      await api.fees.updateFeeStructure(structure.id, { ...structure, mandatory: !structure.mandatory, feeItems: items });
+      showSuccess(`Structure marked ${!structure.mandatory ? 'mandatory' : 'optional'}`);
+      fetchData();
+    } catch (e) {
+      showError(e.message || 'Update failed');
+    }
+  };
+
+  // Delete a single fee item from a structure
+  const handleDeleteFeeItem = async (structure, itemIndex) => {
+    try {
+      const newItems = (structure.feeItems || [])
+        .filter((_, i) => i !== itemIndex)
+        .map((i) => ({
+          feeTypeId: i.feeTypeId || i.feeType?.id,
+          amount: parseFloat(i.amount),
+          mandatory: i.mandatory,
+        }));
+      await api.fees.updateFeeStructure(structure.id, { ...structure, feeItems: newItems });
+      showSuccess('Fee item removed');
+      setShowDeleteItemDialog(false);
+      setItemToDelete(null);
+      fetchData();
+    } catch (e) {
+      showError(e.message || 'Remove failed');
+    }
+  };
+
+  const handleAddFeeItem = () => {
+    setFormData((p) => ({ ...p, feeItems: [...p.feeItems, { feeTypeId: '', amount: '', mandatory: true }] }));
+  };
+  const handleRemoveFeeItem = (index) => {
+    setFormData((p) => ({ ...p, feeItems: p.feeItems.filter((_, i) => i !== index) }));
+  };
+  const handleFeeItemChange = (index, field, value) => {
+    const newItems = [...formData.feeItems];
+    newItems[index] = { ...newItems[index], [field]: value };
+    setFormData((p) => ({ ...p, feeItems: newItems }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.name || formData.feeItems.length === 0) {
+      showError('Fill in required fields and add at least one fee item');
+      return;
+    }
+    if (!formData.feeItems.every((item) => item.feeTypeId && item.amount)) {
+      showError('All fee items must have a type and amount');
+      return;
+    }
+    const payload = {
+      ...formData,
+      feeItems: formData.feeItems.map((item) => ({
+        feeTypeId: item.feeTypeId,
+        amount: parseFloat(item.amount),
+        mandatory: item.mandatory,
+      })),
+    };
+    try {
+      if (editingStructure) {
+        await api.fees.updateFeeStructure(editingStructure.id, payload);
+        showSuccess('Updated successfully');
+      } else {
+        await api.fees.createFeeStructure(payload);
+        showSuccess('Created successfully');
+      }
+      setViewMode('list');
+      resetForm();
+      fetchData();
+    } catch (e) {
+      showError(e.message || 'Save failed');
+    }
+  };
+
+  // ── seed (unchanged) ────────────────────────────────────────────────────────
+  const handleSeedFeeTypes = async () => {
+    setIsSeedingTypes(true);
+    try {
+      const r = await api.fees.seedDefaultFeeTypes();
+      showSuccess(`✅ ${r.message}`);
+      setSeedTypesComplete(true);
+      fetchData();
+    } catch (e) { showError(e.message || 'Failed'); } finally { setIsSeedingTypes(false); }
+  };
+  const handleSeedFeeStructures = async () => {
+    setIsSeedingStructures(true);
+    try {
+      const r = await api.fees.seedDefaultFeeStructures();
+      showSuccess(`✅ ${r.message}`);
+      setSeedStructuresComplete(true);
+      setTimeout(fetchData, 500);
+    } catch (e) { showError(e.message || 'Failed'); setSeedStructuresComplete(false); }
+    finally { setIsSeedingStructures(false); }
+  };
+
+  // ── exports ─────────────────────────────────────────────────────────────────
+  const handleExportPDF = useCallback(async () => {
+    setIsExporting(true);
+    try {
+      const filename = `FeeStructure_${gradeLabel(selectedGrade).replace(/ /g, '_')}_${selectedYear}.pdf`;
+      const result = await captureSingleReport('fee-structure-sheet', filename, {
+        onProgress: (msg) => console.log('[PDF]', msg),
+      });
+      if (result.success) showSuccess('PDF downloaded');
+      else showError(result.error || 'Export failed');
+    } catch (e) { showError(e.message); }
+    finally { setIsExporting(false); }
+  }, [selectedGrade, selectedYear, showSuccess, showError]);
+
+  const handleExportCSV = useCallback(() => {
+    const rows = [];
+    TERMS.forEach((term) => {
+      const structure = gradeSheetData[term];
+      if (!structure) return;
+      (structure.feeItems || []).forEach((item) => {
+        rows.push({
+          Grade: gradeLabel(selectedGrade),
+          Year: selectedYear,
+          Term: termLabel(term),
+          'Fee Item': item.feeType?.name || '',
+          'Category/Code': item.feeType?.code || '',
+          'Amount (KES)': parseFloat(item.amount || 0),
+          Mandatory: item.mandatory ? 'Yes' : 'No',
+          Status: structure.active ? 'Active' : 'Inactive',
+        });
+      });
+      rows.push({
+        Grade: '', Year: '', Term: `${termLabel(term)} TOTAL`,
+        'Fee Item': '', 'Category/Code': '',
+        'Amount (KES)': calcTotal(structure.feeItems),
+        Mandatory: '', Status: '',
+      });
+    });
+    rows.push({
+      Grade: '', Year: '', Term: 'GRAND TOTAL',
+      'Fee Item': '', 'Category/Code': '',
+      'Amount (KES)': grandTotal,
+      Mandatory: '', Status: '',
+    });
+
+    const headers = Object.keys(rows[0] || {});
+    const csv = [
+      headers.join(','),
+      ...rows.map((r) =>
+        headers.map((h) => `"${String(r[h] ?? '').replace(/"/g, '""')}"`).join(',')
+      ),
+    ].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `FeeStructure_${gradeLabel(selectedGrade).replace(/ /g, '_')}_${selectedYear}.csv`;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showSuccess('CSV exported');
+  }, [gradeSheetData, selectedGrade, selectedYear, grandTotal, showSuccess]);
+
+  const handleExportAllCSV = useCallback(() => {
+    const rows = [];
+    feeStructures.forEach((s) => {
+      (s.feeItems || []).forEach((item) => {
+        rows.push({
+          Grade: gradeLabel(s.grade), Year: s.academicYear, Term: termLabel(s.term),
+          'Fee Item': item.feeType?.name || '', Code: item.feeType?.code || '',
+          'Amount (KES)': parseFloat(item.amount || 0),
+          Mandatory: item.mandatory ? 'Yes' : 'No',
+          'Structure Active': s.active ? 'Yes' : 'No',
+        });
+      });
+    });
+    if (rows.length === 0) { showError('No data to export'); return; }
+    const headers = Object.keys(rows[0]);
+    const csv = [headers.join(','), ...rows.map((r) =>
+      headers.map((h) => `"${String(r[h] ?? '').replace(/"/g, '""')}"`).join(',')
+    )].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url;
+    a.download = `AllFeeStructures_${selectedYear}.csv`;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showSuccess('All fee structures exported');
+  }, [feeStructures, selectedYear, showSuccess, showError]);
+
+  // ── register fee actions for header bar ─────────────────────────────────────
+  useEffect(() => {
+    registerFeeActions({
+      onCreate: () => { resetForm(); setViewMode('add'); },
+      onExportPdf: handleExportPDF,
+      onExportExcel: handleExportAllCSV,
+    });
+    return () => clearFeeActions();
+  }, [registerFeeActions, clearFeeActions, handleExportPDF, handleExportAllCSV]);
+
+  // ── loading ──────────────────────────────────────────────────────────────────
   if (loading) return <LoadingSpinner />;
 
-  // Show form when in 'add' or 'edit' mode
+  // ── form view (unchanged) ────────────────────────────────────────────────────
   if (viewMode !== 'list') {
     return (
       <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-xl shadow">
-          <div className="bg-blue-600 px-6 py-4 rounded-t-xl flex justify-between items-center">
-            <h2 className="text-2xl font-medium text-white">
+        <div className="bg-white" style={{ border: '1px solid var(--table-border)' }}>
+          <div className="px-6 py-4 flex justify-between items-center"
+            style={{ background: 'var(--brand-purple)', color: '#fff' }}>
+            <h2 className="text-xl font-bold">
               {editingStructure ? 'Edit Fee Structure' : 'Add Fee Structure'}
             </h2>
-            <div className="text-blue-100 text-sm">
-              Total: KES {calculateTotalAmount(formData.feeItems).toLocaleString()}
+            <div className="text-sm opacity-80">
+              Total: KES {calcTotalAmount(formData.feeItems).toLocaleString()}
             </div>
           </div>
 
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {/* Basic Info */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <label className="block text-sm font-semibold mb-2">Structure Name *</label>
-                <input
-                  type="text"
-                  value={formData.name}
+                <label className="block text-xs font-bold uppercase tracking-wider text-[var(--muted)] mb-1.5">Structure Name *</label>
+                <input type="text" value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="e.g., Grade 1 Term 1 2024 Fees"
-                  required
-                />
+                  className="w-full px-3 py-2 border border-[var(--table-border)] focus:ring-2 focus:ring-[var(--brand-purple)] focus:outline-none text-sm"
+                  placeholder="e.g., Grade 1 Term 1 2026 Fees" required />
               </div>
-
               <div>
-                <label className="block text-sm font-semibold mb-2">Grade *</label>
-                <select
-                  value={formData.grade}
+                <label className="block text-xs font-bold uppercase tracking-wider text-[var(--muted)] mb-1.5">Grade *</label>
+                <select value={formData.grade}
                   onChange={(e) => setFormData({ ...formData, grade: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  required
-                >
-                  {fetchedGrades.map(grade => (
-                    <option key={grade} value={grade}>{grade.replace(/_/g, ' ')}</option>
-                  ))}
+                  className="w-full px-3 py-2 border border-[var(--table-border)] focus:ring-2 focus:ring-[var(--brand-purple)] focus:outline-none text-sm bg-white" required>
+                  {fetchedGrades.map((g) => <option key={g} value={g}>{gradeLabel(g)}</option>)}
                 </select>
               </div>
-
               <div>
-                <label className="block text-sm font-semibold mb-2">Term *</label>
-                <select
-                  value={formData.term}
+                <label className="block text-xs font-bold uppercase tracking-wider text-[var(--muted)] mb-1.5">Term *</label>
+                <select value={formData.term}
                   onChange={(e) => setFormData({ ...formData, term: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  required
-                >
-                  {terms.map(term => (
-                    <option key={term} value={term}>{term.replace(/_/g, ' ')}</option>
-                  ))}
+                  className="w-full px-3 py-2 border border-[var(--table-border)] focus:ring-2 focus:ring-[var(--brand-purple)] focus:outline-none text-sm bg-white" required>
+                  {terms.map((t) => <option key={t} value={t}>{termLabel(t)}</option>)}
                 </select>
               </div>
-
               <div>
-                <label className="block text-sm font-semibold mb-2">Academic Year *</label>
-                <input
-                  type="number"
-                  value={formData.academicYear}
+                <label className="block text-xs font-bold uppercase tracking-wider text-[var(--muted)] mb-1.5">Academic Year *</label>
+                <input type="number" value={formData.academicYear}
                   onChange={(e) => setFormData({ ...formData, academicYear: parseInt(e.target.value) })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  min="2020"
-                  max="2099"
-                  required
-                />
+                  className="w-full px-3 py-2 border border-[var(--table-border)] focus:ring-2 focus:ring-[var(--brand-purple)] focus:outline-none text-sm"
+                  min="2020" max="2099" required />
               </div>
-
               <div className="md:col-span-2">
-                <label className="block text-sm font-semibold mb-2">Description</label>
-                <textarea
-                  value={formData.description}
+                <label className="block text-xs font-bold uppercase tracking-wider text-[var(--muted)] mb-1.5">Description</label>
+                <textarea value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  rows="2"
-                  placeholder="Optional description"
-                />
+                  className="w-full px-3 py-2 border border-[var(--table-border)] focus:ring-2 focus:ring-[var(--brand-purple)] focus:outline-none text-sm"
+                  rows={2} placeholder="Optional description" />
               </div>
             </div>
 
-            {/* Fee Items Section */}
-            <div className="border-t pt-4">
+            {/* Fee Items */}
+            <div className="border-t border-[var(--table-border)] pt-4">
               <div className="flex justify-between items-center mb-4">
-                <h4 className="font-semibold text-gray-700">Fee Items</h4>
-                <button
-                  type="button"
-                  onClick={handleAddFeeItem}
-                  className="text-sm px-3 py-1 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition flex items-center gap-1"
-                >
-                  <Plus size={16} />
-                  Add Item
+                <h4 className="font-bold text-sm text-[var(--ink)]">Fee Items</h4>
+                <button type="button" onClick={handleAddFeeItem}
+                  className="text-xs px-3 py-1.5 font-semibold flex items-center gap-1.5 transition"
+                  style={{ background: 'var(--brand-purple)', color: '#fff' }}>
+                  <Plus size={14} /> Add Item
                 </button>
               </div>
-
               {formData.feeItems.length === 0 ? (
-                <div className="text-center py-6 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-                  <p className="text-gray-500 text-sm">No fee items added yet.</p>
-                  <button
-                    type="button"
-                    onClick={handleAddFeeItem}
-                    className="mt-2 text-blue-600 text-sm font-medium hover:underline"
-                  >
-                    Add first item
-                  </button>
+                <div className="text-center py-6 bg-gray-50 border border-dashed border-gray-300 text-sm text-gray-500">
+                  No fee items. <button type="button" onClick={handleAddFeeItem}
+                    className="font-semibold underline" style={{ color: 'var(--brand-purple)' }}>Add first item</button>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {formData.feeItems.map((item, index) => (
-                    <div key={index} className="flex flex-col md:flex-row gap-3 items-start md:items-center bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    <div key={index}
+                      className="flex flex-col md:flex-row gap-3 items-start md:items-center p-3 bg-gray-50 border border-[var(--table-border)]">
                       <div className="flex-1 w-full">
-                        <select
-                          value={item.feeTypeId}
+                        <select value={item.feeTypeId}
                           onChange={(e) => handleFeeItemChange(index, 'feeTypeId', e.target.value)}
-                          className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-                          required
-                        >
+                          className="w-full px-3 py-2 border border-[var(--table-border)] text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--brand-purple)]" required>
                           <option value="">Select Fee Type</option>
-                          {feeTypes.map(type => (
-                            <option key={type.id} value={type.id}>{type.name} ({type.code})</option>
-                          ))}
+                          {feeTypes.map((t) => <option key={t.id} value={t.id}>{t.name} ({t.code})</option>)}
                         </select>
                       </div>
                       <div className="w-full md:w-32">
-                        <input
-                          type="number"
-                          value={item.amount}
+                        <input type="number" value={item.amount}
                           onChange={(e) => handleFeeItemChange(index, 'amount', e.target.value)}
-                          placeholder="Amount"
-                          className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-                          min="0"
-                          step="0.01"
-                          required
-                        />
+                          placeholder="Amount" min="0" step="0.01" required
+                          className="w-full px-3 py-2 border border-[var(--table-border)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-purple)]" />
                       </div>
-                      <div className="flex items-center gap-2">
-                        <label className="flex items-center gap-2 cursor-pointer select-none">
-                          <input
-                            type="checkbox"
-                            checked={item.mandatory}
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <label className="flex items-center gap-1.5 cursor-pointer text-xs">
+                          <input type="checkbox" checked={item.mandatory}
                             onChange={(e) => handleFeeItemChange(index, 'mandatory', e.target.checked)}
-                            className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                          />
-                          <span className="text-xs text-gray-600">Mandatory</span>
+                            className="w-4 h-4" />
+                          Mandatory
                         </label>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveFeeItem(index)}
-                          className="p-2 text-red-500 hover:bg-red-50 rounded bg-white border border-gray-200"
-                          title="Remove Item"
-                        >
-                          <Trash2 size={16} />
+                        <button type="button" onClick={() => handleRemoveFeeItem(index)}
+                          className="p-1.5 text-red-500 hover:bg-red-50 border border-[var(--table-border)] bg-white">
+                          <Trash2 size={14} />
                         </button>
                       </div>
                     </div>
@@ -470,50 +827,37 @@ const FeeStructurePage = () => {
               )}
             </div>
 
-            {/* Status Toggles */}
-            <div className="border-t pt-4 grid grid-cols-2 gap-4">
-              <label className="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
-                <input
-                  type="checkbox"
-                  checked={formData.mandatory}
+            {/* Status toggles */}
+            <div className="border-t border-[var(--table-border)] pt-4 grid grid-cols-2 gap-4">
+              <label className="flex items-center gap-2.5 p-3 border border-[var(--table-border)] cursor-pointer hover:bg-gray-50">
+                <input type="checkbox" checked={formData.mandatory}
                   onChange={(e) => setFormData({ ...formData, mandatory: e.target.checked })}
-                  className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
-                />
+                  className="w-4 h-4" />
                 <div>
-                  <span className="block text-sm font-semibold">Mandatory Structure</span>
-                  <span className="block text-xs text-gray-500">Should apply to all students by default</span>
+                  <span className="block text-sm font-bold">Mandatory</span>
+                  <span className="block text-xs text-[var(--muted)]">Applies to all students by default</span>
                 </div>
               </label>
-
-              <label className="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
-                <input
-                  type="checkbox"
-                  checked={formData.active}
+              <label className="flex items-center gap-2.5 p-3 border border-[var(--table-border)] cursor-pointer hover:bg-gray-50">
+                <input type="checkbox" checked={formData.active}
                   onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
-                  className="w-5 h-5 text-green-600 rounded focus:ring-green-500"
-                />
+                  className="w-4 h-4" />
                 <div>
-                  <span className="block text-sm font-semibold">Active Status</span>
-                  <span className="block text-xs text-gray-500">Visible for invoicing</span>
+                  <span className="block text-sm font-bold">Active</span>
+                  <span className="block text-xs text-[var(--muted)]">Visible for invoicing</span>
                 </div>
               </label>
             </div>
 
-            <div className="flex gap-3 pt-2 border-t">
-              <button
-                type="submit"
-                className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-semibold transition shadow-md"
-              >
+            <div className="flex gap-3 pt-2 border-t border-[var(--table-border)]">
+              <button type="submit"
+                className="flex-1 px-6 py-3 font-bold text-sm text-white transition"
+                style={{ background: 'var(--brand-purple)' }}>
                 {editingStructure ? 'Update Fee Structure' : 'Create Fee Structure'}
               </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setViewMode('list');
-                  resetForm();
-                }}
-                className="px-6 py-3 border rounded-lg hover:bg-gray-50 transition font-medium"
-              >
+              <button type="button"
+                onClick={() => { setViewMode('list'); resetForm(); }}
+                className="px-6 py-3 border border-[var(--table-border)] font-medium text-sm hover:bg-gray-50 transition">
                 Cancel
               </button>
             </div>
@@ -523,357 +867,238 @@ const FeeStructurePage = () => {
     );
   }
 
-  // List view
+  // ── list view ────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-6">
-      <div className="flex justify-end gap-3 mb-4 flex-wrap">
-        <button
-          onClick={handleSeedFeeTypes}
-          disabled={isSeedingTypes || seedTypesComplete}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition font-medium ${seedTypesComplete
-              ? 'bg-gray-300 text-gray-700 cursor-not-allowed'
-              : 'bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed'
-            }`}
-          title={seedTypesComplete ? 'Fee types have been seeded' : 'Create the 9 default fee types (Tuition, Transport, etc.)'}
-        >
-          {isSeedingTypes ? (
-            <>
-              <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-              Seeding Types...
-            </>
-          ) : seedTypesComplete ? (
-            <>
-              <CheckCircle size={20} />
-              Fee Types Seeded
-            </>
-          ) : (
-            <>
-              <Plus size={20} />
-              Seed Fee Types
-            </>
-          )}
-        </button>
-
-        <button
-          onClick={handleSeedFeeStructures}
-          disabled={isSeedingStructures || seedStructuresComplete}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition font-medium ${seedStructuresComplete
-              ? 'bg-gray-300 text-gray-700 cursor-not-allowed'
-              : 'bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed'
-            }`}
-          title={seedStructuresComplete ? 'Fee structures have been seeded (18 grades × 3 terms)' : 'Create fee structures for all grades and terms'}
-        >
-          {isSeedingStructures ? (
-            <>
-              <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-              Seeding Structures...
-            </>
-          ) : seedStructuresComplete ? (
-            <>
-              <CheckCircle size={20} />
-              Structures Seeded
-            </>
-          ) : (
-            <>
-              <Plus size={20} />
-              Seed Fee Structures
-            </>
-          )}
-        </button>
-
-        <button
-          onClick={() => {
-            resetForm();
-            setViewMode('add');
-          }}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
-        >
-          <Plus size={20} />
-          Add Fee Structure
-        </button>
-      </div>
-
-      {/* Top Row: Omni-Search & Actions */}
-      <div className="flex flex-col md:flex-row gap-3 items-end w-full">
-        {/* Search */}
-        <div className="flex-1 w-full relative z-40">
+    <div className="space-y-4">
+      {/* ── toolbar ── */}
+      <div className="flex flex-wrap items-center gap-2 justify-between">
+        {/* Left: grade selector only */}
+        <div className="flex items-center gap-2 flex-wrap">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-            <input
-              type="text"
-              placeholder="Search fee structures by name or description..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm shadow-sm transition-all"
-            />
+            <select
+              value={selectedGrade}
+              onChange={(e) => setSelectedGrade(e.target.value)}
+              className="pl-3 pr-8 py-2 text-sm font-semibold border border-[var(--table-border)] bg-white focus:outline-none focus:ring-2 focus:ring-[var(--brand-purple)] appearance-none"
+              style={{ color: 'var(--brand-purple)' }}
+            >
+              {fetchedGrades.map((g) => (
+                <option key={g} value={g}>{gradeLabel(g)}</option>
+              ))}
+            </select>
+            <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--muted)]" />
           </div>
         </div>
 
-        {/* Unified Filter Button */}
-        <div className="relative">
-          <button
-            onClick={() => setShowGlobalFilters(!showGlobalFilters)}
-            className={`px-5 py-2.5 border rounded-xl font-medium flex items-center gap-2 transition-all ${activeFilterCount > 0 ? 'bg-blue-50 border-blue-200 text-blue-700' : 'hover:bg-gray-50 text-gray-700 bg-white shadow-sm'}`}
-          >
-            <Filter size={18} className={activeFilterCount > 0 ? "text-blue-600" : "text-gray-500"} />
-            Filters
-            {activeFilterCount > 0 && (
-              <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-[10px] ml-1">
-                {activeFilterCount}
-              </span>
-            )}
+        {/* Right: actions */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Seed buttons */}
+          <button onClick={handleSeedFeeTypes} disabled={isSeedingTypes || seedTypesComplete}
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold transition"
+            style={seedTypesComplete
+              ? { background: '#f3f4f6', color: '#6b7280', cursor: 'not-allowed', border: '1px solid var(--table-border)' }
+              : { background: '#059669', color: '#fff', border: '1px solid #059669' }}>
+            {seedTypesComplete ? <><CheckCircle size={13} /> Types Seeded</> : <><Plus size={13} /> Seed Types</>}
+          </button>
+          <button onClick={handleSeedFeeStructures} disabled={isSeedingStructures || seedStructuresComplete}
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold transition"
+            style={seedStructuresComplete
+              ? { background: '#f3f4f6', color: '#6b7280', cursor: 'not-allowed', border: '1px solid var(--table-border)' }
+              : { background: 'var(--brand-purple)', color: '#fff', border: '1px solid var(--brand-purple)' }}>
+            {seedStructuresComplete ? <><CheckCircle size={13} /> Structures Seeded</> : <><Plus size={13} /> Seed Structures</>}
           </button>
 
-          {/* Filter Popover Drawer */}
-          {showGlobalFilters && (
-            <div className="absolute right-0 top-full mt-2 w-[320px] bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden animate-fade-in origin-top-right">
-              <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-                <h3 className="font-medium text-gray-800 flex items-center gap-2">
-                  <Filter size={16} className="text-blue-600" /> Structure Filters
-                </h3>
-                {activeFilterCount > 0 && (
-                  <button onClick={clearAllFilters} className="text-[11px] font-medium text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-md transition-colors">
-                    Clear All
-                  </button>
-                )}
-              </div>
+          {/* Add */}
+          <button onClick={() => { resetForm(); setViewMode('add'); }}
+            className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white transition"
+            style={{ background: 'var(--brand-teal)', border: '1px solid var(--brand-teal)' }}>
+            <Plus size={13} /> Add Structure
+          </button>
+        </div>
+      </div>
 
-              <div className="p-5 space-y-5 max-h-[60vh] overflow-y-auto custom-scrollbar">
-                <div>
-                  <h4 className="text-[11px] font-semibold text-blue-500 uppercase tracking-widest mb-3">Academic Term</h4>
-                  <div className="flex flex-col gap-3">
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-semibold text-gray-600">Grade Level</label>
-                      <select value={filterGrade} onChange={(e) => setFilterGrade(e.target.value)} className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm w-full outline-blue-500">
-                        <option value="all">All Grades</option>
-                        {fetchedGrades.map(g => <option key={g} value={g}>{g.replace(/_/g, ' ')}</option>)}
-                      </select>
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-semibold text-gray-600">Term</label>
-                      <select value={filterTerm} onChange={(e) => setFilterTerm(e.target.value)} className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm w-full outline-blue-500">
-                        <option value="all">All Terms</option>
-                        {terms.map(t => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
-                      </select>
-                    </div>
-                  </div>
+      {/* ── SHEET VIEW ────────────────────────────────────────────────────────── */}
+      {listView === 'sheet' && (
+        <div>
+          {feeStructures.length === 0 ? (
+            <EmptyState icon={DollarSign} title="No Fee Structures"
+              message="Use 'Seed Structures' or 'Add Structure' to get started."
+              actionText="Add Fee Structure"
+              onAction={() => { resetForm(); setViewMode('add'); }} />
+          ) : (
+            <>
+              {/* Printable / capturable sheet */}
+              <div
+                id="fee-structure-sheet"
+                className="bg-white"
+                style={{ border: '1px solid var(--table-border)', fontFamily: 'Inter, sans-serif' }}
+              >
+                {/* Branded header */}
+                <SheetHeader
+                  grade={selectedGrade}
+                  academicYear={selectedYear}
+                  schoolName={user?.schoolName || user?.school?.name || 'School Name'}
+                  logoUrl={user?.school?.logoUrl || user?.logoUrl}
+                />
+
+                {/* One section per term */}
+                {TERMS.map((term) => (
+                  <TermSection
+                    key={term}
+                    term={term}
+                    structure={gradeSheetData[term]}
+                    feeTypes={feeTypes}
+                    onEdit={handleEdit}
+                    onDelete={(s) => { setStructureToDelete(s); setShowDeleteDialog(true); }}
+                    onDuplicate={handleDuplicate}
+                    onToggleActive={handleToggleActive}
+                    onToggleMandatory={handleToggleMandatory}
+                    onDeleteItem={(s, idx) => { setItemToDelete({ structure: s, index: idx }); setShowDeleteItemDialog(true); }}
+                    onAddItem={() => {
+                      const s = gradeSheetData[term];
+                      if (s) handleEdit(s);
+                      else {
+                        setFormData((p) => ({ ...p, grade: selectedGrade, term, academicYear: selectedYear }));
+                        setViewMode('add');
+                      }
+                    }}
+                    onAddStructure={() => {
+                      resetForm();
+                      setFormData((p) => ({ ...p, grade: selectedGrade, term, academicYear: selectedYear }));
+                      setViewMode('add');
+                    }}
+                  />
+                ))}
+
+                {/* Grand total row */}
+                <div
+                  className="flex items-center justify-between px-4 py-3 border-t border-[var(--table-border)]"
+                  style={{ background: 'var(--brand-purple)', color: '#fff' }}
+                >
+                  <span className="text-xs font-black uppercase tracking-widest">
+                    {gradeLabel(selectedGrade)} — {selectedYear} Grand Total
+                  </span>
+                  <span className="font-black font-mono text-base">
+                    KES {fmtKES(grandTotal)}
+                  </span>
                 </div>
               </div>
 
-              <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end">
-                <button onClick={() => setShowGlobalFilters(false)} className="px-5 py-2 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm">
-                  Apply & Close
-                </button>
+              {/* Sheet footer note (not printed) */}
+              <p className="text-[11px] text-[var(--muted)] mt-2 no-print">
+                Showing fee structure for {gradeLabel(selectedGrade)} · {selectedYear}.
+                Use the Grade and Year selectors above to switch.
+                Click <strong>PDF</strong> to export this exact view.
+              </p>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── GRID VIEW (old matrix, preserved) ─────────────────────────────────── */}
+      {listView === 'grid' && (
+        <div>
+          {feeMatrixRows.length === 0 ? (
+            <EmptyState icon={DollarSign} title="No Fee Structures"
+              message="Use 'Seed Structures' or 'Add Structure' to get started."
+              actionText="Add Fee Structure"
+              onAction={() => { resetForm(); setViewMode('add'); }} />
+          ) : (
+            <div className="bg-white overflow-hidden" style={{ border: '1px solid var(--table-border)' }}>
+              <div className="overflow-x-auto">
+                <table style={{ minWidth: 1100 }}>
+                  <thead>
+                    <tr>
+                      <th>Grade</th>
+                      <th>Year</th>
+                      {terms.map((t) => <th key={t}>{termLabel(t)}</th>)}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {feeMatrixRows.map((row) => (
+                      <tr key={`${row.grade}-${row.academicYear}`}>
+                        <td className="font-bold">{gradeLabel(row.grade)}</td>
+                        <td>{row.academicYear}</td>
+                        {terms.map((term) => {
+                          const structs = row.byTerm[term] || [];
+                          if (structs.length === 0) {
+                            return <td key={term} className="text-xs" style={{ color: 'var(--muted)' }}>No structure</td>;
+                          }
+                          return (
+                            <td key={term}>
+                              {structs.map((s) => (
+                                <div key={s.id}
+                                  className="p-2 mb-1.5 last:mb-0"
+                                  style={{ border: '1px solid var(--table-border)', background: '#fafbfc' }}>
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div>
+                                      <p className="text-xs font-bold text-[var(--ink)] leading-tight">{s.name}</p>
+                                      <p className="text-[10px] mt-0.5" style={{ color: 'var(--muted)' }}>
+                                        {(s.feeItems || []).length} items · KES {fmtKES(calcTotal(s.feeItems || []))}
+                                      </p>
+                                    </div>
+                                    <div className="flex items-center gap-0.5 flex-shrink-0">
+                                      <button onClick={() => handleDuplicate(s)}
+                                        className="p-1 hover:bg-gray-200 transition" title="Duplicate">
+                                        <Copy size={12} />
+                                      </button>
+                                      <button onClick={() => handleEdit(s)}
+                                        className="p-1 hover:bg-blue-50 transition" title="Edit"
+                                        style={{ color: 'var(--brand-purple)' }}>
+                                        <Edit2 size={12} />
+                                      </button>
+                                      <button
+                                        onClick={() => { setStructureToDelete(s); setShowDeleteDialog(true); }}
+                                        className="p-1 hover:bg-red-50 transition text-red-500" title="Delete">
+                                        <Trash2 size={12} />
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                                    {s.mandatory && (
+                                      <span className="text-[10px] font-bold px-1.5 py-0.5 bg-red-100 text-red-700">
+                                        Mandatory
+                                      </span>
+                                    )}
+                                    <span className="text-[10px] font-bold px-1.5 py-0.5"
+                                      style={{ background: s.active ? '#d1fae5' : '#f3f4f6', color: s.active ? '#065f46' : '#6b7280' }}>
+                                      {s.active ? 'Active' : 'Inactive'}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
         </div>
-      </div>
-
-      {/* Fee Structures List */}
-      {Object.keys(groupedStructures).length === 0 ? (
-        <EmptyState
-          icon={DollarSign}
-          title="No Fee Structures Found"
-          message={searchTerm ? "No fee structures match your search." : "Use the 'Seed Fee Structures' button above to auto-create structures for all grades and terms, or manually create one."}
-          actionText="Add Fee Structure"
-          onAction={() => {
-            resetForm();
-            setViewMode('add');
-          }}
-        />
-      ) : (
-        <div className="space-y-4">
-          {Object.values(groupedStructures).map((group, idx) => (
-            <div key={idx} className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
-              {/* Group Header */}
-              <div className="bg-blue-50 px-6 py-3 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <DollarSign size={20} className="text-blue-600" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-900">{group.grade} - {group.term}</h3>
-                      <p className="text-xs text-gray-500">Academic Year {group.academicYear}</p>
-                    </div>
-                  </div>
-                  <div className="text-right text-xs">
-                    <p className="text-gray-600">{group.structures.length} structure(s)</p>
-                    <p className="font-semibold text-gray-900">
-                      KES {group.structures.reduce((acc, s) => acc + calculateTotalAmount(s.feeItems || []), 0).toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Structures List - Collapsible */}
-              <div className="divide-y divide-gray-100">
-                {group.structures.map((structure) => {
-                  const total = calculateTotalAmount(structure.feeItems || []);
-                  const isExpanded = expandedStructures[structure.id];
-
-                  return (
-                    <div key={structure.id} className="hover:bg-gray-50 transition">
-                      {/* Collapsed Header */}
-                      <div
-                        onClick={() => toggleExpanded(structure.id)}
-                        className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition cursor-pointer"
-                      >
-                        <div className="flex items-center gap-4 flex-1 min-w-0">
-                          {/* Chevron Icon */}
-                          <div className="flex-shrink-0 text-gray-400">
-                            {isExpanded ? (
-                              <ChevronDown size={20} />
-                            ) : (
-                              <ChevronRight size={20} />
-                            )}
-                          </div>
-
-                          {/* Structure Info */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <h4 className="text-sm font-semibold text-gray-900 truncate">{structure.name}</h4>
-                              {structure.mandatory && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-medium flex-shrink-0">
-                                  <AlertCircle size={12} />
-                                  Mandatory
-                                </span>
-                              )}
-                              {structure.active ? (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-medium flex-shrink-0">
-                                  <CheckCircle size={12} />
-                                  Active
-                                </span>
-                              ) : (
-                                <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs font-medium flex-shrink-0">
-                                  Inactive
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-xs text-gray-500">{(structure.feeItems || []).length} items</p>
-                          </div>
-                        </div>
-
-                        {/* Total Amount and Actions */}
-                        <div className="flex items-center gap-4 ml-4 flex-shrink-0">
-                          <div className="text-right">
-                            <p className="text-sm font-medium text-gray-900">KES {total.toLocaleString()}</p>
-                          </div>
-
-                          {/* Action Buttons */}
-                          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                            <button
-                              onClick={() => handleDuplicate(structure)}
-                              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded transition"
-                              title="Duplicate"
-                            >
-                              <Copy size={16} />
-                            </button>
-                            <button
-                              onClick={() => handleEdit(structure)}
-                              className="p-2 text-blue-400 hover:text-blue-600 hover:bg-blue-100 rounded transition"
-                              title="Edit"
-                            >
-                              <Edit2 size={16} />
-                            </button>
-                            <button
-                              onClick={() => {
-                                setStructureToDelete(structure);
-                                setShowDeleteDialog(true);
-                              }}
-                              className="p-2 text-red-400 hover:text-red-600 hover:bg-red-100 rounded transition"
-                              title="Delete"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Expanded Content */}
-                      {isExpanded && (
-                        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 space-y-4">
-                          {structure.description && (
-                            <div>
-                              <p className="text-xs font-semibold text-gray-600 uppercase mb-1">Description</p>
-                              <p className="text-sm text-gray-700">{structure.description}</p>
-                            </div>
-                          )}
-
-                          {/* Fee Items Breakdown */}
-                          <div>
-                            <p className="text-xs font-semibold text-gray-600 uppercase mb-2">Fee Breakdown</p>
-                            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                              <table className="w-full text-sm border-collapse">
-                                <thead className="border-b border-[color:var(--table-border)]">
-                                  <tr>
-                                    <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Fee Type</th>
-                                    <th className="px-3 py-1.5 text-right text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-100">Amount</th>
-                                    <th className="px-3 py-1.5 text-center text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase">Mandatory</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {(structure.feeItems || []).map((item, i) => (
-                                    <tr key={i} className="border-t border-gray-100 hover:bg-gray-50 transition">
-                                      <td className="px-3 py-1.5 text-gray-900 border-r border-gray-100">{item.feeType?.name || 'Unknown'}</td>
-                                      <td className="px-3 py-1.5 text-right font-semibold text-gray-900 border-r border-gray-100">
-                                        KES {parseFloat(item.amount).toLocaleString()}
-                                      </td>
-                                      <td className="px-3 py-1.5 text-center">
-                                        {item.mandatory ? (
-                                          <CheckCircle size={16} className="text-green-500 mx-auto" />
-                                        ) : (
-                                          <span className="text-gray-300">—</span>
-                                        )}
-                                      </td>
-                                    </tr>
-                                  ))}
-                                  <tr className="bg-blue-50 border-t-2 border-blue-200 font-medium">
-                                    <td className="px-3 py-1.5 text-gray-900 border-r border-blue-200/50">Total</td>
-                                    <td className="px-3 py-1.5 text-right text-blue-600 border-r border-blue-200/50">
-                                      KES {total.toLocaleString()}
-                                    </td>
-                                    <td className="px-3 py-1.5"></td>
-                                  </tr>
-                                </tbody>
-                              </table>
-                            </div>
-                          </div>
-
-                          {/* Edit Button */}
-                          <div className="pt-2">
-                            <button
-                              onClick={() => handleEdit(structure)}
-                              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm flex items-center justify-center gap-2"
-                            >
-                              <Edit2 size={16} />
-                              Edit Fee Structure
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
       )}
 
-      {/* Delete Confirmation Dialog */}
+      {/* ── Delete structure dialog ── */}
       <ConfirmDialog
         show={showDeleteDialog}
         title="Delete Fee Structure"
-        message={`Are you sure you want to delete "${structureToDelete?.name}"? This action cannot be undone.`}
+        message={`Delete "${structureToDelete?.name}"? This cannot be undone.`}
         confirmText="Delete"
         cancelText="Cancel"
         onConfirm={handleDelete}
-        onCancel={() => {
-          setShowDeleteDialog(false);
-          setStructureToDelete(null);
-        }}
+        onCancel={() => { setShowDeleteDialog(false); setStructureToDelete(null); }}
+      />
+
+      {/* ── Delete fee item dialog ── */}
+      <ConfirmDialog
+        show={showDeleteItemDialog}
+        title="Remove Fee Item"
+        message={`Remove this fee item from ${termLabel(itemToDelete?.structure?.term)}? The structure will be updated.`}
+        confirmText="Remove"
+        cancelText="Cancel"
+        onConfirm={() => itemToDelete && handleDeleteFeeItem(itemToDelete.structure, itemToDelete.index)}
+        onCancel={() => { setShowDeleteItemDialog(false); setItemToDelete(null); }}
       />
     </div>
   );

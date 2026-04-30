@@ -255,7 +255,7 @@ const BulkOperationsModal = ({
                 )}
               </div>
               <span className="text-xs font-medium text-[var(--brand-purple)] uppercase tracking-wider">
-                {exporting ? 'Exporting...' : 'Export CSV'}
+                {exporting ? 'Exporting...' : 'Export All Stuents'}
               </span>
             </button>
           </div>

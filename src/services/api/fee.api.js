@@ -31,6 +31,12 @@ export const feeAPI = {
     const query = new URLSearchParams(params).toString();
     return fetchWithAuth(`/fees/types${query ? `?${query}` : ''}`);
   },
+  createFeeType: async (data) =>
+    fetchWithAuth('/fees/types', { method: 'POST', body: JSON.stringify(data) }),
+  updateFeeType: async (id, data) =>
+    fetchWithAuth(`/fees/types/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteFeeType: async (id) =>
+    fetchWithAuth(`/fees/types/${id}`, { method: 'DELETE' }),
   seedDefaultFeeTypes: async () =>
     fetchWithAuth('/fees/types/seed/defaults', { method: 'POST' }),
   seedDefaultFeeStructures: async (academicYear) =>

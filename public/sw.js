@@ -1,4 +1,4 @@
-const CACHE_NAME = 'zawadi-cache-v2';
+const CACHE_NAME = 'trends-core-cache-v1';
 const APP_SHELL_ASSETS = [
   '/manifest.json',
   '/favicon.png',
@@ -82,6 +82,11 @@ self.addEventListener('notificationclose', event => {
 // ---------------------------------------------------------------------------
 self.addEventListener('fetch', event => {
   const { request } = event;
+  const url = new URL(request.url);
+
+  if (url.origin !== self.location.origin || url.pathname.startsWith('/api/')) {
+    return;
+  }
 
   // Always prefer fresh HTML to avoid stale hashed bundle references.
   if (request.mode === 'navigate') {
@@ -97,7 +102,7 @@ self.addEventListener('fetch', event => {
         return cached;
       }
       return fetch(request).then(networkResponse => {
-        if (request.method === 'GET' && new URL(request.url).origin === self.location.origin) {
+        if (request.method === 'GET') {
           const responseClone = networkResponse.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(request, responseClone));
         }

@@ -1,6 +1,6 @@
 /**
  * PDF Routes
- * Exposes the Puppeteer-based vector PDF generation service to the frontend.
+ * Legacy server-side PDF endpoints retained as authenticated 501 responses.
  * POST /api/pdf/generate  →  { html, options }  →  returns PDF binary
  */
 

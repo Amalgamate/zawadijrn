@@ -96,12 +96,22 @@ const updateInvoiceSchema = z.object({
 
 // FIX (Task 5 — P2): Validation for POST /invoices/bulk (was previously missing)
 const bulkGenerateInvoicesSchema = z.object({
-  feeStructureId: z.string().min(1, 'feeStructureId is required'),
+  feeStructureId: z.string().optional(),
   term: z.string().min(1, 'term is required'),
   academicYear: z.number().int().min(2000, 'academicYear must be a valid year'),
   dueDate: z.string().min(1, 'dueDate is required'),
-  grade: z.string().min(1, 'grade is required'),
-  stream: z.string().optional()
+  grade: z.string().optional(),
+  stream: z.string().optional(),
+  scope: z.enum(['GRADE_STREAM', 'WHOLE_SCHOOL']).optional()
+}).superRefine((data, ctx) => {
+  const scope = data.scope || 'GRADE_STREAM';
+  if (scope === 'WHOLE_SCHOOL') return;
+  if (!data.feeStructureId) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'feeStructureId is required for grade/stream bulk generation' });
+  }
+  if (!data.grade) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'grade is required for grade/stream bulk generation' });
+  }
 });
 
 const createWaiverSchema = z.object({

@@ -2,6 +2,8 @@
   "short_name": "Trends CORE V1.0",
   "name": "Trends CORE V1.0 - School Management & CBC Grading",
   "description": "Complete CBC School Management & Grading System for Kenyan schools",
+  "id": "/",
+  "scope": "/",
   "icons": [
     {
       "src": "favicon-16x16.png",
@@ -37,6 +39,11 @@
   ],
   "start_url": "/",
   "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui",
+    "browser"
+  ],
   "orientation": "portrait",
   "theme_color": "#520050",
   "background_color": "#ffffff",

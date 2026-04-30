@@ -1078,28 +1078,70 @@ export class FeeController {
    * route-specific pricing is honoured for each student individually.
    */
   async bulkGenerateInvoices(req: AuthRequest, res: Response) {
-    const { feeStructureId, term, academicYear, dueDate, grade, stream } = req.body;
+    const { feeStructureId, term, academicYear, dueDate, grade, stream, scope } = req.body;
     const userId = req.user!.userId;
+    const normalizedScope = String(scope || '').toUpperCase();
 
-    const feeStructure = await prisma.feeStructure.findUnique({
-      where: { id: feeStructureId },
-      include: { feeItems: { include: { feeType: true } } } as any
+    let learners = await prisma.learner.findMany({
+      where: {
+        status: 'ACTIVE',
+        archived: false,
+        ...(normalizedScope === 'WHOLE_SCHOOL'
+          ? {}
+          : { grade, stream: stream || undefined })
+      }
     });
-    if (!feeStructure) throw new ApiError(404, 'Fee structure not found');
 
-    const allItems: any[] = (feeStructure as any).feeItems || [];
-    const nonTransportItems = allItems.filter((i: any) => i.feeType?.code !== 'TRANSPORT');
-    const baseTotal = nonTransportItems.reduce((sum: number, i: any) => sum + Number(i.amount), 0);
+    if (learners.length === 0) {
+      if (normalizedScope === 'WHOLE_SCHOOL') {
+        throw new ApiError(400, 'No active learners found in the school');
+      }
+      throw new ApiError(400, 'No active learners found for selected grade/stream');
+    }
 
-    const learners = await prisma.learner.findMany({
-      where: { grade, stream: stream || undefined, status: 'ACTIVE' }
-    });
-    if (learners.length === 0) throw new ApiError(400, 'No active learners found for grade/stream');
+    // Resolve fee structure per learner (whole school) or single provided structure.
+    let structureByGrade = new Map<string, any>();
+    let allItemsByStructureId = new Map<string, any[]>();
+
+    if (normalizedScope === 'WHOLE_SCHOOL') {
+      const structures = await prisma.feeStructure.findMany({
+        where: {
+          active: true,
+          term,
+          academicYear: Number(academicYear)
+        },
+        include: { feeItems: { include: { feeType: true } } } as any
+      });
+
+      for (const fs of structures) {
+        if (fs.grade && !structureByGrade.has(fs.grade)) {
+          structureByGrade.set(fs.grade, fs);
+          allItemsByStructureId.set(fs.id, (fs as any).feeItems || []);
+        }
+      }
+
+      learners = learners.filter((l) => structureByGrade.has(String(l.grade || '')));
+      if (learners.length === 0) {
+        throw new ApiError(400, 'No active learners have a matching active fee structure for the selected term/year');
+      }
+    } else {
+      const feeStructure = await prisma.feeStructure.findUnique({
+        where: { id: feeStructureId },
+        include: { feeItems: { include: { feeType: true } } } as any
+      });
+      if (!feeStructure) throw new ApiError(404, 'Fee structure not found');
+      allItemsByStructureId.set(feeStructure.id, (feeStructure as any).feeItems || []);
+    }
 
     // Pre-fetch already-invoiced learners in one query
     const learnerIds = learners.map(l => l.id);
     const alreadyInvoiced = await prisma.feeInvoice.findMany({
-      where: { learnerId: { in: learnerIds }, feeStructureId, term, academicYear },
+      where: {
+        learnerId: { in: learnerIds },
+        term,
+        academicYear: Number(academicYear),
+        ...(normalizedScope === 'WHOLE_SCHOOL' ? {} : { feeStructureId })
+      },
       select: { learnerId: true }
     });
     const alreadyInvoicedSet = new Set(alreadyInvoiced.map(i => i.learnerId));
@@ -1114,13 +1156,35 @@ export class FeeController {
       });
     }
 
-    // FIX: resolve transport amount per learner so route-specific fees are correct
-    const transportAmounts = await Promise.all(
+    // Resolve amounts per learner so structure/transport are accurate for each record.
+    const invoiceDrafts = await Promise.all(
       learnersToInvoice.map(async (learner) => {
-        if (!(learner as any).isTransportStudent) return 0;
-        return resolveTransportAmount(learner.id, allItems);
+        const resolvedStructure = normalizedScope === 'WHOLE_SCHOOL'
+          ? structureByGrade.get(String(learner.grade || ''))
+          : { id: feeStructureId };
+
+        if (!resolvedStructure?.id) return null;
+        const items = allItemsByStructureId.get(resolvedStructure.id) || [];
+        const nonTransportItems = items.filter((i: any) => i.feeType?.code !== 'TRANSPORT');
+        const baseTotal = nonTransportItems.reduce((sum: number, i: any) => sum + Number(i.amount), 0);
+        const transportAmount = (learner as any).isTransportStudent
+          ? await resolveTransportAmount(learner.id, items)
+          : 0;
+        const totalAmount = baseTotal + transportAmount;
+
+        return {
+          learner,
+          feeStructureId: resolvedStructure.id,
+          transportAmount,
+          totalAmount
+        };
       })
     );
+    const validDrafts = invoiceDrafts.filter(Boolean) as Array<any>;
+
+    if (validDrafts.length === 0) {
+      throw new ApiError(400, 'No eligible learners found for invoice generation');
+    }
 
     let results: any[];
     let lastError: any;
@@ -1135,8 +1199,9 @@ export class FeeController {
           });
           let nextSequence = parseInvoiceNumber(maxResult._max.invoiceNumber as string | null) + 1;
 
-          for (let idx = 0; idx < learnersToInvoice.length; idx++) {
-            const learner = learnersToInvoice[idx];
+          for (let idx = 0; idx < validDrafts.length; idx++) {
+            const draft = validDrafts[idx];
+            const learner = draft.learner;
             const invoiceNumber = `INV-${academicYear}-${String(nextSequence).padStart(6, '0')}`;
             nextSequence++;
 
@@ -1144,16 +1209,16 @@ export class FeeController {
               data: {
                 invoiceNumber,
                 learnerId: learner.id,
-                feeStructureId,
+                feeStructureId: draft.feeStructureId,
                 term,
                 academicYear,
                 dueDate: new Date(dueDate),
-                totalAmount: baseTotal,
+                totalAmount: draft.totalAmount,
                 paidAmount: 0,
-                balance: baseTotal,
-                transportBilled: transportAmounts[idx],
+                balance: draft.totalAmount,
+                transportBilled: draft.transportAmount,
                 transportPaid: 0,
-                transportBalance: transportAmounts[idx],
+                transportBalance: draft.transportAmount,
                 status: 'PENDING',
                 issuedBy: userId
               }
@@ -1185,7 +1250,14 @@ export class FeeController {
       }
     });
 
-    res.status(201).json({ success: true, data: results, count: results.length });
+    res.status(201).json({
+      success: true,
+      data: results,
+      count: results.length,
+      message: normalizedScope === 'WHOLE_SCHOOL'
+        ? `Bulk invoices created for ${results.length} learners (whole school scope).`
+        : `Bulk invoices created for ${results.length} learners.`
+    });
   }
 
   /**

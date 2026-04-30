@@ -1,5 +1,5 @@
 /**
- * WhatsApp Service — Powered by Baileys (Free, WebSocket-based, No Puppeteer)
+ * WhatsApp Service - Powered by Baileys (WebSocket-based)
  * @see https://github.com/WhiskeySockets/Baileys
  */
 

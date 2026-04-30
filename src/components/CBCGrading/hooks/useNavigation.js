@@ -250,6 +250,7 @@ export const allNavSections = [
                     { id: 'fees-unmatched',   label: 'Unmatched Payments', path: 'fees-unmatched',   permission: 'FEE_MANAGEMENT' },
                     { id: 'fees-waivers',     label: 'Fee Waivers',        path: 'fees-waivers',     permission: 'FEE_MANAGEMENT', icon: Gift },
                     { id: 'fees-statements',  label: 'Student Statements', path: 'fees-statements',  permission: 'FEE_MANAGEMENT' },
+                    { id: 'fees-types',       label: 'Fee Types',          path: 'fees-types',       permission: 'FEE_MANAGEMENT' },
                     { id: 'fees-structure',   label: 'Fee Structure',      path: 'fees-structure',   permission: 'FEE_MANAGEMENT' }
                 ]
             },

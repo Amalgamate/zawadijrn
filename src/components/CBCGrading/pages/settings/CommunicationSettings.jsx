@@ -110,7 +110,7 @@ const CommunicationSettings = () => {
   const [testMessage, setTestMessage] = useState(TEST_MESSAGES.sms);
   const [schoolPhone, setSchoolPhone] = useState(''); // Store school phone for fallback
 
-  // Removed Deprecated Puppeteer QR Status Logic
+  // Removed deprecated browser-session QR status logic
 
   // Load Configuration on Mount
 

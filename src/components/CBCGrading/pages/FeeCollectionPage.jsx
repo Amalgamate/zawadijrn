@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Plus, Eye, CheckCircle, AlertCircle, Clock, FileText, Download,
   X, Loader2, MessageSquare, Phone, Info, User, ShieldCheck, Mail, Upload,
-  Trash2, Gift, ThumbsUp, ArrowUpDown, ArrowUp, ArrowDown,
+  Trash2, Gift, ThumbsUp, ArrowUpDown, ArrowUp, ArrowDown, Users,
   Filter, Search, DollarSign, Wallet, Banknote, Coins, Building2, AlertTriangle
 } from 'lucide-react';
 import { generateDocument } from '../../../utils/simplePdfGenerator';
@@ -48,6 +48,8 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
   const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' });
   const [downloadingId, setDownloadingId] = useState(null);
   const [selectedInvoiceIds, setSelectedInvoiceIds] = useState([]);
+  const [selectAllMatching, setSelectAllMatching] = useState(false);
+  const [totalInvoicesCount, setTotalInvoicesCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [statsLoading, setStatsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('invoices'); // 'invoices' | 'unmatched'
@@ -145,6 +147,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
         const learnerRes = await api.fees.getLearnerInvoices(searchLearnerId);
         const learnerRows = Array.isArray(learnerRes?.data) ? learnerRes.data : [];
         rows = learnerRows;
+        setTotalInvoicesCount(learnerRows.length);
       } else {
         const params = {
           page: currentPage,
@@ -161,6 +164,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
         const response = await api.fees.getAllInvoices(params);
         rows = response.data || [];
         pages = response.pagination?.pages || 1;
+        setTotalInvoicesCount(Number(response.pagination?.total || rows.length));
         totals = response.totals;
       }
 
@@ -477,6 +481,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
 
   // Create Invoice State
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showBulkCreateModal, setShowBulkCreateModal] = useState(false);
   const [feeStructures, setFeeStructures] = useState([]);
   const [newInvoice, setNewInvoice] = useState({
     learnerId: '',
@@ -486,10 +491,19 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
     dueDate: new Date().toISOString().split('T')[0],
     includeTransport: true
   });
+  const [bulkInvoice, setBulkInvoice] = useState({
+    scope: 'WHOLE_SCHOOL',
+    grade: '',
+    stream: '',
+    feeStructureId: '',
+    term: 'TERM_1',
+    academicYear: new Date().getFullYear(),
+    dueDate: new Date().toISOString().split('T')[0]
+  });
 
   // Fetch fee structures when modal opens
   useEffect(() => {
-    if (showCreateModal) {
+    if (showCreateModal || showBulkCreateModal) {
       const loadFeeStructures = async () => {
         try {
           let activeTerm = 'TERM_1';
@@ -512,6 +526,12 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
             academicYear: activeAcademicYear,
             feeStructureId: ''
           }));
+          setBulkInvoice(prev => ({
+            ...prev,
+            term: activeTerm,
+            academicYear: activeAcademicYear,
+            dueDate: prev.dueDate || new Date().toISOString().split('T')[0]
+          }));
 
           const response = await api.fees.getAllFeeStructures({
             status: 'ACTIVE',
@@ -526,7 +546,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
       };
       loadFeeStructures();
     }
-  }, [showCreateModal, showError]);
+  }, [showCreateModal, showBulkCreateModal, showError]);
 
   // Auto-select Fee Structure & Transport Toggle based on Learner, Term, and Year
   useEffect(() => {
@@ -610,6 +630,41 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
     }
   };
 
+  const handleBulkCreateInvoices = async () => {
+    if (!bulkInvoice.term || !bulkInvoice.academicYear || !bulkInvoice.dueDate) {
+      showError('Please fill term, year and due date');
+      return;
+    }
+    if (bulkInvoice.scope === 'GRADE_STREAM' && (!bulkInvoice.feeStructureId || !bulkInvoice.grade)) {
+      showError('Please select grade and fee structure');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const payload = {
+        term: bulkInvoice.term,
+        academicYear: Number(bulkInvoice.academicYear),
+        dueDate: bulkInvoice.dueDate,
+        scope: bulkInvoice.scope,
+        ...(bulkInvoice.scope === 'GRADE_STREAM' ? {
+          grade: bulkInvoice.grade,
+          stream: bulkInvoice.stream || undefined,
+          feeStructureId: bulkInvoice.feeStructureId
+        } : {})
+      };
+      const res = await api.fees.bulkGenerateInvoices(payload);
+      showSuccess(res?.message || `Bulk invoice creation complete. ${res?.count || 0} invoices created.`);
+      setShowBulkCreateModal(false);
+      fetchInvoices();
+      fetchStatsInvoices();
+    } catch (error) {
+      showError(error.message || 'Failed to bulk create invoices');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSendReminder = async (invoice, channel) => {
     try {
       setLoading(true);
@@ -652,12 +707,37 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
 
 
   const handleBulkReminders = async (channel) => {
-    if (selectedInvoiceIds.length === 0) return;
+    if (selectedInvoiceIds.length === 0 && !selectAllMatching) return;
     try {
       setLoading(true);
-      await api.fees.bulkSendReminders({ invoiceIds: selectedInvoiceIds, channel });
-      showSuccess(`Bulk reminder process started via ${channel}`);
+      let invoiceIds = selectedInvoiceIds;
+
+      if (selectAllMatching) {
+        if (searchLearnerId) {
+          const learnerRes = await api.fees.getLearnerInvoices(searchLearnerId);
+          const learnerRows = Array.isArray(learnerRes?.data) ? learnerRes.data : [];
+          invoiceIds = learnerRows.map((i) => i.id);
+        } else {
+          const params = {
+            limit: 'all',
+            ...(statusFilter !== 'all' && { status: statusFilter.toUpperCase() }),
+            ...(termFilter !== 'all' && { term: termFilter }),
+            ...(startDate && { startDate }),
+            ...(endDate && { endDate }),
+            ...(gradeFilter !== 'all' && { grade: gradeFilter }),
+            ...(paymentMethodFilter !== 'all' && { paymentMethod: paymentMethodFilter }),
+            sortBy: sortConfig.key,
+            sortOrder: sortConfig.direction
+          };
+          const response = await api.fees.getAllInvoices(params);
+          invoiceIds = (response?.data || []).map((i) => i.id);
+        }
+      }
+
+      await api.fees.bulkSendReminders({ invoiceIds, channel });
+      showSuccess(`Bulk reminder process started via ${channel} for ${invoiceIds.length} invoices`);
       setSelectedInvoiceIds([]);
+      setSelectAllMatching(false);
     } catch (error) {
       showError(error.message || 'Failed to send bulk reminders');
     } finally {
@@ -665,19 +745,38 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
     }
   };
 
+  const allVisibleSelected = invoices.length > 0 && (selectAllMatching || invoices.every((i) => selectedInvoiceIds.includes(i.id)));
+
   const toggleSelectAll = () => {
-    if (selectedInvoiceIds.length === invoices.length) {
+    if (allVisibleSelected) {
       setSelectedInvoiceIds([]);
+      setSelectAllMatching(false);
     } else {
       setSelectedInvoiceIds(invoices.map(i => i.id));
+      setSelectAllMatching(false);
     }
   };
 
   const toggleSelectInvoice = (id) => {
-    setSelectedInvoiceIds(prev =>
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-    );
+    if (selectAllMatching) {
+      setSelectAllMatching(false);
+      setSelectedInvoiceIds(invoices.map(i => i.id));
+      return;
+    }
+    setSelectedInvoiceIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   };
+
+  const handleSelectAllMatching = () => {
+    setSelectAllMatching(true);
+    setSelectedInvoiceIds(invoices.map(i => i.id));
+  };
+
+  const selectedCount = selectAllMatching ? totalInvoicesCount : selectedInvoiceIds.length;
+
+  useEffect(() => {
+    setSelectedInvoiceIds([]);
+    setSelectAllMatching(false);
+  }, [statusFilter, termFilter, startDate, endDate, gradeFilter, paymentMethodFilter, searchLearnerId]);
 
   const handleResetInvoices = () => {
     // Open the scoped reset modal instead of calling directly
@@ -728,6 +827,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
   useEffect(() => {
     registerFeeActions({
       onCreate: () => setShowCreateModal(true),
+      onBulkCreate: () => setShowBulkCreateModal(true),
       onImport: () => setShowImportModal(true),
       onExport: () => setShowExportModal(true),
       userRole: user?.role,
@@ -748,6 +848,10 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
     return () => clearFeeActions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.role, allLearners, searchLearnerId, showMetrics]);
+
+  const gradeOptions = React.useMemo(() => (
+    Array.from(new Set((allLearners || []).map((l) => l.grade).filter(Boolean))).sort()
+  ), [allLearners]);
 
   // ——— Computed KES totals for each metric card (always unfiltered) —————————————
   const stats = React.useMemo(() => {
@@ -1423,13 +1527,24 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
           ) : (
             // ******************** DESKTOP TABLE VIEW ********************
             <div className="bg-white rounded-xl border-[0.5px] border-gray-200 shadow-sm overflow-auto max-h-[70vh] text-sm scrollbar-thin relative">
+              {selectedInvoiceIds.length > 0 && !selectAllMatching && selectedInvoiceIds.length === invoices.length && totalInvoicesCount > invoices.length && (
+                <div className="sticky top-0 z-30 bg-blue-50 border-b border-blue-100 px-4 py-2 text-xs text-blue-800 flex items-center justify-between">
+                  <span>All {invoices.length} invoices on this page are selected.</span>
+                  <button
+                    onClick={handleSelectAllMatching}
+                    className="font-semibold underline underline-offset-2 hover:text-blue-900"
+                  >
+                    Select all {totalInvoicesCount} matching invoices
+                  </button>
+                </div>
+              )}
               <table className="w-full min-w-max border-collapse">
                 <thead className="sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm border-b-[0.5px] border-gray-200">
                   <tr className="">
                     <th className="px-3 py-2 text-left border-r-[0.5px] border-gray-200 w-10 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm">
                       <input
                         type="checkbox"
-                        checked={selectedInvoiceIds.length === invoices.length && invoices.length > 0}
+                        checked={allVisibleSelected}
                         onChange={toggleSelectAll}
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
@@ -1563,7 +1678,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                           <td className="px-3 py-1.5 border-r-[0.5px] border-gray-200" onClick={(e) => e.stopPropagation()}>
                             <input
                               type="checkbox"
-                              checked={selectedInvoiceIds.includes(invoice.id)}
+                              checked={selectAllMatching || selectedInvoiceIds.includes(invoice.id)}
                               onChange={() => toggleSelectInvoice(invoice.id)}
                               className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                             />
@@ -1824,12 +1939,12 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
           )}
 
           {/* Bulk Action Bar */}
-          {selectedInvoiceIds.length > 0 && (
+          {(selectedInvoiceIds.length > 0 || selectAllMatching) && (
             <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-6 z-50 animate-bounce-in">
-              <span className="font-semibold">{selectedInvoiceIds.length} Invoices selected</span>
+              <span className="font-semibold">{selectedCount} Invoices selected</span>
               <div className="h-6 w-px bg-gray-700" />
               <div className="flex items-center gap-3">
-                <span className="text-xs text-gray-400 uppercase tracking-wider font-medium">Send Reminders:</span>
+                <span className="text-xs text-amber-300 uppercase tracking-wider font-semibold drop-shadow-[0_0_6px_rgba(251,191,36,0.65)]">Send Reminders:</span>
                 <button
                   onClick={() => handleBulkReminders('SMS')}
                   className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 px-4 py-1.5 rounded-full text-sm font-medium transition-all"
@@ -1846,7 +1961,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                 </button>
               </div>
               <button
-                onClick={() => setSelectedInvoiceIds([])}
+                onClick={() => { setSelectedInvoiceIds([]); setSelectAllMatching(false); }}
                 className="text-gray-400 hover:text-white transition-colors"
               >
                 <X size={20} />
@@ -1990,6 +2105,123 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                     </button>
                     <button
                       onClick={() => setShowCreateModal(false)}
+                      className="px-6 py-3 border-2 border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 font-medium transition-all"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Bulk Create Invoices Modal */}
+          {showBulkCreateModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-xl shadow-2xl max-w-xl w-full overflow-hidden">
+                <div className="bg-[var(--brand-purple)] px-6 py-4 flex justify-between items-center text-white">
+                  <h3 className="text-lg font-medium">Bulk Create Invoices</h3>
+                  <button
+                    onClick={() => setShowBulkCreateModal(false)}
+                    className="hover:bg-white/20 p-1.5 rounded-lg transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <div className="p-6 space-y-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider">Scope *</label>
+                      <select
+                        value={bulkInvoice.scope}
+                        onChange={(e) => setBulkInvoice((prev) => ({ ...prev, scope: e.target.value }))}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00A09D] text-sm"
+                      >
+                        <option value="WHOLE_SCHOOL">Whole School</option>
+                        <option value="GRADE_STREAM">Specific Grade / Stream</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider">Due Date *</label>
+                      <input
+                        type="date"
+                        value={toInputDate(bulkInvoice.dueDate)}
+                        onChange={(e) => setBulkInvoice((prev) => ({ ...prev, dueDate: e.target.value }))}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00A09D] text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  {bulkInvoice.scope === 'GRADE_STREAM' && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider">Grade *</label>
+                        <select
+                          value={bulkInvoice.grade}
+                          onChange={(e) => setBulkInvoice((prev) => ({ ...prev, grade: e.target.value, feeStructureId: '' }))}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00A09D] text-sm"
+                        >
+                          <option value="">Select Grade</option>
+                          {gradeOptions.map((g) => (
+                            <option key={g} value={g}>{String(g).replace(/_/g, ' ')}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider">Stream (Optional)</label>
+                        <input
+                          type="text"
+                          value={bulkInvoice.stream}
+                          onChange={(e) => setBulkInvoice((prev) => ({ ...prev, stream: e.target.value }))}
+                          placeholder="e.g. A"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00A09D] text-sm"
+                        />
+                      </div>
+                      <div className="md:col-span-2 space-y-2">
+                        <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider">Fee Structure *</label>
+                        <select
+                          value={bulkInvoice.feeStructureId}
+                          onChange={(e) => setBulkInvoice((prev) => ({ ...prev, feeStructureId: e.target.value }))}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00A09D] text-sm"
+                        >
+                          <option value="">Select Fee Structure</option>
+                          {feeStructures
+                            .filter((fs) =>
+                              fs.grade === bulkInvoice.grade &&
+                              fs.term === bulkInvoice.term &&
+                              Number(fs.academicYear) === Number(bulkInvoice.academicYear)
+                            )
+                            .map((fs) => (
+                              <option key={fs.id} value={fs.id}>
+                                {fs.name} - {String(fs.grade || '').replace(/_/g, ' ')}
+                              </option>
+                            ))}
+                        </select>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-xs text-blue-800 flex items-start gap-2">
+                    <Users size={16} className="mt-0.5" />
+                    <p>
+                      {bulkInvoice.scope === 'WHOLE_SCHOOL'
+                        ? 'This will create invoices for all active learners using each learner\'s matching grade fee structure for the selected term/year.'
+                        : 'This will create invoices for active learners in the selected grade/stream only.'}
+                    </p>
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      onClick={handleBulkCreateInvoices}
+                      disabled={loading}
+                      className="flex-1 bg-[#00A09D] text-white px-6 py-3 rounded-xl hover:bg-[#008c89] hover:shadow-lg font-medium transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {loading && <Loader2 size={18} className="animate-spin" />}
+                      <span>{loading ? 'Processing...' : 'Create Bulk Invoices'}</span>
+                    </button>
+                    <button
+                      onClick={() => setShowBulkCreateModal(false)}
                       className="px-6 py-3 border-2 border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 font-medium transition-all"
                     >
                       Cancel

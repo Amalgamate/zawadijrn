@@ -1,7 +1,7 @@
 /**
  * simplePdfGenerator.js
  * ─────────────────────────────────────────────────────────────────────────────
- * Pure frontend PDF generation — no backend, no Puppeteer, no server calls.
+ * Pure frontend PDF generation - no backend or server calls.
  * Uses html2canvas + jsPDF for high-fidelity A4 report capture.
  *
  * PUBLIC API:
@@ -615,7 +615,7 @@ export const generateStatementPDF = (_learner, _invoices, _payments, opts = {}) 
 };
 
 /**
- * generateDocument — previously routed to Puppeteer backend.
+ * generateDocument - previously routed to the backend PDF service.
  * Now runs entirely in the browser.
  *
  * If opts.elementId is provided, captures that element directly.

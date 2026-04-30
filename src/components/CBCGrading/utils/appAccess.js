@@ -102,6 +102,7 @@ const PAGE_APP_REQUIREMENTS = {
   'fees-invoice-detail': 'fee-management',
   'fees-record-payment': 'fee-management',
   'fees-structure': 'fee-management',
+  'fees-types': 'fee-management',
   'fees-reports': 'fee-management',
   'fees-statements': 'fee-management',
   'fees-unmatched': 'fee-management',

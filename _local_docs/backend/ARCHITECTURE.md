@@ -14,11 +14,11 @@ This was an intentional design decision made early in the project. Any code that
 |---------------|-------------------------------------------------|
 | Frontend      | React 18 + Tailwind CSS                         |
 | Backend       | Node.js + Express + TypeScript                  |
-| Database      | PostgreSQL (Supabase) via Prisma ORM            |
+| Database      | PostgreSQL via Prisma ORM                       |
 | Auth          | JWT (access + refresh token rotation)           |
 | Cache         | Redis (production) / in-memory (development)    |
 | SMS           | Africa's Talking or MobileSasa                  |
-| WhatsApp      | whatsapp-web.js (Puppeteer session)             |
+| WhatsApp      | Baileys WebSocket client                        |
 | Email         | Resend                                          |
 | File Storage  | Cloudinary                                      |
 | Payments      | Safaricom Daraja API (M-Pesa STK Push)          |

@@ -17,7 +17,7 @@ To ensure immediate access upon deployment, the system automatically creates/upd
 - **Password**: `Admin@123!`
 
 > [!TIP]
-> This setup is handled by the `ensureSuperAdmin` utility in the backend, ensuring the credentials are ready the moment your Supabase database is connected.
+> This setup is handled by the `ensureSuperAdmin` utility in the backend, ensuring the credentials are ready the moment your PostgreSQL database is connected.
 
 ## �🚀 Key CBC Features (In Development)
 - **Learning Area Management**: Dynamic tracking of CBC learning areas and strands.
@@ -118,7 +118,7 @@ This project is structured as a **Monorepo** to keep the entire ecosystem synchr
 - `/src` & `public`: The React.js frontend application (The user interface).
 
 ## 🛠 Tech Stack (Deep Dive)
-- **Database Architecture**: PostgreSQL hosted on **Supabase** using **Prisma** for type-safe database queries.
+- **Database Architecture**: PostgreSQL using **Prisma** for type-safe database queries.
 - **Authentication**: JWT (JSON Web Tokens) with automated refreshToken rotation.
 - **Real-time Engine**: **Socket.io** for instant notifications and CBC assessment updates.
 - **Caching Layer**: Dual-strategy caching (Redis for production, in-memory for dev) via `redis-cache.service`.
@@ -140,7 +140,7 @@ Before you begin the installation, ensure you have the following credentials and
 - **Docker**: Optional (for local Redis/Postgres testing).
 
 ### 2. External Services (Essential)
-- **Supabase Account**: `DATABASE_URL`, `SUPABASE_URL` & `SUPABASE_ANON_KEY`.
+- **PostgreSQL Database**: `DATABASE_URL` and optional `DIRECT_URL`.
 - **Cloudinary Account**: For media storage.
 - **Resend API Key**: For email services.
 - **Africa's Talking**: API Key and Username for SMS services.

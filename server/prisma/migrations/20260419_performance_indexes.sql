@@ -5,7 +5,7 @@
 --          on the most-queried (archived, role, status) filter combinations.
 --
 -- Safe to run on live data: CREATE INDEX CONCURRENTLY does not lock the table.
--- Supabase supports CONCURRENTLY — just run this in the SQL editor.
+-- PostgreSQL supports CONCURRENTLY; run these outside a transaction.
 -- ============================================================================
 
 -- ── users table ──────────────────────────────────────────────────────────────
@@ -52,7 +52,7 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS "events_start_date_idx"
     ON "events" ("start_date");
 
 -- ============================================================================
--- After applying these indexes, run in psql / Supabase SQL editor:
+-- After applying these indexes, run in psql:
 --
 --   ANALYZE users;
 --   ANALYZE fee_invoices;
