@@ -30,7 +30,8 @@ export const schoolContextMiddleware = async (
     // Refresh cache if expired or not set
     if (!cachedSchool || (now - lastFetch) > CACHE_TTL) {
       const school = await prisma.school.findFirst({
-        where: { active: true },
+        where: { active: true, archived: false },
+        orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
       });
       
       if (!school) {

@@ -5,6 +5,7 @@ import { ApiError } from '../utils/error.util';
 import { generateAdmissionNumber, getCurrentSequenceValue, resetSequence, getNextAdmissionNumberPreview } from '../services/admissionNumber.service';
 import { provisionNewSchool } from '../services/school-provisioning.service';
 import { deleteSchoolSafely } from '../services/school-deletion.service';
+import { clearSchoolCache } from '../middleware/schoolContext.middleware';
 
 import logger from '../utils/logger';
 const VALID_INSTITUTION_TYPES = new Set(['PRIMARY_CBC', 'SECONDARY', 'TERTIARY']);
@@ -15,6 +16,12 @@ const validInstitutionTypeOrThrow = (raw: string) => {
   }
   return normalized as 'PRIMARY_CBC' | 'SECONDARY' | 'TERTIARY';
 };
+
+const resolveCurrentSchool = () =>
+  prisma.school.findFirst({
+    where: { archived: false },
+    orderBy: [{ active: 'desc' }, { updatedAt: 'desc' }, { createdAt: 'desc' }],
+  });
 // ============================================
 // SCHOOL MANAGEMENT ENDPOINTS (Single-Tenant)
 // ============================================
@@ -22,6 +29,8 @@ const validInstitutionTypeOrThrow = (raw: string) => {
 export const getPublicBranding = async (req: Request, res: Response) => {
   try {
     const school = await prisma.school.findFirst({
+      where: { archived: false },
+      orderBy: [{ active: 'desc' }, { updatedAt: 'desc' }, { createdAt: 'desc' }],
       select: {
         id: true,
         name: true,
@@ -82,13 +91,13 @@ export const getPublicBranding = async (req: Request, res: Response) => {
 };
 
 export const getSchool = async (req: AuthRequest, res: Response) => {
-  const school = await prisma.school.findFirst();
+  const school = await resolveCurrentSchool();
   if (!school) throw new ApiError(404, 'School not found');
   res.status(200).json({ success: true, data: school });
 };
 
 export const updateSchool = async (req: AuthRequest, res: Response) => {
-  const school = await prisma.school.findFirst();
+  const school = await resolveCurrentSchool();
 
   if (!school) {
     // If no school exists, create it (handles first-time setup/branding)
@@ -109,6 +118,7 @@ export const updateSchool = async (req: AuthRequest, res: Response) => {
     where: { id: school.id },
     data: req.body,
   });
+  clearSchoolCache();
   res.status(200).json({ success: true, message: 'School updated', data: updated });
 };
 
@@ -131,7 +141,7 @@ const CORE_APP_SLUGS = [
 export const configureInstitutionTypeLock = async (req: AuthRequest, res: Response) => {
   const requestedType = validInstitutionTypeOrThrow(req.body?.institutionType);
 
-  let school = await prisma.school.findFirst();
+  let school = await resolveCurrentSchool();
   if (!school) {
     school = await prisma.school.create({
       data: {
@@ -152,6 +162,7 @@ export const configureInstitutionTypeLock = async (req: AuthRequest, res: Respon
         institutionTypeLocked: true,
       },
     });
+    clearSchoolCache();
   }
 
   // ── Activate core apps as mandatory; hide all add-on modules ──────────────
@@ -297,6 +308,8 @@ export const resetWholeInstitution = async (req: AuthRequest, res: Response) => 
   }
 
   const school = await prisma.school.findFirst({
+    where: { archived: false },
+    orderBy: [{ active: 'desc' }, { updatedAt: 'desc' }, { createdAt: 'desc' }],
     select: { id: true, name: true }
   });
   if (!school) throw new ApiError(404, 'School not found');
@@ -365,7 +378,7 @@ export const resetWholeInstitution = async (req: AuthRequest, res: Response) => 
 };
 
 export const createSchoolWithProvisioning = async (req: AuthRequest, res: Response) => {
-  const existing = await prisma.school.findFirst();
+  const existing = await resolveCurrentSchool();
   if (existing) throw new ApiError(400, 'School already provisioned');
 
   const result = await provisionNewSchool(req.body);
@@ -373,7 +386,7 @@ export const createSchoolWithProvisioning = async (req: AuthRequest, res: Respon
 };
 
 export const deleteSchool = async (req: AuthRequest, res: Response) => {
-  const school = await prisma.school.findFirst();
+  const school = await resolveCurrentSchool();
   if (!school) throw new ApiError(404, 'School not found');
 
   const result = await deleteSchoolSafely(school.id, {
@@ -385,13 +398,14 @@ export const deleteSchool = async (req: AuthRequest, res: Response) => {
 };
 
 export const deactivateSchool = async (req: AuthRequest, res: Response) => {
-  const school = await prisma.school.findFirst();
+  const school = await resolveCurrentSchool();
   if (!school) throw new ApiError(404, 'School not found');
 
   const updated = await prisma.school.update({
     where: { id: school.id },
     data: { active: false, status: 'DEACTIVATED' },
   });
+  clearSchoolCache();
   res.json({ success: true, message: 'School deactivated', data: updated });
 };
 

@@ -36,7 +36,10 @@ export async function provisionNewSchool(data: SchoolProvisioningData): Promise<
   const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
   const result = await prisma.$transaction(async (tx) => {
-    const existingSchool = await tx.school.findFirst();
+    const existingSchool = await tx.school.findFirst({
+      where: { archived: false },
+      orderBy: [{ active: 'desc' }, { updatedAt: 'desc' }, { createdAt: 'desc' }],
+    });
     if (existingSchool) throw new Error('School already provisioned');
 
     const school = await tx.school.create({

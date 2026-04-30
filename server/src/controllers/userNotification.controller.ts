@@ -43,12 +43,14 @@ export class UserNotificationController {
   async getVapidPublicKey(_req: AuthRequest, res: Response) {
     const publicKey = NotificationService.getVapidPublicKey();
     if (!publicKey) {
-      return res.status(503).json({
-        success: false,
+      // Graceful fallback: push is optional. Return 200 so UI can skip push silently.
+      return res.json({
+        success: true,
+        data: { publicKey: null, enabled: false },
         message: 'Push notifications are not configured on this server.',
       });
     }
-    res.json({ success: true, data: { publicKey } });
+    res.json({ success: true, data: { publicKey, enabled: true } });
   }
 
   /**
