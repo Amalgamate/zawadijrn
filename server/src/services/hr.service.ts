@@ -5,6 +5,8 @@ import { SmsService } from './sms.service';
 import { whatsappService } from './whatsapp.service';
 
 export class HRService {
+    private readonly staffRoles = ['ADMIN', 'HEAD_TEACHER', 'TEACHER', 'ACCOUNTANT', 'RECEPTIONIST'] as const;
+
     private toDateOnly(dateValue: Date) {
         const date = new Date(dateValue);
         date.setHours(0, 0, 0, 0);
@@ -38,7 +40,7 @@ export class HRService {
     async getStaffDirectory() {
         return prisma.user.findMany({
             where: {
-                role: { notIn: ['PARENT', 'SUPER_ADMIN'] },
+                role: { in: [...this.staffRoles] as any },
                 archived: false
             },
             select: {
@@ -600,7 +602,11 @@ export class HRService {
     async getDashboardStats(month: number, year: number) {
         const [staffCount, pendingLeaveCount, payrollDraftsCount, payrollGeneratedCount, recentRequests] = await Promise.all([
             prisma.user.count({
-                where: { role: { notIn: ['PARENT', 'SUPER_ADMIN'] }, archived: false, status: 'ACTIVE' }
+                where: {
+                    role: { in: [...this.staffRoles] as any },
+                    archived: false,
+                    status: 'ACTIVE'
+                }
             }),
             prisma.leaveRequest.count({ where: { status: 'PENDING' } }),
             prisma.payrollRecord.count({ where: { month, year, status: 'DRAFT' } }),
