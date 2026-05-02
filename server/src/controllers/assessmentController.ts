@@ -1608,6 +1608,102 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
           { test: { testDate: 'asc' } }
         ]
       });
+
+      // Legacy-data safety net: some environments stored term as TERM 1 / TERM1.
+      // If strict Prisma filtering returns no rows, retry through raw SQL with tolerant term matching.
+      if (results.length === 0) {
+        const termVariants = Array.from(new Set([
+          normalizedTerm,
+          normalizedTerm.replace(/_/g, ' '),
+          normalizedTerm.replace(/_/g, '')
+        ])).filter(Boolean);
+
+        const conditions: Prisma.Sql[] = [
+          Prisma.sql`sr.archived = false`,
+          Prisma.sql`st.archived = false`,
+          Prisma.sql`l.grade = ${String(grade)}`,
+          Prisma.sql`st.grade = ${String(grade)}`,
+          Prisma.sql`st."academicYear" = ${parseInt(academicYear as string)}`,
+          Prisma.sql`st.term::text = ANY(${termVariants})`,
+        ];
+
+        if (stream) conditions.push(Prisma.sql`l.stream = ${String(stream)}`);
+        if (testTypeFilter) {
+          const dbVariants: string[] = [];
+          if (testTypeFilter.includes('MID_TERM')) {
+            dbVariants.push('MID_TERM', 'MIDTERM');
+          } else if (testTypeFilter.includes('END_TERM')) {
+            dbVariants.push('END_TERM', 'END_OF_TERM');
+          } else {
+            dbVariants.push(...testTypeFilter);
+          }
+          conditions.push(Prisma.sql`st."testType"::text = ANY(${dbVariants})`);
+        }
+
+        const rawRows = await prisma.$queryRaw<Array<any>>(Prisma.sql`
+          SELECT
+            sr.id,
+            sr."testId",
+            sr."learnerId",
+            sr."marksObtained",
+            sr.percentage,
+            sr.grade::text AS grade,
+            sr."cbcGrade"::text AS "cbcGrade",
+            sr.status,
+            sr.remarks,
+            sr."teacherComment",
+            sr."recordedBy",
+            sr."createdAt",
+            sr."updatedAt",
+            l.id AS learner_id,
+            l."firstName" AS learner_first_name,
+            l."lastName" AS learner_last_name,
+            l."admissionNumber" AS learner_admission_number,
+            l.stream AS learner_stream,
+            st.id AS test_id,
+            st.title AS test_title,
+            st."learningArea" AS test_learning_area,
+            st."totalMarks" AS test_total_marks,
+            st."testType"::text AS test_test_type
+          FROM summative_results sr
+          INNER JOIN learners l ON l.id = sr."learnerId"
+          INNER JOIN summative_tests st ON st.id = sr."testId"
+          WHERE ${Prisma.join(conditions, ' AND ')}
+          ORDER BY l."firstName" ASC, st."learningArea" ASC, st."testDate" ASC
+        `);
+
+        if (rawRows.length > 0) {
+          results = rawRows.map((row: any) => ({
+            id: row.id,
+            testId: row.testId,
+            learnerId: row.learnerId,
+            marksObtained: row.marksObtained,
+            percentage: row.percentage,
+            grade: row.grade,
+            cbcGrade: row.cbcGrade,
+            status: row.status,
+            remarks: row.remarks,
+            teacherComment: row.teacherComment,
+            recordedBy: row.recordedBy,
+            createdAt: row.createdAt,
+            updatedAt: row.updatedAt,
+            learner: {
+              id: row.learner_id,
+              firstName: row.learner_first_name,
+              lastName: row.learner_last_name,
+              admissionNumber: row.learner_admission_number,
+              stream: row.learner_stream
+            },
+            test: {
+              id: row.test_id,
+              title: row.test_title,
+              learningArea: row.test_learning_area,
+              totalMarks: row.test_total_marks,
+              testType: row.test_test_type
+            }
+          }));
+        }
+      }
     } catch (error: any) {
       const message = String(error?.message || '');
       const enumDrift =
