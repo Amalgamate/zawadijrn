@@ -65,6 +65,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
   const [endDate, setEndDate] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [metricsFeeStructures, setMetricsFeeStructures] = useState([]);
   const [printingInvoice, setPrintingInvoice] = useState(null);
   const [schoolInfo, setSchoolInfo] = useState(null);
   const [listTotals, setListTotals] = useState({ totalBilled: 0, totalPaid: 0, totalBalance: 0, totalWaived: 0, totalOverpaid: 0 });
@@ -90,6 +91,87 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
   });
   const [showColumnFilter, setShowColumnFilter] = useState(false);
   const [showGlobalFilters, setShowGlobalFilters] = useState(false);
+  const normalizeGradeKey = React.useCallback((value) => String(value || '').trim().toUpperCase().replace(/\s+/g, '_'), []);
+
+  const metricsStructureExpectedMap = React.useMemo(() => {
+    const m = new Map();
+    (metricsFeeStructures || []).forEach((fs) => {
+      const total = Array.isArray(fs?.feeItems)
+        ? fs.feeItems.reduce((sum, item) => sum + Number(item?.amount || 0), 0)
+        : Number(fs?.totalAmount || 0);
+      const gradeKey = normalizeGradeKey(fs?.grade);
+      m.set(`${gradeKey}|${fs?.term}|${Number(fs?.academicYear)}`, total);
+      // Fallback by grade only when exact term/year key is unavailable
+      if (!m.has(`${gradeKey}|ANY|ANY`)) {
+        m.set(`${gradeKey}|ANY|ANY`, total);
+      }
+    });
+    return m;
+  }, [metricsFeeStructures, normalizeGradeKey]);
+
+  const getInvoiceTermFee = React.useCallback((invoice) => {
+    const fs = invoice?.feeStructure;
+    if (fs && typeof fs.totalAmount === 'number') return Number(fs.totalAmount || 0);
+    if (fs && typeof fs.expectedAmount === 'number') return Number(fs.expectedAmount || 0);
+    if (fs && Array.isArray(fs.feeItems)) {
+      return fs.feeItems.reduce((sum, item) => sum + Number(item?.amount || 0), 0);
+    }
+    const grade = normalizeGradeKey(invoice?.learner?.grade);
+    const term = invoice?.term;
+    const year = Number(invoice?.academicYear);
+    return Number(
+      metricsStructureExpectedMap.get(`${grade}|${term}|${year}`) ??
+      metricsStructureExpectedMap.get(`${grade}|${term}|ANY`) ??
+      metricsStructureExpectedMap.get(`${grade}|ANY|${year}`) ??
+      metricsStructureExpectedMap.get(`${grade}|ANY|ANY`) ??
+      0
+    );
+  }, [metricsStructureExpectedMap, normalizeGradeKey]);
+
+  const getPreviousTermContext = React.useCallback((term, year) => {
+    const y = Number(year);
+    if (!y || !term) return null;
+    if (term === 'TERM_2') return { term: 'TERM_1', year: y };
+    if (term === 'TERM_3') return { term: 'TERM_2', year: y };
+    if (term === 'TERM_1') return { term: 'TERM_3', year: y - 1 };
+    return null;
+  }, []);
+
+  const closingBalanceByLearnerTermMap = React.useMemo(() => {
+    const map = new Map();
+    (statsInvoices || []).forEach((row) => {
+      const learnerId = String(row?.learnerId || row?.learner?.id || '').trim();
+      const term = String(row?.term || '').trim();
+      const year = Number(row?.academicYear);
+      if (!learnerId || !term || !year) return;
+      map.set(`${learnerId}|${term}|${year}`, Number(row?.balance || 0));
+    });
+    return map;
+  }, [statsInvoices]);
+
+  const getInvoiceCarryFwd = React.useCallback((invoice) => {
+    const learnerId = String(invoice?.learnerId || invoice?.learner?.id || '').trim();
+    const term = String(invoice?.term || '').trim();
+    const year = Number(invoice?.academicYear);
+
+    const prevCtx = getPreviousTermContext(term, year);
+    if (learnerId && prevCtx) {
+      const prevKey = `${learnerId}|${prevCtx.term}|${prevCtx.year}`;
+      if (closingBalanceByLearnerTermMap.has(prevKey)) {
+        return Math.max(0, Number(closingBalanceByLearnerTermMap.get(prevKey) || 0));
+      }
+    }
+
+    // Fallback: for first-time/legacy invoices where B/F was embedded in billed total.
+    const billed = Number(invoice?.totalAmount || 0);
+    const termFee = getInvoiceTermFee(invoice);
+    return Math.max(0, billed - termFee);
+  }, [getInvoiceTermFee, closingBalanceByLearnerTermMap, getPreviousTermContext]);
+
+  const listCarryFwdTotal = React.useMemo(
+    () => invoices.reduce((sum, inv) => sum + getInvoiceCarryFwd(inv), 0),
+    [invoices, getInvoiceCarryFwd]
+  );
 
   const activeFilterCount = (gradeFilter !== 'all' ? 1 : 0) +
     (termFilter !== 'all' ? 1 : 0) +
@@ -483,7 +565,6 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showBulkCreateModal, setShowBulkCreateModal] = useState(false);
   const [feeStructures, setFeeStructures] = useState([]);
-  const [metricsFeeStructures, setMetricsFeeStructures] = useState([]);
   const [newInvoice, setNewInvoice] = useState({
     learnerId: '',
     feeStructureId: '',
@@ -910,14 +991,6 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
   const stats = React.useMemo(() => {
     const fmt = (n) => `KES ${Number(n || 0).toLocaleString('en-KE')}`;
     const src = scopedStatsInvoices;
-    const structureExpectedMap = new Map(
-      (metricsFeeStructures || []).map((fs) => {
-        const total = Array.isArray(fs?.feeItems)
-          ? fs.feeItems.reduce((sum, item) => sum + Number(item?.amount || 0), 0)
-          : Number(fs?.totalAmount || 0);
-        return [`${fs?.grade}|${fs?.term}|${Number(fs?.academicYear)}`, total];
-      })
-    );
     const getStructureExpected = (invoice) => {
       const fs = invoice?.feeStructure;
       if (fs && typeof fs.totalAmount === 'number') return Number(fs.totalAmount || 0);
@@ -925,15 +998,21 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
       if (fs && Array.isArray(fs.feeItems)) {
         return fs.feeItems.reduce((sum, item) => sum + Number(item?.amount || 0), 0);
       }
-      const grade = invoice?.learner?.grade;
+      const grade = normalizeGradeKey(invoice?.learner?.grade);
       const term = invoice?.term;
       const year = Number(invoice?.academicYear);
-      return Number(structureExpectedMap.get(`${grade}|${term}|${year}`) || 0);
+      return Number(
+        metricsStructureExpectedMap.get(`${grade}|${term}|${year}`) ??
+        metricsStructureExpectedMap.get(`${grade}|${term}|ANY`) ??
+        metricsStructureExpectedMap.get(`${grade}|ANY|${year}`) ??
+        metricsStructureExpectedMap.get(`${grade}|ANY|ANY`) ??
+        0
+      );
     };
 
     const totalBilledRaw = src.reduce((s, i) => s + Number(i.totalAmount || 0), 0);
     const thisTermFeeRaw = src.reduce((s, i) => s + getStructureExpected(i), 0);
-    const bfAmountRaw = Math.max(0, totalBilledRaw - thisTermFeeRaw);
+    const bfAmountRaw = src.reduce((sum, i) => sum + Number(getInvoiceCarryFwd(i) || 0), 0);
     const waivedTotalRaw = src.reduce((s, i) => {
       const rowWaived = (i.waivers || [])
         .filter(w => w.status === 'APPROVED')
@@ -1010,7 +1089,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
         return recentMode === 'BANK_TRANSFER' ? s + Number(i.paidAmount || 0) : s;
       }, 0))
     };
-  }, [scopedStatsInvoices, metricsFeeStructures]);
+  }, [scopedStatsInvoices, metricsStructureExpectedMap, getInvoiceCarryFwd, normalizeGradeKey]);
 
 
   if (loading && !showCreateModal) return <LoadingSpinner />;
@@ -1083,12 +1162,11 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                     <div>
                       <p className="text-xs font-medium uppercase tracking-widest text-indigo-200 mb-1">Expected Income</p>
                       <p className="text-2xl font-medium">{stats.totalBilled}</p>
-                      <div className="mt-1.5 space-y-0.5 text-[10px] leading-tight text-indigo-100/95">
+                      <div className="mt-1.5 space-y-0.5 text-xs leading-tight text-indigo-100/95">
                         <p>Balance B/F: <span className="font-medium">{stats.bfAmount}</span></p>
                         <p>This Term Fee: <span className="font-medium">{stats.thisTermFee}</span></p>
-                        <p>Total Expected: <span className="font-medium">{stats.totalBilled}</span></p>
                       </div>
-                      <p className="text-lg font-semibold text-indigo-300 mt-1">{stats.totalCount} Students</p>
+                      <p className="text-lg font-semibold text-indigo-300 mt-1.5">{stats.totalCount} Students</p>
                     </div>
                     <div className="p-2.5 bg-white/15 rounded-xl">
                       <FileText size={22} className="text-white" />
@@ -1108,7 +1186,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                     <div>
                       <p className="text-xs font-medium uppercase tracking-widest text-red-100 mb-1">Not Paid Anything</p>
                       <p className="text-2xl font-medium">{stats.pendingAmt}</p>
-                      <p className="text-lg font-semibold text-red-200 mt-1">{stats.pendingCount} Students</p>
+                      <p className="text-lg font-semibold text-red-200 mt-1.5">{stats.pendingCount} Students</p>
                     </div>
                     <div className="p-2.5 bg-white/15 rounded-xl">
                       <Clock size={22} className="text-white" />
@@ -1129,8 +1207,8 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                       <p className="text-xs font-medium uppercase tracking-widest text-orange-100 mb-1">Partial Payments</p>
                       <p className="text-2xl font-medium mb-2">{stats.partialAmt}</p>
                       <div className="flex flex-col items-start gap-1">
-                        <p className="text-lg font-medium text-orange-100 uppercase tracking-tight leading-none">BAL: {stats.partialBalanceAmt}</p>
-                        <p className="text-sm font-semibold text-orange-200">{stats.partialCount} Students</p>
+                        <p className="text-base font-medium text-orange-100 uppercase tracking-tight leading-none">BAL: {stats.partialBalanceAmt}</p>
+                        <p className="text-lg font-semibold text-orange-200">{stats.partialCount} Students</p>
                       </div>
                     </div>
                     <div className="p-2.5 bg-white/15 rounded-xl">
@@ -1151,7 +1229,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                     <div>
                       <p className="text-xs font-medium uppercase tracking-widest text-emerald-100 mb-1">Completely Cleared</p>
                       <p className="text-2xl font-medium">{stats.paidAmt}</p>
-                      <p className="text-lg font-semibold text-emerald-200 mt-1">{stats.paidCount} Students</p>
+                      <p className="text-lg font-semibold text-emerald-200 mt-1.5">{stats.paidCount} Students</p>
                     </div>
                     <div className="p-2.5 bg-white/15 rounded-xl">
                       <CheckCircle size={22} className="text-white" />
@@ -1724,7 +1802,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                         onClick={() => handleSort('balance')}
                       >
                         <div className="flex items-center gap-1">
-                          Balance
+                          Balance (Carry Fwd | Current)
                           {sortConfig.key === 'balance' ? (
                             sortConfig.direction === 'asc' ? <ArrowUp size={10} /> : <ArrowDown size={10} />
                           ) : <ArrowUpDown size={10} className="text-gray-300" />}
@@ -1783,8 +1861,15 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                       </td>
                     )}
                     {visibleColumns.balance && (
-                      <td className="px-3 py-2 text-xs font-semibold text-red-700 border-r-[0.5px] border-gray-200 text-right">
-                        {Number(listTotals.totalBalance || 0).toLocaleString()}
+                      <td className="px-3 py-2 text-xs font-semibold border-r-[0.5px] border-gray-200">
+                        <div className="inline-flex items-stretch border border-gray-300 rounded-md overflow-hidden float-right">
+                          <span className="px-2 py-1 text-[10px] text-amber-700 bg-amber-50 border-r border-gray-300">
+                            B/F: {Number(listCarryFwdTotal || 0).toLocaleString()}
+                          </span>
+                          <span className="px-2 py-1 text-red-700 bg-red-50">
+                            Curr: {Number(listTotals.totalBalance || 0).toLocaleString()}
+                          </span>
+                        </div>
                       </td>
                     )}
                     {visibleColumns.overpaid && (
@@ -1872,8 +1957,15 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                             </td>
                           )}
                           {visibleColumns.balance && (
-                            <td className="px-3 py-1.5 text-xs font-medium text-red-600 border-r-[0.5px] border-gray-200 text-right w-24">
-                              {invoice.balance > 0 ? Number(invoice.balance).toLocaleString() : '0'}
+                            <td className="px-3 py-1.5 text-xs font-medium border-r-[0.5px] border-gray-200 w-32">
+                              <div className="inline-flex items-stretch border border-gray-300 rounded-md overflow-hidden float-right">
+                                <span className="px-2 py-0.5 text-[10px] text-amber-700 bg-amber-50 border-r border-gray-300">
+                                  {Number(getInvoiceCarryFwd(invoice) || 0).toLocaleString()}
+                                </span>
+                                <span className="px-2 py-0.5 text-red-600 bg-red-50">
+                                  {invoice.balance > 0 ? Number(invoice.balance).toLocaleString() : '0'}
+                                </span>
+                              </div>
                             </td>
                           )}
                           {visibleColumns.overpaid && (
@@ -2015,8 +2107,15 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                       </td>
                     )}
                     {visibleColumns.balance && (
-                      <td className="px-3 py-3 text-xs font-semibold text-red-600 border-r-[0.5px] border-gray-200 text-right">
-                        {Number(listTotals.totalBalance || 0).toLocaleString()}
+                      <td className="px-3 py-3 text-xs font-semibold border-r-[0.5px] border-gray-200">
+                        <div className="inline-flex items-stretch border border-gray-300 rounded-md overflow-hidden float-right">
+                          <span className="px-2 py-1 text-[10px] text-amber-700 bg-amber-50 border-r border-gray-300">
+                            B/F: {Number(listCarryFwdTotal || 0).toLocaleString()}
+                          </span>
+                          <span className="px-2 py-1 text-red-600 bg-red-50">
+                            Curr: {Number(listTotals.totalBalance || 0).toLocaleString()}
+                          </span>
+                        </div>
                       </td>
                     )}
                     {visibleColumns.overpaid && (
