@@ -157,6 +157,14 @@ const api = {
   transport: transportAPI,
   changelog: changelogAPI,
   mpesa: mpesaAPI,
+  gitNotifications: {
+    preview: async (data) => fetchWithAuth('/git-notifications/preview', { method: 'POST', body: JSON.stringify(data) }),
+    publish: async (data) => fetchWithAuth('/git-notifications/publish', { method: 'POST', body: JSON.stringify(data) }),
+    list: async (params = {}) => {
+      const qs = new URLSearchParams(params).toString();
+      return fetchWithAuth(`/git-notifications${qs ? `?${qs}` : ''}`);
+    },
+  },
 };
 
 export default api;

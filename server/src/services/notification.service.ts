@@ -21,7 +21,8 @@ export enum NotificationType {
   SUCCESS = 'SUCCESS',
   WARNING = 'WARNING',
   ERROR = 'ERROR',
-  WAIVER = 'WAIVER'
+  WAIVER = 'WAIVER',
+  GIT_UPDATE = 'GIT_UPDATE'
 }
 
 interface CreateNotificationParams {
@@ -30,6 +31,8 @@ interface CreateNotificationParams {
   message: string;
   type?: NotificationType;
   link?: string;
+  showAsPopup?: boolean;
+  metadata?: Record<string, any>;
 }
 
 export class NotificationService {
@@ -37,7 +40,7 @@ export class NotificationService {
    * Create a notification and emit real-time event
    */
   static async createNotification(params: CreateNotificationParams) {
-    const { userId, title, message, type = NotificationType.INFO, link } = params;
+    const { userId, title, message, type = NotificationType.INFO, link, showAsPopup = false, metadata } = params;
 
     try {
       // 1. Save to database
@@ -47,7 +50,9 @@ export class NotificationService {
           title,
           message,
           type,
-          link
+          link,
+          showAsPopup,
+          metadata: metadata ?? undefined,
         }
       });
 

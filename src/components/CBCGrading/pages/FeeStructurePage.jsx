@@ -23,7 +23,7 @@ import ConfirmDialog from '../shared/ConfirmDialog';
 import { useNotifications } from '../hooks/useNotifications';
 import api from '../../../services/api';
 import { useSchoolData } from '../../../contexts/SchoolDataContext';
-import { generateDocument } from '../../../utils/simplePdfGenerator';
+import { captureSingleReport } from '../../../utils/simplePdfGenerator';
 import { useFeeActions } from '../../../contexts/FeeActionsContext';
 import { useAuth } from '../../../hooks/useAuth';
 
@@ -376,14 +376,6 @@ const FeeStructurePage = () => {
   }, [showError]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-
-  // ── derived: available years ────────────────────────────────────────────────
-  const availableYears = useMemo(() => {
-    const years = Array.from(new Set(feeStructures.map((s) => s.academicYear).filter(Boolean)));
-    years.sort((a, b) => b - a);
-    if (!years.includes(new Date().getFullYear())) years.unshift(new Date().getFullYear());
-    return years;
-  }, [feeStructures]);
 
   // ── derived: sheet data for selected grade+year ─────────────────────────────
   const gradeSheetData = useMemo(() => {

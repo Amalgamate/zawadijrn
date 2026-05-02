@@ -7,6 +7,8 @@ import PageRouter from './layout/PageRouter';
 import GlobalModals from './layout/GlobalModals';
 import ErrorBoundary from './shared/ErrorBoundary';
 import CommandPalette from './layout/CommandPalette';
+import GitPopupAlert from './layout/GitPopupAlert';
+import GitNotificationDialog from './layout/GitNotificationDialog';
 
 // Hooks
 import { useNotifications } from './hooks/useNotifications';
@@ -499,6 +501,9 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
     ...notify,
   };
 
+  // ── Git notification dialog (SUPER_ADMIN / ADMIN only) ────────────────────
+  const [gitDialogOpen, setGitDialogOpen] = useState(false);
+
   // ── Layout ────────────────────────────────────────────────────────────────
   if (isMobile) {
     return (
@@ -549,6 +554,7 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
         setSidebarOpen={setSidebarOpen}
         currentPage={currentPage}
         onNavigate={handleNavigate}
+        onOpenGitDialog={() => setGitDialogOpen(true)}
       />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         {!(user?.role === 'PARENT' && currentPage === 'dashboard') && (
@@ -587,6 +593,20 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
           {...notify}
         />
       </div>
+
+      {/* Git Update Popup — shows automatically on login/refresh for any
+          UserNotification where showAsPopup:true and isRead:false.
+          markAsRead() persists the dismiss to DB so it never reappears. */}
+      <GitPopupAlert />
+
+      {/* Git Notification Compose Dialog — opened via Sidebar button
+          (only rendered for SUPER_ADMIN / ADMIN). */}
+      {['SUPER_ADMIN', 'ADMIN'].includes(user?.role) && (
+        <GitNotificationDialog
+          open={gitDialogOpen}
+          onClose={() => setGitDialogOpen(false)}
+        />
+      )}
     </div>
   );
 }

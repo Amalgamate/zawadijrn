@@ -483,6 +483,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showBulkCreateModal, setShowBulkCreateModal] = useState(false);
   const [feeStructures, setFeeStructures] = useState([]);
+  const [metricsFeeStructures, setMetricsFeeStructures] = useState([]);
   const [newInvoice, setNewInvoice] = useState({
     learnerId: '',
     feeStructureId: '',
@@ -500,6 +501,11 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
     academicYear: new Date().getFullYear(),
     dueDate: new Date().toISOString().split('T')[0]
   });
+  const bulkAcademicYearOptions = [
+    new Date().getFullYear() - 1,
+    new Date().getFullYear(),
+    new Date().getFullYear() + 1
+  ];
 
   // Fetch fee structures when modal opens
   useEffect(() => {
@@ -547,6 +553,40 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
       loadFeeStructures();
     }
   }, [showCreateModal, showBulkCreateModal, showError]);
+
+  // Load fee structures for metrics fallback (grade+term+year expected fee lookup)
+  useEffect(() => {
+    const loadMetricFeeStructures = async () => {
+      try {
+        const scopedForLookup = (statsInvoices || []).filter((inv) => {
+          const matchTerm = termFilter === 'all' || String(inv.term || '') === termFilter;
+          const matchGrade = gradeFilter === 'all' || String(inv?.learner?.grade || '') === gradeFilter;
+          const matchLearner = !searchLearnerId || String(inv?.learnerId || '') === String(searchLearnerId);
+          const invDate = inv.createdAt ? new Date(inv.createdAt) : null;
+          const matchStart = !startDate || (invDate && invDate >= new Date(startDate));
+          const matchEnd = !endDate || (invDate && invDate <= new Date(endDate));
+          return matchTerm && matchGrade && matchLearner && matchStart && matchEnd;
+        });
+
+        const scopedTerms = Array.from(new Set(scopedForLookup.map(i => i?.term).filter(Boolean)));
+        const scopedYears = Array.from(new Set(scopedForLookup.map(i => Number(i?.academicYear)).filter(Boolean)));
+        const targetTerm = termFilter !== 'all' ? termFilter : (scopedTerms.length === 1 ? scopedTerms[0] : null);
+        const targetYear = scopedYears.length === 1 ? scopedYears[0] : null;
+
+        const response = await api.fees.getAllFeeStructures({
+          status: 'ACTIVE',
+          ...(targetTerm ? { term: targetTerm } : {}),
+          ...(targetYear ? { academicYear: targetYear } : {})
+        });
+        setMetricsFeeStructures(Array.isArray(response?.data) ? response.data : []);
+      } catch (error) {
+        console.error('Failed to load fee structures for metrics:', error);
+        setMetricsFeeStructures([]);
+      }
+    };
+
+    loadMetricFeeStructures();
+  }, [termFilter, statsInvoices, gradeFilter, searchLearnerId, startDate, endDate]);
 
   // Auto-select Fee Structure & Transport Toggle based on Learner, Term, and Year
   useEffect(() => {
@@ -853,12 +893,47 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
     Array.from(new Set((allLearners || []).map((l) => l.grade).filter(Boolean))).sort()
   ), [allLearners]);
 
-  // ——— Computed KES totals for each metric card (always unfiltered) —————————————
+  // Metrics must honor selected scope (especially term) to avoid cross-term totals.
+  const scopedStatsInvoices = React.useMemo(() => {
+    return (statsInvoices || []).filter((inv) => {
+      const matchTerm = termFilter === 'all' || String(inv.term || '') === termFilter;
+      const matchGrade = gradeFilter === 'all' || String(inv?.learner?.grade || '') === gradeFilter;
+      const matchLearner = !searchLearnerId || String(inv?.learnerId || '') === String(searchLearnerId);
+      const invDate = inv.createdAt ? new Date(inv.createdAt) : null;
+      const matchStart = !startDate || (invDate && invDate >= new Date(startDate));
+      const matchEnd = !endDate || (invDate && invDate <= new Date(endDate));
+      return matchTerm && matchGrade && matchLearner && matchStart && matchEnd;
+    });
+  }, [statsInvoices, termFilter, gradeFilter, searchLearnerId, startDate, endDate]);
+
+  // ——— Computed KES totals for each metric card —————————————
   const stats = React.useMemo(() => {
     const fmt = (n) => `KES ${Number(n || 0).toLocaleString('en-KE')}`;
-    const src = statsInvoices;
+    const src = scopedStatsInvoices;
+    const structureExpectedMap = new Map(
+      (metricsFeeStructures || []).map((fs) => {
+        const total = Array.isArray(fs?.feeItems)
+          ? fs.feeItems.reduce((sum, item) => sum + Number(item?.amount || 0), 0)
+          : Number(fs?.totalAmount || 0);
+        return [`${fs?.grade}|${fs?.term}|${Number(fs?.academicYear)}`, total];
+      })
+    );
+    const getStructureExpected = (invoice) => {
+      const fs = invoice?.feeStructure;
+      if (fs && typeof fs.totalAmount === 'number') return Number(fs.totalAmount || 0);
+      if (fs && typeof fs.expectedAmount === 'number') return Number(fs.expectedAmount || 0);
+      if (fs && Array.isArray(fs.feeItems)) {
+        return fs.feeItems.reduce((sum, item) => sum + Number(item?.amount || 0), 0);
+      }
+      const grade = invoice?.learner?.grade;
+      const term = invoice?.term;
+      const year = Number(invoice?.academicYear);
+      return Number(structureExpectedMap.get(`${grade}|${term}|${year}`) || 0);
+    };
 
     const totalBilledRaw = src.reduce((s, i) => s + Number(i.totalAmount || 0), 0);
+    const thisTermFeeRaw = src.reduce((s, i) => s + getStructureExpected(i), 0);
+    const bfAmountRaw = Math.max(0, totalBilledRaw - thisTermFeeRaw);
     const waivedTotalRaw = src.reduce((s, i) => {
       const rowWaived = (i.waivers || [])
         .filter(w => w.status === 'APPROVED')
@@ -889,6 +964,10 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
       totalCount: src.length,
       totalBilled: fmt(totalBilledRaw),
       totalBilledRaw,
+      thisTermFee: fmt(thisTermFeeRaw),
+      thisTermFeeRaw,
+      bfAmount: fmt(bfAmountRaw),
+      bfAmountRaw,
       pendingCount: src.filter(i => i.status === 'PENDING').length,
       pendingAmt: fmt(src.filter(i => i.status === 'PENDING').reduce((s, i) => s + Number(i.balance || 0), 0)),
       partialCount: src.filter(i => i.status === 'PARTIAL').length,
@@ -931,7 +1010,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
         return recentMode === 'BANK_TRANSFER' ? s + Number(i.paidAmount || 0) : s;
       }, 0))
     };
-  }, [statsInvoices]);
+  }, [scopedStatsInvoices, metricsFeeStructures]);
 
 
   if (loading && !showCreateModal) return <LoadingSpinner />;
@@ -1004,6 +1083,11 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                     <div>
                       <p className="text-xs font-medium uppercase tracking-widest text-indigo-200 mb-1">Expected Income</p>
                       <p className="text-2xl font-medium">{stats.totalBilled}</p>
+                      <div className="mt-1.5 space-y-0.5 text-[10px] leading-tight text-indigo-100/95">
+                        <p>Balance B/F: <span className="font-medium">{stats.bfAmount}</span></p>
+                        <p>This Term Fee: <span className="font-medium">{stats.thisTermFee}</span></p>
+                        <p>Total Expected: <span className="font-medium">{stats.totalBilled}</span></p>
+                      </div>
                       <p className="text-lg font-semibold text-indigo-300 mt-1">{stats.totalCount} Students</p>
                     </div>
                     <div className="p-2.5 bg-white/15 rounded-xl">
@@ -1526,7 +1610,8 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
             </div>
           ) : (
             // ******************** DESKTOP TABLE VIEW ********************
-            <div className="bg-white rounded-xl border-[0.5px] border-gray-200 shadow-sm overflow-auto max-h-[70vh] text-sm scrollbar-thin relative">
+            <>
+              <div className="bg-white rounded-xl border-[0.5px] border-gray-200 shadow-sm overflow-auto max-h-[70vh] text-sm scrollbar-thin relative">
               {selectedInvoiceIds.length > 0 && !selectAllMatching && selectedInvoiceIds.length === invoices.length && totalInvoicesCount > invoices.length && (
                 <div className="sticky top-0 z-30 bg-blue-50 border-b border-blue-100 px-4 py-2 text-xs text-blue-800 flex items-center justify-between">
                   <span>All {invoices.length} invoices on this page are selected.</span>
@@ -1666,6 +1751,52 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
+                  {/* Excel-style totals row directly under header */}
+                  <tr className="bg-blue-50/60 border-b-[0.5px] border-blue-200 font-medium">
+                    <td className="px-3 py-2 border-r-[0.5px] border-gray-200"></td>
+                    {visibleColumns.invoiceNumber && <td className="px-3 py-2 border-r-[0.5px] border-gray-200"></td>}
+                    {visibleColumns.student && (
+                      <td className="px-3 py-2 border-r-[0.5px] border-gray-200 text-xs">
+                        <div className="flex flex-col leading-tight">
+                          <span className="uppercase tracking-wider text-[10px] text-blue-700 font-semibold">Totals</span>
+                          <span className="text-[9px] text-blue-500">Filtered List</span>
+                        </div>
+                      </td>
+                    )}
+                    {visibleColumns.grade && <td className="px-3 py-2 border-r-[0.5px] border-gray-200"></td>}
+                    {visibleColumns.feeType && <td className="px-3 py-2 border-r-[0.5px] border-gray-200"></td>}
+                    {visibleColumns.dateIssue && <td className="px-3 py-2 border-r-[0.5px] border-gray-200"></td>}
+
+                    {visibleColumns.billed && (
+                      <td className="px-3 py-2 text-xs font-semibold text-gray-900 border-r-[0.5px] border-gray-200 text-right">
+                        {Number(listTotals.totalBilled || 0).toLocaleString()}
+                      </td>
+                    )}
+                    {visibleColumns.paid && (
+                      <td className="px-3 py-2 text-xs font-semibold text-emerald-700 border-r-[0.5px] border-gray-200 text-right">
+                        {Number(listTotals.totalPaid || 0).toLocaleString()}
+                      </td>
+                    )}
+                    {visibleColumns.waived && (
+                      <td className="px-3 py-2 text-xs font-semibold text-teal-700 border-r-[0.5px] border-gray-200 text-right">
+                        {Number(listTotals.totalWaived || 0).toLocaleString()}
+                      </td>
+                    )}
+                    {visibleColumns.balance && (
+                      <td className="px-3 py-2 text-xs font-semibold text-red-700 border-r-[0.5px] border-gray-200 text-right">
+                        {Number(listTotals.totalBalance || 0).toLocaleString()}
+                      </td>
+                    )}
+                    {visibleColumns.overpaid && (
+                      <td className="px-3 py-2 text-xs font-semibold text-purple-700 border-r-[0.5px] border-gray-200 text-right">
+                        {Number(listTotals.totalOverpaid || 0).toLocaleString()}
+                      </td>
+                    )}
+
+                    {visibleColumns.status && <td className="px-3 py-2 border-r-[0.5px] border-gray-200"></td>}
+                    {visibleColumns.paymentMode && <td className="px-3 py-2 border-r-[0.5px] border-gray-200"></td>}
+                    {visibleColumns.actions && <td className="px-2 py-2"></td>}
+                  </tr>
                   {invoices
                     .map((invoice) => {
                       const recentMode = (invoice.payments && invoice.payments.length > 0) ? invoice.payments[0].paymentMethod : 'MPESA';
@@ -1911,6 +2042,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                 </tfoot>
               </table>
             </div>
+            </>
           )}
 
           {/* Pagination Controls */}
@@ -2151,6 +2283,30 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00A09D] text-sm"
                       />
                     </div>
+                    <div className="space-y-2">
+                      <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider">Term *</label>
+                      <select
+                        value={bulkInvoice.term}
+                        onChange={(e) => setBulkInvoice((prev) => ({ ...prev, term: e.target.value, feeStructureId: '' }))}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00A09D] text-sm"
+                      >
+                        <option value="TERM_1">Term 1</option>
+                        <option value="TERM_2">Term 2</option>
+                        <option value="TERM_3">Term 3</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider">Academic Year *</label>
+                      <select
+                        value={bulkInvoice.academicYear}
+                        onChange={(e) => setBulkInvoice((prev) => ({ ...prev, academicYear: Number(e.target.value), feeStructureId: '' }))}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00A09D] text-sm"
+                      >
+                        {bulkAcademicYearOptions.map((year) => (
+                          <option key={year} value={year}>{year}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
 
                   {bulkInvoice.scope === 'GRADE_STREAM' && (
@@ -2198,6 +2354,25 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                               </option>
                             ))}
                         </select>
+                      </div>
+                    </div>
+                  )}
+
+                  {bulkInvoice.scope === 'WHOLE_SCHOOL' && (
+                    <div className="space-y-2">
+                      <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider">Fee Structures For Selection</label>
+                      <div className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 text-sm text-gray-700">
+                        {feeStructures
+                          .filter((fs) =>
+                            fs.term === bulkInvoice.term &&
+                            Number(fs.academicYear) === Number(bulkInvoice.academicYear)
+                          ).length > 0
+                          ? `${feeStructures
+                            .filter((fs) =>
+                              fs.term === bulkInvoice.term &&
+                              Number(fs.academicYear) === Number(bulkInvoice.academicYear)
+                            ).length} fee structures will be used (matched by each learner's grade).`
+                          : 'No fee structures found for this term/year. Please create them first in Fee Structure module.'}
                       </div>
                     </div>
                   )}

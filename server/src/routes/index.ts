@@ -50,6 +50,7 @@ import changelogRoutes from './changelog.routes';
 import tertiaryRoutes from './tertiary.routes';
 import mpesaRoutes from './mpesa.routes';
 import appsRoutes from './apps.routes';
+import gitNotificationRoutes from './gitNotification.routes';
 import secondaryRoutes from './secondary.routes';
 import { requireApp } from '../middleware/requireApp';
 import { issueCsrfToken } from '../middleware/csrf.middleware';
@@ -117,6 +118,7 @@ router.use('/lms', requireApp('lms'), lmsRoutes);
 router.use('/tertiary', requireApp('tertiary-modules'), tertiaryRoutes);
 router.use('/secondary', requireApp('exams'), secondaryRoutes);
 router.use('/settings/apps', appsRoutes);
+router.use('/git-notifications', gitNotificationRoutes);
 router.use('/diagnostics', diagnosticsRoutes);
 router.use('/migrations', migrationRoutes);
 

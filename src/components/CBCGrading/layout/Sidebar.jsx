@@ -16,7 +16,8 @@ import {
   School, Boxes,
   GraduationCap,
   BookOpen,
-  ChevronDown
+  ChevronDown,
+  Rocket
 } from 'lucide-react';
 import { useNavigation } from '../hooks/useNavigation';
 import { useInstitutionLabels } from '../../../hooks/useInstitutionLabels';
@@ -101,6 +102,7 @@ const Sidebar = React.memo(({
   onNavigate,
   brandingSettings,
   user,
+  onOpenGitDialog,
 }) => {
   const labels = useInstitutionLabels();
   const { role } = usePermissions();
@@ -226,6 +228,26 @@ const Sidebar = React.memo(({
                 <NavSection key={s.id} section={s} {...sharedNavProps} isBottom />
               ))}
             </>
+          )}
+
+          {/* Git Update Notification button — SUPER_ADMIN / ADMIN only */}
+          {onOpenGitDialog && ['SUPER_ADMIN', 'ADMIN'].includes(role) && (
+            <button
+              onClick={onOpenGitDialog}
+              title={sidebarOpen ? undefined : 'Publish Platform Update'}
+              className="w-full flex items-center gap-3 px-3 rounded-lg transition-all duration-200
+                text-indigo-300 hover:text-white hover:bg-indigo-500/20 border border-indigo-500/20 hover:border-indigo-400/40"
+              style={{ height: 40 }}
+            >
+              <span className="flex-shrink-0 flex items-center justify-center" style={{ width: 20 }}>
+                <Rocket size={16} className="text-indigo-400" />
+              </span>
+              {sidebarOpen && (
+                <span className="text-[11px] font-bold uppercase tracking-wider truncate">
+                  Publish Update
+                </span>
+              )}
+            </button>
           )}
 
           {/* Collapse toggle */}

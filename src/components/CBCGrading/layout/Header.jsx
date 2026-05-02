@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bell, LogOut, Zap, ChevronDown, ClipboardList, BarChart3, MessageSquare, Calendar, Gift, User as UserIcon } from 'lucide-react';
+import { Bell, LogOut, Zap, ChevronDown, ClipboardList, BarChart3, MessageSquare, Calendar, Gift, User as UserIcon, GitBranch } from 'lucide-react';
 import { usePermissions } from '../../../hooks/usePermissions';
 import api from '../../../services/api';
 import { getReminderDelay, shouldScheduleReminder } from './notificationReminder';
@@ -574,7 +574,13 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
                       <div className="px-3 py-2 text-[10px] font-semibold text-amber-600 uppercase tracking-widest flex items-center gap-2">
                         <Zap size={14} /> Priority Alerts
                       </div>
-                      {systemNotifications.map((n) => (
+                      {systemNotifications.map((n) => {
+                        const isGit = n.type === 'GIT_UPDATE';
+                        const dotCls = n.type === 'SUCCESS' ? 'bg-emerald-500'
+                          : n.type === 'ERROR' ? 'bg-rose-500'
+                          : isGit ? 'bg-indigo-500'
+                          : 'bg-amber-500';
+                        return (
                         <button
                           key={n.id}
                           onClick={() => {
@@ -584,16 +590,16 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
                           }}
                           className="w-full text-left p-3 hover:bg-gray-50 rounded-lg transition-all group flex items-start gap-3"
                         >
-                          <div className={cn(
-                            "w-2 h-2 mt-2 rounded-full shrink-0",
-                            n.type === 'SUCCESS' ? "bg-emerald-500" : n.type === 'ERROR' ? "bg-rose-500" : "bg-amber-500"
-                          )} />
+                          {isGit
+                            ? <GitBranch size={14} className="text-indigo-400 mt-1 flex-shrink-0" />
+                            : <div className={`w-2 h-2 mt-2 rounded-full shrink-0 ${dotCls}`} />}
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-gray-900 line-clamp-1">{n.title}</p>
                             <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{n.message}</p>
                           </div>
                         </button>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
