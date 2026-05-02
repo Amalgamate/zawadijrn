@@ -181,7 +181,7 @@ const formatDate = (dateString) => {
 };
 
 const UserManagement = () => {
-  const [activeTab, setActiveTab] = useState('staff'); // 'staff', 'students', 'parents', 'admins', 'archive'
+  const [activeTab, setActiveTab] = useState('staff'); // 'staff', 'subordinate', 'students', 'parents', 'admins', 'archive'
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -459,6 +459,10 @@ const UserManagement = () => {
   // User grouping functions
   const getAdminUsers = () => users.filter(u => ['SUPER_ADMIN', 'ADMIN'].includes(u.role) && !u.archived);
   const getTutorUsers = () => users.filter(u => ['TEACHER', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM'].includes(u.role) && !u.archived);
+  const getSubordinateStaffUsers = () =>
+    users.filter(
+      u => ['ACCOUNTANT', 'RECEPTIONIST', 'LIBRARIAN', 'NURSE', 'SECURITY', 'DRIVER', 'COOK', 'CLEANER', 'GROUNDSKEEPER', 'IT_SUPPORT'].includes(u.role) && !u.archived
+    );
   const getParentUsers = () => users.filter(u => u.role === 'PARENT' && !u.archived);
   const getStudentUsers = () => users.filter(u => u.role === 'STUDENT' && !u.archived);
 
@@ -470,7 +474,9 @@ const UserManagement = () => {
     } else if (activeTab === 'students') {
       matchesTab = user.role === 'STUDENT' && !user.archived;
     } else if (activeTab === 'staff') {
-      matchesTab = ['TEACHER', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM', 'ACCOUNTANT', 'RECEPTIONIST', 'LIBRARIAN'].includes(user.role) && !user.archived;
+      matchesTab = ['TEACHER', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM'].includes(user.role) && !user.archived;
+    } else if (activeTab === 'subordinate') {
+      matchesTab = ['ACCOUNTANT', 'RECEPTIONIST', 'LIBRARIAN', 'NURSE', 'SECURITY', 'DRIVER', 'COOK', 'CLEANER', 'GROUNDSKEEPER', 'IT_SUPPORT'].includes(user.role) && !user.archived;
     } else if (activeTab === 'admins') {
       matchesTab = ['SUPER_ADMIN', 'ADMIN'].includes(user.role) && !user.archived;
     } else if (activeTab === 'archive') {
@@ -579,6 +585,7 @@ const UserManagement = () => {
             <div className="flex items-center gap-1 bg-white p-1 rounded-xl shadow-sm border border-gray-200 overflow-x-auto no-scrollbar">
               {[
                 { id: 'staff', label: 'Academic Staff', icon: BookOpen, color: 'blue' },
+                { id: 'subordinate', label: 'Subordinate Staff', icon: Users, color: 'teal' },
                 { id: 'students', label: 'Students', icon: Users, color: 'orange' },
                 { id: 'parents', label: 'Parents', icon: Users, color: 'green' },
                 { id: 'admins', label: 'Administrators', icon: Shield, color: 'purple' },
@@ -598,6 +605,7 @@ const UserManagement = () => {
                     }`}>
                     {tab.id === 'archive' ? users.filter(u => u.archived).length :
                       tab.id === 'students' ? (learnerStats.total > 0 ? learnerStats.total : getStudentUsers().length) :
+                        tab.id === 'subordinate' ? getSubordinateStaffUsers().length :
                         tab.id === 'parents' ? getParentUsers().length :
                           tab.id === 'staff' ? getTutorUsers().length :
                             getAdminUsers().length}
