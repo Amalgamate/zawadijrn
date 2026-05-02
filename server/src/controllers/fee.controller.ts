@@ -42,6 +42,16 @@ function normalizeEnumValue(value?: string): string | undefined {
 const INVOICE_NUMBER_RETRY_COUNT = 3;
 const RECEIPT_NUMBER_RETRY_COUNT = 3;
 
+function getPreviousTermContext(termRaw: string, academicYearRaw: number): { term: string; academicYear: number } | null {
+  const term = normalizeEnumValue(termRaw);
+  const academicYear = Number(academicYearRaw);
+  if (!term || !academicYear) return null;
+  if (term === 'TERM_2') return { term: 'TERM_1', academicYear };
+  if (term === 'TERM_3') return { term: 'TERM_2', academicYear };
+  if (term === 'TERM_1') return { term: 'TERM_3', academicYear: academicYear - 1 };
+  return null;
+}
+
 function parseInvoiceNumber(raw: string | null): number {
   if (!raw) return 0;
   const match = raw.match(/(\d+)$/);
@@ -420,8 +430,10 @@ export class FeeController {
   async createInvoice(req: AuthRequest, res: Response) {
     const { learnerId, feeStructureId, term, academicYear, dueDate, includeTransport } = req.body;
     const userId = req.user!.userId;
+    const normalizedTerm = normalizeEnumValue(term) || term;
+    const normalizedYear = Number(academicYear);
 
-    if (!learnerId || !feeStructureId || !term || !academicYear || !dueDate) {
+    if (!learnerId || !feeStructureId || !normalizedTerm || !normalizedYear || !dueDate) {
       throw new ApiError(400, 'Missing required fields');
     }
 
@@ -452,10 +464,29 @@ export class FeeController {
     let transportBilled = 0;
     if (shouldIncludeTransport) {
       transportBilled = await resolveTransportAmount(learnerId, allItems);
+      totalAmount += transportBilled;
     }
 
+    // Enforce carry-forward: billed amount for a term must include prior-term outstanding balance.
+    const prevCtx = getPreviousTermContext(normalizedTerm, normalizedYear);
+    let carryForwardAmount = 0;
+    if (prevCtx) {
+      const previousInvoices = await prisma.feeInvoice.findMany({
+        where: {
+          learnerId,
+          term: prevCtx.term as any,
+          academicYear: prevCtx.academicYear,
+          archived: false,
+          status: { not: 'CANCELLED' as PaymentStatus }
+        },
+        select: { balance: true }
+      });
+      carryForwardAmount = previousInvoices.reduce((sum, inv) => sum + Math.max(0, Number(inv.balance || 0)), 0);
+    }
+    totalAmount += carryForwardAmount;
+
     const existing = await prisma.feeInvoice.findFirst({
-      where: { learnerId, feeStructureId, term, academicYear }
+      where: { learnerId, feeStructureId, term: normalizedTerm, academicYear: normalizedYear }
     });
     if (existing) throw new ApiError(400, 'An invoice for this period already exists for the student');
 
@@ -464,8 +495,8 @@ export class FeeController {
       {
         learnerId,
         feeStructureId,
-        term,
-        academicYear,
+        term: normalizedTerm,
+        academicYear: normalizedYear,
         dueDate: new Date(dueDate),
         totalAmount,
         paidAmount: 0,
@@ -1080,7 +1111,13 @@ export class FeeController {
   async bulkGenerateInvoices(req: AuthRequest, res: Response) {
     const { feeStructureId, term, academicYear, dueDate, grade, stream, scope } = req.body;
     const userId = req.user!.userId;
+    const normalizedTerm = normalizeEnumValue(term) || term;
+    const normalizedYear = Number(academicYear);
     const normalizedScope = String(scope || '').toUpperCase();
+
+    if (!normalizedTerm || !normalizedYear || !dueDate) {
+      throw new ApiError(400, 'term, academicYear and dueDate are required');
+    }
 
     let learners = await prisma.learner.findMany({
       where: {
@@ -1107,8 +1144,8 @@ export class FeeController {
       const structures = await prisma.feeStructure.findMany({
         where: {
           active: true,
-          term,
-          academicYear: Number(academicYear)
+          term: normalizedTerm,
+          academicYear: normalizedYear
         },
         include: { feeItems: { include: { feeType: true } } } as any
       });
@@ -1138,8 +1175,8 @@ export class FeeController {
     const alreadyInvoiced = await prisma.feeInvoice.findMany({
       where: {
         learnerId: { in: learnerIds },
-        term,
-        academicYear: Number(academicYear),
+        term: normalizedTerm,
+        academicYear: normalizedYear,
         ...(normalizedScope === 'WHOLE_SCHOOL' ? {} : { feeStructureId })
       },
       select: { learnerId: true }
@@ -1156,6 +1193,25 @@ export class FeeController {
       });
     }
 
+    const prevCtx = getPreviousTermContext(normalizedTerm, normalizedYear);
+    const carryForwardByLearner = new Map<string, number>();
+    if (prevCtx) {
+      const previousInvoices = await prisma.feeInvoice.findMany({
+        where: {
+          learnerId: { in: learnersToInvoice.map((l) => l.id) },
+          term: prevCtx.term as any,
+          academicYear: prevCtx.academicYear,
+          archived: false,
+          status: { not: 'CANCELLED' as PaymentStatus }
+        },
+        select: { learnerId: true, balance: true }
+      });
+      for (const inv of previousInvoices) {
+        const current = carryForwardByLearner.get(inv.learnerId) || 0;
+        carryForwardByLearner.set(inv.learnerId, current + Math.max(0, Number(inv.balance || 0)));
+      }
+    }
+
     // Resolve amounts per learner so structure/transport are accurate for each record.
     const invoiceDrafts = await Promise.all(
       learnersToInvoice.map(async (learner) => {
@@ -1170,7 +1226,8 @@ export class FeeController {
         const transportAmount = (learner as any).isTransportStudent
           ? await resolveTransportAmount(learner.id, items)
           : 0;
-        const totalAmount = baseTotal + transportAmount;
+        const carryForwardAmount = Number(carryForwardByLearner.get(learner.id) || 0);
+        const totalAmount = baseTotal + transportAmount + carryForwardAmount;
 
         return {
           learner,
@@ -1210,8 +1267,8 @@ export class FeeController {
                 invoiceNumber,
                 learnerId: learner.id,
                 feeStructureId: draft.feeStructureId,
-                term,
-                academicYear,
+                term: normalizedTerm,
+                academicYear: normalizedYear,
                 dueDate: new Date(dueDate),
                 totalAmount: draft.totalAmount,
                 paidAmount: 0,
