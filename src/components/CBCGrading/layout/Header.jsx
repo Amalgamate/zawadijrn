@@ -9,6 +9,7 @@ import { Badge } from "../../ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "../../ui/popover";
 import { cn } from "../../../utils/cn";
 import { useUserNotifications } from '../../../contexts/UserNotificationContext';
+import { refreshBus } from '../../../utils/refreshBus';
 import '../../../styles/notifications.css';
 
 const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate }) => {
@@ -124,7 +125,6 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
           return;
         }
 
-        // No active term configured — hide pill (date still shows)
         setActiveTermLabel('');
         setActiveTermMeta({ isFallback: false });
       } catch {
@@ -134,8 +134,12 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
       }
     };
 
+    const unsub = refreshBus.on('term-config', fetchActiveTerm);
     fetchActiveTerm();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      unsub();
+    };
   }, [user?.id, user?.institutionType]);
 
   const birthdayNotificationItemsRaw = birthdays.map((b) => ({

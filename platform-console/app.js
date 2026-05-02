@@ -212,6 +212,182 @@ function selectedInstance() {
   return INSTANCES.find(instance => instance.name === selectedInstanceName) || INSTANCES[0];
 }
 
+// ── Running Instances panel ───────────────────────────────────────────────
+function containerRows(instance) {
+  const isOnline = instance.status === 'Online';
+  const isDegraded = instance.status === 'Degraded';
+  const containers = [
+    { name: 'Frontend', port: instance.fe, status: isOnline ? 'running' : isDegraded ? 'running' : 'stopped' },
+    { name: 'Backend',  port: instance.be, status: isOnline ? 'running' : 'stopped' },
+    { name: 'Database', port: null,        status: isOnline ? 'running' : isDegraded ? 'running' : 'stopped' },
+  ];
+  if (isDegraded) containers[1].status = 'unhealthy';
+  return containers;
+}
+
+function renderRunningInstances() {
+  const el = $('running-instances-grid');
+  if (!el) return;
+
+  el.innerHTML = INSTANCES.map(instance => {
+    const containers = containerRows(instance);
+    const overallCls = instance.status === 'Online' ? 'online' : instance.status === 'Degraded' ? 'warn' : 'offline';
+    const plan = findPlan(instance.planId);
+    const uptime = instance.status === 'Online' ? '99.9%' : instance.status === 'Degraded' ? '71.2%' : '0%';
+    const runningCount = containers.filter(c => c.status === 'running').length;
+
+    const containerDots = containers.map(c => {
+      const dot = c.status === 'running' ? 'ri-dot-green' : c.status === 'unhealthy' ? 'ri-dot-amber' : 'ri-dot-red';
+      return `<span class="ri-container-dot ${dot}" title="${esc(c.name)}: ${esc(c.status)}${c.port ? ' (:' + c.port + ')' : ''}"></span>`;
+    }).join('');
+
+    const containerList = containers.map(c => {
+      const sCls = c.status === 'running' ? 'online' : c.status === 'unhealthy' ? 'warn' : 'offline';
+      return `<div class="ri-container-row">
+        <span class="ri-c-name">${esc(c.name)}</span>
+        ${c.port ? `<span class="ri-c-port">:${c.port}</span>` : '<span class="ri-c-port">—</span>'}
+        <span class="badge ${sCls}" style="font-size:10px;padding:1px 6px">${esc(c.status)}</span>
+      </div>`;
+    }).join('');
+
+    return `<div class="ri-card">
+      <div class="ri-card-head">
+        <div class="ri-card-title-row">
+          <div>
+            <div class="ri-name">${esc(instance.name)}</div>
+            <div class="ri-domain">${esc(instance.domain)}</div>
+          </div>
+          <span class="badge ${overallCls}">${esc(instance.status)}</span>
+        </div>
+        <div class="ri-dots-row">
+          ${containerDots}
+          <span class="ri-dots-label">${runningCount}/${containers.length} running</span>
+        </div>
+      </div>
+      <div class="ri-container-list">
+        ${containerList}
+      </div>
+      <div class="ri-card-footer">
+        <div class="ri-meta-row">
+          <span class="ri-meta-label">Plan</span>
+          <span class="ri-meta-val">${esc(plan.name)}</span>
+        </div>
+        <div class="ri-meta-row">
+          <span class="ri-meta-label">Uptime</span>
+          <span class="ri-meta-val" style="font-family:var(--mono)">${uptime}</span>
+        </div>
+        <div class="ri-meta-row">
+          <span class="ri-meta-label">Version</span>
+          <span class="ri-meta-val" style="font-family:var(--mono)">${esc(instance.version)}</span>
+        </div>
+        <div class="ri-actions">
+          <button class="tbl-btn primary" data-action="Restart" data-school="${esc(instance.name)}">Restart</button>
+          <button class="tbl-btn" data-action="Logs" data-school="${esc(instance.name)}">Logs</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Space & Usage panel ───────────────────────────────────────────────────
+const TOTAL_DISK = 80;
+const DOCKER_IMAGES_GB = 14.2;
+const DOCKER_VOLUMES_GB = 22.6;
+
+function renderSpaceUsage() {
+  const el = $('space-usage-panel');
+  if (!el) return;
+
+  const totalSchoolDb = INSTANCES.reduce((s, i) => s + i.dbGb, 0);
+  const totalUploads  = INSTANCES.reduce((s, i) => s + i.uploads, 0);
+  const totalBackups  = INSTANCES.reduce((s, i) => s + i.backups, 0);
+  const schoolData    = INSTANCES.reduce((s, i) => s + i.storage, 0);
+  const appStack      = DOCKER_IMAGES_GB + DOCKER_VOLUMES_GB;
+  const usedTotal     = appStack + schoolData;
+  const freeSpace     = Math.max(0, TOTAL_DISK - usedTotal);
+  const usedPct       = Math.round(usedTotal / TOTAL_DISK * 100);
+
+  const segments = [
+    { label: 'Docker Images', value: DOCKER_IMAGES_GB, color: '#030b82' },
+    { label: 'Docker Volumes', value: DOCKER_VOLUMES_GB, color: '#0D9488' },
+    { label: 'School DBs', value: totalSchoolDb, color: '#059669' },
+    { label: 'Uploads', value: totalUploads, color: '#f59e0b' },
+    { label: 'Backups', value: totalBackups, color: '#8b5cf6' },
+    { label: 'Free', value: freeSpace, color: '#e8ebf4' },
+  ];
+
+  el.innerHTML = `
+    <div class="su-summary-row">
+      <div class="su-summary-stat">
+        <div class="su-stat-val">${fmt(usedTotal)} <span class="su-stat-unit">GB</span></div>
+        <div class="su-stat-label">Used of ${TOTAL_DISK} GB</div>
+      </div>
+      <div class="su-summary-stat">
+        <div class="su-stat-val">${fmt(freeSpace)} <span class="su-stat-unit">GB</span></div>
+        <div class="su-stat-label">Free Space</div>
+      </div>
+      <div class="su-summary-stat">
+        <div class="su-stat-val">${usedPct}<span class="su-stat-unit">%</span></div>
+        <div class="su-stat-label">Disk Utilisation</div>
+      </div>
+      <div class="su-summary-stat">
+        <div class="su-stat-val">${fmt(schoolData)} <span class="su-stat-unit">GB</span></div>
+        <div class="su-stat-label">School Data</div>
+      </div>
+    </div>
+
+    <div class="su-stacked-bar">
+      ${segments.filter(s => s.value > 0).map(s =>
+        `<div class="su-seg" style="width:${(s.value / TOTAL_DISK * 100).toFixed(2)}%;background:${s.color}" title="${s.label}: ${fmt(s.value)} GB"></div>`
+      ).join('')}
+    </div>
+    <div class="su-legend">
+      ${segments.filter(s => s.label !== 'Free').map(s =>
+        `<div class="su-legend-item">
+          <span class="su-legend-dot" style="background:${s.color}"></span>
+          <span class="su-legend-label">${esc(s.label)}</span>
+          <span class="su-legend-val">${fmt(s.value)} GB</span>
+        </div>`
+      ).join('')}
+    </div>
+
+    <div class="su-breakdown-grid">
+      ${segments.filter(s => s.label !== 'Free').map(s => {
+        const pct = Math.round(s.value / TOTAL_DISK * 100);
+        return `<div class="su-breakdown-item">
+          <div class="su-b-row">
+            <span class="su-b-label">${esc(s.label)}</span>
+            <span class="su-b-val">${fmt(s.value)} GB</span>
+          </div>
+          <div class="su-meter"><div class="su-meter-fill" style="width:${pct}%;background:${s.color}"></div></div>
+          <div class="su-b-pct">${pct}% of ${TOTAL_DISK} GB disk</div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div class="su-per-instance-section">
+      <div class="su-section-label">Per-Instance Breakdown</div>
+      <div class="su-per-instance-grid">
+        ${INSTANCES.map(inst => {
+          const instPct = Math.round(inst.storage / TOTAL_DISK * 100);
+          return `<div class="su-pi-card">
+            <div class="su-pi-head">
+              <span class="su-pi-name">${esc(inst.name)}</span>
+              <span class="su-pi-total">${fmt(inst.storage)} GB</span>
+            </div>
+            <div class="su-meter" style="margin:6px 0 4px"><div class="su-meter-fill" style="width:${instPct}%;background:var(--brand)"></div></div>
+            <div class="su-pi-rows">
+              <div class="su-pi-row"><span>Database</span><span>${fmt(inst.dbGb)} GB</span></div>
+              <div class="su-pi-row"><span>Uploads</span><span>${fmt(inst.uploads)} GB</span></div>
+              <div class="su-pi-row"><span>Backups</span><span>${fmt(inst.backups)} GB</span></div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
 // Rendering
 function renderInstanceRow(instance, mode = 'compact') {
   const plan = findPlan(instance.planId);
@@ -859,10 +1035,12 @@ function bindModalEvents() {
 function renderEverything() {
   renderMetrics();
   renderInstances();
+  renderRunningInstances();
   renderCapacity();
   renderTimeline('timeline-mini', 3);
   renderTimeline('timeline-full');
   renderStorageSection();
+  renderSpaceUsage();
   renderAuditLog();
   renderControlInstances();
   renderModuleToggles();

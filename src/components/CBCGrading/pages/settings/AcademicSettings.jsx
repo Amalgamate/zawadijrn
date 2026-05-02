@@ -291,6 +291,35 @@ const AcademicSettings = () => {
     }));
   };
 
+  // Determine active term for the selected year, preferring unsaved local edits first.
+  const getEffectiveActiveTerm = () => {
+    const terms = ['TERM_1', 'TERM_2', 'TERM_3'];
+
+    for (const termName of terms) {
+      const key = `${selectedYear}-${termName}`;
+      if (termDrafts[key] && termDrafts[key].isActive) return termName;
+    }
+
+    const savedActive = termConfigs.find((c) => c.academicYear === selectedYear && c.isActive);
+    return savedActive?.term || null;
+  };
+
+  // Single-active-term behavior: selecting one term marks it active and others inactive.
+  const handleSelectActiveTerm = (termName) => {
+    const terms = ['TERM_1', 'TERM_2', 'TERM_3'];
+    setTermDrafts((prev) => {
+      const next = { ...prev };
+      terms.forEach((name) => {
+        const key = `${selectedYear}-${name}`;
+        next[key] = {
+          ...getTermDraft(name),
+          isActive: name === termName
+        };
+      });
+      return next;
+    });
+  };
+
   const handleSaveTerm = async (termName) => {
     const draft = getTermDraft(termName);
     // Validate weights
@@ -317,6 +346,7 @@ const AcademicSettings = () => {
       });
       notifySuccess(`Term ${termName.replace('_', ' ')} saved!`);
       await loadConfigs();
+      refreshBus.emit('term-config');
     } catch (error) {
       showError(error.message || 'Failed to save term configuration');
     } finally {
@@ -747,6 +777,8 @@ const AcademicSettings = () => {
                 <div className="space-y-6">
                   {['TERM_1', 'TERM_2', 'TERM_3'].map((termName, index) => {
                     const draft = getTermDraft(termName);
+                    const effectiveActiveTerm = getEffectiveActiveTerm();
+                    const isSelectedActive = effectiveActiveTerm === termName;
                     const draftKey = `${selectedYear}-${termName}`;
                     const isDirty = !!termDrafts[draftKey];
                     const fw = Number(draft.formativeWeight ?? 30);
@@ -755,7 +787,7 @@ const AcademicSettings = () => {
                     const weightError = Math.abs(weightSum - 100) > 0.01;
 
                     return (
-                      <div key={termName} className={`border rounded-lg p-4 ${draft.isActive ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'}`}>
+                      <div key={termName} className={`border rounded-lg p-4 ${isSelectedActive ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'}`}>
                         <div className="flex justify-between items-center mb-4">
                           <div className="flex items-center gap-3">
                             <h4 className="font-medium text-gray-800">Term {index + 1}</h4>
@@ -767,9 +799,9 @@ const AcademicSettings = () => {
                             <label className="flex items-center gap-2 cursor-pointer">
                               <input
                                 type="checkbox"
-                                checked={draft.isActive}
+                                checked={isSelectedActive}
                                 disabled={submitting}
-                                onChange={(e) => updateTermDraft(termName, { isActive: e.target.checked })}
+                                onChange={() => handleSelectActiveTerm(termName)}
                                 className="w-4 h-4 text-blue-600 disabled:opacity-50"
                               />
                               <span className="text-sm font-medium">Active Term</span>
