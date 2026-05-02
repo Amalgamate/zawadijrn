@@ -182,6 +182,35 @@ export class FeeService {
         );
       }
 
+      // Carry forward previous-term net balance (positive = outstanding, negative = credit/overpaid)
+      const getPreviousTermContext = (
+        currentTerm: 'TERM_1' | 'TERM_2' | 'TERM_3',
+        currentYear: number
+      ): { term: 'TERM_1' | 'TERM_2' | 'TERM_3'; academicYear: number } | null => {
+        if (currentTerm === 'TERM_2') return { term: 'TERM_1', academicYear: currentYear };
+        if (currentTerm === 'TERM_3') return { term: 'TERM_2', academicYear: currentYear };
+        return { term: 'TERM_3', academicYear: currentYear - 1 };
+      };
+
+      const prevCtx = getPreviousTermContext(term as any, Number(academicYear));
+      if (prevCtx) {
+        const previousInvoices = await prisma.feeInvoice.findMany({
+          where: {
+            learnerId,
+            term: prevCtx.term as any,
+            academicYear: prevCtx.academicYear,
+            archived: false,
+            status: { not: 'CANCELLED' as any }
+          },
+          select: { balance: true }
+        });
+        const carryForwardAmount = previousInvoices.reduce(
+          (sum, inv) => sum + Number(inv.balance || 0),
+          0
+        );
+        totalAmount = totalAmount + carryForwardAmount;
+      }
+
       // 6. Due date = 14 days from today
       const dueDate = new Date();
       dueDate.setDate(dueDate.getDate() + 14);

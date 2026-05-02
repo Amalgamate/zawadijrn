@@ -481,7 +481,8 @@ export class FeeController {
         },
         select: { balance: true }
       });
-      carryForwardAmount = previousInvoices.reduce((sum, inv) => sum + Math.max(0, Number(inv.balance || 0)), 0);
+      // Use net prior-term balance so credits (negative balances) automatically reduce next-term billed amount.
+      carryForwardAmount = previousInvoices.reduce((sum, inv) => sum + Number(inv.balance || 0), 0);
     }
     totalAmount += carryForwardAmount;
 
@@ -1208,7 +1209,8 @@ export class FeeController {
       });
       for (const inv of previousInvoices) {
         const current = carryForwardByLearner.get(inv.learnerId) || 0;
-        carryForwardByLearner.set(inv.learnerId, current + Math.max(0, Number(inv.balance || 0)));
+        // Use net prior-term balance so credits (negative balances) automatically reduce next-term billed amount.
+        carryForwardByLearner.set(inv.learnerId, current + Number(inv.balance || 0));
       }
     }
 
