@@ -168,6 +168,39 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
     return Math.max(0, billed - termFee);
   }, [getInvoiceTermFee, closingBalanceByLearnerTermMap, getPreviousTermContext]);
 
+  const getApprovedWaiverAmount = React.useCallback((invoice) => (
+    (invoice?.waivers || [])
+      .filter((w) => w.status === 'APPROVED')
+      .reduce((acc, w) => acc + Number(w.amountWaived || 0), 0)
+  ), []);
+
+  const getInvoiceCashPaid = React.useCallback((invoice) => {
+    const paymentDetailTotal = (invoice?.payments || []).reduce((acc, p) => acc + Number(p.amount || 0), 0);
+    if (paymentDetailTotal > 0) return paymentDetailTotal;
+
+    const rawPaid = Number(invoice?.paidAmount || 0);
+    const waived = getApprovedWaiverAmount(invoice);
+    return Math.max(0, rawPaid - waived);
+  }, [getApprovedWaiverAmount]);
+
+  const getInvoiceSettledAmount = React.useCallback((invoice) => (
+    getInvoiceCashPaid(invoice) + getApprovedWaiverAmount(invoice)
+  ), [getInvoiceCashPaid, getApprovedWaiverAmount]);
+
+  const getInvoiceNetBalance = React.useCallback((invoice) => {
+    const billed = Number(invoice?.totalAmount || 0);
+    const settled = getInvoiceSettledAmount(invoice);
+    return billed - settled;
+  }, [getInvoiceSettledAmount]);
+
+  const getInvoiceCurrentDue = React.useCallback((invoice) => (
+    Math.max(0, getInvoiceNetBalance(invoice))
+  ), [getInvoiceNetBalance]);
+
+  const getInvoiceNetOverpaid = React.useCallback((invoice) => (
+    Math.max(0, -getInvoiceNetBalance(invoice))
+  ), [getInvoiceNetBalance]);
+
   const listCarryFwdTotal = React.useMemo(
     () => invoices.reduce((sum, inv) => sum + getInvoiceCarryFwd(inv), 0),
     [invoices, getInvoiceCarryFwd]
@@ -277,22 +310,22 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
         return String(av || '').localeCompare(String(bv || '')) * dir;
       });
 
-      if (searchLearnerId) {
-        pages = 1;
-        totals = {
-          totalBilled: rows.reduce((s, i) => s + Number(i.totalAmount || 0), 0),
-          totalPaid: rows.reduce((s, i) => s + Number(i.paidAmount || 0), 0),
-          totalBalance: rows.reduce((s, i) => s + Number(i.balance || 0), 0),
-          totalWaived: rows.reduce((s, i) => s + (i.waivers || []).filter(w => w.status === 'APPROVED').reduce((acc, w) => acc + Number(w.amountWaived || 0), 0), 0),
-          totalOverpaid: rows.reduce((s, i) => s + Math.max(0, Number(i.paidAmount || 0) - Number(i.totalAmount || 0)), 0)
-        };
-      }
+      if (searchLearnerId) pages = 1;
+
+      // Keep table totals mathematically consistent:
+      // Current due = billed - paid - waived (floored at 0)
+      // Overpaid = credits created when paid exceeds net bill after waivers.
+      totals = {
+        totalBilled: rows.reduce((s, i) => s + Number(i.totalAmount || 0), 0),
+        totalPaid: rows.reduce((s, i) => s + getInvoiceCashPaid(i), 0),
+        totalWaived: rows.reduce((s, i) => s + getApprovedWaiverAmount(i), 0),
+        totalBalance: rows.reduce((s, i) => s + getInvoiceCurrentDue(i), 0),
+        totalOverpaid: rows.reduce((s, i) => s + getInvoiceNetOverpaid(i), 0)
+      };
 
       setInvoices(rows);
       setTotalPages(pages);
-      if (totals) {
-        setListTotals(totals);
-      }
+      if (totals) setListTotals(totals);
     } catch (error) {
       showError('Failed to load invoices');
       console.error(error);
@@ -300,7 +333,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, termFilter, startDate, endDate, gradeFilter, searchLearnerId, currentPage, sortConfig, showError, paymentMethodFilter]);
+  }, [statusFilter, termFilter, startDate, endDate, gradeFilter, searchLearnerId, currentPage, sortConfig, showError, paymentMethodFilter, getApprovedWaiverAmount, getInvoiceCashPaid, getInvoiceCurrentDue, getInvoiceNetOverpaid]);
 
   // Separate fetch — no filters — solely powers the metric cards
   const fetchStatsInvoices = React.useCallback(async () => {
@@ -415,9 +448,9 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
         i.feeType || i.feeName || '',
         i.term || '',
         i.totalAmount || 0,
-        i.paidAmount || 0,
+        getInvoiceCashPaid(i),
         (i.waivers || []).filter(w => w.status === 'APPROVED').reduce((acc, w) => acc + Number(w.amountWaived), 0),
-        i.balance || 0,
+        getInvoiceCurrentDue(i),
         i.status || '',
         i.paymentMethod || ''
       ]);
@@ -501,15 +534,15 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
           </div>
           <div style="display: flex; justify-content: space-between; padding: 5px 0; color: #16a34a; font-size: 12px; font-weight: 600;">
             <span>Total Paid:</span>
-            <span>KES ${Number(invoice.paidAmount || 0).toLocaleString()}</span>
+            <span>KES ${Number(getInvoiceCashPaid(invoice) || 0).toLocaleString()}</span>
           </div>
           <div style="display: flex; justify-content: space-between; padding: 5px 0; color: #00A09D; font-size: 12px; font-weight: 600;">
             <span>Total Waived:</span>
-            <span>KES ${(invoice.waivers || []).reduce((acc, w) => acc + Number(w.amountWaived), 0).toLocaleString()}</span>
+            <span>KES ${Number(getApprovedWaiverAmount(invoice) || 0).toLocaleString()}</span>
           </div>
-          <div style="display: flex; justify-content: space-between; padding: 10px 0; border-top: 2px solid #e2e8f0; margin-top: 5px; color: ${Number(invoice.balance || 0) <= 0 ? '#16a34a' : '#dc2626'}; font-size: 16px; font-weight: 800;">
-            <span>${Number(invoice.balance || 0) < 0 ? 'CREDIT BALANCE:' : 'BALANCE DUE:'}</span>
-            <span>KES ${Math.abs(Number(invoice.balance || 0)).toLocaleString()}</span>
+          <div style="display: flex; justify-content: space-between; padding: 10px 0; border-top: 2px solid #e2e8f0; margin-top: 5px; color: ${getInvoiceNetBalance(invoice) <= 0 ? '#16a34a' : '#dc2626'}; font-size: 16px; font-weight: 800;">
+            <span>${getInvoiceNetBalance(invoice) < 0 ? 'CREDIT BALANCE:' : 'BALANCE DUE:'}</span>
+            <span>KES ${Math.abs(Number(getInvoiceNetBalance(invoice) || 0)).toLocaleString()}</span>
           </div>
         </div>
       </div>
@@ -1011,23 +1044,26 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
     };
 
     const totalBilledRaw = src.reduce((s, i) => s + Number(i.totalAmount || 0), 0);
-    const thisTermFeeRaw = src.reduce((s, i) => s + getStructureExpected(i), 0);
-    const bfAmountRaw = src.reduce((sum, i) => sum + Number(getInvoiceCarryFwd(i) || 0), 0);
-    const waivedTotalRaw = src.reduce((s, i) => {
-      const rowWaived = (i.waivers || [])
-        .filter(w => w.status === 'APPROVED')
-        .reduce((acc, w) => acc + Number(w.amountWaived), 0);
-      return s + rowWaived;
-    }, 0);
-    const actualCollectedRaw = src.reduce((s, i) => s + Number(i.paidAmount || 0), 0);
+    const structureThisTermFeeRaw = src.reduce((s, i) => s + getStructureExpected(i), 0);
+
+    // Keep card math internally consistent:
+    // Expected = This Term Fee + B/F
+    // For Term 1 in this data flow, B/F is embedded in billed minus fee structure.
+    // For later terms, B/F is previous-term closing balance carry-forward.
+    const bfFromCarryRaw = src.reduce((sum, i) => sum + Number(getInvoiceCarryFwd(i) || 0), 0);
+    const bfFromBilledDeltaRaw = Math.max(0, totalBilledRaw - structureThisTermFeeRaw);
+    const bfAmountRaw = termFilter === 'TERM_1' ? bfFromBilledDeltaRaw : bfFromCarryRaw;
+    const thisTermFeeRaw = Math.max(0, totalBilledRaw - bfAmountRaw);
+    const waivedTotalRaw = src.reduce((s, i) => s + getApprovedWaiverAmount(i), 0);
+    const actualCollectedRaw = src.reduce((s, i) => s + getInvoiceCashPaid(i), 0);
     const netExpectedRaw = totalBilledRaw - waivedTotalRaw;
     const efficiency = netExpectedRaw > 0 ? (actualCollectedRaw / netExpectedRaw) * 100 : 0;
 
     // Sub-Categorization Tool
     const getMetrics = (list) => {
       const billed = list.reduce((s, i) => s + Number(i.totalAmount || 0), 0);
-      const paid = list.reduce((s, i) => s + Number(i.paidAmount || 0), 0);
-      const waived = list.reduce((s, i) => s + (i.waivers || []).filter(w => w.status === 'APPROVED').reduce((acc, w) => acc + Number(w.amountWaived), 0), 0);
+      const paid = list.reduce((s, i) => s + getInvoiceCashPaid(i), 0);
+      const waived = list.reduce((s, i) => s + getApprovedWaiverAmount(i), 0);
       const net = billed - waived;
       return {
         billed: fmt(billed),
@@ -1048,15 +1084,15 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
       bfAmount: fmt(bfAmountRaw),
       bfAmountRaw,
       pendingCount: src.filter(i => i.status === 'PENDING').length,
-      pendingAmt: fmt(src.filter(i => i.status === 'PENDING').reduce((s, i) => s + Number(i.balance || 0), 0)),
+      pendingAmt: fmt(src.filter(i => i.status === 'PENDING').reduce((s, i) => s + getInvoiceCurrentDue(i), 0)),
       partialCount: src.filter(i => i.status === 'PARTIAL').length,
-      partialAmt: fmt(src.filter(i => i.status === 'PARTIAL').reduce((s, i) => s + Number(i.paidAmount || 0), 0)),
-      partialBalanceAmt: fmt(src.filter(i => i.status === 'PARTIAL').reduce((s, i) => s + Number(i.balance || 0), 0)),
-      totalBalance: fmt(src.reduce((s, i) => s + Number(i.balance || 0), 0)),
-      paidCount: src.filter(i => Number(i.balance) <= 0).length,
-      paidAmt: fmt(src.filter(i => Number(i.balance) <= 0).reduce((s, i) => s + Number(i.totalAmount || 0), 0)),
-      overpaidCount: src.filter(i => Number(i.paidAmount || 0) > Number(i.totalAmount || 0)).length,
-      overpaidAmt: fmt(src.reduce((s, i) => s + Math.max(0, Number(i.paidAmount || 0) - Number(i.totalAmount || 0)), 0)),
+      partialAmt: fmt(src.filter(i => i.status === 'PARTIAL').reduce((s, i) => s + getInvoiceCashPaid(i), 0)),
+      partialBalanceAmt: fmt(src.filter(i => i.status === 'PARTIAL').reduce((s, i) => s + getInvoiceCurrentDue(i), 0)),
+      totalBalance: fmt(src.reduce((s, i) => s + getInvoiceCurrentDue(i), 0)),
+      paidCount: src.filter(i => getInvoiceCurrentDue(i) <= 0).length,
+      paidAmt: fmt(src.filter(i => getInvoiceCurrentDue(i) <= 0).reduce((s, i) => s + Number(i.totalAmount || 0), 0)),
+      overpaidCount: src.filter(i => getInvoiceNetOverpaid(i) > 0).length,
+      overpaidAmt: fmt(src.reduce((s, i) => s + getInvoiceNetOverpaid(i), 0)),
 
       waivedTotal: fmt(waivedTotalRaw),
       waivedTotalRaw,
@@ -1074,22 +1110,22 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
         const detail = (i.payments || []).filter(p => p.paymentMethod === 'MPESA').reduce((ss, p) => ss + Number(p.amount), 0);
         if (detail > 0) return s + detail;
         const recentMode = (i.payments && i.payments.length > 0) ? i.payments[0].paymentMethod : 'MPESA';
-        return recentMode === 'MPESA' ? s + Number(i.paidAmount || 0) : s;
+        return recentMode === 'MPESA' ? s + getInvoiceCashPaid(i) : s;
       }, 0)),
       cashTotal: fmt(src.reduce((s, i) => {
         const detail = (i.payments || []).filter(p => p.paymentMethod === 'CASH').reduce((ss, p) => ss + Number(p.amount), 0);
         if (detail > 0) return s + detail;
         const recentMode = (i.payments && i.payments.length > 0) ? i.payments[0].paymentMethod : 'MPESA';
-        return recentMode === 'CASH' ? s + Number(i.paidAmount || 0) : s;
+        return recentMode === 'CASH' ? s + getInvoiceCashPaid(i) : s;
       }, 0)),
       bankTotal: fmt(src.reduce((s, i) => {
         const detail = (i.payments || []).filter(p => ['BANK_TRANSFER', 'CHEQUE'].includes(p.paymentMethod)).reduce((ss, p) => ss + Number(p.amount), 0);
         if (detail > 0) return s + detail;
         const recentMode = (i.payments && i.payments.length > 0) ? i.payments[0].paymentMethod : 'MPESA';
-        return recentMode === 'BANK_TRANSFER' ? s + Number(i.paidAmount || 0) : s;
+        return recentMode === 'BANK_TRANSFER' ? s + getInvoiceCashPaid(i) : s;
       }, 0))
     };
-  }, [scopedStatsInvoices, metricsStructureExpectedMap, getInvoiceCarryFwd, normalizeGradeKey]);
+  }, [scopedStatsInvoices, metricsStructureExpectedMap, getInvoiceCarryFwd, normalizeGradeKey, getApprovedWaiverAmount, getInvoiceCashPaid, getInvoiceCurrentDue, getInvoiceNetOverpaid]);
 
 
   if (loading && !showCreateModal) return <LoadingSpinner />;
@@ -1939,7 +1975,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                           )}
                           {visibleColumns.paid && (
                             <td className="px-3 py-1.5 text-xs font-medium text-green-600 border-r-[0.5px] border-gray-200 text-right w-24">
-                              {Number(invoice.paidAmount).toLocaleString()}
+                              {Number(getInvoiceCashPaid(invoice)).toLocaleString()}
                             </td>
                           )}
                           {visibleColumns.waived && (
@@ -1963,16 +1999,14 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                                   {Number(getInvoiceCarryFwd(invoice) || 0).toLocaleString()}
                                 </span>
                                 <span className="px-2 py-0.5 text-red-600 bg-red-50">
-                                  {invoice.balance > 0 ? Number(invoice.balance).toLocaleString() : '0'}
+                                  {Number(getInvoiceCurrentDue(invoice) || 0).toLocaleString()}
                                 </span>
                               </div>
                             </td>
                           )}
                           {visibleColumns.overpaid && (
                             <td className="px-3 py-1.5 text-xs font-medium text-purple-600 border-r-[0.5px] border-gray-200 text-right w-24">
-                              {Number(invoice.paidAmount) > Number(invoice.totalAmount)
-                                ? (Number(invoice.paidAmount) - Number(invoice.totalAmount)).toLocaleString()
-                                : '0'}
+                              {Number(getInvoiceNetOverpaid(invoice) || 0).toLocaleString()}
                             </td>
                           )}
 
@@ -1983,7 +2017,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                           )}
                           {visibleColumns.paymentMode && (
                             <td className="px-3 py-1.5 border-r-[0.5px] border-gray-200 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                              {Number(invoice.paidAmount) > 0 ? (
+                              {Number(getInvoiceCashPaid(invoice)) > 0 ? (
                                 <div className={`flex items-center gap-1.5 text-[9px] font-semibold uppercase px-2 py-1 rounded-md border w-fit shadow-inner-sm ${recentMode === 'MPESA' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-blue-50 text-blue-700 border-blue-100'
                                   }`}>
                                   <span className={`w-1.5 h-1.5 rounded-full ${recentMode === 'MPESA' ? 'bg-emerald-500 animate-pulse' : 'bg-blue-500'}`} />
