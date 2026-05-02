@@ -5,7 +5,7 @@ import { useSchoolData } from '../contexts/SchoolDataContext';
 
 const TEST_TYPES = [
   { value: 'OPENER', label: 'Opener' },
-  { value: 'MIDTERM', label: 'Midterm' },
+  { value: 'MID_TERM', label: 'Midterm' },
   { value: 'END_TERM', label: 'End Term' },
   { value: 'MONTHLY', label: 'Monthly' },
   { value: 'WEEKLY', label: 'Weekly' },

@@ -1598,7 +1598,7 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
           test: {
             // Avoid selecting enum fields here so legacy enum drift in production data
             // does not crash matrix generation while migrations roll forward.
-            select: { id: true, title: true, learningArea: true, learningAreaId: true, totalMarks: true }
+            select: { id: true, title: true, learningArea: true, learningAreaId: true, totalMarks: true, testType: true }
           }
         },
         orderBy: [
@@ -1669,7 +1669,8 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
           st.id AS test_id,
           st.title AS test_title,
           st."learningArea" AS test_learning_area,
-          st."totalMarks" AS test_total_marks
+          st."totalMarks" AS test_total_marks,
+          st."testType"::text AS test_test_type
         FROM summative_results sr
         INNER JOIN learners l ON l.id = sr."learnerId"
         INNER JOIN summative_tests st ON st.id = sr."testId"
@@ -1702,7 +1703,8 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
           id: row.test_id,
           title: row.test_title,
           learningArea: row.test_learning_area,
-          totalMarks: row.test_total_marks
+          totalMarks: row.test_total_marks,
+          testType: row.test_test_type
         }
       }));
     }

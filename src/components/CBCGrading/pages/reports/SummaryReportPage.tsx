@@ -70,6 +70,7 @@ const LEARNING_AREA_ABBREVIATIONS = {
   'INDIGENOUS LANGUAGE': 'INDI',
   'LANGUAGE ACTIVITIES': 'LANG'
 };
+const CORE_EXAM_TYPES = ['OPENER', 'MID_TERM', 'END_TERM'];
 
 const getAbbreviatedName = (name) => {
   if (!name) return '';
@@ -100,7 +101,7 @@ const SummaryReportPage = () => {
   const [stagedStream, setStagedStream] = useState('all');
   const [stagedTerm, setStagedTerm] = useState('TERM_1');
   const [stagedYear, setStagedYear] = useState(getCurrentAcademicYear());
-  const [stagedTestType, setStagedTestType] = useState('all');
+  const [stagedTestType, setStagedTestType] = useState('');
 
 
 
@@ -113,6 +114,16 @@ const SummaryReportPage = () => {
 
   const [availableTestTypes, setAvailableTestTypes] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const mergedExamTypes = useMemo(() => {
+    const merged = [...new Set([...(availableTestTypes || []), ...CORE_EXAM_TYPES])];
+    return merged.sort((a, b) => {
+      const order = { OPENER: 1, MID_TERM: 2, END_TERM: 3 };
+      const ao = order[a] || 99;
+      const bo = order[b] || 99;
+      if (ao !== bo) return ao - bo;
+      return a.localeCompare(b);
+    });
+  }, [availableTestTypes]);
   
   // Track last fetched configuration to avoid loops but allow auto-switching
   const lastFetchRef = useRef(null);
@@ -151,16 +162,20 @@ const SummaryReportPage = () => {
         // Extract unique testTypes — normalize to uppercase for dedup
         const types = [...new Set(tests.map((t: any) => t.testType).filter(Boolean))].sort() as string[];
         setAvailableTestTypes(types);
-        // Reset selection only if the current value can't match anything in the new list
+        // Keep existing valid selection; otherwise default to OPENER, then first.
         setStagedTestType((prev: string) => {
-          if (prev === 'all') return prev;
+          const nextTypes = [...new Set([...(types || []), ...CORE_EXAM_TYPES])];
+          if (nextTypes.length === 0) return '';
           // Accept if the exact value OR a case-insensitive normalized match exists
           const prevNorm = prev.toUpperCase().replace(/[\s-]+/g, '_');
-          const hasMatch = types.some(t => t === prev || t.toUpperCase().replace(/[\s-]+/g, '_') === prevNorm);
-          return hasMatch ? prev : 'all';
+          const hasMatch = nextTypes.some(t => t === prev || t.toUpperCase().replace(/[\s-]+/g, '_') === prevNorm);
+          if (hasMatch) return prev;
+          if (nextTypes.includes('OPENER')) return 'OPENER';
+          return nextTypes[0];
         });
       } catch {
         setAvailableTestTypes([]);
+        setStagedTestType('OPENER');
       }
     };
     fetchTestTypes();
@@ -203,7 +218,7 @@ const SummaryReportPage = () => {
       if (stagedStream && stagedStream !== 'all') {
           apiParams.stream = stagedStream;
       }
-      if (stagedTestType && stagedTestType !== 'all') {
+      if (stagedTestType) {
           apiParams.testType = stagedTestType;
       }
 
@@ -678,15 +693,9 @@ const SummaryReportPage = () => {
                 onChange={(e) => setStagedTestType(e.target.value)}
                 className="w-full h-9 px-2.5 py-1.5 border border-slate-300 rounded text-xs bg-white text-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-purple appearance-none cursor-pointer hover:border-slate-400 transition-colors"
               >
-                <option value="all">All Exams</option>
-                {availableTestTypes.length > 0
-                  ? availableTestTypes.map(t => (
-                    <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>
-                  ))
-                  : ['OPENER', 'MIDTERM', 'END_TERM'].map(t => (
-                    <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>
-                  ))
-                }
+                {mergedExamTypes.map(t => (
+                  <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>
+                ))}
               </select>
             </div>
 
