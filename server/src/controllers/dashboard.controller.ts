@@ -320,6 +320,7 @@ export class DashboardController {
         try {
             const userId = req.user?.userId;
             if (!userId) throw new ApiError(400, 'User ID is required');
+            const institutionType = (req.school?.institutionType || 'PRIMARY_CBC') as any;
 
             const cacheKey = `dashboard:teacher:${userId}`;
             const cached = await redisCacheService.get<any>(cacheKey);
@@ -327,8 +328,8 @@ export class DashboardController {
 
             const [myClasses, pendingAssessments, recentActivityRaw] = await Promise.all([
                 prisma.class.findMany({
-                    where: { teacherId: userId, archived: false },
-                    include: { _count: { select: { enrollments: true } } },
+                    where: { teacherId: userId, archived: false, institutionType },
+                    include: { _count: { select: { enrollments: { where: { active: true } } } } },
                 }),
                 prisma.formativeAssessment.count({ where: { teacherId: userId, status: 'DRAFT' } }),
                 prisma.formativeAssessment.findMany({
@@ -338,10 +339,30 @@ export class DashboardController {
                 }),
             ]);
 
-            const totalMyStudents = myClasses.reduce((sum, cls) => sum + cls._count.enrollments, 0);
+            const myClassesWithOccupancy = await Promise.all(myClasses.map(async (cls) => {
+                const enrollmentCount = cls._count.enrollments;
+                if (enrollmentCount > 0) return cls;
+
+                const occupancy = await prisma.learner.count({
+                    where: {
+                        grade: cls.grade,
+                        institutionType,
+                        ...(cls.stream ? { stream: cls.stream } : {}),
+                        status: 'ACTIVE',
+                        archived: false,
+                    },
+                });
+
+                return {
+                    ...cls,
+                    _count: { ...cls._count, enrollments: occupancy },
+                };
+            }));
+
+            const totalMyStudents = myClassesWithOccupancy.reduce((sum, cls) => sum + cls._count.enrollments, 0);
             const payload = {
                 stats: {
-                    myStudents: totalMyStudents, myClasses: myClasses.length,
+                    myStudents: totalMyStudents, myClasses: myClassesWithOccupancy.length,
                     pendingTasks: pendingAssessments, messages: 0,
                     analytics: {
                         attendance: 94,
@@ -349,7 +370,7 @@ export class DashboardController {
                         completion: 75, engagement: 90,
                     },
                 },
-                schedule: myClasses.map(cls => ({
+                schedule: myClassesWithOccupancy.map(cls => ({
                     id: cls.id, grade: cls.name, subject: 'Standard CBC',
                     time: '8:00 AM', room: cls.room || 'N/A', status: 'upcoming',
                 })),
