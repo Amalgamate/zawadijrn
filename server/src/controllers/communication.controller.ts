@@ -16,6 +16,7 @@ import logger from '../utils/logger';
  */
 export const getCommunicationConfig = async (req: AuthRequest, res: Response) => {
     const config = await prisma.communicationConfig.findFirst();
+    const otpEnabled = (config?.emailTemplates as any)?.__security?.otpEnabled !== false;
 
     if (!config) {
         return res.status(200).json({
@@ -46,6 +47,9 @@ export const getCommunicationConfig = async (req: AuthRequest, res: Response) =>
                     provider: 'ultramsg',
                     hasApiKey: false,
                     instanceId: ''
+                },
+                otp: {
+                    enabled: true
                 }
             }
         });
@@ -94,6 +98,9 @@ export const getCommunicationConfig = async (req: AuthRequest, res: Response) =>
                 hasApiKey: !!config.whatsappApiKey,
                 instanceId: config.whatsappInstanceId || ''
             },
+            otp: {
+                enabled: otpEnabled
+            },
             createdAt: config.createdAt,
             updatedAt: config.updatedAt
         }
@@ -105,8 +112,12 @@ export const getCommunicationConfig = async (req: AuthRequest, res: Response) =>
  * POST /api/communication/config
  */
 export const saveCommunicationConfig = async (req: AuthRequest, res: Response) => {
-    const { sms, email, mpesa, birthdays, whatsapp } = req.body;
+    const { sms, email, mpesa, birthdays, whatsapp, otp } = req.body;
     const data: any = {};
+    const existingConfig = await prisma.communicationConfig.findFirst();
+    const existingTemplates = (existingConfig?.emailTemplates && typeof existingConfig.emailTemplates === 'object')
+        ? (existingConfig.emailTemplates as any)
+        : {};
 
     if (sms) {
         logger.info(`[CommunicationController] SMS Config Update:`, {
@@ -171,7 +182,19 @@ export const saveCommunicationConfig = async (req: AuthRequest, res: Response) =
         if (whatsapp.instanceId !== undefined) data.whatsappInstanceId = whatsapp.instanceId;
     }
 
-    const existingConfig = await prisma.communicationConfig.findFirst();
+    if (otp && typeof otp.enabled === 'boolean') {
+        const baseTemplates = (data.emailTemplates && typeof data.emailTemplates === 'object')
+            ? data.emailTemplates
+            : existingTemplates;
+        data.emailTemplates = {
+            ...baseTemplates,
+            __security: {
+                ...(baseTemplates?.__security || {}),
+                otpEnabled: otp.enabled
+            }
+        };
+    }
+
     const config = existingConfig
         ? await prisma.communicationConfig.update({ where: { id: existingConfig.id }, data })
         : await prisma.communicationConfig.create({ data });

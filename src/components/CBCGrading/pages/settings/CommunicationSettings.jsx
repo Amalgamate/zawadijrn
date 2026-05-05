@@ -103,7 +103,8 @@ const CommunicationSettings = () => {
     customBaseUrl: '',
     customAuthHeader: 'Authorization',
     customToken: '',
-    enabled: false
+    enabled: false,
+    otpEnabled: true
   });
 
   const [testContact, setTestContact] = useState('');
@@ -178,7 +179,8 @@ const CommunicationSettings = () => {
               customName: data.sms.customName || '',
               customBaseUrl: data.sms.customUrl || '',
               customAuthHeader: data.sms.customAuthHeader || 'Authorization',
-              hasCustomToken: !!data.sms.hasCustomToken
+              hasCustomToken: !!data.sms.hasCustomToken,
+              otpEnabled: data.otp?.enabled !== false
             }));
           }
 
@@ -227,6 +229,9 @@ const CommunicationSettings = () => {
           customBaseUrl: smsSettings.customBaseUrl,
           customAuthHeader: smsSettings.customAuthHeader,
           customToken: smsSettings.customToken || undefined
+        };
+        payload.otp = {
+          enabled: smsSettings.otpEnabled
         };
       }
 
@@ -786,11 +791,20 @@ const CommunicationSettings = () => {
               )}
 
               <div className="flex items-center gap-4 mt-6">
+                <label className="inline-flex items-center gap-3 px-4 py-2 border rounded-lg bg-gray-50">
+                  <input
+                    type="checkbox"
+                    checked={smsSettings.otpEnabled}
+                    onChange={(e) => setSmsSettings({ ...smsSettings, otpEnabled: e.target.checked })}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Require OTP on Login</span>
+                </label>
                 <button
                   onClick={() => handleSave('SMS')}
-                  disabled={loading || (!smsSettings.apiKey && !smsSettings.hasApiKey)}
+                  disabled={loading}
                   className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                  title={!smsSettings.apiKey && !smsSettings.hasApiKey ? "Please enter API Key first" : "Save SMS settings"}
+                  title="Save SMS settings"
                 >
                   {loading ? <Loader size={20} className="animate-spin" /> : <Save size={20} />}
                   {loading ? 'Saving...' : 'Save SMS Settings'}

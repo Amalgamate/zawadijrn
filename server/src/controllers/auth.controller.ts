@@ -200,7 +200,11 @@ export class AuthController {
     const resolvedSchoolId: string | undefined = schoolId || schoolConfig?.id;
 
     const requiresInstitutionSetup = user.role === 'SUPER_ADMIN' && !(schoolConfig?.institutionTypeLocked === true);
-    const requiresOtp = !['SUPER_ADMIN', 'STUDENT'].includes(user.role);
+    const communicationConfig = await prisma.communicationConfig.findFirst({
+      select: { emailTemplates: true }
+    });
+    const otpEnabled = (communicationConfig?.emailTemplates as any)?.__security?.otpEnabled !== false;
+    const requiresOtp = otpEnabled && !['SUPER_ADMIN', 'STUDENT'].includes(user.role);
     let activeApps: string[] = [];
     
     if (resolvedSchoolId) {
