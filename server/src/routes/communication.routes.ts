@@ -66,6 +66,9 @@ const saveCommunicationConfigSchema = z.object({
     birthdays: z.object({
         enabled: z.boolean().optional(),
         template: z.string().optional()
+    }).optional(),
+    otp: z.object({
+        enabled: z.boolean()
     }).optional()
 });
 
