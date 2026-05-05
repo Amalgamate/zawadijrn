@@ -206,7 +206,9 @@ export class UserController {
     if (!targetUser) throw new ApiError(404, 'User not found');
 
     const isSelfUpdate = currentUserId === id;
-    const canUpdate = isSelfUpdate || canManageRole(currentUserRole, targetUser.role as Role);
+    const isSuperAdminEditingPeerSuperAdmin =
+      currentUserRole === 'SUPER_ADMIN' && targetUser.role === 'SUPER_ADMIN' && !isSelfUpdate;
+    const canUpdate = isSelfUpdate || canManageRole(currentUserRole, targetUser.role as Role) || isSuperAdminEditingPeerSuperAdmin;
     if (!canUpdate) throw new ApiError(403, 'Permission denied');
 
     const updateData: any = {};
