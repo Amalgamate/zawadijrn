@@ -246,7 +246,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await axiosInstance.put('/schools', {
+      const payload = {
         name: settings.schoolName,
         address: settings.address,
         phone: settings.phone,
@@ -268,7 +268,19 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
         welcomeMessage: settings.welcomeMessage,
         onboardingTitle: settings.onboardingTitle,
         onboardingMessage: settings.onboardingMessage
-      });
+      };
+
+      // Avoid sending generated API asset URLs back to DB.
+      // We only persist branding fields when they are actual values (data URI upload
+      // or static branding path), otherwise keep existing DB value unchanged.
+      const isGeneratedAssetUrl = (value) =>
+        typeof value === 'string' && value.startsWith('/api/schools/public/assets/');
+
+      if (isGeneratedAssetUrl(payload.logoUrl)) delete payload.logoUrl;
+      if (isGeneratedAssetUrl(payload.faviconUrl)) delete payload.faviconUrl;
+      if (isGeneratedAssetUrl(payload.stampUrl)) delete payload.stampUrl;
+
+      await axiosInstance.put('/schools', payload);
 
       setSavedState({ settings: { ...settings }, previews: { ...previews } });
       toast.success('✅ School settings updated successfully!');

@@ -12,7 +12,8 @@ import {
   getAdmissionSequence,
   getAdmissionNumberPreview,
   resetAdmissionSequence,
-  getPublicBranding
+  getPublicBranding,
+  getPublicBrandingAsset
 } from '../controllers/school.controller';
 import { validate } from '../middleware/validation.middleware';
 import { rateLimit } from '../middleware/enhanced-rateLimit.middleware';
@@ -55,6 +56,7 @@ const resetWholeInstitutionSchema = z.object({
 
 // Public branding route (no auth)
 router.get('/public/branding', rateLimit({ windowMs: 60_000, maxRequests: 100 }), asyncHandler(getPublicBranding));
+router.get('/public/assets/:assetType', rateLimit({ windowMs: 60_000, maxRequests: 200 }), asyncHandler(getPublicBrandingAsset));
 
 // Protect all routes below
 router.use(authenticate);

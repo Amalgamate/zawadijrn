@@ -22,6 +22,34 @@ const resolveCurrentSchool = () =>
     where: { archived: false },
     orderBy: [{ active: 'desc' }, { updatedAt: 'desc' }, { createdAt: 'desc' }],
   });
+
+const isDataUri = (value: unknown): value is string =>
+  typeof value === 'string' && value.startsWith('data:');
+
+const resolveBrandingAssetUrl = (assetType: 'logo' | 'favicon' | 'stamp', value: string | null | undefined, updatedAt?: Date) => {
+  if (!value) return value;
+  if (!isDataUri(value)) return value;
+  const version = updatedAt ? updatedAt.getTime() : Date.now();
+  return `/api/schools/public/assets/${assetType}?v=${version}`;
+};
+
+const optimizeSchoolPayload = <T extends { logoUrl?: string | null; faviconUrl?: string | null; stampUrl?: string | null; updatedAt?: Date }>(school: T) => ({
+  ...school,
+  logoUrl: resolveBrandingAssetUrl('logo', school.logoUrl, school.updatedAt),
+  faviconUrl: resolveBrandingAssetUrl('favicon', school.faviconUrl, school.updatedAt),
+  stampUrl: resolveBrandingAssetUrl('stamp', school.stampUrl, school.updatedAt),
+});
+
+const decodeDataUri = (value: string): { mimeType: string; buffer: Buffer } | null => {
+  const match = value.match(/^data:([^;]+);base64,(.+)$/);
+  if (!match) return null;
+  const [, mimeType, base64Payload] = match;
+  try {
+    return { mimeType, buffer: Buffer.from(base64Payload, 'base64') };
+  } catch {
+    return null;
+  }
+};
 // ============================================
 // SCHOOL MANAGEMENT ENDPOINTS (Single-Tenant)
 // ============================================
@@ -54,11 +82,12 @@ export const getPublicBranding = async (req: Request, res: Response) => {
         latitude: true,
         longitude: true,
         stampUrl: true,
+        updatedAt: true,
       },
     });
 
     // Return defaults when no school record exists yet (single-tenant, not yet provisioned)
-    const branding = school ?? {
+    const branding = school ? optimizeSchoolPayload(school) : {
       id: null,
       name: 'Trends CORE V1.0',
       logoUrl: '/branding/logo.png',
@@ -93,7 +122,44 @@ export const getPublicBranding = async (req: Request, res: Response) => {
 export const getSchool = async (req: AuthRequest, res: Response) => {
   const school = await resolveCurrentSchool();
   if (!school) throw new ApiError(404, 'School not found');
-  res.status(200).json({ success: true, data: school });
+  res.status(200).json({ success: true, data: optimizeSchoolPayload(school) });
+};
+
+export const getPublicBrandingAsset = async (req: Request, res: Response) => {
+  const school = await prisma.school.findFirst({
+    where: { archived: false },
+    orderBy: [{ active: 'desc' }, { updatedAt: 'desc' }, { createdAt: 'desc' }],
+    select: { logoUrl: true, faviconUrl: true, stampUrl: true }
+  });
+
+  const assetType = String(req.params.assetType || '').toLowerCase();
+  const fallbackMap: Record<string, string> = {
+    logo: '/branding/logo.png',
+    favicon: '/branding/favicon.png',
+    stamp: '/branding/stamp.svg'
+  };
+
+  const fieldMap: Record<string, 'logoUrl' | 'faviconUrl' | 'stampUrl'> = {
+    logo: 'logoUrl',
+    favicon: 'faviconUrl',
+    stamp: 'stampUrl'
+  };
+
+  const field = fieldMap[assetType];
+  if (!field) throw new ApiError(400, 'Invalid asset type');
+
+  const value = school?.[field] || fallbackMap[assetType];
+  if (!value) throw new ApiError(404, 'Asset not found');
+
+  if (!isDataUri(value)) {
+    return res.redirect(302, value);
+  }
+
+  const decoded = decodeDataUri(value);
+  if (!decoded) throw new ApiError(400, 'Invalid embedded branding asset');
+
+  res.setHeader('Cache-Control', 'public, max-age=86400, immutable');
+  res.type(decoded.mimeType).status(200).send(decoded.buffer);
 };
 
 export const updateSchool = async (req: AuthRequest, res: Response) => {
