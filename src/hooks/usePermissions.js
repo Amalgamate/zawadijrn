@@ -10,7 +10,6 @@ import { useAuth } from './useAuth';
 import {
   hasPermission,
   hasAnyPermission,
-  hasAllPermissions,
   canManageRole,
   getRolePermissions,
   ROLE_HIERARCHY,
@@ -20,6 +19,12 @@ import {
 export const usePermissions = () => {
   const { user } = useAuth();
   const userRole = user?.role;
+  const userRoles = useMemo(() => {
+    if (Array.isArray(user?.roles) && user.roles.length > 0) {
+      return user.roles;
+    }
+    return userRole ? [userRole] : [];
+  }, [user?.roles, userRole]);
 
   // Memoize permission checks to avoid recalculation
   const permissions = useMemo(() => {
@@ -29,8 +34,8 @@ export const usePermissions = () => {
      * @returns {boolean}
      */
     const can = (permission) => {
-      if (!userRole) return false;
-      return hasPermission(userRole, permission);
+      if (userRoles.length === 0) return false;
+      return userRoles.some((role) => hasPermission(role, permission));
     };
 
     /**
@@ -39,8 +44,8 @@ export const usePermissions = () => {
      * @returns {boolean}
      */
     const canAny = (permissionsList) => {
-      if (!userRole) return false;
-      return hasAnyPermission(userRole, permissionsList);
+      if (userRoles.length === 0) return false;
+      return userRoles.some((role) => hasAnyPermission(role, permissionsList));
     };
 
     /**
@@ -49,8 +54,10 @@ export const usePermissions = () => {
      * @returns {boolean}
      */
     const canAll = (permissionsList) => {
-      if (!userRole) return false;
-      return hasAllPermissions(userRole, permissionsList);
+      if (userRoles.length === 0) return false;
+      return permissionsList.every((permission) =>
+        userRoles.some((role) => hasPermission(role, permission))
+      );
     };
 
     /**
@@ -59,7 +66,7 @@ export const usePermissions = () => {
      * @returns {boolean}
      */
     const isRole = (role) => {
-      return userRole === role;
+      return userRoles.includes(role);
     };
 
     /**
@@ -68,8 +75,8 @@ export const usePermissions = () => {
      * @returns {boolean}
      */
     const isAnyRole = (rolesList) => {
-      if (!userRole) return false;
-      return rolesList.includes(userRole);
+      if (userRoles.length === 0) return false;
+      return rolesList.some((role) => userRoles.includes(role));
     };
 
     /**
@@ -78,8 +85,8 @@ export const usePermissions = () => {
      * @returns {boolean}
      */
     const canManage = (targetRole) => {
-      if (!userRole) return false;
-      return canManageRole(userRole, targetRole);
+      if (userRoles.length === 0) return false;
+      return userRoles.some((role) => canManageRole(role, targetRole));
     };
 
     /**
@@ -87,8 +94,8 @@ export const usePermissions = () => {
      * @returns {string[]}
      */
     const getAllPermissions = () => {
-      if (!userRole) return [];
-      return getRolePermissions(userRole);
+      if (userRoles.length === 0) return [];
+      return [...new Set(userRoles.flatMap((role) => getRolePermissions(role)))];
     };
 
     /**
@@ -96,8 +103,8 @@ export const usePermissions = () => {
      * @returns {number}
      */
     const getHierarchyLevel = () => {
-      if (!userRole) return 0;
-      return ROLE_HIERARCHY[userRole] || 0;
+      if (userRoles.length === 0) return 0;
+      return Math.max(...userRoles.map((role) => ROLE_HIERARCHY[role] || 0));
     };
 
     return {
@@ -112,7 +119,7 @@ export const usePermissions = () => {
       role: userRole,
       ROLES,
     };
-  }, [userRole]);
+  }, [userRole, userRoles]);
 
   return permissions;
 };
