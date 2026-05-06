@@ -342,7 +342,7 @@ const LearnersList = ({
       <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
         <div className="flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center">
 
-          <div className="flex flex-col md:flex-row gap-3 w-full xl:w-auto flex-1 items-center">
+          <div className="flex flex-row gap-2 w-full xl:w-auto flex-1 items-center">
             {/* Search */}
             <div className="relative flex-grow">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
@@ -359,52 +359,61 @@ const LearnersList = ({
             <div className="relative flex-shrink-0">
               <button
                 onClick={() => setShowGlobalFilters(!showGlobalFilters)}
-                className={`px-5 py-2.5 border rounded-xl font-medium flex items-center gap-2 transition-all ${activeFilterCount > 0 ? 'bg-blue-50 border-blue-200 text-blue-700' : 'hover:bg-gray-50 text-gray-700 bg-white shadow-sm'}`}
+                className={`h-11 w-11 md:w-auto md:px-5 md:py-2.5 border rounded-xl font-medium flex items-center justify-center md:justify-start gap-2 transition-all ${activeFilterCount > 0 ? 'bg-blue-50 border-blue-200 text-blue-700' : 'hover:bg-gray-50 text-gray-700 bg-white shadow-sm'}`}
+                aria-label="Open filters"
               >
                 <Filter size={16} className={activeFilterCount > 0 ? 'text-blue-600' : 'text-gray-500'} />
-                Filters
+                {!isMobile && 'Filters'}
                 {activeFilterCount > 0 && (
-                  <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-[10px] ml-1">{activeFilterCount}</span>
+                  <span className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-[10px]">{activeFilterCount}</span>
                 )}
               </button>
 
               {showGlobalFilters && (
-                <div className="absolute right-0 top-full mt-2 w-[320px] bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden animate-fade-in origin-top-right">
-                  <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-                    <h3 className="font-medium text-gray-800 flex items-center gap-2"><Filter size={16} className="text-blue-600" /> Student Filters</h3>
-                    {activeFilterCount > 0 && <button onClick={clearAllFiltersLearners} className="text-[11px] font-medium text-red-600 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-md">Clear All</button>}
-                  </div>
-                  <div className="p-5 space-y-5 max-h-[60vh] overflow-y-auto custom-scrollbar">
-                    {/* Grade */}
-                    <div>
-                      <h4 className="text-[11px] font-semibold text-blue-500 uppercase tracking-widest mb-2">Grade</h4>
-                      <select value={filterGrade} onChange={(e) => setFilterGrade(e.target.value)} className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm w-full outline-blue-500">
-                        <option value="all">All Grades</option>
-                        {gradeOptions.map(g => <option key={g} value={g}>{formatGradeLabel(g)}</option>)}
-                      </select>
+                <>
+                  {isMobile && (
+                    <div
+                      className="fixed inset-0 bg-black/35 z-40"
+                      onClick={() => setShowGlobalFilters(false)}
+                    />
+                  )}
+                  <div className={`${isMobile ? 'fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92vw] max-w-[360px] max-h-[80vh] z-50' : 'absolute right-0 top-full mt-2 w-[320px] z-50'} bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden animate-fade-in origin-top-right`}>
+                    <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                      <h3 className="font-medium text-gray-800 flex items-center gap-2"><Filter size={16} className="text-blue-600" /> Student Filters</h3>
+                      {activeFilterCount > 0 && <button onClick={clearAllFiltersLearners} className="text-[11px] font-medium text-red-600 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-md">Clear All</button>}
                     </div>
-                    {/* Stream */}
-                    <div>
-                      <h4 className="text-[11px] font-semibold text-blue-500 uppercase tracking-widest mb-2">Stream</h4>
-                      <select value={filterStream} onChange={(e) => setFilterStream(e.target.value)} className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm w-full outline-blue-500">
-                        <option value="all">All Streams</option>
-                        {availableStreams.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
-                      </select>
-                    </div>
-                    {/* Status */}
-                    <div>
-                      <h4 className="text-[11px] font-semibold text-blue-500 uppercase tracking-widest mb-2">Enrolment Status</h4>
-                      <div className="flex flex-col gap-1.5">
-                        {[['all','All Status'],['ACTIVE','Active'],['DROPPED_OUT','Archived'],['TRANSFERRED_OUT','Transferred Out'],['GRADUATED','Graduated'],['SUSPENDED','Suspended']].map(([val, label]) => (
-                          <button key={val} onClick={() => setFilterStatus(val)} className={`text-left text-sm px-3 py-1.5 rounded-lg font-semibold transition-all ${filterStatus === val ? 'bg-blue-600 text-white' : 'hover:bg-gray-50 text-gray-700'}`}>{label}</button>
-                        ))}
+                    <div className="p-5 space-y-5 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                      {/* Grade */}
+                      <div>
+                        <h4 className="text-[11px] font-semibold text-blue-500 uppercase tracking-widest mb-2">Grade</h4>
+                        <select value={filterGrade} onChange={(e) => setFilterGrade(e.target.value)} className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm w-full outline-blue-500">
+                          <option value="all">All Grades</option>
+                          {gradeOptions.map(g => <option key={g} value={g}>{formatGradeLabel(g)}</option>)}
+                        </select>
+                      </div>
+                      {/* Stream */}
+                      <div>
+                        <h4 className="text-[11px] font-semibold text-blue-500 uppercase tracking-widest mb-2">Stream</h4>
+                        <select value={filterStream} onChange={(e) => setFilterStream(e.target.value)} className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm w-full outline-blue-500">
+                          <option value="all">All Streams</option>
+                          {availableStreams.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+                        </select>
+                      </div>
+                      {/* Status */}
+                      <div>
+                        <h4 className="text-[11px] font-semibold text-blue-500 uppercase tracking-widest mb-2">Enrolment Status</h4>
+                        <div className="flex flex-col gap-1.5">
+                          {[['all','All Status'],['ACTIVE','Active'],['DROPPED_OUT','Archived'],['TRANSFERRED_OUT','Transferred Out'],['GRADUATED','Graduated'],['SUSPENDED','Suspended']].map(([val, label]) => (
+                            <button key={val} onClick={() => setFilterStatus(val)} className={`text-left text-sm px-3 py-1.5 rounded-lg font-semibold transition-all ${filterStatus === val ? 'bg-blue-600 text-white' : 'hover:bg-gray-50 text-gray-700'}`}>{label}</button>
+                          ))}
+                        </div>
                       </div>
                     </div>
+                    <div className="p-4 bg-gray-50 border-t flex justify-end">
+                      <button onClick={() => setShowGlobalFilters(false)} className="px-5 py-2 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm">Apply & Close</button>
+                    </div>
                   </div>
-                  <div className="p-4 bg-gray-50 border-t flex justify-end">
-                    <button onClick={() => setShowGlobalFilters(false)} className="px-5 py-2 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm">Apply & Close</button>
-                  </div>
-                </div>
+                </>
               )}
             </div>
           </div>
