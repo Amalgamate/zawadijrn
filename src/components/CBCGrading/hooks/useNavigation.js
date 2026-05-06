@@ -397,7 +397,7 @@ function parentSchoolSectionsFromNav(nav) {
 }
 
 export const useNavigation = () => {
-    const { can, role } = usePermissions();
+    const { can, role, isRole } = usePermissions();
     const { user } = useAuth();
     const labels = useInstitutionLabels();
     const institutionType = user?.institutionType || 'PRIMARY_CBC';
@@ -415,7 +415,8 @@ export const useNavigation = () => {
         const isItemVisible = (item) => {
             // 1. App Gating: if the item requires an app, it must be active
             if (item.app && activeAppsLoaded && !activeApps.includes(item.app) && !isSuperAdmin) return false;
-            
+            if (item.path === 'learners-admissions' && isRole('TEACHER')) return true;
+             
             // 2. Permission Gating: must have required permission
             if (item.permission && !can(item.permission)) return false;
             
@@ -545,6 +546,7 @@ export const useNavigation = () => {
         const isSuperAdmin = user?.role === 'SUPER_ADMIN';
         const isItemVisible = (item) => {
             if (item.app && activeAppsLoaded && !activeApps.includes(item.app) && !isSuperAdmin) return false;
+            if (item.path === 'learners-admissions' && isRole('TEACHER')) return true;
             if (item.permission && !can(item.permission)) return false;
             return true;
         };
@@ -601,7 +603,7 @@ export const useNavigation = () => {
             built = transformNavForParentRole(built);
         }
         return built;
-    }, [can, role, labels, user?.activeApps, user?.role]);
+    }, [can, role, isRole, labels, user?.activeApps, user?.role]);
 
     const dashboardSection = navSections.find(s => s.id === 'dashboard');
     const lmsSection = navSections.find(s => s.id === 'lms');
