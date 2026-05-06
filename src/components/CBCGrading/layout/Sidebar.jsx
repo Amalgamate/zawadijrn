@@ -87,6 +87,7 @@ const PREFETCH_MAP = {
   'transport-routes':         () => import('../pages/transport/TransportManager'),
   'settings-school':          () => import('../pages/settings/SchoolSettings'),
   'settings-users':           () => import('../pages/settings/UserManagement'),
+  'planner-duty-roster':      () => import('../pages/planner/DutyRosterPage'),
 };
 
 const prefetch = (path) => {

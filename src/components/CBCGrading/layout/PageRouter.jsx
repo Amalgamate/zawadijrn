@@ -66,6 +66,7 @@ const LearnerProfile = lazy(() => import('../pages/profiles/LearnerProfile'));
 const TeacherProfile = lazy(() => import('../pages/profiles/TeacherProfile'));
 const ParentProfile = lazy(() => import('../pages/profiles/ParentProfile'));
 const PlannerLayout = lazy(() => import('../pages/planner/PlannerLayout'));
+const DutyRosterPage = lazy(() => import('../pages/planner/DutyRosterPage'));
 const ParentEventsPage = lazy(() => import('../pages/parent/ParentEventsPage'));
 const UniformAllocationPage = lazy(() => import('../pages/UniformAllocationPage'));
 const IDPrintingPage = lazy(() => import('../pages/IDPrintingPage'));
@@ -228,6 +229,8 @@ const PageRouter = ({
           case 'planner-agenda':
           case 'planner-schemes':
             return <PlannerLayout currentPage={currentPage === 'events-calendar' ? 'planner-calendar' : currentPage} onNavigate={handleNavigate} />;
+          case 'planner-duty-roster':
+            return <DutyRosterPage />;
           case 'events-calendar':
             return user?.role === 'PARENT'
               ? <ParentEventsPage />
