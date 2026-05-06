@@ -77,6 +77,14 @@ export const createUserSchema = z.object({
     'NURSE', 'SECURITY', 'DRIVER', 'COOK', 'CLEANER', 
     'GROUNDSKEEPER', 'IT_SUPPORT', 'STUDENT'
   ]),
+  roles: z.array(
+    z.enum([
+      'SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM',
+      'TEACHER', 'PARENT', 'ACCOUNTANT', 'RECEPTIONIST', 'LIBRARIAN',
+      'NURSE', 'SECURITY', 'DRIVER', 'COOK', 'CLEANER',
+      'GROUNDSKEEPER', 'IT_SUPPORT', 'STUDENT'
+    ])
+  ).optional(),
   status: z.enum(['ACTIVE', 'INACTIVE', 'SUSPENDED']).optional(),
   gender: z.enum(['MALE', 'FEMALE', 'OTHER']).optional().nullable(),
   staffId: z.string().optional().nullable(),
@@ -95,6 +103,14 @@ export const updateUserSchema = z.object({
     'NURSE', 'SECURITY', 'DRIVER', 'COOK', 'CLEANER', 
     'GROUNDSKEEPER', 'IT_SUPPORT', 'STUDENT'
   ]).optional(),
+  roles: z.array(
+    z.enum([
+      'SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM',
+      'TEACHER', 'PARENT', 'ACCOUNTANT', 'RECEPTIONIST', 'LIBRARIAN',
+      'NURSE', 'SECURITY', 'DRIVER', 'COOK', 'CLEANER',
+      'GROUNDSKEEPER', 'IT_SUPPORT', 'STUDENT'
+    ])
+  ).optional(),
   status: z.enum(['ACTIVE', 'INACTIVE', 'SUSPENDED']).optional(),
   gender: z.enum(['MALE', 'FEMALE', 'OTHER']).optional().nullable(),
   staffId: z.string().optional().nullable(),

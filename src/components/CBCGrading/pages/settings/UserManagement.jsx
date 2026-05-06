@@ -208,6 +208,7 @@ const UserManagement = () => {
     username: '',
     password: '',
     role: 'TEACHER',
+    roles: ['TEACHER'],
     staffId: ''
   });
 
@@ -248,6 +249,7 @@ const UserManagement = () => {
         email: user.email,
         phone: user.phone || '',
         role: user.role,
+        roles: Array.isArray(user.roles) && user.roles.length > 0 ? user.roles : [user.role],
         status: user.archived ? 'ARCHIVED' : (user.status || 'ACTIVE'),
         staffId: user.staffId || '',
         archived: user.archived || false,
@@ -311,12 +313,17 @@ const UserManagement = () => {
         return;
       }
 
+      const payload = {
+        ...formData,
+        roles: Array.from(new Set([formData.role, ...(formData.roles || [])]))
+      };
+
       if (editingUser) {
-        await userAPI.update(editingUser.id, formData);
+        await userAPI.update(editingUser.id, payload);
         addActivityLog('USER_UPDATED', `${formData.firstName} ${formData.lastName} (${formData.role})`);
         showNotification('User updated successfully!');
       } else {
-        await userAPI.create(formData);
+        await userAPI.create(payload);
         addActivityLog('USER_CREATED', `${formData.firstName} ${formData.lastName} (${formData.role})`);
         showNotification('User created successfully!');
       }
@@ -341,6 +348,7 @@ const UserManagement = () => {
       username: user.username || '',
       password: '',
       role: user.role,
+      roles: Array.isArray(user.roles) && user.roles.length > 0 ? user.roles : [user.role],
       staffId: user.staffId || ''
     });
     setShowModal(true);
@@ -394,7 +402,21 @@ const UserManagement = () => {
       username: '',
       password: '',
       role: 'TEACHER',
+      roles: ['TEACHER'],
       staffId: ''
+    });
+  };
+
+  const toggleFormRole = (roleValue) => {
+    setFormData((prev) => {
+      const existing = new Set(prev.roles || [prev.role]);
+      if (existing.has(roleValue)) {
+        if (roleValue === prev.role) return prev;
+        existing.delete(roleValue);
+      } else {
+        existing.add(roleValue);
+      }
+      return { ...prev, roles: Array.from(existing) };
     });
   };
 
@@ -1152,7 +1174,12 @@ const UserManagement = () => {
                     </label>
                     <select
                       value={formData.role}
-                      onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                      onChange={(e) => {
+                        const selectedRole = e.target.value;
+                        const existing = new Set(formData.roles || []);
+                        existing.add(selectedRole);
+                        setFormData({ ...formData, role: selectedRole, roles: Array.from(existing) });
+                      }}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     >
                       {ROLES_CONFIG.map(role => (
@@ -1161,6 +1188,23 @@ const UserManagement = () => {
                         </option>
                       ))}
                     </select>
+                    <div className="mt-3 p-3 border border-gray-200 rounded-lg bg-gray-50">
+                      <p className="text-xs font-semibold text-gray-700 mb-2">Additional Roles</p>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {ROLES_CONFIG.map((roleOption) => (
+                          <label key={roleOption.value} className="flex items-center gap-2 text-xs text-gray-700">
+                            <input
+                              type="checkbox"
+                              checked={(formData.roles || []).includes(roleOption.value)}
+                              onChange={() => toggleFormRole(roleOption.value)}
+                              disabled={roleOption.value === formData.role}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <span>{roleOption.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
                   </div>
 
                   <div className="md:col-span-2">
