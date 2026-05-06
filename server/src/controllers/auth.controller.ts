@@ -29,6 +29,9 @@ const isRefreshTokenRevoked = async (token: string): Promise<boolean> => {
   return val !== null;
 };
 
+const MAX_LOGIN_ATTEMPTS = 5;
+const ACCOUNT_LOCK_MINUTES = 1;
+
 export class AuthController {
   private setTokenCookies(res: Response, accessToken: string, refreshToken: string) {
     const isProd = process.env.NODE_ENV === 'production';
@@ -91,11 +94,11 @@ export class AuthController {
     const user = await prisma.user.create({
       data: {
         email, password: hashedPassword, firstName, lastName,
-        role: requestedRole, phone: phone || null, status: 'ACTIVE'
+        role: requestedRole, roles: [requestedRole], phone: phone || null, status: 'ACTIVE'
       },
       select: {
         id: true, email: true, firstName: true, lastName: true, 
-        role: true, phone: true, createdAt: true, institutionType: true
+        role: true, roles: true, phone: true, createdAt: true, institutionType: true
       }
     });
 
@@ -139,7 +142,7 @@ export class AuthController {
         where: { email },
         select: {
           id: true, password: true, status: true, loginAttempts: true, lockedUntil: true,
-          role: true, email: true, firstName: true, lastName: true,
+          role: true, roles: true, email: true, firstName: true, lastName: true,
           phone: true, lastLogin: true, institutionType: true,
           // mustChangePassword indicator — set on auto-created parent/student accounts
           passwordResetToken: true,
@@ -158,16 +161,16 @@ export class AuthController {
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
       const newAttempts = (user.loginAttempts || 0) + 1;
-      const lockAccount = newAttempts >= 5;
+      const lockAccount = newAttempts >= MAX_LOGIN_ATTEMPTS;
       await redisCacheService.delete(cacheKey);
       await prisma.user.update({
         where: { id: user.id },
         data: {
           loginAttempts: newAttempts,
-          lockedUntil: lockAccount ? new Date(Date.now() + 15 * 60 * 1000) : null,
+          lockedUntil: lockAccount ? new Date(Date.now() + ACCOUNT_LOCK_MINUTES * 60 * 1000) : null,
         }
       });
-      if (lockAccount) throw new ApiError(403, 'Account locked for 15 minutes');
+      if (lockAccount) throw new ApiError(403, `Account locked for ${ACCOUNT_LOCK_MINUTES} minute${ACCOUNT_LOCK_MINUTES === 1 ? '' : 's'}`);
       throw new ApiError(401, 'Invalid credentials');
     }
 
@@ -199,12 +202,13 @@ export class AuthController {
     // resolve the one-and-only school from the DB.
     const resolvedSchoolId: string | undefined = schoolId || schoolConfig?.id;
 
-    const requiresInstitutionSetup = user.role === 'SUPER_ADMIN' && !(schoolConfig?.institutionTypeLocked === true);
+    const userRoles = ((user.roles && user.roles.length > 0) ? user.roles : [user.role]) as string[];
+    const requiresInstitutionSetup = userRoles.includes('SUPER_ADMIN') && !(schoolConfig?.institutionTypeLocked === true);
     const communicationConfig = await prisma.communicationConfig.findFirst({
       select: { emailTemplates: true }
     });
     const otpEnabled = (communicationConfig?.emailTemplates as any)?.__security?.otpEnabled !== false;
-    const requiresOtp = otpEnabled && !['SUPER_ADMIN', 'STUDENT'].includes(user.role);
+    const requiresOtp = otpEnabled && !userRoles.some(r => ['SUPER_ADMIN', 'STUDENT'].includes(r));
     let activeApps: string[] = [];
     
     if (resolvedSchoolId) {
@@ -219,6 +223,7 @@ export class AuthController {
       success: true,
       user: {
         ...userWithoutSensitive,
+        roles: userRoles,
         institutionType: user.institutionType || schoolConfig?.institutionType || (req as any).school?.institutionType || 'PRIMARY_CBC',
         institutionTypeLocked: schoolConfig?.institutionTypeLocked === true,
         requiresInstitutionSetup,
@@ -359,7 +364,7 @@ export class AuthController {
       select: {
         id: true, email: true, firstName: true, lastName: true, phone: true,
         role: true, status: true, createdAt: true,
-        passwordResetToken: true, institutionType: true,
+        roles: true, passwordResetToken: true, institutionType: true,
       }
     });
 
@@ -381,6 +386,7 @@ export class AuthController {
       success: true,
       data: {
         ...userPublic,
+        roles: user.roles && user.roles.length > 0 ? user.roles : [user.role],
         institutionType: user.institutionType || (req as any).school?.institutionType || 'PRIMARY_CBC',
         mustChangePassword: !!passwordResetToken,
         activeApps,

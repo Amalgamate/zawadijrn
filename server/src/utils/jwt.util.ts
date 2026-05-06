@@ -8,6 +8,7 @@ interface JWTPayload {
   userId: string;
   email: string;
   role: Role;
+  roles?: Role[];
   institutionType: InstitutionType;
 }
 
@@ -15,6 +16,7 @@ interface User {
   id: string;
   email: string;
   role: UserRole;
+  roles?: UserRole[];
   institutionType: InstitutionType;
 }
 
@@ -23,6 +25,9 @@ export const generateAccessToken = (user: User): string => {
     userId: user.id,
     email: user.email,
     role: user.role as Role,
+    roles: (user.roles && user.roles.length > 0
+      ? user.roles
+      : [user.role]) as Role[],
     institutionType: user.institutionType,
   };
 

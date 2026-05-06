@@ -16,6 +16,34 @@ import { SmsService } from '../services/sms.service';
 import { SMS_MESSAGES } from '../config/communication.messages';
 import { generateStaffId } from '../services/staffId.service';
 
+const VALID_ROLES: Role[] = [
+  'SUPER_ADMIN',
+  'ADMIN',
+  'HEAD_TEACHER',
+  'HEAD_OF_CURRICULUM',
+  'TEACHER',
+  'PARENT',
+  'ACCOUNTANT',
+  'RECEPTIONIST',
+  'LIBRARIAN',
+  'NURSE',
+  'SECURITY',
+  'DRIVER',
+  'COOK',
+  'CLEANER',
+  'GROUNDSKEEPER',
+  'IT_SUPPORT',
+  'STUDENT'
+];
+
+const normalizeRoles = (input: unknown): Role[] => {
+  if (!Array.isArray(input)) return [];
+  const normalized = input
+    .map((r) => String(r || '').toUpperCase())
+    .filter((r): r is Role => VALID_ROLES.includes(r as Role));
+  return Array.from(new Set(normalized));
+};
+
 export class UserController {
   /**
    * Get all users
@@ -57,6 +85,7 @@ export class UserController {
         lastName: true,
         phone: true,
         role: true,
+        roles: true,
         status: true,
         archived: true,
         createdAt: true,
@@ -93,6 +122,7 @@ export class UserController {
         middleName: true,
         phone: true,
         role: true,
+        roles: true,
         status: true,
         emailVerified: true,
         createdAt: true,
@@ -119,38 +149,26 @@ export class UserController {
    * Create new user
    */
   async createUser(req: AuthRequest, res: Response) {
-    const { email, password, firstName, lastName, middleName, phone, role, subject, gender } = req.body;
+    const { email, password, firstName, lastName, middleName, phone, role, roles, subject, gender } = req.body;
     const currentUserRole = req.user!.role;
 
     if (!email || !password || !firstName || !lastName || !role) {
       throw new ApiError(400, 'Missing required fields');
     }
 
-    const validRoles: Role[] = [
-      'SUPER_ADMIN',
-      'ADMIN',
-      'HEAD_TEACHER',
-      'HEAD_OF_CURRICULUM',
-      'TEACHER',
-      'PARENT',
-      'ACCOUNTANT',
-      'RECEPTIONIST',
-      'LIBRARIAN',
-      'NURSE',
-      'SECURITY',
-      'DRIVER',
-      'COOK',
-      'CLEANER',
-      'GROUNDSKEEPER',
-      'IT_SUPPORT',
-      'STUDENT'
-    ];
-    if (!validRoles.includes(role as Role)) {
+    if (!VALID_ROLES.includes(role as Role)) {
       throw new ApiError(400, `Invalid role`);
     }
 
-    if (!canManageRole(currentUserRole, role as Role)) {
-      throw new ApiError(403, `You cannot create users with role: ${role}`);
+    const normalizedRoles = normalizeRoles(roles);
+    const assignedRoles: Role[] = normalizedRoles.length > 0
+      ? Array.from(new Set([role as Role, ...normalizedRoles]))
+      : [role as Role];
+
+    for (const assignedRole of assignedRoles) {
+      if (!canManageRole(currentUserRole, assignedRole)) {
+        throw new ApiError(403, `You cannot create users with role: ${assignedRole}`);
+      }
     }
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -174,6 +192,7 @@ export class UserController {
         middleName,
         phone,
         role: role as Role,
+        roles: assignedRoles,
         status: 'ACTIVE',
         staffId,
         subject,
@@ -185,6 +204,7 @@ export class UserController {
         firstName: true,
         lastName: true,
         role: true,
+        roles: true,
         status: true,
         staffId: true
       }
@@ -200,7 +220,7 @@ export class UserController {
     const { id } = req.params;
     const currentUserId = req.user!.userId;
     const currentUserRole = req.user!.role;
-    const { firstName, lastName, middleName, phone, role, status, password, subject, gender, email } = req.body;
+    const { firstName, lastName, middleName, phone, role, roles, status, password, subject, gender, email } = req.body;
 
     const targetUser = await prisma.user.findUnique({ where: { id } });
     if (!targetUser) throw new ApiError(404, 'User not found');
@@ -232,6 +252,19 @@ export class UserController {
 
     if (!isSelfUpdate && ['SUPER_ADMIN', 'ADMIN'].includes(currentUserRole)) {
       if (role) updateData.role = role as Role;
+      if (roles !== undefined || role) {
+        const normalizedRoles = normalizeRoles(roles);
+        const baseRole = ((role as Role) || targetUser.role) as Role;
+        const assignedRoles: Role[] = normalizedRoles.length > 0
+          ? Array.from(new Set([baseRole, ...normalizedRoles]))
+          : [baseRole];
+        for (const assignedRole of assignedRoles) {
+          if (!canManageRole(currentUserRole, assignedRole)) {
+            throw new ApiError(403, `You cannot assign role: ${assignedRole}`);
+          }
+        }
+        updateData.roles = assignedRoles;
+      }
       if (status) updateData.status = status;
     }
 
@@ -249,6 +282,7 @@ export class UserController {
         firstName: true,
         lastName: true,
         role: true,
+        roles: true,
         status: true,
         staffId: true
       }
@@ -340,6 +374,7 @@ export class UserController {
           lastName: true,
           phone: true,
           role: true,
+          roles: true,
           status: true,
           staffId: true,
           subject: true,

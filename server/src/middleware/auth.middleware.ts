@@ -47,11 +47,13 @@ export const authenticate = async (
 
 export const authorize = (...roles: Role[]) => {
   return (req: AuthRequest, _res: Response, next: NextFunction) => {
-    if (!req.user || !roles.includes(req.user.role)) {
+    const userRoles = req.user
+      ? (req.user.roles && req.user.roles.length > 0 ? req.user.roles : [req.user.role])
+      : [];
+    if (!req.user || !userRoles.some(r => roles.includes(r))) {
       return next(new ApiError(403, 'Access denied. Required roles: ' + roles.join(', ')));
     }
     next();
   };
 };
-
 

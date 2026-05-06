@@ -19,6 +19,7 @@ declare global {
         userId: string;
         email: string;
         role: Role;
+        roles?: Role[];
       };
       school?: School;
     }
@@ -33,6 +34,7 @@ export interface AuthRequest extends Request {
     userId: string;
     email: string;
     role: Role;
+    roles?: Role[];
   };
   school?: School;
   file?: any;
@@ -55,22 +57,28 @@ export interface AuthRequest extends Request {
 export const requirePermission = (permission: Permission) => {
   return (req: AuthRequest, res: Response, next: NextFunction): void => {
     try {
-      const userRole = req.user?.role?.toUpperCase();
+      const userRoles = ((req.user?.roles && req.user.roles.length > 0)
+        ? req.user.roles
+        : req.user?.role
+          ? [req.user.role]
+          : []
+      ).map(r => r.toUpperCase() as Role);
 
-      if (!userRole) {
+      if (userRoles.length === 0) {
 
 
         res.status(401).json({ success: false, message: 'Authentication required' });
         return;
       }
 
-      if (!hasPermission(userRole as Role, permission)) {
-        console.warn(`[PERMISSIONS] 403 Forbidden: User ${req.user?.email} (${userRole}) lacks permission ${permission} for ${req.method} ${req.originalUrl}`);
+      const allowed = userRoles.some(r => hasPermission(r as Role, permission));
+      if (!allowed) {
+        console.warn(`[PERMISSIONS] 403 Forbidden: User ${req.user?.email} (${userRoles.join(',')}) lacks permission ${permission} for ${req.method} ${req.originalUrl}`);
         res.status(403).json({
           success: false,
           message: 'Insufficient permissions',
           required: permission,
-          userRole: userRole
+          userRoles
         });
         return;
       }
@@ -91,21 +99,25 @@ export const requirePermission = (permission: Permission) => {
 export const requireAnyPermission = (permissions: Permission[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction): void => {
     try {
-      const userRole = req.user?.role;
+      const userRoles = ((req.user?.roles && req.user.roles.length > 0)
+        ? req.user.roles
+        : req.user?.role
+          ? [req.user.role]
+          : []) as Role[];
 
-      if (!userRole) {
+      if (userRoles.length === 0) {
         res.status(401).json({ success: false, message: 'Authentication required' });
         return;
       }
 
-      const hasAnyPermission = permissions.some(permission => hasPermission(userRole, permission));
+      const hasAnyPermission = permissions.some(permission => userRoles.some(r => hasPermission(r, permission)));
 
       if (!hasAnyPermission) {
         res.status(403).json({
           success: false,
           message: 'Insufficient permissions',
           required: permissions,
-          userRole: userRole
+          userRoles
         });
         return;
       }
@@ -126,22 +138,28 @@ export const requireAnyPermission = (permissions: Permission[]) => {
 export const requireRole = (roles: Role[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction): void => {
     try {
-      const userRole = req.user?.role?.toUpperCase();
+      const userRoles = ((req.user?.roles && req.user.roles.length > 0)
+        ? req.user.roles
+        : req.user?.role
+          ? [req.user.role]
+          : []
+      ).map(r => r.toUpperCase());
 
-      if (!userRole) {
+      if (userRoles.length === 0) {
         res.status(401).json({ success: false, message: 'Authentication required' });
         return;
       }
 
       const normalizedAllowedRoles = roles.map(r => r.toUpperCase());
 
-      if (!normalizedAllowedRoles.includes(userRole)) {
-        console.warn(`[PERMISSIONS] 403 Access Denied: User ${req.user?.email} (${userRole}) is not in allowed roles [${roles.join(', ')}] for ${req.method} ${req.originalUrl}`);
+      const hasAllowedRole = userRoles.some(r => normalizedAllowedRoles.includes(r));
+      if (!hasAllowedRole) {
+        console.warn(`[PERMISSIONS] 403 Access Denied: User ${req.user?.email} (${userRoles.join(',')}) is not in allowed roles [${roles.join(', ')}] for ${req.method} ${req.originalUrl}`);
         res.status(403).json({
           success: false,
           message: 'Access denied',
           allowedRoles: roles,
-          userRole: userRole
+          userRoles
         });
         return;
       }

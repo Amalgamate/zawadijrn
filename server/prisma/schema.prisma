@@ -18,6 +18,7 @@ model User {
   middleName                String?
   phone                     String?
   role                      UserRole                 @default(TEACHER)
+  roles                     UserRole[]               @default([])
   status                    UserStatus               @default(ACTIVE)
   institutionType           InstitutionType          @default(PRIMARY_CBC)
   archived                  Boolean                  @default(false)
