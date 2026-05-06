@@ -94,7 +94,6 @@ function incrementAdmissionNumber(admissionNumber: string, increment: number = 1
 
 async function findNextAvailableAdmissionNumber(db: any): Promise<string> {
   const lastLearner = await db.learner.findFirst({
-    where: { admissionNumber: { not: null } },
     orderBy: { createdAt: 'desc' },
     select: { admissionNumber: true }
   });
