@@ -55,35 +55,43 @@ jobs:
           ssh production <<'EOF'
           set -euo pipefail
 
-          echo "Checking expected containers exist..."
-          sudo -n docker ps --format '{{.Names}}' | grep -qx 'zawadi-frontend'
-          sudo -n docker ps --format '{{.Names}}' | grep -qx 'zawadi-backend'
-          sudo -n docker ps --format '{{.Names}}' | grep -qx 'schoolb-frontend-1'
-          sudo -n docker ps --format '{{.Names}}' | grep -qx 'schoolb-backend-1'
-          sudo -n docker ps --format '{{.Names}}' | grep -qx 'schoolc-frontend-1'
-          sudo -n docker ps --format '{{.Names}}' | grep -qx 'schoolc-backend-1'
-          sudo -n docker ps --format '{{.Names}}' | grep -qx 'mertics-frontend-1'
-          sudo -n docker ps --format '{{.Names}}' | grep -qx 'mertics-backend-1'
+          echo "Discovering live frontend instances..."
+          mapfile -t FRONTENDS < <(sudo -n docker ps \
+            --filter "label=com.docker.compose.service=frontend" \
+            --format '{{.Names}}')
+          if [ "${#FRONTENDS[@]}" -eq 0 ]; then
+            echo "No frontend instances discovered." >&2
+            exit 1
+          fi
+          printf 'Frontends: %s\n' "${FRONTENDS[@]}"
 
-          echo "Checking frontend ports..."
-          for url in \
-            "http://127.0.0.1:3000/" \
-            "http://127.0.0.1:3001/" \
-            "http://127.0.0.1:3002/" \
-            "http://127.0.0.1:3003/"; do
+          echo "Discovering live backend instances..."
+          mapfile -t BACKENDS < <(sudo -n docker ps \
+            --filter "label=com.docker.compose.service=backend" \
+            --format '{{.Names}}')
+          if [ "${#BACKENDS[@]}" -eq 0 ]; then
+            echo "No backend instances discovered." >&2
+            exit 1
+          fi
+          printf 'Backends: %s\n' "${BACKENDS[@]}"
+
+          echo "Checking each frontend host port..."
+          for c in "${FRONTENDS[@]}"; do
+            port="$(sudo -n docker port "$c" 80/tcp | awk -F: 'NR==1{print $NF}')"
+            [ -n "$port" ]
+            url="http://127.0.0.1:${port}/"
             code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 15 "$url")"
-            echo "$url -> HTTP $code"
+            echo "$c -> $url -> HTTP $code"
             [ "$code" -ge 200 ] && [ "$code" -lt 400 ]
           done
 
-          echo "Checking backend health endpoints..."
-          for url in \
-            "http://127.0.0.1:5000/api/health" \
-            "http://127.0.0.1:5001/api/health" \
-            "http://127.0.0.1:5002/api/health" \
-            "http://127.0.0.1:5003/api/health"; do
+          echo "Checking each backend health endpoint..."
+          for c in "${BACKENDS[@]}"; do
+            port="$(sudo -n docker port "$c" 5000/tcp | awk -F: 'NR==1{print $NF}')"
+            [ -n "$port" ]
+            url="http://127.0.0.1:${port}/api/health"
             body="$(curl -sS --max-time 15 "$url")"
-            echo "$url -> $body"
+            echo "$c -> $url -> $body"
             echo "$body" | grep -q '"success":true'
           done
           EOF

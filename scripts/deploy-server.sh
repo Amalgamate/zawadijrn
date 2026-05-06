@@ -54,6 +54,16 @@ deploy_school_stack() {
   sudo docker compose --env-file "${env_file}" -p "${project}" -f docker-compose.stack.yml up -d --pull always --force-recreate backend frontend
 }
 
+discover_school_stacks() {
+  # Discover compose stack projects dynamically from running frontend containers.
+  # Output format: "project|env_file"
+  sudo docker ps \
+    --filter "label=com.docker.compose.service=frontend" \
+    --format '{{.Label "com.docker.compose.project"}}|{{.Label "com.docker.compose.project.config_files"}}|{{.Label "com.docker.compose.project.environment_file"}}' \
+    | awk -F'|' 'NF>=3 && $2 ~ /docker-compose\.stack\.yml$/ && length($1)>0 && length($3)>0 {print $1 "|" $3}' \
+    | sort -u
+}
+
 deploy_console() {
   echo "[deploy] Platform console: pull image"
   sudo docker pull "${CONSOLE_IMAGE}"
@@ -103,17 +113,47 @@ site_healthcheck() {
   curl -fsS "http://185.127.16.124:${port}/health" >/dev/null
 }
 
+container_backend_healthcheck() {
+  local container="$1"
+  local port
+  port="$(sudo docker port "${container}" 5000/tcp | awk -F: 'NR==1{print $NF}')"
+  if [[ -z "${port}" ]]; then
+    echo "[deploy] Could not resolve backend port for ${container}" >&2
+    exit 1
+  fi
+  healthcheck "${port}"
+}
+
 deploy_main
-deploy_school_stack "schoolb" "${APPS_DIR}/.env.school-b"
-deploy_school_stack "schoolc" "${APPS_DIR}/.env.school-c"
+
+echo "[deploy] Discovering dynamic school stacks"
+mapfile -t STACKS < <(discover_school_stacks)
+if [[ "${#STACKS[@]}" -eq 0 ]]; then
+  echo "[deploy] No dynamic school stacks discovered." >&2
+else
+  for row in "${STACKS[@]}"; do
+    project="${row%%|*}"
+    env_file="${row#*|}"
+    echo "[deploy] Discovered stack: ${project} (${env_file})"
+    deploy_school_stack "${project}" "${env_file}"
+  done
+fi
+
 deploy_console
 
 echo "[deploy] Container status"
 sudo docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}'
 
-healthcheck 5000
-healthcheck 5001
-healthcheck 5002
+container_backend_healthcheck "zawadi-backend"
+for row in "${STACKS[@]}"; do
+  project="${row%%|*}"
+  backend_container="$(sudo docker ps --filter "label=com.docker.compose.project=${project}" --filter "label=com.docker.compose.service=backend" --format '{{.Names}}' | head -n1)"
+  if [[ -n "${backend_container}" ]]; then
+    container_backend_healthcheck "${backend_container}"
+  else
+    echo "[deploy] Skipping backend healthcheck for ${project}: backend container not found" >&2
+  fi
+done
 site_healthcheck "${CONSOLE_PORT}"
 
 echo "[deploy] Done."
