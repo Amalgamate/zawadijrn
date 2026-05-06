@@ -100,7 +100,7 @@ const LearnersList = ({
   }, [grades, fallbackGrades, user?.institutionType]);
 
   // Check permissions
-  const canCreateLearner = can('CREATE_LEARNER');
+  const canCreateLearner = can('CREATE_LEARNER') || isRole('TEACHER');
   const canEditLearner = can('EDIT_LEARNER');
   const canDeleteLearner = can('DELETE_LEARNER');
   const isTeacher = isRole('TEACHER');
