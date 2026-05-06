@@ -3,6 +3,12 @@ import { Calendar, Plus, Trash2, Users } from 'lucide-react';
 import axiosInstance from '../../../../services/api/axiosConfig';
 
 const initialAssignment = { teacherId: '', dutyDate: '', role: '', notes: '' };
+const extractApiErrorMessage = (e, fallback) => (
+  e?.response?.data?.error?.message
+  || e?.response?.data?.message
+  || e?.message
+  || fallback
+);
 
 export default function DutyRosterPage() {
   const [loading, setLoading] = useState(false);
@@ -38,7 +44,7 @@ export default function DutyRosterPage() {
       setRosters(rosterRes.data?.data || []);
       setTeachers(teacherRes.data?.data || []);
     } catch (e) {
-      setError(e?.response?.data?.message || 'Failed to load duty roster data');
+      setError(extractApiErrorMessage(e, 'Failed to load duty roster data'));
     } finally {
       setLoading(false);
     }
@@ -92,7 +98,7 @@ export default function DutyRosterPage() {
       setAssignments([]);
       await loadData();
     } catch (e) {
-      setError(e?.response?.data?.message || 'Failed to create duty roster');
+      setError(extractApiErrorMessage(e, 'Failed to create duty roster'));
     } finally {
       setSaving(false);
     }
@@ -105,7 +111,7 @@ export default function DutyRosterPage() {
       await axiosInstance.delete(`/duty-rosters/${id}`);
       await loadData();
     } catch (e) {
-      setError(e?.response?.data?.message || 'Failed to delete roster');
+      setError(extractApiErrorMessage(e, 'Failed to delete roster'));
     }
   };
 

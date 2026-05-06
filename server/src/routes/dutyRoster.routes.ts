@@ -45,7 +45,7 @@ router.get(
 
 router.post(
   '/',
-  requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER']),
+  requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'TEACHER']),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
   validate(createRosterSchema),
   auditLog('CREATE_DUTY_ROSTER'),
@@ -54,7 +54,7 @@ router.post(
 
 router.put(
   '/:id',
-  requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER']),
+  requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'TEACHER']),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
   validate(updateRosterSchema),
   auditLog('UPDATE_DUTY_ROSTER'),
