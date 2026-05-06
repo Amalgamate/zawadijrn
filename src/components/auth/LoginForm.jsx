@@ -117,6 +117,7 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
       email: user.email,
       name: `${user.firstName} ${user.lastName}`,
       role: user.role,
+      roles: Array.isArray(user.roles) && user.roles.length > 0 ? user.roles : [user.role],
       id: user.id,
       firstName: user.firstName,
       lastName: user.lastName,
@@ -125,6 +126,7 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
       branchId: user.branchId || user.branch?.id || null,
       school: user.school || null,
       branch: user.branch || null,
+      activeApps: Array.isArray(user.activeApps) ? user.activeApps : [],
       mustChangePassword
     };
 
@@ -242,6 +244,9 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
       email: pendingUserData.user.email,
       name: `${pendingUserData.user.firstName} ${pendingUserData.user.lastName}`,
       role: pendingUserData.user.role,
+      roles: Array.isArray(pendingUserData.user.roles) && pendingUserData.user.roles.length > 0
+        ? pendingUserData.user.roles
+        : [pendingUserData.user.role],
       id: pendingUserData.user.id,
       firstName: pendingUserData.user.firstName,
       lastName: pendingUserData.user.lastName,
@@ -250,6 +255,7 @@ export default function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword
       branchId: pendingUserData.user.branchId || pendingUserData.user.branch?.id || null,
       school: school,
       branch: pendingUserData.user.branch || null,
+      activeApps: Array.isArray(pendingUserData.user.activeApps) ? pendingUserData.user.activeApps : [],
       mustChangePassword: pendingUserData.mustChangePassword
     };
 
