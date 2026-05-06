@@ -122,13 +122,13 @@ const MobileDashboard = ({ onNavigate, user }) => {
         <div className="text-[10px] uppercase tracking-[0.1em] text-[#bbb] mb-3 font-medium">Quick Actions</div>
         <div className="grid grid-cols-2 gap-2">
           {quickActions.map((qa) => (
-            <button key={qa.id} onClick={() => onNavigate(qa.id)} className="bg-white border border-[#ebebeb] rounded-2xl p-3 flex items-center gap-3 active:scale-[0.98]">
-              <div className={`w-9 h-9 rounded-xl ${qa.color} flex items-center justify-center`}>
+            <button key={qa.id} onClick={() => onNavigate(qa.id)} className={`${qa.color} rounded-2xl p-3 flex items-center gap-3 active:scale-[0.98]`}>
+              <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
                 <qa.icon size={16} className="text-white" />
               </div>
               <div className="text-left">
-                <div className="text-[11px] font-semibold text-[#1a1a18]">{qa.title}</div>
-                <div className="text-[9px] text-[#aaa]">{qa.sub}</div>
+                <div className="text-[11px] font-semibold text-white">{qa.title}</div>
+                <div className="text-[9px] text-white/80">{qa.sub}</div>
               </div>
             </button>
           ))}
