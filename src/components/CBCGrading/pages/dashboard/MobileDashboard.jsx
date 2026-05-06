@@ -107,14 +107,16 @@ const MobileDashboard = ({ onNavigate, user }) => {
         </div>
       </div>
 
-      <div className="bg-white border-b border-[#f0f0ec] px-5 py-3">
-        <div className="flex gap-2 overflow-x-auto no-scrollbar">
-          {metricCard('Present', metricValues.present, 'bg-green-500')}
-          {metricCard('Revenue', metricValues.revenue, 'bg-amber-500')}
-          {metricCard('Pending', metricValues.pending, 'bg-red-500')}
-          {metricCard('Growth', metricValues.growth, 'bg-blue-500')}
+      {user?.role !== 'TEACHER' && (
+        <div className="bg-white border-b border-[#f0f0ec] px-5 py-3">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar">
+            {metricCard('Present', metricValues.present, 'bg-green-500')}
+            {metricCard('Revenue', metricValues.revenue, 'bg-amber-500')}
+            {metricCard('Pending', metricValues.pending, 'bg-red-500')}
+            {metricCard('Growth', metricValues.growth, 'bg-blue-500')}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="px-5 pt-5">
         <div className="text-[10px] uppercase tracking-[0.1em] text-[#bbb] mb-3 font-medium">Quick Actions</div>
