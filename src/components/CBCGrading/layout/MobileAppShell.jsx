@@ -31,8 +31,13 @@ const MobileAppShell = ({ children, user, onNavigate, currentPage, brandingSetti
 
         <div className="h-16 flex items-center justify-between px-5 border-b border-[#f4f4f0] bg-white">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-[10px] bg-[#1a1a18] flex items-center justify-center">
-              <img src={brandingSettings?.logoUrl || '/branding/logo.png'} alt="Logo" className="w-5 h-5 object-contain brightness-0 invert" />
+            <div className="w-9 h-9 rounded-[10px] bg-white border border-[#ebebeb] flex items-center justify-center overflow-hidden">
+              <img
+                src="/branding/logo.png"
+                alt="Logo"
+                className="w-7 h-7 object-contain"
+                onError={(e) => { e.currentTarget.src = '/branding/logo.png'; }}
+              />
             </div>
             <div>
               <div className="text-[13px] font-semibold text-[#1a1a18] leading-tight">
