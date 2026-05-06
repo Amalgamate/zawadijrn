@@ -54,11 +54,11 @@ const metricCard = (label, value, dot) => (
 );
 
 const ModuleCard = ({ title, icon: Icon, color, onClick }) => (
-  <button onClick={onClick} className="bg-white border border-[#ebebeb] rounded-[16px] p-3 min-h-[108px] flex flex-col items-center justify-center gap-2 active:scale-[0.97]">
-    <div className={`w-10 h-10 rounded-xl ${color} flex items-center justify-center`}>
+  <button onClick={onClick} className={`${color} rounded-[16px] p-3 min-h-[108px] flex flex-col items-center justify-center gap-2 active:scale-[0.97]`}>
+    <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
       <Icon size={18} className="text-white" />
     </div>
-    <span className="text-[10px] text-[#555] font-medium text-center leading-tight">{title}</span>
+    <span className="text-[10px] text-white font-medium text-center leading-tight">{title}</span>
   </button>
 );
 
