@@ -1,0 +1,95 @@
+name: Deploy All Instances
+
+on:
+  workflow_run:
+    workflows: ["Publish Docker Images"]
+    types: [completed]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-all-instances
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_branch == 'main'
+      )
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          test -n "$DEPLOY_HOST"
+          test -n "$DEPLOY_USER"
+          test -n "$DEPLOY_SSH_KEY"
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+          {
+            echo "Host production"
+            echo "  HostName $DEPLOY_HOST"
+            echo "  User $DEPLOY_USER"
+            echo "  IdentityFile ~/.ssh/deploy_key"
+            echo "  IdentitiesOnly yes"
+            echo "  StrictHostKeyChecking yes"
+          } > ~/.ssh/config
+
+      - name: Preflight check all instances
+        run: |
+          set -euo pipefail
+          ssh production <<'EOF'
+          set -euo pipefail
+
+          echo "Checking expected containers exist..."
+          sudo -n docker ps --format '{{.Names}}' | grep -qx 'zawadi-frontend'
+          sudo -n docker ps --format '{{.Names}}' | grep -qx 'zawadi-backend'
+          sudo -n docker ps --format '{{.Names}}' | grep -qx 'schoolb-frontend-1'
+          sudo -n docker ps --format '{{.Names}}' | grep -qx 'schoolb-backend-1'
+          sudo -n docker ps --format '{{.Names}}' | grep -qx 'schoolc-frontend-1'
+          sudo -n docker ps --format '{{.Names}}' | grep -qx 'schoolc-backend-1'
+          sudo -n docker ps --format '{{.Names}}' | grep -qx 'mertics-frontend-1'
+          sudo -n docker ps --format '{{.Names}}' | grep -qx 'mertics-backend-1'
+
+          echo "Checking frontend ports..."
+          for url in \
+            "http://127.0.0.1:3000/" \
+            "http://127.0.0.1:3001/" \
+            "http://127.0.0.1:3002/" \
+            "http://127.0.0.1:3003/"; do
+            code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 15 "$url")"
+            echo "$url -> HTTP $code"
+            [ "$code" -ge 200 ] && [ "$code" -lt 400 ]
+          done
+
+          echo "Checking backend health endpoints..."
+          for url in \
+            "http://127.0.0.1:5000/api/health" \
+            "http://127.0.0.1:5001/api/health" \
+            "http://127.0.0.1:5002/api/health" \
+            "http://127.0.0.1:5003/api/health"; do
+            body="$(curl -sS --max-time 15 "$url")"
+            echo "$url -> $body"
+            echo "$body" | grep -q '"success":true'
+          done
+          EOF
+
+      - name: Deploy all live instances
+        env:
+          SERVER_HOST: production
+          SERVER_USER: ${{ secrets.DEPLOY_USER }}
+        run: bash scripts/deploy-server.sh
