@@ -1354,7 +1354,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                   {/* Mpesa */}
                   <div
                     onClick={() => setPaymentMethodFilter(prev => prev === 'MPESA' ? 'all' : 'MPESA')}
-                    className={`flex-1 flex items-center gap-4 pr-4 border-r-[0.5px] border-gray-200 justify-center cursor-pointer transition-all duration-200 hover:scale-[1.02] ${paymentMethodFilter === 'MPESA' ? 'bg-lime-50/50 ring-2 ring-lime-400 ring-inset rounded-l-xl' : ''
+                    className={`flex-1 flex items-center gap-4 pr-4 border-r border-gray-300 justify-center cursor-pointer transition-all duration-200 hover:scale-[1.02] ${paymentMethodFilter === 'MPESA' ? 'bg-lime-50/50 ring-2 ring-lime-400 ring-inset rounded-l-xl' : ''
                       }`}
                   >
                     <div className={`w-10 h-10 bg-lime-500 text-white rounded-xl shadow-sm shadow-lime-200 flex items-center justify-center font-medium text-base shrink-0 ${paymentMethodFilter === 'MPESA' ? 'ring-2 ring-white' : ''}`}>
@@ -1375,7 +1375,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                   {/* Cash */}
                   <div
                     onClick={() => setPaymentMethodFilter(prev => prev === 'CASH' ? 'all' : 'CASH')}
-                    className={`flex-1 flex items-center gap-4 px-4 border-r-[0.5px] border-gray-200 justify-center cursor-pointer transition-all duration-200 hover:scale-[1.02] ${paymentMethodFilter === 'CASH' ? 'bg-blue-50/50 ring-2 ring-blue-400 ring-inset' : ''
+                    className={`flex-1 flex items-center gap-4 px-4 border-r border-gray-300 justify-center cursor-pointer transition-all duration-200 hover:scale-[1.02] ${paymentMethodFilter === 'CASH' ? 'bg-blue-50/50 ring-2 ring-blue-400 ring-inset' : ''
                       }`}
                   >
                     <div className={`w-10 h-10 bg-blue-500 text-white rounded-xl shadow-sm shadow-blue-200 flex items-center justify-center shrink-0 ${paymentMethodFilter === 'CASH' ? 'ring-2 ring-white' : ''}`}>
@@ -1725,7 +1725,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
           ) : (
             // ******************** DESKTOP TABLE VIEW ********************
             <>
-              <div className="bg-white rounded-xl border-[0.5px] border-gray-200 shadow-sm overflow-auto max-h-[70vh] text-sm scrollbar-thin relative">
+              <div className="bg-white rounded-xl border border-gray-300 shadow-sm overflow-auto max-h-[70vh] text-sm scrollbar-thin relative">
               {selectedInvoiceIds.length > 0 && !selectAllMatching && selectedInvoiceIds.length === invoices.length && totalInvoicesCount > invoices.length && (
                 <div className="sticky top-0 z-30 bg-blue-50 border-b border-blue-100 px-4 py-2 text-xs text-blue-800 flex items-center justify-between">
                   <span>All {invoices.length} invoices on this page are selected.</span>
@@ -1738,9 +1738,9 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                 </div>
               )}
               <table className="w-full min-w-max border-collapse">
-                <thead className="sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm border-b-[0.5px] border-gray-200">
+                <thead className="sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm border-b border-gray-300">
                   <tr className="">
-                    <th className="px-3 py-2 text-left border-r-[0.5px] border-gray-200 w-10 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm">
+                    <th className="px-3 py-2 text-left border-r border-gray-300 w-10 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm">
                       <input
                         type="checkbox"
                         checked={allVisibleSelected}
@@ -1750,7 +1750,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                     </th>
                     {visibleColumns.invoiceNumber && (
                       <th
-                        className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
+                        className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r border-gray-300 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
                         onClick={() => handleSort('invoiceNumber')}
                       >
                         <div className="flex items-center gap-1">
@@ -1763,7 +1763,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                     )}
                     {visibleColumns.student && (
                       <th
-                        className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
+                        className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r border-gray-300 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
                         onClick={() => handleSort('studentName')}
                       >
                         <div className="flex items-center gap-1">
@@ -1776,7 +1776,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                     )}
                     {visibleColumns.grade && (
                       <th
-                        className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
+                        className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r border-gray-300 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
                         onClick={() => handleSort('grade')}
                       >
                         <div className="flex items-center gap-1">
@@ -1788,11 +1788,11 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                       </th>
                     )}
                     {visibleColumns.feeType && (
-                      <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm">Fee Type</th>
+                      <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-300 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm">Fee Type</th>
                     )}
                     {visibleColumns.dateIssue && (
                       <th
-                        className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
+                        className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r border-gray-300 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
                         onClick={() => handleSort('createdAt')}
                       >
                         <div className="flex items-center gap-1">
@@ -1805,7 +1805,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                     )}
                     {visibleColumns.billed && (
                       <th
-                        className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
+                        className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r border-gray-300 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
                         onClick={() => handleSort('totalAmount')}
                       >
                         <div className="flex items-center gap-1">
@@ -1818,7 +1818,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                     )}
                     {visibleColumns.paid && (
                       <th
-                        className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
+                        className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r border-gray-300 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
                         onClick={() => handleSort('paidAmount')}
                       >
                         <div className="flex items-center gap-1">
@@ -1830,15 +1830,15 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                       </th>
                     )}
                     {visibleColumns.waived && (
-                      <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm">Waived</th>
+                      <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-300 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm">Waived</th>
                     )}
                     {visibleColumns.balance && (
                       <th
-                        className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
+                        className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase cursor-pointer hover:bg-gray-100/50 border-r border-gray-300 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
                         onClick={() => handleSort('balance')}
                       >
                         <div className="flex items-center gap-1">
-                          Balance (Carry Fwd | Current)
+                          Balance
                           {sortConfig.key === 'balance' ? (
                             sortConfig.direction === 'asc' ? <ArrowUp size={10} /> : <ArrowDown size={10} />
                           ) : <ArrowUpDown size={10} className="text-gray-300" />}
@@ -1847,17 +1847,17 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                     )}
                     {visibleColumns.overpaid && (
                       <th
-                        className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
+                        className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-300 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm"
                       >
                         Overpaid
                       </th>
                     )}
 
                     {visibleColumns.status && (
-                      <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm">Status</th>
+                      <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-300 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm">Status</th>
                     )}
                     {visibleColumns.paymentMode && (
-                      <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r-[0.5px] border-gray-200 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm">Mode / Quick Pay</th>
+                      <th className="px-3 py-1.5 text-left text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase border-r border-gray-300 sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm">Mode / Quick Pay</th>
                     )}
                     {visibleColumns.actions && (
                       <th className="px-3 py-1.5 text-right text-[11px] font-medium text-[color:var(--table-header-fg)] uppercase sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm">Actions</th>
@@ -1867,55 +1867,51 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                 <tbody className="divide-y divide-gray-100">
                   {/* Excel-style totals row directly under header */}
                   <tr className="bg-blue-50/60 border-b-[0.5px] border-blue-200 font-medium">
-                    <td className="px-3 py-2 border-r-[0.5px] border-gray-200"></td>
-                    {visibleColumns.invoiceNumber && <td className="px-3 py-2 border-r-[0.5px] border-gray-200"></td>}
+                    <td className="px-3 py-2 border-r border-gray-300"></td>
+                    {visibleColumns.invoiceNumber && <td className="px-3 py-2 border-r border-gray-300"></td>}
                     {visibleColumns.student && (
-                      <td className="px-3 py-2 border-r-[0.5px] border-gray-200 text-xs">
+                      <td className="px-3 py-2 border-r border-gray-300 text-xs">
                         <div className="flex flex-col leading-tight">
                           <span className="uppercase tracking-wider text-[10px] text-blue-700 font-semibold">Totals</span>
                           <span className="text-[9px] text-blue-500">Filtered List</span>
                         </div>
                       </td>
                     )}
-                    {visibleColumns.grade && <td className="px-3 py-2 border-r-[0.5px] border-gray-200"></td>}
-                    {visibleColumns.feeType && <td className="px-3 py-2 border-r-[0.5px] border-gray-200"></td>}
-                    {visibleColumns.dateIssue && <td className="px-3 py-2 border-r-[0.5px] border-gray-200"></td>}
+                    {visibleColumns.grade && <td className="px-3 py-2 border-r border-gray-300"></td>}
+                    {visibleColumns.feeType && <td className="px-3 py-2 border-r border-gray-300"></td>}
+                    {visibleColumns.dateIssue && <td className="px-3 py-2 border-r border-gray-300"></td>}
 
                     {visibleColumns.billed && (
-                      <td className="px-3 py-2 text-xs font-semibold text-gray-900 border-r-[0.5px] border-gray-200 text-right">
+                      <td className="px-3 py-2 text-xs font-semibold text-gray-900 border-r border-gray-300 text-right">
                         {Number(listTotals.totalBilled || 0).toLocaleString()}
                       </td>
                     )}
                     {visibleColumns.paid && (
-                      <td className="px-3 py-2 text-xs font-semibold text-emerald-700 border-r-[0.5px] border-gray-200 text-right">
+                      <td className="px-3 py-2 text-xs font-semibold text-emerald-700 border-r border-gray-300 text-right">
                         {Number(listTotals.totalPaid || 0).toLocaleString()}
                       </td>
                     )}
                     {visibleColumns.waived && (
-                      <td className="px-3 py-2 text-xs font-semibold text-teal-700 border-r-[0.5px] border-gray-200 text-right">
+                      <td className="px-3 py-2 text-xs font-semibold text-teal-700 border-r border-gray-300 text-right">
                         {Number(listTotals.totalWaived || 0).toLocaleString()}
                       </td>
                     )}
                     {visibleColumns.balance && (
-                      <td className="px-3 py-2 text-xs font-semibold border-r-[0.5px] border-gray-200">
-                        <div className="inline-flex items-stretch border border-gray-300 rounded-md overflow-hidden float-right">
-                          <span className="px-2 py-1 text-[10px] text-amber-700 bg-amber-50 border-r border-gray-300">
-                            B/F: {Number(listCarryFwdTotal || 0).toLocaleString()}
-                          </span>
-                          <span className="px-2 py-1 text-red-700 bg-red-50">
-                            Curr: {Number(listTotals.totalBalance || 0).toLocaleString()}
-                          </span>
+                      <td className="px-3 py-2 text-xs font-semibold border-r border-gray-300">
+                        <div className="grid grid-cols-2 gap-3 text-right">
+                          <span className="text-amber-700">B/F {Number(listCarryFwdTotal || 0).toLocaleString()}</span>
+                          <span className="text-red-700 border-l border-gray-200 pl-3">Current {Number(listTotals.totalBalance || 0).toLocaleString()}</span>
                         </div>
                       </td>
                     )}
                     {visibleColumns.overpaid && (
-                      <td className="px-3 py-2 text-xs font-semibold text-purple-700 border-r-[0.5px] border-gray-200 text-right">
+                      <td className="px-3 py-2 text-xs font-semibold text-purple-700 border-r border-gray-300 text-right">
                         {Number(listTotals.totalOverpaid || 0).toLocaleString()}
                       </td>
                     )}
 
-                    {visibleColumns.status && <td className="px-3 py-2 border-r-[0.5px] border-gray-200"></td>}
-                    {visibleColumns.paymentMode && <td className="px-3 py-2 border-r-[0.5px] border-gray-200"></td>}
+                    {visibleColumns.status && <td className="px-3 py-2 border-r border-gray-300"></td>}
+                    {visibleColumns.paymentMode && <td className="px-3 py-2 border-r border-gray-300"></td>}
                     {visibleColumns.actions && <td className="px-2 py-2"></td>}
                   </tr>
                   {invoices
@@ -1924,10 +1920,10 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                       return (
                         <tr
                           key={invoice.id}
-                          className={`hover:bg-blue-50/30 transition-colors cursor-pointer border-b-[0.5px] border-gray-200 ${selectedInvoiceIds.includes(invoice.id) ? 'bg-blue-50/50' : ''}`}
+                          className={`hover:bg-blue-50/30 transition-colors cursor-pointer border-b border-gray-300 ${selectedInvoiceIds.includes(invoice.id) ? 'bg-blue-50/50' : ''}`}
                           onClick={() => navigateTo('fees-invoice-detail', { invoice })}
                         >
-                          <td className="px-3 py-1.5 border-r-[0.5px] border-gray-200" onClick={(e) => e.stopPropagation()}>
+                          <td className="px-3 py-1.5 border-r border-gray-300" onClick={(e) => e.stopPropagation()}>
                             <input
                               type="checkbox"
                               checked={selectAllMatching || selectedInvoiceIds.includes(invoice.id)}
@@ -1936,10 +1932,10 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                             />
                           </td>
                           {visibleColumns.invoiceNumber && (
-                            <td className="px-3 py-1.5 text-xs font-semibold text-gray-900 border-r-[0.5px] border-gray-200">{invoice.invoiceNumber}</td>
+                            <td className="px-3 py-1.5 text-xs font-semibold text-gray-900 border-r border-gray-300">{invoice.invoiceNumber}</td>
                           )}
                           {visibleColumns.student && (
-                            <td className="px-3 py-1.5 border-r-[0.5px] border-gray-200">
+                            <td className="px-3 py-1.5 border-r border-gray-300">
                               <div className="flex items-center justify-between gap-2">
                                 <span className="font-semibold text-gray-800 text-xs">
                                   {invoice.learner?.firstName} {invoice.learner?.lastName}
@@ -1949,10 +1945,10 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                             </td>
                           )}
                           {visibleColumns.grade && (
-                            <td className="px-3 py-1.5 text-xs text-gray-600 border-r-[0.5px] border-gray-200 whitespace-nowrap">{invoice.learner?.grade} {invoice.learner?.stream}</td>
+                            <td className="px-3 py-1.5 text-xs text-gray-600 border-r border-gray-300 whitespace-nowrap">{invoice.learner?.grade} {invoice.learner?.stream}</td>
                           )}
                           {visibleColumns.feeType && (
-                            <td className="px-3 py-1.5 border-r-[0.5px] border-gray-200">
+                            <td className="px-3 py-1.5 border-r border-gray-300">
                               <div className="text-xs font-semibold text-gray-800 line-clamp-1">
                                 {invoice.feeStructure?.name || 'Standard Fees'}
                               </div>
@@ -1964,22 +1960,22 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                             </td>
                           )}
                           {visibleColumns.dateIssue && (
-                            <td className="px-3 py-1.5 text-xs text-gray-600 border-r-[0.5px] border-gray-200 whitespace-nowrap">
+                            <td className="px-3 py-1.5 text-xs text-gray-600 border-r border-gray-300 whitespace-nowrap">
                               {new Date(invoice.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                             </td>
                           )}
                           {visibleColumns.billed && (
-                            <td className="px-3 py-1.5 text-xs font-medium text-gray-900 border-r-[0.5px] border-gray-200 text-right w-24">
+                            <td className="px-3 py-1.5 text-xs font-medium text-gray-900 border-r border-gray-300 text-right w-24">
                               {Number(invoice.totalAmount).toLocaleString()}
                             </td>
                           )}
                           {visibleColumns.paid && (
-                            <td className="px-3 py-1.5 text-xs font-medium text-green-600 border-r-[0.5px] border-gray-200 text-right w-24">
+                            <td className="px-3 py-1.5 text-xs font-medium text-green-600 border-r border-gray-300 text-right w-24">
                               {Number(getInvoiceCashPaid(invoice)).toLocaleString()}
                             </td>
                           )}
                           {visibleColumns.waived && (
-                            <td className="px-3 py-1.5 border-r-[0.5px] border-gray-200 text-right w-24">
+                            <td className="px-3 py-1.5 border-r border-gray-300 text-right w-24">
                               <div className="text-xs font-medium text-teal-600">
                                 {(invoice.waivers || [])
                                   .filter(w => w.status === 'APPROVED')
@@ -1993,30 +1989,26 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                             </td>
                           )}
                           {visibleColumns.balance && (
-                            <td className="px-3 py-1.5 text-xs font-medium border-r-[0.5px] border-gray-200 w-32">
-                              <div className="inline-flex items-stretch border border-gray-300 rounded-md overflow-hidden float-right">
-                                <span className="px-2 py-0.5 text-[10px] text-amber-700 bg-amber-50 border-r border-gray-300">
-                                  {Number(getInvoiceCarryFwd(invoice) || 0).toLocaleString()}
-                                </span>
-                                <span className="px-2 py-0.5 text-red-600 bg-red-50">
-                                  {Number(getInvoiceCurrentDue(invoice) || 0).toLocaleString()}
-                                </span>
+                            <td className="px-3 py-1.5 text-xs font-medium border-r border-gray-300 w-32">
+                              <div className="grid grid-cols-2 gap-3 text-right">
+                                <span className="text-amber-700">{Number(getInvoiceCarryFwd(invoice) || 0).toLocaleString()}</span>
+                                <span className="text-red-600 border-l border-gray-200 pl-3">{Number(getInvoiceCurrentDue(invoice) || 0).toLocaleString()}</span>
                               </div>
                             </td>
                           )}
                           {visibleColumns.overpaid && (
-                            <td className="px-3 py-1.5 text-xs font-medium text-purple-600 border-r-[0.5px] border-gray-200 text-right w-24">
+                            <td className="px-3 py-1.5 text-xs font-medium text-purple-600 border-r border-gray-300 text-right w-24">
                               {Number(getInvoiceNetOverpaid(invoice) || 0).toLocaleString()}
                             </td>
                           )}
 
                           {visibleColumns.status && (
-                            <td className="px-3 py-1.5 border-r-[0.5px] border-gray-200 whitespace-nowrap">
+                            <td className="px-3 py-1.5 border-r border-gray-300 whitespace-nowrap">
                               <div className="scale-90 origin-left">{getStatusBadge(invoice.status)}</div>
                             </td>
                           )}
                           {visibleColumns.paymentMode && (
-                            <td className="px-3 py-1.5 border-r-[0.5px] border-gray-200 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                            <td className="px-3 py-1.5 border-r border-gray-300 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                               {Number(getInvoiceCashPaid(invoice)) > 0 ? (
                                 <div className={`flex items-center gap-1.5 text-[9px] font-semibold uppercase px-2 py-1 rounded-md border w-fit shadow-inner-sm ${recentMode === 'MPESA' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-blue-50 text-blue-700 border-blue-100'
                                   }`}>
@@ -2109,58 +2101,54 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                 </tbody>
 
                 {/* Table Totals Footer */}
-                <tfoot className="bg-gray-50 border-t-[0.5px] border-gray-200">
+                <tfoot className="bg-gray-50 border-t border-gray-300">
                   <tr className="font-medium text-gray-900">
-                    <td className="px-3 py-3 border-r-[0.5px] border-gray-200"></td>
-                    {visibleColumns.invoiceNumber && <td className="px-3 py-3 border-r-[0.5px] border-gray-200"></td>}
+                    <td className="px-3 py-3 border-r border-gray-300"></td>
+                    {visibleColumns.invoiceNumber && <td className="px-3 py-3 border-r border-gray-300"></td>}
                     {visibleColumns.student && (
-                      <td className="px-3 py-3 border-r-[0.5px] border-gray-200 text-xs">
+                      <td className="px-3 py-3 border-r border-gray-300 text-xs">
                         <div className="flex flex-col">
                           <span className="uppercase tracking-wider text-[10px] text-gray-500">Totals</span>
                           <span className="text-gray-400 font-medium text-[9px]">Entire Filtered List</span>
                         </div>
                       </td>
                     )}
-                    {visibleColumns.grade && <td className="px-3 py-3 border-r-[0.5px] border-gray-200"></td>}
-                    {visibleColumns.feeType && <td className="px-3 py-3 border-r-[0.5px] border-gray-200"></td>}
-                    {visibleColumns.dateIssue && <td className="px-3 py-3 border-r-[0.5px] border-gray-200"></td>}
+                    {visibleColumns.grade && <td className="px-3 py-3 border-r border-gray-300"></td>}
+                    {visibleColumns.feeType && <td className="px-3 py-3 border-r border-gray-300"></td>}
+                    {visibleColumns.dateIssue && <td className="px-3 py-3 border-r border-gray-300"></td>}
 
                     {visibleColumns.billed && (
-                      <td className="px-3 py-3 text-xs font-semibold text-gray-900 border-r-[0.5px] border-gray-200 text-right">
+                      <td className="px-3 py-3 text-xs font-semibold text-gray-900 border-r border-gray-300 text-right">
                         {Number(listTotals.totalBilled || 0).toLocaleString()}
                       </td>
                     )}
                     {visibleColumns.paid && (
-                      <td className="px-3 py-3 text-xs font-semibold text-emerald-600 border-r-[0.5px] border-gray-200 text-right">
+                      <td className="px-3 py-3 text-xs font-semibold text-emerald-600 border-r border-gray-300 text-right">
                         {Number(listTotals.totalPaid || 0).toLocaleString()}
                       </td>
                     )}
                     {visibleColumns.waived && (
-                      <td className="px-3 py-3 text-xs font-semibold text-teal-600 border-r-[0.5px] border-gray-200 text-right">
+                      <td className="px-3 py-3 text-xs font-semibold text-teal-600 border-r border-gray-300 text-right">
                         {Number(listTotals.totalWaived || 0).toLocaleString()}
                       </td>
                     )}
                     {visibleColumns.balance && (
-                      <td className="px-3 py-3 text-xs font-semibold border-r-[0.5px] border-gray-200">
-                        <div className="inline-flex items-stretch border border-gray-300 rounded-md overflow-hidden float-right">
-                          <span className="px-2 py-1 text-[10px] text-amber-700 bg-amber-50 border-r border-gray-300">
-                            B/F: {Number(listCarryFwdTotal || 0).toLocaleString()}
-                          </span>
-                          <span className="px-2 py-1 text-red-600 bg-red-50">
-                            Curr: {Number(listTotals.totalBalance || 0).toLocaleString()}
-                          </span>
+                      <td className="px-3 py-3 text-xs font-semibold border-r border-gray-300">
+                        <div className="grid grid-cols-2 gap-3 text-right">
+                          <span className="text-amber-700">B/F {Number(listCarryFwdTotal || 0).toLocaleString()}</span>
+                          <span className="text-red-600 border-l border-gray-200 pl-3">Current {Number(listTotals.totalBalance || 0).toLocaleString()}</span>
                         </div>
                       </td>
                     )}
                     {visibleColumns.overpaid && (
-                      <td className="px-3 py-3 text-xs font-semibold text-purple-600 border-r-[0.5px] border-gray-200 text-right">
+                      <td className="px-3 py-3 text-xs font-semibold text-purple-600 border-r border-gray-300 text-right">
                         {Number(listTotals.totalOverpaid || 0).toLocaleString()}
                       </td>
                     )}
 
 
-                    {visibleColumns.status && <td className="px-3 py-3 border-r-[0.5px] border-gray-200"></td>}
-                    {visibleColumns.paymentMode && <td className="px-3 py-3 border-r-[0.5px] border-gray-200"></td>}
+                    {visibleColumns.status && <td className="px-3 py-3 border-r border-gray-300"></td>}
+                    {visibleColumns.paymentMode && <td className="px-3 py-3 border-r border-gray-300"></td>}
                     {visibleColumns.actions && <td className="px-2 py-3"></td>}
                   </tr>
                   {/* Footnote Message */}
@@ -2738,3 +2726,4 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
 };
 
 export default FeeCollectionPage;
+
