@@ -21,8 +21,6 @@ const MobileAppShell = ({ children, user, onNavigate, currentPage, brandingSetti
     { id: 'settings-users', label: 'Profile', icon: User },
   ];
 
-  const showDashboardChrome = currentPage === 'dashboard';
-
   return (
     <div className="h-[100dvh] bg-[#f0efe9] flex justify-center overflow-hidden">
       <div className="w-full max-w-[420px] bg-white flex flex-col rounded-none md:rounded-[40px] md:mt-2 md:mb-2 md:shadow-[0_24px_64px_rgba(0,0,0,0.18)] overflow-hidden relative">
@@ -55,15 +53,6 @@ const MobileAppShell = ({ children, user, onNavigate, currentPage, brandingSetti
         </div>
 
         <div className="flex-1 overflow-y-auto bg-[#fafaf8] pb-4">{children}</div>
-
-        {showDashboardChrome && (
-          <button
-            onClick={() => onNavigate(role === 'TEACHER' ? 'learners-admissions' : 'dashboard')}
-            className="absolute bottom-[84px] right-5 w-12 h-12 rounded-2xl bg-[#1a1a18] text-white flex items-center justify-center shadow-[0_8px_24px_rgba(0,0,0,0.2)] z-20"
-          >
-            <Plus size={20} />
-          </button>
-        )}
 
         <div className="h-[72px] border-t border-[#f0f0ec] bg-white flex items-center px-2 pb-[env(safe-area-inset-bottom)]">
           {navItems.map((item, idx) => {
