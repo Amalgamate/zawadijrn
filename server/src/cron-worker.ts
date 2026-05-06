@@ -10,6 +10,7 @@ import { pledgeReminderService } from './services/pledgeReminder.service';
 import { libraryAutomationService } from './services/libraryAutomation.service';
 import messageService from './services/message.service';
 import logger from './utils/logger';
+import { DutyRosterService } from './services/dutyRoster.service';
 
 async function startCronWorker() {
     try {
@@ -59,6 +60,31 @@ async function startCronWorker() {
             logger.info('[CRON] Running library membership expiration check');
             libraryAutomationService.autoExpireMemberships().catch(err => {
                 logger.error('[CRON] Library membership expiration error:', err);
+            });
+        });
+
+        // ── Duty Roster Notifications ────────────────────────────────────────
+        // 1. Tomorrow reminder: 8:00 PM EAT (17:00 UTC)
+        cron.schedule('0 17 * * *', () => {
+            logger.info('[CRON] Sending duty reminders for tomorrow');
+            DutyRosterService.sendDailyPreviousDayReminders().catch(err => {
+                logger.error('[CRON] Duty tomorrow reminder error:', err);
+            });
+        });
+
+        // 2. Same-day reminder: 6:00 AM EAT (03:00 UTC)
+        cron.schedule('0 3 * * *', () => {
+            logger.info('[CRON] Sending same-day duty reminders');
+            DutyRosterService.sendDailySameDayReminders().catch(err => {
+                logger.error('[CRON] Duty same-day reminder error:', err);
+            });
+        });
+
+        // 3. Weekly summary reminder: Sunday 6:00 PM EAT (15:00 UTC)
+        cron.schedule('0 15 * * 0', () => {
+            logger.info('[CRON] Sending weekly duty summary reminders');
+            DutyRosterService.sendWeeklySummaries().catch(err => {
+                logger.error('[CRON] Duty weekly summary error:', err);
             });
         });
 

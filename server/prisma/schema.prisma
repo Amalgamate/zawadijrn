@@ -109,6 +109,8 @@ model User {
   // ── Apps Module ─────────────────────────────────────────────────────────────
   appConfigsUpdated         SchoolAppConfig[]        @relation("AppConfigUpdater")
   appAuditLogs              AppAuditLog[]            @relation("AppAuditor")
+  dutyRosterAssignments     DutyRosterAssignment[]   @relation("DutyTeacher")
+  dutyRostersCreated        DutyRoster[]
 
 
   @@map("users")
@@ -2820,6 +2822,70 @@ model UserNotification {
   @@index([userId, isRead])  // composite: fastest path for unread count query
   @@index([createdAt])
   @@map("user_notifications")
+}
+
+enum DutyRosterFrequency {
+  DAILY
+  WEEKLY
+}
+
+model DutyRoster {
+  id               String                @id @default(uuid())
+  title            String
+  frequency        DutyRosterFrequency
+  startDate        DateTime
+  endDate          DateTime?
+  isActive         Boolean               @default(true)
+  reminderEnabled  Boolean               @default(true)
+  createdById      String
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  createdBy        User                  @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  assignments      DutyRosterAssignment[]
+
+  @@index([isActive, frequency])
+  @@index([startDate, endDate])
+  @@map("duty_rosters")
+}
+
+model DutyRosterAssignment {
+  id              String       @id @default(uuid())
+  rosterId        String
+  teacherId       String
+  dutyDate        DateTime
+  role            String?
+  notes           String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  roster          DutyRoster   @relation(fields: [rosterId], references: [id], onDelete: Cascade)
+  teacher         User         @relation("DutyTeacher", fields: [teacherId], references: [id], onDelete: Restrict)
+  notificationLog DutyNotificationLog[]
+
+  @@unique([rosterId, teacherId, dutyDate])
+  @@index([teacherId, dutyDate])
+  @@index([dutyDate])
+  @@map("duty_roster_assignments")
+}
+
+model DutyNotificationLog {
+  id            String                 @id @default(uuid())
+  assignmentId  String
+  type          DutyNotificationType
+  sentAt        DateTime               @default(now())
+
+  assignment    DutyRosterAssignment   @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+
+  @@unique([assignmentId, type])
+  @@index([sentAt])
+  @@map("duty_notification_logs")
+}
+
+enum DutyNotificationType {
+  PREVIOUS_DAY
+  SAME_DAY
+  WEEKLY_SUMMARY
 }
 
 
