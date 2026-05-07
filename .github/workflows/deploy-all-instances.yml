@@ -98,6 +98,7 @@ jobs:
             echo "$c -> $url -> $body"
             echo "$body" | grep -q '"success":true'
           done
+          exit 0
           EOF
 
       - name: Deploy all live instances

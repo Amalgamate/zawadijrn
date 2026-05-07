@@ -157,4 +157,5 @@ done
 site_healthcheck "${CONSOLE_PORT}"
 
 echo "[deploy] Done."
+exit 0
 REMOTE
