@@ -56,7 +56,7 @@ jobs:
       - name: Preflight check all instances
         run: |
           set -euo pipefail
-          ssh production <<'EOF'
+          ssh -tt production "bash --noprofile --norc -s" <<'EOF'
           set -euo pipefail
 
           echo "Discovering live frontend instances..."
