@@ -20,6 +20,12 @@ router.patch(
   asyncHandler(appsController.toggleApp.bind(appsController))
 );
 
+router.patch(
+  '/enable-all',
+  requireRole(['SUPER_ADMIN', 'ADMIN']),
+  asyncHandler(appsController.enableAllApps.bind(appsController))
+);
+
 // Super admin only
 router.patch(
   '/:slug/mandatory',

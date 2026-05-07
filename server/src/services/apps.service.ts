@@ -20,6 +20,14 @@ interface SetVisibilityParams extends ToggleAppParams {
   isVisible: boolean;
 }
 
+interface EnableAllParams {
+  schoolId: string;
+  performedByUserId: string;
+  performedByRole: string;
+  ipAddress?: string;
+  userAgent?: string;
+}
+
 export class AppsService {
 
   /** Resolve an app by slug — throws 404 if not found */
@@ -189,6 +197,54 @@ export class AppsService {
     );
 
     return { slug, isVisible };
+  }
+
+  /**
+   * Activate all non-system apps for a school.
+   * Super admin can include system apps if requested by future extension.
+   */
+  static async enableAllApps(params: EnableAllParams) {
+    const { schoolId, performedByUserId, performedByRole, ipAddress, userAgent } = params;
+
+    const apps = await prisma.app.findMany({
+      where: { isSystem: false },
+      orderBy: { sortOrder: 'asc' }
+    });
+
+    const activated: string[] = [];
+
+    for (const app of apps) {
+      const cfg = await AppsService._ensureConfig(schoolId, app.id);
+      if (cfg.isActive) continue;
+
+      await AppsService._activateDependencies(
+        schoolId,
+        (app.dependencies as string[]) || [],
+        performedByUserId,
+        performedByRole,
+        ipAddress,
+        userAgent
+      );
+
+      await prisma.schoolAppConfig.update({
+        where: { schoolId_appId: { schoolId, appId: app.id } },
+        data: { isActive: true, updatedById: performedByUserId }
+      });
+
+      await AppsService._audit(
+        schoolId,
+        app.id,
+        'ACTIVATED',
+        performedByUserId,
+        performedByRole,
+        ipAddress,
+        userAgent
+      );
+
+      activated.push(app.slug);
+    }
+
+    return { activatedCount: activated.length, activated };
   }
 
   // ─────────────────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   LayoutGrid, Lock, Eye, EyeOff, RefreshCw,
-  History, ChevronDown, ChevronUp, AlertTriangle, Shield
+  History, ChevronDown, ChevronUp, AlertTriangle, Shield, Power
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useApps } from '../../../../hooks/useApps';
@@ -198,8 +198,9 @@ const AppsPage = () => {
 
   const {
     appsByCategory, categories, loading, error,
-    toggling, isSuperAdmin,
+    toggling, bulkEnabling, isSuperAdmin,
     toggle, setMandatory, setVisibility, refresh,
+    enableAll
   } = useApps(schoolId);
 
   const [depsApp,        setDepsApp]        = useState(null);
@@ -259,6 +260,19 @@ const AppsPage = () => {
     if (next && auditLogs.length === 0) loadAuditLog();
   };
 
+  const handleEnableAll = async () => {
+    if (!schoolId) return;
+    const ok = window.confirm('Enable all modules for this school?');
+    if (!ok) return;
+
+    try {
+      const result = await enableAll();
+      toast.success(`Enabled ${result.activatedCount || 0} module(s)`);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to enable all modules');
+    }
+  };
+
   // ── Render ──
   if (loading) {
     return (
@@ -291,6 +305,15 @@ const AppsPage = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={handleEnableAll}
+            disabled={bulkEnabling}
+            className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 disabled:opacity-60"
+            title="Enable all modules for this school"
+          >
+            <Power className="h-4 w-4" />
+            {bulkEnabling ? 'Enabling…' : 'Enable All Modules'}
+          </button>
           {isSuperAdmin && (
             <div className="flex items-center gap-1.5 rounded-lg bg-amber-50 border border-amber-200 px-3 py-1.5">
               <Shield className="h-4 w-4 text-amber-500" />

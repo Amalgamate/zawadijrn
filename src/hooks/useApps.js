@@ -8,6 +8,7 @@ export const useApps = (schoolId) => {
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
   const [toggling, setToggling] = useState({}); // slug -> bool
+  const [bulkEnabling, setBulkEnabling] = useState(false);
 
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const syncAuthApps = useCallback((nextApps) => {
@@ -103,6 +104,18 @@ export const useApps = (schoolId) => {
     ));
   }, [schoolId, isSuperAdmin]);
 
+  const enableAll = useCallback(async () => {
+    if (!schoolId) return { activatedCount: 0 };
+    setBulkEnabling(true);
+    try {
+      const res = await appsApi.enableAll(schoolId);
+      await fetchApps();
+      return res.data?.data || { activatedCount: 0 };
+    } finally {
+      setBulkEnabling(false);
+    }
+  }, [fetchApps, schoolId]);
+
   /** Group apps by category */
   const appsByCategory = apps.reduce((acc, app) => {
     if (!acc[app.category]) acc[app.category] = [];
@@ -119,10 +132,12 @@ export const useApps = (schoolId) => {
     loading,
     error,
     toggling,
+    bulkEnabling,
     isSuperAdmin,
     toggle,
     setMandatory,
     setVisibility,
+    enableAll,
     refresh: fetchApps,
   };
 };

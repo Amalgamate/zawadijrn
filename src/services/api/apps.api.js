@@ -11,6 +11,10 @@ export const appsApi = {
   toggle: (slug, schoolId) =>
     axiosInstance.patch(`${BASE}/${slug}/toggle`, { schoolId }),
 
+  /** Activate all apps for a school */
+  enableAll: (schoolId) =>
+    axiosInstance.patch(`${BASE}/enable-all`, { schoolId }),
+
   /** Set mandatory flag (SUPER_ADMIN only) */
   setMandatory: (slug, schoolId, isMandatory) =>
     axiosInstance.patch(`${BASE}/${slug}/mandatory`, { schoolId, isMandatory }),

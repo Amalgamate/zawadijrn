@@ -51,6 +51,30 @@ export class AppsController {
     res.json({ success: true, data: result });
   }
 
+  /** PATCH /settings/apps/enable-all */
+  async enableAllApps(req: AuthRequest, res: Response) {
+    let schoolId = (req.query.schoolId as string) || req.body.schoolId;
+
+    if (!schoolId) {
+      const school = await (prisma as any).school.findFirst({ select: { id: true } });
+      schoolId = school?.id;
+    }
+
+    if (!schoolId) {
+      return res.status(400).json({ success: false, message: 'schoolId is required' });
+    }
+
+    const result = await AppsService.enableAllApps({
+      schoolId,
+      performedByUserId: req.user!.userId,
+      performedByRole: req.user!.role,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
+    res.json({ success: true, data: result });
+  }
+
   /** PATCH /settings/apps/:slug/mandatory — SUPER_ADMIN only */
   async setMandatory(req: AuthRequest, res: Response) {
     const { slug } = req.params;
