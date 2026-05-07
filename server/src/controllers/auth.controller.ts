@@ -223,6 +223,7 @@ export class AuthController {
       success: true,
       user: {
         ...userWithoutSensitive,
+        schoolId: resolvedSchoolId || null,
         roles: userRoles,
         institutionType: user.institutionType || schoolConfig?.institutionType || (req as any).school?.institutionType || 'PRIMARY_CBC',
         institutionTypeLocked: schoolConfig?.institutionTypeLocked === true,
@@ -371,11 +372,15 @@ export class AuthController {
     if (!user) throw new ApiError(404, 'User not found');
 
     const schoolId = (user as any).schoolId || (req as any).school?.id;
+    const school = schoolId
+      ? null
+      : await prisma.school.findFirst({ select: { id: true } });
+    const resolvedSchoolId = schoolId || school?.id;
     let activeApps: string[] = [];
     
-    if (schoolId) {
+    if (resolvedSchoolId) {
       const appConfigs = await prisma.schoolAppConfig.findMany({
-        where: { schoolId, isActive: true },
+        where: { schoolId: resolvedSchoolId, isActive: true },
         include: { app: { select: { slug: true } } }
       });
       activeApps = appConfigs.map(c => c.app.slug);
@@ -386,6 +391,7 @@ export class AuthController {
       success: true,
       data: {
         ...userPublic,
+        schoolId: resolvedSchoolId || null,
         roles: user.roles && user.roles.length > 0 ? user.roles : [user.role],
         institutionType: user.institutionType || (req as any).school?.institutionType || 'PRIMARY_CBC',
         mustChangePassword: !!passwordResetToken,

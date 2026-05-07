@@ -240,7 +240,6 @@ const AppsPage = () => {
   };
 
   const loadAuditLog = async () => {
-    if (!schoolId) return;
     setAuditLoading(true);
     try {
       const { appsApi } = await import('../../../../services/api/apps.api');
@@ -261,7 +260,6 @@ const AppsPage = () => {
   };
 
   const handleEnableAll = async () => {
-    if (!schoolId) return;
     const ok = window.confirm('Enable all modules for this school?');
     if (!ok) return;
 

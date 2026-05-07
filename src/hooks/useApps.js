@@ -49,7 +49,6 @@ export const useApps = (schoolId) => {
 
   /** Toggle isActive — optimistic update */
   const toggle = useCallback(async (slug) => {
-    if (!schoolId) return;
     setToggling(t => ({ ...t, [slug]: true }));
 
     // Optimistic
@@ -88,7 +87,7 @@ export const useApps = (schoolId) => {
 
   /** Set mandatory (SUPER_ADMIN only) */
   const setMandatory = useCallback(async (slug, isMandatory) => {
-    if (!schoolId || !isSuperAdmin) return;
+    if (!isSuperAdmin) return;
     await appsApi.setMandatory(slug, schoolId, isMandatory);
     setApps(prev => prev.map(a =>
       a.slug === slug ? { ...a, isMandatory } : a
@@ -97,7 +96,7 @@ export const useApps = (schoolId) => {
 
   /** Set visibility (SUPER_ADMIN only) */
   const setVisibility = useCallback(async (slug, isVisible) => {
-    if (!schoolId || !isSuperAdmin) return;
+    if (!isSuperAdmin) return;
     await appsApi.setVisibility(slug, schoolId, isVisible);
     setApps(prev => prev.map(a =>
       a.slug === slug ? { ...a, isVisible } : a
@@ -105,7 +104,6 @@ export const useApps = (schoolId) => {
   }, [schoolId, isSuperAdmin]);
 
   const enableAll = useCallback(async () => {
-    if (!schoolId) return { activatedCount: 0 };
     setBulkEnabling(true);
     try {
       const res = await appsApi.enableAll(schoolId);
