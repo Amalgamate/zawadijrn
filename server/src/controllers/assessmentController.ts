@@ -25,6 +25,9 @@ type LearningAreaContext = {
 const areaNameCache = new Map<string, { id: string; name: string } | null>();
 const SS_GRADES = new Set(['GRADE10', 'GRADE11', 'GRADE12', 'GRADE_10', 'GRADE_11', 'GRADE_12', 'FORM_1', 'FORM_2', 'FORM_3']);
 const JS_GRADES = new Set(['PLAYGROUP', 'PP1', 'PP2', 'GRADE_1', 'GRADE_2', 'GRADE_3', 'GRADE_4', 'GRADE_5', 'GRADE_6', 'GRADE_7', 'GRADE_8', 'GRADE_9']);
+const DEFAULT_SUMMATIVE_TOTAL_MARKS = 100;
+const DEFAULT_SUMMATIVE_PASS_MARKS = 40;
+const MAX_SUMMATIVE_TOTAL_MARKS = 100;
 
 function normalizeGradeCode(grade: string): string {
   return String(grade || '').trim().toUpperCase().replace(/\s+/g, '_');
@@ -40,6 +43,18 @@ function assertGradeAllowedForInstitution(institutionType: string | undefined, g
   if (inst === 'PRIMARY_CBC') {
     if (!JS_GRADES.has(g)) throw new ApiError(400, `${contextLabel}: grade ${grade} is not allowed for Junior School`);
   }
+}
+
+function normalizeSummativeMarks(totalMarksInput: unknown, passMarksInput: unknown): { totalMarks: number; passMarks: number } {
+  let totalMarks = Number(totalMarksInput);
+  if (!Number.isFinite(totalMarks) || totalMarks <= 0) totalMarks = DEFAULT_SUMMATIVE_TOTAL_MARKS;
+  totalMarks = Math.round(Math.min(totalMarks, MAX_SUMMATIVE_TOTAL_MARKS));
+
+  let passMarks = Number(passMarksInput);
+  if (!Number.isFinite(passMarks) || passMarks < 0) passMarks = DEFAULT_SUMMATIVE_PASS_MARKS;
+  passMarks = Math.round(Math.max(0, Math.min(passMarks, totalMarks)));
+
+  return { totalMarks, passMarks };
 }
 
 async function resolveLearningAreaWithContext(input: LearningAreaContext): Promise<{ id: string | null; name: string | null }> {
@@ -666,7 +681,7 @@ export const createSummativeTest = async (req: AuthRequest, res: Response) => {
       ? normalizedSeriesName
       : `${normalizedSeriesName} - ${resolvedLearningArea} - ${resolvedTestType} - ${normalizedTerm} ${academicYear}`;
 
-    const resolvedTotalMarks = totalMarks ?? maxScore ?? 100;
+    const normalizedMarks = normalizeSummativeMarks(totalMarks ?? maxScore ?? DEFAULT_SUMMATIVE_TOTAL_MARKS, passMarks);
 
     if (!teacherId || !resolvedLearningArea || !normalizedTerm || !academicYear) {
       return res.status(400).json({
@@ -685,8 +700,8 @@ export const createSummativeTest = async (req: AuthRequest, res: Response) => {
           term: normalizedTerm,
           academicYear: parseInt(academicYear),
           testDate: testDate ? new Date(testDate) : new Date(),
-          totalMarks: parseInt(String(resolvedTotalMarks)),
-          passMarks: parseInt(passMarks),
+          totalMarks: normalizedMarks.totalMarks,
+          passMarks: normalizedMarks.passMarks,
           description,
           instructions,
           grade,
@@ -805,6 +820,7 @@ export const generateTestsBulk = async (req: AuthRequest, res: Response) => {
     }
 
     const createdTests = [];
+    const normalizedMarks = normalizeSummativeMarks(totalMarks, passMarks);
     const scaleWarnings: string[] = [];
     let duplicateCount = 0;
 
@@ -841,8 +857,8 @@ export const generateTestsBulk = async (req: AuthRequest, res: Response) => {
             term: normalizedTerm,
             academicYear: parseInt(academicYear),
             testDate: testDate ? new Date(testDate) : new Date(),
-            totalMarks: parseInt(totalMarks),
-            passMarks: parseInt(passMarks),
+            totalMarks: normalizedMarks.totalMarks,
+            passMarks: normalizedMarks.passMarks,
             duration: duration ? parseInt(String(duration)) : undefined,
             grade,
             curriculum,
@@ -1078,13 +1094,18 @@ export const updateSummativeTest = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ success: false, message: 'Test not found' });
     }
 
+    const normalizedMarks = normalizeSummativeMarks(
+      updateData.totalMarks != null ? updateData.totalMarks : test.totalMarks,
+      updateData.passMarks != null ? updateData.passMarks : test.passMarks
+    );
+
     const updatedTest = await prisma.summativeTest.update({
       where: { id },
       data: {
         ...updateData,
         academicYear: updateData.academicYear ? parseInt(updateData.academicYear) : undefined,
-        totalMarks: updateData.totalMarks ? parseInt(updateData.totalMarks) : undefined,
-        passMarks: updateData.passMarks ? parseInt(updateData.passMarks) : undefined,
+        totalMarks: normalizedMarks.totalMarks,
+        passMarks: normalizedMarks.passMarks,
         duration: updateData.duration != null ? parseInt(String(updateData.duration)) : undefined,
         testDate: updateData.testDate ? new Date(updateData.testDate) : undefined
       }

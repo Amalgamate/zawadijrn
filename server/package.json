@@ -32,6 +32,7 @@
     "provision": "ts-node src/scripts/provision-school.ts",
     "system-setup": "ts-node src/scripts/setup-system.ts",
     "schools:dedupe": "ts-node src/scripts/dedupe-schools.ts",
+    "fix:summative-total-marks": "ts-node src/scripts/fix-summative-total-marks.ts",
     "audit:responses": "node scripts/audit-api-response-format.js",
     "audit:responses:strict": "node scripts/audit-api-response-format.js --fail-on-findings",
     "backup": "node scripts/backup-db.js",
