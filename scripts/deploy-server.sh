@@ -24,7 +24,7 @@ CONSOLE_ENV_FILE="${CONSOLE_ENV_FILE:-${APPS_DIR}/.env.console}"
 echo "[deploy] Host: ${SERVER_USER}@${SERVER_HOST}"
 echo "[deploy] Images: ghcr.io/amalgamate/zawadi-frontend:latest, ghcr.io/amalgamate/zawadi-backend:latest, ${CONSOLE_IMAGE}"
 
-ssh -tt "${SERVER_USER}@${SERVER_HOST}" "APPS_DIR='${APPS_DIR}' MAIN_DIR='${MAIN_DIR}' CONSOLE_IMAGE='${CONSOLE_IMAGE}' CONSOLE_PORT='${CONSOLE_PORT}' CONSOLE_ENV_FILE='${CONSOLE_ENV_FILE}' bash --noprofile --norc -s" <<'REMOTE'
+ssh -o ServerAliveInterval=30 -o ServerAliveCountMax=10 "${SERVER_USER}@${SERVER_HOST}" "APPS_DIR='${APPS_DIR}' MAIN_DIR='${MAIN_DIR}' CONSOLE_IMAGE='${CONSOLE_IMAGE}' CONSOLE_PORT='${CONSOLE_PORT}' CONSOLE_ENV_FILE='${CONSOLE_ENV_FILE}' bash --noprofile --norc -s" <<'REMOTE'
 set -euo pipefail
 
 deploy_main() {
