@@ -318,13 +318,14 @@ const SummaryReportPage = () => {
 
         subjects.forEach(sub => {
           const res = studentResults.find(r => r.test?.learningArea === sub);
-          if (res) {
-            subjectScores[sub] = {
-              marks: res.marksObtained,
-              max: res.test?.totalMarks || 100,
-              grade: res.grade,
-              percentage: res.percentage
-            };
+            if (res) {
+              const derivedBand = getCBCGrade(Number(res.percentage || 0)).grade;
+              subjectScores[sub] = {
+                marks: res.marksObtained,
+                max: res.test?.totalMarks || 100,
+                grade: res.cbcGrade || derivedBand,
+                percentage: res.percentage
+              };
             totalScore += res.marksObtained;
             totalMax += (res.test?.totalMarks || 100);
             subjectsAssessed++;
