@@ -35,18 +35,22 @@ jobs:
           test -n "$DEPLOY_HOST"
           test -n "$DEPLOY_USER"
           test -n "$DEPLOY_SSH_KEY"
+          CLEAN_HOST="${DEPLOY_HOST#http://}"
+          CLEAN_HOST="${CLEAN_HOST#https://}"
+          CLEAN_HOST="${CLEAN_HOST%%/*}"
+          test -n "$CLEAN_HOST"
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
           printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+          ssh-keyscan -H "$CLEAN_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
           {
             echo "Host production"
-            echo "  HostName $DEPLOY_HOST"
+            echo "  HostName $CLEAN_HOST"
             echo "  User $DEPLOY_USER"
             echo "  IdentityFile ~/.ssh/deploy_key"
             echo "  IdentitiesOnly yes"
-            echo "  StrictHostKeyChecking yes"
+            echo "  StrictHostKeyChecking accept-new"
           } > ~/.ssh/config
 
       - name: Preflight check all instances
