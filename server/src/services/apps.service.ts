@@ -29,6 +29,41 @@ interface EnableAllParams {
 }
 
 export class AppsService {
+  private static _isUpdatedByWriteError(error: any) {
+    const message = String(error?.message || '').toLowerCase();
+    return (
+      message.includes('updatedbyid') ||
+      message.includes('school_app_configs_updatedbyid_fkey') ||
+      message.includes('does not exist in the current database')
+    );
+  }
+
+  /**
+   * Compatibility-safe update for legacy school DBs where `updatedById`
+   * column or FK may be missing/misaligned.
+   */
+  private static async _updateConfigSafe(
+    schoolId: string,
+    appId: string,
+    data: Record<string, any>,
+    performedByUserId?: string,
+  ) {
+    try {
+      return await prisma.schoolAppConfig.update({
+        where: { schoolId_appId: { schoolId, appId } },
+        data: performedByUserId ? { ...data, updatedById: performedByUserId } : data,
+      });
+    } catch (error: any) {
+      if (!performedByUserId || !AppsService._isUpdatedByWriteError(error)) {
+        throw error;
+      }
+
+      return prisma.schoolAppConfig.update({
+        where: { schoolId_appId: { schoolId, appId } },
+        data,
+      });
+    }
+  }
 
   /** Resolve an app by slug — throws 404 if not found */
   private static async _resolveApp(slug: string) {
@@ -149,10 +184,12 @@ export class AppsService {
       await AppsService._checkNoDependants(schoolId, slug);
     }
 
-    await prisma.schoolAppConfig.update({
-      where: { schoolId_appId: { schoolId, appId: app.id } },
-      data: { isActive: newState, updatedById: performedByUserId },
-    });
+    await AppsService._updateConfigSafe(
+      schoolId,
+      app.id,
+      { isActive: newState },
+      performedByUserId,
+    );
 
     await AppsService._audit(
       schoolId, app.id,
@@ -170,10 +207,12 @@ export class AppsService {
     const app = await AppsService._resolveApp(slug);
     await AppsService._ensureConfig(schoolId, app.id);
 
-    await prisma.schoolAppConfig.update({
-      where: { schoolId_appId: { schoolId, appId: app.id } },
-      data: { isMandatory, updatedById: performedByUserId },
-    });
+    await AppsService._updateConfigSafe(
+      schoolId,
+      app.id,
+      { isMandatory },
+      performedByUserId,
+    );
 
     await AppsService._audit(
       schoolId, app.id,
@@ -191,10 +230,12 @@ export class AppsService {
     const app = await AppsService._resolveApp(slug);
     await AppsService._ensureConfig(schoolId, app.id);
 
-    await prisma.schoolAppConfig.update({
-      where: { schoolId_appId: { schoolId, appId: app.id } },
-      data: { isVisible, updatedById: performedByUserId },
-    });
+    await AppsService._updateConfigSafe(
+      schoolId,
+      app.id,
+      { isVisible },
+      performedByUserId,
+    );
 
     await AppsService._audit(
       schoolId, app.id,
@@ -232,10 +273,12 @@ export class AppsService {
         userAgent
       );
 
-      await prisma.schoolAppConfig.update({
-        where: { schoolId_appId: { schoolId, appId: app.id } },
-        data: { isActive: true, updatedById: performedByUserId }
-      });
+      await AppsService._updateConfigSafe(
+        schoolId,
+        app.id,
+        { isActive: true },
+        performedByUserId,
+      );
 
       await AppsService._audit(
         schoolId,
@@ -342,10 +385,12 @@ export class AppsService {
     for (const depApp of depApps) {
       const depCfg = await AppsService._ensureConfig(schoolId, depApp.id);
       if (!depCfg.isActive) {
-        await prisma.schoolAppConfig.update({
-          where: { schoolId_appId: { schoolId, appId: depApp.id } },
-          data: { isActive: true, updatedById: performedByUserId },
-        });
+        await AppsService._updateConfigSafe(
+          schoolId,
+          depApp.id,
+          { isActive: true },
+          performedByUserId,
+        );
         await AppsService._audit(schoolId, depApp.id, 'ACTIVATED', performedByUserId, performedByRole, ipAddress, userAgent);
       }
     }
