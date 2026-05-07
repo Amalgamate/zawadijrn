@@ -56,17 +56,23 @@ export class AppsService {
     ipAddress?: string,
     userAgent?: string,
   ) {
-    await prisma.appAuditLog.create({
-      data: {
-        schoolId,
-        appId,
-        action,
-        performedBy,
-        roleAtTime,
-        ipAddress: ipAddress ?? null,
-        userAgent:  userAgent  ?? null,
-      },
-    });
+    try {
+      await prisma.appAuditLog.create({
+        data: {
+          schoolId,
+          appId,
+          action,
+          performedBy,
+          roleAtTime,
+          ipAddress: ipAddress ?? null,
+          userAgent: userAgent ?? null,
+        },
+      });
+    } catch (error: any) {
+      // Audit should never block app activation/deactivation.
+      // If audit persistence fails (e.g. legacy user mismatch), continue safely.
+      console.warn('[AppsService] Audit log write failed (non-blocking):', error?.message || error);
+    }
   }
 
   // ─────────────────────────────────────────────────────────────
