@@ -682,29 +682,65 @@ export const getSmsBalance = async (req: AuthRequest, res: Response) => {
     }
 
     if (config.smsProvider === 'africastalking') {
-        const { decrypt } = await import('../utils/encryption.util');
-        const axios = (await import('axios')).default;
+        try {
+            const { decrypt } = await import('../utils/encryption.util');
+            const axios = (await import('axios')).default;
 
-        const apiKey = decrypt(config.smsApiKey);
-        const username = (config as any).smsUsername;
+            const apiKey = decrypt(config.smsApiKey);
+            const username = (config as any).smsUsername;
 
-        if (!username || !apiKey) {
-            return res.status(200).json({ success: true, data: { balance: null, provider: 'africastalking' } });
-        }
+            if (!username || !apiKey) {
+                return res.status(200).json({
+                    success: true,
+                    data: { balance: null, provider: 'africastalking', available: false, reason: 'Missing username or API key' }
+                });
+            }
 
-        const response = await axios.get(
-            `https://api.africastalking.com/version1/user?username=${username}`,
-            { headers: { apikey: apiKey, Accept: 'application/json' } }
-        );
+            const response = await axios.get(
+                `https://api.africastalking.com/version1/user?username=${encodeURIComponent(username)}`,
+                {
+                    headers: { apikey: apiKey, Accept: 'application/json' },
+                    timeout: 10000
+                }
+            );
 
-        const data = response.data;
-        if (data?.UserData?.balance) {
+            const data = response.data;
+            if (data?.UserData?.balance) {
+                return res.status(200).json({
+                    success: true,
+                    data: { balance: data.UserData.balance, provider: 'africastalking', available: true }
+                });
+            }
+
             return res.status(200).json({
                 success: true,
-                data: { balance: data.UserData.balance, provider: 'africastalking' }
+                data: { balance: null, provider: 'africastalking', available: false, reason: 'Balance not returned by provider' }
+            });
+        } catch (error: any) {
+            logger.warn('[Communication] Failed to fetch SMS balance from Africa\'s Talking', {
+                status: error?.response?.status,
+                message: error?.message
+            });
+
+            return res.status(200).json({
+                success: true,
+                data: {
+                    balance: null,
+                    provider: 'africastalking',
+                    available: false,
+                    reason: error?.response?.data?.errorMessage || error?.message || 'Provider request failed'
+                }
             });
         }
     }
 
-    res.status(200).json({ success: true, data: { balance: null, provider: config.smsProvider } });
+    res.status(200).json({
+        success: true,
+        data: {
+            balance: null,
+            provider: config.smsProvider,
+            available: false,
+            reason: 'Balance lookup not supported for this provider yet'
+        }
+    });
 };
