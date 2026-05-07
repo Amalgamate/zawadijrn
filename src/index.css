@@ -224,6 +224,45 @@
     color: var(--table-header-fg);
     border-color: var(--table-border) !important;
   }
+
+  /* Report card marks table: force clear vertical separators in screen + PDF */
+  .report-marks-table th,
+  .report-marks-table td {
+    border-right: 1.5px solid #000000 !important;
+  }
+
+  .report-marks-table th:last-child,
+  .report-marks-table td:last-child {
+    border-right: 1.5px solid #000000 !important;
+  }
+
+  /* Shared PDF report system: isolates report tables/layout from app-wide table rules */
+  .pdf-report-root {
+    background: #ffffff;
+    color: #000000;
+  }
+
+  .pdf-report-header {
+    color: #000000;
+  }
+
+  .pdf-report-root table,
+  .pdf-report-table {
+    border-collapse: collapse !important;
+    border-spacing: 0 !important;
+    width: 100% !important;
+    border: 1.5px solid #000000 !important;
+    background: #ffffff !important;
+  }
+
+  .pdf-report-root th,
+  .pdf-report-root td,
+  .pdf-report-table th,
+  .pdf-report-table td {
+    border: 1.2px solid #000000 !important;
+    border-right: 1.2px solid #000000 !important;
+    border-bottom: 1.2px solid #000000 !important;
+  }
 }
 
 /* --- High-Fidelity Native Print Styles --- */
@@ -235,13 +274,18 @@
   
   #summative-report-content, 
   #summative-report-content *,
+  #single-print-content,
+  #single-print-content *,
   .report-card,
-  .report-card * {
+  .report-card *,
+  .pdf-report-root,
+  .pdf-report-root * {
     visibility: visible !important;
   }
 
   /* 2. Position the report at the top-left of the A4 page */
   #summative-report-content,
+  #single-print-content,
   .report-card {
     position: absolute !important;
     left: 0 !important;
@@ -251,8 +295,23 @@
     margin: 0 !important;
     padding: 0 !important;
     background: white !important;
+    overflow: hidden !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+  }
+
+  /* In print, PDF report classes own table styling (global table rules should not leak) */
+  .pdf-report-root table,
+  .pdf-report-table {
+    border: 1.5px solid #000000 !important;
+    border-collapse: collapse !important;
+  }
+
+  .pdf-report-root th,
+  .pdf-report-root td,
+  .pdf-report-table th,
+  .pdf-report-table td {
+    border: 1.2px solid #000000 !important;
   }
 
   /* 3. Page Setup */
@@ -269,6 +328,15 @@
 
   .no-print, .screen-only, button, .sticky {
     display: none !important;
+  }
+
+  /* Preserve colored graph bars in print/PDF */
+  .report-chart-bar {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    background-color: var(--bar-color) !important;
+    opacity: 1 !important;
+    border-color: var(--bar-color) !important;
   }
 }
 
@@ -329,7 +397,7 @@ code {
 
   /* Ensure proper page margins */
   @page {
-    margin: 20mm;
+    margin: 0;
     size: A4 portrait;
     /* Match the statement and report orientation */
   }

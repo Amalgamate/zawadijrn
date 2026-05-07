@@ -425,6 +425,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
   });
 
   const pointRows = tableRows.filter((r) => typeof r.points === 'number' && Number.isFinite(r.points));
+  const totalPoints = pointRows.reduce((acc, r) => acc + r.points, 0);
   const meanPoints = pointRows.length > 0
     ? (pointRows.reduce((acc, r) => acc + r.points, 0) / pointRows.length)
     : 0;
@@ -459,7 +460,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
   // commentData is now passed in as a prop from the parent (pre-fetched before bulk render)
 
   return (
-    <div className="report-card relative bg-white mx-auto overflow-hidden"
+    <div className="report-card pdf-report-root relative bg-white mx-auto"
       style={{
         fontFamily: "'Raleway', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
         lineHeight: '1.2',
@@ -475,23 +476,31 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
       }}
     >
       {/* Header Section - Ultra-Slim Horizontal Redesign */}
-      <div className="mb-2" style={{
+      <div className="mb-2 pdf-report-header" style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '0 0 4px 0',
+        padding: '2px 0 6px 0',
         borderBottom: `2.5px solid ${brandingSettings?.brandColor || '#1e3a8a'}`,
         gap: '24px'
       }}>
         {/* LEFT: Logo */}
-        <div style={{ flexShrink: 0 }}>
+        <div style={{
+          flexShrink: 0,
+          width: '96px',
+          height: '96px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'visible'
+        }}>
           {(() => {
             const logoSrc = brandingSettings?.logoUrl || user?.school?.logoUrl || user?.school?.logo || user?.schoolLogo || user?.logoUrl || '/branding/logo.png';
             return (
               <img
                 src={logoSrc}
                 alt="School Logo"
-                style={{ height: '85px', width: 'auto', objectFit: 'contain', display: 'block' }}
+                style={{ maxHeight: '92px', maxWidth: '92px', width: 'auto', objectFit: 'contain', display: 'block' }}
                 onError={(e) => { e.target.style.display = 'none'; }}
               />
             );
@@ -587,7 +596,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
                 </div>
                 <div style={{ padding: '8px 4px', textAlign: 'center', borderBottom: '1.2px solid #e2e8f0', display: 'flex', flexDirection: 'column', justifyContent: 'center', backgroundColor: '#f8fafc', gap: '2px' }}>
                   <div style={{ fontSize: '8px', fontWeight: pdfTypeWeight.semibold, color: '#64748b', textTransform: 'uppercase' }}>Points</div>
-                  <div style={{ fontSize: '16px', fontWeight: pdfTypeWeight.bold, color: '#0f172a' }}>{meanPoints.toFixed(1)}/8</div>
+                  <div style={{ fontSize: '16px', fontWeight: pdfTypeWeight.bold, color: '#0f172a' }}>{pointRows.length > 0 ? totalPoints : '—'}</div>
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
@@ -609,7 +618,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
 
 
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', marginBottom: '6px' }}>
+        <table className="report-marks-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', marginBottom: '6px' }}>
           <thead>
             <tr style={{ color: '#000000' }}>
               <th style={{ padding: '5px 10px', textAlign: 'left', fontWeight: pdfTypeWeight.title, border: '1.5px solid #dbe4ee', letterSpacing: '0.3px', backgroundColor: '#ffffff' }}>SUBJECT</th>
@@ -621,8 +630,8 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
               {testColumns.length > 1 && (
                 <th style={{ padding: '5px 6px', textAlign: 'center', fontWeight: pdfTypeWeight.title, border: '1.5px solid #dbe4ee', minWidth: '64px', letterSpacing: '0.3px', backgroundColor: '#ffffff' }}>AVG %</th>
               )}
-              <th style={{ padding: '5px 6px', textAlign: 'left', fontWeight: pdfTypeWeight.title, border: '1.5px solid #dbe4ee', minWidth: '64px', letterSpacing: '0.3px', backgroundColor: '#ffffff' }}>GRADE</th>
-              <th style={{ padding: '5px 6px', textAlign: 'center', fontWeight: pdfTypeWeight.title, border: '1.5px solid #dbe4ee', minWidth: '44px', letterSpacing: '0.3px', backgroundColor: '#ffffff' }}>PTS</th>
+              <th style={{ padding: '5px 6px', textAlign: 'left', fontWeight: pdfTypeWeight.title, border: '1.5px solid #dbe4ee', borderLeft: '1.5px solid #dbe4ee', minWidth: '64px', letterSpacing: '0.3px', backgroundColor: '#ffffff' }}>GRADE</th>
+              <th style={{ padding: '5px 6px', textAlign: 'center', fontWeight: pdfTypeWeight.title, border: '1.5px solid #dbe4ee', borderLeft: '1.5px solid #dbe4ee', borderRight: '1.5px solid #dbe4ee', minWidth: '44px', letterSpacing: '0.3px', backgroundColor: '#ffffff' }}>PTS</th>
 
             </tr>
           </thead>
@@ -650,8 +659,8 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
                 {testColumns.length > 1 && (
                   <td style={{ padding: '6px 6px', textAlign: 'center', fontWeight: pdfTypeWeight.bold, fontSize: '13px', color: '#0f172a', border: '1.5px solid #e2e8f0' }}>{row.percentage}%</td>
                 )}
-                <td style={{ padding: '6px 6px', textAlign: 'left', fontWeight: pdfTypeWeight.bold, fontSize: '13px', color: row.color, border: '1.5px solid #e2e8f0' }}>{row.grade}</td>
-                <td style={{ padding: '6px 6px', textAlign: 'center', fontWeight: pdfTypeWeight.bold, fontSize: '13px', color: '#0f172a', border: '1.5px solid #e2e8f0' }}>{row.points || '—'}</td>
+                <td style={{ padding: '6px 6px', textAlign: 'left', fontWeight: pdfTypeWeight.bold, fontSize: '13px', color: row.color, border: '1.5px solid #e2e8f0', borderLeft: '1.5px solid #e2e8f0' }}>{row.grade}</td>
+                <td style={{ padding: '6px 6px', textAlign: 'center', fontWeight: pdfTypeWeight.bold, fontSize: '13px', color: '#0f172a', border: '1.5px solid #e2e8f0', borderLeft: '1.5px solid #e2e8f0', borderRight: '1.5px solid #e2e8f0' }}>{row.points || '—'}</td>
 
               </tr>
             ))}
@@ -672,11 +681,11 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
                     —
                   </td>
                 )}
-                <td style={{ padding: '6px 6px', textAlign: 'left', fontWeight: 900, fontSize: '15px', color: gradeFromMeanPointsColor, border: '1.5px solid #e2e8f0' }}>
+                <td style={{ padding: '6px 6px', textAlign: 'left', fontWeight: 900, fontSize: '15px', color: gradeFromMeanPointsColor, border: '1.5px solid #e2e8f0', borderLeft: '1.5px solid #e2e8f0' }}>
                   {gradeFromMeanPoints}
                 </td>
-                <td style={{ padding: '6px 6px', textAlign: 'center', fontWeight: 900, fontSize: '15px', color: '#64748b', border: '1.5px solid #e2e8f0' }}>
-                  {pointRows.length > 0 ? `${meanPoints.toFixed(1)}/8` : '—'}
+                <td style={{ padding: '6px 6px', textAlign: 'center', fontWeight: 900, fontSize: '15px', color: '#64748b', border: '1.5px solid #e2e8f0', borderLeft: '1.5px solid #e2e8f0', borderRight: '1.5px solid #e2e8f0' }}>
+                  {pointRows.length > 0 ? totalPoints : '—'}
                 </td>
               </tr>
             )}
@@ -686,7 +695,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
         {/* Chart + Pathway Insight Section */}
         <div style={{ display: 'flex', gap: '30px', marginTop: '16px', marginBottom: '8px', alignItems: 'start', justifyContent: 'flex-start' }}>
           {/* LEFT: Bar Chart — Show for ALL grades */}
-          <div style={{ width: isJSS ? '420px' : '50%', minWidth: '360px', maxWidth: '460px' }}>
+          <div style={{ width: '50%', minWidth: '340px', maxWidth: '50%' }}>
             <h3 style={{ fontSize: '10px', fontWeight: '800', color: '#111827', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', marginBottom: '6px', paddingBottom: '2px' }}>Subject Performance</h3>
             <div style={{ width: '100%' }}>
               {tableRows && tableRows.length > 0 ? (
@@ -695,18 +704,21 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
                   width: '100%',
                   display: 'flex',
                   alignItems: 'flex-end',
-                  gap: isJSS ? '8px' : '16px',
+                  gap: '12px',
                   padding: '12px 10px 18px 10px',
                   borderBottom: '0.8px solid #e2e8f0',
                   position: 'relative',
-                  boxSizing: 'border-box'
+                  boxSizing: 'border-box',
+                  WebkitPrintColorAdjust: 'exact',
+                  printColorAdjust: 'exact',
+                  colorAdjust: 'exact'
                 }}>
                   {tableRows.map((row, i) => {
                     const barH = Math.max(4, Math.round((row.percentage / 100) * 88));
                     // Dynamically calculate bar width
                     // max-width of container is ~770 if full, 400 if half
-                    const containerW = isJSS ? 400 : 770;
-                    const barW = Math.max(16, Math.floor((containerW / tableRows.length) - (isJSS ? 8 : 16)));
+                    const containerW = 370;
+                    const barW = Math.max(14, Math.floor((containerW / tableRows.length) - 10));
                     return (
                       <div key={row.area} style={{
                         flex: 1,
@@ -731,12 +743,17 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
                         </div>
 
                         {/* Bar */}
-                        <div style={{
+                        <div className="report-chart-bar" style={{
+                          '--bar-color': CHART_COLORS[i % CHART_COLORS.length],
                           width: `${barW}px`,
                           height: `${barH}px`,
-                          backgroundColor: CHART_COLORS[i % CHART_COLORS.length],
+                          backgroundColor: 'var(--bar-color)',
+                          border: `1px solid ${CHART_COLORS[i % CHART_COLORS.length]}`,
                           borderRadius: '3px 3px 0 0',
-                          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1)'
+                          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1)',
+                          WebkitPrintColorAdjust: 'exact',
+                          printColorAdjust: 'exact',
+                          colorAdjust: 'exact'
                         }} />
 
                         {/* Subject Label (Absolute positioned below the baseline) */}
@@ -927,7 +944,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
           <span style={{ fontSize: '10px', fontWeight: '900', color: '#475569', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
             Class Teacher's Remarks:
           </span>
-          <div style={{ flex: 1, borderBottom: '1px dotted #cbd5e1', paddingBottom: '2px', minHeight: '22px' }}>
+          <div style={{ flex: 1, borderBottom: '1px dotted #cbd5e1', paddingBottom: '2px', minHeight: '32px' }}>
             {/* Blank for handwriting as requested */}
           </div>
         </div>
@@ -1515,9 +1532,20 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
     setIsExporting(true);
     try {
       setPdfProgress('Opening print preview...');
+      const reportType = reportData?.type;
+      const isSingleLearnerReport =
+        reportType === 'LEARNER_REPORT' ||
+        reportType === 'LEARNER_TERMLY_REPORT' ||
+        Boolean(reportData?.learner) ||
+        (Array.isArray(reportData?.rows) && reportData.rows.length === 1);
+      const targetId = isSingleLearnerReport ? 'single-print-content' : 'summative-report-content';
       const result = await pdfPrintWindow(
-        'summative-report-content',
-        { onProgress: (msg) => setPdfProgress(msg), autoPrint: true }
+        targetId,
+        {
+          onProgress: (msg) => setPdfProgress(msg),
+          autoPrint: true,
+          fitToSinglePage: isSingleLearnerReport
+        }
       );
       if (result?.success) {
         showSuccess('Print dialog opened. Use Save as PDF for a crisp copy.');
@@ -2875,7 +2903,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                 <div
                   id="summative-report-content"
                   ref={reportRef}
-                  className="rounded-xl overflow-hidden shadow-2xl"
+                  className="pdf-report-root rounded-xl overflow-hidden shadow-2xl"
                 >
                   <LearnerReportTemplate
                     learner={reportData.learner || reportData.rows[0].learner}
@@ -3162,7 +3190,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
             <div className="bg-gray-100 py-12 px-4 rounded-xl shadow-inner mb-8 no-print">
               <div
                 id="summative-report-content"
-                className="bg-white mx-auto shadow-2xl overflow-hidden"
+                className="pdf-report-root bg-white mx-auto shadow-2xl overflow-hidden"
                 style={{
                   fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
                   lineHeight: '1.2',
@@ -3173,7 +3201,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                 }}
               >
                 {/* Professional Letterhead - Matching Learner's Report Flow */}
-                <div className="mb-6 flex flex-col items-center text-center">
+                <div className="mb-6 flex flex-col items-center text-center pdf-report-header">
                   {/* Logo Middle */}
                   <div className="mb-4">
                     <img
@@ -3361,7 +3389,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
             <div className="bg-gray-100 py-12 px-4 rounded-xl shadow-inner mb-8 no-print">
               <div
                 id="summative-report-content"
-                className="bg-white mx-auto shadow-2xl overflow-hidden"
+                className="pdf-report-root bg-white mx-auto shadow-2xl overflow-hidden"
                 style={{
                   fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
                   lineHeight: '1.2',
@@ -3372,7 +3400,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                 }}
               >
                 {/* Professional Letterhead - Consistency across reports */}
-                <div className="mb-6 flex flex-col items-center text-center">
+                <div className="mb-6 flex flex-col items-center text-center pdf-report-header">
                   {/* Logo Middle */}
                   <div className="mb-4">
                     <img
@@ -3510,7 +3538,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
 
         {/* Single Download Container */}
         {singleDownloadData && (
-          <div id="single-print-content">
+          <div id="single-print-content" className="pdf-report-root">
             <LearnerReportTemplate
               learner={singleDownloadData.learner}
               results={singleDownloadData.results}
@@ -3787,7 +3815,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
       <div style={{ position: 'fixed', top: 0, left: 0, width: '794px', minHeight: '1123px', visibility: 'hidden', pointerEvents: 'none', zIndex: -100, overflow: 'visible' }}>
         {/* Single Page Capture */}
         {(singleDownloadData || (reportData?.rows?.length === 1 && (reportData.type === 'LEARNER_REPORT' || reportData.type === 'LEARNER_TERMLY_REPORT'))) && (
-          <div id="single-print-content">
+          <div id="single-print-content" className="pdf-report-root">
             <LearnerReportTemplate
               learner={singleDownloadData?.learner || reportData?.learner || reportData?.rows?.[0]?.learner}
               results={singleDownloadData?.results || reportData?.results || reportData?.rows?.[0]?.results || []}
