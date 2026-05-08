@@ -14,11 +14,11 @@ router.use(authenticate);
 /**
  * @route   GET /api/dashboard/admin
  * @desc    Get admin dashboard metrics
- * @access  ADMIN, SUPER_ADMIN
+ * @access  ADMIN, SUPER_ADMIN, HEAD_TEACHER, HEAD_OF_CURRICULUM
  */
 router.get(
   '/admin',
-  requireRole(['ADMIN', 'SUPER_ADMIN']),
+  requireRole(['ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM']),
   rateLimit({ windowMs: 60_000, maxRequests: 60 }),
   asyncHandler(dashboardController.getAdminMetrics.bind(dashboardController))
 );

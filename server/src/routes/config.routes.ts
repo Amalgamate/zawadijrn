@@ -36,11 +36,11 @@ router.get(
 /**
  * @route   GET /api/config/term/active
  * @desc    Get active term configuration
- * @access  ADMIN, SUPER_ADMIN, TEACHER
+ * @access  ADMIN, SUPER_ADMIN, HEAD_TEACHER, HEAD_OF_CURRICULUM, TEACHER
  */
 router.get(
   '/term/active',
-  requireRole(['ADMIN', 'SUPER_ADMIN', 'TEACHER']),
+  requireRole(['ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM', 'TEACHER']),
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   configController.getActiveTermConfig
 );
@@ -271,11 +271,11 @@ router.post(
 /**
  * @route   GET /api/config/grades
  * @desc    Get available grades
- * @access  ADMIN, SUPER_ADMIN, TEACHER
+ * @access  ADMIN, SUPER_ADMIN, HEAD_TEACHER, HEAD_OF_CURRICULUM, TEACHER
  */
 router.get(
   '/grades',
-  requireRole(['ADMIN', 'SUPER_ADMIN', 'TEACHER']),
+  requireRole(['ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM', 'TEACHER']),
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   configController.getGrades
 );
