@@ -20,8 +20,7 @@ async function main() {
       totalMarks: true,
       passMarks: true,
       scaleId: true,
-      grade: true,
-      institutionType: true
+      grade: true
     }
   });
 
@@ -52,8 +51,7 @@ async function main() {
       gradeRanges = byId?.ranges || [];
     }
     if (!gradeRanges.length) {
-      const systemType = String(test.institutionType || '').toUpperCase() === 'SECONDARY' ? 'SECONDARY' : 'SUMMATIVE';
-      const byType = await gradingService.getGradingSystem(systemType as any);
+      const byType = await gradingService.getGradingSystem('SUMMATIVE' as any);
       gradeRanges = byType?.ranges || [];
     }
 
@@ -104,4 +102,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-
