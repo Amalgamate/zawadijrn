@@ -410,13 +410,17 @@ export const printWindow = async (elementId, opts = {}) => {
     onProgress,
     title = 'Report Print Preview',
     autoPrint = true,
-    fitToSinglePage = false
+    fitToSinglePage = false,
+    orientation = 'portrait'
   } = opts;
+  const isLandscape = orientation === 'landscape';
+  const pageWidthMm = isLandscape ? 297 : 210;
+  const pageHeightMm = isLandscape ? 210 : 297;
   const pageMarginTopMm = fitToSinglePage ? 5 : 8;
   const pageMarginBottomMm = fitToSinglePage ? 5 : 8;
   const pageMarginSideMm = fitToSinglePage ? 8 : 10;
-  const pageContentWidthMm = 210 - (pageMarginSideMm * 2);
-  const pageContentHeightMm = 297 - pageMarginTopMm - pageMarginBottomMm;
+  const pageContentWidthMm = pageWidthMm - (pageMarginSideMm * 2);
+  const pageContentHeightMm = pageHeightMm - pageMarginTopMm - pageMarginBottomMm;
   const el = document.getElementById(elementId);
   if (!el) return { success: false, error: `Element #${elementId} not found` };
 
@@ -449,7 +453,7 @@ export const printWindow = async (elementId, opts = {}) => {
   ${headStyles}
   <style>
     @page {
-      size: A4 portrait;
+      size: A4 ${isLandscape ? 'landscape' : 'portrait'};
       margin: ${pageMarginTopMm}mm ${pageMarginSideMm}mm ${pageMarginBottomMm}mm ${pageMarginSideMm}mm;
     }
     * { box-sizing: border-box; }
@@ -485,9 +489,26 @@ export const printWindow = async (elementId, opts = {}) => {
       min-height: auto !important;
     }
     .no-print { display: none !important; }
+    .print-landscape-root {
+      width: ${pageContentWidthMm}mm !important;
+      min-height: ${pageContentHeightMm}mm !important;
+      height: auto !important;
+      max-width: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow: visible !important;
+    }
+    body.landscape-print #summative-report-content {
+      width: ${pageContentWidthMm}mm !important;
+      min-height: ${pageContentHeightMm}mm !important;
+      padding: 6mm !important;
+      margin: 0 !important;
+      overflow: visible !important;
+      box-shadow: none !important;
+    }
   </style>
 </head>
-<body class="${fitToSinglePage ? 'fit-single-page' : ''}">${bodyHtml}</body>
+<body class="${fitToSinglePage ? 'fit-single-page' : ''} ${isLandscape ? 'landscape-print' : ''}">${bodyHtml}</body>
 </html>`;
 
     const win = window.open('', '_blank');

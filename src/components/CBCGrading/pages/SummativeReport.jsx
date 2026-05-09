@@ -5,6 +5,7 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Download, Loader, MessageCircle, Printer, MessageSquare, AlertCircle, CheckCircle, XCircle, Edit2, FileText } from 'lucide-react';
+import ExcelJS from 'exceljs';
 import VirtualizedTable from '../shared/VirtualizedTable';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
@@ -1499,6 +1500,10 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
 
 
       const reportType = reportData?.type;
+      const isBroadsheetReport =
+        reportType === 'GRADE_REPORT' ||
+        reportType === 'STREAM_REPORT' ||
+        reportType === 'STREAM_RANKING_REPORT';
       const isSingleLearnerReport =
         reportType === 'LEARNER_REPORT' ||
         reportType === 'LEARNER_TERMLY_REPORT' ||
@@ -1510,6 +1515,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
         title: filename,
         autoPrint: true,
         fitToSinglePage: isSingleLearnerReport,
+        orientation: isBroadsheetReport ? 'landscape' : 'portrait',
         onProgress: (msg) => { setPdfProgress(msg); console.log(`🖨️ PRINT: ${msg}`); }
       });
 
@@ -1533,6 +1539,10 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
     try {
       setPdfProgress('Opening print preview...');
       const reportType = reportData?.type;
+      const isBroadsheetReport =
+        reportType === 'GRADE_REPORT' ||
+        reportType === 'STREAM_REPORT' ||
+        reportType === 'STREAM_RANKING_REPORT';
       const isSingleLearnerReport =
         reportType === 'LEARNER_REPORT' ||
         reportType === 'LEARNER_TERMLY_REPORT' ||
@@ -1544,7 +1554,8 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
         {
           onProgress: (msg) => setPdfProgress(msg),
           autoPrint: true,
-          fitToSinglePage: isSingleLearnerReport
+          fitToSinglePage: isSingleLearnerReport,
+          orientation: isBroadsheetReport ? 'landscape' : 'portrait'
         }
       );
       if (result?.success) {
@@ -1558,6 +1569,95 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
     } finally {
       setIsExporting(false);
       setPdfProgress('');
+    }
+  };
+
+  const handleExportBroadsheetExcel = async () => {
+    if (!reportData?.rows?.length || !reportData?.subjects?.length) {
+      showError('No broadsheet data to export');
+      return;
+    }
+    try {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Broadsheet', {
+        pageSetup: {
+          orientation: 'landscape',
+          paperSize: 9, // A4
+          fitToPage: true,
+          fitToWidth: 1,
+          fitToHeight: 0,
+          margins: { left: 0.3, right: 0.3, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2 }
+        }
+      });
+
+      const subjectHeaders = reportData.subjects.map((s) => getAbbreviatedName(s));
+      const headers = ['#', 'LEARNER NAME', ...subjectHeaders, 'TOTAL', 'AVG %', 'GRD'];
+      worksheet.addRow(headers);
+
+      reportData.rows.forEach((row) => {
+        const subjectValues = reportData.subjects.map((subj) => row.subjectScores[subj] ?? '-');
+        worksheet.addRow([
+          row.position,
+          `${row.learner.firstName} ${row.learner.lastName}`,
+          ...subjectValues,
+          Math.round(row.totalScore),
+          Number(row.averagePct) / 100,
+          row.grade || ''
+        ]);
+      });
+
+      worksheet.columns = headers.map((h, idx) => ({
+        header: h,
+        key: `c${idx}`,
+        width: idx === 1 ? 32 : 10
+      }));
+
+      worksheet.getRow(1).eachCell((cell) => {
+        cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+      });
+
+      worksheet.eachRow((r, rowNumber) => {
+        if (rowNumber === 1) return;
+        r.eachCell((cell, colNumber) => {
+          cell.border = {
+            top: { style: 'thin', color: { argb: 'FFBFC7D4' } },
+            left: { style: 'thin', color: { argb: 'FFBFC7D4' } },
+            bottom: { style: 'thin', color: { argb: 'FFBFC7D4' } },
+            right: { style: 'thin', color: { argb: 'FFBFC7D4' } }
+          };
+          if (colNumber !== 2) {
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+          }
+        });
+      });
+
+      const avgCol = headers.indexOf('AVG %') + 1;
+      worksheet.getColumn(avgCol).numFmt = '0.0%';
+
+      const ts = new Date().toISOString().split('T')[0];
+      const fileName = `Broadsheet_${reportData?.meta?.grade || 'Grade'}_${reportData?.meta?.stream || 'All'}_${ts}.xlsx`;
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      showSuccess('Broadsheet exported to Excel (landscape print setup).');
+    } catch (err) {
+      console.error('Excel export error:', err);
+      showError('Failed to export broadsheet Excel.');
     }
   };
 
@@ -2470,12 +2570,20 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
         }
 
         // 4. Aggregate Data for Broadsheet
+        // Critical fairness rule:
+        // Every learner must be graded out of the SAME full subject/test denominator.
+        // Missing subjects therefore contribute 0 marks but still count in totalMax.
+        const expectedTotalMax = targetTests.reduce(
+          (sum, t) => sum + (Number(t?.totalMarks) || 100),
+          0
+        );
+
         const broadsheetData = targetLearners.map(learner => {
           const learnerResults = allResultsMap[learner.id] || [];
 
           // Aggregates
           const totalScore = learnerResults.reduce((sum, r) => sum + (r.score || 0), 0);
-          const totalMax = learnerResults.reduce((sum, r) => sum + (r.maxScore || 100), 0);
+          const totalMax = expectedTotalMax;
           const averagePct = totalMax > 0 ? (totalScore / totalMax) * 100 : 0;
           const { grade, remark } = getCBCGrade(averagePct);
 
@@ -3190,7 +3298,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
             <div className="bg-gray-100 py-12 px-4 rounded-xl shadow-inner mb-8 no-print">
               <div
                 id="summative-report-content"
-                className="pdf-report-root bg-white mx-auto shadow-2xl overflow-hidden"
+                className="pdf-report-root print-landscape-root bg-white mx-auto shadow-2xl overflow-hidden"
                 style={{
                   fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
                   lineHeight: '1.2',
@@ -3252,6 +3360,43 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
 
                 {/* Broadsheet Table */}
                 <div className="overflow-x-auto">
+                  <table className="print-only w-full border-collapse" style={{ fontSize: '11px' }}>
+                    <thead>
+                      <tr style={{ backgroundColor: '#1e3a8a', color: 'white' }}>
+                        <th style={{ padding: '6px', border: '1px solid #ccc', textAlign: 'center', width: '30px' }}>#</th>
+                        <th style={{ padding: '6px', border: '1px solid #ccc', textAlign: 'left', minWidth: '150px' }}>LEARNER NAME</th>
+                        {reportData.subjects.map(subj => (
+                          <th key={`print-${subj}`} style={{ padding: '6px', border: '1px solid #ccc', textAlign: 'center', writingMode: 'vertical-rl', transform: 'rotate(180deg)', minHeight: '80px' }}>
+                            {getAbbreviatedName(subj)}
+                          </th>
+                        ))}
+                        <th style={{ padding: '6px', border: '1px solid #ccc', textAlign: 'center' }}>TOTAL</th>
+                        <th style={{ padding: '6px', border: '1px solid #ccc', textAlign: 'center' }}>AVG %</th>
+                        <th style={{ padding: '6px', border: '1px solid #ccc', textAlign: 'center' }}>GRD</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {reportData.rows.map((row, idx) => (
+                        <tr key={`print-row-${row.learner.id}-${idx}`} style={{ backgroundColor: idx % 2 === 0 ? 'white' : '#f8fafc' }}>
+                          <td style={{ padding: '4px', border: '1px solid #e2e8f0', textAlign: 'center' }}>{row.position}</td>
+                          <td style={{ padding: '4px', border: '1px solid #e2e8f0', fontWeight: 'bold' }}>
+                            {row.learner.firstName} {row.learner.lastName}
+                          </td>
+                          {reportData.subjects.map(subj => (
+                            <td key={`print-score-${row.learner.id}-${subj}`} style={{ padding: '4px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+                              {row.subjectScores[subj] || '-'}
+                            </td>
+                          ))}
+                          <td style={{ padding: '4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: 'bold' }}>{Math.round(row.totalScore)}</td>
+                          <td style={{ padding: '4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: 'bold' }}>{row.averagePct}%</td>
+                          <td style={{ padding: '4px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: 'bold', color: row.grade?.includes('EE') ? 'green' : row.grade?.includes('ME') ? 'blue' : 'orange' }}>
+                            {row.grade}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
                   <VirtualizedTable
                     data={reportData.rows}
                     rowHeight={28} // Compact broadsheet row height
@@ -3357,6 +3502,14 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
                   >
                     {isExporting ? <Loader size={16} className="animate-spin" /> : <Download size={16} />}
                     {isExporting ? 'Opening...' : 'Print / Save Broadsheet'}
+                  </button>
+
+                  <button
+                    onClick={handleExportBroadsheetExcel}
+                    className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 transition shadow-sm font-semibold text-sm"
+                  >
+                    <FileText size={16} />
+                    Export Excel
                   </button>
 
                   {(bulkProgress.active || isSendingWhatsApp) && (
