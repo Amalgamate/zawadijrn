@@ -8,7 +8,7 @@ import {
   TrendingUp, Settings, BookOpen, Users2, Truck,
   CreditCard, PieChart, Package, HelpCircle, FileText, Receipt,
   ClipboardList, BarChart3, Building2, PlayCircle,
-  Award, Fingerprint, BookMarked
+  Award, Fingerprint, BookMarked, Activity
 } from 'lucide-react';
 
 export const tertiaryNavSections = [
@@ -226,6 +226,7 @@ export const tertiaryNavSections = [
       { id: 'settings-academic',      label: 'Academic Settings',      path: 'settings-academic',      permission: 'ACADEMIC_SETTINGS' },
       { id: 'settings-communication', label: 'Communication Settings', path: 'settings-communication', permission: 'SCHOOL_SETTINGS'   },
       { id: 'settings-users',         label: 'User Management',        path: 'settings-users',         permission: 'EDIT_USER'         },
+      { id: 'settings-system-logs',   label: 'System Logs',            path: 'settings-system-logs',   permission: 'SYSTEM_SETTINGS', icon: Activity },
     ],
   },
   {

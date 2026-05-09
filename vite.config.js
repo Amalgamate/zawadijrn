@@ -15,9 +15,9 @@ export default defineConfig({
   },
 
   server: {
-    port: 3000,
+    port: Number(process.env.VITE_PORT || 3000),
     open: true,
-    strictPort: true,
+    strictPort: process.env.VITE_STRICT_PORT === 'true',
     // Proxy /api calls to the local Express server so the HTTPS frontend
     // never makes mixed-content requests to http://localhost:5000.
     proxy: {
@@ -33,6 +33,33 @@ export default defineConfig({
         ws: true,
       },
     },
+  },
+
+  // Pre-bundle frequently used heavy deps to reduce cold-start churn in dev.
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      'axios',
+      'recharts',
+      'jspdf',
+      'html2canvas',
+      'exceljs',
+      'socket.io-client',
+      'react-big-calendar',
+      'react-day-picker',
+      'date-fns',
+      'lucide-react',
+      'qrcode.react',
+      '@radix-ui/react-dialog',
+      '@radix-ui/react-dropdown-menu',
+      '@radix-ui/react-label',
+      '@radix-ui/react-popover',
+      '@radix-ui/react-select',
+      '@radix-ui/react-slot',
+      '@radix-ui/react-tabs'
+    ]
   },
 
   build: {

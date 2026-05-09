@@ -22,6 +22,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
   const { showSuccess } = useNotifications();
   const fileInputRef = useRef(null);
   const faviconInputRef = useRef(null);
+  const pwaLogoInputRef = useRef(null);
   const stampInputRef = useRef(null);
 
   // State for tabs
@@ -45,6 +46,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
     accentColor2: normalizeHexColor(brandingSettings?.accentColor2, '#e11d48'),
     logoUrl: brandingSettings?.logoUrl || '/branding/logo.png',
     faviconUrl: brandingSettings?.faviconUrl || '/branding/favicon.png',
+    pwaLogoUrl: brandingSettings?.pwaLogoUrl || '/logo512.png',
     stampUrl: brandingSettings?.stampUrl || '/branding/stamp.svg',
     welcomeTitle: brandingSettings?.welcomeTitle || '',
     welcomeMessage: brandingSettings?.welcomeMessage || '',
@@ -55,6 +57,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
   const [previews, setPreviews] = useState({
     logo: brandingSettings?.logoUrl || '/branding/logo.png',
     favicon: brandingSettings?.faviconUrl || '/branding/favicon.png',
+    pwaLogo: brandingSettings?.pwaLogoUrl || '/logo512.png',
     stamp: brandingSettings?.stampUrl || '/branding/stamp.svg'
   });
 
@@ -80,6 +83,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
       accentColor2: normalizeHexColor(brandingSettings?.accentColor2, '#e11d48'),
       logoUrl: brandingSettings?.logoUrl || '/branding/logo.png',
       faviconUrl: brandingSettings?.faviconUrl || '/branding/favicon.png',
+      pwaLogoUrl: brandingSettings?.pwaLogoUrl || '/logo512.png',
       stampUrl: brandingSettings?.stampUrl || '/branding/stamp.svg',
       welcomeTitle: brandingSettings?.welcomeTitle || '',
       welcomeMessage: brandingSettings?.welcomeMessage || '',
@@ -89,6 +93,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
     previews: {
       logo: brandingSettings?.logoUrl || '/branding/logo.png',
       favicon: brandingSettings?.faviconUrl || '/branding/favicon.png',
+      pwaLogo: brandingSettings?.pwaLogoUrl || '/logo512.png',
       stamp: brandingSettings?.stampUrl || '/branding/stamp.svg'
     }
   });
@@ -136,6 +141,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
             accentColor2: normalizeHexColor(school.accentColor2, '#e11d48'),
             logoUrl: school.logoUrl || '/branding/logo.png',
             faviconUrl: school.faviconUrl || '/branding/favicon.png',
+            pwaLogoUrl: school.pwaLogoUrl || '/logo512.png',
             stampUrl: school.stampUrl || '/branding/stamp.svg',
             welcomeTitle: school.welcomeTitle || '',
             welcomeMessage: school.welcomeMessage || '',
@@ -146,6 +152,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
           const fetchedPreviews = {
             logo: fetchedSettings.logoUrl,
             favicon: fetchedSettings.faviconUrl,
+            pwaLogo: fetchedSettings.pwaLogoUrl,
             stamp: fetchedSettings.stampUrl
           };
 
@@ -256,6 +263,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
         mission: settings.mission,
         logoUrl: settings.logoUrl,
         faviconUrl: settings.faviconUrl,
+        pwaLogoUrl: settings.pwaLogoUrl,
         stampUrl: settings.stampUrl,
         brandColor: settings.brandColor,
         primaryColor: settings.primaryColor,
@@ -278,6 +286,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
 
       if (isGeneratedAssetUrl(payload.logoUrl)) delete payload.logoUrl;
       if (isGeneratedAssetUrl(payload.faviconUrl)) delete payload.faviconUrl;
+      if (isGeneratedAssetUrl(payload.pwaLogoUrl)) delete payload.pwaLogoUrl;
       if (isGeneratedAssetUrl(payload.stampUrl)) delete payload.stampUrl;
 
       await axiosInstance.put('/schools', payload);
@@ -290,6 +299,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
         setBrandingSettings({
           logoUrl: settings.logoUrl,
           faviconUrl: settings.faviconUrl,
+          pwaLogoUrl: settings.pwaLogoUrl,
           stampUrl: settings.stampUrl,
           schoolName: settings.schoolName,
           brandColor: settings.brandColor,
@@ -322,6 +332,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
             user.school.address = settings.address;
             user.school.motto = settings.motto;
             user.school.logoUrl = settings.logoUrl;
+            user.school.pwaLogoUrl = settings.pwaLogoUrl;
             user.school.brandColor = settings.brandColor;
             user.school.primaryColor = settings.primaryColor;
             user.school.secondaryColor = settings.secondaryColor;
@@ -627,7 +638,7 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
                 <ImageIcon className="text-blue-600" size={20} />
                 <h3 className="font-medium text-gray-700">Brand Assets</h3>
               </div>
-              <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="p-6 grid grid-cols-1 md:grid-cols-4 gap-8">
                 {/* Logo */}
                 <div className="text-center group">
                   <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-4">School Logo</label>
@@ -663,6 +674,25 @@ const SchoolSettings = ({ brandingSettings, setBrandingSettings }) => {
                     Change Icon
                   </button>
                   <p className="text-[10px] text-gray-400 mt-1">Recommended: 32x32px PNG</p>
+                </div>
+
+                {/* PWA Logo */}
+                <div className="text-center group">
+                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-4">PWA App Icon</label>
+                  <div className="relative mx-auto w-28 h-28 border-2 border-dashed border-gray-200 rounded-2xl flex items-center justify-center bg-gray-50 overflow-hidden transition-colors hover:border-blue-400 group-hover:bg-white shadow-inner mt-6">
+                    <img src={previews.pwaLogo} alt="PWA App Icon" className="w-16 h-16 object-contain" onError={(e) => e.target.src = '/logo512.png'} />
+                    {previews.pwaLogo !== '/logo512.png' && (
+                      <button onClick={() => handleRemoveImage('pwaLogo', '/logo512.png')} className="absolute top-1 right-1 w-6 h-6 bg-red-100 text-red-600 rounded-md opacity-0 group-hover:opacity-100 transition shadow-sm flex items-center justify-center">
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+                  <input ref={pwaLogoInputRef} type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'pwaLogo')} className="hidden" />
+                  <button onClick={() => pwaLogoInputRef.current?.click()} className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 transition">
+                    <Upload size={16} />
+                    Change PWA Icon
+                  </button>
+                  <p className="text-[10px] text-gray-400 mt-1">Recommended: 512x512px PNG (install app icon)</p>
                 </div>
 
                 {/* Official Stamp */}

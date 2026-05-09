@@ -12,8 +12,8 @@ router.use(authenticate);
 
 // In-app notifications
 router.get('/',             asyncHandler(userNotificationController.getMyNotifications.bind(userNotificationController)));
-router.patch('/:id/read',   asyncHandler(userNotificationController.markAsRead.bind(userNotificationController)));
 router.patch('/read-all',   asyncHandler(userNotificationController.markAllRead.bind(userNotificationController)));
+router.patch('/:id/read',   asyncHandler(userNotificationController.markAsRead.bind(userNotificationController)));
 
 // Web Push
 router.post('/push-subscription',  asyncHandler(userNotificationController.savePushSubscription.bind(userNotificationController)));

@@ -29,6 +29,7 @@ class RedisCacheService {
   }
 
   private async initialize() {
+    const isDev = process.env.NODE_ENV !== 'production';
     const hasRedisConfig = !!(process.env.REDIS_URL || process.env.REDIS_HOST);
     if (!hasRedisConfig) {
       console.log('[Cache] No Redis config detected — using in-memory cache.');
@@ -49,14 +50,15 @@ class RedisCacheService {
           // through to the memory cache. Without this cap, a bad Upstash URL
           // retries forever and blocks the whole process for minutes.
           retryStrategy: (times: number) => {
-            if (times > 3) {
-              console.warn('[Cache] Upstash Redis unreachable after 3 retries — using memory fallback');
+            const maxRetries = isDev ? 1 : 3;
+            if (times > maxRetries) {
+              console.warn(`[Cache] Upstash Redis unreachable after ${maxRetries} retries — using memory fallback`);
               this.useRedis = false;
               return null; // stop retrying
             }
-            return Math.min(times * 200, 2000);
+            return isDev ? 100 : Math.min(times * 200, 2000);
           },
-          connectTimeout:       8_000,  // 8 s — Upstash cold-connect can take ~3-5 s
+          connectTimeout:       isDev ? 1_500 : 8_000,
           commandTimeout:       5_000,  // 5 s per command max
           enableReadyCheck:     false,  // skip PING on connect (saves 1 RTT)
           enableOfflineQueue:   false,  // drop commands that arrive while disconnected
@@ -71,10 +73,11 @@ class RedisCacheService {
           db:       parseInt(process.env.REDIS_DB || '0', 10),
           lazyConnect: true,
           retryStrategy: (times: number) => {
-            if (times > 3) { this.useRedis = false; return null; }
-            return Math.min(times * 200, 2000);
+            const maxRetries = isDev ? 1 : 3;
+            if (times > maxRetries) { this.useRedis = false; return null; }
+            return isDev ? 100 : Math.min(times * 200, 2000);
           },
-          connectTimeout:       5_000,
+          connectTimeout:       isDev ? 1_500 : 5_000,
           commandTimeout:       5_000,
           enableReadyCheck:     false,
           enableOfflineQueue:   false,

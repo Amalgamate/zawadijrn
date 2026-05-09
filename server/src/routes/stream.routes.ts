@@ -39,6 +39,19 @@ router.get(
 );
 
 /**
+ * @route   GET /api/facility/streams/available-names
+ * @desc    Get available stream names
+ * @access  SUPER_ADMIN, ADMIN, HEAD_TEACHER
+ * NOTE: Must come BEFORE /:streamId route to avoid being matched by :streamId parameter
+ */
+router.get(
+  '/available-names',
+  authenticate,
+  rateLimit({ windowMs: 60_000, maxRequests: 100 }),
+  asyncHandler((req, res) => controller.getAvailableStreamNames(req, res))
+);
+
+/**
  * @route   GET /api/facility/streams/:streamId
  * @desc    Get single stream by ID
  * @access  SUPER_ADMIN, ADMIN, HEAD_TEACHER
@@ -48,18 +61,6 @@ router.get(
   authenticate,
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   asyncHandler((req, res) => controller.getStream(req, res))
-);
-
-/**
- * @route   GET /api/facility/streams/available-names
- * @desc    Get available stream names
- * @access  SUPER_ADMIN, ADMIN, HEAD_TEACHER
- */
-router.get(
-  '/available-names',
-  authenticate,
-  rateLimit({ windowMs: 60_000, maxRequests: 100 }),
-  asyncHandler((req, res) => controller.getAvailableStreamNames(req, res))
 );
 
 /**

@@ -11,20 +11,27 @@ ALTER TABLE "user_notifications"
 ALTER TABLE "user_notifications"
   ADD COLUMN IF NOT EXISTS "metadata" JSONB;
 
--- 3. Add GIT_UPDATE to the NotificationType enum.
---    pg_enum check prevents duplicate-value errors on re-run.
---    Note: ALTER TYPE ... ADD VALUE cannot run inside a transaction in PG < 12;
---    Prisma runs migrations in a transaction, so we use a DO block to safely
---    check before adding.
+-- 3. Create NotificationType enum if it doesn't exist, then add GIT_UPDATE value
 DO $$
 BEGIN
+  -- First, check if the enum type exists at all
   IF NOT EXISTS (
-    SELECT 1 FROM pg_enum e
-    JOIN pg_type t ON t.oid = e.enumtypid
-    WHERE t.typname = 'NotificationType'
-      AND e.enumlabel = 'GIT_UPDATE'
+    SELECT 1 FROM pg_type WHERE typname = 'NotificationType'
   ) THEN
-    ALTER TYPE "NotificationType" ADD VALUE 'GIT_UPDATE';
+    -- Create the enum with all expected values
+    CREATE TYPE "NotificationType" AS ENUM (
+      'INFO', 'WARNING', 'ERROR', 'SUCCESS', 'GIT_UPDATE'
+    );
+  ELSE
+    -- If enum exists but doesn't have GIT_UPDATE, add it
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_enum e
+      JOIN pg_type t ON t.oid = e.enumtypid
+      WHERE t.typname = 'NotificationType'
+        AND e.enumlabel = 'GIT_UPDATE'
+    ) THEN
+      ALTER TYPE "NotificationType" ADD VALUE 'GIT_UPDATE';
+    END IF;
   END IF;
 END$$;
 

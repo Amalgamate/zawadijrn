@@ -13,7 +13,8 @@ import {
   getAdmissionNumberPreview,
   resetAdmissionSequence,
   getPublicBranding,
-  getPublicBrandingAsset
+  getPublicBrandingAsset,
+  getPublicManifest
 } from '../controllers/school.controller';
 import { validate } from '../middleware/validation.middleware';
 import { rateLimit } from '../middleware/enhanced-rateLimit.middleware';
@@ -32,6 +33,7 @@ const updateSchoolSchema = z.object({
   mission: z.string().max(2000).optional().nullable(),
   logoUrl: z.string().optional().nullable(),
   faviconUrl: z.string().optional().nullable(),
+  pwaLogoUrl: z.string().optional().nullable(),
   stampUrl: z.string().optional().nullable(),
   brandColor: z.string().max(20).optional().nullable(),
   primaryColor: z.string().max(20).optional().nullable(),
@@ -57,6 +59,7 @@ const resetWholeInstitutionSchema = z.object({
 // Public branding route (no auth)
 router.get('/public/branding', rateLimit({ windowMs: 60_000, maxRequests: 100 }), asyncHandler(getPublicBranding));
 router.get('/public/assets/:assetType', rateLimit({ windowMs: 60_000, maxRequests: 200 }), asyncHandler(getPublicBrandingAsset));
+router.get('/public/manifest', rateLimit({ windowMs: 60_000, maxRequests: 100 }), asyncHandler(getPublicManifest));
 
 // Protect all routes below
 router.use(authenticate);

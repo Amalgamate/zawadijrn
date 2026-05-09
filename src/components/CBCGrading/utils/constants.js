@@ -213,6 +213,7 @@ export const PAGE_TITLES = {
   'settings-users': 'System Users',
   'settings-branding': 'School Settings & Branding',
   'settings-backup': 'System Maintenance',
+  'settings-system-logs': 'System Logs',
   'settings-communication': 'Message Settings',
   'settings-payment': 'Payment Settings',
   'settings-profile': 'My Profile'

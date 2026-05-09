@@ -135,6 +135,7 @@ model School {
   principalPhone      String?
   logoUrl             String?
   faviconUrl          String?
+  pwaLogoUrl          String?
   schoolType          String?
   motto               String?
   vision              String?

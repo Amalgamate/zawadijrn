@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "nodemon",
-    "dev:ts": "ts-node --transpile-only src/index.ts",
+    "dev:ts": "tsx src/index.ts",
     "kill": "powershell -Command \"Get-NetTCPConnection -LocalPort 5000 -ErrorAction SilentlyContinue | Select-Object -Expand OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }\"",
     "build": "echo '=== BUILD STEP 1: Pre-deploy and Migration Resolution ===' && node scripts/pre-deploy.js && echo '=== BUILD STEP 2: Database Schema Push ===' && npx prisma db push --accept-data-loss && echo '=== BUILD STEP 3: Generate Prisma ===' && npx prisma generate && echo '=== BUILD STEP 4: TypeScript ===' && tsc && echo '=== BUILD COMPLETE ==='",
     "postinstall": "prisma generate",
@@ -130,7 +130,8 @@
     "nodemon": "^3.0.2",
     "prisma": "^5.22.0",
     "supertest": "^7.2.2",
-    "ts-jest": "^29.1.1"
+    "ts-jest": "^29.1.1",
+    "tsx": "^4.20.6"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

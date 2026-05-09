@@ -12,6 +12,7 @@ import { ensureSuperAdmin } from './utils/setup-admin';
 import logger from './utils/logger';
 
 const PORT = process.env.PORT || 5000;
+const skipSuperAdminBootstrap = (process.env.SKIP_SUPERADMIN_BOOTSTRAP || 'false').toLowerCase() === 'true';
 
 async function startServer() {
   try {
@@ -19,8 +20,12 @@ async function startServer() {
     await prisma.$connect();
     logger.info('✅ Database connection established');
 
-    // Ensure SuperAdmin exists on startup
-    await ensureSuperAdmin();
+    // Optional fast-dev optimization: skip bootstrap user upserts/hashing.
+    if (skipSuperAdminBootstrap) {
+      logger.warn('⚡ Skipping ensureSuperAdmin bootstrap (SKIP_SUPERADMIN_BOOTSTRAP=true)');
+    } else {
+      await ensureSuperAdmin();
+    }
 
     const httpServer = http.createServer(app);
     const io = initializeSocket(httpServer);

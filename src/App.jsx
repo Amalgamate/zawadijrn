@@ -39,6 +39,7 @@ const pickBrandingValue = (incoming, fallback) => {
 const DEFAULT_BRANDING = {
   logoUrl: '/branding/logo.png',
   faviconUrl: '/branding/favicon.png',
+  pwaLogoUrl: '/logo512.png',
   stampUrl: '/branding/stamp.svg',
   brandColor: '#030b82',
   primaryColor: '#030b82',
@@ -79,6 +80,7 @@ function AppContent() {
             ...branding,
             logoUrl: pickBrandingValue(branding.logoUrl, prev.logoUrl),
             faviconUrl: pickBrandingValue(branding.faviconUrl, prev.faviconUrl),
+            pwaLogoUrl: pickBrandingValue(branding.pwaLogoUrl, prev.pwaLogoUrl),
             stampUrl: pickBrandingValue(branding.stampUrl, prev.stampUrl),
             schoolName: normalizeSchoolName(branding.name || branding.schoolName),
           }));
@@ -103,6 +105,30 @@ function AppContent() {
     if (!url) { link.href = '/branding/favicon.png'; return; }
     link.href = url.startsWith('data:') ? url : `${url}${url.includes('?') ? '&' : '?'}v=${Date.now()}`;
   }, [brandingSettings.faviconUrl]);
+
+  // PWA icons and manifest
+  useEffect(() => {
+    const iconUrl = brandingSettings.pwaLogoUrl || brandingSettings.faviconUrl || '/logo512.png';
+    const versionedIcon = iconUrl.startsWith('data:')
+      ? iconUrl
+      : `${iconUrl}${iconUrl.includes('?') ? '&' : '?'}v=${Date.now()}`;
+
+    let appleIcon = document.querySelector("link[rel='apple-touch-icon']");
+    if (!appleIcon) {
+      appleIcon = document.createElement('link');
+      appleIcon.rel = 'apple-touch-icon';
+      document.head.appendChild(appleIcon);
+    }
+    appleIcon.href = versionedIcon;
+
+    let manifestLink = document.querySelector("link[rel='manifest']");
+    if (!manifestLink) {
+      manifestLink = document.createElement('link');
+      manifestLink.rel = 'manifest';
+      document.head.appendChild(manifestLink);
+    }
+    manifestLink.href = `/api/schools/public/manifest?v=${Date.now()}`;
+  }, [brandingSettings.pwaLogoUrl, brandingSettings.faviconUrl]);
 
   // CSS variables
   useEffect(() => {

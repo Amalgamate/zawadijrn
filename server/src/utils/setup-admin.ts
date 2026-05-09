@@ -60,27 +60,39 @@ export async function ensureSuperAdmin() {
     try {
         console.log('[SETUP] Checking/Creating initial users...');
 
-        for (const userData of usersToCreate) {
-            const finalHashedPassword = await bcrypt.hash(userData.password, 12);
+        const hashRounds = process.env.NODE_ENV === 'production' ? 12 : 10;
 
-            await prisma.user.upsert({
+        for (const userData of usersToCreate) {
+            const existing = await prisma.user.findUnique({
                 where: { email: userData.email },
-                update: {
-                    status: 'ACTIVE',
-                    role: userData.role,
-                    firstName: userData.firstName,
-                    lastName: userData.lastName,
-                },
-                create: {
-                    email: userData.email,
-                    password: finalHashedPassword,
-                    firstName: userData.firstName,
-                    lastName: userData.lastName,
-                    role: userData.role,
-                    status: 'ACTIVE',
-                    phone: userData.phone
-                },
+                select: { id: true }
             });
+
+            if (existing) {
+                await prisma.user.update({
+                    where: { id: existing.id },
+                    data: {
+                        status: 'ACTIVE',
+                        role: userData.role,
+                        firstName: userData.firstName,
+                        lastName: userData.lastName,
+                        phone: userData.phone
+                    }
+                });
+            } else {
+                const finalHashedPassword = await bcrypt.hash(userData.password, hashRounds);
+                await prisma.user.create({
+                    data: {
+                        email: userData.email,
+                        password: finalHashedPassword,
+                        firstName: userData.firstName,
+                        lastName: userData.lastName,
+                        role: userData.role,
+                        status: 'ACTIVE',
+                        phone: userData.phone
+                    }
+                });
+            }
             console.log(`✅ User ready: ${userData.email} (${userData.role})`);
         }
 

@@ -26,17 +26,18 @@ const resolveCurrentSchool = () =>
 const isDataUri = (value: unknown): value is string =>
   typeof value === 'string' && value.startsWith('data:');
 
-const resolveBrandingAssetUrl = (assetType: 'logo' | 'favicon' | 'stamp', value: string | null | undefined, updatedAt?: Date) => {
+const resolveBrandingAssetUrl = (assetType: 'logo' | 'favicon' | 'stamp' | 'pwa-logo', value: string | null | undefined, updatedAt?: Date) => {
   if (!value) return value;
   if (!isDataUri(value)) return value;
   const version = updatedAt ? updatedAt.getTime() : Date.now();
   return `/api/schools/public/assets/${assetType}?v=${version}`;
 };
 
-const optimizeSchoolPayload = <T extends { logoUrl?: string | null; faviconUrl?: string | null; stampUrl?: string | null; updatedAt?: Date }>(school: T) => ({
+const optimizeSchoolPayload = <T extends { logoUrl?: string | null; faviconUrl?: string | null; pwaLogoUrl?: string | null; stampUrl?: string | null; updatedAt?: Date }>(school: T) => ({
   ...school,
   logoUrl: resolveBrandingAssetUrl('logo', school.logoUrl, school.updatedAt),
   faviconUrl: resolveBrandingAssetUrl('favicon', school.faviconUrl, school.updatedAt),
+  pwaLogoUrl: resolveBrandingAssetUrl('pwa-logo', school.pwaLogoUrl, school.updatedAt),
   stampUrl: resolveBrandingAssetUrl('stamp', school.stampUrl, school.updatedAt),
 });
 
@@ -64,6 +65,7 @@ export const getPublicBranding = async (req: Request, res: Response) => {
         name: true,
         logoUrl: true,
         faviconUrl: true,
+        pwaLogoUrl: true,
         brandColor: true,
         primaryColor: true,
         secondaryColor: true,
@@ -92,6 +94,7 @@ export const getPublicBranding = async (req: Request, res: Response) => {
       name: 'Trends CORE V1.0',
       logoUrl: '/branding/logo.png',
       faviconUrl: '/branding/favicon.png',
+      pwaLogoUrl: '/logo512.png',
       brandColor: '#030b82',
       primaryColor: '#030b82',
       secondaryColor: '#0D9488',
@@ -129,19 +132,21 @@ export const getPublicBrandingAsset = async (req: Request, res: Response) => {
   const school = await prisma.school.findFirst({
     where: { archived: false },
     orderBy: [{ active: 'desc' }, { updatedAt: 'desc' }, { createdAt: 'desc' }],
-    select: { logoUrl: true, faviconUrl: true, stampUrl: true }
+    select: { logoUrl: true, faviconUrl: true, pwaLogoUrl: true, stampUrl: true }
   });
 
   const assetType = String(req.params.assetType || '').toLowerCase();
   const fallbackMap: Record<string, string> = {
     logo: '/branding/logo.png',
     favicon: '/branding/favicon.png',
+    'pwa-logo': '/logo512.png',
     stamp: '/branding/stamp.svg'
   };
 
-  const fieldMap: Record<string, 'logoUrl' | 'faviconUrl' | 'stampUrl'> = {
+  const fieldMap: Record<string, 'logoUrl' | 'faviconUrl' | 'pwaLogoUrl' | 'stampUrl'> = {
     logo: 'logoUrl',
     favicon: 'faviconUrl',
+    'pwa-logo': 'pwaLogoUrl',
     stamp: 'stampUrl'
   };
 
@@ -174,6 +179,7 @@ export const updateSchool = async (req: AuthRequest, res: Response) => {
         motto: req.body.motto || 'School Management System',
         logoUrl: req.body.logoUrl || '/branding/logo.png',
         faviconUrl: req.body.faviconUrl || '/branding/favicon.png',
+        pwaLogoUrl: req.body.pwaLogoUrl || '/logo512.png',
         stampUrl: req.body.stampUrl || '/branding/stamp.svg',
       },
     });
@@ -186,6 +192,49 @@ export const updateSchool = async (req: AuthRequest, res: Response) => {
   });
   clearSchoolCache();
   res.status(200).json({ success: true, message: 'School updated', data: updated });
+};
+
+export const getPublicManifest = async (_req: Request, res: Response) => {
+  const school = await prisma.school.findFirst({
+    where: { archived: false },
+    orderBy: [{ active: 'desc' }, { updatedAt: 'desc' }, { createdAt: 'desc' }],
+    select: {
+      name: true,
+      primaryColor: true,
+      brandColor: true,
+      pwaLogoUrl: true,
+      updatedAt: true,
+    },
+  });
+
+  const pwaIcon = resolveBrandingAssetUrl('pwa-logo', school?.pwaLogoUrl || '/logo512.png', school?.updatedAt) || '/logo512.png';
+  const themeColor = school?.primaryColor || school?.brandColor || '#520050';
+  const appName = school?.name || 'Trends CORE V1.0';
+
+  res.setHeader('Content-Type', 'application/manifest+json');
+  res.setHeader('Cache-Control', 'public, max-age=300');
+  res.status(200).json({
+    short_name: appName,
+    name: `${appName} - School Management & CBC Grading`,
+    description: 'Complete CBC School Management & Grading System for Kenyan schools',
+    id: '/',
+    scope: '/',
+    start_url: '/',
+    display: 'standalone',
+    display_override: ['standalone', 'minimal-ui', 'browser'],
+    orientation: 'portrait',
+    theme_color: themeColor,
+    background_color: '#ffffff',
+    categories: ['education', 'productivity'],
+    icons: [
+      { src: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { src: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { src: '/favicon-48x48.png', sizes: '48x48', type: 'image/png' },
+      { src: pwaIcon, sizes: '192x192', type: 'image/png' },
+      { src: pwaIcon, sizes: '512x512', type: 'image/png' },
+      { src: pwaIcon, sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+    ],
+  });
 };
 
 // Core apps that are mandatory and auto-activated on institution setup.

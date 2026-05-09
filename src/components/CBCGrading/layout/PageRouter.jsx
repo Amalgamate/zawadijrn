@@ -52,6 +52,7 @@ const UserManagement = lazy(() => import('../pages/settings/UserManagement'));
 const CommunicationSettings = lazy(() => import('../pages/settings/CommunicationSettings'));
 const PaymentSettings = lazy(() => import('../pages/settings/PaymentSettings'));
 const IDCardTemplatesDesigner = lazy(() => import('../pages/settings/IDCardTemplatesDesigner'));
+const SystemLogsPage = lazy(() => import('../pages/settings/SystemLogsPage'));
 const InvoiceDetailPage = lazy(() => import('../pages/InvoiceDetailPage'));
 const RecordPaymentPage = lazy(() => import('../pages/RecordPaymentPage'));
 const FeeTypesPage = lazy(() => import('../pages/FeeTypesPage'));
@@ -459,6 +460,7 @@ const PageRouter = ({
           case 'settings-backup': return <SystemMaintenancePage />;
           case 'settings-communication': return <ErrorBoundary><CommunicationSettings /></ErrorBoundary>;
           case 'settings-payment': return <PaymentSettings />;
+          case 'settings-system-logs': return <ErrorBoundary><SystemLogsPage /></ErrorBoundary>;
           case 'settings-id-templates': return <ErrorBoundary><IDCardTemplatesDesigner /></ErrorBoundary>;
 
           case 'system-maintenance': return <SystemMaintenancePage />;
