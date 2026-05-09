@@ -1592,7 +1592,34 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
 
       const subjectHeaders = reportData.subjects.map((s) => getAbbreviatedName(s));
       const headers = ['#', 'LEARNER NAME', ...subjectHeaders, 'TOTAL', 'AVG %', 'GRD'];
-      worksheet.addRow(headers);
+      const totalColumns = headers.length;
+      const lastColLetter = worksheet.getColumn(totalColumns).letter;
+      const schoolName = (user?.school?.name || brandingSettings?.schoolName || 'TRENDS CORE SCHOOL').toUpperCase();
+      const reportTitle = (reportData?.title || 'GRADE REPORT').toUpperCase();
+      const streamLabel = reportData?.meta?.stream && reportData.meta.stream !== 'all' ? reportData.meta.stream : 'ALL';
+      const headerMeta = `CLASS: ${(reportData?.meta?.grade || '').replace(/_/g, ' ')} ${streamLabel} | TERM: ${(reportData?.meta?.term || '').replace(/_/g, ' ')} | GENERATED: ${new Date().toLocaleDateString()}`;
+
+      worksheet.mergeCells(`A1:${lastColLetter}1`);
+      worksheet.getCell('A1').value = schoolName;
+      worksheet.getCell('A1').font = { bold: true, size: 18, color: { argb: 'FF1E3A8A' } };
+      worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+
+      worksheet.mergeCells(`A2:${lastColLetter}2`);
+      worksheet.getCell('A2').value = reportTitle;
+      worksheet.getCell('A2').font = { bold: true, size: 13, color: { argb: 'FF111827' } };
+      worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
+
+      worksheet.mergeCells(`A3:${lastColLetter}3`);
+      worksheet.getCell('A3').value = headerMeta;
+      worksheet.getCell('A3').font = { bold: true, size: 10, color: { argb: 'FF475569' } };
+      worksheet.getCell('A3').alignment = { horizontal: 'center', vertical: 'middle' };
+
+      worksheet.mergeCells(`A4:${lastColLetter}4`);
+      worksheet.getCell('A4').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+      worksheet.getRow(4).height = 6;
+
+      const tableHeaderRow = 5;
+      worksheet.getRow(tableHeaderRow).values = headers;
 
       reportData.rows.forEach((row) => {
         const subjectValues = reportData.subjects.map((subj) => row.subjectScores[subj] ?? '-');
@@ -1612,7 +1639,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
         width: idx === 1 ? 32 : 10
       }));
 
-      worksheet.getRow(1).eachCell((cell) => {
+      worksheet.getRow(tableHeaderRow).eachCell((cell) => {
         cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
         cell.alignment = { vertical: 'middle', horizontal: 'center' };
@@ -1625,7 +1652,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
       });
 
       worksheet.eachRow((r, rowNumber) => {
-        if (rowNumber === 1) return;
+        if (rowNumber <= tableHeaderRow) return;
         r.eachCell((cell, colNumber) => {
           cell.border = {
             top: { style: 'thin', color: { argb: 'FFBFC7D4' } },
@@ -1641,6 +1668,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
 
       const avgCol = headers.indexOf('AVG %') + 1;
       worksheet.getColumn(avgCol).numFmt = '0.0%';
+      worksheet.views = [{ state: 'frozen', ySplit: tableHeaderRow }];
 
       const ts = new Date().toISOString().split('T')[0];
       const fileName = `Broadsheet_${reportData?.meta?.grade || 'Grade'}_${reportData?.meta?.stream || 'All'}_${ts}.xlsx`;
