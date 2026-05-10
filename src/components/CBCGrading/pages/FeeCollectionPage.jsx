@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Plus, Eye, CheckCircle, AlertCircle, Clock, FileText, Download,
+  Plus, CheckCircle, AlertCircle, Clock, FileText, Download,
   X, Loader2, MessageSquare, Phone, Info, User, ShieldCheck, Mail, Upload,
   Trash2, Gift, ThumbsUp, ArrowUpDown, ArrowUp, ArrowDown, Users,
   Filter, Search, DollarSign, Wallet, Banknote, Coins, Building2, AlertTriangle
@@ -91,7 +91,16 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
   });
   const [showColumnFilter, setShowColumnFilter] = useState(false);
   const [showGlobalFilters, setShowGlobalFilters] = useState(false);
+  const [showBalanceBreakdown, setShowBalanceBreakdown] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem('feeCollection.showBalanceBreakdown') === 'true';
+  });
   const normalizeGradeKey = React.useCallback((value) => String(value || '').trim().toUpperCase().replace(/\s+/g, '_'), []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('feeCollection.showBalanceBreakdown', String(showBalanceBreakdown));
+  }, [showBalanceBreakdown]);
 
   const metricsStructureExpectedMap = React.useMemo(() => {
     const m = new Map();
@@ -204,6 +213,15 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
   const listCarryFwdTotal = React.useMemo(
     () => invoices.reduce((sum, inv) => sum + getInvoiceCarryFwd(inv), 0),
     [invoices, getInvoiceCarryFwd]
+  );
+
+  const getInvoiceCurrentTermDue = React.useCallback((invoice) => (
+    Math.max(0, getInvoiceCurrentDue(invoice) - getInvoiceCarryFwd(invoice))
+  ), [getInvoiceCurrentDue, getInvoiceCarryFwd]);
+
+  const listCurrentTermDueTotal = React.useMemo(
+    () => invoices.reduce((sum, inv) => sum + getInvoiceCurrentTermDue(inv), 0),
+    [invoices, getInvoiceCurrentTermDue]
   );
 
   const activeFilterCount = (gradeFilter !== 'all' ? 1 : 0) +
@@ -1510,7 +1528,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
 
                   {/* Filter Drawer/Popover */}
                   {showGlobalFilters && (
-                    <div className="absolute left-0 mt-2 w-[480px] bg-white border border-gray-200 rounded-2xl shadow-2xl z-50 p-6 flex flex-col gap-6 animate-in slide-in-from-top-2">
+                    <div className="absolute right-0 mt-2 w-[min(92vw,480px)] max-h-[calc(100vh-180px)] overflow-y-auto bg-white border border-gray-200 rounded-2xl shadow-2xl z-50 p-6 flex flex-col gap-6 animate-in slide-in-from-top-2">
                       <div className="flex justify-between items-center border-b pb-3">
                         <h3 className="font-medium text-gray-800 flex items-center gap-2">
                           <Filter size={18} className="text-gray-400" /> Refine Results
@@ -1617,7 +1635,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                     Columns <ArrowUpDown size={16} className="text-gray-400" />
                   </button>
                   {showColumnFilter && (
-                    <div className="absolute left-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 p-2 text-sm flex flex-col">
+                    <div className="absolute right-0 mt-2 w-48 max-w-[90vw] bg-white border border-gray-200 rounded-xl shadow-2xl z-50 p-2 text-sm flex flex-col">
                       <div className="font-medium border-b pb-2 mb-2 px-2 text-gray-700 bg-gray-50/80 -mx-2 -mt-2 p-2 rounded-t-xl text-[11px] uppercase tracking-wider">Display Columns</div>
                       {Object.keys(visibleColumns).map(colKey => (
                         <label key={colKey} className="flex items-center gap-3 cursor-pointer hover:bg-blue-50/50 p-1.5 rounded transition-colors group">
@@ -1632,6 +1650,17 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                           </span>
                         </label>
                       ))}
+                      {visibleColumns.balance && (
+                        <label className="flex items-center gap-3 cursor-pointer hover:bg-blue-50/50 p-1.5 rounded transition-colors group border-t mt-2 pt-2">
+                          <input
+                            type="checkbox"
+                            checked={showBalanceBreakdown}
+                            onChange={() => setShowBalanceBreakdown(prev => !prev)}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+                          />
+                          <span className="text-gray-700 font-medium group-hover:text-blue-700">Balance Split</span>
+                        </label>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1838,7 +1867,7 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                         onClick={() => handleSort('balance')}
                       >
                         <div className="flex items-center gap-1">
-                          Balance
+                          <span>Balance</span>
                           {sortConfig.key === 'balance' ? (
                             sortConfig.direction === 'asc' ? <ArrowUp size={10} /> : <ArrowDown size={10} />
                           ) : <ArrowUpDown size={10} className="text-gray-300" />}
@@ -1897,11 +1926,15 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                       </td>
                     )}
                     {visibleColumns.balance && (
-                      <td className="px-3 py-2 text-xs font-semibold border-r border-gray-300">
-                        <div className="grid grid-cols-2 gap-3 text-right">
-                          <span className="text-amber-700">B/F {Number(listCarryFwdTotal || 0).toLocaleString()}</span>
-                          <span className="text-red-700 border-l border-gray-200 pl-3">Current {Number(listTotals.totalBalance || 0).toLocaleString()}</span>
-                        </div>
+                      <td className="px-3 py-2 text-xs font-semibold border-r border-gray-300 text-right">
+                        {showBalanceBreakdown ? (
+                          <div className="grid grid-cols-2 gap-3">
+                            <span className="text-amber-700">B/F {Number(listCarryFwdTotal || 0).toLocaleString()}</span>
+                            <span className="text-red-700 border-l border-gray-200 pl-3">Current {Number(listCurrentTermDueTotal || 0).toLocaleString()}</span>
+                          </div>
+                        ) : (
+                          <span className="text-red-700">{Number(listTotals.totalBalance || 0).toLocaleString()}</span>
+                        )}
                       </td>
                     )}
                     {visibleColumns.overpaid && (
@@ -1989,11 +2022,15 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                             </td>
                           )}
                           {visibleColumns.balance && (
-                            <td className="px-3 py-1.5 text-xs font-medium border-r border-gray-300 w-32">
-                              <div className="grid grid-cols-2 gap-3 text-right">
-                                <span className="text-amber-700">{Number(getInvoiceCarryFwd(invoice) || 0).toLocaleString()}</span>
-                                <span className="text-red-600 border-l border-gray-200 pl-3">{Number(getInvoiceCurrentDue(invoice) || 0).toLocaleString()}</span>
-                              </div>
+                            <td className="px-3 py-1.5 text-xs font-medium border-r border-gray-300 w-32 text-right">
+                              {showBalanceBreakdown ? (
+                                <div className="grid grid-cols-2 gap-3">
+                                  <span className="text-amber-700">{Number(getInvoiceCarryFwd(invoice) || 0).toLocaleString()}</span>
+                                  <span className="text-red-600 border-l border-gray-200 pl-3">{Number(getInvoiceCurrentTermDue(invoice) || 0).toLocaleString()}</span>
+                                </div>
+                              ) : (
+                                <span className="text-red-600">{Number(getInvoiceCurrentDue(invoice) || 0).toLocaleString()}</span>
+                              )}
                             </td>
                           )}
                           {visibleColumns.overpaid && (
@@ -2133,11 +2170,15 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
                       </td>
                     )}
                     {visibleColumns.balance && (
-                      <td className="px-3 py-3 text-xs font-semibold border-r border-gray-300">
-                        <div className="grid grid-cols-2 gap-3 text-right">
-                          <span className="text-amber-700">B/F {Number(listCarryFwdTotal || 0).toLocaleString()}</span>
-                          <span className="text-red-600 border-l border-gray-200 pl-3">Current {Number(listTotals.totalBalance || 0).toLocaleString()}</span>
-                        </div>
+                      <td className="px-3 py-3 text-xs font-semibold border-r border-gray-300 text-right">
+                        {showBalanceBreakdown ? (
+                          <div className="grid grid-cols-2 gap-3">
+                            <span className="text-amber-700">B/F {Number(listCarryFwdTotal || 0).toLocaleString()}</span>
+                            <span className="text-red-600 border-l border-gray-200 pl-3">Current {Number(listCurrentTermDueTotal || 0).toLocaleString()}</span>
+                          </div>
+                        ) : (
+                          <span className="text-red-600">{Number(listTotals.totalBalance || 0).toLocaleString()}</span>
+                        )}
                       </td>
                     )}
                     {visibleColumns.overpaid && (
