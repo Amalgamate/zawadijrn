@@ -716,14 +716,21 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
 
         // 2. Fetch Existing Marks from backend first, then fall back to draft
         const draftKey = `draft-marks-${selectedTestId}`;
+        const draftMetaKey = `draft-marks-meta-${selectedTestId}`;
         const savedDraft = localStorage.getItem(draftKey);
+        let draftMeta = null;
+        try {
+          draftMeta = JSON.parse(localStorage.getItem(draftMetaKey) || 'null');
+        } catch {
+          draftMeta = null;
+        }
 
         // Always try to load from backend first
         const resultsResponse = await assessmentAPI.getTestResults(selectedTestId);
         const results = resultsResponse.data || resultsResponse || [];
 
         if (results.length > 0) {
-          // Backend has data — load it (most authoritative source)
+          // Backend has data — build backend marks, but allow user to keep newer local draft.
           const existingMarks = {};
           results.forEach(r => {
             if (r.learnerId) {
@@ -733,12 +740,44 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
               };
             }
           });
-          setMarks(existingMarks);
-          setIsDraft(false);
-          // Clear stale local draft if backend data exists
-          localStorage.removeItem(draftKey);
-          setLastSaved(new Date());
-          setLastBackendSave(new Date());
+
+          const backendUpdatedAtMs = results.reduce((maxTs, r) => {
+            const ts = Date.parse(r?.updatedAt || r?.createdAt || 0);
+            return Number.isFinite(ts) ? Math.max(maxTs, ts) : maxTs;
+          }, 0);
+          const draftSavedAtMs = Date.parse(draftMeta?.savedAt || 0);
+          const hasNewerLocalDraft = Boolean(savedDraft) && Number.isFinite(draftSavedAtMs) && draftSavedAtMs > backendUpdatedAtMs;
+
+          if (hasNewerLocalDraft) {
+            let parsedDraft = null;
+            try {
+              parsedDraft = JSON.parse(savedDraft);
+            } catch {
+              parsedDraft = null;
+            }
+            const keepDraft = window.confirm(
+              'Newer local draft detected for this test.\n\n' +
+              'OK = Keep local draft marks\n' +
+              'Cancel = Load backend marks'
+            );
+            if (keepDraft && parsedDraft && typeof parsedDraft === 'object') {
+              setMarks(parsedDraft);
+              setIsDraft(true);
+              setLastSaved(new Date(draftSavedAtMs));
+              setLastBackendSave(backendUpdatedAtMs ? new Date(backendUpdatedAtMs) : new Date());
+              toast('Loaded newer local draft. Click Save to publish to backend.', { icon: '📝' });
+            } else {
+              setMarks(existingMarks);
+              setIsDraft(false);
+              setLastSaved(new Date());
+              setLastBackendSave(backendUpdatedAtMs ? new Date(backendUpdatedAtMs) : new Date());
+            }
+          } else {
+            setMarks(existingMarks);
+            setIsDraft(false);
+            setLastSaved(new Date());
+            setLastBackendSave(backendUpdatedAtMs ? new Date(backendUpdatedAtMs) : new Date());
+          }
         } else if (savedDraft) {
           // No backend data yet — restore local draft
           const parsedDraft = JSON.parse(savedDraft);
@@ -780,13 +819,11 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
   // ============================================================
   // AUTO-SAVE: debounce → localStorage + backend (twice per session)
   // ============================================================
-  // Track how many times we've auto-saved to the backend this session
-  const autoSaveCountRef = useRef(0);
-
   useEffect(() => {
     if (!selectedTestId) return;
 
     const draftKey = `draft-marks-${selectedTestId}`;
+    const draftMetaKey = `draft-marks-meta-${selectedTestId}`;
 
     // Clear any pending timer
     if (autoSaveTimerRef.current) {
@@ -799,67 +836,59 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
 
       // 1. Always save to localStorage immediately
       localStorage.setItem(draftKey, JSON.stringify(marks));
+      localStorage.setItem(draftMetaKey, JSON.stringify({ savedAt: new Date().toISOString() }));
       setIsDraft(true);
       setLastSaved(new Date());
       console.log('[AutoSave] Draft saved to localStorage.');
 
-      // 2. Also persist to backend (limit to 2 auto-saves per loaded test)
-      if (autoSaveCountRef.current < 2) {
-        autoSaveInProgressRef.current = true;
-        try {
-          const resultsToSave = Object.entries(marks)
-            .filter(([, markData]) => {
-              const m = markData?.mark;
-              return m !== null && m !== undefined && m !== '';
-            })
-            .map(([learnerId, markData]) => ({
-              learnerId,
-              marksObtained: markData.mark,
-              remarks: '-',
-              teacherComment: markData.comment || ''
-            }));
+      // 2. Persist to backend on every autosave cycle (no hard cap)
+      autoSaveInProgressRef.current = true;
+      try {
+        const resultsToSave = Object.entries(marks)
+          .filter(([, markData]) => {
+            const m = markData?.mark;
+            return m !== null && m !== undefined && m !== '';
+          })
+          .map(([learnerId, markData]) => ({
+            learnerId,
+            marksObtained: markData.mark,
+            remarks: '-',
+            teacherComment: markData.comment || ''
+          }));
 
-          if (resultsToSave.length > 0) {
-            await assessmentAPI.recordBulkResults({
-              testId: selectedTestId,
-              results: resultsToSave
-            });
-            autoSaveCountRef.current += 1;
-            setLastBackendSave(new Date());
-            setIsDraft(false);
-            localStorage.removeItem(draftKey);
-            console.log(`[AutoSave] Backend persist #${autoSaveCountRef.current} complete.`);
+        if (resultsToSave.length > 0) {
+          await assessmentAPI.recordBulkResults({
+            testId: selectedTestId,
+            results: resultsToSave
+          });
+          setLastBackendSave(new Date());
+          setIsDraft(false);
+          // Keep draft cache for conflict recovery instead of deleting it silently.
+          console.log('[AutoSave] Backend persist complete.');
 
-            // Mark this test as having results in the tests list (so tick appears immediately)
-            setTests(prev => prev.map(t =>
-              String(t.id) === String(selectedTestId)
-                ? { ...t, _count: { ...t._count, results: Math.max((t._count?.results || 0), resultsToSave.length) } }
-                : t
-            ));
+          // Mark this test as having results in the tests list (so tick appears immediately)
+          setTests(prev => prev.map(t =>
+            String(t.id) === String(selectedTestId)
+              ? { ...t, _count: { ...t._count, results: Math.max((t._count?.results || 0), resultsToSave.length) } }
+              : t
+          ));
 
-            // Subtle silent toast on auto-save to backend
-            toast.success('Auto-saved', {
-              duration: 2000,
-              style: { fontSize: '12px', padding: '8px 12px' },
-              icon: '🔄'
-            });
-          }
-        } catch (err) {
-          console.warn('[AutoSave] Backend auto-save failed, draft kept in localStorage:', err.message);
-        } finally {
-          autoSaveInProgressRef.current = false;
+          // Subtle silent toast on auto-save to backend
+          toast.success('Auto-saved', {
+            duration: 2000,
+            style: { fontSize: '12px', padding: '8px 12px' },
+            icon: '🔄'
+          });
         }
+      } catch (err) {
+        console.warn('[AutoSave] Backend auto-save failed, draft kept in localStorage:', err.message);
+      } finally {
+        autoSaveInProgressRef.current = false;
       }
     }, 3000); // 3-second debounce
 
     return () => clearTimeout(autoSaveTimerRef.current);
   }, [marks, selectedTestId]);
-
-  // Reset auto-save counter when test changes
-  useEffect(() => {
-    autoSaveCountRef.current = 0;
-    autoSaveInProgressRef.current = false;
-  }, [selectedTestId]);
 
 
   // Fetch Learners when test is selected
@@ -1194,15 +1223,13 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
       });
       setMarks(updatedMarks);
 
-      // Clear local draft — backend is now authoritative
+      // Clear local draft + metadata — backend is now authoritative
       localStorage.removeItem(`draft-marks-${selectedTestId}`);
+      localStorage.removeItem(`draft-marks-meta-${selectedTestId}`);
       setIsDraft(false);
       const now = new Date();
       setLastSaved(now);
       setLastBackendSave(now);
-
-      // Reset auto-save counter so it will auto-save again after manual save
-      autoSaveCountRef.current = 0;
 
       // ── Update the test's _count.results so the green tick appears immediately ──
       setTests(prev => prev.map(t =>
