@@ -120,6 +120,63 @@ const ROLE_PAGE_ALLOWLIST = {
   ])
 };
 
+const SECONDARY_ONLY_PAGES = new Set([
+  'sec-pathways',
+  'sec-subjects',
+  'sec-form-groups',
+  'sec-schemes',
+  'sec-mark-entry',
+  'sec-cats',
+  'sec-mid-term',
+  'sec-end-term',
+  'sec-kcse-mock',
+  'sec-mean-grades',
+  'sec-rankings',
+  'sec-subject-analysis',
+  'sec-report-cards',
+  'sec-kcse-prediction',
+]);
+
+const TERTIARY_ONLY_PAGES = new Set([
+  'tert-departments',
+  'tert-programs',
+  'tert-units',
+  'tert-enrollment',
+  'tert-cats',
+  'tert-exams',
+  'tert-mark-entry',
+  'tert-grade-sheet',
+  'tert-unit-results',
+  'tert-gpa',
+  'tert-semester-report',
+  'tert-transcripts',
+  'tert-classifications',
+  'tert-clubs',
+  'tert-clearance',
+]);
+
+const INSTITUTION_AGNOSTIC_PAGES = new Set([
+  'dashboard',
+  'help',
+  'settings-school',
+  'settings-users',
+  'settings-system-logs',
+  'settings-communication',
+  'settings-payment',
+  'system-maintenance',
+  'comm-notices',
+  'comm-messages',
+  'comm-history',
+]);
+
+const isInstitutionPageAllowed = (institutionTypeRaw, page) => {
+  const institutionType = String(institutionTypeRaw || 'PRIMARY_CBC').toUpperCase();
+  if (INSTITUTION_AGNOSTIC_PAGES.has(page)) return true;
+  if (SECONDARY_ONLY_PAGES.has(page)) return institutionType === 'SECONDARY';
+  if (TERTIARY_ONLY_PAGES.has(page)) return institutionType === 'TERTIARY';
+  return institutionType === 'PRIMARY_CBC' || institutionType === 'SECONDARY' || institutionType === 'TERTIARY';
+};
+
 export const getUserActiveApps = (user) => user?.activeApps || [];
 
 export const getRequiredAppForPage = (page) => {
@@ -140,6 +197,10 @@ export const hasPageAccess = (user, page) => {
   const allowlist = role ? ROLE_PAGE_ALLOWLIST[role] : null;
 
   if (allowlist && !allowlist.has(normalizedPage)) {
+    return false;
+  }
+
+  if (!isInstitutionPageAllowed(user?.institutionType, normalizedPage)) {
     return false;
   }
 

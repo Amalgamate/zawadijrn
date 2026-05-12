@@ -3,7 +3,7 @@
  * Now with PDF Download functionality!
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { FileText, Printer, Edit3, User, ArrowRight, Filter, MessageSquarePlus } from 'lucide-react';
 import { generatePDFWithLetterhead } from '../../../utils/simplePdfGenerator';
 import { useNotifications } from '../hooks/useNotifications';
@@ -15,7 +15,7 @@ import { useLearnerSelection } from '../hooks/useLearnerSelection';
 import TermlyReportTemplate from '../templates/TermlyReportTemplate';
 import TermlyReportCommentsForm from '../../../pages/assessments/TermlyReportCommentsForm';
 
-const TermlyReport = ({ learners, brandingSettings, user }) => {
+const TermlyReport = ({ learners, brandingSettings, user, pageParams = {} }) => {
   const { showSuccess, showError } = useNotifications();
 
   // Use centralized hooks for assessment state management
@@ -34,11 +34,37 @@ const TermlyReport = ({ learners, brandingSettings, user }) => {
   const selectedLearnerId = selection.selectedLearnerId;
   const setSelectedLearnerId = selection.selectLearner;
   const selectedLearner = learners?.find(l => l.id === selectedLearnerId);
+  const initializedFromParamsRef = useRef(false);
 
   const [viewMode, setViewMode] = useState('setup'); // 'setup' | 'report'
   const [reportData, setReportData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showCommentsForm, setShowCommentsForm] = useState(false);
+
+  useEffect(() => {
+    if (initializedFromParamsRef.current) return;
+    initializedFromParamsRef.current = true;
+
+    const normalizeGrade = (value) => {
+      if (!value) return '';
+      return String(value).trim().replace(/\s+/g, '_').toUpperCase();
+    };
+    const normalizedGrade = normalizeGrade(pageParams?.grade);
+    if (normalizedGrade && grades.some(g => normalizeGrade(g.value) === normalizedGrade)) {
+      setSelectedGrade(normalizedGrade);
+    }
+
+    if (pageParams?.term) {
+      const normalizedTerm = String(pageParams.term).trim().replace(/\s+/g, '_').toUpperCase();
+      if (terms.some(t => t.value === normalizedTerm)) {
+        setSelectedTerm(normalizedTerm);
+      }
+    }
+
+    if (pageParams?.academicYear && !Number.isNaN(Number(pageParams.academicYear))) {
+      setup.setSelectedAcademicYear(Number(pageParams.academicYear));
+    }
+  }, [grades, pageParams, setSelectedGrade, setSelectedTerm, setup, terms]);
 
   const fetchReportData = useCallback(async () => {
     if (!selection.selectedLearnerId) return;

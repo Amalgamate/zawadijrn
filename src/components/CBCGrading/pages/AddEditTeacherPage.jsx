@@ -8,6 +8,24 @@ import { ArrowLeft, Save, User, Mail, BookOpen, CheckCircle, AlertCircle } from 
 import { useNotifications } from '../hooks/useNotifications';
 import { useAuth } from '../../../hooks/useAuth';
 
+const normalizePhoneForApi = (raw) => {
+    const cleaned = String(raw || '').replace(/[^\d+]/g, '');
+    if (!cleaned) return '';
+
+    // Keep +E.164 as-is (strip only spaces/symbols already done above).
+    if (cleaned.startsWith('+')) return cleaned;
+
+    // Kenya local formats -> international without plus
+    // 07XXXXXXXX / 01XXXXXXXX => 2547XXXXXXXX / 2541XXXXXXXX
+    if (/^0\d{9}$/.test(cleaned)) return `254${cleaned.slice(1)}`;
+
+    // Already starts with country code
+    if (/^254\d{9}$/.test(cleaned)) return cleaned;
+
+    // Fallback: return cleaned for backend validation to decide
+    return cleaned;
+};
+
 const AddEditTeacherPage = ({ onSave, onCancel, teacher = null }) => {
     const { user } = useAuth();
     const isEdit = !!teacher;
@@ -74,6 +92,12 @@ const AddEditTeacherPage = ({ onSave, onCancel, teacher = null }) => {
         if (!formData.email.trim()) newErrors.email = 'Email is required';
         else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email is invalid';
         if (!formData.phone.trim()) newErrors.phone = 'Phone number is required';
+        else {
+            const normalized = normalizePhoneForApi(formData.phone);
+            if (!/^\+?[1-9]\d{1,14}$/.test(normalized)) {
+                newErrors.phone = 'Use a valid phone format, e.g. 0712345678 or +254712345678';
+            }
+        }
 
         // Password is only required for new teachers
         if (!isEdit && !formData.password) {
@@ -103,7 +127,7 @@ const AddEditTeacherPage = ({ onSave, onCancel, teacher = null }) => {
                 lastName: formData.lastName,
                 middleName: formData.middleName,
                 email: formData.email,
-                phone: formData.phone,
+                phone: normalizePhoneForApi(formData.phone),
                 gender: formData.gender,
                 subject: formData.subject,
                 kraPin: formData.kraPin,
@@ -258,8 +282,9 @@ const AddEditTeacherPage = ({ onSave, onCancel, teacher = null }) => {
                                 value={formData.phone}
                                 onChange={handleChange}
                                 className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-purple transition ${errors.phone ? 'border-red-500 focus:ring-red-200' : 'border-gray-300'}`}
-                                placeholder="Enter phone number"
+                                placeholder="e.g. 0712345678 or +254712345678"
                             />
+                            {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
                         </div>
 
                         <div>

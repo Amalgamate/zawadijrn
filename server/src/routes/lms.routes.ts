@@ -2,10 +2,9 @@
  * LMS Routes
  * Defines all Learning Management System API endpoints
  *
- * FIX: authorize() is typed as (...roles: Role[]) but passing multiple string
- * literals caused TS2345 ("string[] not assignable to Role") in strict mode.
- * Cast each call-site with `as Role` to satisfy the type checker without
- * changing the runtime behaviour at all.
+ * Guard contract:
+ * - authenticate at router level
+ * - requireRole([...]) per route for consistent structured auth errors
  *
  * FIX: The old import referenced `validateRequest` which was never exported
  * from validation.middleware. The correct export is `validate`.
@@ -15,9 +14,9 @@
 
 import { Router } from 'express';
 import { LMSController } from '../controllers/lms.controller';
-import { authenticate, authorize } from '../middleware/auth.middleware';
+import { authenticate } from '../middleware/auth.middleware';
+import { requireRole } from '../middleware/permissions.middleware';
 import { validate } from '../middleware/validation.middleware';
-import { Role } from '../config/permissions';
 import {
     createCourseSchema,
     updateCourseSchema,
@@ -35,29 +34,29 @@ router.use(authenticate);
  * Course Management Routes
  */
 router.get('/courses',
-    authorize('SUPER_ADMIN' as Role, 'ADMIN' as Role, 'HEAD_TEACHER' as Role, 'HEAD_OF_CURRICULUM' as Role, 'TEACHER' as Role),
+    requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM', 'TEACHER']),
     lmsController.getCourses.bind(lmsController)
 );
 
 router.get('/courses/:id',
-    authorize('SUPER_ADMIN' as Role, 'ADMIN' as Role, 'HEAD_TEACHER' as Role, 'HEAD_OF_CURRICULUM' as Role, 'TEACHER' as Role),
+    requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM', 'TEACHER']),
     lmsController.getCourse.bind(lmsController)
 );
 
 router.post('/courses',
-    authorize('SUPER_ADMIN' as Role, 'ADMIN' as Role, 'HEAD_TEACHER' as Role, 'TEACHER' as Role, 'HEAD_OF_CURRICULUM' as Role),
+    requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'TEACHER', 'HEAD_OF_CURRICULUM']),
     validate(createCourseSchema),
     lmsController.createCourse.bind(lmsController)
 );
 
 router.put('/courses/:id',
-    authorize('SUPER_ADMIN' as Role, 'ADMIN' as Role, 'HEAD_TEACHER' as Role, 'TEACHER' as Role, 'HEAD_OF_CURRICULUM' as Role),
+    requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'TEACHER', 'HEAD_OF_CURRICULUM']),
     validate(updateCourseSchema),
     lmsController.updateCourse.bind(lmsController)
 );
 
 router.delete('/courses/:id',
-    authorize('SUPER_ADMIN' as Role, 'ADMIN' as Role, 'HEAD_TEACHER' as Role),
+    requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER']),
     lmsController.deleteCourse.bind(lmsController)
 );
 
@@ -65,18 +64,18 @@ router.delete('/courses/:id',
  * Content Management Routes
  */
 router.get('/content',
-    authorize('SUPER_ADMIN' as Role, 'ADMIN' as Role, 'HEAD_TEACHER' as Role, 'HEAD_OF_CURRICULUM' as Role, 'TEACHER' as Role),
+    requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM', 'TEACHER']),
     lmsController.getContent.bind(lmsController)
 );
 
 router.post('/content',
-    authorize('SUPER_ADMIN' as Role, 'ADMIN' as Role, 'HEAD_TEACHER' as Role, 'HEAD_OF_CURRICULUM' as Role, 'TEACHER' as Role),
+    requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM', 'TEACHER']),
     validate(uploadContentSchema),
     lmsController.uploadContent.bind(lmsController)
 );
 
 router.delete('/content/:id',
-    authorize('SUPER_ADMIN' as Role, 'ADMIN' as Role, 'HEAD_TEACHER' as Role, 'HEAD_OF_CURRICULUM' as Role, 'TEACHER' as Role),
+    requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM', 'TEACHER']),
     lmsController.deleteContent.bind(lmsController)
 );
 
@@ -84,18 +83,18 @@ router.delete('/content/:id',
  * Enrollment Management Routes
  */
 router.get('/enrollments',
-    authorize('SUPER_ADMIN' as Role, 'ADMIN' as Role, 'HEAD_TEACHER' as Role, 'HEAD_OF_CURRICULUM' as Role),
+    requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM']),
     lmsController.getEnrollments.bind(lmsController)
 );
 
 router.post('/enrollments',
-    authorize('SUPER_ADMIN' as Role, 'ADMIN' as Role, 'HEAD_TEACHER' as Role),
+    requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER']),
     validate(enrollLearnerSchema),
     lmsController.enrollLearner.bind(lmsController)
 );
 
 router.delete('/enrollments/:id',
-    authorize('SUPER_ADMIN' as Role, 'ADMIN' as Role, 'HEAD_TEACHER' as Role),
+    requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER']),
     lmsController.unenrollLearner.bind(lmsController)
 );
 
@@ -103,37 +102,37 @@ router.delete('/enrollments/:id',
  * Progress Tracking Routes
  */
 router.get('/progress/:learnerId/:courseId',
-    authorize('SUPER_ADMIN' as Role, 'ADMIN' as Role, 'HEAD_TEACHER' as Role, 'HEAD_OF_CURRICULUM' as Role, 'TEACHER' as Role),
+    requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM', 'TEACHER']),
     lmsController.getLearnerProgress.bind(lmsController)
 );
 
 router.put('/progress/:enrollmentId',
-    authorize('SUPER_ADMIN' as Role, 'ADMIN' as Role, 'HEAD_TEACHER' as Role, 'HEAD_OF_CURRICULUM' as Role, 'TEACHER' as Role),
+    requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM', 'TEACHER']),
     lmsController.updateProgress.bind(lmsController)
 );
 
 router.get('/my-courses',
-    authorize('STUDENT' as Role),
+    requireRole(['STUDENT']),
     lmsController.getStudentCourses.bind(lmsController)
 );
 
 router.get('/my-courses/:courseId',
-    authorize('STUDENT' as Role),
+    requireRole(['STUDENT']),
     lmsController.getStudentCourse.bind(lmsController)
 );
 
 router.get('/my-assignments',
-    authorize('STUDENT' as Role),
+    requireRole(['STUDENT']),
     lmsController.getStudentAssignments.bind(lmsController)
 );
 
 router.put('/my-progress',
-    authorize('STUDENT' as Role),
+    requireRole(['STUDENT']),
     lmsController.updateStudentProgress.bind(lmsController)
 );
 
 router.post('/assignments/:id/submit',
-    authorize('STUDENT' as Role),
+    requireRole(['STUDENT']),
     lmsController.submitAssignment.bind(lmsController)
 );
 
@@ -141,13 +140,14 @@ router.post('/assignments/:id/submit',
  * Reports Routes
  */
 router.get('/reports',
-    authorize('SUPER_ADMIN' as Role, 'ADMIN' as Role, 'HEAD_TEACHER' as Role),
+    requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER']),
     lmsController.getLMSReports.bind(lmsController)
 );
 
 router.get('/dashboard/stats',
-    authorize('SUPER_ADMIN' as Role, 'ADMIN' as Role, 'HEAD_TEACHER' as Role, 'HEAD_OF_CURRICULUM' as Role, 'TEACHER' as Role),
+    requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM', 'TEACHER']),
     lmsController.getLMSDashboardStats.bind(lmsController)
 );
 
 export default router;
+

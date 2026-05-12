@@ -1,6 +1,19 @@
+/**
+ * dashboard.routes.ts
+ *
+ * Guard contract:
+ *   - authenticate — applied once in index.ts; NOT repeated here
+ *   - requireRole  — applied per route for role-specific dashboards
+ *
+ * The /secondary endpoint is intentionally NOT gated with
+ * requireInstitutionType here because the frontend calls it regardless of
+ * institution context and the controller scopes the query via
+ * req.resolvedInstitutionType.  Per-route institution guards should be added
+ * if the endpoint is later split into context-specific handlers.
+ */
+
 import { Router } from 'express';
 import { DashboardController } from '../controllers/dashboard.controller';
-import { authenticate } from '../middleware/auth.middleware';
 import { requireRole } from '../middleware/permissions.middleware';
 import { rateLimit } from '../middleware/enhanced-rateLimit.middleware';
 import { asyncHandler } from '../utils/async.util';
@@ -8,17 +21,28 @@ import { asyncHandler } from '../utils/async.util';
 const router = Router();
 const dashboardController = new DashboardController();
 
-// All dashboard routes are protected
-router.use(authenticate);
+// authenticate is applied in index.ts — do NOT add router.use(authenticate) here
+
+/**
+ * @route   GET /api/dashboard/secondary
+ * @desc    Get secondary dashboard metrics
+ * @access  SUPER_ADMIN, ADMIN, HEAD_TEACHER, HEAD_OF_CURRICULUM
+ */
+router.get(
+  '/secondary',
+  requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM']),
+  rateLimit({ windowMs: 60_000, maxRequests: 60 }),
+  asyncHandler(dashboardController.getSecondaryMetrics.bind(dashboardController))
+);
 
 /**
  * @route   GET /api/dashboard/admin
  * @desc    Get admin dashboard metrics
- * @access  ADMIN, SUPER_ADMIN, HEAD_TEACHER, HEAD_OF_CURRICULUM
+ * @access  SUPER_ADMIN, ADMIN, HEAD_TEACHER, HEAD_OF_CURRICULUM
  */
 router.get(
   '/admin',
-  requireRole(['ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM']),
+  requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM']),
   rateLimit({ windowMs: 60_000, maxRequests: 60 }),
   asyncHandler(dashboardController.getAdminMetrics.bind(dashboardController))
 );
@@ -50,11 +74,11 @@ router.get(
 /**
  * @route   GET /api/dashboard/insights
  * @desc    Get deterministic smart insights derived from live school data
- * @access  ADMIN, SUPER_ADMIN, HEAD_TEACHER
+ * @access  SUPER_ADMIN, ADMIN, HEAD_TEACHER
  */
 router.get(
   '/insights',
-  requireRole(['ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER']),
+  requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER']),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
   asyncHandler(dashboardController.getInsights.bind(dashboardController))
 );

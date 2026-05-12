@@ -20,7 +20,7 @@ import { Badge } from '../../components/ui/badge';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 
-const SummativeTestFormDesktop = ({ onBack, onSuccess }) => {
+const SummativeTestFormDesktop = ({ onBack, onSuccess, initialTestType = null }) => {
   const { user } = useAuth();
   const {
     formData,
@@ -37,7 +37,7 @@ const SummativeTestFormDesktop = ({ onBack, onSuccess }) => {
     handleInputChange,
     handleSubmit: originalHandleSubmit,
     getSelectedScale
-  } = useSummativeTestForm();
+  } = useSummativeTestForm({ initialTestType });
 
   const handleSubmit = async (e) => {
     e.preventDefault();

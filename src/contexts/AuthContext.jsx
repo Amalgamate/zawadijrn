@@ -5,11 +5,14 @@
  * @module contexts/AuthContext
  */
 
-import React, { createContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useEffect, useRef, useCallback } from 'react';
+import { setInstitutionType } from '../services/api/institutionContext';
+import { useBootstrapStore } from '../store/useBootstrapStore';
 
 export const AuthContext = createContext({
   isAuthenticated: false,
   user: null,
+  institutionType: 'PRIMARY_CBC',
   login: () => { },
   logout: () => { },
   updateUser: () => { },
@@ -19,18 +22,40 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const prevInstitutionTypeRef = useRef(null);
 
   const normalizeUser = useCallback((u) => {
     if (!u) return u;
+    const isLocalhost =
+      typeof window !== 'undefined' &&
+      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
     // Don't force PRIMARY_CBC default when the backend has signalled that institution
     // setup is still required (post-reset). The wizard will lock the type and then
     // call updateUser() to patch this value in memory.
     const institutionType = u.requiresInstitutionSetup
       ? (u.institutionType ?? null)
       : (u.institutionType || 'PRIMARY_CBC');
+    const localOverride = isLocalhost ? localStorage.getItem('selectedInstitutionType') : null;
+    const resolvedInstitutionType = localOverride || institutionType;
     const activeApps = Array.isArray(u.activeApps) ? u.activeApps : undefined;
-    return { ...u, institutionType, activeApps };
+    return { ...u, institutionType: resolvedInstitutionType, activeApps };
   }, []);
+
+  // Keep the axios interceptor and bootstrap cache in sync whenever user changes
+  useEffect(() => {
+    const type = user?.institutionType || 'PRIMARY_CBC';
+    setInstitutionType(type);
+
+    // If the institution type changed mid-session, wipe the bootstrap cache so
+    // stale scoped data (learners, classes, subjects) never bleeds into the new context.
+    if (
+      prevInstitutionTypeRef.current !== null &&
+      prevInstitutionTypeRef.current !== type
+    ) {
+      useBootstrapStore.getState().clear();
+    }
+    prevInstitutionTypeRef.current = type;
+  }, [user?.institutionType]);
 
   // Check for existing auth on mount
   useEffect(() => {
@@ -103,6 +128,7 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated,
     user,
     loading,
+    institutionType: user?.institutionType || 'PRIMARY_CBC',
     login,
     logout,
     updateUser,

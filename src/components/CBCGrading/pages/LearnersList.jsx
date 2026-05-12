@@ -8,6 +8,7 @@ import StatusBadge from '../shared/StatusBadge';
 import EmptyState from '../shared/EmptyState';
 import { usePermissions } from '../../../hooks/usePermissions';
 import { useAuth } from '../../../hooks/useAuth';
+import { getSelectedInstitutionType } from '../../../services/schoolContext';
 import { configAPI, communicationAPI, learnerAPI } from '../../../services/api';
 import BulkOperationsModal from '../shared/bulk/BulkOperationsModal';
 import VirtualizedTable from '../shared/VirtualizedTable';
@@ -66,6 +67,13 @@ const LearnersList = ({
     return s.replace(/_/g, ' ');
   };
 
+  const selectedInstitutionType = String(getSelectedInstitutionType() || user?.institutionType || '').toUpperCase();
+  const isSecondaryPortal = selectedInstitutionType === 'SECONDARY' || selectedInstitutionType === 'HIGH_SCHOOL';
+  const isSecondaryGrade = (gradeValue) => {
+    const g = String(gradeValue || '').trim().toUpperCase();
+    return g.startsWith('FORM') || ['GRADE_10', 'GRADE_11', 'GRADE_12', 'GRADE10', 'GRADE11', 'GRADE12'].includes(g);
+  };
+
   const gradeOptions = useMemo(() => {
     // 1. Get unique grades from both context (classes) and the API fallback
     const combined = [
@@ -76,13 +84,11 @@ const LearnersList = ({
     // 2. Filter by school level (Junior vs Senior)
     // If badge is JUNIOR, hide Senior grades (GRADE_10-12 / FORM_1-4)
     // If badge is SENIOR, hide Junior grades (PP-GRADE_9)
-    const isSecondary = user?.institutionType === 'SECONDARY' || user?.institutionType === 'HIGH_SCHOOL';
-    
     const unique = Array.from(new Set(combined.filter(Boolean).map(g => String(g).trim())));
     
     return unique.filter(g => {
-      const isSS = g.startsWith('FORM') || ['GRADE_10', 'GRADE_11', 'GRADE_12', 'GRADE10', 'GRADE11', 'GRADE12'].includes(g);
-      return isSecondary ? isSS : !isSS;
+      const isSS = isSecondaryGrade(g);
+      return isSecondaryPortal ? isSS : !isSS;
     }).sort((a, b) => {
         // Basic smart sort: PP -> Grade -> Form
         if (a === b) return 0;
@@ -97,7 +103,7 @@ const LearnersList = ({
         };
         return rank(a) - rank(b);
     });
-  }, [grades, fallbackGrades, user?.institutionType]);
+  }, [grades, fallbackGrades, isSecondaryPortal]);
 
   // Check permissions
   const canCreateLearner = can('CREATE_LEARNER') || isRole('TEACHER');
@@ -182,7 +188,14 @@ const LearnersList = ({
     }
   };
 
-  const displayLearners = learners;
+  const displayLearners = useMemo(() => {
+    const source = Array.isArray(learners) ? learners : [];
+    return source.filter((learner) => {
+      const learnerIsSecondary = isSecondaryGrade(learner?.grade);
+      return isSecondaryPortal ? learnerIsSecondary : !learnerIsSecondary;
+    });
+  }, [learners, isSecondaryPortal]);
+  const visibleStudentsCount = displayLearners.length;
 
   const canTeacherModify = (learner) => {
     if (!isTeacher) return true; // Admins etc can always modify
@@ -424,7 +437,7 @@ const LearnersList = ({
             <div className="hidden lg:flex items-center gap-4 mr-2 border-r pr-4 border-gray-200 h-10">
               <div className="text-right">
                 <p className="text-[10px] text-gray-500 uppercase font-medium tracking-wider">Total Students</p>
-                <p className="text-xl font-medium text-gray-800 leading-none">{totalStudentsCount ?? pagination?.total ?? 0}</p>
+                <p className="text-xl font-medium text-gray-800 leading-none">{visibleStudentsCount}</p>
               </div>
             </div>
 

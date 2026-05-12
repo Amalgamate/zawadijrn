@@ -10,6 +10,8 @@ import {
 } from 'lucide-react';
 import { learnerAPI } from '../../../services/api';
 import { useSchoolData } from '../../../contexts/SchoolDataContext';
+import { useAuth } from '../../../hooks/useAuth';
+import { getSelectedInstitutionType } from '../../../services/schoolContext';
 
 // ─── Catalogue of uniform items ──────────────────────────────────────────────
 const UNIFORM_ITEMS = [
@@ -298,6 +300,13 @@ const AllocationModal = ({ learner, onClose, onSave }) => {
 // ─── Main page ────────────────────────────────────────────────────────────────
 const UniformAllocationPage = () => {
   const { grades } = useSchoolData();
+  const { user } = useAuth();
+  const selectedInstitutionType = String(getSelectedInstitutionType() || user?.institutionType || '').toUpperCase();
+  const isSecondaryPortal = selectedInstitutionType === 'SECONDARY' || selectedInstitutionType === 'HIGH_SCHOOL';
+  const isSecondaryGrade = (gradeValue) => {
+    const g = String(gradeValue || '').trim().toUpperCase().replace(/\s+/g, '_');
+    return g.startsWith('FORM') || ['GRADE_10', 'GRADE_11', 'GRADE_12', 'GRADE10', 'GRADE11', 'GRADE12'].includes(g);
+  };
 
   const [learners, setLearners]       = useState([]);
   const [loading, setLoading]         = useState(false);
@@ -351,7 +360,11 @@ const UniformAllocationPage = () => {
           : (filterGrade !== 'all' ? { grade: filterGrade } : {})),
       });
       if (resp?.success) {
-        setLearners(resp.data || []);
+        const rows = Array.isArray(resp.data) ? resp.data : [];
+        setLearners(rows.filter((learner) => {
+          const learnerIsSecondary = isSecondaryGrade(learner?.grade);
+          return isSecondaryPortal ? learnerIsSecondary : !learnerIsSecondary;
+        }));
         if (resp.pagination) setPagination(resp.pagination);
       }
     } catch (err) {
@@ -359,7 +372,7 @@ const UniformAllocationPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, filterGrade, pagination.page]);
+  }, [searchTerm, filterGrade, pagination.page, isSecondaryPortal]);
 
   // Debounced search / filter
   useEffect(() => {

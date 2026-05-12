@@ -8,7 +8,7 @@ import React, { useState, useEffect } from 'react';
 import SummativeTestsMobile from './SummativeTestsMobile';
 import SummativeTests from './SummativeTests';
 
-const SummativeTestsRouter = ({ onNavigate, isMobile: deviceIsMobile }) => {
+const SummativeTestsRouter = ({ onNavigate, isMobile: deviceIsMobile, defaultTestType = null }) => {
   const [isMobile, setIsMobile] = useState(deviceIsMobile ?? window.innerWidth < 768);
 
   useEffect(() => {
@@ -28,13 +28,13 @@ const SummativeTestsRouter = ({ onNavigate, isMobile: deviceIsMobile }) => {
   if (isMobile) {
     return (
       <div className="fixed inset-0 z-50 bg-gray-50 overflow-hidden">
-        <SummativeTestsMobile onNavigate={onNavigate} />
+        <SummativeTestsMobile onNavigate={onNavigate} defaultTestType={defaultTestType} />
       </div>
     );
   }
 
   // On desktop: render within normal layout
-  return <SummativeTests onNavigate={onNavigate} />;
+  return <SummativeTests onNavigate={onNavigate} defaultTestType={defaultTestType} />;
 };
 
 export default SummativeTestsRouter;

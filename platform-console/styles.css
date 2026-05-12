@@ -653,3 +653,79 @@ input:checked + .toggle-slider::before{transform:translateX(18px)}
   display:flex;align-items:center;gap:5px;font-weight:700
 }
 .btn.btn-signout-confirm:hover{background:#b91c1c;border-color:#b91c1c}
+
+/* ── Leads & CRM ────────────────────────────────────────────────────── */
+
+/* Pipeline stage bar */
+.crm-pipeline{display:grid;grid-template-columns:repeat(5,1fr);gap:0;margin-bottom:20px;border:1px solid var(--border)}
+.crm-stage{
+  padding:14px 16px;text-align:center;cursor:pointer;
+  border-right:1px solid var(--border);
+  background:var(--surface);transition:background .15s;
+  position:relative
+}
+.crm-stage:last-child{border-right:0}
+.crm-stage:hover{background:var(--page)}
+.crm-stage.active{background:#eef1ff}
+.crm-stage.active::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--brand)
+}
+.crm-stage-name{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+.crm-stage.active .crm-stage-name{color:var(--brand)}
+.crm-stage-count{font-size:26px;font-weight:900;color:var(--ink);margin:4px 0 2px;line-height:1}
+.crm-stage.active .crm-stage-count{color:var(--brand)}
+.crm-stage-sub{font-size:11px;color:var(--muted)}
+
+/* Lead stage badges */
+.lead-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;font-size:11px;font-weight:700}
+.lead-badge::before{content:'';width:6px;height:6px;border-radius:50%}
+.lead-badge.new{background:#eef1ff;color:var(--brand)}
+.lead-badge.new::before{background:var(--brand)}
+.lead-badge.contacted{background:var(--amber-soft);color:var(--amber)}
+.lead-badge.contacted::before{background:#f59e0b}
+.lead-badge.interested{background:var(--green-soft);color:#065f46}
+.lead-badge.interested::before{background:var(--green)}
+.lead-badge.converted{background:var(--teal-soft);color:#0f6e56}
+.lead-badge.converted::before{background:var(--teal)}
+.lead-badge.lost{background:var(--red-soft);color:var(--red)}
+.lead-badge.lost::before{background:var(--red)}
+
+/* Systems-in-use chips in table */
+.sys-chips{display:flex;flex-wrap:wrap;gap:4px}
+.sys-chip{
+  font-size:11px;padding:2px 7px;
+  background:var(--page);border:1px solid var(--border);
+  color:var(--muted);font-weight:500
+}
+.sys-chip.filled{color:var(--ink);background:#f8fbff;border-color:#c7ccf2}
+
+/* Lead modal — systems section divider */
+.form-section-divider{
+  display:flex;align-items:center;gap:10px;
+  margin:6px 0 14px
+}
+.form-section-divider::before,.form-section-divider::after{
+  content:'';flex:1;height:1px;background:var(--border)
+}
+.form-section-label{
+  font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.09em;color:var(--muted);white-space:nowrap
+}
+
+/* Stage move inline dropdown */
+.stage-picker{position:relative;display:inline-block}
+.stage-picker-menu{
+  position:absolute;top:100%;left:0;z-index:50;
+  background:var(--surface);border:1px solid var(--border);
+  min-width:140px;display:none;
+  box-shadow:0 4px 12px rgba(0,0,0,.08)
+}
+.stage-picker-menu.open{display:block}
+.stage-picker-item{
+  display:block;width:100%;text-align:left;
+  padding:8px 14px;font-size:12px;font-weight:600;
+  border:none;background:none;cursor:pointer;color:var(--ink);
+  border-bottom:1px solid var(--border)
+}
+.stage-picker-item:last-child{border-bottom:0}
+.stage-picker-item:hover{background:var(--page)}

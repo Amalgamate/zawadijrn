@@ -35,7 +35,7 @@ const isJuniorGrade = (grade) => {
   return g === 'PLAYGROUP' || g === 'PP1' || g === 'PP2' || /^GRADE_[1-9]$/.test(g);
 };
 
-const SummativeTests = ({ onNavigate }) => {
+const SummativeTests = ({ onNavigate, defaultTestType = null }) => {
   const { showSuccess, showError } = useNotifications();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -166,12 +166,21 @@ const SummativeTests = ({ onNavigate }) => {
   const [filterGrade, setFilterGrade] = useState('');
   const [filterTerm, setFilterTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  const normalizedDefaultTestType = useMemo(
+    () => normalizeTestType(defaultTestType),
+    [defaultTestType]
+  );
 
   // Derived filter options from loaded tests
   const availableGrades = useMemo(() => [...new Set(tests.map(t => t.grade).filter(Boolean))].sort(), [tests]);
   const availableTerms = useMemo(() => [...new Set(tests.map(t => t.term).filter(Boolean))].sort(), [tests]);
-  const activeFilterCount = [filterGrade, filterTerm, filterStatus].filter(Boolean).length;
-  const clearAllFilters = () => { setSearchQuery(''); setFilterGrade(''); setFilterTerm(''); setFilterStatus(''); };
+  const activeFilterCount = [filterGrade, filterTerm, filterStatus, normalizedDefaultTestType].filter(Boolean).length;
+  const clearAllFilters = () => {
+    setSearchQuery('');
+    setFilterGrade('');
+    setFilterTerm('');
+    setFilterStatus('');
+  };
   const toggleGrade = (grade) => {
     setExpandedGrades(prev =>
       prev.includes(grade) ? prev.filter(g => g !== grade) : [...prev, grade]
@@ -206,8 +215,11 @@ const SummativeTests = ({ onNavigate }) => {
     if (filterGrade) result = result.filter(t => toCanonicalGrade(t.grade) === toCanonicalGrade(filterGrade));
     if (filterTerm) result = result.filter(t => (t.term || '') === filterTerm);
     if (filterStatus) result = result.filter(t => (t.status || '').toUpperCase() === filterStatus.toUpperCase());
+    if (normalizedDefaultTestType) {
+      result = result.filter(t => normalizeTestType(t.testType) === normalizedDefaultTestType);
+    }
     return result;
-  }, [tests, searchQuery, filterGrade, filterTerm, filterStatus]);
+  }, [tests, searchQuery, filterGrade, filterTerm, filterStatus, normalizedDefaultTestType]);
 
   const groupedData = useMemo(() => {
     const grouped = {};
@@ -321,6 +333,7 @@ const SummativeTests = ({ onNavigate }) => {
   if (viewMode === 'create' || viewMode === 'edit') {
     return (
       <SummativeTestForm
+        initialTestType={viewMode === 'create' ? normalizedDefaultTestType : null}
         onBack={() => setViewMode('list')}
         onSuccess={(createdTest, selectedLearners) => {
           console.log('Test created:', createdTest);

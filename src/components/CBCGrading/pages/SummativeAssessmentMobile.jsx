@@ -12,10 +12,32 @@ import { useSchoolData } from '../../../contexts/SchoolDataContext';
 import { getLearningAreasByGrade } from '../../../constants/learningAreas';
 import { useInstitutionLabels } from '../../../hooks/useInstitutionLabels';
 import { cn } from '../../../utils/cn';
+import { useAuth } from '../../../hooks/useAuth';
+import { normalizeTestType } from '../utils/testType';
 
-const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSettings, embedded }) => {
+const normalizeGradeCode = (grade) => String(grade || '').trim().replace(/\s+/g, '_').toUpperCase();
+const toCanonicalGrade = (grade) => {
+  const g = normalizeGradeCode(grade);
+  if (g === 'FORM_1' || g === 'GRADE_10') return 'GRADE10';
+  if (g === 'FORM_2' || g === 'GRADE_11') return 'GRADE11';
+  if (g === 'FORM_3' || g === 'GRADE_12') return 'GRADE12';
+  return g;
+};
+const isSecondaryGrade = (grade) => /^GRADE(10|11|12)$/.test(toCanonicalGrade(grade));
+const isJuniorGrade = (grade) => {
+  const g = toCanonicalGrade(grade);
+  return g === 'PLAYGROUP' || g === 'PP1' || g === 'PP2' || /^GRADE_[1-9]$/.test(g);
+};
+
+const SummativeAssessmentMobile = ({ learners, initialTestId, defaultTestType = null, onBack, brandingSettings, embedded }) => {
   const { showSuccess, showError } = useNotifications();
   const labels = useInstitutionLabels();
+  const { user } = useAuth();
+  const isSecondaryPortal = String(user?.institutionType || '').toUpperCase() === 'SECONDARY';
+  const normalizedDefaultTestType = useMemo(
+    () => normalizeTestType(defaultTestType),
+    [defaultTestType]
+  );
   const setup = useAssessmentSetup({ defaultTerm: 'TERM_1' });
   const teacherWorkload = useTeacherWorkload();
   const learningAreasMgr = useLearningAreas(setup.selectedGrade);
@@ -46,9 +68,17 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
       } else if (Array.isArray(response)) {
         testsData = response;
       }
-      const activeTests = testsData.filter(t => {
+      let activeTests = testsData.filter(t => {
         const status = (t.status || '').toUpperCase();
         return status === 'PUBLISHED' || t.published === true;
+      });
+      activeTests = activeTests.filter((t) => {
+        const g = toCanonicalGrade(t?.grade);
+        if (isSecondaryPortal ? !isSecondaryGrade(g) : !isJuniorGrade(g)) return false;
+        if (normalizedDefaultTestType) {
+          return normalizeTestType(t.testType) === normalizedDefaultTestType;
+        }
+        return true;
       });
 
       setTests(activeTests);
@@ -58,7 +88,7 @@ const SummativeAssessmentMobile = ({ learners, initialTestId, onBack, brandingSe
     } finally {
       setLoading(false);
     }
-  }, [showError]);
+  }, [showError, isSecondaryPortal, normalizedDefaultTestType]);
 
   // Load Terms (from context classes)
   const loadOptions = useCallback(() => {

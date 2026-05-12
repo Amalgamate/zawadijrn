@@ -93,7 +93,7 @@ const getCBCGrade = (percentage) => {
 // COMPONENT
 // ============================================================================
 
-const SummaryReportPage = () => {
+const SummaryReportPage = ({ pageParams = {} }: { pageParams?: any }) => {
   const { grades: fetchedGrades, loading: schoolDataLoading } = useSchoolData();
 
   // Filter States
@@ -128,6 +128,31 @@ const SummaryReportPage = () => {
   // Track last fetched configuration to avoid loops but allow auto-switching
   const lastFetchRef = useRef(null);
   const isFetchingRef = useRef(false);
+  const initializedFromParamsRef = useRef(false);
+
+  useEffect(() => {
+    if (initializedFromParamsRef.current) return;
+    initializedFromParamsRef.current = true;
+
+    const normalize = (value: any) => String(value || '').trim().replace(/\s+/g, '_').toUpperCase();
+
+    if (pageParams?.grade) {
+      const normalizedGrade = normalize(pageParams.grade);
+      setStagedGrade(normalizedGrade);
+    }
+    if (pageParams?.stream) {
+      setStagedStream(String(pageParams.stream));
+    }
+    if (pageParams?.term) {
+      const normalizedTerm = normalize(pageParams.term);
+      if (['TERM_1', 'TERM_2', 'TERM_3'].includes(normalizedTerm)) {
+        setStagedTerm(normalizedTerm);
+      }
+    }
+    if (pageParams?.academicYear && !Number.isNaN(Number(pageParams.academicYear))) {
+      setStagedYear(Number(pageParams.academicYear));
+    }
+  }, [pageParams]);
 
   // Initial Fetch: Streams — single-tenant, no schoolId guard needed
   useEffect(() => {

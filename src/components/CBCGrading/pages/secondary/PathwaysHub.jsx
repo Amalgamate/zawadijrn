@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { BookOpen, Layers, RefreshCw } from 'lucide-react';
 import { fetchWithAuth } from '../../../../services/api/core';
+import { configAPI } from '../../../../services/api/config.api';
 import EmptyState from '../../shared/EmptyState';
 
 const Pill = ({ children, className = '' }) => (
@@ -15,6 +16,7 @@ const PathwaysHub = () => {
   const [selected, setSelected] = useState(null);
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState(null);
+  const [seeding, setSeeding] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -55,18 +57,32 @@ const PathwaysHub = () => {
     [pathways]
   );
 
+  const seedCatalog = async () => {
+    setSeeding(true);
+    setError(null);
+    try {
+      await configAPI.seedPathways();
+      await configAPI.seedLearningAreas();
+      await load();
+    } catch (e) {
+      setError(e?.message || 'Failed to run secondary bootstrap seed');
+    } finally {
+      setSeeding(false);
+    }
+  };
+
   return (
     <div className="p-6 space-y-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-semibold text-gray-900">CBC Senior Secondary Pathways</h1>
-            <Pill className="bg-indigo-50 text-indigo-800 border-indigo-200">Secondary</Pill>
-          </div>
-          <p className="mt-1 text-sm font-medium text-gray-600">
-            View the pathway catalog and category constraints (min/max subject selection rules).
-          </p>
-        </div>
+      <div className="-mt-2 flex items-center justify-end gap-2">
+        <button
+          type="button"
+          onClick={seedCatalog}
+          disabled={seeding}
+          className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold uppercase tracking-widest shadow hover:bg-indigo-700 disabled:opacity-60"
+        >
+          <BookOpen size={16} />
+          {seeding ? 'Seeding…' : 'Seed'}
+        </button>
         <button
           type="button"
           onClick={load}
@@ -89,7 +105,7 @@ const PathwaysHub = () => {
         <EmptyState
           icon={BookOpen}
           title="No Pathways Found"
-          message="Run the SS pathways seed to populate CORE/STEM/SOCIAL_SCIENCES/ARTS_SPORTS."
+          message="Click Seed to load pathways and subjects."
         />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -159,11 +175,11 @@ const PathwaysHub = () => {
             </div>
 
             <div className="mt-6 rounded-2xl border border-indigo-200 bg-indigo-50 p-4">
-              <div className="text-xs font-semibold uppercase tracking-widest text-indigo-700">Next UI steps</div>
+              <div className="text-xs font-semibold uppercase tracking-widest text-indigo-700">Quick Stats</div>
               <ul className="mt-2 text-sm font-medium text-indigo-900/90 list-disc pl-5 space-y-1">
-                <li>Assign each SS learner a pathway (one selection required)</li>
-                <li>Select subjects and show live validation errors per category</li>
-                <li>Show recommendations based on Grade 7–9 performance</li>
+                <li>Pathways: {visiblePathways.length}</li>
+                <li>Categories: {categories.length}</li>
+                <li>Grades: 10-12</li>
               </ul>
             </div>
           </div>
@@ -174,4 +190,3 @@ const PathwaysHub = () => {
 };
 
 export default PathwaysHub;
-

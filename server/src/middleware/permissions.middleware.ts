@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { Permission, Role, hasPermission } from '../config/permissions';
+import { getCanonicalRoles, hasAnyRole } from '../utils/roleNormalizer';
 import prisma from '../config/database';
+import { ApiError } from '../utils/error.util';
 
 type InstitutionType = 'PRIMARY_CBC' | 'SECONDARY' | 'TERTIARY';
 
@@ -22,6 +24,9 @@ declare global {
         roles?: Role[];
       };
       school?: School;
+      requestId?: string;
+      resolvedInstitutionType?: string;
+      requestedInstitutionType?: string | null;
     }
   }
 }
@@ -45,42 +50,35 @@ export interface AuthRequest extends Request {
   [key: string]: any;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// NOTE: Local normalizeRole / resolveNormalizedUserRoles helpers have been
+// removed. Use getCanonicalRoles(req.user) or hasAnyRole(req.user, [...])
+// from utils/roleNormalizer.ts everywhere in this file and in all guards.
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
- * Middleware to check if user has required permission
- *
- * @param permission - The permission to check
- * @returns Express middleware function
- *
- * @example
- * router.post('/learners', requirePermission('CREATE_LEARNER'), createLearner);
+ * Middleware to check if user has required permission.
+ * Denials are routed through next(ApiError) so the global error handler
+ * emits the RFC-compliant payload with code + requestId.
  */
 export const requirePermission = (permission: Permission) => {
-  return (req: AuthRequest, res: Response, next: NextFunction): void => {
+  return (req: AuthRequest, _res: Response, next: NextFunction): void => {
     try {
-      const userRoles = ((req.user?.roles && req.user.roles.length > 0)
-        ? req.user.roles
-        : req.user?.role
-          ? [req.user.role]
-          : []
-      ).map(r => r.toUpperCase() as Role);
+      const userRoles = getCanonicalRoles(req.user);
 
       if (userRoles.length === 0) {
-
-
-        res.status(401).json({ success: false, message: 'Authentication required' });
-        return;
+        return next(
+          new ApiError(401, 'Authentication required').withCode('AUTH_REQUIRED')
+        );
       }
 
       const allowed = userRoles.some(r => hasPermission(r as Role, permission));
       if (!allowed) {
-        console.warn(`[PERMISSIONS] 403 Forbidden: User ${req.user?.email} (${userRoles.join(',')}) lacks permission ${permission} for ${req.method} ${req.originalUrl}`);
-        res.status(403).json({
-          success: false,
-          message: 'Insufficient permissions',
-          required: permission,
-          userRoles
-        });
-        return;
+        return next(
+          new ApiError(403, 'Insufficient permissions')
+            .withCode('ROLE_FORBIDDEN')
+            .withRoles([permission], userRoles)
+        );
       }
 
       next();
@@ -91,35 +89,30 @@ export const requirePermission = (permission: Permission) => {
 };
 
 /**
- * Middleware to check if user has any of the required permissions
- *
- * @param permissions - Array of permissions, user needs at least one
- * @returns Express middleware function
+ * Middleware to check if user has any of the required permissions.
+ * Denials are routed through next(ApiError).
  */
 export const requireAnyPermission = (permissions: Permission[]) => {
-  return (req: AuthRequest, res: Response, next: NextFunction): void => {
+  return (req: AuthRequest, _res: Response, next: NextFunction): void => {
     try {
-      const userRoles = ((req.user?.roles && req.user.roles.length > 0)
-        ? req.user.roles
-        : req.user?.role
-          ? [req.user.role]
-          : []) as Role[];
+      const userRoles = getCanonicalRoles(req.user);
 
       if (userRoles.length === 0) {
-        res.status(401).json({ success: false, message: 'Authentication required' });
-        return;
+        return next(
+          new ApiError(401, 'Authentication required').withCode('AUTH_REQUIRED')
+        );
       }
 
-      const hasAnyPermission = permissions.some(permission => userRoles.some(r => hasPermission(r, permission)));
+      const ok = permissions.some(permission =>
+        userRoles.some(r => hasPermission(r, permission))
+      );
 
-      if (!hasAnyPermission) {
-        res.status(403).json({
-          success: false,
-          message: 'Insufficient permissions',
-          required: permissions,
-          userRoles
-        });
-        return;
+      if (!ok) {
+        return next(
+          new ApiError(403, 'Insufficient permissions')
+            .withCode('ROLE_FORBIDDEN')
+            .withRoles(permissions as string[], userRoles)
+        );
       }
 
       next();
@@ -130,38 +123,27 @@ export const requireAnyPermission = (permissions: Permission[]) => {
 };
 
 /**
- * Middleware to check if user has a specific role
- *
- * @param roles - Array of allowed roles
- * @returns Express middleware function
+ * Middleware to check if user has a specific role.
+ * Denials are routed through next(ApiError) so the global error handler
+ * emits a consistent { code, requestId, allowedRoles, userRoles } payload.
  */
 export const requireRole = (roles: Role[]) => {
-  return (req: AuthRequest, res: Response, next: NextFunction): void => {
+  return (req: AuthRequest, _res: Response, next: NextFunction): void => {
     try {
-      const userRoles = ((req.user?.roles && req.user.roles.length > 0)
-        ? req.user.roles
-        : req.user?.role
-          ? [req.user.role]
-          : []
-      ).map(r => r.toUpperCase());
+      const userRoles = getCanonicalRoles(req.user);
 
       if (userRoles.length === 0) {
-        res.status(401).json({ success: false, message: 'Authentication required' });
-        return;
+        return next(
+          new ApiError(401, 'Authentication required').withCode('AUTH_REQUIRED')
+        );
       }
 
-      const normalizedAllowedRoles = roles.map(r => r.toUpperCase());
-
-      const hasAllowedRole = userRoles.some(r => normalizedAllowedRoles.includes(r));
-      if (!hasAllowedRole) {
-        console.warn(`[PERMISSIONS] 403 Access Denied: User ${req.user?.email} (${userRoles.join(',')}) is not in allowed roles [${roles.join(', ')}] for ${req.method} ${req.originalUrl}`);
-        res.status(403).json({
-          success: false,
-          message: 'Access denied',
-          allowedRoles: roles,
-          userRoles
-        });
-        return;
+      if (!hasAnyRole(req.user, roles as string[])) {
+        return next(
+          new ApiError(403, 'Access denied')
+            .withCode('ROLE_FORBIDDEN')
+            .withRoles(roles as string[], userRoles)
+        );
       }
 
       next();
@@ -172,35 +154,40 @@ export const requireRole = (roles: Role[]) => {
 };
 
 /**
- * Middleware factory for resource-level access control
+ * Middleware factory for resource-level access control.
+ * All denial paths call next(ApiError) instead of res.status().json().
  */
 export class ResourceAccessControl {
   /**
-   * Check if user can access a specific learner
-   * - SUPER_ADMIN, ADMIN, HEAD_TEACHER: Can access all learners
-   * - TEACHER: Can access learners in their assigned classes
-   * - PARENT: Can access only their own children
+   * Check if user can access a specific learner.
+   * - SUPER_ADMIN, ADMIN, HEAD_TEACHER: all learners
+   * - TEACHER: learners in assigned classes or records they created
+   * - PARENT: only own children
    */
   static canAccessLearner() {
-    return async (req: AuthRequest, res: Response, next: NextFunction) => {
+    return async (req: AuthRequest, _res: Response, next: NextFunction) => {
       try {
-        const userRole = req.user?.role;
-        const userId = req.user?.userId;
+        const userRoles = getCanonicalRoles(req.user);
+        const userId    = req.user?.userId;
 
-        if (!userRole || !userId) {
-          return res.status(401).json({ success: false, message: 'Authentication required' });
+        if (!userRoles.length || !userId) {
+          return next(
+            new ApiError(401, 'Authentication required').withCode('AUTH_REQUIRED')
+          );
         }
 
-        if (['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER'].includes(userRole)) {
+        if (hasAnyRole(req.user, ['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER'])) {
           return next();
         }
 
-        if (['ACCOUNTANT', 'RECEPTIONIST'].includes(userRole)) {
+        if (hasAnyRole(req.user, ['ACCOUNTANT', 'RECEPTIONIST'])) {
           if (req.method === 'GET') return next();
-          return res.status(403).json({ success: false, message: 'You can only view learner information' });
+          return next(
+            new ApiError(403, 'You can only view learner information').withCode('ROLE_FORBIDDEN')
+          );
         }
 
-        if (userRole === 'TEACHER') {
+        if (hasAnyRole(req.user, ['TEACHER'])) {
           if (req.method === 'GET') return next();
 
           const learnerId = req.params.learnerId || req.params.id || req.body.learnerId || req.query.learnerId;
@@ -219,18 +206,18 @@ export class ResourceAccessControl {
 
           if (!learner) return next();
 
-          const isCreator = learner.createdBy === userId;
+          const isCreator      = learner.createdBy === userId;
           const isClassTeacher = learner.enrollments.some(e => e.class?.teacherId === userId);
 
           if (isCreator || isClassTeacher) return next();
 
-          return res.status(403).json({
-            success: false,
-            message: 'You can only modify learners in your assigned classes or records you created'
-          });
+          return next(
+            new ApiError(403, 'You can only modify learners in your assigned classes or records you created')
+              .withCode('ROLE_FORBIDDEN')
+          );
         }
 
-        if (userRole === 'PARENT') {
+        if (hasAnyRole(req.user, ['PARENT'])) {
           const learnerId = req.params.learnerId || req.body.learnerId || req.query.learnerId;
           if (!learnerId) return next();
 
@@ -240,13 +227,15 @@ export class ResourceAccessControl {
           });
 
           if (learner && learner.parentId === userId) return next();
-          return res.status(403).json({
-            success: false,
-            message: "You can only access your own children's information"
-          });
+          return next(
+            new ApiError(403, "You can only access your own children's information")
+              .withCode('ACCESS_DENIED')
+          );
         }
 
-        return res.status(403).json({ success: false, message: 'Cannot access this learner' });
+        return next(
+          new ApiError(403, 'Cannot access this learner').withCode('ACCESS_DENIED')
+        );
       } catch (error) {
         next(error);
       }
@@ -254,23 +243,24 @@ export class ResourceAccessControl {
   }
 
   /**
-   * Check if user can access a specific assessment
+   * Check if user can access a specific assessment.
    */
   static canAccessAssessment() {
-    return async (req: AuthRequest, res: Response, next: NextFunction) => {
+    return async (req: AuthRequest, _res: Response, next: NextFunction) => {
       try {
-        const userRole = req.user?.role;
         const userId = req.user?.userId;
 
-        if (!userRole || !userId) {
-          return res.status(401).json({ success: false, message: 'Authentication required' });
+        if (!req.user || !userId) {
+          return next(
+            new ApiError(401, 'Authentication required').withCode('AUTH_REQUIRED')
+          );
         }
 
-        if (['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER'].includes(userRole)) {
+        if (hasAnyRole(req.user, ['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER'])) {
           return next();
         }
 
-        if (userRole === 'TEACHER') {
+        if (hasAnyRole(req.user, ['TEACHER'])) {
           if (req.method === 'GET') return next();
 
           const id = req.params.id || req.body.id || req.body.assessmentId || req.body.testId;
@@ -289,13 +279,13 @@ export class ResourceAccessControl {
 
           if (isOwner) return next();
 
-          return res.status(403).json({
-            success: false,
-            message: 'You can only modify assessments you recorded or tests you created'
-          });
+          return next(
+            new ApiError(403, 'You can only modify assessments you recorded or tests you created')
+              .withCode('ROLE_FORBIDDEN')
+          );
         }
 
-        if (userRole === 'PARENT') {
+        if (hasAnyRole(req.user, ['PARENT'])) {
           if (req.method === 'GET') {
             const learnerId = req.query.learnerId || req.body.learnerId;
             if (!learnerId) return next();
@@ -306,15 +296,19 @@ export class ResourceAccessControl {
             });
 
             if (learner && learner.parentId === userId) return next();
-            return res.status(403).json({
-              success: false,
-              message: 'You can only view assessments for your own children'
-            });
+            return next(
+              new ApiError(403, 'You can only view assessments for your own children')
+                .withCode('ACCESS_DENIED')
+            );
           }
-          return res.status(403).json({ success: false, message: 'Parents can only view assessments' });
+          return next(
+            new ApiError(403, 'Parents can only view assessments').withCode('ROLE_FORBIDDEN')
+          );
         }
 
-        return res.status(403).json({ success: false, message: 'Cannot access this assessment' });
+        return next(
+          new ApiError(403, 'Cannot access this assessment').withCode('ACCESS_DENIED')
+        );
       } catch (error) {
         next(error);
       }

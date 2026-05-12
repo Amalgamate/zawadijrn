@@ -6,7 +6,7 @@ import SummativeTestFormDesktop from './SummativeTestFormDesktop';
  * SummativeTestForm - Responsive wrapper
  * Routes to mobile or desktop version based on screen size
  */
-const SummativeTestForm = ({ onBack, onSuccess }) => {
+const SummativeTestForm = ({ onBack, onSuccess, initialTestType = null }) => {
   const [isMobile, setIsMobile] = useState(() => {
     // Use documentElement.clientWidth for more accurate viewport detection
     const width = typeof window !== 'undefined' ? window.innerWidth || document.documentElement.clientWidth : 1024;
@@ -27,9 +27,9 @@ const SummativeTestForm = ({ onBack, onSuccess }) => {
   }, []);
 
   return isMobile ? (
-    <SummativeTestFormMobile onBack={onBack} onSuccess={onSuccess} />
+    <SummativeTestFormMobile onBack={onBack} onSuccess={onSuccess} initialTestType={initialTestType} />
   ) : (
-    <SummativeTestFormDesktop onBack={onBack} onSuccess={onSuccess} />
+    <SummativeTestFormDesktop onBack={onBack} onSuccess={onSuccess} initialTestType={initialTestType} />
   );
 };
 

@@ -106,6 +106,11 @@
       <span class="nav-icon">📋</span> Audit Log
     </a>
 
+    <div class="nav-section-label">Sales</div>
+    <a class="nav-item" data-section="leads" href="#">
+      <span class="nav-icon">👥</span> Leads &amp; CRM
+    </a>
+
     <div class="sb-footer">
       <div class="sb-footer-row">
         <span class="sb-footer-label">Console Port</span>
@@ -355,7 +360,6 @@
           </div>
         </div>
 
-        <!-- Instance selector -->
         <div class="panel" style="margin-bottom:14px">
           <div class="panel-header">
             <div class="panel-title">Select Instance</div>
@@ -364,10 +368,7 @@
           <div class="ctrl-instance-info" id="ctrl-instance-info"></div>
         </div>
 
-        <!-- Main controls grid -->
         <div class="controls-layout">
-
-          <!-- Quick Actions -->
           <div class="panel">
             <div class="panel-header">
               <div>
@@ -386,8 +387,6 @@
               <button class="ctrl-btn danger-ctrl" type="button" data-ctrl="reset" data-label="Factory Reset"><span class="ctrl-icon">⚠️</span>Factory Reset…</button>
             </div>
           </div>
-
-          <!-- Global Actions -->
           <div class="panel">
             <div class="panel-header">
               <div>
@@ -403,8 +402,6 @@
               <button class="ctrl-btn" type="button" data-ctrl="health-all" data-label="Global Health Check"><span class="ctrl-icon">❤️</span>Global Health Check</button>
             </div>
           </div>
-
-          <!-- Module Toggles -->
           <div class="panel">
             <div class="panel-header">
               <div>
@@ -414,8 +411,6 @@
             </div>
             <div class="module-toggle-list" id="module-toggle-list"></div>
           </div>
-
-          <!-- Logs viewer -->
           <div class="panel">
             <div class="panel-header">
               <div>
@@ -429,10 +424,8 @@
             </div>
             <div class="log-viewer" id="log-viewer"><span class="log-placeholder">Select an instance and click Fetch Logs →</span></div>
           </div>
+        </div>
 
-        </div><!-- /controls-layout -->
-
-        <!-- Danger zone -->
         <div class="panel danger-zone" style="margin-top:14px">
           <div class="panel-header">
             <div>
@@ -464,7 +457,6 @@
             </div>
           </div>
         </div>
-
       </div>
       <!-- ── END CONTROLS ── -->
 
@@ -480,8 +472,6 @@
             <button class="btn teal" id="btn-new-plan" type="button">+ New Plan</button>
           </div>
         </div>
-
-        <!-- Plan summary metrics -->
         <div class="metric-row" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px">
           <div class="metric-card">
             <div class="m-label">Active Plans</div>
@@ -508,12 +498,8 @@
             <div class="m-badge warn">Action needed</div>
           </div>
         </div>
-
-        <!-- Plans cards grid -->
         <div class="plans-section-label">Defined Plans</div>
         <div class="plans-grid" id="plans-grid"></div>
-
-        <!-- Instance Plan Assignment table -->
         <div class="panel" style="margin-top:20px">
           <div class="panel-header">
             <div>
@@ -533,8 +519,6 @@
             </table>
           </div>
         </div>
-
-        <!-- Feature matrix -->
         <div class="panel" style="margin-top:14px">
           <div class="panel-header">
             <div>
@@ -549,7 +533,6 @@
             </table>
           </div>
         </div>
-
       </div>
       <!-- ── END PRICING PLANS ── -->
 
@@ -585,6 +568,80 @@
           </div>
         </div>
       </div>
+
+      <!-- ── LEADS & CRM section ── -->
+      <div id="section-leads" class="section-hidden">
+        <div class="page-header">
+          <div>
+            <div class="page-eyebrow">Trends CORE · v1</div>
+            <div class="page-title">Leads &amp; CRM</div>
+            <div class="page-sub">Track prospective schools through the sales pipeline</div>
+          </div>
+          <div class="page-actions">
+            <button class="btn teal" id="btn-new-lead" type="button">+ Add Lead</button>
+          </div>
+        </div>
+
+        <!-- Pipeline stage bar -->
+        <div class="crm-pipeline" id="crm-pipeline"></div>
+
+        <!-- Summary metrics -->
+        <div class="metric-row" style="grid-template-columns:repeat(4,1fr)">
+          <div class="metric-card">
+            <div class="m-label">Total Leads</div>
+            <div class="m-value" id="crm-m-total">0</div>
+            <div class="m-sub">All time</div>
+          </div>
+          <div class="metric-card teal">
+            <div class="m-label">Contacted This Week</div>
+            <div class="m-value" id="crm-m-week">0</div>
+            <div class="m-sub">Last 7 days</div>
+          </div>
+          <div class="metric-card green">
+            <div class="m-label">Converted</div>
+            <div class="m-value" id="crm-m-converted">0</div>
+            <div class="m-sub">Became customers</div>
+            <div class="m-badge up">↑ Active</div>
+          </div>
+          <div class="metric-card amber">
+            <div class="m-label">Conversion Rate</div>
+            <div class="m-value" id="crm-m-rate">0%</div>
+            <div class="m-sub">Converted / total</div>
+          </div>
+        </div>
+
+        <!-- Leads table -->
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">All Leads</div>
+              <div class="panel-sub" id="crm-table-sub">Showing all stages</div>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input class="form-input" id="lead-search" placeholder="Search leads…" style="width:180px;padding:5px 10px;font-size:12px" type="text"/>
+              <button class="btn" id="btn-export-leads" type="button">↓ Export CSV</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table style="min-width:1000px">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Phone</th>
+                  <th>School / Org</th>
+                  <th>Stage</th>
+                  <th>Current systems</th>
+                  <th>Last contact</th>
+                  <th>Notes</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="leads-table"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <!-- ── END LEADS & CRM ── -->
 
     </div><!-- /content -->
   </div><!-- /main -->
@@ -761,7 +818,73 @@
     </div>
   </div>
 </div>
-<!-- END LOGOUT MODAL -->
+
+<!-- LEAD MODAL -->
+<div class="overlay" id="lead-modal-overlay" aria-modal="true" role="dialog">
+  <div class="modal" style="max-width:540px">
+    <div class="modal-header">
+      <div class="modal-title" id="lead-modal-title">Add New Lead</div>
+      <button class="modal-close" id="lead-modal-close" type="button" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-row">
+          <label class="form-label" for="l-name">Full Name</label>
+          <input class="form-input" id="l-name" placeholder="e.g. Mary Wanjiku" type="text"/>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="l-phone">Phone Number</label>
+          <input class="form-input" id="l-phone" placeholder="e.g. +254 712 345 678" type="tel"/>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-row">
+          <label class="form-label" for="l-school">School / Organisation</label>
+          <input class="form-input" id="l-school" placeholder="e.g. Sunshine Academy" type="text"/>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="l-stage">Stage</label>
+          <select class="form-select" id="l-stage">
+            <option value="new">New</option>
+            <option value="contacted">Contacted</option>
+            <option value="interested">Interested</option>
+            <option value="converted">Converted</option>
+            <option value="lost">Lost</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-section-divider">
+        <span class="form-section-label">Current systems in use</span>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+        <div class="form-row" style="margin-bottom:0">
+          <label class="form-label" for="l-sys-assessment">Assessment</label>
+          <input class="form-input" id="l-sys-assessment" placeholder="e.g. Manual / Zeraki" type="text"/>
+        </div>
+        <div class="form-row" style="margin-bottom:0">
+          <label class="form-label" for="l-sys-fees">Fee management</label>
+          <input class="form-input" id="l-sys-fees" placeholder="e.g. Excel / none" type="text"/>
+        </div>
+        <div class="form-row" style="margin-bottom:0">
+          <label class="form-label" for="l-sys-lms">LMS</label>
+          <input class="form-input" id="l-sys-lms" placeholder="e.g. Google Classroom" type="text"/>
+        </div>
+      </div>
+
+      <div class="form-row" style="margin-top:14px;margin-bottom:0">
+        <label class="form-label" for="l-notes">Notes</label>
+        <textarea class="form-input" id="l-notes" rows="3" placeholder="Key details from the call, follow-up actions…" style="resize:vertical;font-family:var(--sans)"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" id="lead-modal-cancel" type="button">Cancel</button>
+      <button class="btn primary" id="lead-modal-submit" type="button">Save Lead</button>
+    </div>
+  </div>
+</div>
+<!-- END LEAD MODAL -->
 
 <script src="./app.js"></script>
 <script src="./login.js"></script>

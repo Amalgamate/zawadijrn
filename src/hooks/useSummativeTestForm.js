@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { assessmentAPI, gradingAPI, configAPI, classAPI } from '../services/api';
 import { getLearningAreasByGrade } from '../constants/learningAreas';
 import { useSchoolData } from '../contexts/SchoolDataContext';
+import { normalizeTestType } from '../components/CBCGrading/utils/testType';
 
 const TEST_TYPES = [
   { value: 'OPENER', label: 'Opener' },
@@ -9,6 +10,8 @@ const TEST_TYPES = [
   { value: 'END_TERM', label: 'End Term' },
   { value: 'MONTHLY', label: 'Monthly' },
   { value: 'WEEKLY', label: 'Weekly' },
+  { value: 'CAT', label: 'CAT' },
+  { value: 'MOCK', label: 'Mock Exam' },
   { value: 'RANDOM', label: 'Random' }
 ];
 
@@ -31,7 +34,7 @@ const DEFAULT_FORM_DATA = {
   status: 'PUBLISHED'
 };
 
-export const useSummativeTestForm = () => {
+export const useSummativeTestForm = ({ initialTestType = null } = {}) => {
   const { grades, classes, loading: schoolDataLoading } = useSchoolData();
   const [fallbackGrades, setFallbackGrades] = useState([]);
   const [scales, setScales] = useState([]);
@@ -40,7 +43,10 @@ export const useSummativeTestForm = () => {
   const [availableLearningAreas, setAvailableLearningAreas] = useState([]);
   const [loadingScales, setLoadingScales] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [formData, setFormData] = useState(DEFAULT_FORM_DATA);
+  const [formData, setFormData] = useState(() => ({
+    ...DEFAULT_FORM_DATA,
+    type: normalizeTestType(initialTestType) || DEFAULT_FORM_DATA.type
+  }));
   const [errors, setErrors] = useState({});
   const [saveStatus, setSaveStatus] = useState('');
 
@@ -265,7 +271,10 @@ export const useSummativeTestForm = () => {
   };
 
   const resetForm = () => {
-    setFormData(DEFAULT_FORM_DATA);
+    setFormData({
+      ...DEFAULT_FORM_DATA,
+      type: normalizeTestType(initialTestType) || DEFAULT_FORM_DATA.type
+    });
     setErrors({});
   };
 

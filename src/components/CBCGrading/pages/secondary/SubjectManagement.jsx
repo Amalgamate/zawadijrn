@@ -7,6 +7,8 @@ const gradeLabel = (g) => {
   if (s.startsWith('GRADE')) return `Grade ${s.replace('GRADE', '')}`;
   return s.replaceAll('_', ' ');
 };
+const SECONDARY_GRADES = new Set(['GRADE10', 'GRADE11', 'GRADE12', 'GRADE_10', 'GRADE_11', 'GRADE_12', 'FORM_1', 'FORM_2', 'FORM_3']);
+const isSecondaryGrade = (g) => SECONDARY_GRADES.has(String(g || '').toUpperCase());
 
 const Pill = ({ children, className = '' }) => (
   <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest ${className}`}>
@@ -21,6 +23,7 @@ const SubjectManagement = () => {
   const [gradeLevel, setGradeLevel] = useState('');
   const [pathway, setPathway] = useState('');
   const [category, setCategory] = useState('');
+  const [seeding, setSeeding] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -33,7 +36,8 @@ const SubjectManagement = () => {
       };
       const resp = await configAPI.getLearningAreas(params);
       const data = resp?.data || resp || [];
-      setRows(Array.isArray(data) ? data : []);
+      const filtered = (Array.isArray(data) ? data : []).filter((r) => isSecondaryGrade(r?.gradeLevel));
+      setRows(filtered);
     } catch (e) {
       setError(e?.message || 'Failed to load learning areas');
       setRows([]);
@@ -70,6 +74,19 @@ const SubjectManagement = () => {
       });
   }, [rows]);
 
+  const seedLearningAreas = async () => {
+    setSeeding(true);
+    setError(null);
+    try {
+      await configAPI.seedLearningAreas();
+      await load();
+    } catch (e) {
+      setError(e?.message || 'Failed to seed learning areas');
+    } finally {
+      setSeeding(false);
+    }
+  };
+
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-start justify-between gap-3">
@@ -82,14 +99,25 @@ const SubjectManagement = () => {
             View seeded learning areas with pathway/category metadata for Grade 10–12.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={load}
-          className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border bg-white text-xs font-semibold text-gray-700 hover:bg-gray-50"
-        >
-          <RefreshCw size={16} />
-          Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={seedLearningAreas}
+            disabled={seeding}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold uppercase tracking-widest shadow hover:bg-indigo-700 disabled:opacity-60"
+          >
+            <Filter size={16} />
+            {seeding ? 'Seeding…' : 'Seed Learning Areas'}
+          </button>
+          <button
+            type="button"
+            onClick={load}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border bg-white text-xs font-semibold text-gray-700 hover:bg-gray-50"
+          >
+            <RefreshCw size={16} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       <div className="rounded-2xl border bg-white p-4">
@@ -194,4 +222,3 @@ const SubjectManagement = () => {
 };
 
 export default SubjectManagement;
-

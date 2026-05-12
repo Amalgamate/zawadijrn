@@ -18,6 +18,7 @@ import ThermalReceipt from '../shared/ThermalReceipt';
 import '../../../styles/receipt-print.css';
 import { useNotifications } from '../hooks/useNotifications';
 import { useAuth } from '../../../hooks/useAuth';
+import { getSelectedInstitutionType } from '../../../services/schoolContext';
 import api from '../../../services/api';
 import { toInputDate } from '../utils/dateHelpers';
 import SmartLearnerSearch from '../shared/SmartLearnerSearch';
@@ -244,6 +245,12 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
 
   const { showSuccess, showError, showToast, toastMessage, toastType, hideNotification } = useNotifications();
   const { user } = useAuth();
+  const selectedInstitutionType = String(getSelectedInstitutionType() || user?.institutionType || '').toUpperCase();
+  const isSecondaryPortal = selectedInstitutionType === 'SECONDARY' || selectedInstitutionType === 'HIGH_SCHOOL';
+  const isSecondaryGrade = React.useCallback((gradeValue) => {
+    const g = String(gradeValue || '').trim().toUpperCase().replace(/\s+/g, '_');
+    return g.startsWith('FORM') || ['GRADE_10', 'GRADE_11', 'GRADE_12', 'GRADE10', 'GRADE11', 'GRADE12'].includes(g);
+  }, []);
   const { registerFeeActions, clearFeeActions } = useFeeActions();
   const bootstrapFeeStats = useBootstrapStore(s => s.feeStats);
 
@@ -301,6 +308,12 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
         totals = response.totals;
       }
 
+      // Enforce strict institution view segmentation first.
+      rows = rows.filter((inv) => {
+        const learnerIsSecondary = isSecondaryGrade(inv?.learner?.grade);
+        return isSecondaryPortal ? learnerIsSecondary : !learnerIsSecondary;
+      });
+
       // Apply same filters to learner-search and list-path results for consistency.
       rows = rows.filter((inv) => {
         const matchGrade = gradeFilter === 'all' || String(inv?.learner?.grade || '') === gradeFilter;
@@ -351,29 +364,39 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, termFilter, startDate, endDate, gradeFilter, searchLearnerId, currentPage, sortConfig, showError, paymentMethodFilter, getApprovedWaiverAmount, getInvoiceCashPaid, getInvoiceCurrentDue, getInvoiceNetOverpaid]);
+  }, [statusFilter, termFilter, startDate, endDate, gradeFilter, searchLearnerId, currentPage, sortConfig, showError, paymentMethodFilter, getApprovedWaiverAmount, getInvoiceCashPaid, getInvoiceCurrentDue, getInvoiceNetOverpaid, isSecondaryPortal, isSecondaryGrade]);
 
   // Separate fetch — no filters — solely powers the metric cards
   const fetchStatsInvoices = React.useCallback(async () => {
     try {
       setStatsLoading(true);
       const response = await api.fees.getAllInvoices({ limit: 'all' });
-      setStatsInvoices(response.data || []);
+      const rows = Array.isArray(response.data) ? response.data : [];
+      const scoped = rows.filter((inv) => {
+        const learnerIsSecondary = isSecondaryGrade(inv?.learner?.grade);
+        return isSecondaryPortal ? learnerIsSecondary : !learnerIsSecondary;
+      });
+      setStatsInvoices(scoped);
     } catch (error) {
       console.error('Failed to load stats invoices:', error);
     } finally {
       setStatsLoading(false);
     }
-  }, []);
+  }, [isSecondaryPortal, isSecondaryGrade]);
 
   const fetchLearners = React.useCallback(async () => {
     try {
       const response = await api.learners.getAll({ status: 'ACTIVE' });
-      setAllLearners(Array.isArray(response.data) ? response.data : []);
+      const rows = Array.isArray(response.data) ? response.data : [];
+      const scoped = rows.filter((learner) => {
+        const learnerIsSecondary = isSecondaryGrade(learner?.grade);
+        return isSecondaryPortal ? learnerIsSecondary : !learnerIsSecondary;
+      });
+      setAllLearners(scoped);
     } catch (error) {
       console.error('Failed to load learners:', error);
     }
-  }, []);
+  }, [isSecondaryPortal, isSecondaryGrade]);
 
   const fetchBranding = React.useCallback(async () => {
     try {
@@ -1028,15 +1051,17 @@ const FeeCollectionPage = ({ learnerId, grade: gradeParam }) => {
   // Metrics must honor selected scope (especially term) to avoid cross-term totals.
   const scopedStatsInvoices = React.useMemo(() => {
     return (statsInvoices || []).filter((inv) => {
+      const learnerIsSecondary = isSecondaryGrade(inv?.learner?.grade);
+      const matchInstitution = isSecondaryPortal ? learnerIsSecondary : !learnerIsSecondary;
       const matchTerm = termFilter === 'all' || String(inv.term || '') === termFilter;
       const matchGrade = gradeFilter === 'all' || String(inv?.learner?.grade || '') === gradeFilter;
       const matchLearner = !searchLearnerId || String(inv?.learnerId || '') === String(searchLearnerId);
       const invDate = inv.createdAt ? new Date(inv.createdAt) : null;
       const matchStart = !startDate || (invDate && invDate >= new Date(startDate));
       const matchEnd = !endDate || (invDate && invDate <= new Date(endDate));
-      return matchTerm && matchGrade && matchLearner && matchStart && matchEnd;
+      return matchInstitution && matchTerm && matchGrade && matchLearner && matchStart && matchEnd;
     });
-  }, [statsInvoices, termFilter, gradeFilter, searchLearnerId, startDate, endDate]);
+  }, [statsInvoices, termFilter, gradeFilter, searchLearnerId, startDate, endDate, isSecondaryPortal, isSecondaryGrade]);
 
   // ——— Computed KES totals for each metric card —————————————
   const stats = React.useMemo(() => {

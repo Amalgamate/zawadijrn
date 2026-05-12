@@ -23,6 +23,8 @@ import { toInputDate } from '../utils/dateHelpers';
 import SmartLearnerSearch from '../shared/SmartLearnerSearch';
 import { useSchoolData } from '../../../contexts/SchoolDataContext';
 import { useUIStore } from '../../../store/useUIStore';
+import { useAuth } from '../../../hooks/useAuth';
+import { getSelectedInstitutionType } from '../../../services/schoolContext';
 
 const FeeReportsPage = () => {
   const [loading, setLoading] = useState(true);
@@ -70,6 +72,13 @@ const FeeReportsPage = () => {
   const { showSuccess, showError } = useNotifications();
   const { grades: fetchedGrades, classes } = useSchoolData();
   const { setCurrentPage } = useUIStore();
+  const { user } = useAuth();
+  const selectedInstitutionType = String(getSelectedInstitutionType() || user?.institutionType || '').toUpperCase();
+  const isSecondaryPortal = selectedInstitutionType === 'SECONDARY' || selectedInstitutionType === 'HIGH_SCHOOL';
+  const isSecondaryGrade = React.useCallback((gradeValue) => {
+    const g = String(gradeValue || '').trim().toUpperCase().replace(/\s+/g, '_');
+    return g.startsWith('FORM') || ['GRADE_10', 'GRADE_11', 'GRADE_12', 'GRADE10', 'GRADE11', 'GRADE12'].includes(g);
+  }, []);
 
   const uniqueTerms = Array.from(new Set(classes.map(c => c.term).filter(Boolean))).sort();
   const terms = uniqueTerms.length > 0 ? uniqueTerms : ['TERM_1', 'TERM_2', 'TERM_3'];
@@ -89,7 +98,11 @@ const FeeReportsPage = () => {
 
       if (learners.length === 0) {
         const learnersResponse = await api.learners.getAll({ status: 'Active' });
-        setLearners(learnersResponse.data || []);
+        const rows = Array.isArray(learnersResponse.data) ? learnersResponse.data : [];
+        setLearners(rows.filter((learner) => {
+          const learnerIsSecondary = isSecondaryGrade(learner?.grade);
+          return isSecondaryPortal ? learnerIsSecondary : !learnerIsSecondary;
+        }));
       }
     } catch (error) {
       showError('Failed to load fee statistics');
@@ -97,7 +110,7 @@ const FeeReportsPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [dateRange, filterGrade, filterTerm, showError, learners.length]);
+  }, [dateRange, filterGrade, filterTerm, showError, learners.length, isSecondaryPortal, isSecondaryGrade]);
 
   // Defaulters tab: invoices that are PENDING or PARTIAL past due date
   const fetchDefaulters = React.useCallback(async () => {
@@ -110,7 +123,10 @@ const FeeReportsPage = () => {
         api.fees.getAllInvoices({ ...params, status: 'PENDING', limit: 200 }),
         api.fees.getAllInvoices({ ...params, status: 'PARTIAL', limit: 200 })
       ]);
-      const all = [...(pendingRes.data || []), ...(partialRes.data || [])];
+      const all = [...(pendingRes.data || []), ...(partialRes.data || [])].filter((inv) => {
+        const learnerIsSecondary = isSecondaryGrade(inv?.learner?.grade);
+        return isSecondaryPortal ? learnerIsSecondary : !learnerIsSecondary;
+      });
       const today = new Date();
       setDefaulters(all.filter(inv => inv.dueDate && new Date(inv.dueDate) < today));
     } catch (error) {
@@ -118,7 +134,7 @@ const FeeReportsPage = () => {
     } finally {
       setDefaultersLoading(false);
     }
-  }, [dateRange, filterGrade, filterTerm, showError]);
+  }, [dateRange, filterGrade, filterTerm, showError, isSecondaryPortal, isSecondaryGrade]);
 
   // Detailed tab: all invoices with full breakdown
   const fetchDetailed = React.useCallback(async () => {
@@ -128,13 +144,17 @@ const FeeReportsPage = () => {
       if (filterGrade !== 'all') params.grade = filterGrade;
       if (filterTerm !== 'all') params.term = filterTerm;
       const res = await api.fees.getAllInvoices(params);
-      setDetailedInvoices(res.data || []);
+      const rows = Array.isArray(res.data) ? res.data : [];
+      setDetailedInvoices(rows.filter((inv) => {
+        const learnerIsSecondary = isSecondaryGrade(inv?.learner?.grade);
+        return isSecondaryPortal ? learnerIsSecondary : !learnerIsSecondary;
+      }));
     } catch (error) {
       showError('Failed to load detailed invoices');
     } finally {
       setDetailedLoading(false);
     }
-  }, [dateRange, filterGrade, filterTerm, showError]);
+  }, [dateRange, filterGrade, filterTerm, showError, isSecondaryPortal, isSecondaryGrade]);
 
   // Collection tab: paid/partial invoices showing payment history
   const fetchCollection = React.useCallback(async () => {
@@ -147,13 +167,17 @@ const FeeReportsPage = () => {
         api.fees.getAllInvoices({ ...params, status: 'PAID' }),
         api.fees.getAllInvoices({ ...params, status: 'PARTIAL' })
       ]);
-      setCollectionEntries([...(paidRes.data || []), ...(partialRes.data || [])]);
+      const rows = [...(paidRes.data || []), ...(partialRes.data || [])];
+      setCollectionEntries(rows.filter((inv) => {
+        const learnerIsSecondary = isSecondaryGrade(inv?.learner?.grade);
+        return isSecondaryPortal ? learnerIsSecondary : !learnerIsSecondary;
+      }));
     } catch (error) {
       showError('Failed to load collection data');
     } finally {
       setCollectionLoading(false);
     }
-  }, [dateRange, filterGrade, filterTerm, showError]);
+  }, [dateRange, filterGrade, filterTerm, showError, isSecondaryPortal, isSecondaryGrade]);
 
   useEffect(() => {
     fetchStats();
@@ -926,4 +950,3 @@ const FeeReportsPage = () => {
 };
 
 export default FeeReportsPage;
-

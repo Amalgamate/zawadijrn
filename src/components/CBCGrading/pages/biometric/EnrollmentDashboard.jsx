@@ -15,8 +15,17 @@ import { biometricAPI } from '../../../../services/api/biometric.api';
 import { learnerAPI } from '../../../../services/api/learner.api';
 import { userAPI } from '../../../../services/api/user.api';
 import EnrollmentModal from './EnrollmentModal';
+import { useAuth } from '../../../../hooks/useAuth';
+import { getSelectedInstitutionType } from '../../../../services/schoolContext';
 
 const EnrollmentDashboard = () => {
+  const { user } = useAuth();
+  const selectedInstitutionType = String(getSelectedInstitutionType() || user?.institutionType || '').toUpperCase();
+  const isSecondaryPortal = selectedInstitutionType === 'SECONDARY' || selectedInstitutionType === 'HIGH_SCHOOL';
+  const isSecondaryGrade = (gradeValue) => {
+    const g = String(gradeValue || '').trim().toUpperCase().replace(/\s+/g, '_');
+    return g.startsWith('FORM') || ['GRADE_10', 'GRADE_11', 'GRADE_12', 'GRADE10', 'GRADE11', 'GRADE12'].includes(g);
+  };
   const [searchQuery, setSearchQuery] = useState('');
   const [activeType, setActiveType] = useState('LEARNER'); // 'LEARNER' or 'STAFF'
   const [results, setResults] = useState([]);
@@ -32,7 +41,11 @@ const EnrollmentDashboard = () => {
       let data = [];
       if (activeType === 'LEARNER') {
         const learners = await learnerAPI.getAll({ search: searchQuery });
-        data = learners;
+        const rows = Array.isArray(learners?.data) ? learners.data : (Array.isArray(learners) ? learners : []);
+        data = rows.filter((learner) => {
+          const learnerIsSecondary = isSecondaryGrade(learner?.grade);
+          return isSecondaryPortal ? learnerIsSecondary : !learnerIsSecondary;
+        });
       } else {
         const users = await userAPI.getAll({ search: searchQuery });
         data = users.filter(u => u.role !== 'PARENT' && u.role !== 'SUPER_ADMIN');

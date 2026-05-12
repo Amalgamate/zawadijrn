@@ -170,12 +170,15 @@ function AppContent() {
   }, [isAuthenticated, loading, pathname, navigate]);
 
   const handleAuthSuccess = (userData, token, refreshToken) => {
+    // Always clear bootstrap and UI state on login. The incoming user may
+    // have a different institutionType and stale cached data must not bleed
+    // through. The bootstrap store will refill during the splash screen.
+    clearBootstrap();
+    localStorage.removeItem('cbc_ui_state');
     localStorage.removeItem('cbc_current_page');
     localStorage.removeItem('cbc_page_params');
     localStorage.removeItem('cbc_expanded_sections');
-    if (userData?.institutionType === 'SECONDARY') {
-      localStorage.removeItem('cbc_ui_state');
-    }
+
     login(userData, token, refreshToken);
 
     if (userData.mustChangePassword) {

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ArrowRight, BarChart3, FileText, Grid, LineChart, Users } from 'lucide-react';
 
 const contentByVariant = {
@@ -43,9 +43,17 @@ const ActionCard = ({ icon: Icon, title, description, onClick }) => (
   </button>
 );
 
-const ResultsWorkbench = ({ variant = 'mean', onNavigate }) => {
+const ResultsWorkbench = ({ variant = 'mean', pageParams = {}, onNavigate }) => {
   const cfg = contentByVariant[variant] || contentByVariant.mean;
   const HeaderIcon = cfg.icon;
+  const contextSummary = useMemo(() => {
+    const parts = [];
+    if (pageParams?.term) parts.push(String(pageParams.term).replace('_', ' '));
+    if (pageParams?.academicYear) parts.push(String(pageParams.academicYear));
+    if (pageParams?.stream) parts.push(`Stream ${pageParams.stream}`);
+    if (pageParams?.learningArea) parts.push(pageParams.learningArea);
+    return parts.join(' • ');
+  }, [pageParams]);
 
   return (
     <div className="p-6 space-y-4">
@@ -55,6 +63,11 @@ const ResultsWorkbench = ({ variant = 'mean', onNavigate }) => {
           <h1 className="text-2xl font-semibold text-gray-900">{cfg.title}</h1>
         </div>
         <p className="mt-1 text-sm font-medium text-gray-600">{cfg.description}</p>
+        {contextSummary ? (
+          <div className="mt-2 inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-indigo-700">
+            Context: {contextSummary}
+          </div>
+        ) : null}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -62,25 +75,25 @@ const ResultsWorkbench = ({ variant = 'mean', onNavigate }) => {
           icon={Grid}
           title="Assessment Matrix"
           description="Open the matrix report to compare performance distribution."
-          onClick={() => onNavigate?.('assess-summary-report')}
+          onClick={() => onNavigate?.('assess-summary-report', pageParams)}
         />
         <ActionCard
           icon={FileText}
           title="Detailed Summative Reports"
           description="Review detailed learner and class performance outputs."
-          onClick={() => onNavigate?.('assess-summative-report')}
+          onClick={() => onNavigate?.('assess-summative-report', pageParams)}
         />
         <ActionCard
           icon={BarChart3}
           title="Summative Assessment Analytics"
           description="Open summative workflows and analytics views."
-          onClick={() => onNavigate?.('assess-summative-assessment')}
+          onClick={() => onNavigate?.('assess-summative-assessment', pageParams)}
         />
         <ActionCard
           icon={LineChart}
           title="Termly Report"
           description="Generate termly outputs and use them for trend interpretation."
-          onClick={() => onNavigate?.('assess-termly-report')}
+          onClick={() => onNavigate?.('assess-termly-report', pageParams)}
         />
       </div>
 
@@ -95,4 +108,3 @@ const ResultsWorkbench = ({ variant = 'mean', onNavigate }) => {
 };
 
 export default ResultsWorkbench;
-

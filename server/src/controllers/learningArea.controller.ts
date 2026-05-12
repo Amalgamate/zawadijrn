@@ -7,13 +7,13 @@ import { Request, Response, Router } from 'express';
 import { AuthRequest } from '../middleware/permissions.middleware';
 import prisma from '../config/database';
 import { seedSeniorPathways } from '../services/ss-pathways.seed';
+import { ApiError } from '../utils/error.util';
 
 import logger from '../utils/logger';
 const router = Router();
 
-const resolveInstitutionType = (req: AuthRequest) => {
-  return (req.school?.institutionType || 'PRIMARY_CBC') as 'PRIMARY_CBC' | 'SECONDARY';
-};
+const resolveInstitutionType = (req: AuthRequest): 'PRIMARY_CBC' | 'SECONDARY' | 'TERTIARY' =>
+  (req.resolvedInstitutionType || req.school?.institutionType || 'PRIMARY_CBC') as 'PRIMARY_CBC' | 'SECONDARY' | 'TERTIARY';
 
 /**
  * GET /api/learning-areas
@@ -35,10 +35,10 @@ export const getLearningAreas = async (req: AuthRequest, res: Response) => {
       ]
     });
 
-    res.json({ success: true, data: learningAreas });
+    return res.json({ success: true, data: learningAreas });
   } catch (error: any) {
     logger.error('Error fetching learning areas:', error);
-    res.status(500).json({ success: false, error: error.message || 'Failed to fetch learning areas' });
+    throw new ApiError(500, error.message || 'Failed to fetch learning areas');
   }
 };
 
@@ -55,13 +55,13 @@ export const getLearningArea = async (req: AuthRequest, res: Response) => {
     });
 
     if (!learningArea) {
-      return res.status(404).json({ success: false, error: 'Learning area not found' });
+      throw new ApiError(404, 'Learning area not found');
     }
 
-    res.json({ success: true, data: learningArea });
+    return res.json({ success: true, data: learningArea });
   } catch (error: any) {
     logger.error('Error fetching learning area:', error);
-    res.status(500).json({ success: false, error: error.message || 'Failed to fetch learning area' });
+    throw new ApiError(500, error.message || 'Failed to fetch learning area');
   }
 };
 
@@ -75,7 +75,7 @@ export const createLearningArea = async (req: AuthRequest, res: Response) => {
     const institutionType = resolveInstitutionType(req);
 
     if (!name || !gradeLevel) {
-      return res.status(400).json({ success: false, error: 'Name and grade level are required' });
+      throw new ApiError(400, 'Name and grade level are required');
     }
 
     // Check for duplicates
@@ -88,7 +88,7 @@ export const createLearningArea = async (req: AuthRequest, res: Response) => {
     });
 
     if (existing) {
-      return res.status(409).json({ success: false, error: 'Learning area already exists' });
+      throw new ApiError(409, 'Learning area already exists');
     }
 
     const learningArea = await prisma.learningArea.create({
@@ -103,10 +103,10 @@ export const createLearningArea = async (req: AuthRequest, res: Response) => {
       }
     });
 
-    res.status(201).json({ success: true, data: learningArea });
+    return res.status(201).json({ success: true, data: learningArea });
   } catch (error: any) {
     logger.error('Error creating learning area:', error);
-    res.status(500).json({ success: false, error: error.message || 'Failed to create learning area' });
+    throw new ApiError(500, error.message || 'Failed to create learning area');
   }
 };
 
@@ -125,7 +125,7 @@ export const updateLearningArea = async (req: AuthRequest, res: Response) => {
     });
 
     if (!learningArea) {
-      return res.status(404).json({ success: false, error: 'Learning area not found' });
+      throw new ApiError(404, 'Learning area not found');
     }
 
     // Check if name already exists (excluding current record)
@@ -140,7 +140,7 @@ export const updateLearningArea = async (req: AuthRequest, res: Response) => {
       });
 
       if (existing) {
-        return res.status(409).json({ success: false, error: 'Learning area name already exists' });
+        throw new ApiError(409, 'Learning area name already exists');
       }
     }
 
@@ -156,10 +156,10 @@ export const updateLearningArea = async (req: AuthRequest, res: Response) => {
       }
     });
 
-    res.json({ success: true, data: updated });
+    return res.json({ success: true, data: updated });
   } catch (error: any) {
     logger.error('Error updating learning area:', error);
-    res.status(500).json({ success: false, error: error.message || 'Failed to update learning area' });
+    throw new ApiError(500, error.message || 'Failed to update learning area');
   }
 };
 
@@ -177,21 +177,21 @@ export const deleteLearningArea = async (req: AuthRequest, res: Response) => {
     });
 
     if (!learningArea) {
-      return res.status(404).json({ success: false, error: 'Learning area not found' });
+      throw new ApiError(404, 'Learning area not found');
     }
 
     if (learningArea.institutionType !== institutionType) {
-      return res.status(404).json({ success: false, error: 'Learning area not found' });
+      throw new ApiError(404, 'Learning area not found');
     }
 
     await prisma.learningArea.delete({
       where: { id }
     });
 
-    res.json({ success: true, message: 'Learning area deleted successfully' });
+    return res.json({ success: true, message: 'Learning area deleted successfully' });
   } catch (error: any) {
     logger.error('Error deleting learning area:', error);
-    res.status(500).json({ success: false, error: error.message || 'Failed to delete learning area' });
+    throw new ApiError(500, error.message || 'Failed to delete learning area');
   }
 };
 
@@ -201,7 +201,7 @@ export const deleteLearningArea = async (req: AuthRequest, res: Response) => {
  */
 export const seedLearningAreas = async (req: AuthRequest, res: Response) => {
   try {
-    const institutionType = resolveInstitutionType(req);
+    const institutionType = resolveInstitutionType(req) as 'PRIMARY_CBC' | 'SECONDARY';
 
     // Official CBC Per-Grade Mapping
     const primaryCbcGradeMappings: { [key: string]: string[] } = {
@@ -562,7 +562,7 @@ export const seedLearningAreas = async (req: AuthRequest, res: Response) => {
     const created = result.count;
     const skipped = Math.max(total - created, 0);
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Learning areas seeded successfully',
       created,
@@ -570,7 +570,7 @@ export const seedLearningAreas = async (req: AuthRequest, res: Response) => {
     });
   } catch (error: any) {
     logger.error('Error seeding learning areas:', error);
-    res.status(500).json({ success: false, error: error.message || 'Failed to seed learning areas' });
+    throw new ApiError(500, error.message || 'Failed to seed learning areas');
   }
 };
 

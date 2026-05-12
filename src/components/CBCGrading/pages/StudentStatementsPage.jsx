@@ -14,6 +14,8 @@ import { useNotifications } from '../hooks/useNotifications';
 import api from '../../../services/api';
 import { generateStatementPDF } from '../../../utils/simplePdfGenerator';
 import { useSchoolData } from '../../../contexts/SchoolDataContext';
+import { useAuth } from '../../../hooks/useAuth';
+import { getSelectedInstitutionType } from '../../../services/schoolContext';
 
 const StudentStatementsPage = () => {
   const [learners, setLearners] = useState([]);
@@ -33,6 +35,13 @@ const StudentStatementsPage = () => {
   const [pdfProgress, setPdfProgress] = useState('');
   const { showSuccess, showError } = useNotifications();
   const { grades: fetchedGrades } = useSchoolData();
+  const { user } = useAuth();
+  const selectedInstitutionType = String(getSelectedInstitutionType() || user?.institutionType || '').toUpperCase();
+  const isSecondaryPortal = selectedInstitutionType === 'SECONDARY' || selectedInstitutionType === 'HIGH_SCHOOL';
+  const isSecondaryGrade = React.useCallback((gradeValue) => {
+    const g = String(gradeValue || '').trim().toUpperCase().replace(/\s+/g, '_');
+    return g.startsWith('FORM') || ['GRADE_10', 'GRADE_11', 'GRADE_12', 'GRADE10', 'GRADE11', 'GRADE12'].includes(g);
+  }, []);
 
   useEffect(() => {
     const fetchLearners = async () => {
@@ -40,7 +49,11 @@ const StudentStatementsPage = () => {
         setLoading(true);
         // 1. Load learners (Essential)
         const learnersRes = await api.learners.getAll({ status: 'ACTIVE' });
-        setLearners(learnersRes.data || []);
+        const rows = Array.isArray(learnersRes.data) ? learnersRes.data : [];
+        setLearners(rows.filter((learner) => {
+          const learnerIsSecondary = isSecondaryGrade(learner?.grade);
+          return isSecondaryPortal ? learnerIsSecondary : !learnerIsSecondary;
+        }));
 
         // 2. Load school info (Optional/Non-blocking)
         try {
@@ -68,7 +81,7 @@ const StudentStatementsPage = () => {
       }
     };
     fetchLearners();
-  }, [showError]);
+  }, [showError, isSecondaryPortal, isSecondaryGrade]);
 
   const fetchLearnerStatement = async (learnerId) => {
     try {

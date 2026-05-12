@@ -17,6 +17,24 @@ import { v2 as cloudinary } from 'cloudinary';
 
 import logger from '../utils/logger';
 const SKIP_PARENT_PORTAL_NOTIFICATIONS = process.env.SKIP_PARENT_PORTAL_NOTIFICATIONS === 'true' || process.env.NODE_ENV === 'test';
+const SECONDARY_GRADE_CODES = ['GRADE10', 'GRADE11', 'GRADE12', 'GRADE_10', 'GRADE_11', 'GRADE_12', 'FORM_1', 'FORM_2', 'FORM_3'] as const;
+const getInstitutionType = (req: AuthRequest): 'PRIMARY_CBC' | 'SECONDARY' | 'TERTIARY' =>
+  (req.resolvedInstitutionType || req.school?.institutionType || 'PRIMARY_CBC') as 'PRIMARY_CBC' | 'SECONDARY' | 'TERTIARY';
+
+const applyInstitutionGradeScope = (
+  institutionType: 'PRIMARY_CBC' | 'SECONDARY' | 'TERTIARY',
+  whereClause: any = {}
+) => {
+  if (institutionType === 'SECONDARY') {
+    whereClause.grade = { in: [...SECONDARY_GRADE_CODES] as any };
+    return whereClause;
+  }
+  whereClause.NOT = {
+    ...(whereClause.NOT || {}),
+    grade: { in: [...SECONDARY_GRADE_CODES] as any },
+  };
+  return whereClause;
+};
 
 /**
  * LearnerController handles learner operations in Trends CORE V1.0.
@@ -26,13 +44,14 @@ export class LearnerController {
   async getAllLearners(req: AuthRequest, res: Response) {
     const currentUserRole = req.user!.role;
     const currentUserId = req.user!.userId;
-    const institutionType = (req.school?.institutionType || 'PRIMARY_CBC') as any;
+    const institutionType = getInstitutionType(req);
     const { grade, stream, status, search, page = 1, limit = 50 } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
 
     logger.info('📚 [LEARNER] getAllLearners called with filters:', { grade, stream, status, search, page, limit });
 
     let whereClause: any = { archived: false, institutionType };
+    whereClause = applyInstitutionGradeScope(institutionType, whereClause);
     if (currentUserRole === 'PARENT') whereClause.parentId = currentUserId;
     if (grade) whereClause.grade = String(grade);
     if (stream) whereClause.stream = String(stream);
@@ -96,8 +115,8 @@ export class LearnerController {
   }
 
   async getLearnerStats(_req: AuthRequest, res: Response) {
-    const institutionType = (_req.school?.institutionType || 'PRIMARY_CBC') as any;
-    const whereClause: any = { archived: false, institutionType };
+    const institutionType = getInstitutionType(_req);
+    const whereClause: any = applyInstitutionGradeScope(institutionType, { archived: false, institutionType });
     try {
       const [statusCounts, gradeCounts, genderCounts, total, active] = await Promise.all([
         prisma.learner.groupBy({ by: ['status'], _count: true, where: whereClause }),
@@ -134,7 +153,7 @@ export class LearnerController {
 
   async getLearnerById(req: AuthRequest, res: Response) {
     const { id } = req.params;
-    const institutionType = (req.school?.institutionType || 'PRIMARY_CBC') as any;
+    const institutionType = getInstitutionType(req);
     const learner = await prisma.learner.findUnique({
       where: { id },
       include: { parent: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } } },
@@ -148,7 +167,7 @@ export class LearnerController {
   }
 
   async getLearnerByAdmissionNumber(req: AuthRequest, res: Response) {
-    const institutionType = (req.school?.institutionType || 'PRIMARY_CBC') as any;
+    const institutionType = getInstitutionType(req);
     const learner = await prisma.learner.findUnique({
       where: { admissionNumber: req.params.admissionNumber },
       include: { parent: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } } },
@@ -160,7 +179,7 @@ export class LearnerController {
 
   async createLearner(req: AuthRequest, res: Response) {
     const currentUserId = req.user!.userId;
-    const institutionType = (req.school?.institutionType || 'PRIMARY_CBC') as any;
+    const institutionType = getInstitutionType(req);
     let {
       admissionNumber, firstName, lastName, middleName, dateOfBirth, gender, grade, stream,
       parentId, guardianName, guardianPhone, guardianEmail, medicalConditions, allergies,
@@ -473,8 +492,15 @@ export class LearnerController {
   async getLearnersByGrade(req: AuthRequest, res: Response) {
     const { grade } = req.params;
     const { stream, status = 'ACTIVE' } = req.query;
+    const institutionType = getInstitutionType(req);
     const learners = await prisma.learner.findMany({
-      where: { grade: String(grade), status: String(status).toUpperCase() as LearnerStatus, stream: stream ? (stream as string) : undefined, archived: false },
+      where: {
+        grade: String(grade),
+        status: String(status).toUpperCase() as LearnerStatus,
+        stream: stream ? (stream as string) : undefined,
+        archived: false,
+        institutionType,
+      },
       include: { parent: { select: { id: true, firstName: true, lastName: true, phone: true } } },
       orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
     });
@@ -492,8 +518,9 @@ export class LearnerController {
   }
 
   async getUpcomingBirthdays(_req: AuthRequest, res: Response) {
+    const institutionType = getInstitutionType(_req);
     const activeLearners = await prisma.learner.findMany({
-      where: { status: 'ACTIVE', archived: false },
+      where: { status: 'ACTIVE', archived: false, institutionType },
       select: { id: true, firstName: true, lastName: true, dateOfBirth: true, grade: true, stream: true, admissionNumber: true },
     });
     const today = new Date(); today.setHours(0, 0, 0, 0);

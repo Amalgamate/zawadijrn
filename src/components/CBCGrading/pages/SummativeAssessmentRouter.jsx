@@ -8,7 +8,7 @@ import React, { useState, useEffect } from 'react';
 import SummativeAssessmentMobile from './SummativeAssessmentMobile';
 import SummativeAssessment from './SummativeAssessment';
 
-const SummativeAssessmentRouter = ({ learners, initialTestId, onBack, isMobile: deviceIsMobile, brandingSettings, embedded }) => {
+const SummativeAssessmentRouter = ({ learners, initialTestId, defaultTestType = null, onBack, isMobile: deviceIsMobile, brandingSettings, embedded }) => {
   const [isMobile, setIsMobile] = useState(deviceIsMobile ?? window.innerWidth < 768);
 
   useEffect(() => {
@@ -29,19 +29,19 @@ const SummativeAssessmentRouter = ({ learners, initialTestId, onBack, isMobile: 
     if (embedded) {
       return (
         <div className="absolute inset-0 bg-gray-50 overflow-hidden">
-          <SummativeAssessmentMobile learners={learners} initialTestId={initialTestId} onBack={onBack} brandingSettings={brandingSettings} embedded={embedded} />
+          <SummativeAssessmentMobile learners={learners} initialTestId={initialTestId} defaultTestType={defaultTestType} onBack={onBack} brandingSettings={brandingSettings} embedded={embedded} />
         </div>
       );
     }
     return (
       <div className="fixed inset-0 z-50 bg-gray-50 overflow-hidden">
-        <SummativeAssessmentMobile learners={learners} initialTestId={initialTestId} onBack={onBack} brandingSettings={brandingSettings} />
+        <SummativeAssessmentMobile learners={learners} initialTestId={initialTestId} defaultTestType={defaultTestType} onBack={onBack} brandingSettings={brandingSettings} />
       </div>
     );
   }
 
   // On desktop: render within normal layout
-  return <SummativeAssessment learners={learners} initialTestId={initialTestId} brandingSettings={brandingSettings} />;
+  return <SummativeAssessment learners={learners} initialTestId={initialTestId} defaultTestType={defaultTestType} brandingSettings={brandingSettings} />;
 };
 
 export default SummativeAssessmentRouter;

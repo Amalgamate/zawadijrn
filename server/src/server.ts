@@ -9,9 +9,14 @@ import { ipRateLimit } from './middleware/enhanced-rateLimit.middleware';
 import pinoHttp from 'pino-http';
 import cookieParser from 'cookie-parser';
 import logger from './utils/logger';
+import { requestIdMiddleware } from './middleware/requestId.middleware';
 import { schoolContextMiddleware } from './middleware/schoolContext.middleware';
+import { institutionContextResolver } from './middleware/institutionContextResolver.middleware';
 
 const app: Application = express();
+
+// ── Request ID — must be first so every log line and error response is traceable
+app.use(requestIdMiddleware);
 
 // Use lightweight request logging in dev to keep local UI snappy.
 // Only log errors and slow requests instead of every request payload.
@@ -26,8 +31,16 @@ app.use(pinoHttp({
   }
 }));
 
-// Resolve school context globally
+// Parse cookies before context/auth-sensitive middleware.
+app.use(cookieParser());
+
+// ── Institution context pipeline ───────────────────────────────────────────────
+// schoolContextMiddleware  — populates req.school from DB (cached, normalized).
+// institutionContextResolver — derives req.resolvedInstitutionType with
+//   explicit precedence: header > tenant > default.
+// All downstream routes read req.resolvedInstitutionType; nothing re-computes.
 app.use(schoolContextMiddleware);
+app.use(institutionContextResolver);
 
 // Trust proxy
 app.set('trust proxy', 1);
@@ -78,7 +91,7 @@ app.use(cors({
     'x-institution-type',
     'X-Institution-Type'
   ],
-  exposedHeaders: ['X-Total-Count', 'X-Page-Count'],
+  exposedHeaders: ['X-Total-Count', 'X-Page-Count', 'X-Request-Id'],
   maxAge: 86400, // 24 hours
 }));
 
@@ -95,7 +108,6 @@ app.use(sanitizeResponse);
 // Body parsers
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-app.use(cookieParser());
 
 // API Routes
 app.use('/api', routes);

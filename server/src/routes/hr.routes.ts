@@ -1,12 +1,14 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { hrController } from '../controllers/hr.controller';
-import { authenticate, authorize } from '../middleware/auth.middleware';
-import { auditLog } from '../middleware/permissions.middleware';
+import { authenticate } from '../middleware/auth.middleware';
+import { auditLog, requireRole } from '../middleware/permissions.middleware';
 import { validate } from '../middleware/validation.middleware';
 import { rateLimit } from '../middleware/enhanced-rateLimit.middleware';
 
 const router = Router();
+
+const ROLE_HR_ADMIN = ['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER'] as const;
 
 // ── Validation schemas ───────────────────────────────────────────────────────
 
@@ -57,7 +59,7 @@ const voidPayrollSchema = z.object({
 router.get(
     '/dashboard',
     authenticate,
-    authorize('ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER', 'ACCOUNTANT'),
+    requireRole([...ROLE_HR_ADMIN]),
     rateLimit({ windowMs: 60_000, maxRequests: 120 }),
     hrController.getDashboardStats
 );
@@ -99,7 +101,7 @@ router.get(
 router.put(
     '/staff/:userId',
     authenticate,
-    authorize('ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER'),
+    requireRole([...ROLE_HR_ADMIN]),
     rateLimit({ windowMs: 60_000, maxRequests: 30 }),
     auditLog('UPDATE_STAFF_HR'),
     hrController.updateStaffHR
@@ -110,7 +112,7 @@ router.put(
 router.get(
     '/allowances/:userId',
     authenticate,
-    authorize('ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER', 'ACCOUNTANT'),
+    requireRole([...ROLE_HR_ADMIN]),
     rateLimit({ windowMs: 60_000, maxRequests: 100 }),
     hrController.getStaffAllowances
 );
@@ -118,7 +120,7 @@ router.get(
 router.post(
     '/allowances/:userId',
     authenticate,
-    authorize('ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER', 'ACCOUNTANT'),
+    requireRole([...ROLE_HR_ADMIN]),
     rateLimit({ windowMs: 60_000, maxRequests: 30 }),
     validate(allowanceSchema),
     auditLog('UPSERT_STAFF_ALLOWANCE'),
@@ -128,7 +130,7 @@ router.post(
 router.delete(
     '/allowances/:userId/:id',
     authenticate,
-    authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+    requireRole([...ROLE_HR_ADMIN]),
     rateLimit({ windowMs: 60_000, maxRequests: 20 }),
     auditLog('DELETE_STAFF_ALLOWANCE'),
     hrController.deleteAllowance
@@ -139,7 +141,7 @@ router.delete(
 router.get(
     '/deductions/:userId',
     authenticate,
-    authorize('ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER', 'ACCOUNTANT'),
+    requireRole([...ROLE_HR_ADMIN]),
     rateLimit({ windowMs: 60_000, maxRequests: 100 }),
     hrController.getStaffDeductions
 );
@@ -147,7 +149,7 @@ router.get(
 router.post(
     '/deductions/:userId',
     authenticate,
-    authorize('ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER', 'ACCOUNTANT'),
+    requireRole([...ROLE_HR_ADMIN]),
     rateLimit({ windowMs: 60_000, maxRequests: 30 }),
     validate(deductionSchema),
     auditLog('UPSERT_STAFF_DEDUCTION'),
@@ -157,7 +159,7 @@ router.post(
 router.delete(
     '/deductions/:userId/:id',
     authenticate,
-    authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+    requireRole([...ROLE_HR_ADMIN]),
     rateLimit({ windowMs: 60_000, maxRequests: 20 }),
     auditLog('DELETE_STAFF_DEDUCTION'),
     hrController.deleteDeduction
@@ -191,7 +193,7 @@ router.get(
 router.put(
     '/leave/approve/:requestId',
     authenticate,
-    authorize('ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER'),
+    requireRole([...ROLE_HR_ADMIN]),
     rateLimit({ windowMs: 60_000, maxRequests: 30 }),
     auditLog('APPROVE_LEAVE'),
     hrController.approveLeave
@@ -208,7 +210,7 @@ const leaveTypeSchema = z.object({
 router.post(
     '/leave/types',
     authenticate,
-    authorize('ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER'),
+    requireRole([...ROLE_HR_ADMIN]),
     rateLimit({ windowMs: 60_000, maxRequests: 10 }),
     validate(leaveTypeSchema),
     auditLog('CREATE_LEAVE_TYPE'),
@@ -218,7 +220,7 @@ router.post(
 router.put(
     '/leave/types/:id',
     authenticate,
-    authorize('ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER'),
+    requireRole([...ROLE_HR_ADMIN]),
     rateLimit({ windowMs: 60_000, maxRequests: 20 }),
     auditLog('UPDATE_LEAVE_TYPE'),
     hrController.updateLeaveType
@@ -227,7 +229,7 @@ router.put(
 router.delete(
     '/leave/types/:id',
     authenticate,
-    authorize('ADMIN', 'SUPER_ADMIN'),
+    requireRole([...ROLE_HR_ADMIN]),
     rateLimit({ windowMs: 60_000, maxRequests: 10 }),
     auditLog('DELETE_LEAVE_TYPE'),
     hrController.deleteLeaveType
@@ -246,7 +248,7 @@ router.get(
 router.get(
     '/attendance/report',
     authenticate,
-    authorize('ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER', 'ACCOUNTANT'),
+    requireRole([...ROLE_HR_ADMIN]),
     rateLimit({ windowMs: 60_000, maxRequests: 30 }),
     hrController.getAttendanceReport
 );
@@ -256,7 +258,7 @@ router.get(
 router.post(
     '/payroll/generate',
     authenticate,
-    authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+    requireRole([...ROLE_HR_ADMIN]),
     rateLimit({ windowMs: 60_000, maxRequests: 10 }),
     auditLog('GENERATE_PAYROLL'),
     hrController.generatePayroll
@@ -265,7 +267,7 @@ router.post(
 router.get(
     '/payroll',
     authenticate,
-    authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+    requireRole([...ROLE_HR_ADMIN]),
     rateLimit({ windowMs: 60_000, maxRequests: 100 }),
     hrController.getPayroll
 );
@@ -278,7 +280,7 @@ router.get(
 router.get(
     '/payroll/:id',
     authenticate,
-    authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+    requireRole([...ROLE_HR_ADMIN]),
     rateLimit({ windowMs: 60_000, maxRequests: 100 }),
     hrController.getPayslip
 );
@@ -286,7 +288,7 @@ router.get(
 router.put(
     '/payroll/confirm/:id',
     authenticate,
-    authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+    requireRole([...ROLE_HR_ADMIN]),
     rateLimit({ windowMs: 60_000, maxRequests: 20 }),
     auditLog('CONFIRM_PAYROLL'),
     hrController.confirmPayroll
@@ -300,7 +302,7 @@ router.put(
 router.post(
     '/payroll/bulk-confirm',
     authenticate,
-    authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+    requireRole([...ROLE_HR_ADMIN]),
     rateLimit({ windowMs: 60_000, maxRequests: 5 }),
     auditLog('BULK_CONFIRM_PAYROLL'),
     hrController.bulkConfirmPayroll
@@ -314,7 +316,7 @@ router.post(
 router.put(
     '/payroll/pay/:id',
     authenticate,
-    authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+    requireRole([...ROLE_HR_ADMIN]),
     rateLimit({ windowMs: 60_000, maxRequests: 20 }),
     auditLog('MARK_PAYROLL_PAID'),
     hrController.markPayrollPaid
@@ -328,7 +330,7 @@ router.put(
 router.post(
     '/payroll/bulk-pay',
     authenticate,
-    authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+    requireRole([...ROLE_HR_ADMIN]),
     rateLimit({ windowMs: 60_000, maxRequests: 5 }),
     auditLog('BULK_MARK_PAYROLL_PAID'),
     hrController.bulkMarkPaid
@@ -342,7 +344,7 @@ router.post(
 router.put(
     '/payroll/void/:id',
     authenticate,
-    authorize('ADMIN', 'SUPER_ADMIN'),
+    requireRole([...ROLE_HR_ADMIN]),
     rateLimit({ windowMs: 60_000, maxRequests: 10 }),
     validate(voidPayrollSchema),
     auditLog('VOID_PAYROLL'),
@@ -354,7 +356,7 @@ router.put(
 router.get(
     '/performance',
     authenticate,
-    authorize('ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM'),
+    requireRole([...ROLE_HR_ADMIN]),
     rateLimit({ windowMs: 60_000, maxRequests: 100 }),
     hrController.getPerformance
 );
@@ -362,7 +364,7 @@ router.get(
 router.post(
     '/performance',
     authenticate,
-    authorize('ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER'),
+    requireRole([...ROLE_HR_ADMIN]),
     rateLimit({ windowMs: 60_000, maxRequests: 30 }),
     validate(performanceSchema),
     auditLog('CREATE_PERFORMANCE_EVALUATION'),
@@ -372,7 +374,7 @@ router.post(
 router.put(
     '/performance/:id',
     authenticate,
-    authorize('ADMIN', 'SUPER_ADMIN', 'HEAD_TEACHER'),
+    requireRole([...ROLE_HR_ADMIN]),
     rateLimit({ windowMs: 60_000, maxRequests: 30 }),
     validate(performanceSchema),
     auditLog('UPDATE_PERFORMANCE_EVALUATION'),
@@ -380,3 +382,5 @@ router.put(
 );
 
 export default router;
+
+

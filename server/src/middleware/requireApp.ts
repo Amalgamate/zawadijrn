@@ -13,14 +13,18 @@
  *       2. req.query.schoolId
  *       3. req.body.schoolId
  *   - DB look-up is intentionally lightweight: one indexed unique lookup per request.
+ *
+ * All denials are routed through next(ApiError) so the global error handler
+ * emits the RFC-compliant payload with code + requestId.
  */
 
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from './permissions.middleware';
+import { ApiError } from '../utils/error.util';
 import prisma from '../config/database';
 
 export const requireApp = (slug: string) => {
-  return async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  return async (req: AuthRequest, _res: Response, next: NextFunction): Promise<void> => {
     try {
       // Super admins always pass through
       if (req.user?.role === 'SUPER_ADMIN') {
@@ -34,27 +38,21 @@ export const requireApp = (slug: string) => {
         (req.query.schoolId as string | undefined) ??
         (req.body?.schoolId as string | undefined);
 
-      // Single-tenant fallback: Look up first school if none provided
+      // Single-tenant fallback: look up first school if none provided
       if (!schoolId) {
-        const school = await (prisma as any).school.findFirst({ 
+        const school = await (prisma as any).school.findFirst({
           select: { id: true },
-          // Add a timeout or safety to ensure this doesn't hang background tasks
         });
         schoolId = school?.id;
       }
 
       if (!schoolId) {
-        // Log this specifically to the server console help debug if DB is empty
         console.error('[requireApp] Resolution failed: No schoolId found in request or database.');
-        res.status(400).json({
-          success: false,
-          code:    'SCHOOL_REQUIRED',
-          message: 'schoolId is required to check app access.',
-        });
-        return;
+        return next(
+          new ApiError(400, 'schoolId is required to check app access.').withCode('SCHOOL_REQUIRED')
+        );
       }
 
-      // Convert to string to satisfy type checker
       const resolvedSchoolId = String(schoolId);
 
       // Find the app definition
@@ -64,12 +62,9 @@ export const requireApp = (slug: string) => {
       });
 
       if (!app) {
-        res.status(500).json({
-          success: false,
-          code:    'UNKNOWN_APP',
-          message: `App '${slug}' is not registered in the system.`,
-        });
-        return;
+        return next(
+          new ApiError(500, `App '${slug}' is not registered in the system.`).withCode('UNKNOWN_APP')
+        );
       }
 
       // Check per-school config
@@ -78,16 +73,13 @@ export const requireApp = (slug: string) => {
         select: { isActive: true },
       });
 
-      const isActive = config?.isActive ?? true;  // default OPEN if no config row exists (seed not yet run)
+      const isActive = config?.isActive ?? true; // default OPEN if no config row exists
 
       if (!isActive) {
-        res.status(403).json({
-          success: false,
-          code:    'APP_DISABLED',
-          message: `The '${app.name}' module is not enabled for your school.`,
-          app:     slug,
-        });
-        return;
+        return next(
+          new ApiError(403, `The '${app.name}' module is not enabled for your school.`)
+            .withCode('APP_DISABLED')
+        );
       }
 
       next();

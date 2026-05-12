@@ -1,5 +1,5 @@
 import express, { Router } from 'express';
-import { authenticate, authorize } from '../middleware/auth.middleware';
+import { authenticate } from '../middleware/auth.middleware';
 import {
   createSchoolWithProvisioning,
   getSchool,
@@ -17,11 +17,14 @@ import {
   getPublicManifest
 } from '../controllers/school.controller';
 import { validate } from '../middleware/validation.middleware';
+import { requireRole } from '../middleware/permissions.middleware';
 import { rateLimit } from '../middleware/enhanced-rateLimit.middleware';
 import { asyncHandler } from '../utils/async.util';
 import { z } from 'zod';
 
 const router = Router();
+
+const ROLE_SCHOOL_ADMIN = ['SUPER_ADMIN', 'ADMIN'] as const;
 
 const updateSchoolSchema = z.object({
   name: z.string().min(3).max(100).optional().nullable(),
@@ -69,7 +72,7 @@ router.use(authenticate);
 // ============================================
 
 router.post('/provision',
-  authorize('SUPER_ADMIN'),
+  requireRole([...ROLE_SCHOOL_ADMIN]),
   rateLimit({ windowMs: 60_000, maxRequests: 5 }),
   asyncHandler(createSchoolWithProvisioning)
 );
@@ -86,7 +89,7 @@ router.get('/:id',
 );
 
 router.put('/',
-  authorize('SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM'),
+  requireRole([...ROLE_SCHOOL_ADMIN]),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
   express.json({ limit: '10mb' }),   // logo/favicon/stamp are base64 — needs a higher limit
   validate(updateSchoolSchema),
@@ -94,7 +97,7 @@ router.put('/',
 );
 
 router.post('/institution-type/lock',
-  authorize('SUPER_ADMIN'),
+  requireRole([...ROLE_SCHOOL_ADMIN]),
   rateLimit({ windowMs: 60_000, maxRequests: 10 }),
   express.json(),
   validate(configureInstitutionSchema),
@@ -102,13 +105,13 @@ router.post('/institution-type/lock',
 );
 
 router.get('/institution-setup/progress/:institutionType',
-  authorize('SUPER_ADMIN'),
+  requireRole([...ROLE_SCHOOL_ADMIN]),
   rateLimit({ windowMs: 60_000, maxRequests: 60 }),
   asyncHandler(getInstitutionSetupProgress)
 );
 
 router.post('/maintenance/reset-whole-institution',
-  authorize('SUPER_ADMIN'),
+  requireRole([...ROLE_SCHOOL_ADMIN]),
   rateLimit({ windowMs: 60_000, maxRequests: 2 }),
   express.json(),
   validate(resetWholeInstitutionSchema),
@@ -116,13 +119,13 @@ router.post('/maintenance/reset-whole-institution',
 );
 
 router.delete('/',
-  authorize('SUPER_ADMIN'),
+  requireRole([...ROLE_SCHOOL_ADMIN]),
   rateLimit({ windowMs: 60_000, maxRequests: 10 }),
   asyncHandler(deleteSchool)
 );
 
 router.post('/deactivate',
-  authorize('SUPER_ADMIN', 'ADMIN'),
+  requireRole([...ROLE_SCHOOL_ADMIN]),
   rateLimit({ windowMs: 60_000, maxRequests: 10 }),
   asyncHandler(deactivateSchool)
 );
@@ -142,9 +145,11 @@ router.get('/admission-number-preview/:academicYear',
 );
 
 router.post('/reset-sequence',
-  authorize('SUPER_ADMIN', 'ADMIN'),
+  requireRole([...ROLE_SCHOOL_ADMIN]),
   rateLimit({ windowMs: 60_000, maxRequests: 5 }),
   asyncHandler(resetAdmissionSequence)
 );
 
 export default router;
+
+

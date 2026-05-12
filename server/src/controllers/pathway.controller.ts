@@ -2,6 +2,7 @@ import { Response } from 'express';
 import prisma from '../config/database';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { ApiError } from '../utils/error.util';
+import { seedSeniorPathways } from '../services/ss-pathways.seed';
 
 type SelectionItem = { learningAreaId: string; active?: boolean };
 
@@ -65,6 +66,11 @@ function validateSelections({
 }
 
 export const pathwayController = {
+  seedPathwaysCatalog: async (_req: AuthRequest, res: Response) => {
+    await seedSeniorPathways(prisma as any);
+    res.json({ success: true, message: 'Senior secondary pathways seeded successfully' });
+  },
+
   listPathways: async (_req: AuthRequest, res: Response) => {
     const pathways = await prisma.pathway.findMany({
       where: { active: true },
@@ -176,4 +182,3 @@ export const pathwayController = {
     res.json({ success: true, data: learner });
   },
 };
-

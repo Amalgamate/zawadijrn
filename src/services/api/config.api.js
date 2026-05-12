@@ -1,8 +1,11 @@
 import { fetchWithAuth, cachedFetch, cacheDel, cacheDelPrefix, TTL } from './core';
 import axiosInstance from './axiosConfig';
+import { getSelectedInstitutionType } from '../schoolContext';
 
 const institutionCacheKeySuffix = () => {
   try {
+    const selected = String(getSelectedInstitutionType() || '').toUpperCase();
+    if (selected) return selected;
     const raw = localStorage.getItem('user');
     if (!raw) return 'PRIMARY_CBC';
     const u = JSON.parse(raw);
@@ -75,6 +78,7 @@ export const configAPI = {
     cacheDelPrefix('config:learning-areas:');
     return fetchWithAuth('/learning-areas/seed/default', { method: 'POST' });
   },
+  seedPathways: async () => fetchWithAuth('/pathways/seed', { method: 'POST' }),
 
   seedClasses: async () => fetchWithAuth('/config/classes/seed', { method: 'POST' }),
   seedStreams: async () => {

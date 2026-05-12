@@ -21,6 +21,7 @@ import { useTeacherWorkload } from '../hooks/useTeacherWorkload';
 import { useSchoolData } from '../../../contexts/SchoolDataContext';
 import { getLearningAreasByGrade } from '../../../constants/learningAreas';
 import { getAcademicYearOptions, getCurrentAcademicYear } from '../utils/academicYear';
+import { normalizeTestType } from '../utils/testType';
 
 const SECONDARY_GRADES = ['GRADE10', 'GRADE11', 'GRADE12'];
 const JUNIOR_GRADE_ORDER = ['PLAYGROUP', 'PP1', 'PP2', 'GRADE_1', 'GRADE_2', 'GRADE_3', 'GRADE_4', 'GRADE_5', 'GRADE_6', 'GRADE_7', 'GRADE_8', 'GRADE_9'];
@@ -136,7 +137,7 @@ const TestPicker = ({ tests, value, onChange, disabled }) => {
   );
 };
 
-const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
+const SummativeAssessment = ({ learners, initialTestId, defaultTestType = null, brandingSettings }) => {
   const { showSuccess, showError } = useNotifications();
 
   // Use centralized hooks for assessment state management
@@ -260,6 +261,10 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
   // User Context removed schoolId for single-tenant mode
   const { user } = useAuth();
   const isSecondaryPortal = String(user?.institutionType || '').toUpperCase() === 'SECONDARY';
+  const normalizedDefaultTestType = useMemo(
+    () => normalizeTestType(defaultTestType),
+    [defaultTestType]
+  );
   const schoolId = null;
 
   // Load Tests
@@ -410,9 +415,13 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
         const testTerm = (t.term || '').toUpperCase().trim();
         if (testTerm !== normalizedTerm) return false;
       }
+      if (normalizedDefaultTestType) {
+        const testType = normalizeTestType(t.testType);
+        if (testType !== normalizedDefaultTestType) return false;
+      }
       return true;
     }),
-    [tests, setup.selectedGrade, setup.selectedTerm]
+    [tests, setup.selectedGrade, setup.selectedTerm, normalizedDefaultTestType]
   );
 
   // Staged filtered tests - for dropdown options while editing
@@ -428,9 +437,13 @@ const SummativeAssessment = ({ learners, initialTestId, brandingSettings }) => {
         const testTerm = (t.term || '').toUpperCase().trim();
         if (testTerm !== normalizedTerm) return false;
       }
+      if (normalizedDefaultTestType) {
+        const testType = normalizeTestType(t.testType);
+        if (testType !== normalizedDefaultTestType) return false;
+      }
       return true;
     }),
-    [tests, stagedGrade, stagedTerm]
+    [tests, stagedGrade, stagedTerm, normalizedDefaultTestType]
   );
 
   const availableLearningAreas = useMemo(() => {

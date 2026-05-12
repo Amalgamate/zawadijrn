@@ -122,11 +122,6 @@ const BiometricManager = lazy(() => import('../pages/biometric/BiometricManager'
 const LMSManager = lazy(() => import('../pages/LMSManager'));
 const LMSAssignments = lazy(() => import('../pages/lms/LMSAssignments'));
 
-// Tertiary Modules
-const TertiaryDepartments = lazy(() => import('../../Tertiary/pages/DepartmentManagement'));
-const TertiaryPrograms    = lazy(() => import('../../Tertiary/pages/ProgramManagement'));
-const TertiaryUnits       = lazy(() => import('../../Tertiary/pages/UnitManagement'));
-
 // Student Portal
 const MyCourses = lazy(() => import('../pages/student/MyCourses'));
 const CourseViewer = lazy(() => import('../pages/student/CourseViewer'));
@@ -336,11 +331,11 @@ const PageRouter = ({
             return <MobileAssessmentsDashboard learners={learners} brandingSettings={brandingSettings} onNavigate={handleNavigate} />;
           case 'assess-formative': return <ErrorBoundary><FormativeAssessment learners={learners} /></ErrorBoundary>;
           case 'assess-formative-report': return <ErrorBoundary><FormativeReport learners={learners} brandingSettings={brandingSettings} user={user} /></ErrorBoundary>;
-          case 'assess-summative-tests': return <ErrorBoundary><SummativeTestsRouter onNavigate={handleNavigate} /></ErrorBoundary>;
-          case 'assess-summative-assessment': return <ErrorBoundary><SummativeAssessmentRouter learners={learners} initialTestId={pageParams.initialTestId} brandingSettings={brandingSettings} /></ErrorBoundary>;
-          case 'assess-summative-report': return <ErrorBoundary><SummativeReport learners={learners} onFetchLearners={fetchLearners} brandingSettings={brandingSettings} user={user} /></ErrorBoundary>;
-          case 'assess-summary-report': return <ErrorBoundary><SummaryReportPage /></ErrorBoundary>;
-          case 'assess-termly-report': return <ErrorBoundary><TermlyReport learners={learners} brandingSettings={brandingSettings} user={user} /></ErrorBoundary>;
+          case 'assess-summative-tests': return <ErrorBoundary><SummativeTestsRouter onNavigate={handleNavigate} defaultTestType={pageParams.defaultTestType} /></ErrorBoundary>;
+          case 'assess-summative-assessment': return <ErrorBoundary><SummativeAssessmentRouter learners={learners} initialTestId={pageParams.initialTestId} defaultTestType={pageParams.defaultTestType} brandingSettings={brandingSettings} /></ErrorBoundary>;
+          case 'assess-summative-report': return <ErrorBoundary><SummativeReport learners={learners} onFetchLearners={fetchLearners} brandingSettings={brandingSettings} user={user} pageParams={pageParams} /></ErrorBoundary>;
+          case 'assess-summary-report': return <ErrorBoundary><SummaryReportPage pageParams={pageParams} /></ErrorBoundary>;
+          case 'assess-termly-report': return <ErrorBoundary><TermlyReport learners={learners} brandingSettings={brandingSettings} user={user} pageParams={pageParams} /></ErrorBoundary>;
           case 'assess-values': return <ValuesAssessment learners={learners} />;
           case 'assess-cocurricular': return <CoCurricularActivities learners={learners} />;
           case 'assess-core-competencies': return <CoreCompetenciesAssessment learners={learners} />;
@@ -470,21 +465,21 @@ const PageRouter = ({
           case 'sec-subjects':        return <SubjectManagement />;
           case 'sec-form-groups':     return <FormGroups />;
           case 'sec-schemes':         return <PlannerLayout currentPage="planner-schemes" onNavigate={handleNavigate} />;
-          case 'sec-mark-entry':      return <MarkEntryHub onNavigate={handleNavigate} />;
-          case 'sec-cats':            return <SecondaryExamWorkbench type="cats" onNavigate={handleNavigate} />;
-          case 'sec-mid-term':        return <SecondaryExamWorkbench type="mid" onNavigate={handleNavigate} />;
-          case 'sec-end-term':        return <SecondaryExamWorkbench type="end" onNavigate={handleNavigate} />;
-          case 'sec-kcse-mock':       return <SecondaryExamWorkbench type="mock" onNavigate={handleNavigate} />;
-          case 'sec-mean-grades':     return <ResultsWorkbench variant="mean" onNavigate={handleNavigate} />;
-          case 'sec-rankings':        return <ResultsWorkbench variant="rankings" onNavigate={handleNavigate} />;
-          case 'sec-subject-analysis':return <ResultsWorkbench variant="subject" onNavigate={handleNavigate} />;
+          case 'sec-mark-entry':      return <MarkEntryHub onNavigate={handleNavigate} defaultTestType={pageParams.defaultTestType} />;
+          case 'sec-cats':            return <MarkEntryHub onNavigate={handleNavigate} defaultTestType="CAT" />;
+          case 'sec-mid-term':        return <MarkEntryHub onNavigate={handleNavigate} defaultTestType="MID_TERM" />;
+          case 'sec-end-term':        return <MarkEntryHub onNavigate={handleNavigate} defaultTestType="END_TERM" />;
+          case 'sec-kcse-mock':       return <MarkEntryHub onNavigate={handleNavigate} defaultTestType="MOCK" />;
+          case 'sec-mean-grades':     return <ResultsWorkbench variant="mean" pageParams={pageParams} onNavigate={handleNavigate} />;
+          case 'sec-rankings':        return <ResultsWorkbench variant="rankings" pageParams={pageParams} onNavigate={handleNavigate} />;
+          case 'sec-subject-analysis':return <ResultsWorkbench variant="subject" pageParams={pageParams} onNavigate={handleNavigate} />;
           case 'sec-report-cards':    return <ReportsHub onNavigate={handleNavigate} />;
-          case 'sec-kcse-prediction': return <ResultsWorkbench variant="forecast" onNavigate={handleNavigate} />;
+          case 'sec-kcse-prediction': return <ResultsWorkbench variant="forecast" pageParams={pageParams} onNavigate={handleNavigate} />;
 
           // ── Tertiary Institution modules ──────────────────────────────────
-          case 'tert-departments':    return <TertiaryDepartments />;
-          case 'tert-programs':       return <TertiaryPrograms />;
-          case 'tert-units':          return <TertiaryUnits />;
+          case 'tert-departments':    return <ComingSoon badge="Tertiary" title="Departments"          description="Department setup for tertiary institutions is coming soon." />;
+          case 'tert-programs':       return <ComingSoon badge="Tertiary" title="Programs"             description="Program management for tertiary institutions is coming soon." />;
+          case 'tert-units':          return <ComingSoon badge="Tertiary" title="Unit Management"      description="Unit setup and unit catalog management is coming soon." />;
           case 'tert-enrollment':     return <ComingSoon badge="Tertiary" title="Unit Enrollment"        description="Enroll students into units for the current semester." />;
           case 'tert-cats':           return <ComingSoon badge="Tertiary" title="CATs (30%)"             description="Record Continuous Assessment Test scores — 30% of the final grade." />;
           case 'tert-exams':          return <ComingSoon badge="Tertiary" title="Exams (70%)"            description="Record end-of-semester examination scores — 70% of the final grade." />;

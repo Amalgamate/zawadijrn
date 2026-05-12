@@ -1,8 +1,10 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { authenticate } from '../../middleware/auth.middleware';
 import { AuthRequest } from '../../middleware/auth.middleware';
 import { rateLimit } from '../../middleware/enhanced-rateLimit.middleware';
 import { auditLog } from '../../middleware/permissions.middleware';
+import { hasAnyRole } from '../../utils/roleNormalizer';
+import { ApiError } from '../../utils/error.util';
 
 import prisma from '../../config/database';
 import multer from 'multer';
@@ -327,10 +329,14 @@ router.post(
   authenticate,
   rateLimit({ windowMs: 60_000, maxRequests: 5 }),
   auditLog('SYNC_STUDENT_USERS'),
-  async (req: AuthRequest, res: Response) => {
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      if (!['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER'].includes(req.user?.role || '')) {
-        return res.status(403).json({ success: false, error: 'Forbidden' });
+      if (!hasAnyRole(req.user as any, ['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER'])) {
+        return next(
+          new ApiError(403, 'Forbidden')
+            .withCode('ROLE_FORBIDDEN')
+            .withRoles(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER'], req.user?.roles || [req.user?.role])
+        );
       }
 
       const learners = await prisma.learner.findMany({

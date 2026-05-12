@@ -1,5 +1,16 @@
 /**
- * Learning Area Routes
+ * learningArea.routes.ts
+ *
+ * Guard contract:
+ *   - authenticate — applied once in index.ts; NOT repeated here
+ *   - requireRole  — applied per-route for mutation endpoints
+ *
+ * NOTE: The GET / listing endpoint does NOT carry a requireInstitutionType guard
+ * here.  The controller is responsible for scoping results to
+ * req.resolvedInstitutionType so that Secondary callers see Secondary learning
+ * areas and Primary callers see Primary learning areas.
+ * (Data-level filtering is Chunk 6; do not add an institution guard here that
+ * would break Primary flows while Secondary is being fixed.)
  */
 
 import { Router } from 'express';
@@ -12,7 +23,6 @@ import {
   deleteLearningArea,
   seedLearningAreas
 } from '../controllers/learningArea.controller';
-import { authenticate } from '../middleware/auth.middleware';
 import { requireRole, auditLog } from '../middleware/permissions.middleware';
 import { validate } from '../middleware/validation.middleware';
 import { rateLimit } from '../middleware/enhanced-rateLimit.middleware';
@@ -42,9 +52,7 @@ const updateLearningAreaSchema = z.object({
   description: z.string().max(500).optional(),
 });
 
-// ── Auth applied to all routes ───────────────────────────────────────────────
-
-router.use(authenticate);
+// authenticate is applied in index.ts — do NOT add router.use(authenticate) here
 
 // ── GET /api/learning-areas ─────────────────────────────────────────────────
 router.get(
@@ -57,7 +65,7 @@ router.get(
 // MUST be declared before /:id routes to avoid Express treating "seed" as an id
 router.post(
   '/seed/default',
-  requireRole(['ADMIN', 'SUPER_ADMIN']),
+  requireRole(['SUPER_ADMIN', 'ADMIN']),
   rateLimit({ windowMs: 60_000, maxRequests: 5 }),
   auditLog('SEED_LEARNING_AREAS'),
   seedLearningAreas
@@ -66,7 +74,7 @@ router.post(
 // ── POST /api/learning-areas ────────────────────────────────────────────────
 router.post(
   '/',
-  requireRole(['ADMIN', 'SUPER_ADMIN']),
+  requireRole(['SUPER_ADMIN', 'ADMIN']),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
   validate(createLearningAreaSchema),
   auditLog('CREATE_LEARNING_AREA'),
@@ -83,7 +91,7 @@ router.get(
 // ── PUT /api/learning-areas/:id ─────────────────────────────────────────────
 router.put(
   '/:id',
-  requireRole(['ADMIN', 'SUPER_ADMIN']),
+  requireRole(['SUPER_ADMIN', 'ADMIN']),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
   validate(updateLearningAreaSchema),
   auditLog('UPDATE_LEARNING_AREA'),
@@ -93,7 +101,7 @@ router.put(
 // ── DELETE /api/learning-areas/:id ──────────────────────────────────────────
 router.delete(
   '/:id',
-  requireRole(['ADMIN', 'SUPER_ADMIN']),
+  requireRole(['SUPER_ADMIN', 'ADMIN']),
   rateLimit({ windowMs: 60_000, maxRequests: 10 }),
   auditLog('DELETE_LEARNING_AREA'),
   deleteLearningArea

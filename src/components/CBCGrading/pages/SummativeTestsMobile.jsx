@@ -9,8 +9,9 @@ import EmptyState from '../shared/EmptyState';
 import ConfirmDialog from '../shared/ConfirmDialog';
 import { useInstitutionLabels } from '../../../hooks/useInstitutionLabels';
 import { cn } from '../../../utils/cn';
+import { normalizeTestType } from '../utils/testType';
 
-const SummativeTestsMobile = ({ onNavigate, onBack }) => {
+const SummativeTestsMobile = ({ onNavigate, onBack, defaultTestType = null }) => {
   const { showSuccess, showError } = useNotifications();
   const { user } = useAuth();
   const labels = useInstitutionLabels();
@@ -22,6 +23,10 @@ const SummativeTestsMobile = ({ onNavigate, onBack }) => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [confirmConfig, setConfirmConfig] = useState({});
   const [deleting, setDeleting] = useState(false);
+  const normalizedDefaultTestType = useMemo(
+    () => normalizeTestType(defaultTestType),
+    [defaultTestType]
+  );
 
   const handleBackToSidebar = () => {
     if (onBack) onBack();
@@ -46,12 +51,16 @@ const SummativeTestsMobile = ({ onNavigate, onBack }) => {
   }, [fetchTests]);
 
   const filteredTests = useMemo(() => {
-    return tests.filter(t =>
-      (t.title || t.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (t.grade || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (t.learningArea || '').toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [tests, searchQuery]);
+    return tests.filter(t => {
+      const matchesSearch =
+        (t.title || t.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (t.grade || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (t.learningArea || '').toLowerCase().includes(searchQuery.toLowerCase());
+      if (!matchesSearch) return false;
+      if (!normalizedDefaultTestType) return true;
+      return normalizeTestType(t.testType) === normalizedDefaultTestType;
+    });
+  }, [tests, searchQuery, normalizedDefaultTestType]);
 
   const groupedData = useMemo(() => {
     const grouped = {};
@@ -115,6 +124,7 @@ const SummativeTestsMobile = ({ onNavigate, onBack }) => {
     return (
       <div className="fixed inset-0 bg-white z-[120]">
         <SummativeTestForm
+          initialTestType={viewMode === 'create' ? normalizedDefaultTestType : null}
           test={selectedTest}
           onBack={() => {
             setViewMode('list');

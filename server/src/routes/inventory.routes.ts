@@ -1,12 +1,14 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import inventoryController from '../controllers/inventory.controller';
-import { authenticate, authorize } from '../middleware/auth.middleware';
-import { auditLog } from '../middleware/permissions.middleware';
+import { authenticate } from '../middleware/auth.middleware';
+import { auditLog, requireRole } from '../middleware/permissions.middleware';
 import { validate } from '../middleware/validation.middleware';
 import { rateLimit } from '../middleware/enhanced-rateLimit.middleware';
 
 const router = Router();
+
+const ROLE_INVENTORY_ADMIN = ['SUPER_ADMIN', 'ADMIN'] as const;
 
 // Validation schemas
 const createCategorySchema = z.object({
@@ -69,7 +71,7 @@ const registerAssetSchema = z.object({
 router.post(
   '/categories',
   authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN'),
+  requireRole([...ROLE_INVENTORY_ADMIN]),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
   validate(createCategorySchema),
   auditLog('CREATE_INVENTORY_CATEGORY'),
@@ -100,7 +102,7 @@ router.get(
 router.post(
   '/stores',
   authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN'),
+  requireRole([...ROLE_INVENTORY_ADMIN]),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
   validate(createStoreSchema),
   auditLog('CREATE_STORE'),
@@ -131,7 +133,7 @@ router.get(
 router.post(
   '/items',
   authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN'),
+  requireRole([...ROLE_INVENTORY_ADMIN]),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
   validate(createItemSchema),
   auditLog('CREATE_INVENTORY_ITEM'),
@@ -162,7 +164,7 @@ router.get(
 router.post(
   '/movements',
   authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN', 'LIBRARIAN'),
+  requireRole([...ROLE_INVENTORY_ADMIN]),
   rateLimit({ windowMs: 60_000, maxRequests: 50 }),
   validate(recordMovementSchema),
   auditLog('RECORD_STOCK_MOVEMENT'),
@@ -219,7 +221,7 @@ router.get(
 router.patch(
   '/requisitions/:id/status',
   authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN'),
+  requireRole([...ROLE_INVENTORY_ADMIN]),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
   auditLog('UPDATE_REQUISITION_STATUS'),
   inventoryController.updateRequisitionStatus
@@ -237,7 +239,7 @@ router.patch(
 router.post(
   '/assets',
   authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN'),
+  requireRole([...ROLE_INVENTORY_ADMIN]),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
   validate(registerAssetSchema),
   auditLog('REGISTER_ASSET'),
@@ -252,7 +254,7 @@ router.post(
 router.post(
   '/assets/assign',
   authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN'),
+  requireRole([...ROLE_INVENTORY_ADMIN]),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
   auditLog('ASSIGN_ASSET'),
   inventoryController.assignAsset
@@ -271,3 +273,5 @@ router.get(
 );
 
 export default router;
+
+

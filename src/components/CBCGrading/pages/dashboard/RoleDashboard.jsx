@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { usePermissions } from '../../../../hooks/usePermissions';
+import { useAuth } from '../../../../hooks/useAuth';
 import AdminDashboard from './AdminDashboard';
 import HeadTeacherDashboard from './HeadTeacherDashboard';
 import TeacherDashboard from './TeacherDashboard';
@@ -13,45 +14,33 @@ import AccountantDashboard from './AccountantDashboard';
 import ReceptionistDashboard from './ReceptionistDashboard';
 import MobileDashboard from './MobileDashboard';
 import StudentDashboard from '../student/StudentDashboard';
+import ComingSoon from '../../shared/ComingSoon';
 import useMediaQuery from '../../hooks/useMediaQuery';
 import { MOBILE_MEDIA_QUERY } from '../../../../constants/breakpoints';
 
-const Tile = ({ title, description, onClick, badge, tone = 'indigo' }) => {
-  const toneClasses = tone === 'emerald'
-    ? 'border-emerald-200 bg-emerald-50 text-emerald-900 hover:bg-emerald-100'
-    : tone === 'slate'
-      ? 'border-slate-200 bg-slate-50 text-slate-900 hover:bg-slate-100'
-      : 'border-indigo-200 bg-indigo-50 text-indigo-900 hover:bg-indigo-100';
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`w-full text-left rounded-2xl border p-4 shadow-sm transition ${toneClasses}`}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-base font-semibold">{title}</div>
-          <div className="mt-1 text-xs font-medium opacity-80">{description}</div>
-        </div>
-        {badge ? (
-          <span className="shrink-0 inline-flex items-center rounded-full border border-white/40 bg-white/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest">
-            {badge}
-          </span>
-        ) : null}
-      </div>
-    </button>
-  );
-};
-
 const RoleDashboard = ({ learners, pagination, teachers, user, onNavigate, brandingSettings }) => {
   const { role } = usePermissions();
+  const { institutionType } = useAuth();
   const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
 
-  // Senior School / Secondary placeholder portal.
-  // This keeps the Junior (PRIMARY_CBC) dashboard unchanged while giving SS users
-  // a distinct landing view even before SS pages are fully implemented.
-  if (user?.institutionType === 'SECONDARY') {
+  // Tertiary: whole module is Coming Soon — must check before mobile branch
+  // so mobile tertiary users also see ComingSoon instead of MobileDashboard.
+  if (institutionType === 'TERTIARY') {
+    return (
+      <ComingSoon
+        badge="Tertiary"
+        title="Tertiary portal"
+        description="The tertiary institution module is currently under development and will be available in a future release."
+      />
+    );
+  }
+
+  // Secondary: placeholder until SecondaryAdminDashboard is built.
+  // Also checked before the mobile branch for the same reason.
+  if (institutionType === 'SECONDARY') {
+    if (isMobile) {
+      return <MobileDashboard user={user} onNavigate={onNavigate} brandingSettings={brandingSettings} />;
+    }
     return (
       <div className="p-6 space-y-4">
         <div className="rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-indigo-50 p-6 shadow-sm">
@@ -59,7 +48,7 @@ const RoleDashboard = ({ learners, pagination, teachers, user, onNavigate, brand
             <div>
               <h1 className="text-2xl font-semibold text-indigo-900">Senior School Dashboard</h1>
               <p className="mt-2 text-sm font-medium text-indigo-900/80">
-                This is the Senior School environment. Modules will open progressively; anything unfinished will clearly show “Coming Soon”.
+                This is the Senior School environment. Modules open progressively; anything unfinished shows "Coming Soon".
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <span className="inline-flex items-center rounded-full border border-indigo-200 bg-white px-2 py-1 text-[10px] font-semibold uppercase tracking-widest text-indigo-800">
@@ -79,54 +68,38 @@ const RoleDashboard = ({ learners, pagination, teachers, user, onNavigate, brand
             </button>
           </div>
         </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          <Tile
-            title="CBC Pathways"
-            description="View STEM / Social Sciences / Arts & Sports plus category min/max rules."
-            badge="Live"
-            onClick={() => onNavigate?.('sec-pathways')}
-          />
-          <Tile
-            title="Students"
-            description="Browse Senior School learners (Grade 10–12) and open profiles."
-            badge="Ready"
-            tone="emerald"
-            onClick={() => onNavigate?.('learners-list')}
-          />
-          <Tile
-            title="Learning Areas"
-            description="Manage learning areas for the active institution type."
-            badge="Ready"
-            tone="emerald"
-            onClick={() => onNavigate?.('assess-learning-areas')}
-          />
-          <Tile
-            title="Assessments"
-            description="Summative and formative assessment flows (CBC 8-level grading supported)."
-            badge="Ready"
-            tone="emerald"
-            onClick={() => onNavigate?.('assess-summative-assessment')}
-          />
-          <Tile
-            title="Reports"
-            description="Termly report and analytics using learningAreaId joins where available."
-            badge="Ready"
-            tone="emerald"
-            onClick={() => onNavigate?.('assess-termly-report')}
-          />
-          <Tile
-            title="Secondary Placeholders"
-            description="Legacy secondary pages kept as placeholders while SS CBC screens replace them."
-            badge="Coming soon"
-            tone="slate"
-            onClick={() => onNavigate?.('sec-subjects')}
-          />
+          {[
+            { title: 'CBC Pathways',     description: 'STEM / Social Sciences / Arts & Sports pathways.',   path: 'sec-pathways',              badge: 'Live'  },
+            { title: 'Students',         description: 'Senior School learners (Grade 10–12).',               path: 'learners-list',             badge: 'Ready' },
+            { title: 'Learning Areas',   description: 'Manage learning areas for the active context.',       path: 'assess-learning-areas',     badge: 'Ready' },
+            { title: 'Assessments',      description: 'Summative and formative assessment flows.',           path: 'assess-summative-assessment',badge: 'Ready' },
+            { title: 'Reports',          description: 'Termly report and analytics.',                        path: 'assess-termly-report',      badge: 'Ready' },
+            { title: 'Grade Streams',    description: 'Grade 10–12 class streams.',                          path: 'sec-form-groups',           badge: 'Ready' },
+          ].map(({ title, description, path, badge }) => (
+            <button
+              key={path}
+              type="button"
+              onClick={() => onNavigate?.(path)}
+              className="w-full text-left rounded-2xl border border-indigo-200 bg-indigo-50 p-4 shadow-sm transition hover:bg-indigo-100 text-indigo-900"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-base font-semibold">{title}</div>
+                  <div className="mt-1 text-xs font-medium opacity-80">{description}</div>
+                </div>
+                <span className="shrink-0 inline-flex items-center rounded-full border border-white/40 bg-white/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest">
+                  {badge}
+                </span>
+              </div>
+            </button>
+          ))}
         </div>
       </div>
     );
   }
 
+  // Primary CBC — mobile shell or role-based dashboard
   if (isMobile) {
     return <MobileDashboard user={user} onNavigate={onNavigate} brandingSettings={brandingSettings} />;
   }

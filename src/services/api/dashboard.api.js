@@ -2,6 +2,8 @@ import { fetchWithAuth } from './core';
 import axiosInstance from './axiosConfig';
 
 export const dashboardAPI = {
+  getSecondaryMetrics: async () =>
+    fetchWithAuth('/dashboard/secondary'),
   getAdminMetrics: async (filter = 'today') =>
     fetchWithAuth(`/dashboard/admin?filter=${filter}`),
   getTeacherMetrics: async (filter = 'today') =>

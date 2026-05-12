@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { AuthController } from '../controllers/auth.controller';
-import { authenticate } from '../middleware/auth.middleware';
+import { authenticate, optionalAuthenticate } from '../middleware/auth.middleware';
 import { asyncHandler } from '../utils/async.util';
 import { sendOTP, verifyOTP } from '../controllers/otp.controller';
 import { authRateLimit, progressiveRateLimit } from '../middleware/enhanced-rateLimit.middleware';
@@ -12,6 +12,7 @@ const authController = new AuthController();
 
 // Public routes with enhanced security rate limiting
 router.post('/register',
+  optionalAuthenticate,
   authRateLimit(5, 60_000), // 5 registrations per minute per IP+email
   validate(registerSchema),
   asyncHandler(authController.register.bind(authController))

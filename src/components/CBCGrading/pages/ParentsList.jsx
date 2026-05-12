@@ -4,7 +4,7 @@
  * Teachers can archive but not delete
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Edit, Trash2, Users, Mail, Phone, Eye, MessageCircle, Archive, Search, RefreshCw, ChevronLeft, ChevronRight, Key, UserCheck, Users2, ShieldAlert, ChevronDown, ChevronUp, Download, X, MessageSquare, Loader2, Send } from 'lucide-react';
 import { userAPI } from '../../../services/api/user.api';
 import { communicationAPI } from '../../../services/api';
@@ -15,6 +15,7 @@ import { usePermissions } from '../../../hooks/usePermissions';
 import { useAuth } from '../../../hooks/useAuth';
 import BulkOperationsModal from '../shared/bulk/BulkOperationsModal';
 import { formatPhoneNumber } from '../../../utils/phoneFormatter';
+import { getSelectedInstitutionType } from '../../../services/schoolContext';
 
 const ParentsList = ({ parents = [], pagination, onFetchParents, onAddParent, onEditParent, onViewParent, onDeleteParent, onArchiveParent, onRefresh, loading = false }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -29,7 +30,7 @@ const ParentsList = ({ parents = [], pagination, onFetchParents, onAddParent, on
   const [studentsTotal, setStudentsTotal] = useState(0);
   const [allLearners, setAllLearners] = useState([]);
   const { can, isRole } = usePermissions();
-  useAuth(); // Auth context
+  const { user } = useAuth();
   const currentUserIsTeacher = isRole('TEACHER');
 
   // Check if user can delete (only admins)
@@ -82,27 +83,53 @@ const ParentsList = ({ parents = [], pagination, onFetchParents, onAddParent, on
     }
   };
 
+  const selectedInstitutionType = String(getSelectedInstitutionType() || user?.institutionType || '').toUpperCase();
+  const isSecondaryPortal = selectedInstitutionType === 'SECONDARY' || selectedInstitutionType === 'HIGH_SCHOOL';
+  const isSecondaryGrade = (gradeValue) => {
+    const g = String(gradeValue || '').trim().toUpperCase();
+    return g.startsWith('FORM') || ['GRADE_10', 'GRADE_11', 'GRADE_12', 'GRADE10', 'GRADE11', 'GRADE12'].includes(g);
+  };
+
+  const scopedLearners = useMemo(() => {
+    const rows = Array.isArray(allLearners) ? allLearners : [];
+    return rows.filter((learner) => {
+      const learnerIsSecondary = isSecondaryGrade(learner?.grade);
+      return isSecondaryPortal ? learnerIsSecondary : !learnerIsSecondary;
+    });
+  }, [allLearners, isSecondaryPortal]);
+
+  const scopedParentIds = useMemo(() => {
+    const ids = new Set();
+    scopedLearners.forEach((learner) => {
+      if (learner?.parentId) ids.add(learner.parentId);
+    });
+    return ids;
+  }, [scopedLearners]);
+
+  const scopedParents = useMemo(() => {
+    const source = Array.isArray(parents) ? parents : [];
+    return source.filter((p) => scopedParentIds.has(p.id));
+  }, [parents, scopedParentIds]);
+
   // Filter parents (fallback for client-side if onFetchParents is not provided)
-  const filteredParents = onFetchParents ? parents : parents.filter(p =>
+  const filteredParents = onFetchParents ? scopedParents : scopedParents.filter(p =>
     p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.phone?.includes(searchTerm)
   );
 
   const nonDemoParents = filteredParents.filter((p) => !isDemoParent(p));
-  const displayTotalParents = onFetchParents
-    ? (pagination?.total || parents.length || 0) - (parents.filter((p) => isDemoParent(p)).length)
-    : nonDemoParents.length;
+  const displayTotalParents = nonDemoParents.length;
 
   const parentLearnerCountMap = React.useMemo(() => {
     const map = new Map();
-    for (const learner of allLearners) {
+    for (const learner of scopedLearners) {
       const parentId = learner?.parentId;
       if (!parentId) continue;
       map.set(parentId, (map.get(parentId) || 0) + 1);
     }
     return map;
-  }, [allLearners]);
+  }, [scopedLearners]);
 
   const metricFilteredParents = nonDemoParents.filter((p) => {
     const childCount = parentLearnerCountMap.get(p.id) || 0;
@@ -155,7 +182,6 @@ const ParentsList = ({ parents = [], pagination, onFetchParents, onAddParent, on
         if (!mounted) return;
         const learners = Array.isArray(response?.data) ? response.data : [];
         setAllLearners(learners);
-        setStudentsTotal(learners.length);
       } catch (e) {
         if (mounted) {
           setAllLearners([]);
@@ -166,6 +192,10 @@ const ParentsList = ({ parents = [], pagination, onFetchParents, onAddParent, on
     fetchLearnerTotal();
     return () => { mounted = false; };
   }, []);
+
+  useEffect(() => {
+    setStudentsTotal(scopedLearners.length);
+  }, [scopedLearners]);
 
   // Handle WhatsApp message
   const handleWhatsAppMessage = (parent) => {
@@ -538,11 +568,9 @@ const ParentsList = ({ parents = [], pagination, onFetchParents, onAddParent, on
                   <td className="px-3 py-1.5 border-r border-gray-100">
                     <div className="flex items-center gap-1 text-sm">
                       <Users size={14} className="text-gray-500" />
-                      <span className="font-semibold text-gray-700 text-xs">
-                        {parent.learnerIds?.length || 0}
-                      </span>
+                      <span className="font-semibold text-gray-700 text-xs">{parentLearnerCountMap.get(parent.id) || 0}</span>
                       <span className="text-gray-500 text-[10px]">
-                        {parent.learnerIds?.length === 1 ? 'child' : 'children'}
+                        {(parentLearnerCountMap.get(parent.id) || 0) === 1 ? 'child' : 'children'}
                       </span>
                     </div>
                   </td>

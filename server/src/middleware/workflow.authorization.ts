@@ -7,6 +7,7 @@ import { Response, NextFunction } from 'express';
 import { AuthRequest } from './permissions.middleware';
 import { UserRole, AssessmentStatus } from '@prisma/client';
 import prisma from '../config/database';
+import { ApiError } from '../utils/error.util';
 
 // ============================================
 // WORKFLOW PERMISSIONS
@@ -34,25 +35,17 @@ export const canPerformWorkflowAction = (action: keyof typeof WORKFLOW_PERMISSIO
       const userRole = req.user?.role;
 
       if (!userRole) {
-        return res.status(401).json({
-          success: false,
-          error: {
-            code: 'UNAUTHORIZED',
-            message: 'User not authenticated'
-          }
-        });
+        return next(new ApiError(401, 'User not authenticated').withCode('AUTH_REQUIRED'));
       }
 
       const allowedRoles = WORKFLOW_PERMISSIONS[action];
 
       if (!allowedRoles.includes(userRole)) {
-        return res.status(403).json({
-          success: false,
-          error: {
-            code: 'FORBIDDEN',
-            message: `Your role (${userRole}) cannot ${action} assessments. Required roles: ${allowedRoles.join(', ')}`
-          }
-        });
+        return next(
+          new ApiError(403, `Your role (${userRole}) cannot ${action} assessments. Required roles: ${allowedRoles.join(', ')}`)
+            .withCode('ROLE_FORBIDDEN')
+            .withRoles(allowedRoles as any, [userRole])
+        );
       }
 
       next();
@@ -118,14 +111,10 @@ export const checkNotLocked = async (
         return next();
       }
 
-      return res.status(403).json({
-        success: false,
-        error: {
-          code: 'LOCKED',
-          message: 'This assessment is locked and cannot be modified. Contact an administrator if changes are required.',
-          status: assessment.status
-        }
-      });
+      return next(
+        new ApiError(403, 'This assessment is locked and cannot be modified. Contact an administrator if changes are required.')
+          .withCode('ACCESS_DENIED')
+      );
     }
 
     next();
@@ -197,14 +186,10 @@ export const checkNotPublishedOrLocked = async (
         return next();
       }
 
-      return res.status(403).json({
-        success: false,
-        error: {
-          code: 'ASSESSMENT_FINALIZED',
-          message: `This assessment is ${assessment.status.toLowerCase()} and cannot be modified`,
-          status: assessment.status
-        }
-      });
+      return next(
+        new ApiError(403, `This assessment is ${assessment.status.toLowerCase()} and cannot be modified`)
+          .withCode('ACCESS_DENIED')
+      );
     }
 
     next();
@@ -263,13 +248,10 @@ export const preventSelfApproval = async (
     // Bypass for ADMIN and SUPER_ADMIN to allow self-approval of their own tests
     const isAdmin = req.user?.role === 'ADMIN' || req.user?.role === 'SUPER_ADMIN';
     if (assessment.submittedBy === userId && !isAdmin) {
-      return res.status(403).json({
-        success: false,
-        error: {
-          code: 'SELF_APPROVAL_NOT_ALLOWED',
-          message: 'You cannot approve your own submission. Please have another administrator review and approve this assessment.'
-        }
-      });
+      return next(
+        new ApiError(403, 'You cannot approve your own submission. Please have another administrator review and approve this assessment.')
+          .withCode('ACCESS_DENIED')
+      );
     }
 
     next();

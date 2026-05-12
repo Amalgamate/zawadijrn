@@ -11,6 +11,8 @@ import {
 } from 'lucide-react';
 import { learnerAPI, idTemplateAPI } from '../../../services/api';
 import { useSchoolData } from '../../../contexts/SchoolDataContext';
+import { useAuth } from '../../../hooks/useAuth';
+import { getSelectedInstitutionType } from '../../../services/schoolContext';
 
 // ─── Single ID card visual ───────────────────────────────────────────────────
 const IDCard = ({ learner, school, cardStyle, template }) => {
@@ -256,6 +258,13 @@ const StylePanel = ({ cardStyle, onChange, onClose }) => (
 // ─── Main page ───────────────────────────────────────────────────────────────
 const IDPrintingPage = () => {
   const { grades, school } = useSchoolData();
+  const { user } = useAuth();
+  const selectedInstitutionType = String(getSelectedInstitutionType() || user?.institutionType || '').toUpperCase();
+  const isSecondaryPortal = selectedInstitutionType === 'SECONDARY' || selectedInstitutionType === 'HIGH_SCHOOL';
+  const isSecondaryGrade = (gradeValue) => {
+    const g = String(gradeValue || '').trim().toUpperCase().replace(/\s+/g, '_');
+    return g.startsWith('FORM') || ['GRADE_10', 'GRADE_11', 'GRADE_12', 'GRADE10', 'GRADE11', 'GRADE12'].includes(g);
+  };
 
   const [learners, setLearners]         = useState([]);
   const [loading, setLoading]           = useState(false);
@@ -302,7 +311,11 @@ const IDPrintingPage = () => {
         ...(filterGrade !== 'all' && !params.grade  ? { grade: filterGrade } : {}),
       });
       if (resp?.success) {
-        setLearners(resp.data || []);
+        const rows = Array.isArray(resp.data) ? resp.data : [];
+        setLearners(rows.filter((learner) => {
+          const learnerIsSecondary = isSecondaryGrade(learner?.grade);
+          return isSecondaryPortal ? learnerIsSecondary : !learnerIsSecondary;
+        }));
         if (resp.pagination) setPagination(resp.pagination);
       }
     } catch (err) {
@@ -310,7 +323,7 @@ const IDPrintingPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, filterGrade, pagination.page]);
+  }, [searchTerm, filterGrade, pagination.page, isSecondaryPortal]);
 
   useEffect(() => {
     const t = setTimeout(() => fetchLearners({ page: 1 }), 400);

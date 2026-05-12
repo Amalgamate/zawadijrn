@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { ApiError } from '../utils/error.util';
 
 const store: Record<string, string> = {};
 
@@ -16,7 +17,7 @@ export const requireCsrf = (req: Request, res: Response, next: NextFunction) => 
   const key = String(req.ip || req.headers['x-forwarded-for'] || 'local');
   const token = req.header('X-CSRF-Token') || '';
   if (!store[key] || store[key] !== token) {
-    return res.status(403).json({ success: false, error: 'Invalid CSRF token' });
+    return next(new ApiError(403, 'Invalid CSRF token').withCode('ACCESS_DENIED'));
   }
   next();
 };

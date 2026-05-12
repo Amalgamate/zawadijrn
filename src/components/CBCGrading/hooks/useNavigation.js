@@ -400,9 +400,8 @@ function parentSchoolSectionsFromNav(nav) {
 
 export const useNavigation = () => {
     const { can, role, isRole } = usePermissions();
-    const { user } = useAuth();
+    const { user, institutionType } = useAuth();
     const labels = useInstitutionLabels();
-    const institutionType = user?.institutionType || 'PRIMARY_CBC';
 
     // ── Institution type branching ───────────────────────────────────────────
     // Each type gets its own filtered nav — CBC users NEVER see secondary/tertiary

@@ -84,10 +84,10 @@ export const secondaryNavSections = [
     permission: 'ACCESS_ASSESSMENT_MODULE',
     items: [
       { id: 'sec-mark-entry',  label: 'Mark Entry',     path: 'sec-mark-entry',  permission: 'ACCESS_ASSESSMENT_MODULE' },
-      { id: 'sec-cats',        label: 'CATs',           path: 'sec-cats',        permission: 'ACCESS_ASSESSMENT_MODULE' },
-      { id: 'sec-mid-term',    label: 'Mid-term Exams', path: 'sec-mid-term',    permission: 'ACCESS_ASSESSMENT_MODULE' },
-      { id: 'sec-end-term',    label: 'End-term Exams', path: 'sec-end-term',    permission: 'ACCESS_ASSESSMENT_MODULE' },
-      { id: 'sec-kcse-mock',   label: 'Mock Exams',     path: 'sec-kcse-mock',   permission: 'ACCESS_ASSESSMENT_MODULE' },
+      { id: 'sec-cats',        label: 'CATs',           path: 'sec-mark-entry',  params: { defaultTestType: 'CAT' },      permission: 'ACCESS_ASSESSMENT_MODULE' },
+      { id: 'sec-mid-term',    label: 'Mid-term Exams', path: 'sec-mark-entry',  params: { defaultTestType: 'MID_TERM' }, permission: 'ACCESS_ASSESSMENT_MODULE' },
+      { id: 'sec-end-term',    label: 'End-term Exams', path: 'sec-mark-entry',  params: { defaultTestType: 'END_TERM' }, permission: 'ACCESS_ASSESSMENT_MODULE' },
+      { id: 'sec-kcse-mock',   label: 'Mock Exams',     path: 'sec-mark-entry',  params: { defaultTestType: 'MOCK' },     permission: 'ACCESS_ASSESSMENT_MODULE' },
     ],
   },
 

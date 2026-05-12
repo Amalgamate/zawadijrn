@@ -1,9 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Bell, LogOut, Zap, ChevronDown, ClipboardList, BarChart3, MessageSquare, Calendar, Gift, User as UserIcon, GitBranch } from 'lucide-react';
 import { usePermissions } from '../../../hooks/usePermissions';
+import { useAuth } from '../../../hooks/useAuth';
 import api from '../../../services/api';
 import { getReminderDelay, shouldScheduleReminder } from './notificationReminder';
 import { clockInTeacher, clockOutTeacher, getCurrentUserClockInStatus, syncCurrentUserClockInStatus } from '../../../utils/teacherClockIn';
+import { setSelectedInstitutionType } from '../../../services/schoolContext';
+import { setInstitutionType } from '../../../services/api/institutionContext';
 import { Button } from "../../ui/button";
 import { Badge } from "../../ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "../../ui/popover";
@@ -39,6 +42,41 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
   const dropdownRef = useRef(null);
   const sessionStartedAtRef = useRef(Date.now());
   const { role } = usePermissions();
+  const { updateUser } = useAuth();
+  const [institutionOverride, setInstitutionOverride] = useState(() => {
+    try {
+      return localStorage.getItem('selectedInstitutionType') || '';
+    } catch {
+      return '';
+    }
+  });
+
+  useEffect(() => {
+    const nextInstitution = String(user?.institutionType || '').toUpperCase();
+    if (!nextInstitution) return;
+
+    try {
+      const currentStored = String(localStorage.getItem('selectedInstitutionType') || '').toUpperCase();
+      if (currentStored) {
+        // Keep AuthContext and API header source aligned with the persisted local switch.
+        if (currentStored !== nextInstitution) {
+          updateUser?.({ institutionType: currentStored });
+          setInstitutionType(currentStored);
+        }
+        if (institutionOverride !== currentStored) {
+          setInstitutionOverride(currentStored);
+        }
+        return;
+      }
+
+      setSelectedInstitutionType(nextInstitution);
+      if (institutionOverride !== nextInstitution) {
+        setInstitutionOverride(nextInstitution);
+      }
+    } catch {
+      // ignore storage access issues
+    }
+  }, [institutionOverride, updateUser, user?.institutionType]);
 
   // Key is scoped to the resolved user id. We wait until user.id is available
   // before loading from localStorage so we never load from the 'unknown' key
@@ -406,6 +444,22 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
   };
 
   const brandColor = brandingSettings?.brandColor || 'var(--brand-purple)';
+  const canSwitchInstitutionLocal =
+    String(user?.role || '').toUpperCase() === 'SUPER_ADMIN' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+  const effectiveInstitutionType = institutionOverride || user?.institutionType || 'PRIMARY_CBC';
+  const isSecondaryPortal = effectiveInstitutionType === 'SECONDARY';
+  const isTertiaryPortal = effectiveInstitutionType === 'TERTIARY';
+
+  const handleInstitutionSwitch = (nextType) => {
+    const value = String(nextType || '').toUpperCase();
+    if (!value) return;
+    setInstitutionOverride(value);
+    setSelectedInstitutionType(value);
+    setInstitutionType(value);
+    updateUser?.({ institutionType: value });
+  };
 
   return (
     <header className="h-20 bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm sticky top-0 z-50">
@@ -430,13 +484,15 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
             <span
               className={cn(
                 "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest leading-none shadow-sm",
-                (user?.institutionType === 'SECONDARY')
+                isSecondaryPortal
                   ? "bg-indigo-50 text-indigo-800 border-indigo-200"
-                  : "bg-emerald-50 text-emerald-800 border-emerald-200"
+                  : isTertiaryPortal
+                    ? "bg-amber-50 text-amber-800 border-amber-200"
+                    : "bg-emerald-50 text-emerald-800 border-emerald-200"
               )}
-              title={user?.institutionType === 'SECONDARY' ? 'Senior School portal' : 'Junior School portal'}
+              title={isSecondaryPortal ? 'Senior School portal' : isTertiaryPortal ? 'Tertiary portal' : 'Junior School portal'}
             >
-              {user?.institutionType === 'SECONDARY' ? 'Senior School' : 'Junior School'}
+              {isSecondaryPortal ? 'Senior School' : isTertiaryPortal ? 'Tertiary' : 'Junior School'}
             </span>
             <span className="hidden md:inline-block h-4 w-px bg-gray-200 mx-1" aria-hidden="true" />
             <span className="hidden md:inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-gray-500">
@@ -453,6 +509,24 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
                 </span>
               )}
             </span>
+            {canSwitchInstitutionLocal && (
+              <>
+                <span className="hidden md:inline-block h-4 w-px bg-gray-200 mx-1" aria-hidden="true" />
+                <label className="hidden md:inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-gray-500">
+                  Context
+                  <select
+                    value={effectiveInstitutionType}
+                    onChange={(e) => handleInstitutionSwitch(e.target.value)}
+                    className="rounded-md border border-gray-300 bg-white px-2 py-1 text-[10px] font-semibold text-gray-800 uppercase tracking-widest"
+                    title="Local institution context switch"
+                  >
+                    <option value="PRIMARY_CBC">Junior</option>
+                    <option value="SECONDARY">Secondary</option>
+                    <option value="TERTIARY">Tertiary</option>
+                  </select>
+                </label>
+              </>
+            )}
           </div>
           <p className="text-[9px] text-gray-400 font-medium uppercase tracking-[0.2em] mt-1">
             {title ? (brandingSettings?.schoolName || 'Trends CORE V1.0') : 'School Management System'}

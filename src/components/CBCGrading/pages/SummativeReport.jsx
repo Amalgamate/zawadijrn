@@ -960,7 +960,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
 };
 
 
-const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) => {
+const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user, pageParams = {} }) => {
   const { showSuccess, showError, showInfo, showToast, toastMessage, toastType, hideNotification } = useNotifications();
 
   // Use centralized hooks for assessment state management
@@ -1191,12 +1191,43 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user }) 
   const [selectedLearnerIds, setSelectedLearnerIds] = useState([]);
   const [showLearnerOptions, setShowLearnerOptions] = useState(false);
   const learnerOptionsRef = useRef(null);
+  const initializedFromParamsRef = useRef(false);
 
   // Helper to normalize strings for comparison (e.g., "Grade 1" -> "GRADE_1")
   const normalize = (str) => {
     if (!str) return '';
     return String(str).trim().replace(/\s+/g, '_').toUpperCase();
   };
+
+  useEffect(() => {
+    if (initializedFromParamsRef.current) return;
+    initializedFromParamsRef.current = true;
+
+    if (pageParams?.grade) {
+      const grade = normalize(pageParams.grade);
+      setStagedGrade(grade);
+      setSelectedGrade(grade);
+    }
+
+    if (pageParams?.stream) {
+      const stream = String(pageParams.stream);
+      setStagedStream(stream);
+      setSelectedStream(stream);
+    }
+
+    if (pageParams?.term) {
+      const term = normalize(pageParams.term);
+      if (['TERM_1', 'TERM_2', 'TERM_3'].includes(term)) {
+        setStagedTerm(term);
+        setSelectedTerm(term);
+      }
+    }
+
+    if (pageParams?.academicYear && !Number.isNaN(Number(pageParams.academicYear))) {
+      setStagedAcademicYear(Number(pageParams.academicYear));
+      setup.setSelectedAcademicYear(Number(pageParams.academicYear));
+    }
+  }, [pageParams, setup]);
 
   // Dynamic learner fetching whenever grade or stream changes
   useEffect(() => {

@@ -497,7 +497,7 @@ const LeafItem = ({ item, currentPage, onNavigate }) => {
 
   return (
     <button
-      onClick={() => !item.greyedOut && !item.comingSoon && onNavigate(item.path)}
+      onClick={() => !item.greyedOut && !item.comingSoon && onNavigate(item.path, item.params)}
       onMouseEnter={() => prefetch(item.path)}
       disabled={!!(item.greyedOut || item.comingSoon)}
       className={`

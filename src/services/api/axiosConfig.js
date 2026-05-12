@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getInstitutionType } from './institutionContext';
 
 // Use environment variable for API URL or fall back to automatic discovery for production stability
 const getApiBaseUrl = () => {
@@ -40,15 +41,9 @@ axiosInstance.interceptors.request.use(
         if (token && token.startsWith('ey')) {
             config.headers['Authorization'] = `Bearer ${token}`;
         }
-        try {
-            const selectedInstitutionType = localStorage.getItem('selectedInstitutionType');
-            const user = JSON.parse(localStorage.getItem('user') || '{}');
-            const institutionType = selectedInstitutionType || user?.institutionType;
-            if (institutionType) {
-                config.headers['x-institution-type'] = institutionType;
-            }
-        } catch (_err) {
-            // Ignore malformed local storage and proceed without context override.
+        const institutionType = getInstitutionType();
+        if (institutionType) {
+            config.headers['x-institution-type'] = institutionType;
         }
         return config;
     },

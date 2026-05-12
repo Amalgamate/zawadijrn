@@ -7,10 +7,17 @@ import React, { useState, useEffect } from 'react';
 import { CheckCircle, ArrowRight, Users } from 'lucide-react';
 import EmptyState from '../shared/EmptyState';
 import { useAuth } from '../../../hooks/useAuth';
+import { getSelectedInstitutionType } from '../../../services/schoolContext';
 import api, { configAPI } from '../../../services/api';
 
 const PromotionPage = ({ onPromote, showNotification }) => {
   const { user } = useAuth();
+  const selectedInstitutionType = String(getSelectedInstitutionType() || user?.institutionType || '').toUpperCase();
+  const isSecondaryPortal = selectedInstitutionType === 'SECONDARY' || selectedInstitutionType === 'HIGH_SCHOOL';
+  const isSecondaryGrade = (gradeValue) => {
+    const g = String(gradeValue || '').trim().toUpperCase().replace(/\s+/g, '_');
+    return g.startsWith('FORM') || ['GRADE_10', 'GRADE_11', 'GRADE_12', 'GRADE10', 'GRADE11', 'GRADE12'].includes(g);
+  };
   const [sourceGrade, setSourceGrade] = useState('');
   const [sourceStream, setSourceStream] = useState('all');
   const [selectedLearners, setSelectedLearners] = useState([]);
@@ -91,7 +98,12 @@ const PromotionPage = ({ onPromote, showNotification }) => {
             (response.data && Array.isArray(response.data.data)) ? response.data.data : [];
 
           // Transform data if needed to match UI expectations (consistent with useLearners hook)
-          const transformed = data.map(l => ({
+          const transformed = data
+            .filter((l) => {
+              const learnerIsSecondary = isSecondaryGrade(l?.grade);
+              return isSecondaryPortal ? learnerIsSecondary : !learnerIsSecondary;
+            })
+            .map(l => ({
             id: l.id,
             firstName: l.firstName,
             lastName: l.lastName,
@@ -114,7 +126,7 @@ const PromotionPage = ({ onPromote, showNotification }) => {
     };
 
     fetchClassLearners();
-  }, [sourceGrade, sourceStream]);
+  }, [sourceGrade, sourceStream, isSecondaryPortal]);
 
   // Toggle learner selection
   const toggleLearner = (learnerId) => {

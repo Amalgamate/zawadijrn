@@ -291,7 +291,7 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
       }
       return { success: false, error: res.data?.message || 'Failed to process transfer out' };
     } catch (err) {
-      return { success: false, error: err.response?.data?.message || err.message };
+      return { success: false, error: extractApiErrorMessage(err, 'Failed to process transfer out') };
     }
   }, [fetchLearnersFromApi]);
 
@@ -306,7 +306,7 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
       }
       return { success: false, error: res.data?.message };
     } catch (err) {
-      return { success: false, error: err.response?.data?.message || err.message };
+      return { success: false, error: extractApiErrorMessage(err, 'Failed to create tutor') };
     }
   }, [fetchTeachersFromApi]);
 
@@ -320,7 +320,7 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
       }
       return { success: false, error: res.data?.message };
     } catch (err) {
-      return { success: false, error: err.message };
+      return { success: false, error: extractApiErrorMessage(err, 'Failed to update tutor') };
     }
   }, [fetchTeachersFromApi]);
 
@@ -330,7 +330,7 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
       if (res.data?.success) { await fetchTeachersFromApi(); return { success: true }; }
       return { success: false, error: res.data?.message };
     } catch (err) {
-      return { success: false, error: err.message };
+      return { success: false, error: extractApiErrorMessage(err, 'Failed to delete tutor') };
     }
   }, [fetchTeachersFromApi]);
 
@@ -340,7 +340,7 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
       if (res.data?.success) { await fetchTeachersFromApi(); return { success: true }; }
       return { success: false, error: res.data?.message };
     } catch (err) {
-      return { success: false, error: err.message };
+      return { success: false, error: extractApiErrorMessage(err, 'Failed to archive tutor') };
     }
   }, [fetchTeachersFromApi]);
 
@@ -351,7 +351,7 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
       if (res.data?.success) { await fetchParentsFromApi(); return { success: true }; }
       return { success: false, error: res.data?.message };
     } catch (err) {
-      return { success: false, error: err.response?.data?.message || err.message };
+      return { success: false, error: extractApiErrorMessage(err, 'Failed to create parent') };
     }
   }, [fetchParentsFromApi]);
 

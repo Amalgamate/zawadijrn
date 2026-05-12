@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ArrowRight, ClipboardList, FileText, Layers } from 'lucide-react';
+import { normalizeTestType } from '../../utils/testType';
 
 const Card = ({ title, description, onClick, icon: Icon }) => (
   <button
@@ -20,7 +21,13 @@ const Card = ({ title, description, onClick, icon: Icon }) => (
   </button>
 );
 
-const MarkEntryHub = ({ onNavigate }) => {
+const MarkEntryHub = ({ onNavigate, defaultTestType = null }) => {
+  useEffect(() => {
+    const normalized = normalizeTestType(defaultTestType);
+    if (!normalized) return;
+    onNavigate?.('assess-summative-tests', { defaultTestType: normalized });
+  }, [defaultTestType, onNavigate]);
+
   return (
     <div className="p-6 space-y-4">
       <div>
@@ -33,9 +40,27 @@ const MarkEntryHub = ({ onNavigate }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card
           icon={ClipboardList}
-          title="Summative Assessments"
-          description="Create tests, record results, and view matrices."
-          onClick={() => onNavigate?.('assess-summative-assessment')}
+          title="CAT Mark Entry"
+          description="Manage CAT tests and entry workflows."
+          onClick={() => onNavigate?.('assess-summative-tests', { defaultTestType: 'CAT' })}
+        />
+        <Card
+          icon={ClipboardList}
+          title="Mid-Term Mark Entry"
+          description="Manage mid-term tests and score entry."
+          onClick={() => onNavigate?.('assess-summative-tests', { defaultTestType: 'MID_TERM' })}
+        />
+        <Card
+          icon={ClipboardList}
+          title="End-Term Mark Entry"
+          description="Manage end-term tests and score entry."
+          onClick={() => onNavigate?.('assess-summative-tests', { defaultTestType: 'END_TERM' })}
+        />
+        <Card
+          icon={ClipboardList}
+          title="Mock Mark Entry"
+          description="Manage mock tests and score entry."
+          onClick={() => onNavigate?.('assess-summative-tests', { defaultTestType: 'MOCK' })}
         />
         <Card
           icon={Layers}
@@ -61,4 +86,3 @@ const MarkEntryHub = ({ onNavigate }) => {
 };
 
 export default MarkEntryHub;
-

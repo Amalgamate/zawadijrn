@@ -1,13 +1,19 @@
 /**
- * Class Routes
- * Handles class management and enrollment endpoints
- * 
- * @module routes/class.routes
+ * class.routes.ts
+ *
+ * Guard contract:
+ *   - authenticate — applied once in index.ts; NOT repeated here
+ *   - requireRole  — applied per-route for all write/admin operations
+ *   - requireSchoolContext — kept per-route (needed for req.school resolution)
+ *
+ * NOTE: createClassSchema currently enumerates Primary CBC grades only
+ * (Grade1–Grade6).  Secondary classes (Grade10–Grade12) require a different
+ * or extended grade set.  Extend the schema in Chunk 6 when Secondary class
+ * creation is added.
  */
 
 import { Router } from 'express';
 import { ClassController } from '../controllers/class.controller';
-import { authenticate, authorize } from '../middleware/auth.middleware';
 import { requireSchoolContext } from '../middleware/school.middleware';
 import { requirePermission, requireRole, auditLog } from '../middleware/permissions.middleware';
 import { asyncHandler } from '../utils/async.util';
@@ -18,10 +24,18 @@ import { z } from 'zod';
 const router = Router();
 const classController = new ClassController();
 
-// Validation schemas
+// ── Validation schemas ───────────────────────────────────────────────────────
+
 const createClassSchema = z.object({
   name: z.string().min(2).max(100),
-  grade: z.enum(['Grade1', 'Grade2', 'Grade3', 'Grade4', 'Grade5', 'Grade6']),
+  grade: z.enum([
+    'PLAYGROUP', 'PP1', 'PP2',
+    'GRADE_1', 'GRADE_2', 'GRADE_3', 'GRADE_4', 'GRADE_5', 'GRADE_6', 'GRADE_7', 'GRADE_8', 'GRADE_9',
+    'GRADE10', 'GRADE11', 'GRADE12',
+    'GRADE_10', 'GRADE_11', 'GRADE_12',
+    'Grade1', 'Grade2', 'Grade3', 'Grade4', 'Grade5', 'Grade6',
+    'Grade 10', 'Grade 11', 'Grade 12'
+  ]),
   classTeacherId: z.string().min(1).optional(),
   capacity: z.number().int().min(1).max(200).optional()
 });
@@ -32,14 +46,14 @@ const updateClassSchema = z.object({
   capacity: z.number().int().min(1).max(200).optional()
 });
 
+// authenticate is applied in index.ts — do NOT add authenticate here
+
 /**
  * @route   GET /api/classes
- * @desc    Get all classes
- * @access  SUPER_ADMIN, ADMIN, HEAD_TEACHER, TEACHER
+ * @access  SUPER_ADMIN, ADMIN, HEAD_TEACHER, HEAD_OF_CURRICULUM, TEACHER (VIEW_ALL_LEARNERS)
  */
-router.get('/', 
-  authenticate, 
-  requireSchoolContext, 
+router.get('/',
+  requireSchoolContext,
   requirePermission('VIEW_ALL_LEARNERS'),
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   asyncHandler(classController.getAllClasses.bind(classController))
@@ -47,12 +61,10 @@ router.get('/',
 
 /**
  * @route   GET /api/classes/:id
- * @desc    Get single class with learners
- * @access  SUPER_ADMIN, ADMIN, HEAD_TEACHER, TEACHER
+ * @access  VIEW_ALL_LEARNERS
  */
 router.get(
   '/:id',
-  authenticate,
   requireSchoolContext,
   requirePermission('VIEW_ALL_LEARNERS'),
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
@@ -61,12 +73,10 @@ router.get(
 
 /**
  * @route   POST /api/classes
- * @desc    Create new class
  * @access  SUPER_ADMIN, ADMIN, HEAD_TEACHER
  */
 router.post(
   '/',
-  authenticate,
   requireSchoolContext,
   requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER']),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
@@ -77,12 +87,10 @@ router.post(
 
 /**
  * @route   PUT /api/classes/:id
- * @desc    Update class
  * @access  SUPER_ADMIN, ADMIN, HEAD_TEACHER
  */
 router.put(
   '/:id',
-  authenticate,
   requireSchoolContext,
   requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER']),
   auditLog('UPDATE_CLASS'),
@@ -91,12 +99,10 @@ router.put(
 
 /**
  * @route   POST /api/classes/enroll
- * @desc    Enroll learner in class
  * @access  SUPER_ADMIN, ADMIN, HEAD_TEACHER
  */
 router.post(
   '/enroll',
-  authenticate,
   requireSchoolContext,
   requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER']),
   auditLog('ENROLL_LEARNER'),
@@ -105,12 +111,10 @@ router.post(
 
 /**
  * @route   POST /api/classes/unenroll
- * @desc    Remove learner from class
  * @access  SUPER_ADMIN, ADMIN, HEAD_TEACHER
  */
 router.post(
   '/unenroll',
-  authenticate,
   requireSchoolContext,
   requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER']),
   auditLog('UNENROLL_LEARNER'),
@@ -119,19 +123,20 @@ router.post(
 
 /**
  * @route   GET /api/classes/learner/:learnerId
- * @desc    Get learner's current class
- * @access  SUPER_ADMIN, ADMIN, HEAD_TEACHER, TEACHER, PARENT
+ * @access  Any authenticated user with school context
  */
-router.get('/learner/:learnerId', authenticate, requireSchoolContext, asyncHandler(classController.getLearnerClass.bind(classController)));
+router.get(
+  '/learner/:learnerId',
+  requireSchoolContext,
+  asyncHandler(classController.getLearnerClass.bind(classController))
+);
 
 /**
  * @route   POST /api/classes/assign-teacher
- * @desc    Assign teacher to class
- * @access  SUPER_ADMIN, ADMIN, HEAD_TEACHER
+ * @access  SUPER_ADMIN, ADMIN, HEAD_TEACHER, HEAD_OF_CURRICULUM
  */
 router.post(
   '/assign-teacher',
-  authenticate,
   requireSchoolContext,
   requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM']),
   auditLog('ASSIGN_TEACHER'),
@@ -140,12 +145,10 @@ router.post(
 
 /**
  * @route   POST /api/classes/unassign-teacher
- * @desc    Unassign teacher from class
- * @access  SUPER_ADMIN, ADMIN, HEAD_TEACHER
+ * @access  SUPER_ADMIN, ADMIN, HEAD_TEACHER, HEAD_OF_CURRICULUM
  */
 router.post(
   '/unassign-teacher',
-  authenticate,
   requireSchoolContext,
   requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM']),
   auditLog('UNASSIGN_TEACHER'),
@@ -154,12 +157,10 @@ router.post(
 
 /**
  * @route   GET /api/classes/teacher/:teacherId/workload
- * @desc    Get teacher's workload (all assigned classes)
- * @access  SUPER_ADMIN, ADMIN, HEAD_TEACHER
+ * @access  SUPER_ADMIN, ADMIN, HEAD_TEACHER, HEAD_OF_CURRICULUM, TEACHER
  */
 router.get(
   '/teacher/:teacherId/workload',
-  authenticate,
   requireSchoolContext,
   requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM', 'TEACHER']),
   asyncHandler(classController.getTeacherWorkload.bind(classController))
@@ -167,12 +168,10 @@ router.get(
 
 /**
  * @route   GET /api/classes/teacher/:teacherId/schedules
- * @desc    Get teacher's subject schedules from ClassSchedule table
- * @access  SUPER_ADMIN, ADMIN, HEAD_TEACHER, HEAD_OF_CURRICULUM, TEACHER (self)
+ * @access  SUPER_ADMIN, ADMIN, HEAD_TEACHER, HEAD_OF_CURRICULUM, TEACHER
  */
 router.get(
   '/teacher/:teacherId/schedules',
-  authenticate,
   requireSchoolContext,
   requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM', 'TEACHER']),
   asyncHandler(classController.getTeacherSchedules.bind(classController))
@@ -180,22 +179,19 @@ router.get(
 
 /**
  * @route   GET /api/classes/:id/schedules
- * @desc    Get schedules for a specific class
  */
 router.get(
   '/:id/schedules',
-  authenticate,
   requireSchoolContext,
   asyncHandler(classController.getClassSchedules.bind(classController))
 );
 
 /**
  * @route   POST /api/classes/:id/schedules
- * @desc    Add a schedule to a class
+ * @access  SUPER_ADMIN, ADMIN, HEAD_TEACHER, HEAD_OF_CURRICULUM
  */
 router.post(
   '/:id/schedules',
-  authenticate,
   requireSchoolContext,
   requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM']),
   asyncHandler(classController.createClassSchedule.bind(classController))
@@ -203,11 +199,10 @@ router.post(
 
 /**
  * @route   PUT /api/classes/:id/schedules/:scheduleId
- * @desc    Update a schedule
+ * @access  SUPER_ADMIN, ADMIN, HEAD_TEACHER, HEAD_OF_CURRICULUM
  */
 router.put(
   '/:id/schedules/:scheduleId',
-  authenticate,
   requireSchoolContext,
   requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM']),
   asyncHandler(classController.updateClassSchedule.bind(classController))
@@ -215,11 +210,10 @@ router.put(
 
 /**
  * @route   DELETE /api/classes/:id/schedules/:scheduleId
- * @desc    Delete a schedule
+ * @access  SUPER_ADMIN, ADMIN, HEAD_TEACHER, HEAD_OF_CURRICULUM
  */
 router.delete(
   '/:id/schedules/:scheduleId',
-  authenticate,
   requireSchoolContext,
   requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM']),
   asyncHandler(classController.deleteClassSchedule.bind(classController))

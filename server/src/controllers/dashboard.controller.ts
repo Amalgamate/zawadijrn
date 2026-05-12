@@ -1,10 +1,12 @@
 import { Response } from 'express';
+import { Prisma } from '@prisma/client';
 import prisma from '../config/database';
 import { ApiError } from '../utils/error.util';
 import { AuthRequest } from '../middleware/permissions.middleware';
 import { redisCacheService } from '../services/redis-cache.service';
 import { configService } from '../services/config.service';
 import { generateInsights } from '../services/insights.service';
+import { CanonicalInstitutionType } from '../utils/institutionNormalizer';
 
 import logger from '../utils/logger';
 // ─── TTL constants ─────────────────────────────────────────────────────────────
@@ -16,6 +18,176 @@ const TEACHER_CACHE_TTL = 120; // 2 min
 const PARENT_CACHE_TTL  = 120; // 2 min
 
 export class DashboardController {
+
+    /**
+     * Returns the resolved institution type for this request.
+     * Reads req.resolvedInstitutionType set by institutionContextResolver —
+     * never re-derives from headers or req.school.
+     */
+    private getInstitutionType(req: AuthRequest): CanonicalInstitutionType {
+        return (req.resolvedInstitutionType ?? 'PRIMARY_CBC') as CanonicalInstitutionType;
+    }
+
+    /** GET /api/dashboard/secondary */
+    async getSecondaryMetrics(req: AuthRequest, res: Response) {
+        try {
+            const institutionType = this.getInstitutionType(req);
+            if (institutionType !== 'SECONDARY') {
+                throw new ApiError(403, 'Secondary dashboard is available for secondary institutions only')
+                    .withCode('INSTITUTION_FORBIDDEN');
+            }
+
+            const cacheKey = `dashboard:secondary:${institutionType}`;
+            const cached = await redisCacheService.get<any>(cacheKey);
+            if (cached) return res.json({ success: true, data: cached, _cached: true });
+
+            const secondaryGrades = ['GRADE10', 'GRADE11', 'GRADE12', 'GRADE_10', 'GRADE_11', 'GRADE_12', 'FORM_1', 'FORM_2', 'FORM_3'];
+            const activeTermConfig = await configService.getActiveTermConfig();
+            const activeAcademicYear = Number(activeTermConfig?.academicYear || new Date().getFullYear());
+            const activeTerm = String(activeTermConfig?.term || 'TERM_1');
+
+            const [
+                learnerCount,
+                learnersByStream,
+                tests,
+            ] = await Promise.all([
+                prisma.learner.count({
+                    where: {
+                        institutionType: 'SECONDARY',
+                        archived: false,
+                        status: 'ACTIVE',
+                        grade: { in: secondaryGrades as any }
+                    }
+                }),
+                prisma.learner.groupBy({
+                    by: ['stream'],
+                    where: {
+                        institutionType: 'SECONDARY',
+                        archived: false,
+                        status: 'ACTIVE',
+                        grade: { in: secondaryGrades as any }
+                    },
+                    _count: true
+                }),
+                prisma.summativeTest.findMany({
+                    where: {
+                        archived: false,
+                        active: true,
+                        status: 'PUBLISHED',
+                        grade: { in: secondaryGrades as any }
+                    },
+                    select: { id: true, testType: true }
+                })
+            ]);
+
+            const testResultCounts = await prisma.summativeResult.groupBy({
+              by: ['testId'],
+              where: { archived: false, testId: { in: tests.map(t => t.id) } },
+              _count: true,
+            });
+            const resultsCountMap = new Map(testResultCounts.map((r) => [r.testId, r._count]));
+            const countByType = (type: string) => tests.filter((t) => String(t.testType || '').toUpperCase() === type).length;
+            const totalAssigned = tests.reduce((sum, t) => sum + Number(resultsCountMap.get(t.id) || 0), 0);
+            const avgAssigned = tests.length > 0 ? Math.round(totalAssigned / tests.length) : 0;
+
+            // Trend 1: mean score trend for last 3 terms (within active year)
+            const termRows = await prisma.$queryRaw<Array<any>>(Prisma.sql`
+              SELECT
+                st.term AS term,
+                AVG(sr.percentage)::float AS mean_percentage
+              FROM summative_results sr
+              INNER JOIN summative_tests st ON st.id = sr."testId"
+              WHERE st."institutionType" = 'SECONDARY'
+                AND st.archived = false
+                AND st."academicYear" = ${activeAcademicYear}
+                AND st.grade = ANY(${secondaryGrades})
+              GROUP BY st.term
+            `);
+            const termOrder = ['TERM_1', 'TERM_2', 'TERM_3'];
+            const meanTrend = termRows
+              .map((r) => ({
+                term: String(r.term || ''),
+                mean: Number(r.mean_percentage || 0),
+              }))
+              .sort((a, b) => termOrder.indexOf(a.term) - termOrder.indexOf(b.term))
+              .slice(-3);
+
+            // Trend 2: stream ranking snapshot for active term/year
+            const streamRows = await prisma.$queryRaw<Array<any>>(Prisma.sql`
+              SELECT
+                l.stream AS stream,
+                AVG(sr.percentage)::float AS mean_percentage
+              FROM summative_results sr
+              INNER JOIN summative_tests st ON st.id = sr."testId"
+              INNER JOIN learners l ON l.id = sr."learnerId"
+              WHERE st."institutionType" = 'SECONDARY'
+                AND st.archived = false
+                AND st."academicYear" = ${activeAcademicYear}
+                AND st.term = ${activeTerm}
+                AND st.grade = ANY(${secondaryGrades})
+                AND l.archived = false
+              GROUP BY l.stream
+              ORDER BY mean_percentage DESC
+              LIMIT 5
+            `);
+            const streamSnapshot = streamRows.map((r, idx) => ({
+              rank: idx + 1,
+              stream: String(r.stream || 'Unassigned'),
+              mean: Number(r.mean_percentage || 0),
+            }));
+
+            // Trend 3: subject performance snapshot for active term/year
+            const subjectRows = await prisma.$queryRaw<Array<any>>(Prisma.sql`
+              SELECT
+                st."learningArea" AS learning_area,
+                AVG(sr.percentage)::float AS mean_percentage
+              FROM summative_results sr
+              INNER JOIN summative_tests st ON st.id = sr."testId"
+              WHERE st."institutionType" = 'SECONDARY'
+                AND st.archived = false
+                AND st."academicYear" = ${activeAcademicYear}
+                AND st.term = ${activeTerm}
+                AND st.grade = ANY(${secondaryGrades})
+              GROUP BY st."learningArea"
+              ORDER BY mean_percentage DESC
+              LIMIT 5
+            `);
+            const subjectSnapshot = subjectRows.map((r) => ({
+              learningArea: String(r.learning_area || 'Unknown'),
+              mean: Number(r.mean_percentage || 0),
+            }));
+
+            const payload = {
+                context: {
+                    academicYear: activeAcademicYear,
+                    term: activeTerm,
+                },
+                learnerCount,
+                streamCount: learnersByStream.filter((s) => Boolean(s.stream)).length,
+                activeTestsCount: tests.length,
+                avgAssigned,
+                tests: {
+                    CAT: countByType('CAT'),
+                    MID_TERM: countByType('MID_TERM'),
+                    END_TERM: countByType('END_TERM'),
+                    MOCK: countByType('MOCK')
+                },
+                trends: {
+                    meanTrend,
+                    streamSnapshot,
+                    subjectSnapshot
+                },
+            };
+
+            await redisCacheService.set(cacheKey, payload, 120);
+            res.json({ success: true, data: payload });
+        } catch (error: any) {
+            logger.error('Secondary Dashboard Error:', error);
+            if (error instanceof ApiError) throw error;
+            throw new ApiError(500, error.message || 'Failed to fetch secondary dashboard metrics');
+        }
+    }
+
     /**
      * GET /api/dashboard/admin
      * Pass ?fresh=1 to bypass the cache (e.g. after a manual refresh button click).
@@ -24,7 +196,24 @@ export class DashboardController {
         console.time('🚀 [DASHBOARD] getAdminMetrics');
         try {
             const { filter = 'today', fresh } = req.query;
-            const cacheKey = `dashboard:admin:${filter}`;
+            const institutionType = this.getInstitutionType(req);
+            const secondaryGrades = ['GRADE10', 'GRADE11', 'GRADE12', 'GRADE_10', 'GRADE_11', 'GRADE_12', 'FORM_1', 'FORM_2', 'FORM_3'];
+            const isSecondaryContext = institutionType === 'SECONDARY';
+            const summativeTestScope: Prisma.SummativeTestWhereInput = isSecondaryContext
+                ? { grade: { in: secondaryGrades as any } }
+                : { NOT: { grade: { in: secondaryGrades as any } } };
+            const learnerScope: Prisma.LearnerWhereInput = isSecondaryContext
+                ? {
+                    archived: false,
+                    institutionType: 'SECONDARY' as any,
+                    grade: { in: secondaryGrades as any },
+                }
+                : {
+                    archived: false,
+                    institutionType: { not: 'SECONDARY' as any },
+                    NOT: { grade: { in: secondaryGrades as any } },
+                };
+            const cacheKey = `dashboard:admin:v2:${institutionType}:${filter}`;
 
             // ── Serve from cache unless caller explicitly bypassed it ──────────
             if (!fresh) {
@@ -44,25 +233,22 @@ export class DashboardController {
             const prevDateFilter = this.getPreviousDateFilter(filter as string);
 
             // ── Stage 1: All independent queries fired in one Promise.all ─────
-            // 22 queries total. On PgBouncer (port 6543, pool ≤15) these are
-            // batched by Prisma's own pool (connection_limit=5 by default in
-            // database.ts), so at most 5 run simultaneously and the rest queue
-            // for <1 RTT each — much cheaper than all 22 competing at once.
             const resultStage1 = await Promise.all([
                 // [0] counts
-                prisma.learner.count({ where: { archived: false } }),
+                prisma.learner.count({ where: learnerScope }),
                 prisma.user.count({ where: { role: 'TEACHER', archived: false } }),
-                prisma.class.count({ where: { archived: false } }),
-                prisma.learner.count({ where: { archived: false, createdAt: prevDateFilter } }),
+                prisma.class.count({ where: { archived: false, institutionType: isSecondaryContext ? ('SECONDARY' as any) : ('PRIMARY_CBC' as any) } }),
+                prisma.learner.count({ where: { ...learnerScope, createdAt: prevDateFilter } }),
                 prisma.user.count({ where: { role: 'TEACHER', archived: false, createdAt: prevDateFilter } }),
-                prisma.learner.count({ where: { status: 'ACTIVE', archived: false } }),
+                prisma.learner.count({ where: { ...learnerScope, status: 'ACTIVE' } }),
                 prisma.user.count({ where: { role: 'TEACHER', status: 'ACTIVE', archived: false } }),
                 // [7] group-bys
                 prisma.attendance.groupBy({ by: ['status'], where: { date: dateFilter }, _count: true }),
-                prisma.learner.groupBy({ by: ['grade'], where: { archived: false }, _count: true }),
+                prisma.learner.groupBy({ by: ['grade'], where: learnerScope, _count: true }),
                 prisma.user.groupBy({ by: ['role'], where: { archived: false }, _count: true }),
                 // [10] recent records
                 prisma.learner.findMany({
+                    where: learnerScope,
                     orderBy: { createdAt: 'desc' }, take: 5,
                     select: { firstName: true, lastName: true, admissionNumber: true, grade: true, createdAt: true }
                 }),
@@ -91,10 +277,15 @@ export class DashboardController {
                 })(),
                 // [14]
                 prisma.formativeAssessment.count({ where: { status: 'DRAFT', archived: false } }),
-                prisma.learner.groupBy({ by: ['gender'], where: { archived: false }, _count: true }),
+                prisma.learner.groupBy({ by: ['gender'], where: learnerScope, _count: true }),
                 // [16] latest test series
                 prisma.summativeTest.findFirst({
-                    where: { archived: false, academicYear: activeAcademicYear, term: activeTerm as any },
+                    where: {
+                        archived: false,
+                        academicYear: activeAcademicYear,
+                        term: activeTerm as any,
+                        ...summativeTestScope,
+                    },
                     orderBy: { createdAt: 'desc' },
                     select: { testType: true, term: true, academicYear: true }
                 }),
@@ -120,7 +311,7 @@ export class DashboardController {
                     _count: true,
                 }),
                 // [21]
-                prisma.class.count({ where: { archived: false, active: true } }),
+                prisma.class.count({ where: { archived: false, active: true, institutionType: isSecondaryContext ? ('SECONDARY' as any) : ('PRIMARY_CBC' as any) } }),
             ]);
 
             const latestTest         = resultStage1[16];
@@ -138,9 +329,6 @@ export class DashboardController {
             ] = resultStage1;
 
             // ── Stage 2: Assessment-series detail ─────────────────────────────
-            // The two sub-queries (totalPerGrade, assessedPerGrade) now run in a
-            // single Promise.all — they were previously serialised (await…await)
-            // which added an extra full database round-trip.
             let totalMissedExams    = 0;
             let currentTestSeries   = 'CURRENT SERIES';
             let unAssessedBreakdown: any[] = [];
@@ -153,7 +341,8 @@ export class DashboardController {
                         testType:     latestTest.testType,
                         term:         latestTest.term,
                         academicYear: latestTest.academicYear,
-                        archived:     false
+                        archived:     false,
+                        ...summativeTestScope,
                     },
                     select: { id: true, grade: true }
                 });
@@ -162,18 +351,17 @@ export class DashboardController {
                     const testIds = testsInSeries.map(t => t.id);
                     const grades  = [...new Set(testsInSeries.map(t => t.grade))];
 
-                    // ── Both queries fire at the same time ──────────────────
                     const [totalPerGrade, assessedPerGrade] = await Promise.all([
                         prisma.learner.groupBy({
                             by: ['grade'],
-                            where: { status: 'ACTIVE', archived: false, grade: { in: grades as any } },
+                            where: { ...learnerScope, status: 'ACTIVE', grade: { in: grades as any } },
                             _count: true,
                         }),
                         prisma.learner.groupBy({
                             by: ['grade'],
                             where: {
                                 status:  'ACTIVE',
-                                archived: false,
+                                ...learnerScope,
                                 grade:   { in: grades as any },
                                 summativeResults: { some: { testId: { in: testIds }, archived: false } },
                             },
@@ -195,7 +383,7 @@ export class DashboardController {
                 }
             }
 
-            // ── Stage 3: Lookup tables (still parallel, already fast) ─────────
+            // ── Stage 3: Lookup tables ────────────────────────────────────────
             const latestAssessments = [
                 ...latestFormative.map(f => ({ ...f, type: 'FORMATIVE' })),
                 ...latestSummative.map(s => ({
@@ -215,8 +403,15 @@ export class DashboardController {
                 }),
             ]);
 
-            const feeStructureMap = new Map(feeStructures.map(fs => [fs.id, fs]));
-            const streamBreakdown = feeByGrade
+            const scopedFeeStructures = feeStructures.filter((fs) => {
+                const g = String(fs?.grade || '').toUpperCase();
+                const isSecondaryGrade = secondaryGrades.includes(g as any);
+                return isSecondaryContext ? isSecondaryGrade : !isSecondaryGrade;
+            });
+            const allowedFeeStructureIds = new Set(scopedFeeStructures.map((fs) => fs.id));
+            const scopedFeeByGrade = feeByGrade.filter((row) => allowedFeeStructureIds.has(row.feeStructureId));
+            const feeStructureMap = new Map(scopedFeeStructures.map(fs => [fs.id, fs]));
+            const streamBreakdown = scopedFeeByGrade
                 .map(row => {
                     const fs = feeStructureMap.get(row.feeStructureId);
                     if (!fs) return null;
@@ -229,6 +424,8 @@ export class DashboardController {
                 })
                 .filter(Boolean)
                 .sort((a: any, b: any) => b.bal - a.bal);
+            const scopedFeeCollected = scopedFeeByGrade.reduce((sum, row) => sum + Number(row._sum.paidAmount || 0), 0);
+            const scopedFeePending = scopedFeeByGrade.reduce((sum, row) => sum + Number(row._sum.balance || 0), 0);
 
             const gradeMap = new Map(testGrades.map(t => [t.id, t.grade]));
             const classPerfMap: Record<string, { total: number; count: number }> = {};
@@ -276,8 +473,8 @@ export class DashboardController {
                     totalMissedExams, currentTestSeries,
                     presentToday: attendanceMap.PRESENT, absentToday: attendanceMap.ABSENT, lateToday: attendanceMap.LATE,
                     avgAttendance: parseFloat(avgAttendance.toFixed(1)),
-                    feeCollected: Number(feeAgg._sum.paidAmount || 0),
-                    feePending:   Number(feeAgg._sum.balance    || 0),
+                    feeCollected: scopedFeeCollected,
+                    feePending:   scopedFeePending,
                     studentTrend: this.calculateTrend(studentCount,  prevStudentCount),
                     teacherTrend: this.calculateTrend(teacherCount,  prevTeacherCount),
                     males:   genderDistribution.find((g: any) => g.gender === 'MALE')  ?._count || 0,
@@ -311,6 +508,7 @@ export class DashboardController {
         } catch (error: any) {
             console.timeEnd('🚀 [DASHBOARD] getAdminMetrics');
             logger.error('Admin Dashboard Error:', error);
+            if (error instanceof ApiError) throw error;
             throw new ApiError(500, error.message || 'Failed to fetch dashboard metrics');
         }
     }
@@ -320,7 +518,7 @@ export class DashboardController {
         try {
             const userId = req.user?.userId;
             if (!userId) throw new ApiError(400, 'User ID is required');
-            const institutionType = (req.school?.institutionType || 'PRIMARY_CBC') as any;
+            const institutionType = this.getInstitutionType(req) as any;
 
             const cacheKey = `dashboard:teacher:${userId}`;
             const cached = await redisCacheService.get<any>(cacheKey);
@@ -384,6 +582,7 @@ export class DashboardController {
 
         } catch (error: any) {
             logger.error('Teacher Dashboard Error:', error);
+            if (error instanceof ApiError) throw error;
             throw new ApiError(500, error.message || 'Failed to fetch teacher dashboard metrics');
         }
     }
@@ -472,7 +671,6 @@ export class DashboardController {
                     return 'BE';
                 };
 
-                // Map results to standard subject list for the UI
                 const subjectStats = child.summativeResults.map(r => ({
                     name: r.test.learningArea,
                     score: r.percentage,
@@ -540,6 +738,7 @@ export class DashboardController {
 
         } catch (error: any) {
             logger.error('Parent Dashboard Error:', error);
+            if (error instanceof ApiError) throw error;
             throw new ApiError(500, error.message || 'Failed to fetch parent dashboard metrics');
         }
     }
@@ -610,6 +809,7 @@ export class DashboardController {
             res.json({ success: true, data: payload });
         } catch (error: any) {
             logger.error('Insights Error:', error);
+            if (error instanceof ApiError) throw error;
             throw new ApiError(500, error.message || 'Failed to generate insights');
         }
     }

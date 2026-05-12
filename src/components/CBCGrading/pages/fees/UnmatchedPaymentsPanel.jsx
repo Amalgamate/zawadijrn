@@ -11,6 +11,8 @@ import {
     Clock, ChevronRight, RefreshCw, XCircle, Info, UserCheck
 } from 'lucide-react';
 import api from '../../../../services/api';
+import { useAuth } from '../../../../hooks/useAuth';
+import { getSelectedInstitutionType } from '../../../../services/schoolContext';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 const fmt = (n) => Number(n || 0).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -24,6 +26,13 @@ const statusColors = {
 
 // ─── Assign Modal ────────────────────────────────────────────────────────────
 const AssignModal = ({ payment, onClose, onResolved }) => {
+    const { user } = useAuth();
+    const selectedInstitutionType = String(getSelectedInstitutionType() || user?.institutionType || '').toUpperCase();
+    const isSecondaryPortal = selectedInstitutionType === 'SECONDARY' || selectedInstitutionType === 'HIGH_SCHOOL';
+    const isSecondaryGrade = (gradeValue) => {
+        const g = String(gradeValue || '').trim().toUpperCase().replace(/\s+/g, '_');
+        return g.startsWith('FORM') || ['GRADE_10', 'GRADE_11', 'GRADE_12', 'GRADE10', 'GRADE11', 'GRADE12'].includes(g);
+    };
     const [step, setStep] = useState(1); // 1=search learner, 2=pick invoice
     const [learnerSearch, setLearnerSearch] = useState('');
     const [learners, setLearners] = useState([]);
@@ -38,7 +47,11 @@ const AssignModal = ({ payment, onClose, onResolved }) => {
         setSearching(true);
         try {
             const res = await api.learners.getAll({ search: learnerSearch, status: 'ACTIVE', limit: 20 });
-            setLearners(res.data || []);
+            const rows = Array.isArray(res.data) ? res.data : [];
+            setLearners(rows.filter((learner) => {
+                const learnerIsSecondary = isSecondaryGrade(learner?.grade);
+                return isSecondaryPortal ? learnerIsSecondary : !learnerIsSecondary;
+            }));
         } catch {
             setLearners([]);
         } finally {

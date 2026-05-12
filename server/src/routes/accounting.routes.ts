@@ -1,12 +1,14 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { accountingController } from '../controllers/accounting.controller';
-import { authenticate, authorize } from '../middleware/auth.middleware';
-import { auditLog } from '../middleware/permissions.middleware';
+import { authenticate } from '../middleware/auth.middleware';
+import { auditLog, requireRole } from '../middleware/permissions.middleware';
 import { validate } from '../middleware/validation.middleware';
 import { rateLimit } from '../middleware/enhanced-rateLimit.middleware';
 
 const router = Router();
+
+const ROLE_FINANCE_ACCESS = ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT'] as const;
 
 // Validation schemas
 const createAccountSchema = z.object({
@@ -59,7 +61,7 @@ const recordExpenseSchema = z.object({
 router.get(
   '/accounts',
   authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+  requireRole([...ROLE_FINANCE_ACCESS]),
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   accountingController.getAccounts
 );
@@ -72,7 +74,7 @@ router.get(
 router.post(
   '/accounts',
   authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+  requireRole([...ROLE_FINANCE_ACCESS]),
   validate(createAccountSchema),
   auditLog('CREATE_ACCOUNT'),
   accountingController.createAccount
@@ -86,7 +88,7 @@ router.post(
 router.get(
   '/journals',
   authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+  requireRole([...ROLE_FINANCE_ACCESS]),
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   accountingController.getJournals
 );
@@ -99,7 +101,7 @@ router.get(
 router.post(
   '/initialize',
   authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+  requireRole([...ROLE_FINANCE_ACCESS]),
   rateLimit({ windowMs: 60_000, maxRequests: 5 }),
   auditLog('INITIALIZE_CHART_OF_ACCOUNTS'),
   accountingController.initializeCoA
@@ -117,7 +119,7 @@ router.post(
 router.post(
   '/entries',
   authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+  requireRole([...ROLE_FINANCE_ACCESS]),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
   validate(createJournalEntrySchema),
   auditLog('CREATE_JOURNAL_ENTRY'),
@@ -132,7 +134,7 @@ router.post(
 router.put(
   '/entries/:id/post',
   authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+  requireRole([...ROLE_FINANCE_ACCESS]),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
   auditLog('POST_JOURNAL_ENTRY'),
   accountingController.postJournalEntry
@@ -146,7 +148,7 @@ router.put(
 router.get(
   '/entries',
   authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+  requireRole([...ROLE_FINANCE_ACCESS]),
   accountingController.getJournalEntries
 );
 
@@ -162,7 +164,7 @@ router.get(
 router.get(
   '/reports/trial-balance',
   authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+  requireRole([...ROLE_FINANCE_ACCESS]),
   rateLimit({ windowMs: 60_000, maxRequests: 50 }),
     accountingController.getTrialBalance
 );
@@ -175,7 +177,7 @@ router.get(
 router.get(
   '/dashboard-stats',
   authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+  requireRole([...ROLE_FINANCE_ACCESS]),
   rateLimit({ windowMs: 60_000, maxRequests: 60 }),
   accountingController.getDashboardStats
 );
@@ -192,7 +194,7 @@ router.get(
 router.get(
   '/vendors',
   authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+  requireRole([...ROLE_FINANCE_ACCESS]),
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   accountingController.getVendors
 );
@@ -205,7 +207,7 @@ router.get(
 router.post(
   '/vendors',
   authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+  requireRole([...ROLE_FINANCE_ACCESS]),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
   validate(createVendorSchema),
   auditLog('CREATE_VENDOR'),
@@ -220,7 +222,7 @@ router.post(
 router.get(
   '/expenses',
   authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+  requireRole([...ROLE_FINANCE_ACCESS]),
   accountingController.getExpenses
 );
 
@@ -232,7 +234,7 @@ router.get(
 router.post(
   '/expenses',
   authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+  requireRole([...ROLE_FINANCE_ACCESS]),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
   validate(recordExpenseSchema),
   auditLog('RECORD_EXPENSE'),
@@ -251,7 +253,7 @@ router.post(
 router.get(
   '/bank-statements',
   authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+  requireRole([...ROLE_FINANCE_ACCESS]),
   rateLimit({ windowMs: 60_000, maxRequests: 100 }),
   accountingController.getBankStatements
 );
@@ -264,7 +266,7 @@ router.get(
 router.post(
   '/bank-statements/import',
   authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+  requireRole([...ROLE_FINANCE_ACCESS]),
   rateLimit({ windowMs: 60_000, maxRequests: 10 }),
   auditLog('IMPORT_BANK_STATEMENT'),
   accountingController.importBankStatement
@@ -278,7 +280,7 @@ router.post(
 router.post(
   '/bank-statements/reconcile',
   authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+  requireRole([...ROLE_FINANCE_ACCESS]),
   rateLimit({ windowMs: 60_000, maxRequests: 30 }),
   auditLog('RECONCILE_BANK_ENTRY'),
   accountingController.reconcileLine
@@ -292,8 +294,10 @@ router.post(
 router.get(
   '/bank-statements/:lineId/suggest-matches',
   authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN', 'ACCOUNTANT'),
+  requireRole([...ROLE_FINANCE_ACCESS]),
   accountingController.suggestMatches
 );
 
 export default router;
+
+
