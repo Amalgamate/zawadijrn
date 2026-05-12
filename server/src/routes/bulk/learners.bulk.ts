@@ -335,7 +335,10 @@ router.post(
         return next(
           new ApiError(403, 'Forbidden')
             .withCode('ROLE_FORBIDDEN')
-            .withRoles(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER'], req.user?.roles || [req.user?.role])
+            .withRoles(
+              ['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER'],
+              (req.user?.roles || [req.user?.role]).filter((role): role is string => Boolean(role))
+            )
         );
       }
 

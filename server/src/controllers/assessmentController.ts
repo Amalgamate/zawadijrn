@@ -1464,12 +1464,9 @@ export const getTestResults = async (req: Request, res: Response) => {
 
     const test = await prisma.summativeTest.findUnique({
       where: { id: testId },
-      select: { id: true, grade: true, institutionType: true }
+      select: { id: true, grade: true }
     });
     if (!test) throw new ApiError(404, 'Test not found');
-    if (String(test.institutionType || '').toUpperCase() !== institutionScope) {
-      throw new ApiError(404, 'Test not found');
-    }
     assertGradeAllowedForInstitution(institutionScope, String(test.grade || ''), 'Get test results');
 
     const cacheKey = `results:${institutionScope}:${testId}`;
