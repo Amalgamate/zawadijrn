@@ -337,7 +337,9 @@ router.post(
             .withCode('ROLE_FORBIDDEN')
             .withRoles(
               ['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER'],
-              (req.user?.roles || [req.user?.role]).filter((role): role is string => Boolean(role))
+              (req.user?.roles || [req.user?.role])
+                .filter((role): role is NonNullable<typeof role> => role != null)
+                .map((role) => String(role))
             )
         );
       }
