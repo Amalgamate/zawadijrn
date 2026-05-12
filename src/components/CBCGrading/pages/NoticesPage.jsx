@@ -17,18 +17,18 @@ const NoticesPage = ({ initialTab }) => {
   // Get initial tab from prop, localStorage or URL, default to 'notices'
   const getInitialTab = () => {
     // 0. Check prop first
-    if (initialTab && ['notices', 'birthdays', 'alerts', 'changelog'].includes(initialTab)) {
+    if (initialTab && ['notices', 'birthdays', 'changelog'].includes(initialTab)) {
       return initialTab;
     }
     // 1. Check URL params
     const params = new URLSearchParams(window.location.search);
     const urlTab = params.get('tab');
-    if (urlTab && ['notices', 'birthdays', 'alerts', 'changelog'].includes(urlTab)) {
+    if (urlTab && ['notices', 'birthdays', 'changelog'].includes(urlTab)) {
       return urlTab;
     }
     // 2. Check localStorage
     const savedTab = localStorage.getItem('noticesPage_activeTab');
-    if (savedTab && ['notices', 'birthdays', 'alerts', 'changelog'].includes(savedTab)) {
+    if (savedTab && ['notices', 'birthdays', 'changelog'].includes(savedTab)) {
       return savedTab;
     }
     return 'notices';
@@ -111,9 +111,8 @@ const NoticesPage = ({ initialTab }) => {
       fetchNotices();
     } else if (activeTab === 'birthdays') {
       fetchBirthdays();
-    } else if (activeTab === 'alerts') {
-      fetchSystemAlerts();
     } else if (activeTab === 'changelog') {
+      fetchSystemAlerts();
       fetchChangelogs();
     }
     showSuccess('Page refreshed!');
@@ -137,9 +136,8 @@ const NoticesPage = ({ initialTab }) => {
     } else if (activeTab === 'birthdays') {
       fetchBirthdays();
       if (sid) fetchBirthdaysToday(sid);
-    } else if (activeTab === 'alerts') {
-      fetchSystemAlerts();
     } else if (activeTab === 'changelog') {
+      fetchSystemAlerts();
       fetchChangelogs();
     }
   }, [activeTab]);
@@ -631,23 +629,16 @@ const NoticesPage = ({ initialTab }) => {
               )}
             </TabsTrigger>
             <TabsTrigger
-              value="alerts"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-brand-teal data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-4 flex items-center gap-2"
-            >
-              <Bell size={16} />
-              <span className="font-medium">System Alerts</span>
-              {unreadAlertsCount > 0 && (
-                <Badge variant="destructive" className="ml-2">
-                  {unreadAlertsCount}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger
               value="changelog"
               className="rounded-none border-b-2 border-transparent data-[state=active]:border-brand-purple data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-4 flex items-center gap-2"
             >
               <Rocket size={16} />
               <span className="font-medium">What's New</span>
+              {unreadAlertsCount > 0 && (
+                <Badge variant="destructive" className="ml-2">
+                  {unreadAlertsCount}
+                </Badge>
+              )}
             </TabsTrigger>
           </TabsList>
 
@@ -1003,100 +994,90 @@ const NoticesPage = ({ initialTab }) => {
             </div>
           </TabsContent>
 
-          {/* System Alerts Tab */}
-          <TabsContent value="alerts" className="flex-1 overflow-auto p-6 space-y-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-medium text-gray-800 flex items-center gap-2">
-                <Bell className="text-brand-teal" size={24} />
-                System & Financial Alerts
-              </h2>
-              {unreadAlertsCount > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={markAllAlertsRead}
-                  className="text-brand-teal border-brand-teal hover:bg-brand-teal/10 font-medium"
-                >
-                  <CheckCircle size={16} className="mr-2" />
-                  Mark all as read
-                </Button>
-              )}
-            </div>
-
-            {loadingAlerts ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="text-center">
-                  <Loader className="mx-auto mb-4 animate-spin text-brand-teal" size={32} />
-                  <p className="text-gray-500 font-medium">Loading alerts...</p>
-                </div>
-              </div>
-            ) : systemAlerts.length > 0 ? (
-              <div className="space-y-4">
-                {systemAlerts.map(alert => (
-                  <Card
-                    key={alert.id}
-                    className={`border-l-4 ${alert.isRead ? 'border-l-gray-300 opacity-80' : 'border-l-brand-teal shadow-md'} transition hover:shadow-lg`}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            {alert.type === 'WAIVER' ? (
-                              <Badge className="bg-brand-teal text-white">WAIVER</Badge>
-                            ) : (
-                              <Badge variant="secondary">{alert.type}</Badge>
-                            )}
-                            <h3 className={`font-medium ${alert.isRead ? 'text-gray-600' : 'text-gray-800'}`}>
-                              {alert.title}
-                            </h3>
-                            {!alert.isRead && (
-                              <div className="w-2 h-2 bg-brand-teal rounded-full animate-pulse" />
-                            )}
-                          </div>
-                          <p className="text-sm text-gray-600 mb-2">{alert.message}</p>
-                          <div className="flex items-center gap-4 text-[10px] text-gray-500">
-                            <span>{new Date(alert.createdAt).toLocaleString()}</span>
-                            {alert.link && (
-                              <a
-                                href={alert.link}
-                                className="text-brand-teal hover:underline font-medium flex items-center gap-1"
-                              >
-                                View Details
-                                <Eye size={12} />
-                              </a>
-                            )}
-                          </div>
-                        </div>
-                        {!alert.isRead && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => markAlertAsRead(alert.id)}
-                            className="text-gray-400 hover:text-brand-teal"
-                            title="Mark as read"
-                          >
-                            <CheckCircle size={18} />
-                          </Button>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <div className="flex items-center justify-center py-20">
-                <div className="text-center">
-                  <Bell size={48} className="mx-auto text-gray-300 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-600 mb-2">Internal Peace</h3>
-                  <p className="text-gray-400 max-w-sm">No system alerts or waiver requests at the moment.</p>
-                </div>
-              </div>
-            )}
-          </TabsContent>
           {/* ---------------------------------------------------------------- */}
           {/* Changelog Tab                                                      */}
           {/* ---------------------------------------------------------------- */}
-          <TabsContent value="changelog" className="flex-1 overflow-auto p-6">
+          <TabsContent value="changelog" className="flex-1 overflow-auto p-6 space-y-8">
+            {/* Combined System Alerts */}
+            <section className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-medium text-gray-800 flex items-center gap-2">
+                  <Bell className="text-brand-teal" size={22} />
+                  System Alerts
+                </h2>
+                {unreadAlertsCount > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={markAllAlertsRead}
+                    className="text-brand-teal border-brand-teal hover:bg-brand-teal/10 font-medium"
+                  >
+                    <CheckCircle size={16} className="mr-2" />
+                    Mark all as read
+                  </Button>
+                )}
+              </div>
+
+              {loadingAlerts ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-center">
+                    <Loader className="mx-auto mb-3 animate-spin text-brand-teal" size={28} />
+                    <p className="text-gray-500 font-medium">Loading alerts...</p>
+                  </div>
+                </div>
+              ) : systemAlerts.length > 0 ? (
+                <div className="space-y-3">
+                  {systemAlerts.map(alert => (
+                    <Card
+                      key={alert.id}
+                      className={`border-l-4 ${alert.isRead ? 'border-l-gray-300 opacity-80' : 'border-l-brand-teal shadow-md'} transition hover:shadow-lg`}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              {alert.type === 'WAIVER' ? (
+                                <Badge className="bg-brand-teal text-white">WAIVER</Badge>
+                              ) : (
+                                <Badge variant="secondary">{alert.type}</Badge>
+                              )}
+                              <h3 className={`font-medium ${alert.isRead ? 'text-gray-600' : 'text-gray-800'}`}>
+                                {alert.title}
+                              </h3>
+                              {!alert.isRead && <div className="w-2 h-2 bg-brand-teal rounded-full animate-pulse" />}
+                            </div>
+                            <p className="text-sm text-gray-600 mb-2">{alert.message}</p>
+                            <div className="flex items-center gap-4 text-[10px] text-gray-500">
+                              <span>{new Date(alert.createdAt).toLocaleString()}</span>
+                              {alert.link && (
+                                <a href={alert.link} className="text-brand-teal hover:underline font-medium flex items-center gap-1">
+                                  View Details
+                                  <Eye size={12} />
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                          {!alert.isRead && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => markAlertAsRead(alert.id)}
+                              className="text-gray-400 hover:text-brand-teal"
+                              title="Mark as read"
+                            >
+                              <CheckCircle size={18} />
+                            </Button>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-sm text-gray-500">No active system alerts.</div>
+              )}
+            </section>
+
             {/* Header row */}
             <div className="flex items-center justify-between mb-6">
               <div>
