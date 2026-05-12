@@ -1134,23 +1134,7 @@ const SummativeAssessment = ({ learners, initialTestId, defaultTestType = null, 
       const existingResults = existingResultsResponse.data || existingResultsResponse || [];
 
       if (existingResults.length > 0) {
-        const publishedResultsCount = existingResults.filter(r => r.status === 'PUBLISHED').length;
-
-        let confirmMessage = `Results already exist for ${existingResults.length} learner(s) in this test.\n\n`;
-
-        if (publishedResultsCount > 0) {
-          confirmMessage += `⚠️ ${publishedResultsCount} result(s) are PUBLISHED. Overwriting will affect report cards and student records.\n\n`;
-        }
-
-        confirmMessage += `New marks to save: ${Object.keys(currentMarksToSave).length} learner(s).\n\nAre you sure you want to overwrite these results?`;
-
-        const userConfirmed = window.confirm(`Results Already Exist\n\n${confirmMessage}`);
-
-        if (!userConfirmed) {
-          toast.dismiss(saveToastId);
-          toast('Save cancelled — existing results were not overwritten.', { icon: 'ℹ️' });
-          return;
-        }
+        toast('Existing results detected. Saving will overwrite them.', { icon: 'ℹ️' });
       }
 
       // Prepare bulk payload — skip learners with no mark entered
