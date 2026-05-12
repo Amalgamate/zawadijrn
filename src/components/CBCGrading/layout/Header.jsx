@@ -445,8 +445,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
 
   const brandColor = brandingSettings?.brandColor || 'var(--brand-purple)';
   const canSwitchInstitutionLocal =
-    String(user?.role || '').toUpperCase() === 'SUPER_ADMIN' &&
-    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    String(user?.role || '').toUpperCase() === 'SUPER_ADMIN';
 
   const effectiveInstitutionType = institutionOverride || user?.institutionType || 'PRIMARY_CBC';
   const isSecondaryPortal = effectiveInstitutionType === 'SECONDARY';
