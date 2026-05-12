@@ -19,9 +19,33 @@ class ErrorBoundary extends React.Component {
     return { hasError: true, error };
   }
 
+  componentDidMount() {
+    sessionStorage.removeItem('cbc_chunk_reload_once');
+  }
+
   componentDidCatch(error, errorInfo) {
     // You can also log the error to an error reporting service here
     console.error('ErrorBoundary caught an error:', error, errorInfo);
+    const errorMessage = String(error?.message || error || '');
+    const isChunkLoadError =
+      /Failed to fetch dynamically imported module/i.test(errorMessage) ||
+      /Importing a module script failed/i.test(errorMessage) ||
+      /Expected a JavaScript module script/i.test(errorMessage);
+
+    if (isChunkLoadError) {
+      const retryKey = 'cbc_chunk_reload_once';
+      const alreadyRetried = sessionStorage.getItem(retryKey) === '1';
+      if (!alreadyRetried) {
+        sessionStorage.setItem(retryKey, '1');
+        const refreshUrl = new URL(window.location.href);
+        refreshUrl.searchParams.set('_v', String(Date.now()));
+        window.location.replace(refreshUrl.toString());
+        return;
+      }
+    } else {
+      sessionStorage.removeItem('cbc_chunk_reload_once');
+    }
+
     this.setState({ errorInfo });
   }
 
