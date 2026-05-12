@@ -743,7 +743,7 @@ const SummativeAssessment = ({ learners, initialTestId, defaultTestType = null, 
         const results = resultsResponse.data || resultsResponse || [];
 
         if (results.length > 0) {
-          // Backend has data — build backend marks, but allow user to keep newer local draft.
+          // Backend has data — use backend marks as the source of truth.
           const existingMarks = {};
           results.forEach(r => {
             if (r.learnerId) {
@@ -758,39 +758,10 @@ const SummativeAssessment = ({ learners, initialTestId, defaultTestType = null, 
             const ts = Date.parse(r?.updatedAt || r?.createdAt || 0);
             return Number.isFinite(ts) ? Math.max(maxTs, ts) : maxTs;
           }, 0);
-          const draftSavedAtMs = Date.parse(draftMeta?.savedAt || 0);
-          const hasNewerLocalDraft = Boolean(savedDraft) && Number.isFinite(draftSavedAtMs) && draftSavedAtMs > backendUpdatedAtMs;
-
-          if (hasNewerLocalDraft) {
-            let parsedDraft = null;
-            try {
-              parsedDraft = JSON.parse(savedDraft);
-            } catch {
-              parsedDraft = null;
-            }
-            const keepDraft = window.confirm(
-              'Newer local draft detected for this test.\n\n' +
-              'OK = Keep local draft marks\n' +
-              'Cancel = Load backend marks'
-            );
-            if (keepDraft && parsedDraft && typeof parsedDraft === 'object') {
-              setMarks(parsedDraft);
-              setIsDraft(true);
-              setLastSaved(new Date(draftSavedAtMs));
-              setLastBackendSave(backendUpdatedAtMs ? new Date(backendUpdatedAtMs) : new Date());
-              toast('Loaded newer local draft. Click Save to publish to backend.', { icon: '📝' });
-            } else {
-              setMarks(existingMarks);
-              setIsDraft(false);
-              setLastSaved(new Date());
-              setLastBackendSave(backendUpdatedAtMs ? new Date(backendUpdatedAtMs) : new Date());
-            }
-          } else {
-            setMarks(existingMarks);
-            setIsDraft(false);
-            setLastSaved(new Date());
-            setLastBackendSave(backendUpdatedAtMs ? new Date(backendUpdatedAtMs) : new Date());
-          }
+          setMarks(existingMarks);
+          setIsDraft(false);
+          setLastSaved(new Date());
+          setLastBackendSave(backendUpdatedAtMs ? new Date(backendUpdatedAtMs) : new Date());
         } else if (savedDraft) {
           // No backend data yet — restore local draft
           const parsedDraft = JSON.parse(savedDraft);
