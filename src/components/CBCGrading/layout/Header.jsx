@@ -450,6 +450,7 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
   const effectiveInstitutionType = institutionOverride || user?.institutionType || 'PRIMARY_CBC';
   const isSecondaryPortal = effectiveInstitutionType === 'SECONDARY';
   const isTertiaryPortal = effectiveInstitutionType === 'TERTIARY';
+  const institutionLabel = isSecondaryPortal ? 'Senior School' : isTertiaryPortal ? 'Tertiary' : 'Junior School';
 
   const handleInstitutionSwitch = (nextType) => {
     const value = String(nextType || '').toUpperCase();
@@ -480,19 +481,50 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
             <h1 className="text-base lg:text-lg font-semibold text-gray-900 leading-none tracking-tight uppercase">
               {title || brandingSettings?.schoolName || 'Trends CORE V1.0'}
             </h1>
-            <span
-              className={cn(
-                "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest leading-none shadow-sm",
-                isSecondaryPortal
-                  ? "bg-indigo-50 text-indigo-800 border-indigo-200"
-                  : isTertiaryPortal
-                    ? "bg-amber-50 text-amber-800 border-amber-200"
-                    : "bg-emerald-50 text-emerald-800 border-emerald-200"
-              )}
-              title={isSecondaryPortal ? 'Senior School portal' : isTertiaryPortal ? 'Tertiary portal' : 'Junior School portal'}
-            >
-              {isSecondaryPortal ? 'Senior School' : isTertiaryPortal ? 'Tertiary' : 'Junior School'}
-            </span>
+            {canSwitchInstitutionLocal ? (
+              <label
+                className={cn(
+                  "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest leading-none shadow-sm",
+                  isSecondaryPortal
+                    ? "bg-indigo-50 text-indigo-800 border-indigo-200"
+                    : isTertiaryPortal
+                      ? "bg-amber-50 text-amber-800 border-amber-200"
+                      : "bg-emerald-50 text-emerald-800 border-emerald-200"
+                )}
+                title={`Context switch (${institutionLabel})`}
+              >
+                <select
+                  value={effectiveInstitutionType}
+                  onChange={(e) => handleInstitutionSwitch(e.target.value)}
+                  className={cn(
+                    "bg-transparent border-none outline-none text-[10px] font-semibold uppercase tracking-widest pl-1 pr-1",
+                    isSecondaryPortal
+                      ? "text-indigo-900"
+                      : isTertiaryPortal
+                        ? "text-amber-900"
+                        : "text-emerald-900"
+                  )}
+                >
+                  <option value="PRIMARY_CBC">Junior</option>
+                  <option value="SECONDARY">Secondary</option>
+                  <option value="TERTIARY">Tertiary</option>
+                </select>
+              </label>
+            ) : (
+              <span
+                className={cn(
+                  "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest leading-none shadow-sm",
+                  isSecondaryPortal
+                    ? "bg-indigo-50 text-indigo-800 border-indigo-200"
+                    : isTertiaryPortal
+                      ? "bg-amber-50 text-amber-800 border-amber-200"
+                      : "bg-emerald-50 text-emerald-800 border-emerald-200"
+                )}
+                title={isSecondaryPortal ? 'Senior School portal' : isTertiaryPortal ? 'Tertiary portal' : 'Junior School portal'}
+              >
+                {institutionLabel}
+              </span>
+            )}
             <span className="hidden md:inline-block h-4 w-px bg-gray-200 mx-1" aria-hidden="true" />
             <span className="hidden md:inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-gray-500">
               <span className="text-gray-800 font-bold">{formatToday()}</span>
@@ -508,24 +540,6 @@ const Header = React.memo(({ user, onLogout, brandingSettings, title, onNavigate
                 </span>
               )}
             </span>
-            {canSwitchInstitutionLocal && (
-              <>
-                <span className="hidden md:inline-block h-4 w-px bg-gray-200 mx-1" aria-hidden="true" />
-                <label className="hidden md:inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-gray-500">
-                  Context
-                  <select
-                    value={effectiveInstitutionType}
-                    onChange={(e) => handleInstitutionSwitch(e.target.value)}
-                    className="rounded-md border border-gray-300 bg-white px-2 py-1 text-[10px] font-semibold text-gray-800 uppercase tracking-widest"
-                    title="Local institution context switch"
-                  >
-                    <option value="PRIMARY_CBC">Junior</option>
-                    <option value="SECONDARY">Secondary</option>
-                    <option value="TERTIARY">Tertiary</option>
-                  </select>
-                </label>
-              </>
-            )}
           </div>
           <p className="text-[9px] text-gray-400 font-medium uppercase tracking-[0.2em] mt-1">
             {title ? (brandingSettings?.schoolName || 'Trends CORE V1.0') : 'School Management System'}
