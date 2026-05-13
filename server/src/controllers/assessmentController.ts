@@ -1277,9 +1277,39 @@ export const recordSummativeResult = async (req: AuthRequest, res: Response) => 
 
     const test = await prisma.summativeTest.findUnique({
       where: { id: testId },
-      select: { id: true, totalMarks: true, passMarks: true, scaleId: true }
+      select: { id: true, totalMarks: true, passMarks: true, scaleId: true, learningAreaId: true, learningArea: true }
     });
     if (!test) return res.status(404).json({ success: false, message: 'Test not found' });
+
+    const learner = await prisma.learner.findUnique({
+      where: { id: learnerId },
+      select: { id: true, institutionType: true },
+    });
+    if (!learner) return res.status(404).json({ success: false, message: 'Learner not found' });
+
+    if (learner.institutionType === 'SECONDARY') {
+      const testAreaId = test.learningAreaId || (
+        test.learningArea
+          ? (await prisma.learningArea.findFirst({
+              where: { name: test.learningArea, institutionType: 'SECONDARY' },
+              select: { id: true },
+            }))?.id
+          : null
+      );
+
+      if (testAreaId) {
+        const hasSelection = await prisma.learnerSubjectSelection.findFirst({
+          where: { learnerId, learningAreaId: testAreaId, active: true },
+          select: { learnerId: true },
+        });
+        if (!hasSelection) {
+          return res.status(400).json({
+            success: false,
+            message: 'This learner is not enrolled for the selected subject in their pathway profile.',
+          });
+        }
+      }
+    }
 
     const marks = Number(marksObtained);
     if (isNaN(marks) || marks < 0 || marks > test.totalMarks) {
@@ -1940,7 +1970,7 @@ export const recordSummativeResultsBulk = async (req: AuthRequest, res: Response
     // ── 1. Fetch test + grading scale ─────────────────────────────────────────
     const test = await prisma.summativeTest.findUnique({
       where: { id: testId },
-      select: { id: true, totalMarks: true, passMarks: true, scaleId: true, grade: true }
+      select: { id: true, totalMarks: true, passMarks: true, scaleId: true, grade: true, learningAreaId: true, learningArea: true }
     });
     if (!test) return res.status(404).json({ success: false, message: 'Test not found' });
 
@@ -1972,7 +2002,7 @@ export const recordSummativeResultsBulk = async (req: AuthRequest, res: Response
     const learnerIds = results.map(r => r.learnerId);
     const learners = await prisma.learner.findMany({
       where: { id: { in: learnerIds } },
-      select: { id: true, grade: true, admissionNumber: true }
+      select: { id: true, grade: true, admissionNumber: true, institutionType: true }
     });
     const learnerGradeMap = new Map(learners.map((l: { id: string; grade: string; admissionNumber: string }) => [l.id, l]));
 
@@ -1981,14 +2011,35 @@ export const recordSummativeResultsBulk = async (req: AuthRequest, res: Response
     const upsertOps: any[] = [];
     const historyRows: any[] = [];
 
+    let allowedLearnerIds = new Set<string>();
+    if (test.learningAreaId) {
+      const selections = await prisma.learnerSubjectSelection.findMany({
+        where: {
+          learnerId: { in: learnerIds },
+          learningAreaId: test.learningAreaId,
+          active: true,
+        },
+        select: { learnerId: true },
+      });
+      allowedLearnerIds = new Set(selections.map((s: { learnerId: string }) => s.learnerId));
+    }
+
     for (const item of results) {
-      const learnerData = learnerGradeMap.get(item.learnerId) as { id: string; grade: string; admissionNumber: string } | undefined;
+      const learnerData = learnerGradeMap.get(item.learnerId) as { id: string; grade: string; admissionNumber: string; institutionType: string } | undefined;
       
       // Grade Match Guard: Ensure learner grade matches test grade
       if (learnerData && learnerData.grade !== test.grade) {
         skipped.push({ 
           learnerId: item.learnerId, 
           reason: `Grade mismatch: Learner is ${learnerData.grade}, Test is ${test.grade}` 
+        });
+        continue;
+      }
+
+      if (learnerData?.institutionType === 'SECONDARY' && test.learningAreaId && !allowedLearnerIds.has(item.learnerId)) {
+        skipped.push({
+          learnerId: item.learnerId,
+          reason: 'Learner is not enrolled for this subject in pathway profile',
         });
         continue;
       }

@@ -2456,10 +2456,39 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user, pa
     if (selectedStream && selectedStream !== 'all') queryParams.stream = selectedStream;
 
     try {
+      const isSeniorSecondaryGrade = (grade) => ['GRADE_10', 'GRADE_11', 'GRADE_12'].includes(String(grade || ''));
+      const buildAllowedSubjectsMap = async (learnerRows) => {
+        const secondaryLearners = (learnerRows || []).filter((l) => isSeniorSecondaryGrade(l?.grade));
+        if (secondaryLearners.length === 0) return new Map();
+
+        const profiles = await Promise.all(
+          secondaryLearners.map(async (learner) => {
+            try {
+              const resp = await api.pathways.getLearnerPathwayProfile(learner.id);
+              const selections = resp?.data?.subjectSelections || [];
+              const names = new Set(
+                selections
+                  .map((s) => String(s?.learningArea?.name || '').trim().toUpperCase())
+                  .filter(Boolean)
+              );
+              return [learner.id, names];
+            } catch {
+              return [learner.id, null];
+            }
+          })
+        );
+
+        return new Map(profiles);
+      };
+
       if (selectedType === 'LEARNER_REPORT' || selectedType === 'LEARNER_TERMLY_REPORT') {
         setStatusMessage(`📚 Loading results for ${selectedLearnerIds.length} learner(s)...`);
 
         const allReportRows = [];
+        const selectedLearners = selectedLearnerIds
+          .map((id) => filteredLearners?.find((l) => l.id === id))
+          .filter(Boolean);
+        const allowedSubjectsByLearner = await buildAllowedSubjectsMap(selectedLearners);
 
         // OPTIMIZED: Fetch all results and communication history for the whole group in one hit
         const bulkRes = await api.assessments.getBulkResults(queryParams);
@@ -2491,6 +2520,15 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user, pa
                 title: r.test?.title || matchingTest?.title || r.title
               });
               return selectedTestGroups.includes(group);
+            });
+          }
+
+          const allowedSubjects = allowedSubjectsByLearner.get(learnerId);
+          if (allowedSubjects && allowedSubjects.size > 0) {
+            processedResults = processedResults.filter((r) => {
+              const test = r.test || currentTests.find((t) => t.id === r.testId) || {};
+              const areaName = String(r.learningArea || test.learningArea || '').trim().toUpperCase();
+              return areaName ? allowedSubjects.has(areaName) : true;
             });
           }
 
@@ -2582,6 +2620,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user, pa
         }
 
         setStatusMessage(`⏳ Fetching results for ${targetLearners.length} learners...`);
+        const allowedSubjectsByLearner = await buildAllowedSubjectsMap(targetLearners);
 
         // 2. Identify Target Tests
         let targetTests = currentTests;
@@ -2638,11 +2677,20 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user, pa
         );
 
         const broadsheetData = targetLearners.map(learner => {
-          const learnerResults = allResultsMap[learner.id] || [];
+          const learnerAllowedSubjects = allowedSubjectsByLearner.get(learner.id);
+          const learnerResults = (allResultsMap[learner.id] || []).filter((r) => {
+            if (!learnerAllowedSubjects || learnerAllowedSubjects.size === 0) return true;
+            const areaName = String(r.learningArea || r.test?.learningArea || '').trim().toUpperCase();
+            return areaName ? learnerAllowedSubjects.has(areaName) : true;
+          });
 
           // Aggregates
           const totalScore = learnerResults.reduce((sum, r) => sum + (r.score || 0), 0);
-          const totalMax = expectedTotalMax;
+          const totalMax = (!learnerAllowedSubjects || learnerAllowedSubjects.size === 0)
+            ? expectedTotalMax
+            : targetTests
+                .filter((t) => learnerAllowedSubjects.has(String(t.learningArea || '').trim().toUpperCase()))
+                .reduce((sum, t) => sum + (Number(t?.totalMarks) || 100), 0);
           const averagePct = totalMax > 0 ? (totalScore / totalMax) * 100 : 0;
           const { grade, remark } = getCBCGrade(averagePct);
 

@@ -15,6 +15,12 @@ const router = Router();
 const resolveInstitutionType = (req: AuthRequest): 'PRIMARY_CBC' | 'SECONDARY' | 'TERTIARY' =>
   (req.resolvedInstitutionType || req.school?.institutionType || 'PRIMARY_CBC') as 'PRIMARY_CBC' | 'SECONDARY' | 'TERTIARY';
 
+const normalizeGradeLevel = (value?: string | null): string => {
+  const raw = String(value || '').trim().toUpperCase();
+  if (!raw) return '';
+  return raw.replace(/^GRADE_(\d+)$/, 'GRADE$1');
+};
+
 /**
  * GET /api/learning-areas
  * Get all learning areas for a school
@@ -23,11 +29,19 @@ export const getLearningAreas = async (req: AuthRequest, res: Response) => {
   try {
     const institutionType = resolveInstitutionType(req);
     const { gradeLevel } = (req.query || {}) as { gradeLevel?: string };
+    const normalizedGradeLevel = normalizeGradeLevel(gradeLevel);
 
     const learningAreas = await prisma.learningArea.findMany({
       where: {
         institutionType,
-        ...(gradeLevel ? { gradeLevel: String(gradeLevel) } : {}),
+        ...(normalizedGradeLevel
+          ? {
+              OR: [
+                { gradeLevel: normalizedGradeLevel },
+                { gradeLevel: normalizedGradeLevel.replace(/^GRADE(\d+)$/, 'GRADE_$1') },
+              ],
+            }
+          : {}),
       },
       orderBy: [
         { gradeLevel: 'asc' },

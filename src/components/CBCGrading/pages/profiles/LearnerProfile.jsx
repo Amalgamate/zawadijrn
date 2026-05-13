@@ -2,17 +2,21 @@ import React, { useState, useEffect } from 'react';
 import {
     User, Calendar, MapPin, Users, Heart,
     GraduationCap, Receipt, FileText, Activity,
-    Download, AlertCircle, Camera, Plus, Bus, Zap, TrendingUp, Brain
+    Download, AlertCircle, Camera, Plus, Bus, Zap, TrendingUp, Brain, Lock
 } from 'lucide-react';
 import api from '../../../../services/api';
+import { useAuth } from '../../../../hooks/useAuth';
+import { generatePDFFromElement } from '../../../../utils/simplePdfGenerator';
 import StatusBadge from '../../shared/StatusBadge';
 import ProfileHeader from '../../shared/ProfileHeader';
 import ProfileLayout from '../../shared/ProfileLayout';
 import { useNotifications } from '../../hooks/useNotifications';
 import ProfilePhotoModal from '../../shared/ProfilePhotoModal';
+import PathwaysWizard from './PathwaysWizard';
 
 const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onNavigate }) => {
     const { showSuccess, showError } = useNotifications();
+    const { user } = useAuth();
     const [currentLearner, setCurrentLearner] = useState(initialLearner);
     const [activeTab, setActiveTab] = useState('overview');
     const [loading, setLoading] = useState(false);
@@ -49,7 +53,7 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
         if (currentLearner?.id) {
             fetchTabData('academic');
             fetchTabData('financials');
-            if (activeTab !== 'overview' && activeTab !== 'academic' && activeTab !== 'financials') {
+            if (activeTab !== 'overview' && activeTab !== 'academic' && activeTab !== 'financials' && activeTab !== 'pathways') {
                 fetchTabData(activeTab);
             }
         }
@@ -71,7 +75,7 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                 setTransportAssignments(res.success ? (res.data || []) : []);
             } else if (targetTab === 'ai-insights') {
                 const [feedbackRes, riskRes, trendRes] = await Promise.all([
-                    api.ai.generateFeedback(currentLearner.id, 'TERM_1', 2026), // Mocking current term/year for now
+                    api.ai.generateFeedback(currentLearner.id, 'TERM_1', 2026),
                     api.ai.analyzeRisk(currentLearner.id),
                     api.ai.getTrend(currentLearner.id)
                 ]);
@@ -118,15 +122,17 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
     };
 
     const feeBalance = invoices.reduce((sum, inv) => sum + Number(inv.balance || 0), 0);
+    const isSecondaryLearner = currentLearner?.institutionType === 'SECONDARY';
 
     const tabs = [
-        { id: 'overview',   label: 'Overview',   icon: User         },
-        { id: 'financials', label: 'Financials', icon: Receipt       },
-        { id: 'academic',   label: 'Academic',   icon: GraduationCap },
-        { id: 'transport',  label: 'Transport',  icon: Bus           },
-        { id: 'ai-insights', label: 'AI Insights', icon: Brain       },
-        { id: 'medical',    label: 'Medical',    icon: Heart         },
-        { id: 'documents',  label: 'Documents',  icon: FileText      },
+        { id: 'overview',    label: 'Overview',    icon: User          },
+        { id: 'financials',  label: 'Financials',  icon: Receipt       },
+        { id: 'academic',    label: 'Academic',    icon: GraduationCap },
+        { id: 'transport',   label: 'Transport',   icon: Bus           },
+        { id: 'ai-insights', label: 'AI Insights', icon: Brain         },
+        ...(isSecondaryLearner ? [{ id: 'pathways', label: 'Pathways', icon: Activity }] : []),
+        { id: 'medical',     label: 'Medical',     icon: Heart         },
+        { id: 'documents',   label: 'Documents',   icon: FileText      },
     ];
 
     if (!currentLearner) return null;
@@ -168,7 +174,7 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
 
             {/* Tab Content */}
             <div className="min-h-[400px]">
-                {loading ? (
+                {loading && activeTab !== 'pathways' ? (
                     <div className="flex justify-center items-center h-64">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-purple"></div>
                     </div>
@@ -378,7 +384,6 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                         {/* TRANSPORT TAB */}
                         {activeTab === 'transport' && (
                             <div className="animate-fade-in">
-                                {/* status badge */}
                                 <div className="mb-4 flex items-center gap-3">
                                     <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold uppercase ${
                                         currentLearner.isTransportStudent
@@ -470,6 +475,13 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                             </div>
                         )}
 
+                        {/* PATHWAYS TAB */}
+                        {activeTab === 'pathways' && isSecondaryLearner && (
+                            <div className="animate-fade-in">
+                                <PathwaysWizard learner={currentLearner} />
+                            </div>
+                        )}
+
                         {/* MEDICAL TAB */}
                         {activeTab === 'medical' && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
@@ -528,7 +540,6 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                         {activeTab === 'ai-insights' && (
                             <div className="space-y-6 animate-fade-in">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {/* AI Performance Commentary */}
                                     <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                                         <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
                                             <Brain className="text-brand-purple" size={20} />
@@ -542,7 +553,6 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                                         </p>
                                     </div>
 
-                                    {/* Risk Assessment */}
                                     <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                                         <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
                                             <AlertCircle className="text-rose-500" size={20} />
@@ -554,7 +564,6 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                                     </div>
                                 </div>
 
-                                {/* Longitudinal Performance Trend */}
                                 <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                                     <div className="flex items-center justify-between mb-6 pb-2 border-b border-gray-100">
                                         <div className="flex items-center gap-2">
@@ -571,13 +580,13 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                                             </span>
                                         )}
                                     </div>
-                                    
+
                                     {aiData.trend?.trend?.length > 0 ? (
                                         <div className="space-y-4">
                                             <div className="flex items-end gap-2 h-32 px-4 border-b border-gray-100">
                                                 {aiData.trend.trend.map((pt, i) => (
                                                     <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
-                                                        <div 
+                                                        <div
                                                             className="w-full bg-brand-purple/20 group-hover:bg-brand-purple/40 rounded-t-sm transition-all duration-500 relative"
                                                             style={{ height: `${pt.percentage}%` }}
                                                         >

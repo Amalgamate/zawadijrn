@@ -34,6 +34,8 @@ const DEFAULT_FORM_DATA = {
   status: 'PUBLISHED'
 };
 
+const SENIOR_SECONDARY_GRADES = new Set(['GRADE_10', 'GRADE_11', 'GRADE_12']);
+
 export const useSummativeTestForm = ({ initialTestType = null } = {}) => {
   const { grades, classes, loading: schoolDataLoading } = useSchoolData();
   const [fallbackGrades, setFallbackGrades] = useState([]);
@@ -129,9 +131,14 @@ export const useSummativeTestForm = ({ initialTestType = null } = {}) => {
       try {
         const resp = await configAPI.getLearningAreas({ gradeLevel: formData.grade });
         const rows = Array.isArray(resp?.data) ? resp.data : (Array.isArray(resp) ? resp : []);
+        // For senior secondary, keep only pathway-mapped or core subjects.
+        const filteredRows = SENIOR_SECONDARY_GRADES.has(formData.grade)
+          ? rows.filter((row) => row?.isCore || row?.pathway)
+          : rows;
+
         // Deduplicate by name (keep first occurrence)
         const seen = new Set();
-        const dedupe = rows.filter((a) => {
+        const dedupe = filteredRows.filter((a) => {
           const n = String(a?.name || '');
           if (!n || seen.has(n)) return false;
           seen.add(n);

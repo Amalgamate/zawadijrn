@@ -34,6 +34,17 @@ router.post(
 );
 
 /**
+ * @route  GET /api/pathways/integrity
+ * @desc   Run pathway catalog integrity checks (duplicate/conflicting mappings)
+ * @access SUPER_ADMIN, ADMIN, HEAD_TEACHER, HEAD_OF_CURRICULUM
+ */
+router.get(
+  '/integrity',
+  requireRole(['SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER', 'HEAD_OF_CURRICULUM']),
+  pathwayController.getCatalogIntegrity
+);
+
+/**
  * @route  GET /api/pathways
  * @desc   List all active pathways
  * @access Any authenticated user in SECONDARY context

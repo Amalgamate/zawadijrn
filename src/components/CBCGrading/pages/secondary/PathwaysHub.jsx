@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { BookOpen, Layers, RefreshCw } from 'lucide-react';
-import { fetchWithAuth } from '../../../../services/api/core';
+import { AlertTriangle, BookOpen, CheckCircle2, Layers, RefreshCw, ShieldAlert } from 'lucide-react';
+import api from '../../../../services/api';
 import { configAPI } from '../../../../services/api/config.api';
 import EmptyState from '../../shared/EmptyState';
 
@@ -15,14 +15,33 @@ const PathwaysHub = () => {
   const [pathways, setPathways] = useState([]);
   const [selected, setSelected] = useState(null);
   const [categories, setCategories] = useState([]);
+  const [integrity, setIntegrity] = useState(null);
+  const [integrityLoading, setIntegrityLoading] = useState(false);
   const [error, setError] = useState(null);
   const [seeding, setSeeding] = useState(false);
+
+  const loadIntegrity = async () => {
+    setIntegrityLoading(true);
+    try {
+      const resp = await api.pathways.getCatalogIntegrity();
+      setIntegrity(resp?.data || resp || null);
+    } catch (e) {
+      setIntegrity({
+        success: false,
+        checkedAt: new Date().toISOString(),
+        counts: { issues: 1, errors: 1, warnings: 0 },
+        issues: [{ code: 'INTEGRITY_FETCH_FAILED', message: e?.message || 'Failed to load catalog health', severity: 'error' }],
+      });
+    } finally {
+      setIntegrityLoading(false);
+    }
+  };
 
   const load = async () => {
     setLoading(true);
     setError(null);
     try {
-      const resp = await fetchWithAuth('/pathways');
+      const resp = await api.pathways.listPathways();
       const rows = Array.isArray(resp?.data) ? resp.data : (Array.isArray(resp) ? resp : []);
       setPathways(rows);
       if (!selected && rows.length) setSelected(rows.find((p) => p.code !== 'CORE') || rows[0]);
@@ -35,6 +54,7 @@ const PathwaysHub = () => {
 
   useEffect(() => {
     load();
+    loadIntegrity();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -42,7 +62,7 @@ const PathwaysHub = () => {
     const loadCategories = async () => {
       if (!selected?.code) return;
       try {
-        const resp = await fetchWithAuth(`/pathways/${selected.code}/categories`);
+        const resp = await api.pathways.getPathwayCategories(selected.code);
         const catRows = resp?.data?.categories || resp?.categories || [];
         setCategories(Array.isArray(catRows) ? catRows : []);
       } catch {
@@ -64,6 +84,7 @@ const PathwaysHub = () => {
       await configAPI.seedPathways();
       await configAPI.seedLearningAreas();
       await load();
+      await loadIntegrity();
     } catch (e) {
       setError(e?.message || 'Failed to run secondary bootstrap seed');
     } finally {
@@ -85,7 +106,10 @@ const PathwaysHub = () => {
         </button>
         <button
           type="button"
-          onClick={load}
+          onClick={async () => {
+            await load();
+            await loadIntegrity();
+          }}
           className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border bg-white text-xs font-semibold text-gray-700 hover:bg-gray-50"
         >
           <RefreshCw size={16} />
@@ -108,7 +132,49 @@ const PathwaysHub = () => {
           message="Click Seed to load pathways and subjects."
         />
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="space-y-4">
+          <div className={`rounded-2xl border p-4 ${
+            integrity?.success ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'
+          }`}>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-widest text-gray-600">Catalog Health</div>
+                <div className="mt-1 flex items-center gap-2">
+                  {integrity?.success ? <CheckCircle2 size={18} className="text-emerald-600" /> : <ShieldAlert size={18} className="text-amber-700" />}
+                  <span className={`text-sm font-semibold ${integrity?.success ? 'text-emerald-800' : 'text-amber-900'}`}>
+                    {integrityLoading ? 'Checking integrity...' : (integrity?.success ? 'No critical integrity conflicts' : 'Catalog integrity needs attention')}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-gray-600">
+                  Errors: {integrity?.counts?.errors || 0} • Warnings: {integrity?.counts?.warnings || 0}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={loadIntegrity}
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border bg-white text-xs font-semibold text-gray-700 hover:bg-gray-50"
+              >
+                <RefreshCw size={14} />
+                Recheck
+              </button>
+            </div>
+
+            {(integrity?.issues || []).length > 0 && (
+              <div className="mt-3 space-y-2 max-h-40 overflow-auto pr-1">
+                {integrity.issues.slice(0, 8).map((issue, idx) => (
+                  <div key={`${issue.code}-${idx}`} className="rounded-xl border border-white/70 bg-white/70 p-3">
+                    <div className="flex items-center gap-2">
+                      {issue.severity === 'error' ? <AlertTriangle size={14} className="text-red-600" /> : <AlertTriangle size={14} className="text-amber-600" />}
+                      <span className="text-xs font-semibold uppercase tracking-wider text-gray-700">{issue.code}</span>
+                    </div>
+                    <p className="mt-1 text-sm text-gray-800">{issue.message}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="rounded-2xl border bg-white p-4">
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gray-500">
               <Layers size={16} />
@@ -182,6 +248,7 @@ const PathwaysHub = () => {
                 <li>Grades: 10-12</li>
               </ul>
             </div>
+          </div>
           </div>
         </div>
       )}

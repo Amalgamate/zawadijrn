@@ -3,8 +3,15 @@ import prisma from '../config/database';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { ApiError } from '../utils/error.util';
 import { seedSeniorPathways } from '../services/ss-pathways.seed';
+import { runSeniorPathwayIntegrityCheck } from '../services/pathway-integrity.service';
 
 type SelectionItem = { learningAreaId: string; active?: boolean };
+
+const normalizeGradeLevel = (value?: string | null): string => {
+  const raw = String(value || '').trim().toUpperCase();
+  if (!raw) return '';
+  return raw.replace(/^GRADE_(\d+)$/, 'GRADE$1');
+};
 
 function assertSecondaryLearner(learner: { institutionType: any }) {
   if (learner.institutionType !== 'SECONDARY') {
@@ -68,7 +75,17 @@ function validateSelections({
 export const pathwayController = {
   seedPathwaysCatalog: async (_req: AuthRequest, res: Response) => {
     await seedSeniorPathways(prisma as any);
-    res.json({ success: true, message: 'Senior secondary pathways seeded successfully' });
+    const integrity = await runSeniorPathwayIntegrityCheck();
+    res.json({
+      success: true,
+      message: 'Senior secondary pathways seeded successfully',
+      integrity,
+    });
+  },
+
+  getCatalogIntegrity: async (_req: AuthRequest, res: Response) => {
+    const integrity = await runSeniorPathwayIntegrityCheck();
+    res.json({ success: integrity.success, data: integrity });
   },
 
   listPathways: async (_req: AuthRequest, res: Response) => {
@@ -123,12 +140,16 @@ export const pathwayController = {
       .map(s => ({ learningAreaId: String(s.learningAreaId), active: s.active !== false }));
 
     const areaIds = Array.from(new Set(activeSelections.map(s => s.learningAreaId)));
+    const normalizedLearnerGrade = normalizeGradeLevel(learner.grade);
+    const gradeAliases = normalizedLearnerGrade
+      ? [normalizedLearnerGrade, normalizedLearnerGrade.replace(/^GRADE(\d+)$/, 'GRADE_$1')]
+      : [];
+
     const areas = await prisma.learningArea.findMany({
       where: {
         id: { in: areaIds },
         institutionType: 'SECONDARY',
-        // Keep grade-level relevance: allow same catalog across 10–12 but enforce the gradeLevel match if present
-        ...(learner.grade ? { gradeLevel: learner.grade } : {}),
+        ...(gradeAliases.length ? { gradeLevel: { in: Array.from(new Set(gradeAliases)) } } : {}),
       },
       select: { id: true, categoryId: true, pathwayId: true, isCore: true },
     });
