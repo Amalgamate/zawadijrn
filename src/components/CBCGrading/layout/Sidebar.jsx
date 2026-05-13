@@ -1,19 +1,15 @@
 /**
  * Sidebar Component — Industry-Grade Rewrite
  *
- * Key improvements over previous version:
- * - Removed flyout dependency for collapsed mode (global top horizontal submenu handles children)
- * - Perfect icon centering in collapsed mode (w-16 / 64px column)
- * - Category labels are static; section children list in full when expanded (no in-sidebar accordions)
- * - Consistent 44px touch-target row heights throughout
- * - Portal flyout aligned flush to sidebar right edge with no gap
- * - Single source of truth for hover state (ref + setState)
+ * Institution theming (sidebar background only — all nav chrome stays white-on-dark):
+ *   PRIMARY_CBC  → brand navy   #030b82 / #02075e   (original, unchanged)
+ *   SECONDARY    → deep indigo  #1e1b4b / #13102d
+ *   TERTIARY     → dark teal    #134e4a / #0d3330
  */
 
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import {
   Menu, X,
-  School, Boxes,
   GraduationCap,
   BookOpen,
   ChevronDown,
@@ -22,11 +18,25 @@ import {
 import { useNavigation } from '../hooks/useNavigation';
 import { useInstitutionLabels } from '../../../hooks/useInstitutionLabels';
 import { usePermissions } from '../../../hooks/usePermissions';
+import { useAuth } from '../../../hooks/useAuth';
 
 // ─── constants ────────────────────────────────────────────────────────────────
-const SIDEBAR_COLLAPSED_W = 64;   // px  (w-16)
-const SIDEBAR_EXPANDED_W  = 224;  // px  (w-56)
-const HEADER_H            = 72;   // px  — must match the logo bar below
+const SIDEBAR_COLLAPSED_W = 64;
+const SIDEBAR_EXPANDED_W  = 224;
+const HEADER_H            = 72;
+
+// ─── Institution-aware sidebar palette ───────────────────────────────────────
+const getSidebarTheme = (institutionType) => {
+  switch (institutionType) {
+    case 'SECONDARY':
+      return { bg: '#1e1b4b', dark: '#13102d', accent: '#818cf8' }; // deep indigo / indigo-400
+    case 'TERTIARY':
+      return { bg: '#134e4a', dark: '#0d3330', accent: '#2dd4bf' }; // dark teal / teal-400
+    case 'PRIMARY_CBC':
+    default:
+      return { bg: '#030b82', dark: '#02075e', accent: '#0D9488' }; // brand navy / brand-teal (original)
+  }
+};
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 const findDefaultPath = (items = []) => {
@@ -44,50 +54,50 @@ const findDefaultPath = (items = []) => {
 const getCollapsedIconColor = (id, isActive) => {
   if (isActive) return 'text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.7)]';
   switch (id) {
-    case 'finance': return 'text-red-500 drop-shadow-[0_0_6px_rgba(239,68,68,0.7)] group-hover:text-red-400 group-hover:drop-shadow-[0_0_10px_rgba(239,68,68,0.9)]';
-    case 'learners': return 'text-blue-500 drop-shadow-[0_0_6px_rgba(59,130,246,0.7)] group-hover:text-blue-400 group-hover:drop-shadow-[0_0_10px_rgba(59,130,246,0.9)]';
-    case 'teachers': return 'text-emerald-500 drop-shadow-[0_0_6px_rgba(16,185,129,0.7)] group-hover:text-emerald-400 group-hover:drop-shadow-[0_0_10px_rgba(16,185,129,0.9)]';
-    case 'parents': return 'text-fuchsia-500 drop-shadow-[0_0_6px_rgba(217,70,239,0.7)] group-hover:text-fuchsia-400 group-hover:drop-shadow-[0_0_10px_rgba(217,70,239,0.9)]';
-    case 'assessment': return 'text-amber-500 drop-shadow-[0_0_6px_rgba(245,158,11,0.7)] group-hover:text-amber-400 group-hover:drop-shadow-[0_0_10px_rgba(245,158,11,0.9)]';
-    case 'communications': return 'text-cyan-500 drop-shadow-[0_0_6px_rgba(6,182,212,0.7)] group-hover:text-cyan-400 group-hover:drop-shadow-[0_0_10px_rgba(6,182,212,0.9)]';
-    case 'planner': return 'text-orange-500 drop-shadow-[0_0_6px_rgba(249,115,22,0.7)] group-hover:text-orange-400 group-hover:drop-shadow-[0_0_10px_rgba(249,115,22,0.9)]';
-    case 'learning-hub': return 'text-indigo-500 drop-shadow-[0_0_6px_rgba(99,102,241,0.7)] group-hover:text-indigo-400 group-hover:drop-shadow-[0_0_10px_rgba(99,102,241,0.9)]';
-    case 'lms': return 'text-pink-500 drop-shadow-[0_0_6px_rgba(236,72,153,0.7)] group-hover:text-pink-400 group-hover:drop-shadow-[0_0_10px_rgba(236,72,153,0.9)]';
-    case 'attendance': return 'text-lime-500 drop-shadow-[0_0_6px_rgba(132,204,22,0.7)] group-hover:text-lime-400 group-hover:drop-shadow-[0_0_10px_rgba(132,204,22,0.9)]';
-    case 'docs-center': return 'text-sky-500 drop-shadow-[0_0_6px_rgba(14,165,233,0.7)] group-hover:text-sky-400 group-hover:drop-shadow-[0_0_10px_rgba(14,165,233,0.9)]';
-    case 'hr': return 'text-teal-500 drop-shadow-[0_0_6px_rgba(20,184,166,0.7)] group-hover:text-teal-400 group-hover:drop-shadow-[0_0_10px_rgba(20,184,166,0.9)]';
-    case 'library': return 'text-violet-500 drop-shadow-[0_0_6px_rgba(139,92,246,0.7)] group-hover:text-violet-400 group-hover:drop-shadow-[0_0_10px_rgba(139,92,246,0.9)]';
-    case 'transport': return 'text-rose-500 drop-shadow-[0_0_6px_rgba(244,63,94,0.7)] group-hover:text-rose-400 group-hover:drop-shadow-[0_0_10px_rgba(244,63,94,0.9)]';
-    case 'inventory': return 'text-yellow-500 drop-shadow-[0_0_6px_rgba(234,179,8,0.7)] group-hover:text-yellow-400 group-hover:drop-shadow-[0_0_10px_rgba(234,179,8,0.9)]';
-    case 'biometric': return 'text-emerald-400 drop-shadow-[0_0_6px_rgba(52,211,153,0.7)] group-hover:text-emerald-300 group-hover:drop-shadow-[0_0_10px_rgba(52,211,153,0.9)]';
-    case 'settings': return 'text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.7)] group-hover:text-white group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.9)]';
-    case 'dashboard': return 'text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.7)] group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.9)]';
-    default: return 'text-white/60 group-hover:text-white group-hover:drop-shadow-md';
+    case 'finance':         return 'text-red-500    drop-shadow-[0_0_6px_rgba(239,68,68,0.7)]   group-hover:text-red-400    group-hover:drop-shadow-[0_0_10px_rgba(239,68,68,0.9)]';
+    case 'learners':        return 'text-blue-500   drop-shadow-[0_0_6px_rgba(59,130,246,0.7)]  group-hover:text-blue-400   group-hover:drop-shadow-[0_0_10px_rgba(59,130,246,0.9)]';
+    case 'teachers':        return 'text-emerald-500 drop-shadow-[0_0_6px_rgba(16,185,129,0.7)] group-hover:text-emerald-400 group-hover:drop-shadow-[0_0_10px_rgba(16,185,129,0.9)]';
+    case 'parents':         return 'text-fuchsia-500 drop-shadow-[0_0_6px_rgba(217,70,239,0.7)] group-hover:text-fuchsia-400 group-hover:drop-shadow-[0_0_10px_rgba(217,70,239,0.9)]';
+    case 'assessment':      return 'text-amber-500  drop-shadow-[0_0_6px_rgba(245,158,11,0.7)]  group-hover:text-amber-400  group-hover:drop-shadow-[0_0_10px_rgba(245,158,11,0.9)]';
+    case 'communications':  return 'text-cyan-500   drop-shadow-[0_0_6px_rgba(6,182,212,0.7)]   group-hover:text-cyan-400   group-hover:drop-shadow-[0_0_10px_rgba(6,182,212,0.9)]';
+    case 'planner':         return 'text-orange-500 drop-shadow-[0_0_6px_rgba(249,115,22,0.7)]  group-hover:text-orange-400 group-hover:drop-shadow-[0_0_10px_rgba(249,115,22,0.9)]';
+    case 'learning-hub':    return 'text-indigo-500 drop-shadow-[0_0_6px_rgba(99,102,241,0.7)]  group-hover:text-indigo-400 group-hover:drop-shadow-[0_0_10px_rgba(99,102,241,0.9)]';
+    case 'lms':             return 'text-pink-500   drop-shadow-[0_0_6px_rgba(236,72,153,0.7)]  group-hover:text-pink-400   group-hover:drop-shadow-[0_0_10px_rgba(236,72,153,0.9)]';
+    case 'attendance':      return 'text-lime-500   drop-shadow-[0_0_6px_rgba(132,204,22,0.7)]  group-hover:text-lime-400   group-hover:drop-shadow-[0_0_10px_rgba(132,204,22,0.9)]';
+    case 'docs-center':     return 'text-sky-500    drop-shadow-[0_0_6px_rgba(14,165,233,0.7)]  group-hover:text-sky-400    group-hover:drop-shadow-[0_0_10px_rgba(14,165,233,0.9)]';
+    case 'hr':              return 'text-teal-500   drop-shadow-[0_0_6px_rgba(20,184,166,0.7)]  group-hover:text-teal-400   group-hover:drop-shadow-[0_0_10px_rgba(20,184,166,0.9)]';
+    case 'library':         return 'text-violet-500 drop-shadow-[0_0_6px_rgba(139,92,246,0.7)]  group-hover:text-violet-400 group-hover:drop-shadow-[0_0_10px_rgba(139,92,246,0.9)]';
+    case 'transport':       return 'text-rose-500   drop-shadow-[0_0_6px_rgba(244,63,94,0.7)]   group-hover:text-rose-400   group-hover:drop-shadow-[0_0_10px_rgba(244,63,94,0.9)]';
+    case 'inventory':       return 'text-yellow-500 drop-shadow-[0_0_6px_rgba(234,179,8,0.7)]   group-hover:text-yellow-400 group-hover:drop-shadow-[0_0_10px_rgba(234,179,8,0.9)]';
+    case 'biometric':       return 'text-emerald-400 drop-shadow-[0_0_6px_rgba(52,211,153,0.7)] group-hover:text-emerald-300 group-hover:drop-shadow-[0_0_10px_rgba(52,211,153,0.9)]';
+    case 'settings':
+    case 'dashboard':       return 'text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.7)] group-hover:text-white group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.9)]';
+    default:                return 'text-white/60 group-hover:text-white group-hover:drop-shadow-md';
   }
 };
 
 // ─── Route → chunk prefetch map ──────────────────────────────────────────────
 const PREFETCH_MAP = {
-  'learners-list':            () => import('../pages/LearnersList'),
-  'teachers-list':            () => import('../pages/TeachersList'),
-  'parents-list':             () => import('../pages/ParentsList'),
-  'attendance-daily':         () => import('../pages/DailyAttendanceAPI'),
-  'attendance-reports':       () => import('../pages/AttendanceReports'),
-  'assess-formative':         () => import('../pages/FormativeAssessment'),
-  'assess-summative-tests':   () => import('../pages/SummativeTestsRouter'),
-  'fees-collection':          () => import('../pages/FeeCollectionPage'),
-  'fees-structure':           () => import('../pages/FeeStructurePage'),
-  'fees-reports':             () => import('../pages/FeeReportsPage'),
-  'comm-notices':             () => import('../pages/NoticesPage'),
-  'hr-portal':                () => import('../pages/hr/HRManager'),
-  'hr-payroll':               () => import('../pages/hr/PayrollManager'),
-  'accounting-dashboard':     () => import('../pages/accounting/AccountingManager'),
-  'inventory-items':          () => import('../pages/inventory/InventoryItems'),
-  'library-catalog':          () => import('../pages/library/LibraryManager'),
-  'transport-routes':         () => import('../pages/transport/TransportManager'),
-  'settings-school':          () => import('../pages/settings/SchoolSettings'),
-  'settings-users':           () => import('../pages/settings/UserManagement'),
-  'planner-duty-roster':      () => import('../pages/planner/DutyRosterPage'),
+  'learners-list':        () => import('../pages/LearnersList'),
+  'teachers-list':        () => import('../pages/TeachersList'),
+  'parents-list':         () => import('../pages/ParentsList'),
+  'attendance-daily':     () => import('../pages/DailyAttendanceAPI'),
+  'attendance-reports':   () => import('../pages/AttendanceReports'),
+  'assess-formative':     () => import('../pages/FormativeAssessment'),
+  'assess-summative-tests':() => import('../pages/SummativeTestsRouter'),
+  'fees-collection':      () => import('../pages/FeeCollectionPage'),
+  'fees-structure':       () => import('../pages/FeeStructurePage'),
+  'fees-reports':         () => import('../pages/FeeReportsPage'),
+  'comm-notices':         () => import('../pages/NoticesPage'),
+  'hr-portal':            () => import('../pages/hr/HRManager'),
+  'hr-payroll':           () => import('../pages/hr/PayrollManager'),
+  'accounting-dashboard': () => import('../pages/accounting/AccountingManager'),
+  'inventory-items':      () => import('../pages/inventory/InventoryItems'),
+  'library-catalog':      () => import('../pages/library/LibraryManager'),
+  'transport-routes':     () => import('../pages/transport/TransportManager'),
+  'settings-school':      () => import('../pages/settings/SchoolSettings'),
+  'settings-users':       () => import('../pages/settings/UserManagement'),
+  'planner-duty-roster':  () => import('../pages/planner/DutyRosterPage'),
 };
 
 const prefetch = (path) => {
@@ -107,9 +117,13 @@ const Sidebar = React.memo(({
 }) => {
   const labels = useInstitutionLabels();
   const { role } = usePermissions();
+  const { institutionType } = useAuth();
+
+  // Compute per-institution colour tokens — memoised so it only re-runs when
+  // institutionType changes (which is essentially never mid-session).
+  const theme = useMemo(() => getSidebarTheme(institutionType), [institutionType]);
 
   const {
-    navSections,
     dashboardSection,
     communicationSection,
     schoolSections,
@@ -131,169 +145,148 @@ const Sidebar = React.memo(({
     sidebarOpen,
     currentPage,
     onNavigate,
+    accentColor: theme.accent,
   };
 
   const sidebarW = sidebarOpen ? SIDEBAR_EXPANDED_W : SIDEBAR_COLLAPSED_W;
 
   return (
-    <>
-      <aside
-        style={{ width: sidebarW }}
-        className="relative flex flex-col h-full bg-[var(--brand-purple)] text-white transition-[width] duration-300 ease-in-out border-r border-white/10 shadow-xl flex-shrink-0 z-30"
+    <aside
+      style={{ width: sidebarW, backgroundColor: theme.bg }}
+      className="relative flex flex-col h-full text-white transition-[width] duration-300 ease-in-out border-r border-white/10 shadow-xl flex-shrink-0 z-30"
+    >
+      {/* ── Logo bar ─────────────────────────────────────────────────────── */}
+      <div
+        style={{ height: HEADER_H, backgroundColor: theme.dark }}
+        className="flex items-center justify-center px-3 border-b border-white/10 overflow-hidden flex-shrink-0"
       >
-        {/* Logo bar */}
-        <div
-          style={{ height: HEADER_H }}
-          className="flex items-center justify-center px-3 border-b border-white/10 bg-[var(--brand-purple-dark)] overflow-hidden flex-shrink-0"
-        >
-          {brandingSettings?.logoUrl ? (
-            <img
-              src={brandingSettings.logoUrl}
-              alt="School Logo"
-              className={`object-contain transition-all duration-300 ${sidebarOpen ? 'h-11 max-w-full' : 'h-9 w-9'}`}
-            />
-          ) : sidebarOpen ? (
-            <span className="text-base font-semibold text-white tracking-wider truncate text-center leading-tight px-1">
-              {brandingSettings?.schoolName || 'ZAWADI'}
+        {brandingSettings?.logoUrl ? (
+          <img
+            src={brandingSettings.logoUrl}
+            alt="School Logo"
+            className={`object-contain transition-all duration-300 ${sidebarOpen ? 'h-11 max-w-full' : 'h-9 w-9'}`}
+          />
+        ) : sidebarOpen ? (
+          <span className="text-base font-semibold text-white tracking-wider truncate text-center leading-tight px-1">
+            {brandingSettings?.schoolName || 'ZAWADI'}
+          </span>
+        ) : (
+          <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center border border-white/20 shadow-inner">
+            <span className="text-sm font-semibold text-white">
+              {(brandingSettings?.schoolName || 'ZA').substring(0, 2).toUpperCase()}
             </span>
-          ) : (
-            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center border border-white/20 shadow-inner">
-              <span className="text-sm font-semibold text-white">
-                {(brandingSettings?.schoolName || 'ZA').substring(0, 2).toUpperCase()}
-              </span>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
+      </div>
 
-        {/* Nav scroll area */}
-        <nav className="flex-1 overflow-y-auto overflow-x-hidden py-3 px-2 space-y-0.5 custom-scrollbar">
+      {/* ── Nav scroll area ──────────────────────────────────────────────── */}
+      <nav className="flex-1 overflow-y-auto overflow-x-hidden py-3 px-2 space-y-0.5 custom-scrollbar">
 
-          {/* Dashboard */}
-          {dashboardSection && (
-            <SingleItem
-              section={dashboardSection}
-              currentPage={currentPage}
-              onNavigate={onNavigate}
-              sidebarOpen={sidebarOpen}
-            />
-          )}
+        {dashboardSection && (
+          <SingleItem
+            section={dashboardSection}
+            currentPage={currentPage}
+            onNavigate={onNavigate}
+            sidebarOpen={sidebarOpen}
+            accentColor={theme.accent}
+          />
+        )}
 
-          {/* Communications */}
-          {communicationSection && (
-            <NavSection key={communicationSection.id} section={communicationSection} {...sharedNavProps} />
-          )}
+        {communicationSection && (
+          <NavSection key={communicationSection.id} section={communicationSection} {...sharedNavProps} />
+        )}
 
-          {/* ── School group ─────────────────────────────────────── */}
-          {schoolSections.length > 0 && (
-            <CategoryGroup label={labels.schoolGroup || "School"} sidebarOpen={sidebarOpen}>
-              {schoolSections.map(s => <NavSection key={s.id} section={s} {...sharedNavProps} />)}
-            </CategoryGroup>
-          )}
+        {schoolSections.length > 0 && (
+          <CategoryGroup label={labels.schoolGroup || 'School'} sidebarOpen={sidebarOpen}>
+            {schoolSections.map(s => <NavSection key={s.id} section={s} {...sharedNavProps} />)}
+          </CategoryGroup>
+        )}
 
-          {/* LMS */}
-          {lmsSection && <NavSection key={lmsSection.id} section={lmsSection} {...sharedNavProps} />}
+        {lmsSection && <NavSection key={lmsSection.id} section={lmsSection} {...sharedNavProps} />}
+        {studentLmsSection && <NavSection key={studentLmsSection.id} section={studentLmsSection} {...sharedNavProps} />}
 
-          {/* Student Portal */}
-          {studentLmsSection && <NavSection key={studentLmsSection.id} section={studentLmsSection} {...sharedNavProps} />}
+        {backOfficeSections.length > 0 && (
+          <CategoryGroup label={labels.backOfficeGroup || 'Back Office'} sidebarOpen={sidebarOpen}>
+            {backOfficeSections.map(s => <NavSection key={s.id} section={s} {...sharedNavProps} />)}
+          </CategoryGroup>
+        )}
 
-          {/* ── Back Office group ─────────────────────────────────── */}
-          {backOfficeSections.length > 0 && (
-            <CategoryGroup label={labels.backOfficeGroup || "Back Office"} sidebarOpen={sidebarOpen}>
-              {backOfficeSections.map(s => <NavSection key={s.id} section={s} {...sharedNavProps} />)}
-            </CategoryGroup>
-          )}
+        {docsCenterSection && (
+          <div className="mt-2 pt-2 border-t border-white/10 -mx-2 px-2">
+            <NavSection key={docsCenterSection.id} section={docsCenterSection} {...sharedNavProps} />
+          </div>
+        )}
+      </nav>
 
-          {/* Document Center */}
-          {docsCenterSection && (
-            <div className="mt-2 pt-2 border-t border-white/10 -mx-2 px-2">
-              <NavSection key={docsCenterSection.id} section={docsCenterSection} {...sharedNavProps} />
-            </div>
-          )}
-        </nav>
+      {/* ── Footer ───────────────────────────────────────────────────────── */}
+      <footer
+        style={{ backgroundColor: theme.dark }}
+        className="flex-shrink-0 border-t border-white/10 px-2 py-2 space-y-0.5"
+      >
+        {systemAdminSections.length > 0 && (
+          <>
+            {sidebarOpen && (
+              <p className="text-[9px] text-gray-400 font-medium uppercase tracking-wider mt-1 px-3">
+                {role === 'TEACHER'      ? labels.teacher :
+                 role === 'PARENT'       ? 'Parent' :
+                 role === 'ADMIN'        ? 'Administrator' :
+                 role === 'HEAD_TEACHER' ? (labels.headLabel || 'Principal') :
+                 role === 'SUPER_ADMIN'  ? 'Administrator' :
+                 (user?.role || 'Guest')}
+              </p>
+            )}
+            {systemAdminSections.map(s => (
+              <NavSection key={s.id} section={s} {...sharedNavProps} isBottom />
+            ))}
+          </>
+        )}
 
-        {/* Footer — System Admin + collapse toggle */}
-        <footer className="flex-shrink-0 border-t border-white/10 bg-[var(--brand-purple-dark)] px-2 py-2 space-y-0.5">
-          {systemAdminSections.length > 0 && (
-            <>
-              {sidebarOpen && (
-                <p className="text-[9px] text-gray-400 font-medium uppercase tracking-wider mt-1 px-3">
-                  {role === 'TEACHER' ? labels.teacher : 
-                   role === 'PARENT' ? 'Parent' : 
-                   role === 'ADMIN' ? 'Administrator' : 
-                   role === 'HEAD_TEACHER' ? (labels.headLabel || 'Principal') : 
-                   role === 'SUPER_ADMIN' ? 'Administrator' : 
-                   (user?.role || 'Guest')}
-                </p>
-              )}
-              {systemAdminSections.map(s => (
-                <NavSection key={s.id} section={s} {...sharedNavProps} isBottom />
-              ))}
-            </>
-          )}
-
-          {/* Git Update Notification button — SUPER_ADMIN / ADMIN only */}
-          {onOpenGitDialog && ['SUPER_ADMIN', 'ADMIN'].includes(role) && (
-            <button
-              onClick={onOpenGitDialog}
-              title={sidebarOpen ? undefined : 'Publish Platform Update'}
-              className="w-full flex items-center gap-3 px-3 rounded-lg transition-all duration-200
-                text-indigo-300 hover:text-white hover:bg-indigo-500/20 border border-indigo-500/20 hover:border-indigo-400/40"
-              style={{ height: 40 }}
-            >
-              <span className="flex-shrink-0 flex items-center justify-center" style={{ width: 20 }}>
-                <Rocket size={16} className="text-indigo-400" />
-              </span>
-              {sidebarOpen && (
-                <span className="text-[11px] font-bold uppercase tracking-wider truncate">
-                  Publish Update
-                </span>
-              )}
-            </button>
-          )}
-
-          {/* Collapse toggle */}
+        {onOpenGitDialog && ['SUPER_ADMIN', 'ADMIN'].includes(role) && (
           <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="w-full flex items-center gap-3 px-3 rounded-lg transition-all duration-200 text-white/50 hover:text-white hover:bg-white/10"
+            onClick={onOpenGitDialog}
+            title={sidebarOpen ? undefined : 'Publish Platform Update'}
+            className="w-full flex items-center gap-3 px-3 rounded-lg transition-all duration-200 text-indigo-300 hover:text-white hover:bg-indigo-500/20 border border-indigo-500/20 hover:border-indigo-400/40"
             style={{ height: 40 }}
-            title={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
           >
             <span className="flex-shrink-0 flex items-center justify-center" style={{ width: 20 }}>
-              {sidebarOpen ? <X size={17} /> : <Menu size={17} />}
+              <Rocket size={16} className="text-indigo-400" />
             </span>
-            {sidebarOpen && <span className="text-xs font-semibold">Collapse</span>}
+            {sidebarOpen && (
+              <span className="text-[11px] font-bold uppercase tracking-wider truncate">Publish Update</span>
+            )}
           </button>
-        </footer>
-      </aside>
-    </>
+        )}
+
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="w-full flex items-center gap-3 px-3 rounded-lg transition-all duration-200 text-white/50 hover:text-white hover:bg-white/10"
+          style={{ height: 40 }}
+          title={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+        >
+          <span className="flex-shrink-0 flex items-center justify-center" style={{ width: 20 }}>
+            {sidebarOpen ? <X size={17} /> : <Menu size={17} />}
+          </span>
+          {sidebarOpen && <span className="text-xs font-semibold">Collapse</span>}
+        </button>
+      </footer>
+    </aside>
   );
 });
 
-// ─── CategoryGroup ─────────────────────────────────────────────────────────────
-/**
- * Section label only — no icon, no underline, no background tint.
- * Items stay visible (no accordion); collapsed rail still lists icons.
- */
+// ─── CategoryGroup ────────────────────────────────────────────────────────────
 const CategoryGroup = ({ label, sidebarOpen, children }) => (
   <div className="mt-2 pt-2 border-t border-white/10 -mx-2 px-2">
     {sidebarOpen && (
-      <div
-        className="w-full flex items-center px-3 pointer-events-none"
-        style={{ height: 36 }}
-      >
-        <span className="text-[12px] font-extrabold uppercase tracking-[0.14em] text-white/60">
-          {label}
-        </span>
+      <div className="w-full flex items-center px-3 pointer-events-none" style={{ height: 36 }}>
+        <span className="text-[12px] font-extrabold uppercase tracking-[0.14em] text-white/60">{label}</span>
       </div>
     )}
-    <div className="space-y-0.5 pt-0.5">
-      {children}
-    </div>
+    <div className="space-y-0.5 pt-0.5">{children}</div>
   </div>
 );
 
-// ─── SingleItem (leaf, no children — e.g. Dashboard / Help) ───────────────────
-const SingleItem = ({ section, currentPage, onNavigate, sidebarOpen }) => {
+// ─── SingleItem ───────────────────────────────────────────────────────────────
+const SingleItem = ({ section, currentPage, onNavigate, sidebarOpen, accentColor }) => {
   const isActive = currentPage === section.id;
   return (
     <button
@@ -303,38 +296,38 @@ const SingleItem = ({ section, currentPage, onNavigate, sidebarOpen }) => {
       title={!sidebarOpen ? section.label : undefined}
       className={`
         relative w-full flex items-center gap-3 px-3 rounded-lg transition-all duration-300 group
-        ${isActive && sidebarOpen
-          ? 'bg-white/15 text-white font-semibold shadow-sm ring-1 ring-white/20'
-          : isActive && !sidebarOpen
-          ? 'bg-white/10'
-          : 'text-white/60 hover:text-white hover:bg-white/8'}
+        ${isActive && sidebarOpen  ? 'bg-white/15 text-white font-semibold shadow-sm ring-1 ring-white/20'
+        : isActive && !sidebarOpen ? 'bg-white/10'
+        : 'text-white/60 hover:text-white hover:bg-white/8'}
         ${section.greyedOut ? 'opacity-40 cursor-not-allowed' : ''}
       `}
       style={{ height: 44 }}
     >
       {isActive && (
-        <span className="absolute left-0 top-3 bottom-3 w-0.5 bg-brand-teal rounded-r-full" />
+        <span
+          className="absolute left-0 top-3 bottom-3 w-0.5 rounded-r-full"
+          style={{ backgroundColor: accentColor }}
+        />
       )}
       <span className="flex-shrink-0 flex items-center justify-center" style={{ width: 20 }}>
         <section.icon size={18} className={!sidebarOpen ? `${getCollapsedIconColor(section.id, isActive)} transition-all duration-300` : ''} />
       </span>
-      {sidebarOpen && (
-        <span className="text-sm font-semibold truncate">{section.label}</span>
-      )}
+      {sidebarOpen && <span className="text-sm font-semibold truncate">{section.label}</span>}
     </button>
   );
 };
 
-// ─── NavSection ────────────────────────────────────────────────────────────────
+// ─── NavSection ───────────────────────────────────────────────────────────────
 const NavSection = React.memo(({
   section,
   handleSectionClick,
   sidebarOpen,
   currentPage,
   onNavigate,
+  accentColor,
   isBottom = false,
 }) => {
-  const hasChildren    = (section.items?.length || 0) > 0;
+  const hasChildren = (section.items?.length || 0) > 0;
 
   const isChildActive = useMemo(() => {
     if (!hasChildren) return false;
@@ -344,16 +337,14 @@ const NavSection = React.memo(({
     return check(section.items);
   }, [section.items, currentPage, hasChildren]);
 
-  const isActive = currentPage === section.id || isChildActive;
+  const isActive     = currentPage === section.id || isChildActive;
   const isAssessment = section.id === 'assessment';
-  const isSettings = section.id === 'settings';
+  const isSettings   = section.id === 'settings';
 
   const [isExpanded, setIsExpanded] = useState(isActive);
 
   useEffect(() => {
-    if (isChildActive && isSettings) {
-      setIsExpanded(true);
-    }
+    if (isChildActive && isSettings) setIsExpanded(true);
   }, [isChildActive, isSettings]);
 
   if (!hasChildren) {
@@ -363,68 +354,40 @@ const NavSection = React.memo(({
         currentPage={currentPage}
         onNavigate={onNavigate}
         sidebarOpen={sidebarOpen}
+        accentColor={accentColor}
       />
     );
   }
 
   const headerClass = `
-          relative w-full flex items-center px-3 rounded-lg
-          transition-all duration-200
-          ${isAssessment
-            ? (isActive
-                ? 'text-amber-300 bg-amber-500/10'
-                : 'text-amber-400/70')
-            : (isActive
-                ? 'text-white bg-white/8'
-                : 'text-white/60')
-          }
-          ${section.greyedOut ? 'opacity-40' : ''}
-        `;
+    relative w-full flex items-center px-3 rounded-lg transition-all duration-200
+    ${isAssessment
+      ? (isActive ? 'text-amber-300 bg-amber-500/10' : 'text-amber-400/70')
+      : (isActive ? 'text-white bg-white/8' : 'text-white/60')}
+    ${section.greyedOut ? 'opacity-40' : ''}
+  `;
 
   const sectionItemsBlock = (
     <div className={`ml-[11px] mt-1 border-l border-white/10 pl-3 space-y-0.5 ${isBottom ? 'mb-2' : 'mb-1'}`}>
       {section.items.map(item => {
         if (item.type === 'group') {
-          const isAssessmentPrimaryGroup =
+          const isPrimaryGroup =
             section.id === 'assessment' && (item.id === 'group-summative' || item.id === 'group-formative');
           return (
             <div key={item.id} className="mb-2 last:mb-0">
-              <div
-                className={`flex items-center gap-1.5 px-2 py-1 tracking-wide ${
-                  isAssessmentPrimaryGroup
-                    ? 'text-[11px] font-semibold text-amber-400 tracking-normal'
-                    : 'text-[9px] font-semibold text-white/45 uppercase'
-                }`}
-              >
-                {item.icon && (
-                  <item.icon
-                    size={11}
-                    className={`${isAssessmentPrimaryGroup ? 'text-amber-400' : 'opacity-70'} flex-shrink-0`}
-                  />
-                )}
+              <div className={`flex items-center gap-1.5 px-2 py-1 tracking-wide ${isPrimaryGroup ? 'text-[11px] font-semibold text-amber-400 tracking-normal' : 'text-[9px] font-semibold text-white/45 uppercase'}`}>
+                {item.icon && <item.icon size={11} className={`${isPrimaryGroup ? 'text-amber-400' : 'opacity-70'} flex-shrink-0`} />}
                 <span>{item.label}</span>
               </div>
               <div className="ml-1 border-l border-white/10 pl-2 space-y-0.5 pt-0.5">
                 {(item.items || []).map(sub => (
-                  <LeafItem
-                    key={sub.id}
-                    item={sub}
-                    currentPage={currentPage}
-                    onNavigate={onNavigate}
-                  />
+                  <LeafItem key={sub.id} item={sub} currentPage={currentPage} onNavigate={onNavigate} accentColor={accentColor} />
                 ))}
               </div>
             </div>
           );
         }
-        return (
-          <LeafItem
-            key={item.id}
-            item={item}
-            currentPage={currentPage}
-            onNavigate={onNavigate}
-          />
-        );
+        return <LeafItem key={item.id} item={item} currentPage={currentPage} onNavigate={onNavigate} accentColor={accentColor} />;
       })}
     </div>
   );
@@ -437,64 +400,60 @@ const NavSection = React.memo(({
             className={`${headerClass} ${isSettings ? 'cursor-pointer' : 'pointer-events-none'}`}
             style={{ height: 40 }}
             onClick={() => isSettings && setIsExpanded(!isExpanded)}
-            role={isSettings ? "button" : undefined}
+            role={isSettings ? 'button' : undefined}
             tabIndex={isSettings ? 0 : -1}
           >
             {isActive && (
-              <span className="absolute left-0 top-3 bottom-3 w-0.5 bg-brand-teal rounded-r-full" />
+              <span
+                className="absolute left-0 top-3 bottom-3 w-0.5 rounded-r-full"
+                style={{ backgroundColor: accentColor }}
+              />
             )}
             <div className="flex items-center gap-3 flex-1 min-w-0">
               <span className="flex-shrink-0 flex items-center justify-center" style={{ width: 20 }}>
                 <section.icon size={18} className={isSettings ? 'text-white' : undefined} />
               </span>
               <span className="text-sm font-semibold truncate text-left flex-1">{section.label}</span>
-              
               {isSettings && (
-                <ChevronDown 
-                  size={14} 
-                  className={`transition-transform duration-200 text-white/40 ${isExpanded ? 'rotate-180' : ''}`}
-                />
+                <ChevronDown size={14} className={`transition-transform duration-200 text-white/40 ${isExpanded ? 'rotate-180' : ''}`} />
               )}
             </div>
           </div>
           {(!isSettings || isExpanded) && sectionItemsBlock}
         </>
       ) : (
-        <>
-          <button
-            type="button"
-            onClick={() => !section.greyedOut && handleSectionClick(section)}
-            disabled={!!section.greyedOut}
-            title={section.label}
-            className={`
-              relative w-full flex items-center px-3 rounded-lg transition-all duration-300 group
-              ${isActive
-                ? 'bg-white/10'
-                : 'hover:bg-white/8'
-              }
-              ${section.greyedOut ? 'opacity-40 cursor-not-allowed' : ''}
-            `}
-            style={{ height: 44 }}
-          >
-            {isActive && (
-              <span className="absolute left-0 top-3 bottom-3 w-0.5 bg-brand-teal rounded-r-full" />
-            )}
-            <div className="flex items-center gap-3 flex-1 min-w-0 justify-center">
-              <span className="flex-shrink-0 flex items-center justify-center" style={{ width: 20 }}>
-                <section.icon size={18} className={`${getCollapsedIconColor(section.id, isActive)} transition-all duration-300`} />
-              </span>
-            </div>
-          </button>
-        </>
+        <button
+          type="button"
+          onClick={() => !section.greyedOut && handleSectionClick(section)}
+          disabled={!!section.greyedOut}
+          title={section.label}
+          className={`
+            relative w-full flex items-center px-3 rounded-lg transition-all duration-300 group
+            ${isActive ? 'bg-white/10' : 'hover:bg-white/8'}
+            ${section.greyedOut ? 'opacity-40 cursor-not-allowed' : ''}
+          `}
+          style={{ height: 44 }}
+        >
+          {isActive && (
+            <span
+              className="absolute left-0 top-3 bottom-3 w-0.5 rounded-r-full"
+              style={{ backgroundColor: accentColor }}
+            />
+          )}
+          <div className="flex items-center gap-3 flex-1 min-w-0 justify-center">
+            <span className="flex-shrink-0 flex items-center justify-center" style={{ width: 20 }}>
+              <section.icon size={18} className={`${getCollapsedIconColor(section.id, isActive)} transition-all duration-300`} />
+            </span>
+          </div>
+        </button>
       )}
     </div>
   );
 });
 
-// ─── LeafItem ──────────────────────────────────────────────────────────────────
+// ─── LeafItem ─────────────────────────────────────────────────────────────────
 const LeafItem = ({ item, currentPage, onNavigate }) => {
   const isActive = currentPage === item.path;
-
   return (
     <button
       onClick={() => !item.greyedOut && !item.comingSoon && onNavigate(item.path, item.params)}
@@ -519,7 +478,7 @@ const LeafItem = ({ item, currentPage, onNavigate }) => {
   );
 };
 
-// ─── display names ─────────────────────────────────────────────────────────────
+// ─── display names ────────────────────────────────────────────────────────────
 Sidebar.displayName    = 'Sidebar';
 NavSection.displayName = 'NavSection';
 
