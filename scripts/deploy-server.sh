@@ -13,6 +13,7 @@ set -euo pipefail
 #   CONSOLE_PORT=3100
 #   CONSOLE_ENV_FILE=/srv/zawadi/apps/.env.console
 #   CONSOLE_INSTANCE_PROVISION_SCRIPT=/srv/zawadi/apps/scripts/provision-instance.sh
+#   CONSOLE_NGINX_SITES_DIR=/etc/nginx/sites-enabled
 
 SERVER_HOST="${SERVER_HOST:-185.127.16.124}"
 SERVER_USER="${SERVER_USER:-deploy}"
@@ -21,11 +22,12 @@ MAIN_DIR="${MAIN_DIR:-/srv/zawadi/apps/zawadijrn}"
 CONSOLE_IMAGE="${CONSOLE_IMAGE:-ghcr.io/amalgamate/zawadi-console:latest}"
 CONSOLE_PORT="${CONSOLE_PORT:-3100}"
 CONSOLE_ENV_FILE="${CONSOLE_ENV_FILE:-${APPS_DIR}/.env.console}"
+CONSOLE_NGINX_SITES_DIR="${CONSOLE_NGINX_SITES_DIR:-/etc/nginx/sites-enabled}"
 
 echo "[deploy] Host: ${SERVER_USER}@${SERVER_HOST}"
 echo "[deploy] Images: ghcr.io/amalgamate/zawadi-frontend:latest, ghcr.io/amalgamate/zawadi-backend:latest, ${CONSOLE_IMAGE}"
 
-ssh -o ServerAliveInterval=30 -o ServerAliveCountMax=10 "${SERVER_USER}@${SERVER_HOST}" "APPS_DIR='${APPS_DIR}' MAIN_DIR='${MAIN_DIR}' CONSOLE_IMAGE='${CONSOLE_IMAGE}' CONSOLE_PORT='${CONSOLE_PORT}' CONSOLE_ENV_FILE='${CONSOLE_ENV_FILE}' bash --noprofile --norc -s" <<'REMOTE'
+ssh -o ServerAliveInterval=30 -o ServerAliveCountMax=10 "${SERVER_USER}@${SERVER_HOST}" "APPS_DIR='${APPS_DIR}' MAIN_DIR='${MAIN_DIR}' CONSOLE_IMAGE='${CONSOLE_IMAGE}' CONSOLE_PORT='${CONSOLE_PORT}' CONSOLE_ENV_FILE='${CONSOLE_ENV_FILE}' CONSOLE_NGINX_SITES_DIR='${CONSOLE_NGINX_SITES_DIR}' bash --noprofile --norc -s" <<'REMOTE'
 set -euo pipefail
 
 deploy_main() {
@@ -84,6 +86,7 @@ deploy_console() {
     --env-file "${CONSOLE_ENV_FILE}" \
     -v /var/run/docker.sock:/var/run/docker.sock \
     -v "${APPS_DIR}:${APPS_DIR}" \
+    -v "${CONSOLE_NGINX_SITES_DIR}:${CONSOLE_NGINX_SITES_DIR}:ro" \
     -p "${CONSOLE_PORT}:3100" \
     "${CONSOLE_IMAGE}"
 }

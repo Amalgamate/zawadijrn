@@ -40,6 +40,7 @@ const docker = process.env.DOCKER_HOST
 
 const APP_VERSION = process.env.CONSOLE_APP_VERSION || 'live';
 const INSTANCE_PROVISION_SCRIPT = process.env.CONSOLE_INSTANCE_PROVISION_SCRIPT || '';
+const NGINX_SITES_DIR = process.env.CONSOLE_NGINX_SITES_DIR || '/etc/nginx/sites-enabled';
 
 const deploymentLog = [];
 const auditLog = [];
@@ -204,6 +205,40 @@ function mapContainersToInstances(containers) {
   return list;
 }
 
+function parseNginxDomainMap() {
+  const mapping = { byFePort: {}, byBePort: {} };
+  if (!fs.existsSync(NGINX_SITES_DIR)) return mapping;
+
+  const files = fs.readdirSync(NGINX_SITES_DIR);
+  for (const name of files) {
+    const filePath = path.join(NGINX_SITES_DIR, name);
+    let text = '';
+    try {
+      text = fs.readFileSync(filePath, 'utf8');
+    } catch {
+      continue;
+    }
+
+    const serverMatch = text.match(/server_name\s+([^;]+);/);
+    if (!serverMatch) continue;
+    const domain = (serverMatch[1] || '')
+      .split(/\s+/)
+      .map(x => x.trim())
+      .find(x => x && !x.startsWith('www.'));
+    if (!domain) continue;
+
+    const lines = text.split(/\r?\n/);
+    for (const line of lines) {
+      const hit = line.match(/proxy_pass\s+http:\/\/127\.0\.0\.1:(\d+)/);
+      if (!hit) continue;
+      const p = Number(hit[1]);
+      if (p >= 3000 && p < 4000) mapping.byFePort[p] = domain;
+      if (p >= 5000 && p < 6000) mapping.byBePort[p] = domain;
+    }
+  }
+  return mapping;
+}
+
 async function collectRuntime() {
   const [containers, mem, disk, load] = await Promise.all([
     docker.listContainers({ all: true, size: true }),
@@ -213,6 +248,10 @@ async function collectRuntime() {
   ]);
 
   const instances = mapContainersToInstances(containers);
+  const nginxMap = parseNginxDomainMap();
+  for (const i of instances) {
+    i.domain = (i.fe && nginxMap.byFePort[i.fe]) || (i.be && nginxMap.byBePort[i.be]) || i.domain || '';
+  }
 
   const totalDiskBytes = disk.reduce((sum, d) => sum + Number(d.size || 0), 0);
   const usedDiskBytes = disk.reduce((sum, d) => sum + Number(d.used || 0), 0);
