@@ -518,6 +518,8 @@ function groupInstances(instances) {
     if (component === 'frontend') group.hasFrontend = true;
     if (component === 'backend') group.hasBackend = true;
     if (component === 'database') group.hasDatabase = true;
+    if (!Number.isFinite(group.fePort) && Number.isFinite(Number(instance.fe))) group.fePort = Number(instance.fe);
+    if (!Number.isFinite(group.bePort) && Number.isFinite(Number(instance.be))) group.bePort = Number(instance.be);
   }
 
   return Array.from(map.values())
@@ -525,23 +527,42 @@ function groupInstances(instances) {
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
+function resolveServerIp() {
+  const rows = Array.from(document.querySelectorAll('.sb-footer-row'));
+  for (const row of rows) {
+    const label = row.querySelector('.sb-footer-label')?.textContent?.trim().toLowerCase();
+    if (label === 'server') {
+      const value = row.querySelector('.sb-footer-val')?.textContent?.trim();
+      if (value) return value;
+    }
+  }
+  return '185.127.16.124';
+}
+
 function renderInstances() {
   const groups = groupInstances(INSTANCES);
+  const serverIp = resolveServerIp();
 
   const renderGroupHeader = group => {
     const badge = group.complete ? '<span class="badge online">Complete</span>' : '<span class="badge warn">Partial</span>';
     const parts = `${group.hasFrontend ? 'FE' : ''}${group.hasBackend ? ' BE' : ''}${group.hasDatabase ? ' DB' : ''}`.trim() || 'No mapped components';
+    const feLabel = Number.isFinite(group.fePort) ? `${serverIp}:${group.fePort}` : '-';
+    const beLabel = Number.isFinite(group.bePort) ? `${serverIp}:${group.bePort}` : '-';
+    const openUrl = Number.isFinite(group.fePort) ? `http://${serverIp}:${group.fePort}` : (Number.isFinite(group.bePort) ? `http://${serverIp}:${group.bePort}` : '');
+    const openLink = openUrl ? `<a class="group-open-link" href="${esc(openUrl)}" target="_blank" rel="noopener noreferrer" title="Open endpoint">↗</a>` : '';
     return `<tr class="group-head" data-group="${esc(group.key)}" style="background:#f6f8ff;cursor:pointer">
       <td colspan="7">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
           <div>
             <strong>${esc(group.name)}</strong>
             <span style="margin-left:8px;color:var(--muted);font-size:12px">${group.items.length} container row(s) · ${esc(parts)}</span>
+            <span style="margin-left:12px;font-family:var(--mono);font-size:12px;color:var(--muted)">FE ${esc(feLabel)} · BE ${esc(beLabel)}</span>
+            ${openLink}
           </div>
           <div style="display:flex;align-items:center;gap:8px;">
             ${badge}
             <span style="font-family:var(--mono);font-size:12px">${fmt(group.storage)} GB</span>
-            <span style="font-size:16px;line-height:1">▾</span>
+            <span class="group-chevron" style="font-size:16px;line-height:1">▸</span>
           </div>
         </div>
       </td>
@@ -550,7 +571,7 @@ function renderInstances() {
 
   const renderGroupedBody = mode => groups.map(group => {
     const rows = group.items.map(instance =>
-      renderInstanceRow(instance, mode).replace('<tr>', `<tr class="group-row" data-group="${esc(group.key)}">`)
+      renderInstanceRow(instance, mode).replace('<tr>', `<tr class="group-row" data-group="${esc(group.key)}" style="display:none">`)
     ).join('');
     return `${renderGroupHeader(group)}${rows}`;
   }).join('');
@@ -1012,13 +1033,20 @@ function exportLogsCsv() {
 
 // Event wiring
 document.body.addEventListener('click', event => {
+  if (event.target.closest('.group-open-link')) {
+    return;
+  }
+
   const groupHead = event.target.closest('.group-head');
   if (groupHead) {
     const groupKey = groupHead.dataset.group;
     const rows = document.querySelectorAll(`.group-row[data-group="${groupKey}"]`);
+    const chevron = groupHead.querySelector('.group-chevron');
+    const isClosed = Array.from(rows).every(row => row.style.display === 'none');
     rows.forEach(row => {
-      row.style.display = row.style.display === 'none' ? '' : 'none';
+      row.style.display = isClosed ? '' : 'none';
     });
+    if (chevron) chevron.textContent = isClosed ? '▾' : '▸';
     return;
   }
 
