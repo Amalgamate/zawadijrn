@@ -162,14 +162,22 @@ function mapContainersToInstances(containers) {
         containers: 0,
         runningContainers: 0,
         containerIds: [],
+        hasFrontend: false,
+        hasBackend: false,
+        hasDatabase: false,
       });
     }
 
     const inst = grouped.get(key);
+    const descriptor = `${cname} ${c.Image || ''}`.toLowerCase();
     inst.containers += 1;
     inst.containerIds.push(c.Id);
     if (c.State === 'running') inst.runningContainers += 1;
     if (c.State !== 'running') inst.status = inst.runningContainers === 0 ? 'Offline' : 'Degraded';
+
+    if (/(^|[-_])(frontend|fe|web|ui)($|[-_])/.test(descriptor)) inst.hasFrontend = true;
+    if (/(^|[-_])(backend|be|api|server)($|[-_])/.test(descriptor)) inst.hasBackend = true;
+    if (/(^|[-_])(db|database|postgres|mysql|mariadb)($|[-_])/.test(descriptor)) inst.hasDatabase = true;
 
     const ports = c.Ports || [];
     for (const p of ports) {
@@ -210,7 +218,7 @@ async function collectRuntime() {
   const usedDiskBytes = disk.reduce((sum, d) => sum + Number(d.used || 0), 0);
 
   const metrics = {
-    liveSchools: instances.length,
+    liveSchools: instances.filter(i => i.hasFrontend && i.hasBackend && i.hasDatabase).length,
     containersHealthy: `${instances.reduce((s, i) => s + i.runningContainers, 0)}/${Math.max(1, instances.reduce((s, i) => s + i.containers, 0))}`,
     storageUsedGb: Number(instances.reduce((s, i) => s + i.storage, 0).toFixed(2)),
     cpuLoadPercent: Math.round(load.currentLoad || 0),
