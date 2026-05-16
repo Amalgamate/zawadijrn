@@ -498,6 +498,10 @@ function prettyGroupName(groupKey) {
 
 function groupInstances(instances) {
   const map = new Map();
+  const asPort = value => {
+    const n = Number(value);
+    return Number.isInteger(n) && n > 0 ? n : null;
+  };
   for (const instance of instances) {
     const groupKey = inferGroupKey(instance);
     if (!map.has(groupKey)) {
@@ -518,8 +522,10 @@ function groupInstances(instances) {
     if (component === 'frontend') group.hasFrontend = true;
     if (component === 'backend') group.hasBackend = true;
     if (component === 'database') group.hasDatabase = true;
-    if (!Number.isFinite(group.fePort) && Number.isFinite(Number(instance.fe))) group.fePort = Number(instance.fe);
-    if (!Number.isFinite(group.bePort) && Number.isFinite(Number(instance.be))) group.bePort = Number(instance.be);
+    const fe = asPort(instance.fe);
+    const be = asPort(instance.be);
+    if (!Number.isFinite(group.fePort) && Number.isFinite(fe)) group.fePort = fe;
+    if (!Number.isFinite(group.bePort) && Number.isFinite(be)) group.bePort = be;
   }
 
   return Array.from(map.values())
