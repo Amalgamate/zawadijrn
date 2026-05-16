@@ -23,6 +23,15 @@ if ! command -v docker >/dev/null 2>&1; then
   exit 2
 fi
 
+if docker compose version >/dev/null 2>&1; then
+  COMPOSE_CMD=(docker compose)
+elif command -v docker-compose >/dev/null 2>&1; then
+  COMPOSE_CMD=(docker-compose)
+else
+  echo "docker compose is missing in the console runtime. Install Docker Compose plugin and redeploy console image." >&2
+  exit 2
+fi
+
 if ! command -v openssl >/dev/null 2>&1; then
   echo "openssl is required for secret generation" >&2
   exit 2
@@ -84,6 +93,7 @@ REQ_BE_PORT="${PARSED[7]}"
 
 PROJECT_NAME="zawadi-${SCHOOL_SLUG}"
 ENV_FILE="${ENV_DIR}/.${PROJECT_NAME}.env"
+REUSED_ENV_FILE=false
 
 if [[ ! -f "${STACK_COMPOSE_FILE}" ]]; then
   echo "stack compose file not found: ${STACK_COMPOSE_FILE}" >&2
@@ -91,8 +101,8 @@ if [[ ! -f "${STACK_COMPOSE_FILE}" ]]; then
 fi
 
 if [[ -f "${ENV_FILE}" ]]; then
-  echo "env file already exists for ${PROJECT_NAME}: ${ENV_FILE}" >&2
-  exit 3
+  REUSED_ENV_FILE=true
+  echo "[provision] reusing existing env file: ${ENV_FILE}"
 fi
 
 port_in_use() {
@@ -138,6 +148,7 @@ if port_in_use "${BE_PORT}"; then
   exit 4
 fi
 
+if [[ "${REUSED_ENV_FILE}" == "false" ]]; then
 DB_USER="zawadi"
 DB_PASSWORD="$(openssl rand -hex 16)"
 JWT_SECRET="$(openssl rand -hex 32)"
@@ -174,17 +185,23 @@ VAPID_SUBJECT=mailto:admin@example.com
 EOF
 
 echo "[provision] env file created: ${ENV_FILE}"
+else
+  # Existing env file is source of truth for retry runs.
+  FE_PORT="$(grep -E '^FRONTEND_PORT=' "${ENV_FILE}" | tail -n1 | cut -d= -f2)"
+  BE_PORT="$(grep -E '^BACKEND_PORT=' "${ENV_FILE}" | tail -n1 | cut -d= -f2)"
+  DB_NAME="$(grep -E '^DB_NAME=' "${ENV_FILE}" | tail -n1 | cut -d= -f2)"
+fi
 
 pushd "${APPS_DIR}" >/dev/null
 
 echo "[provision] creating/updating stack ${PROJECT_NAME}"
-docker compose --env-file "${ENV_FILE}" -p "${PROJECT_NAME}" -f "${STACK_COMPOSE_FILE}" up -d db backend frontend
+"${COMPOSE_CMD[@]}" --env-file "${ENV_FILE}" -p "${PROJECT_NAME}" -f "${STACK_COMPOSE_FILE}" up -d db backend frontend
 
 echo "[provision] applying prisma schema"
-docker compose --env-file "${ENV_FILE}" -p "${PROJECT_NAME}" -f "${STACK_COMPOSE_FILE}" run -T --rm backend npx prisma db push --skip-generate < /dev/null
+"${COMPOSE_CMD[@]}" --env-file "${ENV_FILE}" -p "${PROJECT_NAME}" -f "${STACK_COMPOSE_FILE}" run -T --rm backend npx prisma db push --skip-generate < /dev/null
 
 echo "[provision] restarting app containers"
-docker compose --env-file "${ENV_FILE}" -p "${PROJECT_NAME}" -f "${STACK_COMPOSE_FILE}" up -d --force-recreate backend frontend
+"${COMPOSE_CMD[@]}" --env-file "${ENV_FILE}" -p "${PROJECT_NAME}" -f "${STACK_COMPOSE_FILE}" up -d --force-recreate backend frontend
 
 popd >/dev/null
 
@@ -217,6 +234,7 @@ RESULT_JSON=$(jq -n \
   --argjson backendPort "${BE_PORT}" \
   --arg dbName "${DB_NAME}" \
   --arg requestedBy "${REQUESTED_BY}" \
-  '{ok:true, projectName:$projectName, envFile:$envFile, schoolName:$schoolName, domain:$domain, institutionType:$institutionType, frontendPort:$frontendPort, backendPort:$backendPort, dbName:$dbName, requestedBy:$requestedBy}')
+  --argjson reusedEnvFile "$( [[ "${REUSED_ENV_FILE}" == "true" ]] && echo true || echo false )" \
+  '{ok:true, projectName:$projectName, envFile:$envFile, schoolName:$schoolName, domain:$domain, institutionType:$institutionType, frontendPort:$frontendPort, backendPort:$backendPort, dbName:$dbName, requestedBy:$requestedBy, reusedEnvFile:$reusedEnvFile}')
 
 echo "${RESULT_JSON}"

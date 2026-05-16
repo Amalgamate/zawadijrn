@@ -3,7 +3,7 @@ FROM node:22-alpine
 WORKDIR /app
 ENV NODE_ENV=production
 
-RUN apk add --no-cache bash jq docker-cli curl openssl
+RUN apk add --no-cache bash jq docker-cli docker-cli-compose curl openssl
 
 COPY package*.json ./
 RUN npm ci --omit=dev
