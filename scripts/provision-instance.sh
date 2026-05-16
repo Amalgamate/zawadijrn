@@ -13,8 +13,8 @@ if [[ -z "${PAYLOAD_JSON}" ]]; then
   exit 2
 fi
 
-if ! command -v node >/dev/null 2>&1; then
-  echo "node runtime is required for payload parsing" >&2
+if ! command -v jq >/dev/null 2>&1; then
+  echo "jq is required for payload parsing" >&2
   exit 2
 fi
 
@@ -38,32 +38,40 @@ DEFAULT_HOST_IP="${DEFAULT_HOST_IP:-185.127.16.124}"
 
 mkdir -p "${ENV_DIR}"
 
-# Parse and sanitize payload via node (keeps shell logic robust and simple).
-mapfile -t PARSED < <(node -e '
-const src = process.argv[1] || "{}";
-let p;
-try { p = JSON.parse(src); } catch (e) { console.error("invalid json payload"); process.exit(2); }
-const clean = (v) => String(v || "").trim();
-const slug = (v) => clean(v).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-const schoolName = clean(p.name);
-if (!schoolName) { console.error("name is required"); process.exit(2); }
-const schoolSlug = slug(schoolName);
-if (!schoolSlug) { console.error("name produced empty slug"); process.exit(2); }
-const domain = clean(p.domain) || `${schoolSlug}.elimucrown.co.ke`;
-const requestedBy = clean(p.requestedBy) || "console";
-const type = clean(p.type) || "PRIMARY_CBC";
-const dbName = clean(p.db) || `zawadi_${schoolSlug.replace(/-/g, "_")}`;
-const fePort = Number(p.fePort || 0);
-const bePort = Number(p.bePort || 0);
-console.log(schoolName);
-console.log(schoolSlug);
-console.log(domain);
-console.log(requestedBy);
-console.log(type);
-console.log(dbName);
-console.log(Number.isFinite(fePort) ? fePort : 0);
-console.log(Number.isFinite(bePort) ? bePort : 0);
-' "${PAYLOAD_JSON}")
+# Parse and sanitize payload via jq.
+mapfile -t PARSED < <(printf '%s' "${PAYLOAD_JSON}" | jq -r '
+  def clean: (tostring | gsub("^\\s+|\\s+$"; ""));
+  def slug:
+    clean
+    | ascii_downcase
+    | gsub("[^a-z0-9]+"; "-")
+    | gsub("^-+|-+$"; "");
+
+  . as $p
+  | ($p.name // "" | clean) as $name
+  | if $name == "" then error("name is required") else . end
+  | ($name | slug) as $slug
+  | if $slug == "" then error("name produced empty slug") else . end
+  | ($p.domain // "" | clean) as $domain
+  | ($p.requestedBy // "" | clean) as $requestedBy
+  | ($p.type // "" | clean) as $type
+  | ($p.db // "" | clean) as $dbName
+  | [
+      $name,
+      $slug,
+      (if $domain == "" then "\($slug).elimucrown.co.ke" else $domain end),
+      (if $requestedBy == "" then "console" else $requestedBy end),
+      (if $type == "" then "PRIMARY_CBC" else $type end),
+      (if $dbName == "" then "zawadi_\($slug|gsub("-"; "_"))" else $dbName end),
+      ((($p.fePort // 0) | tonumber? // 0) | tostring),
+      ((($p.bePort // 0) | tonumber? // 0) | tostring)
+    ][]
+')
+
+if [[ "${#PARSED[@]}" -lt 8 ]]; then
+  echo "invalid json payload" >&2
+  exit 2
+fi
 
 SCHOOL_NAME="${PARSED[0]}"
 SCHOOL_SLUG="${PARSED[1]}"
@@ -199,20 +207,16 @@ check_url() {
 check_url "http://${DEFAULT_HOST_IP}:${BE_PORT}/api/health" "backend health"
 check_url "http://${DEFAULT_HOST_IP}:${FE_PORT}/" "frontend health"
 
-RESULT_JSON=$(node -e '
-const out = {
-  ok: true,
-  projectName: process.argv[1],
-  envFile: process.argv[2],
-  schoolName: process.argv[3],
-  domain: process.argv[4],
-  institutionType: process.argv[5],
-  frontendPort: Number(process.argv[6]),
-  backendPort: Number(process.argv[7]),
-  dbName: process.argv[8],
-  requestedBy: process.argv[9],
-};
-console.log(JSON.stringify(out));
-' "${PROJECT_NAME}" "${ENV_FILE}" "${SCHOOL_NAME}" "${SCHOOL_DOMAIN}" "${SCHOOL_TYPE}" "${FE_PORT}" "${BE_PORT}" "${DB_NAME}" "${REQUESTED_BY}")
+RESULT_JSON=$(jq -n \
+  --arg projectName "${PROJECT_NAME}" \
+  --arg envFile "${ENV_FILE}" \
+  --arg schoolName "${SCHOOL_NAME}" \
+  --arg domain "${SCHOOL_DOMAIN}" \
+  --arg institutionType "${SCHOOL_TYPE}" \
+  --argjson frontendPort "${FE_PORT}" \
+  --argjson backendPort "${BE_PORT}" \
+  --arg dbName "${DB_NAME}" \
+  --arg requestedBy "${REQUESTED_BY}" \
+  '{ok:true, projectName:$projectName, envFile:$envFile, schoolName:$schoolName, domain:$domain, institutionType:$institutionType, frontendPort:$frontendPort, backendPort:$backendPort, dbName:$dbName, requestedBy:$requestedBy}')
 
 echo "${RESULT_JSON}"
