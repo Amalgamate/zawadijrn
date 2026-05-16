@@ -187,6 +187,7 @@ let selectedInstanceName = INSTANCES[0]?.name || '';
 let pendingConfirm = null;
 let editingPlanId = null;
 let liveMode = false;
+let RUNTIME_METRICS = null;
 
 function toast(message) {
   const el = $('toast');
@@ -250,10 +251,12 @@ async function refreshFromRuntime() {
       }));
       selectedInstanceName = INSTANCES.find(i => i.name === selectedInstanceName)?.name || INSTANCES[0]?.name || '';
     }
+    RUNTIME_METRICS = runtime?.metrics || null;
     if (Array.isArray(runtime?.deployments)) DEPLOYMENTS = runtime.deployments;
     if (Array.isArray(runtime?.auditLogs)) AUDIT_LOGS = runtime.auditLogs;
     liveMode = runtime?.mode === 'live';
   } catch (_) {
+    RUNTIME_METRICS = null;
     liveMode = false;
   }
 }
@@ -464,22 +467,110 @@ function renderInstanceRow(instance, mode = 'compact') {
   </tr>`;
 }
 
+function inferComponent(instance) {
+  const probe = `${instance.name || ''} ${instance.domain || ''} ${instance.db || ''}`.toLowerCase();
+  if (/(^|[-_ ])(frontend|fe|web|ui)([-_ 0-9]|$)/.test(probe)) return 'frontend';
+  if (/(^|[-_ ])(backend|be|api|server)([-_ 0-9]|$)/.test(probe)) return 'backend';
+  if (/(^|[-_ ])(db|database|postgres|mysql|mariadb)([-_ 0-9]|$)/.test(probe)) return 'database';
+  if (Number.isFinite(Number(instance.fe)) && !Number.isFinite(Number(instance.be))) return 'frontend';
+  if (Number.isFinite(Number(instance.be)) && !Number.isFinite(Number(instance.fe))) return 'backend';
+  return 'unknown';
+}
+
+function inferGroupKey(instance) {
+  const fromDomain = String(instance.domain || '').split('.')[0].toLowerCase();
+  const fromName = slugify(instance.name || '');
+  const base = (fromDomain || fromName)
+    .replace(/^zawadi-/, '')
+    .replace(/-(frontend|backend|db|database)(-\d+)?$/, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  return base || fromName || slugify(instance.name || 'instance');
+}
+
+function prettyGroupName(groupKey) {
+  return groupKey
+    .split('-')
+    .filter(Boolean)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+function groupInstances(instances) {
+  const map = new Map();
+  for (const instance of instances) {
+    const groupKey = inferGroupKey(instance);
+    if (!map.has(groupKey)) {
+      map.set(groupKey, {
+        key: groupKey,
+        name: prettyGroupName(groupKey),
+        items: [],
+        hasFrontend: false,
+        hasBackend: false,
+        hasDatabase: false,
+        storage: 0,
+      });
+    }
+    const group = map.get(groupKey);
+    group.items.push(instance);
+    group.storage += Number(instance.storage || 0);
+    const component = inferComponent(instance);
+    if (component === 'frontend') group.hasFrontend = true;
+    if (component === 'backend') group.hasBackend = true;
+    if (component === 'database') group.hasDatabase = true;
+  }
+
+  return Array.from(map.values())
+    .map(group => ({ ...group, complete: group.hasFrontend && group.hasBackend && group.hasDatabase }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
 function renderInstances() {
+  const groups = groupInstances(INSTANCES);
+
+  const renderGroupHeader = group => {
+    const badge = group.complete ? '<span class="badge online">Complete</span>' : '<span class="badge warn">Partial</span>';
+    const parts = `${group.hasFrontend ? 'FE' : ''}${group.hasBackend ? ' BE' : ''}${group.hasDatabase ? ' DB' : ''}`.trim() || 'No mapped components';
+    return `<tr class="group-head" data-group="${esc(group.key)}" style="background:#f6f8ff;cursor:pointer">
+      <td colspan="7">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+          <div>
+            <strong>${esc(group.name)}</strong>
+            <span style="margin-left:8px;color:var(--muted);font-size:12px">${group.items.length} container row(s) · ${esc(parts)}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            ${badge}
+            <span style="font-family:var(--mono);font-size:12px">${fmt(group.storage)} GB</span>
+            <span style="font-size:16px;line-height:1">▾</span>
+          </div>
+        </div>
+      </td>
+    </tr>`;
+  };
+
+  const renderGroupedBody = mode => groups.map(group => {
+    const rows = group.items.map(instance =>
+      renderInstanceRow(instance, mode).replace('<tr>', `<tr class="group-row" data-group="${esc(group.key)}">`)
+    ).join('');
+    return `${renderGroupHeader(group)}${rows}`;
+  }).join('');
+
   const overview = $('instance-table');
-  if (overview) overview.innerHTML = INSTANCES.map(instance => renderInstanceRow(instance)).join('');
+  if (overview) overview.innerHTML = renderGroupedBody('compact');
 
   const full = $('instance-table-full');
-  if (full) full.innerHTML = INSTANCES.map(instance => renderInstanceRow(instance, 'full')).join('');
+  if (full) full.innerHTML = renderGroupedBody('full');
 }
 
 function renderMetrics() {
   const totalStorage = INSTANCES.reduce((sum, instance) => sum + instance.storage, 0);
   const healthy = INSTANCES.filter(instance => instance.status === 'Online').reduce((sum, instance) => sum + instance.containers, 0);
   const total = INSTANCES.reduce((sum, instance) => sum + instance.containers, 0);
+  const schoolGroups = groupInstances(INSTANCES).filter(group => group.complete).length;
 
-  if ($('m-schools')) $('m-schools').textContent = INSTANCES.length;
-  if ($('m-containers')) $('m-containers').textContent = `${healthy}/${total}`;
-  if ($('m-storage')) $('m-storage').textContent = `${fmt(totalStorage)} GB`;
+  if ($('m-schools')) $('m-schools').textContent = Number.isFinite(Number(RUNTIME_METRICS?.liveSchools)) ? RUNTIME_METRICS.liveSchools : schoolGroups;
+  if ($('m-containers')) $('m-containers').textContent = RUNTIME_METRICS?.containersHealthy || `${healthy}/${total}`;
+  if ($('m-storage')) $('m-storage').textContent = `${fmt(Number(RUNTIME_METRICS?.storageUsedGb ?? totalStorage))} GB`;
 }
 
 function renderTimeline(elId, maxItems = 99) {
@@ -921,6 +1012,16 @@ function exportLogsCsv() {
 
 // Event wiring
 document.body.addEventListener('click', event => {
+  const groupHead = event.target.closest('.group-head');
+  if (groupHead) {
+    const groupKey = groupHead.dataset.group;
+    const rows = document.querySelectorAll(`.group-row[data-group="${groupKey}"]`);
+    rows.forEach(row => {
+      row.style.display = row.style.display === 'none' ? '' : 'none';
+    });
+    return;
+  }
+
   const btn = event.target.closest('button');
   if (!btn) return;
 
