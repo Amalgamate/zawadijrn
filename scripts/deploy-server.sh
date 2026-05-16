@@ -12,6 +12,7 @@ set -euo pipefail
 #   CONSOLE_IMAGE=ghcr.io/amalgamate/zawadi-console:latest
 #   CONSOLE_PORT=3100
 #   CONSOLE_ENV_FILE=/srv/zawadi/apps/.env.console
+#   CONSOLE_INSTANCE_PROVISION_SCRIPT=/srv/zawadi/apps/scripts/provision-instance.sh
 
 SERVER_HOST="${SERVER_HOST:-185.127.16.124}"
 SERVER_USER="${SERVER_USER:-deploy}"
@@ -81,6 +82,8 @@ deploy_console() {
     --restart always \
     --label com.zawadi.service=platform-console \
     --env-file "${CONSOLE_ENV_FILE}" \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -v "${APPS_DIR}:${APPS_DIR}" \
     -p "${CONSOLE_PORT}:3100" \
     "${CONSOLE_IMAGE}"
 }

@@ -3,7 +3,7 @@
 // still being built. No Docker or billing action is executed from this demo UI.
 
 // Demo data
-const INSTANCES = [
+let INSTANCES = [
   {
     name: 'Trends CORE Main',
     domain: 'core.elimucrown.co.ke',
@@ -134,7 +134,7 @@ const PLATFORM_MODULES = [
   { id: 'ai', name: 'AI Smart Insights', desc: 'Automated school insights', enabled: true },
 ];
 
-const DEPLOYMENTS = [
+let DEPLOYMENTS = [
   { time: '10:47 EAT', title: 'Trends CORE v1 - initial release', copy: 'Frontend + backend images published, all live instances redeployed.' },
   { time: '10:36 EAT', title: 'Health check retries enabled', copy: 'Deploy script now waits for services to warm up before failing.' },
   { time: '10:20 EAT', title: 'All instances moved to GHCR images', copy: 'Main, School B, and School C use the shared latest images.' },
@@ -142,7 +142,7 @@ const DEPLOYMENTS = [
   { time: '09:30 EAT', title: 'Core apps auto-activation on lock', copy: 'PRIMARY_CBC, SECONDARY, TERTIARY each activate 9 core modules on confirm.' },
 ];
 
-const AUDIT_LOGS = [
+let AUDIT_LOGS = [
   { time: '10:47 EAT', action: 'Redeploy', instance: 'All Instances', by: 'system@elimucrown.co.ke', details: 'Latest GHCR images deployed', status: 'Success' },
   { time: '10:36 EAT', action: 'Config Update', instance: 'Trends CORE Main', by: 'admin@elimucrown.co.ke', details: 'Health retry window changed', status: 'Success' },
   { time: '10:20 EAT', action: 'Image Pull', instance: 'School B', by: 'system@elimucrown.co.ke', details: 'Frontend and backend image pull', status: 'Success' },
@@ -186,6 +186,7 @@ let toastTimer;
 let selectedInstanceName = INSTANCES[0]?.name || '';
 let pendingConfirm = null;
 let editingPlanId = null;
+let liveMode = false;
 
 function toast(message) {
   const el = $('toast');
@@ -210,6 +211,36 @@ function addAudit({ action, instance, details, status = 'Success' }) {
 
 function selectedInstance() {
   return INSTANCES.find(instance => instance.name === selectedInstanceName) || INSTANCES[0];
+}
+
+async function fetchRuntimeData() {
+  const response = await fetch('/api/runtime', { credentials: 'same-origin' });
+  if (!response.ok) throw new Error(`runtime http ${response.status}`);
+  return response.json();
+}
+
+async function refreshFromRuntime() {
+  try {
+    const runtime = await fetchRuntimeData();
+    if (runtime?.ok && Array.isArray(runtime.instances) && runtime.instances.length) {
+      INSTANCES = runtime.instances.map(item => ({
+        ...item,
+        domain: item.domain || `${slugify(item.name)}.elimucrown.co.ke`,
+        type: item.type || 'PRIMARY_CBC',
+        typeLabel: item.typeLabel || 'Managed',
+        planId: item.planId || 'professional',
+        billingCycle: item.billingCycle || 'Monthly',
+        nextRenewal: item.nextRenewal || '2026-12-31',
+        billingStatus: item.billingStatus || 'Active',
+      }));
+      selectedInstanceName = INSTANCES.find(i => i.name === selectedInstanceName)?.name || INSTANCES[0]?.name || '';
+    }
+    if (Array.isArray(runtime?.deployments)) DEPLOYMENTS = runtime.deployments;
+    if (Array.isArray(runtime?.auditLogs)) AUDIT_LOGS = runtime.auditLogs;
+    liveMode = runtime?.mode === 'live';
+  } catch (_) {
+    liveMode = false;
+  }
 }
 
 // ── Running Instances panel ───────────────────────────────────────────────
@@ -760,16 +791,20 @@ function savePlan() {
 }
 
 // Controls
-async function callControlStub(action) {
+async function callControlStub(action, instanceKey = '') {
   try {
-    const response = await fetch(`/api/controls/${encodeURIComponent(action)}`, {
+    const endpoint = instanceKey
+      ? `/api/instances/${encodeURIComponent(instanceKey)}/${encodeURIComponent(action)}`
+      : `/api/controls/${encodeURIComponent(action)}`;
+    const response = await fetch(endpoint, {
       method: 'POST',
       credentials: 'same-origin',
     });
-    if (!response.ok) return false;
-    return true;
+    if (!response.ok) return { ok: false };
+    const data = await response.json().catch(() => ({}));
+    return { ok: true, data };
   } catch (_) {
-    return false;
+    return { ok: false };
   }
 }
 
@@ -798,33 +833,27 @@ async function runControl(action, label, options = {}) {
     return;
   }
 
-  const allowed = await callControlStub(action);
-  if (!allowed) {
+  const actionMap = { redeploy: 'redeploy', restart: 'restart', stop: 'stop', start: 'start', health: 'health' };
+  const mappedAction = actionMap[action] || action;
+  const result = await callControlStub(mappedAction, options.global ? '' : instance.key || instance.name);
+  if (!result.ok) {
     toast('Control API is not available or your role is not allowed.');
   }
 
-  if (action === 'start') instance.status = 'Online';
-  if (action === 'stop') instance.status = 'Offline';
-  if (action === 'restart' || action === 'redeploy' || action === 'health') instance.status = instance.status === 'Offline' ? 'Offline' : 'Online';
-  if (action === 'start-all' || action === 'redeploy-all') {
-    INSTANCES.forEach(item => { item.status = 'Online'; });
-  }
-  if (action === 'stop-all') {
-    INSTANCES.forEach(item => { item.status = 'Offline'; });
-  }
+  await refreshFromRuntime();
 
   renderLogs(controlLogLines(action, options.global ? null : instance));
   addAudit({
     action: label,
     instance: target,
-    details: allowed ? 'Protected control endpoint accepted demo request' : 'Demo-only UI event',
+    details: result.ok ? 'Live control endpoint executed request' : 'Control failed or denied',
     status: action.includes('stop') || action.includes('reset') || action.includes('purge') || action.includes('remove') ? 'Warning' : 'Success',
   });
   renderEverything();
   toast(`${label} recorded for ${target}.`);
 }
 
-function handleControlButton(btn) {
+async function handleControlButton(btn) {
   const action = btn.dataset.ctrl;
   const label = btn.dataset.label || action;
   const global = action?.endsWith('-all');
@@ -832,9 +861,23 @@ function handleControlButton(btn) {
   const requireText = ['reset', 'purge', 'remove'].includes(action);
 
   if (action === 'logs') {
-    renderLogs(controlLogLines('logs', selectedInstance()));
-    addAudit({ action: 'Fetch Logs', instance: selectedInstance().name, details: 'Demo log viewer refreshed' });
-    toast('Demo logs loaded.');
+    const active = selectedInstance();
+    try {
+      const response = await fetch(`/api/instances/${encodeURIComponent(active.key || active.name)}/logs`, {
+        credentials: 'same-origin',
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const lines = String(data.logs || '').split(/\r?\n/).filter(Boolean).slice(-120).map(text => ({ text }));
+        renderLogs(lines);
+        addAudit({ action: 'Fetch Logs', instance: active.name, details: 'Live logs fetched from server containers' });
+        toast('Live logs loaded.');
+        return;
+      }
+    } catch (_) {}
+    renderLogs(controlLogLines('logs', active));
+    addAudit({ action: 'Fetch Logs', instance: active.name, details: 'Fallback demo logs shown', status: 'Warning' });
+    toast('Could not fetch live logs. Showing fallback.');
     return;
   }
 
@@ -873,9 +916,12 @@ document.body.addEventListener('click', event => {
   }
 
   if (id === 'btn-refresh') {
-    if ($('last-updated')) $('last-updated').textContent = `Refreshed ${nowLabel()}`;
-    renderEverything();
-    toast('Demo metrics refreshed.');
+    (async () => {
+      await refreshFromRuntime();
+      if ($('last-updated')) $('last-updated').textContent = `Refreshed ${nowLabel()}${liveMode ? ' · live' : ' · fallback'}`;
+      renderEverything();
+      toast(liveMode ? 'Live metrics refreshed.' : 'Could not refresh live metrics; fallback data shown.');
+    })();
     return;
   }
 
@@ -974,39 +1020,45 @@ function bindModalEvents() {
   $('modal-cancel')?.addEventListener('click', closeModal);
   $('modal-overlay')?.addEventListener('click', event => { if (event.target === $('modal-overlay')) closeModal(); });
   $('modal-submit')?.addEventListener('click', () => {
+    (async () => {
     const name = $('f-name')?.value.trim();
     if (!name) {
       toast('Please enter a school name.');
       return;
     }
-    const planId = $('f-plan')?.value || 'starter';
-    const newInstance = {
+    const payload = {
       name,
       domain: $('f-domain')?.value.trim() || `${slugify(name)}.elimucrown.co.ke`,
-      status: 'Pending',
       type: $('f-type')?.value || 'PRIMARY_CBC',
-      typeLabel: $('f-type')?.selectedOptions?.[0]?.textContent || 'Junior CBC',
-      created: '2026-04-29',
-      version: 'pending',
-      fe: Number($('f-port-fe')?.value || 3003),
-      be: Number($('f-port-be')?.value || 5003),
+      fePort: Number($('f-port-fe')?.value || 3003),
+      bePort: Number($('f-port-be')?.value || 5003),
       db: `trends_core_${slugify(name).replace(/-/g, '_')}`,
-      storage: 0,
-      dbGb: 0,
-      uploads: 0,
-      backups: 0,
-      containers: 0,
-      planId,
-      billingCycle: 'Monthly',
-      nextRenewal: '2026-05-29',
-      billingStatus: 'Pending',
     };
-    INSTANCES.push(newInstance);
-    selectedInstanceName = newInstance.name;
-    addAudit({ action: 'Provision Instance', instance: newInstance.name, details: 'Demo instance added locally', status: 'Warning' });
-    renderEverything();
-    closeModal();
-    toast(`Provisioning "${name}" queued in demo mode.`);
+
+    try {
+      const response = await fetch('/api/instances/create', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        toast(error.error || 'Create instance failed.');
+        return;
+      }
+
+      addAudit({ action: 'Provision Instance', instance: payload.name, details: 'Provision request sent to server', status: 'Warning' });
+      await refreshFromRuntime();
+      renderEverything();
+      closeModal();
+      toast(`Provisioning "${name}" started.`);
+      return;
+    } catch (_) {}
+
+    toast('Provision endpoint unreachable.');
+    })();
   });
 
   $('plan-modal-close')?.addEventListener('click', closePlanModal);
@@ -1047,11 +1099,12 @@ function renderEverything() {
   renderPricingPlans();
 }
 
-function init() {
+async function init() {
   bindModalEvents();
+  await refreshFromRuntime();
   renderEverything();
   renderLogs();
-  if ($('last-updated')) $('last-updated').textContent = `Demo · ${nowLabel()}`;
+  if ($('last-updated')) $('last-updated').textContent = `${liveMode ? 'Live' : 'Fallback'} · ${nowLabel()}`;
 }
 
 init();
