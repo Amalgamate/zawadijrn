@@ -550,15 +550,18 @@ function renderInstances() {
   const serverIp = resolveServerIp();
 
   const renderGroupHeader = group => {
+    const primary = group.items.find(item => Number(item.fe) > 0) || group.items[0] || {};
+    const domain = primary.domain || `${slugify(group.name)}.elimucrown.co.ke`;
     const feLabel = Number.isFinite(group.fePort) ? `${serverIp}:${group.fePort}` : '-';
     const openUrl = Number.isFinite(group.fePort) ? `http://${serverIp}:${group.fePort}` : '';
-    const openLink = openUrl ? `<a class="group-open-link" href="${esc(openUrl)}" target="_blank" rel="noopener noreferrer" title="Open endpoint">↗</a>` : '';
+    const openLink = openUrl ? `<a class="group-open-link" href="${esc(openUrl)}" target="_blank" rel="noopener noreferrer" title="Open endpoint" style="margin-left:10px;display:inline-flex;align-items:center;text-decoration:none;">↗</a>` : '';
     return `<tr class="group-head" data-group="${esc(group.key)}" style="background:#f6f8ff;cursor:pointer">
       <td colspan="7">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
           <div>
             <strong>${esc(group.name)}</strong>
-            <span style="margin-left:12px;font-family:var(--mono);font-size:12px;color:var(--muted)">FE ${esc(feLabel)}</span>
+            <span style="margin-left:14px;color:var(--muted);font-size:12px">${esc(domain)}</span>
+            <span style="margin-left:14px;font-family:var(--mono);font-size:12px;color:var(--muted)">FE ${esc(feLabel)}</span>
             ${openLink}
           </div>
           <div style="display:flex;align-items:center;gap:8px;">
