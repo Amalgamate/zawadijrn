@@ -544,24 +544,18 @@ function renderInstances() {
   const serverIp = resolveServerIp();
 
   const renderGroupHeader = group => {
-    const badge = group.complete ? '<span class="badge online">Complete</span>' : '<span class="badge warn">Partial</span>';
-    const parts = `${group.hasFrontend ? 'FE' : ''}${group.hasBackend ? ' BE' : ''}${group.hasDatabase ? ' DB' : ''}`.trim() || 'No mapped components';
     const feLabel = Number.isFinite(group.fePort) ? `${serverIp}:${group.fePort}` : '-';
-    const beLabel = Number.isFinite(group.bePort) ? `${serverIp}:${group.bePort}` : '-';
-    const openUrl = Number.isFinite(group.fePort) ? `http://${serverIp}:${group.fePort}` : (Number.isFinite(group.bePort) ? `http://${serverIp}:${group.bePort}` : '');
+    const openUrl = Number.isFinite(group.fePort) ? `http://${serverIp}:${group.fePort}` : '';
     const openLink = openUrl ? `<a class="group-open-link" href="${esc(openUrl)}" target="_blank" rel="noopener noreferrer" title="Open endpoint">↗</a>` : '';
     return `<tr class="group-head" data-group="${esc(group.key)}" style="background:#f6f8ff;cursor:pointer">
       <td colspan="7">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
           <div>
             <strong>${esc(group.name)}</strong>
-            <span style="margin-left:8px;color:var(--muted);font-size:12px">${group.items.length} container row(s) · ${esc(parts)}</span>
-            <span style="margin-left:12px;font-family:var(--mono);font-size:12px;color:var(--muted)">FE ${esc(feLabel)} · BE ${esc(beLabel)}</span>
+            <span style="margin-left:12px;font-family:var(--mono);font-size:12px;color:var(--muted)">FE ${esc(feLabel)}</span>
             ${openLink}
           </div>
           <div style="display:flex;align-items:center;gap:8px;">
-            ${badge}
-            <span style="font-family:var(--mono);font-size:12px">${fmt(group.storage)} GB</span>
             <span class="group-chevron" style="font-size:16px;line-height:1">▸</span>
           </div>
         </div>
