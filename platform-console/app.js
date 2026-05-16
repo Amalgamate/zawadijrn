@@ -213,6 +213,21 @@ function selectedInstance() {
   return INSTANCES.find(instance => instance.name === selectedInstanceName) || INSTANCES[0];
 }
 
+function nextPortInLine(basePort, usedPorts = []) {
+  const used = new Set(usedPorts.filter(Number.isFinite));
+  let port = basePort;
+  while (used.has(port)) port += 1;
+  return port;
+}
+
+function suggestNextPorts() {
+  const usedFe = INSTANCES.map(i => Number(i.fe)).filter(Number.isFinite);
+  const usedBe = INSTANCES.map(i => Number(i.be)).filter(Number.isFinite);
+  const fe = nextPortInLine(3000, usedFe);
+  const be = nextPortInLine(5000, usedBe);
+  return { fe, be };
+}
+
 async function fetchRuntimeData() {
   const response = await fetch('/api/runtime', { credentials: 'same-origin' });
   if (!response.ok) throw new Error(`runtime http ${response.status}`);
@@ -1019,6 +1034,21 @@ function bindModalEvents() {
   $('modal-close')?.addEventListener('click', closeModal);
   $('modal-cancel')?.addEventListener('click', closeModal);
   $('modal-overlay')?.addEventListener('click', event => { if (event.target === $('modal-overlay')) closeModal(); });
+  $('btn-create')?.addEventListener('click', () => {
+    const { fe, be } = suggestNextPorts();
+    if ($('f-port-fe')) $('f-port-fe').value = fe;
+    if ($('f-port-be')) $('f-port-be').value = be;
+  });
+  $('btn-create2')?.addEventListener('click', () => {
+    const { fe, be } = suggestNextPorts();
+    if ($('f-port-fe')) $('f-port-fe').value = fe;
+    if ($('f-port-be')) $('f-port-be').value = be;
+  });
+  $('btn-create3')?.addEventListener('click', () => {
+    const { fe, be } = suggestNextPorts();
+    if ($('f-port-fe')) $('f-port-fe').value = fe;
+    if ($('f-port-be')) $('f-port-be').value = be;
+  });
   $('modal-submit')?.addEventListener('click', () => {
     (async () => {
     const name = $('f-name')?.value.trim();
@@ -1030,8 +1060,8 @@ function bindModalEvents() {
       name,
       domain: $('f-domain')?.value.trim() || `${slugify(name)}.elimucrown.co.ke`,
       type: $('f-type')?.value || 'PRIMARY_CBC',
-      fePort: Number($('f-port-fe')?.value || 3003),
-      bePort: Number($('f-port-be')?.value || 5003),
+      fePort: Number($('f-port-fe')?.value || 0),
+      bePort: Number($('f-port-be')?.value || 0),
       db: `trends_core_${slugify(name).replace(/-/g, '_')}`,
     };
 
