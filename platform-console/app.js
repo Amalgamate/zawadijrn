@@ -193,6 +193,8 @@ const findPlan = id => PRICING_PLANS.find(plan => plan.id === id) || PRICING_PLA
 
 let toastTimer;
 let installProgressTimer = null;
+let runtimePollTimer = null;
+let runtimePollBusy = false;
 let selectedInstanceName = INSTANCES[0]?.name || '';
 let pendingConfirm = null;
 let editingPlanId = null;
@@ -615,7 +617,7 @@ async function fetchRuntimeData() {
 async function refreshFromRuntime() {
   try {
     const runtime = await fetchRuntimeData();
-    if (runtime?.ok && Array.isArray(runtime.instances) && runtime.instances.length) {
+    if (runtime?.ok && Array.isArray(runtime.instances)) {
       INSTANCES = runtime.instances.map(item => ({
         ...item,
         domain: item.domain || `${slugify(item.name).replace(/-(frontend|backend|db|database)-?\d*$/i, '')}.elimcrown.co.ke`,
@@ -636,6 +638,31 @@ async function refreshFromRuntime() {
     RUNTIME_METRICS = null;
     liveMode = false;
   }
+}
+
+function renderRuntimeStamp(label = liveMode ? 'Live' : 'Fallback') {
+  if ($('last-updated')) $('last-updated').textContent = `${label} · ${nowLabel()}`;
+}
+
+async function pollRuntimeAndRender() {
+  if (runtimePollBusy) return;
+  runtimePollBusy = true;
+  try {
+    await refreshFromRuntime();
+    renderEverything();
+    renderRuntimeStamp();
+  } catch (_) {
+    renderRuntimeStamp('Retrying');
+  } finally {
+    runtimePollBusy = false;
+  }
+}
+
+function startRuntimePolling(intervalMs = 20000) {
+  if (runtimePollTimer) clearInterval(runtimePollTimer);
+  runtimePollTimer = setInterval(() => {
+    pollRuntimeAndRender();
+  }, intervalMs);
 }
 
 // ── Running Instances panel ───────────────────────────────────────────────
@@ -717,8 +744,6 @@ function renderRunningInstances() {
 
 // ── Space & Usage panel ───────────────────────────────────────────────────
 const TOTAL_DISK = 80;
-const DOCKER_IMAGES_GB = 14.2;
-const DOCKER_VOLUMES_GB = 22.6;
 
 function renderSpaceUsage() {
   const el = $('space-usage-panel');
@@ -728,14 +753,14 @@ function renderSpaceUsage() {
   const totalUploads  = INSTANCES.reduce((s, i) => s + i.uploads, 0);
   const totalBackups  = INSTANCES.reduce((s, i) => s + i.backups, 0);
   const schoolData    = INSTANCES.reduce((s, i) => s + i.storage, 0);
-  const appStack      = DOCKER_IMAGES_GB + DOCKER_VOLUMES_GB;
+  const runtimeUsed   = Number(RUNTIME_METRICS?.storageUsedGb || 0);
+  const appStack      = Math.max(0, runtimeUsed - schoolData);
   const usedTotal     = appStack + schoolData;
   const freeSpace     = Math.max(0, TOTAL_DISK - usedTotal);
   const usedPct       = Math.round(usedTotal / TOTAL_DISK * 100);
 
   const segments = [
-    { label: 'Docker Images', value: DOCKER_IMAGES_GB, color: '#030b82' },
-    { label: 'Docker Volumes', value: DOCKER_VOLUMES_GB, color: '#0D9488' },
+    { label: 'Platform Stack', value: appStack, color: '#030b82' },
     { label: 'School DBs', value: totalSchoolDb, color: '#059669' },
     { label: 'Uploads', value: totalUploads, color: '#f59e0b' },
     { label: 'Backups', value: totalBackups, color: '#8b5cf6' },
@@ -1135,10 +1160,13 @@ function renderTimeline(elId, maxItems = 99) {
 
 function renderCapacity() {
   const totalStorage = INSTANCES.reduce((sum, instance) => sum + instance.storage, 0);
+  const runtimeUsed = Number(RUNTIME_METRICS?.storageUsedGb || 0);
+  const stackUsed = Math.max(0, runtimeUsed - totalStorage);
+  const freeUsed = Math.max(0, TOTAL_DISK - runtimeUsed);
   const items = [
-    { label: 'App Stack (Docker)', used: 36.8, total: 80, color: 'brand', meta: 'Images, volumes, containers' },
-    { label: 'School Data', used: totalStorage, total: 80, color: 'teal', meta: 'DB + uploads + backups across all instances' },
-    { label: 'Free Space', used: 80 - 36.8 - totalStorage, total: 80, color: 'green', meta: 'Available for new instances' },
+    { label: 'Platform Stack', used: stackUsed, total: TOTAL_DISK, color: 'brand', meta: 'Containers and shared volumes' },
+    { label: 'School Data', used: totalStorage, total: TOTAL_DISK, color: 'teal', meta: 'DB + uploads + backups across all instances' },
+    { label: 'Free Space', used: freeUsed, total: TOTAL_DISK, color: 'green', meta: 'Available for new instances' },
   ];
   const el = $('capacity-items');
   if (!el) return;
@@ -1158,12 +1186,13 @@ function renderStorageSection() {
 
   const disk = $('disk-breakdown');
   if (disk) {
+    const runtimeUsed = Number(RUNTIME_METRICS?.storageUsedGb || 0);
+    const platformUsed = Math.max(0, runtimeUsed - total);
     const rows = [
-      { label: 'Docker Images (OS/App)', used: 14.2, total: 80, color: 'brand' },
-      { label: 'Docker Volumes', used: 22.6, total: 80, color: 'teal' },
-      { label: 'School Databases', used: INSTANCES.reduce((sum, instance) => sum + instance.dbGb, 0), total: 80, color: 'green' },
-      { label: 'Uploaded Files', used: INSTANCES.reduce((sum, instance) => sum + instance.uploads, 0), total: 80, color: 'amber' },
-      { label: 'Backups', used: INSTANCES.reduce((sum, instance) => sum + instance.backups, 0), total: 80, color: 'brand' },
+      { label: 'Platform Stack', used: platformUsed, total: TOTAL_DISK, color: 'brand' },
+      { label: 'School Databases', used: INSTANCES.reduce((sum, instance) => sum + instance.dbGb, 0), total: TOTAL_DISK, color: 'green' },
+      { label: 'Uploaded Files', used: INSTANCES.reduce((sum, instance) => sum + instance.uploads, 0), total: TOTAL_DISK, color: 'amber' },
+      { label: 'Backups', used: INSTANCES.reduce((sum, instance) => sum + instance.backups, 0), total: TOTAL_DISK, color: 'brand' },
     ];
     disk.innerHTML = rows.map(row => {
       const pct = Math.round(row.used / row.total * 100);
@@ -1854,38 +1883,13 @@ function renderEverything() {
   renderControlInstances();
   renderModuleToggles();
   renderPricingPlans();
-}
-
-async function init() {
-  bindModalEvents();
-  await loadLeadsFromApi();
-  await refreshFromRuntime();
-  renderEverything();
-  renderLogs();
-  if ($('last-updated')) $('last-updated').textContent = `${liveMode ? 'Live' : 'Fallback'} · ${nowLabel()}`;
-}
-
-init();
-function renderEverything() {
-  renderMetrics();
-  renderInstances();
-  renderRunningInstances();
-  renderCapacity();
-  renderTimeline('timeline-mini', 3);
-  renderTimeline('timeline-full');
-  renderStorageSection();
-  renderSpaceUsage();
-  renderAuditLog();
-  renderControlInstances();
-  renderModuleToggles();
-  renderPricingPlans();
   if(typeof renderPipeline === 'function') renderPipeline();
   if(typeof renderLeadsList === 'function') renderLeadsList();
 }
 
 // CRM View Toggles
 $('btn-view-pipeline')?.addEventListener('click', () => {
-  if($('kanban-board')) $('kanban-board').style.display = 'flex';
+  if($('kanban-board')) $('kanban-board').style.display = '';
   if($('leads-list-panel')) $('leads-list-panel').style.display = 'none';
   $('btn-view-pipeline')?.classList.add('active');
   $('btn-view-list')?.classList.remove('active');
@@ -1990,5 +1994,15 @@ $('lead-modal-submit')?.addEventListener('click', async () => {
   renderEverything();
   toast(editId ? 'Lead updated' : 'Lead added successfully');
 });
+
+async function init() {
+  bindModalEvents();
+  await loadLeadsFromApi();
+  await refreshFromRuntime();
+  renderEverything();
+  renderLogs();
+  renderRuntimeStamp();
+  startRuntimePolling(20000);
+}
 
 init();
