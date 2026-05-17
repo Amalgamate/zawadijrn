@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="./styles.css"/>
 <link rel="stylesheet" href="./login.css"/>
+<link rel="stylesheet" href="./kanban-crm.css"/>
 </head>
 <body>
 
@@ -602,37 +603,40 @@
               <button class="btn" id="btn-view-list" style="border:none;background:transparent;box-shadow:none">List View</button>
               <button class="btn" id="btn-view-clients" style="border:none;background:transparent;box-shadow:none">Client Base</button>
             </div>
+            <button class="btn" id="btn-toggle-crm-metrics" type="button">Show Metrics</button>
             <button class="btn teal" id="btn-new-lead" type="button">+ Add Lead</button>
+          </div>
+        </div>
+
+        <!-- Summary metrics (collapsible) -->
+        <div class="crm-metrics-panel" id="crm-metrics-panel" hidden>
+          <div class="metric-row" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
+            <div class="metric-card">
+              <div class="m-label">Total Leads</div>
+              <div class="m-value" id="crm-m-total">--</div>
+              <div class="m-sub">All time</div>
+            </div>
+            <div class="metric-card teal">
+              <div class="m-label">Contacted This Week</div>
+              <div class="m-value" id="crm-m-week">--</div>
+              <div class="m-sub">Last 7 days</div>
+            </div>
+            <div class="metric-card green">
+              <div class="m-label">Converted</div>
+              <div class="m-value" id="crm-m-converted">--</div>
+              <div class="m-sub">Became customers</div>
+              <div class="m-badge up">↑ Active</div>
+            </div>
+            <div class="metric-card amber">
+              <div class="m-label">Conversion Rate</div>
+              <div class="m-value" id="crm-m-rate">--</div>
+              <div class="m-sub">Converted / total</div>
+            </div>
           </div>
         </div>
 
         <!-- Kanban Board -->
         <div class="kanban-board" id="kanban-board"></div>
-
-        <!-- Summary metrics -->
-        <div class="metric-row" style="grid-template-columns:repeat(4,1fr)">
-          <div class="metric-card">
-            <div class="m-label">Total Leads</div>
-            <div class="m-value" id="crm-m-total">0</div>
-            <div class="m-sub">All time</div>
-          </div>
-          <div class="metric-card teal">
-            <div class="m-label">Contacted This Week</div>
-            <div class="m-value" id="crm-m-week">0</div>
-            <div class="m-sub">Last 7 days</div>
-          </div>
-          <div class="metric-card green">
-            <div class="m-label">Converted</div>
-            <div class="m-value" id="crm-m-converted">0</div>
-            <div class="m-sub">Became customers</div>
-            <div class="m-badge up">↑ Active</div>
-          </div>
-          <div class="metric-card amber">
-            <div class="m-label">Conversion Rate</div>
-            <div class="m-value" id="crm-m-rate">0%</div>
-            <div class="m-sub">Converted / total</div>
-          </div>
-        </div>
 
         <!-- Leads table -->
         <div class="panel" id="leads-list-panel" style="display:none">

@@ -680,6 +680,17 @@ input:checked + .toggle-slider::before{transform:translateX(18px)}
 .btn.btn-signout-confirm:hover{background:#b91c1c;border-color:#b91c1c}
 
 /* ── Leads & CRM ────────────────────────────────────────────────────── */
+.crm-metrics-panel{margin-bottom:6px}
+.crm-metrics-panel[hidden]{display:none !important}
+.tbl-btn.danger{
+  color:var(--red);
+  border-color:#f3b3b3;
+  background:#fff5f5;
+}
+.tbl-btn.danger:hover{
+  border-color:#ea8b8b;
+  background:#ffecec;
+}
 
 /* Pipeline stage bar */
 .crm-pipeline{display:grid;grid-template-columns:repeat(5,1fr);gap:0;margin-bottom:20px;border:1px solid var(--border)}

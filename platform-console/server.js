@@ -45,6 +45,7 @@ const NGINX_SITES_DIR = process.env.CONSOLE_NGINX_SITES_DIR || '/etc/nginx/sites
 const deploymentLog = [];
 const auditLog = [];
 const APP_TYPE_SET = new Set(['school', 'odoo', 'wordpress', 'sacco', 'hospital', 'hotel', 'organization']);
+const LEADS_STORE_FILE = path.join(__dirname, 'leads.store.json');
 
 const DEFAULT_IMAGE_CATALOG = {
   school: [
@@ -99,6 +100,27 @@ function pushAudit(action, instance, by, details, status = 'Success') {
     status,
   });
   if (auditLog.length > 500) auditLog.length = 500;
+}
+
+function ensureLeadsStore() {
+  if (!fs.existsSync(LEADS_STORE_FILE)) {
+    fs.writeFileSync(LEADS_STORE_FILE, JSON.stringify({ leads: [] }, null, 2), 'utf8');
+  }
+}
+
+function readLeadsStore() {
+  ensureLeadsStore();
+  try {
+    const raw = fs.readFileSync(LEADS_STORE_FILE, 'utf8');
+    const parsed = JSON.parse(raw || '{}');
+    return Array.isArray(parsed.leads) ? parsed.leads : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeLeadsStore(leads) {
+  fs.writeFileSync(LEADS_STORE_FILE, JSON.stringify({ leads }, null, 2), 'utf8');
 }
 
 if (process.env.NODE_ENV === 'production') {
@@ -668,6 +690,85 @@ app.get('/api/audit-logs', requireAuth, (req, res) => {
 
 app.get('/api/deployments', requireAuth, (_req, res) => {
   res.json({ ok: true, deployments: deploymentLog.slice(0, 50) });
+});
+
+app.get('/api/leads', requireAuth, requireRole('super_admin', 'platform_owner'), (_req, res) => {
+  const leads = readLeadsStore();
+  res.json({ ok: true, leads });
+});
+
+app.post('/api/leads', requireAuth, requireRole('super_admin', 'platform_owner'), (req, res) => {
+  const body = req.body || {};
+  const name = String(body.name || '').trim();
+  const school = String(body.school || '').trim();
+  if (!name || !school) {
+    return res.status(400).json({ error: 'name and school are required' });
+  }
+
+  const leads = readLeadsStore();
+  const lead = {
+    id: String(body.id || `L${Date.now()}`),
+    name,
+    school,
+    phone: String(body.phone || '').trim(),
+    stage: String(body.stage || 'new').trim() || 'new',
+    priority: String(body.priority || '1').trim() || '1',
+    students: Number(body.students || 0) || 0,
+    tags: Array.isArray(body.tags) ? body.tags : [],
+    systems: {
+      assessment: String(body?.systems?.assessment || 'None'),
+      fees: String(body?.systems?.fees || 'None'),
+      lms: String(body?.systems?.lms || 'None'),
+    },
+    notes: String(body.notes || '').trim(),
+    nextActivity: String(body.nextActivity || 'New lead added').trim(),
+    created: String(body.created || new Date().toISOString().slice(0, 10)),
+  };
+
+  leads.push(lead);
+  writeLeadsStore(leads);
+  pushAudit('LEAD_CREATE', lead.school, req.user.email, `Created lead ${lead.name}`, 'Success');
+  return res.json({ ok: true, lead });
+});
+
+app.put('/api/leads/:id', requireAuth, requireRole('super_admin', 'platform_owner'), (req, res) => {
+  const id = String(req.params.id || '').trim();
+  if (!id) return res.status(400).json({ error: 'id is required' });
+
+  const leads = readLeadsStore();
+  const idx = leads.findIndex(l => String(l.id) === id);
+  if (idx < 0) return res.status(404).json({ error: 'Lead not found' });
+
+  const prev = leads[idx];
+  const body = req.body || {};
+  const updated = {
+    ...prev,
+    ...body,
+    id: prev.id,
+    systems: {
+      assessment: String(body?.systems?.assessment ?? prev?.systems?.assessment ?? 'None'),
+      fees: String(body?.systems?.fees ?? prev?.systems?.fees ?? 'None'),
+      lms: String(body?.systems?.lms ?? prev?.systems?.lms ?? 'None'),
+    },
+  };
+  leads[idx] = updated;
+  writeLeadsStore(leads);
+  pushAudit('LEAD_UPDATE', updated.school, req.user.email, `Updated lead ${updated.name}`, 'Success');
+  return res.json({ ok: true, lead: updated });
+});
+
+app.delete('/api/leads/:id', requireAuth, requireRole('super_admin', 'platform_owner'), (req, res) => {
+  const id = String(req.params.id || '').trim();
+  if (!id) return res.status(400).json({ error: 'id is required' });
+
+  const leads = readLeadsStore();
+  const idx = leads.findIndex(l => String(l.id) === id);
+  if (idx < 0) return res.status(404).json({ error: 'Lead not found' });
+
+  const [removed] = leads.splice(idx, 1);
+  writeLeadsStore(leads);
+  pushAudit('LEAD_DELETE', removed.school, req.user.email, `Deleted lead ${removed.name}`, 'Warning');
+  return res.json({ ok: true });
 });
 
 app.use(express.static(path.join(__dirname)));

@@ -165,13 +165,14 @@ const FEATURE_MATRIX = [
   'API access',
 ];
 
-let LEADS = [
+const DEFAULT_LEADS = [
   { id: 'L1', name: 'Mary Wanjiku', phone: '+254 712 345 678', school: 'Sunshine Academy', stage: 'new', priority: '2', students: 350, tags: ['CBC'], systems: { assessment: 'Manual', fees: 'Excel', lms: 'None' }, nextActivity: 'Call tomorrow', notes: 'Interested in core modules.', created: '2026-05-15' },
   { id: 'L2', name: 'John Doe', phone: '+254 799 123 456', school: 'Pioneer High', stage: 'contacted', priority: '3', students: 800, tags: ['Large School', 'Urgent'], systems: { assessment: 'Zeraki', fees: 'Manual', lms: 'Google Classroom' }, nextActivity: 'Demo scheduled', notes: 'Looking to replace Zeraki.', created: '2026-05-16' },
   { id: 'L3', name: 'Sarah Musyoka', phone: '+254 722 000 111', school: 'Greenfield Primary', stage: 'interested', priority: '2', students: 200, tags: ['Follow-up'], systems: { assessment: 'None', fees: 'None', lms: 'None' }, nextActivity: 'Send quote', notes: 'Wants the Starter plan.', created: '2026-05-10' },
   { id: 'L4', name: 'Peter Omondi', phone: '+254 700 999 888', school: 'Nairobi Heights', stage: 'converted', priority: '3', students: 1200, tags: ['Client'], systems: { assessment: 'Trends CORE', fees: 'Trends CORE', lms: 'Trends CORE' }, nextActivity: 'Onboarding', notes: 'Signed 1 year contract.', created: '2026-04-20' },
   { id: 'L5', name: 'Jane Kamau', phone: '+254 733 444 555', school: 'Hilltop Secondary', stage: 'new', priority: '1', students: 150, tags: [], systems: { assessment: 'Manual', fees: 'Manual', lms: 'None' }, nextActivity: 'Initial contact', notes: 'Found us via web search.', created: '2026-05-17' }
 ];
+let LEADS = [...DEFAULT_LEADS];
 
 // Helpers
 const $ = id => document.getElementById(id);
@@ -228,6 +229,51 @@ function nextPortInLine(basePort, usedPorts = []) {
   let port = basePort;
   while (used.has(port)) port += 1;
   return port;
+}
+
+async function loadLeadsFromApi() {
+  try {
+    const response = await fetch('/api/leads', { credentials: 'same-origin' });
+    if (!response.ok) return false;
+    const data = await response.json().catch(() => null);
+    if (data?.ok && Array.isArray(data.leads)) {
+      LEADS = data.leads;
+      return true;
+    }
+  } catch (_) {}
+  return false;
+}
+
+async function createLeadApi(lead) {
+  const response = await fetch('/api/leads', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(lead),
+  });
+  if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || 'Create lead failed');
+  const data = await response.json();
+  return data.lead;
+}
+
+async function updateLeadApi(id, lead) {
+  const response = await fetch(`/api/leads/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(lead),
+  });
+  if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || 'Update lead failed');
+  const data = await response.json();
+  return data.lead;
+}
+
+async function deleteLeadApi(id) {
+  const response = await fetch(`/api/leads/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    credentials: 'same-origin',
+  });
+  if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || 'Delete lead failed');
 }
 
 function setInstallProgress(value) {
@@ -811,6 +857,7 @@ function renderPipeline() {
               <span class="k-students">👤 ${lead.students}</span>
             </div>
             <button class="k-card-edit" onclick="openLeadModal(null, '${lead.id}')">✎</button>
+            <button class="k-card-edit" style="right:34px" onclick="deleteLead('${lead.id}')">🗑</button>
           </div>`;
         }).join('')}
       </div>
@@ -870,6 +917,7 @@ function renderLeadsList() {
       <td>
         <div class="action-row">
           <button class="tbl-btn" onclick="openLeadModal(null, '${lead.id}')">Edit</button>
+          <button class="tbl-btn danger" onclick="deleteLead('${lead.id}')">Delete</button>
         </div>
       </td>
     </tr>
@@ -881,6 +929,32 @@ function renderLeadsList() {
   const converted = LEADS.filter(l => l.stage === 'converted').length;
   if ($('crm-m-converted')) $('crm-m-converted').textContent = converted;
   if ($('crm-m-rate')) $('crm-m-rate').textContent = LEADS.length ? Math.round((converted / LEADS.length) * 100) + '%' : '0%';
+}
+
+window.deleteLead = async function(leadId) {
+  const lead = LEADS.find(l => l.id === leadId);
+  if (!lead) return;
+  const ok = window.confirm(`Delete lead "${lead.school}"? This cannot be undone.`);
+  if (!ok) return;
+  try {
+    await deleteLeadApi(leadId);
+    LEADS = LEADS.filter(l => l.id !== leadId);
+  } catch (error) {
+    toast(error.message || 'Delete failed');
+    return;
+  }
+  addAudit({ action: 'Lead Deleted', instance: lead.school, details: `Deleted lead record for ${lead.name}` });
+  renderEverything();
+  toast('Lead deleted.');
+};
+
+function toggleCrmMetrics() {
+  const panel = $('crm-metrics-panel');
+  const btn = $('btn-toggle-crm-metrics');
+  if (!panel || !btn) return;
+  const nextHidden = !panel.hidden ? true : false;
+  panel.hidden = nextHidden;
+  btn.textContent = nextHidden ? 'Show Metrics' : 'Hide Metrics';
 }
 
 // Rendering
@@ -1784,6 +1858,7 @@ function renderEverything() {
 
 async function init() {
   bindModalEvents();
+  await loadLeadsFromApi();
   await refreshFromRuntime();
   renderEverything();
   renderLogs();
@@ -1866,8 +1941,9 @@ window.openLeadModal = function(defaultStage = 'new', editLeadId = null) {
 $('lead-modal-close')?.addEventListener('click', () => $('lead-modal-overlay')?.classList.remove('open'));
 $('lead-modal-cancel')?.addEventListener('click', () => $('lead-modal-overlay')?.classList.remove('open'));
 $('btn-new-lead')?.addEventListener('click', () => openLeadModal('new', null));
+$('btn-toggle-crm-metrics')?.addEventListener('click', toggleCrmMetrics);
 
-$('lead-modal-submit')?.addEventListener('click', () => {
+$('lead-modal-submit')?.addEventListener('click', async () => {
   const name = $('l-name').value?.trim();
   const school = $('l-school').value?.trim();
   if (!name || !school) {
@@ -1894,11 +1970,18 @@ $('lead-modal-submit')?.addEventListener('click', () => {
     nextActivity: editId ? (LEADS.find(l=>l.id===editId)?.nextActivity) : 'New lead added'
   };
 
-  if (editId) {
-    const idx = LEADS.findIndex(l => l.id === editId);
-    if (idx >= 0) LEADS[idx] = { ...LEADS[idx], ...newLead };
-  } else {
-    LEADS.push(newLead);
+  try {
+    if (editId) {
+      const updated = await updateLeadApi(editId, newLead);
+      const idx = LEADS.findIndex(l => l.id === editId);
+      if (idx >= 0) LEADS[idx] = updated;
+    } else {
+      const created = await createLeadApi(newLead);
+      LEADS.push(created);
+    }
+  } catch (error) {
+    toast(error.message || 'Save failed');
+    return;
   }
 
   addAudit({ action: editId ? 'Lead Updated' : 'Lead Added', instance: school, details: `Stage: ${newLead.stage}` });
