@@ -141,8 +141,9 @@ function mapContainersToInstances(containers) {
 
   for (const c of containers) {
     const cname = (c.Names?.[0] || c.Id || '').replace(/^\//, '');
+    const composeProject = c.Labels?.['com.docker.compose.project'] || '';
     const matched = cname.match(/(.*?)(?:[-_])?(frontend|backend|db|database|redis|worker)(?:[-_]?\d+)?$/i);
-    const keyBase = matched ? matched[1].replace(/[-_]+$/, '') : cname;
+    const keyBase = composeProject || (matched ? matched[1].replace(/[-_]+$/, '') : cname);
     const key = keyBase || cname;
 
     if (!grouped.has(key)) {
@@ -163,6 +164,7 @@ function mapContainersToInstances(containers) {
         containers: 0,
         runningContainers: 0,
         containerIds: [],
+        composeProject: composeProject || key,
         hasFrontend: false,
         hasBackend: false,
         hasDatabase: false,
@@ -240,11 +242,12 @@ function parseNginxDomainMap() {
 }
 
 async function collectRuntime() {
-  const [containers, mem, disk, load] = await Promise.all([
+  const [containers, mem, disk, load, dockerDf] = await Promise.all([
     docker.listContainers({ all: true, size: true }),
     si.mem(),
     si.fsSize(),
     si.currentLoad(),
+    docker.df().catch(() => null),
   ]);
 
   const instances = mapContainersToInstances(containers);
@@ -253,13 +256,37 @@ async function collectRuntime() {
     i.domain = (i.fe && nginxMap.byFePort[i.fe]) || (i.be && nginxMap.byBePort[i.be]) || i.domain || '';
   }
 
+  // Prefer real Docker volume usage per compose project when available.
+  if (dockerDf && Array.isArray(dockerDf.Volumes)) {
+    const volumeBytesByProject = {};
+    for (const v of dockerDf.Volumes) {
+      const project = v?.Labels?.['com.docker.compose.project'] || '';
+      const size = Number(v?.UsageData?.Size || 0);
+      if (!project || !Number.isFinite(size) || size <= 0) continue;
+      volumeBytesByProject[project] = (volumeBytesByProject[project] || 0) + size;
+    }
+
+    for (const i of instances) {
+      const bytes = volumeBytesByProject[i.composeProject] || 0;
+      if (bytes > 0) {
+        i.storage = Number((bytes / (1024 ** 3)).toFixed(2));
+        // For now treat volume storage as DB bucket unless specialized buckets are tracked.
+        i.dbGb = i.storage;
+        i.uploads = 0;
+        i.backups = 0;
+      }
+    }
+  }
+
   const totalDiskBytes = disk.reduce((sum, d) => sum + Number(d.size || 0), 0);
   const usedDiskBytes = disk.reduce((sum, d) => sum + Number(d.used || 0), 0);
 
   const metrics = {
     liveSchools: instances.filter(i => i.hasFrontend && i.hasBackend && i.hasDatabase).length,
     containersHealthy: `${instances.reduce((s, i) => s + i.runningContainers, 0)}/${Math.max(1, instances.reduce((s, i) => s + i.containers, 0))}`,
-    storageUsedGb: Number(instances.reduce((s, i) => s + i.storage, 0).toFixed(2)),
+    storageUsedGb: dockerDf
+      ? Number((((Number(dockerDf.LayersSize || 0) + (dockerDf.Volumes || []).reduce((s, v) => s + Number(v?.UsageData?.Size || 0), 0)) / (1024 ** 3))).toFixed(2))
+      : Number(instances.reduce((s, i) => s + i.storage, 0).toFixed(2)),
     cpuLoadPercent: Math.round(load.currentLoad || 0),
     memoryUsedPercent: Math.round((mem.used / Math.max(mem.total, 1)) * 100),
     diskTotalGb: Number((totalDiskBytes / (1024 ** 3)).toFixed(1)),
