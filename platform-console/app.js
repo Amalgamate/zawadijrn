@@ -462,6 +462,7 @@ function renderInstanceRow(instance, mode = 'compact') {
         <button class="tbl-btn" data-action="Logs" data-school="${esc(instance.name)}">Logs</button>
         <button class="tbl-btn" data-action="Redeploy" data-school="${esc(instance.name)}">Redeploy</button>
         <button class="tbl-btn danger" data-action="Stop" data-school="${esc(instance.name)}">Stop</button>
+        <button class="tbl-btn danger" data-action="Drop" data-school="${esc(instance.name)}">Drop</button>
       </div>
     </td>
   </tr>`;
@@ -965,7 +966,7 @@ async function runControl(action, label, options = {}) {
     return;
   }
 
-  const actionMap = { redeploy: 'redeploy', restart: 'restart', stop: 'stop', start: 'start', health: 'health' };
+  const actionMap = { redeploy: 'redeploy', restart: 'restart', stop: 'stop', drop: 'drop', start: 'start', health: 'health' };
   const mappedAction = actionMap[action] || action;
   const result = await callControlStub(mappedAction, options.global ? '' : instance.key || instance.name);
   if (!result.ok) {
@@ -989,8 +990,8 @@ async function handleControlButton(btn) {
   const action = btn.dataset.ctrl;
   const label = btn.dataset.label || action;
   const global = action?.endsWith('-all');
-  const destructive = ['stop', 'stop-all', 'restore', 'reset', 'purge', 'remove'].includes(action);
-  const requireText = ['reset', 'purge', 'remove'].includes(action);
+  const destructive = ['stop', 'drop', 'stop-all', 'restore', 'reset', 'purge', 'remove'].includes(action);
+  const requireText = ['drop', 'reset', 'purge', 'remove'].includes(action);
 
   if (action === 'logs') {
     const active = selectedInstance();

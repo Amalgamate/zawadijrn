@@ -316,6 +316,7 @@ async function applyInstanceAction(instanceKey, action) {
     const container = docker.getContainer(cid);
     if (action === 'start') await container.start().catch(() => undefined);
     if (action === 'stop') await container.stop({ t: 10 }).catch(() => undefined);
+    if (action === 'drop') await container.remove({ force: true }).catch(() => undefined);
     if (action === 'restart' || action === 'redeploy') await container.restart({ t: 10 }).catch(() => undefined);
   }
 
@@ -324,7 +325,7 @@ async function applyInstanceAction(instanceKey, action) {
 
 app.post('/api/instances/:key/:action', requireAuth, requireRole('super_admin'), async (req, res) => {
   const action = String(req.params.action || '').toLowerCase();
-  if (!['start', 'stop', 'restart', 'redeploy', 'health'].includes(action)) {
+  if (!['start', 'stop', 'drop', 'restart', 'redeploy', 'health'].includes(action)) {
     return res.status(400).json({ error: 'Unsupported action' });
   }
 
@@ -332,7 +333,7 @@ app.post('/api/instances/:key/:action', requireAuth, requireRole('super_admin'),
     const target = action === 'health' ? (await collectRuntime()).instances.find(i => i.key === req.params.key || i.name === req.params.key) : await applyInstanceAction(req.params.key, action);
     if (!target) return res.status(404).json({ error: 'Instance not found' });
 
-    pushAudit(action.toUpperCase(), target.name, req.user.email, `Action ${action} executed on ${target.name}`, action === 'stop' ? 'Warning' : 'Success');
+    pushAudit(action.toUpperCase(), target.name, req.user.email, `Action ${action} executed on ${target.name}`, action === 'stop' || action === 'drop' ? 'Warning' : 'Success');
     res.json({ ok: true, target: target.name, action });
   } catch (error) {
     const code = error.code || 500;
