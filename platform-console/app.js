@@ -191,6 +191,7 @@ const statusCls = status => status === 'Online' || status === 'Active' || status
 const findPlan = id => PRICING_PLANS.find(plan => plan.id === id) || PRICING_PLANS[0];
 
 let toastTimer;
+let installProgressTimer = null;
 let selectedInstanceName = INSTANCES[0]?.name || '';
 let pendingConfirm = null;
 let editingPlanId = null;
@@ -227,6 +228,42 @@ function nextPortInLine(basePort, usedPorts = []) {
   let port = basePort;
   while (used.has(port)) port += 1;
   return port;
+}
+
+function setInstallProgress(value) {
+  const wrap = $('install-progress');
+  const line = $('install-progress-line');
+  if (!wrap || !line) return;
+  const pct = Math.max(0, Math.min(100, Number(value) || 0));
+  line.style.width = `${pct}%`;
+}
+
+function startInstallProgress() {
+  const wrap = $('install-progress');
+  if (!wrap) return;
+  wrap.classList.add('active');
+  wrap.setAttribute('aria-hidden', 'false');
+  setInstallProgress(8);
+  clearInterval(installProgressTimer);
+  installProgressTimer = setInterval(() => {
+    const line = $('install-progress-line');
+    if (!line) return;
+    const current = parseFloat(String(line.style.width || '0').replace('%', '')) || 0;
+    if (current < 90) setInstallProgress(current + 4);
+  }, 450);
+}
+
+function finishInstallProgress(ok = true) {
+  const wrap = $('install-progress');
+  if (!wrap) return;
+  clearInterval(installProgressTimer);
+  installProgressTimer = null;
+  setInstallProgress(ok ? 100 : 0);
+  setTimeout(() => {
+    wrap.classList.remove('active');
+    wrap.setAttribute('aria-hidden', 'true');
+    if (ok) setInstallProgress(0);
+  }, ok ? 350 : 150);
 }
 
 const APP_PORT_RANGES = {
@@ -1648,15 +1685,19 @@ function bindModalEvents() {
       }
 
       try {
+        startInstallProgress();
+        setInstallProgress(20);
         const preflightResponse = await fetch('/api/instances/preflight', {
           method: 'POST',
           credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
+        setInstallProgress(45);
         if (preflightResponse.ok) {
           const preflight = await preflightResponse.json().catch(() => null);
           if (preflight && preflight.valid === false) {
+            finishInstallProgress(false);
             const msg = Array.isArray(preflight.issues) && preflight.issues.length
               ? preflight.issues.join(' ')
               : 'Preflight check failed.';
@@ -1674,8 +1715,10 @@ function bindModalEvents() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
+        setInstallProgress(92);
 
         if (!response.ok) {
+          finishInstallProgress(false);
           const error = await response.json().catch(() => ({}));
           toast(error.error || `Create ${app.label} instance failed.`);
           return;
@@ -1690,9 +1733,12 @@ function bindModalEvents() {
         await refreshFromRuntime();
         renderEverything();
         closeModal();
+        finishInstallProgress(true);
         toast(`Provisioning "${name}" (${app.label}) started.`);
         return;
-      } catch (_) {}
+      } catch (_) {
+        finishInstallProgress(false);
+      }
 
       toast('Provision endpoint unreachable.');
     })();
