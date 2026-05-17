@@ -9,7 +9,7 @@ COPY package*.json ./
 RUN npm ci --omit=dev
 
 COPY auth-config.js server.js ./
-COPY index.html styles.css app.js login.css login.js ./
+COPY index.html styles.css kanban-crm.css app.js login.css login.js ./
 
 EXPOSE 3100
 
