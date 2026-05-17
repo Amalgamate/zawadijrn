@@ -195,6 +195,7 @@ let toastTimer;
 let installProgressTimer = null;
 let runtimePollTimer = null;
 let runtimePollBusy = false;
+let pendingProvisionLeadId = null;
 let selectedInstanceName = INSTANCES[0]?.name || '';
 let pendingConfirm = null;
 let editingPlanId = null;
@@ -881,8 +882,9 @@ function renderPipeline() {
               <span class="k-activity" title="Next Activity">📅 ${esc(lead.nextActivity || 'No planned activity')}</span>
               <span class="k-students">👤 ${lead.students}</span>
             </div>
-            <button class="k-card-edit" onclick="openLeadModal(null, '${lead.id}')">✎</button>
-            <button class="k-card-edit" style="right:34px" onclick="deleteLead('${lead.id}')">🗑</button>
+            <button class="k-card-edit" onclick="openLeadModal(null, '${lead.id}')">Edit</button>
+            <button class="k-card-edit" style="right:46px" onclick="convertLeadToProvision('${lead.id}')">Convert</button>
+            <button class="k-card-edit" style="right:112px" onclick="deleteLead('${lead.id}')">Delete</button>
           </div>`;
         }).join('')}
       </div>
@@ -942,6 +944,7 @@ function renderLeadsList() {
       <td>
         <div class="action-row">
           <button class="tbl-btn" onclick="openLeadModal(null, '${lead.id}')">Edit</button>
+          <button class="tbl-btn primary" onclick="convertLeadToProvision('${lead.id}')">Convert & Provision</button>
           <button class="tbl-btn danger" onclick="deleteLead('${lead.id}')">Delete</button>
         </div>
       </td>
@@ -971,6 +974,35 @@ window.deleteLead = async function(leadId) {
   addAudit({ action: 'Lead Deleted', instance: lead.school, details: `Deleted lead record for ${lead.name}` });
   renderEverything();
   toast('Lead deleted.');
+};
+
+window.convertLeadToProvision = function(leadId) {
+  const lead = LEADS.find(l => l.id === leadId);
+  if (!lead) return;
+
+  openModal('school', leadId);
+
+  const schoolName = (lead.school || '').trim() || `${lead.name || 'School'} Instance`;
+  if ($('f-name')) $('f-name').value = schoolName;
+  if ($('f-domain')) $('f-domain').value = `${slugify(schoolName)}.${APP_PROVISIONING_CATALOG.school.defaultDomainSuffix}`;
+
+  const studentCount = Number(lead.students || 0);
+  const inferredPlan = studentCount >= 1000
+    ? 'enterprise'
+    : studentCount >= 500
+      ? 'professional'
+      : studentCount >= 250
+        ? 'standard'
+        : 'starter';
+  if ($('f-plan')) $('f-plan').value = inferredPlan;
+
+  const source = `Lead source: ${lead.name}${lead.phone ? ` (${lead.phone})` : ''}`;
+  const existingNotes = (lead.notes || '').trim();
+  if ($('f-notes')) $('f-notes').value = existingNotes ? `${existingNotes}\n${source}` : source;
+
+  renderComposePreview();
+  addAudit({ action: 'Lead Convert Initiated', instance: schoolName, details: `Provision form opened from CRM lead ${lead.id}` });
+  toast(`Provision form prefilled from ${schoolName}.`);
 };
 
 function toggleCrmMetrics() {
@@ -1392,12 +1424,14 @@ document.querySelectorAll('.nav-item').forEach(el => {
 });
 
 // Modals
-function openModal(appKey = 'school') {
+function openModal(appKey = 'school', sourceLeadId = null) {
+  pendingProvisionLeadId = sourceLeadId;
   prepareProvisionDefaults(appKey);
   $('modal-overlay')?.classList.add('open');
 }
 
 function closeModal() {
+  pendingProvisionLeadId = null;
   $('modal-overlay')?.classList.remove('open');
 }
 
@@ -1833,6 +1867,30 @@ function bindModalEvents() {
           details: `${app.label} ${payload.version} requested (${payload.image})`,
           status: 'Warning',
         });
+        if (pendingProvisionLeadId) {
+          const leadIdx = LEADS.findIndex(l => l.id === pendingProvisionLeadId);
+          if (leadIdx >= 0) {
+            const updatedLead = {
+              ...LEADS[leadIdx],
+              stage: 'converted',
+              nextActivity: `Provisioning ${app.label} (${payload.version})`,
+              notes: [LEADS[leadIdx].notes, `Provision requested for ${payload.name} (${payload.domain})`]
+                .filter(Boolean)
+                .join(' | '),
+            };
+            try {
+              LEADS[leadIdx] = await updateLeadApi(updatedLead.id, updatedLead);
+              addAudit({
+                action: 'Lead Converted',
+                instance: updatedLead.school,
+                details: `Lead linked to provisioning request for ${payload.name}`,
+                status: 'Success',
+              });
+            } catch (_) {
+              // Keep provisioning success even if lead update fails.
+            }
+          }
+        }
         await refreshFromRuntime();
         renderEverything();
         closeModal();
