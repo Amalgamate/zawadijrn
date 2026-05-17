@@ -234,6 +234,29 @@ function nextPortInLine(basePort, usedPorts = []) {
   return port;
 }
 
+async function readApiError(response, fallback) {
+  try {
+    const payload = await response.json();
+    if (payload?.error) {
+      return payload.hint ? `${payload.error} ${payload.hint}` : payload.error;
+    }
+  } catch (_) {}
+  return fallback;
+}
+
+function setProvisionSubmitBusy(isBusy) {
+  const btn = $('modal-submit');
+  if (!btn) return;
+  if (isBusy) {
+    if (!btn.dataset.label) btn.dataset.label = btn.textContent || 'Provision';
+    btn.disabled = true;
+    btn.textContent = 'Provisioning...';
+    return;
+  }
+  btn.disabled = false;
+  btn.textContent = btn.dataset.label || btn.textContent || 'Provision';
+}
+
 async function loadLeadsFromApi() {
   try {
     const response = await fetch('/api/leads', { credentials: 'same-origin' });
@@ -1822,6 +1845,7 @@ function bindModalEvents() {
       }
 
       try {
+        setProvisionSubmitBusy(true);
         startInstallProgress();
         setInstallProgress(20);
         const preflightResponse = await fetch('/api/instances/preflight', {
@@ -1838,12 +1862,29 @@ function bindModalEvents() {
             const msg = Array.isArray(preflight.issues) && preflight.issues.length
               ? preflight.issues.join(' ')
               : 'Preflight check failed.';
+            addAudit({
+              action: `Provision ${app.label} Blocked`,
+              instance: payload.name,
+              details: msg,
+              status: 'Warning',
+            });
             toast(msg);
             return;
           }
           if (preflight && Array.isArray(preflight.warnings) && preflight.warnings.length) {
             toast(`Preflight warning: ${preflight.warnings[0]}`);
           }
+        } else {
+          finishInstallProgress(false);
+          const preflightError = await readApiError(preflightResponse, 'Preflight request failed.');
+          addAudit({
+            action: `Provision ${app.label} Failed`,
+            instance: payload.name,
+            details: `Preflight failed: ${preflightError}`,
+            status: 'Warning',
+          });
+          toast(preflightError);
+          return;
         }
 
         const response = await fetch('/api/instances/create', {
@@ -1856,8 +1897,14 @@ function bindModalEvents() {
 
         if (!response.ok) {
           finishInstallProgress(false);
-          const error = await response.json().catch(() => ({}));
-          toast(error.error || `Create ${app.label} instance failed.`);
+          const message = await readApiError(response, `Create ${app.label} instance failed.`);
+          addAudit({
+            action: `Provision ${app.label} Failed`,
+            instance: payload.name,
+            details: message,
+            status: 'Warning',
+          });
+          toast(message);
           return;
         }
 
@@ -1897,11 +1944,19 @@ function bindModalEvents() {
         finishInstallProgress(true);
         toast(`Provisioning "${name}" (${app.label}) started.`);
         return;
-      } catch (_) {
+      } catch (error) {
         finishInstallProgress(false);
+        const message = error?.message || 'Provision endpoint unreachable.';
+        addAudit({
+          action: `Provision ${app.label} Failed`,
+          instance: payload.name,
+          details: message,
+          status: 'Warning',
+        });
+        toast(message);
+      } finally {
+        setProvisionSubmitBusy(false);
       }
-
-      toast('Provision endpoint unreachable.');
     })();
   });
 
