@@ -23,6 +23,7 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
   const [availableGrades, setAvailableGrades] = useState([]);
   const [isDraft, setIsDraft] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [changeReason, setChangeReason] = useState('');
   const [lastSaved, setLastSaved] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [stepErrors, setStepErrors] = useState({}); // Track validation errors per step
@@ -83,6 +84,22 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
 
   const [formData, setFormData] = useState(initialFormData);
 
+  const normalizeField = (value) => (value ?? '').toString().trim();
+  const toDateOnly = (value) => {
+    if (!value) return '';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toISOString().slice(0, 10);
+  };
+
+  const hasSensitiveFieldChanges = React.useMemo(() => {
+    if (!isEdit || !learner) return false;
+    const upiChanged = normalizeField(formData.upiNumber) !== normalizeField(learner.upiNumber);
+    const gradeChanged = normalizeField(formData.grade) !== normalizeField(learner.grade);
+    const dobChanged = toDateOnly(formData.dateOfBirth) !== toDateOnly(learner.dateOfBirth);
+    return upiChanged || gradeChanged || dobChanged;
+  }, [formData.dateOfBirth, formData.grade, formData.upiNumber, isEdit, learner]);
+
   // Initialize form with learner data if editing
   useEffect(() => {
     if (learner) {
@@ -102,6 +119,7 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
       if (learner.photo) {
         setPhotoPreview(learner.photo);
       }
+      setChangeReason('');
     } else {
       const savedDraft = localStorage.getItem('admission-form-draft');
       if (savedDraft) {
@@ -410,8 +428,15 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
     const finalFormData = {
       ...formData,
       ...primaryContact,
-      generateInvoice: formData.isScholarshipStudent ? false : generateInvoice
+      generateInvoice: formData.isScholarshipStudent ? false : generateInvoice,
+      changeReason: hasSensitiveFieldChanges ? changeReason.trim() : undefined
     };
+
+    if (hasSensitiveFieldChanges && (!changeReason || changeReason.trim().length < 10)) {
+      showError('Please provide a clear reason (minimum 10 characters) for changing UPI/NEMIS, Date of Birth, or Grade.');
+      setCurrentStep(3);
+      return;
+    }
 
     console.log('📤 Submitting form data:', finalFormData);
 
@@ -440,11 +465,13 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
           if (onCancel) onCancel(); // Go back to list
         } else {
           console.log('❌ Save failed:', result?.error);
-          showError('Failed to create student: ' + (result?.error || 'Unknown error'));
+          const actionLabel = isEdit ? 'update' : 'create';
+          showError(`Failed to ${actionLabel} student: ` + (result?.error || 'Unknown error'));
         }
       } catch (error) {
         console.error('❌ Error during save:', error);
-        showError('Failed to create student: ' + (error?.message || 'Unknown error'));
+        const actionLabel = isEdit ? 'update' : 'create';
+        showError(`Failed to ${actionLabel} student: ` + (error?.message || 'Unknown error'));
       } finally {
         setIsSaving(false);
       }
@@ -821,6 +848,24 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
                   <p className="text-xs text-brand-purple leading-relaxed font-medium">Please verify all information above before completing the admission. You can edit these details later in student management.</p>
 
                 </div>
+
+                {isEdit && hasSensitiveFieldChanges && (
+                  <div className="mt-4 p-4 border border-amber-300 bg-amber-50 rounded-lg">
+                    <label className="block text-sm font-semibold text-amber-900 mb-2">
+                      Reason for Sensitive Change <span className="text-red-600">*</span>
+                    </label>
+                    <p className="text-xs text-amber-800 mb-2">
+                      Required because UPI/NEMIS, Date of Birth, or Grade was changed.
+                    </p>
+                    <textarea
+                      value={changeReason}
+                      onChange={(e) => setChangeReason(e.target.value)}
+                      rows={3}
+                      className="w-full px-3 py-2 bg-white border border-amber-300 rounded-md text-sm focus:ring-1 focus:ring-amber-500 focus:border-amber-500"
+                      placeholder="Explain why this sensitive information is being changed..."
+                    />
+                  </div>
+                )}
 
                 <div className="border border-gray-200 rounded-lg p-4 bg-gray-50/40 mt-4">
                   <h4 className="text-lg font-medium text-gray-800 mb-4">Student Photo (Optional)</h4>

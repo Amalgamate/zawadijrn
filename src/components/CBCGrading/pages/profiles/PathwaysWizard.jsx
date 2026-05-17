@@ -33,7 +33,7 @@ import {
 } from 'lucide-react';
 import api from '../../../../services/api';
 import { useNotifications } from '../../hooks/useNotifications';
-import { generatePDFFromElement } from '../../../../utils/simplePdfGenerator';
+import { drawStandardHeader, getSchoolBranding, hexToRgb } from '../../../../utils/brandingUtils';
 
 // ─── tiny helpers ────────────────────────────────────────────────────────────
 
@@ -87,7 +87,7 @@ const STEPS = [
 
 // ─── component ───────────────────────────────────────────────────────────────
 
-const PathwaysWizard = ({ learner }) => {
+const PathwaysWizard = ({ learner, brandingSettings }) => {
   const { showSuccess, showError } = useNotifications();
 
   // raw data
@@ -473,11 +473,121 @@ const PathwaysWizard = ({ learner }) => {
 
   const handleDownloadPdf = async () => {
     try {
-      await generatePDFFromElement(
-        'pw-slip-preview',
-        `Pathway_${learner?.firstName}_${selectedPathwayCode}.pdf`,
-        { action: 'download', fitToPage: true }
-      );
+      if (selectedAreas.length === 0) {
+        showError('No selected subjects to export.');
+        return;
+      }
+      const { default: jsPDF } = await import('jspdf');
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
+
+      const rows = selectedAreas
+        .slice()
+        .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')))
+        .map((row, idx) => ({
+          no: idx + 1,
+          subject: row.name,
+          category: isCoreSubject(row) ? 'Core' : 'Elective',
+        }));
+
+      const fallbackBranding = getSchoolBranding();
+      const resolvedBranding = {
+        name: brandingSettings?.schoolName || fallbackBranding.name,
+        phone: brandingSettings?.phone || fallbackBranding.phone,
+        email: brandingSettings?.email || fallbackBranding.email,
+        address: brandingSettings?.address || fallbackBranding.address,
+        motto: brandingSettings?.motto || fallbackBranding.motto,
+        logo: brandingSettings?.logoUrl || fallbackBranding.logo,
+        brandColor: brandingSettings?.brandColor || fallbackBranding.brandColor,
+      };
+
+      const pageWidth = 210;
+      const margin = 12;
+      const usableWidth = pageWidth - margin * 2;
+      const col1 = 14;
+      const col3 = 34;
+      const col2 = usableWidth - col1 - col3;
+      let y = await drawStandardHeader(doc, resolvedBranding, {
+        type: 'PATHWAY SLIP',
+        ref: `${selectedPathwayCode || 'N/A'}-${new Date().toISOString().slice(0, 10)}`,
+      });
+
+      const accent = hexToRgb(resolvedBranding.brandColor || '#1a3668');
+      doc.setDrawColor(accent.r, accent.g, accent.b);
+      doc.setLineWidth(0.9);
+      doc.line(margin, y - 2, pageWidth - margin, y - 2);
+      doc.setTextColor(31, 41, 55);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.text('Student Pathway Selection Slip', margin, y + 4);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9.5);
+      doc.text(`Learner: ${`${learner?.firstName || ''} ${learner?.lastName || ''}`.trim() || 'Learner'}`, margin, y + 10);
+      doc.text(`Admission No: ${learner?.admissionNumber || 'N/A'}`, margin + 78, y + 10);
+      doc.text(`Grade: ${gradeLabel(learner?.grade)}    Pathway: ${selectedPathwayCode || 'N/A'}`, margin, y + 15);
+      y += 20;
+
+      doc.setTextColor(80, 80, 80);
+      doc.setFontSize(8);
+      doc.text(`Generated: ${new Date().toLocaleString()}`, margin, y);
+      if (resolvedBranding.motto) {
+        doc.text(`Motto: ${resolvedBranding.motto}`, pageWidth - margin, y, { align: 'right' });
+      }
+      y += 5;
+
+      const drawHeader = () => {
+        doc.setDrawColor(210, 210, 210);
+        doc.setFillColor(245, 247, 250);
+        doc.rect(margin, y, usableWidth, 8, 'FD');
+        doc.setTextColor(31, 41, 55);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.text('#', margin + 2.5, y + 5.5);
+        doc.text('SUBJECT', margin + col1 + 2, y + 5.5);
+        doc.text('CATEGORY', margin + col1 + col2 + 2, y + 5.5);
+        y += 8;
+      };
+
+      const drawRow = (row) => {
+        const subjectLines = doc.splitTextToSize(String(row.subject || ''), col2 - 4);
+        const rowHeight = Math.max(7, subjectLines.length * 4 + 2);
+
+        if (y + rowHeight > 285) {
+          doc.addPage();
+          y = 14;
+          drawHeader();
+        }
+
+        doc.setDrawColor(230, 230, 230);
+        doc.rect(margin, y, usableWidth, rowHeight);
+        doc.line(margin + col1, y, margin + col1, y + rowHeight);
+        doc.line(margin + col1 + col2, y, margin + col1 + col2, y + rowHeight);
+
+        doc.setTextColor(31, 41, 55);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.text(String(row.no), margin + 2.5, y + 4.8);
+        doc.text(subjectLines, margin + col1 + 2, y + 4.8);
+        doc.text(String(row.category || ''), margin + col1 + col2 + 2, y + 4.8);
+
+        y += rowHeight;
+      };
+
+      drawHeader();
+      rows.forEach(drawRow);
+
+      const pageCount = doc.getNumberOfPages();
+      const footerY = 292;
+      for (let p = 1; p <= pageCount; p += 1) {
+        doc.setPage(p);
+        doc.setDrawColor(220, 220, 220);
+        doc.line(margin, footerY - 4, pageWidth - margin, footerY - 4);
+        doc.setFontSize(8);
+        doc.setTextColor(110, 110, 110);
+        doc.text(`${resolvedBranding.name} • Official School Document`, margin, footerY);
+        doc.text(`Page ${p} of ${pageCount}`, pageWidth - margin, footerY, { align: 'right' });
+      }
+
+      doc.save(`Pathway_${learner?.firstName || 'Learner'}_${selectedPathwayCode || 'Pathway'}.pdf`);
       showSuccess('PDF downloaded');
     } catch {
       showError('PDF generation failed');
@@ -1075,30 +1185,25 @@ const PathwaysWizard = ({ learner }) => {
                 <p className="text-xs">No subjects selected yet.</p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-100">
-                {selectedAreas.map((row, i) => {
-                  const isCore = isCoreSubject(row);
-                  const catLabel = isCore ? 'Core' : resolveCategoryLabel(row);
-                  const g = electivesByCategory.find((g) => g.label === catLabel);
-                  return (
-                    <div key={row.id} className="flex items-center gap-3 px-4 py-2.5">
-                      <span className="text-[11px] text-gray-400 font-mono w-5 shrink-0">{i + 1}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 truncate">{row.name}</p>
-                      </div>
-                      <span className={`shrink-0 px-2 py-0.5 rounded-full border text-[10px] font-bold ${
-                        isCore
-                          ? 'bg-slate-100 border-slate-200 text-slate-700'
-                          : g
-                          ? g.colors.pill
-                          : 'bg-gray-100 border-gray-200 text-gray-600'
-                      }`}>
-                        {catLabel}
-                      </span>
-                      {isCore && <Lock size={10} className="text-slate-400 shrink-0" />}
-                    </div>
-                  );
-                })}
+              <div className="max-h-[380px] overflow-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="text-left px-4 py-2 border-b border-gray-200 w-12">#</th>
+                      <th className="text-left px-4 py-2 border-b border-gray-200">Subject</th>
+                      <th className="text-left px-4 py-2 border-b border-gray-200 w-28">Category</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedAreas.map((row, i) => (
+                      <tr key={row.id} className="odd:bg-white even:bg-gray-50">
+                        <td className="px-4 py-2 border-b border-gray-100">{i + 1}</td>
+                        <td className="px-4 py-2 border-b border-gray-100">{row.name}</td>
+                        <td className="px-4 py-2 border-b border-gray-100">{isCoreSubject(row) ? 'Core' : 'Elective'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
 
@@ -1223,6 +1328,7 @@ const PathwaysWizard = ({ learner }) => {
           </div>
         </div>
       </div>
+
     </div>
   );
 };

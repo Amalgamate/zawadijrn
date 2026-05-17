@@ -26,6 +26,7 @@ const SystemLogsPage = () => {
   const [error, setError] = useState('');
   const [logs, setLogs] = useState([]);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [filter, setFilter] = useState('ALL');
 
   const loadLogs = async (asRefresh = false) => {
     try {
@@ -57,8 +58,16 @@ const SystemLogsPage = () => {
   const summary = useMemo(() => {
     const academic = logs.filter((l) => l.source === 'ACADEMIC').length;
     const system = logs.filter((l) => l.source === 'SYSTEM').length;
-    return { total: logs.length, academic, system };
+    const sensitive = logs.filter((l) => l.sensitiveLearnerChange).length;
+    return { total: logs.length, academic, system, sensitive };
   }, [logs]);
+
+  const visibleLogs = useMemo(() => {
+    if (filter === 'ACADEMIC') return logs.filter((l) => l.source === 'ACADEMIC');
+    if (filter === 'SYSTEM') return logs.filter((l) => l.source === 'SYSTEM');
+    if (filter === 'SENSITIVE') return logs.filter((l) => l.sensitiveLearnerChange);
+    return logs;
+  }, [filter, logs]);
 
   return (
     <div className="space-y-5 p-4 md:p-6">
@@ -105,6 +114,27 @@ const SystemLogsPage = () => {
             <p className="text-2xl font-semibold text-amber-800">{summary.system}</p>
           </div>
         </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {[
+            { key: 'ALL', label: 'All Logs' },
+            { key: 'ACADEMIC', label: 'Academic' },
+            { key: 'SYSTEM', label: 'System' },
+            { key: 'SENSITIVE', label: `Sensitive Learner Changes (${summary.sensitive})` },
+          ].map((option) => (
+            <button
+              key={option.key}
+              type="button"
+              onClick={() => setFilter(option.key)}
+              className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                filter === option.key
+                  ? 'border-blue-600 bg-blue-600 text-white'
+                  : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="rounded-xl border border-gray-200 bg-white">
@@ -117,14 +147,14 @@ const SystemLogsPage = () => {
               {error}
             </div>
           </div>
-        ) : logs.length === 0 ? (
+        ) : visibleLogs.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
             <Activity className="h-10 w-10 mx-auto mb-3 text-gray-300" />
-            No activity logs found yet.
+            No logs match the selected filter.
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
-            {logs.map((log) => (
+            {visibleLogs.map((log) => (
               <div key={log.id} className="p-4 md:p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -159,4 +189,3 @@ const SystemLogsPage = () => {
 };
 
 export default SystemLogsPage;
-

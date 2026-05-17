@@ -45,6 +45,16 @@ const extractApiErrorMessage = (err, fallback = 'Request failed') => {
   return fallback;
 };
 
+const extractLearner403Message = (err) => {
+  const status = err?.response?.status;
+  if (status !== 403) return null;
+  const data = err?.response?.data || {};
+  const base = typeof data?.message === 'string' && data.message.trim()
+    ? data.message.trim()
+    : 'You do not have permission to modify this learner record.';
+  return `${base} If this is unexpected, contact an admin or headteacher to grant learner access.`;
+};
+
 /**
  * CBCGradingSystem — Orchestration Layer
  *
@@ -223,6 +233,10 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
       }
       return { success: false, error: res.data?.message || 'Failed to create learner' };
     } catch (err) {
+      const forbiddenMessage = extractLearner403Message(err);
+      if (forbiddenMessage) {
+        return { success: false, error: forbiddenMessage };
+      }
       const message = extractApiErrorMessage(err, 'Failed to create learner');
       console.error('❌ createLearner failed:', message, err?.response?.data || err);
       return { success: false, error: message };
@@ -241,7 +255,11 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
       }
       return { success: false, error: res.data?.message };
     } catch (err) {
-      return { success: false, error: err.response?.data?.message || err.message };
+      const forbiddenMessage = extractLearner403Message(err);
+      if (forbiddenMessage) {
+        return { success: false, error: forbiddenMessage };
+      }
+      return { success: false, error: extractApiErrorMessage(err, 'Failed to update learner') };
     }
   }, [learners, storeRefreshLearners]);
 

@@ -577,13 +577,18 @@
             <div class="page-title">Leads &amp; CRM</div>
             <div class="page-sub">Track prospective schools through the sales pipeline</div>
           </div>
-          <div class="page-actions">
+          <div class="page-actions" style="display:flex;align-items:center;gap:16px">
+            <div class="view-toggles" style="display:flex;background:var(--page);padding:4px;border-radius:6px;gap:4px">
+              <button class="btn active" id="btn-view-pipeline" style="border:none;box-shadow:0 1px 2px rgba(0,0,0,0.1)">Pipeline</button>
+              <button class="btn" id="btn-view-list" style="border:none;background:transparent;box-shadow:none">List View</button>
+              <button class="btn" id="btn-view-clients" style="border:none;background:transparent;box-shadow:none">Client Base</button>
+            </div>
             <button class="btn teal" id="btn-new-lead" type="button">+ Add Lead</button>
           </div>
         </div>
 
-        <!-- Pipeline stage bar -->
-        <div class="crm-pipeline" id="crm-pipeline"></div>
+        <!-- Kanban Board -->
+        <div class="kanban-board" id="kanban-board"></div>
 
         <!-- Summary metrics -->
         <div class="metric-row" style="grid-template-columns:repeat(4,1fr)">
@@ -611,10 +616,10 @@
         </div>
 
         <!-- Leads table -->
-        <div class="panel">
+        <div class="panel" id="leads-list-panel" style="display:none">
           <div class="panel-header">
             <div>
-              <div class="panel-title">All Leads</div>
+              <div class="panel-title" id="leads-panel-title">All Leads</div>
               <div class="panel-sub" id="crm-table-sub">Showing all stages</div>
             </div>
             <div style="display:flex;gap:6px;align-items:center">
@@ -854,6 +859,25 @@
         </div>
       </div>
 
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+        <div class="form-row">
+          <label class="form-label" for="l-priority">Priority</label>
+          <select class="form-select" id="l-priority">
+            <option value="1">★☆☆ Low</option>
+            <option value="2">★★☆ Medium</option>
+            <option value="3">★★★ High</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="l-students">Est. Students</label>
+          <input class="form-input" id="l-students" placeholder="e.g. 350" type="number"/>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="l-tags">Tags</label>
+          <input class="form-input" id="l-tags" placeholder="e.g. Urgent, Large" type="text"/>
+        </div>
+      </div>
+
       <div class="form-section-divider">
         <span class="form-section-label">Current systems in use</span>
       </div>
@@ -886,6 +910,7 @@
 </div>
 <!-- END LEAD MODAL -->
 
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 <script src="./app.js"></script>
 <script src="./login.js"></script>
 </body>

@@ -32,6 +32,9 @@ const updateLearnerSchema = z.object({
   firstName: z.string().min(2).max(100).optional(),
   lastName: z.string().min(2).max(100).optional(),
   dateOfBirth: z.string().optional(),
+  upiNumber: z.string().max(100).optional().or(z.literal('')),
+  grade: z.string().max(50).optional().or(z.literal('')),
+  changeReason: z.string().min(10).max(500).optional().or(z.literal('')),
   // Match create: empty string is valid when father/mother is primary (guardian fields unused)
   guardianName: z.string().max(100).optional().or(z.literal(''))
 }).passthrough();

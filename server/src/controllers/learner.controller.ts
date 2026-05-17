@@ -13,6 +13,7 @@ import { SmsService } from '../services/sms.service';
 import { EmailService } from '../services/email.service';
 import { parentService } from '../services/parent.service';
 import { ensureStudentAccountForLearner } from '../services/studentAccount.service';
+import { auditService } from '../services/audit.service';
 import { v2 as cloudinary } from 'cloudinary';
 
 import logger from '../utils/logger';
@@ -372,6 +373,7 @@ export class LearnerController {
       const allowedFields = [
         'firstName', 'lastName', 'middleName',
         'dateOfBirth', 'gender', 'grade', 'stream',
+        'upiNumber',
         'parentId',
         'guardianName', 'guardianPhone', 'guardianEmail',
         'fatherName', 'fatherPhone', 'fatherEmail', 'fatherDeceased',
@@ -386,6 +388,16 @@ export class LearnerController {
       ];
 
       const updateData: any = { updatedBy: req.user!.userId };
+      const normalizeScalar = (value: unknown): string => {
+        if (value === null || value === undefined) return '';
+        return String(value).trim();
+      };
+      const normalizeDateOnly = (value: unknown): string => {
+        if (!value) return '';
+        const d = new Date(value as string | Date);
+        if (Number.isNaN(d.getTime())) return '';
+        return d.toISOString().slice(0, 10);
+      };
 
       for (const field of allowedFields) {
         const val = req.body[field];
@@ -434,6 +446,33 @@ export class LearnerController {
       if (req.body.dateOfAdmission && req.body.dateOfAdmission !== '') updateData.admissionDate = new Date(req.body.dateOfAdmission);
       if (req.body.exitDate && req.body.exitDate !== '') updateData.exitDate = new Date(req.body.exitDate);
 
+      const sensitiveChanges: string[] = [];
+      if (Object.prototype.hasOwnProperty.call(req.body, 'upiNumber')) {
+        const oldVal = normalizeScalar(learner.upiNumber);
+        const nextVal = normalizeScalar(req.body.upiNumber);
+        if (oldVal !== nextVal) sensitiveChanges.push('UPI/NEMIS');
+      }
+      if (Object.prototype.hasOwnProperty.call(req.body, 'dateOfBirth')) {
+        const oldVal = normalizeDateOnly(learner.dateOfBirth);
+        const nextVal = normalizeDateOnly(req.body.dateOfBirth);
+        if (oldVal !== nextVal) sensitiveChanges.push('Date of Birth');
+      }
+      if (Object.prototype.hasOwnProperty.call(req.body, 'grade')) {
+        const oldVal = normalizeScalar(learner.grade);
+        const nextVal = normalizeScalar(req.body.grade);
+        if (oldVal !== nextVal) sensitiveChanges.push('Grade');
+      }
+
+      if (sensitiveChanges.length > 0) {
+        const changeReason = normalizeScalar(req.body.changeReason);
+        if (!changeReason || changeReason.length < 10) {
+          throw new ApiError(
+            400,
+            `Reason for change is required (minimum 10 characters) when updating: ${sensitiveChanges.join(', ')}`
+          ).withCode('VALIDATION_ERROR');
+        }
+      }
+
       if (req.body.photo && req.body.photo !== '') {
         let finalPhotoUrl = req.body.photo;
         if (req.body.photo.startsWith('data:image')) {
@@ -455,6 +494,44 @@ export class LearnerController {
         data: updateData,
         include: { parent: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } } },
       });
+
+      if (sensitiveChanges.length > 0) {
+        const reason = normalizeScalar(req.body.changeReason);
+        const auditEntries: Array<{ field: string; oldValue: string; newValue: string }> = [];
+
+        const oldUpi = normalizeScalar(learner.upiNumber);
+        const newUpi = normalizeScalar(updated.upiNumber);
+        if (oldUpi !== newUpi) {
+          auditEntries.push({ field: 'upiNumber', oldValue: oldUpi, newValue: newUpi });
+        }
+
+        const oldDob = normalizeDateOnly(learner.dateOfBirth);
+        const newDob = normalizeDateOnly(updated.dateOfBirth);
+        if (oldDob !== newDob) {
+          auditEntries.push({ field: 'dateOfBirth', oldValue: oldDob, newValue: newDob });
+        }
+
+        const oldGrade = normalizeScalar(learner.grade);
+        const newGrade = normalizeScalar(updated.grade);
+        if (oldGrade !== newGrade) {
+          auditEntries.push({ field: 'grade', oldValue: oldGrade, newValue: newGrade });
+        }
+
+        await Promise.all(
+          auditEntries.map((entry) =>
+            auditService.logChange({
+              entityType: 'learner',
+              entityId: updated.id,
+              action: 'UPDATE',
+              userId: req.user!.userId,
+              field: entry.field,
+              oldValue: entry.oldValue,
+              newValue: entry.newValue,
+              reason,
+            })
+          )
+        );
+      }
 
       // Keep student portal account in sync (and backfill if missing).
       try {

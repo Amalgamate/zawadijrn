@@ -165,6 +165,14 @@ const FEATURE_MATRIX = [
   'API access',
 ];
 
+let LEADS = [
+  { id: 'L1', name: 'Mary Wanjiku', phone: '+254 712 345 678', school: 'Sunshine Academy', stage: 'new', priority: '2', students: 350, tags: ['CBC'], systems: { assessment: 'Manual', fees: 'Excel', lms: 'None' }, nextActivity: 'Call tomorrow', notes: 'Interested in core modules.', created: '2026-05-15' },
+  { id: 'L2', name: 'John Doe', phone: '+254 799 123 456', school: 'Pioneer High', stage: 'contacted', priority: '3', students: 800, tags: ['Large School', 'Urgent'], systems: { assessment: 'Zeraki', fees: 'Manual', lms: 'Google Classroom' }, nextActivity: 'Demo scheduled', notes: 'Looking to replace Zeraki.', created: '2026-05-16' },
+  { id: 'L3', name: 'Sarah Musyoka', phone: '+254 722 000 111', school: 'Greenfield Primary', stage: 'interested', priority: '2', students: 200, tags: ['Follow-up'], systems: { assessment: 'None', fees: 'None', lms: 'None' }, nextActivity: 'Send quote', notes: 'Wants the Starter plan.', created: '2026-05-10' },
+  { id: 'L4', name: 'Peter Omondi', phone: '+254 700 999 888', school: 'Nairobi Heights', stage: 'converted', priority: '3', students: 1200, tags: ['Client'], systems: { assessment: 'Trends CORE', fees: 'Trends CORE', lms: 'Trends CORE' }, nextActivity: 'Onboarding', notes: 'Signed 1 year contract.', created: '2026-04-20' },
+  { id: 'L5', name: 'Jane Kamau', phone: '+254 733 444 555', school: 'Hilltop Secondary', stage: 'new', priority: '1', students: 150, tags: [], systems: { assessment: 'Manual', fees: 'Manual', lms: 'None' }, nextActivity: 'Initial contact', notes: 'Found us via web search.', created: '2026-05-17' }
+];
+
 // Helpers
 const $ = id => document.getElementById(id);
 const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({
@@ -435,6 +443,121 @@ function renderSpaceUsage() {
       </div>
     </div>
   `;
+}
+
+// Rendering
+
+function renderPipeline() {
+  const pipeline = $('kanban-board');
+  if (!pipeline) return;
+
+  const stages = [
+    { id: 'new', label: 'New' },
+    { id: 'contacted', label: 'Contacted' },
+    { id: 'interested', label: 'Interested' },
+    { id: 'converted', label: 'Converted' },
+    { id: 'lost', label: 'Lost' }
+  ];
+
+  pipeline.innerHTML = stages.map(stage => {
+    const stageLeads = LEADS.filter(l => l.stage === stage.id);
+    const totalStudents = stageLeads.reduce((sum, l) => sum + (Number(l.students) || 0), 0);
+    
+    return `<div class="kanban-column" data-stage="${stage.id}">
+      <div class="k-col-head">
+        <div class="k-col-title">
+          <span class="k-stage-name">${stage.label}</span>
+          <span class="k-stage-count">${stageLeads.length}</span>
+        </div>
+        <div class="k-col-sub">${fmt(totalStudents)} expected students</div>
+        <button class="k-quick-add" onclick="openLeadModal('${stage.id}')" title="Quick Add">+</button>
+      </div>
+      <div class="k-col-body" id="k-col-${stage.id}">
+        ${stageLeads.map(lead => {
+          const prioStars = '★'.repeat(lead.priority) + '☆'.repeat(3 - lead.priority);
+          return `<div class="k-card ${lead.stage}" data-id="${lead.id}">
+            <div class="k-card-color"></div>
+            <div class="k-card-top">
+              <span class="k-priority p${lead.priority}">${prioStars}</span>
+              ${lead.tags.map(t => `<span class="k-tag">${esc(t)}</span>`).join('')}
+            </div>
+            <div class="k-card-title">${esc(lead.school)}</div>
+            <div class="k-card-sub">${esc(lead.name)} • ${esc(lead.phone)}</div>
+            <div class="k-card-foot">
+              <span class="k-activity" title="Next Activity">📅 ${esc(lead.nextActivity || 'No planned activity')}</span>
+              <span class="k-students">👤 ${lead.students}</span>
+            </div>
+            <button class="k-card-edit" onclick="openLeadModal(null, '${lead.id}')">✎</button>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  if (typeof Sortable !== 'undefined') {
+    stages.forEach(stage => {
+      const col = $('k-col-' + stage.id);
+      if (col) {
+        new Sortable(col, {
+          group: 'pipeline',
+          animation: 150,
+          ghostClass: 'k-card-ghost',
+          onEnd: function (evt) {
+            const itemEl = evt.item;
+            const toCol = evt.to;
+            const leadId = itemEl.dataset.id;
+            const newStage = toCol.closest('.kanban-column').dataset.stage;
+            
+            const lead = LEADS.find(l => l.id === leadId);
+            if (lead && lead.stage !== newStage) {
+              lead.stage = newStage;
+              addAudit({ action: 'Lead Stage Changed', instance: lead.school, details: `Moved to ${newStage}` });
+              renderEverything();
+              toast(`Moved ${lead.school} to ${newStage}`);
+            }
+          }
+        });
+      }
+    });
+  }
+}
+
+let activeLeadFilter = null;
+function renderLeadsList() {
+  const table = $('leads-table');
+  if (!table) return;
+
+  const filteredLeads = activeLeadFilter ? LEADS.filter(l => l.stage === activeLeadFilter) : LEADS;
+
+  table.innerHTML = filteredLeads.map(lead => `
+    <tr>
+      <td><strong>${esc(lead.name)}</strong></td>
+      <td>${esc(lead.phone)}</td>
+      <td><div class="cell-school"><strong>${esc(lead.school)}</strong></div></td>
+      <td><span class="lead-badge ${lead.stage}">${esc(lead.stage)}</span></td>
+      <td>
+        <div class="sys-chips">
+          <span class="sys-chip ${lead.systems.assessment !== 'None' ? 'filled' : ''}" title="Assessment">A: ${esc(lead.systems.assessment)}</span>
+          <span class="sys-chip ${lead.systems.fees !== 'None' ? 'filled' : ''}" title="Fees">F: ${esc(lead.systems.fees)}</span>
+          <span class="sys-chip ${lead.systems.lms !== 'None' ? 'filled' : ''}" title="LMS">L: ${esc(lead.systems.lms)}</span>
+        </div>
+      </td>
+      <td>${esc(lead.nextActivity)}</td>
+      <td style="max-width:200px;font-size:12px;color:var(--muted);white-space:normal">${esc(lead.notes)}</td>
+      <td>
+        <div class="action-row">
+          <button class="tbl-btn" onclick="openLeadModal(null, '${lead.id}')">Edit</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+
+  if ($('crm-m-total')) $('crm-m-total').textContent = LEADS.length;
+  const contactedWeek = LEADS.filter(l => l.stage !== 'new').length;
+  if ($('crm-m-week')) $('crm-m-week').textContent = contactedWeek;
+  const converted = LEADS.filter(l => l.stage === 'converted').length;
+  if ($('crm-m-converted')) $('crm-m-converted').textContent = converted;
+  if ($('crm-m-rate')) $('crm-m-rate').textContent = LEADS.length ? Math.round((converted / LEADS.length) * 100) + '%' : '0%';
 }
 
 // Rendering

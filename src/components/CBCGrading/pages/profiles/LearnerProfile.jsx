@@ -478,7 +478,7 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                         {/* PATHWAYS TAB */}
                         {activeTab === 'pathways' && isSecondaryLearner && (
                             <div className="animate-fade-in">
-                                <PathwaysWizard learner={currentLearner} />
+                                <PathwaysWizard learner={currentLearner} brandingSettings={brandingSettings} />
                             </div>
                         )}
 

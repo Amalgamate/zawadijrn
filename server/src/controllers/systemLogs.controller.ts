@@ -11,6 +11,7 @@ type UiLogEntry = {
   action: string;
   message: string;
   details?: string;
+  sensitiveLearnerChange?: boolean;
 };
 
 const formatRole = (role?: string | null) => {
@@ -84,6 +85,8 @@ const humanizeChangeHistory = (entry: {
   return `${action.toLowerCase()} ${subject.toLowerCase()} record`;
 };
 
+const SENSITIVE_LEARNER_FIELDS = new Set(['upiNumber', 'dateOfBirth', 'grade']);
+
 export const getSystemLogs = async (req: AuthRequest, res: Response) => {
   const limitRaw = Number(req.query.limit || 120);
   const limit = Number.isFinite(limitRaw) ? Math.max(20, Math.min(limitRaw, 300)) : 120;
@@ -127,7 +130,14 @@ export const getSystemLogs = async (req: AuthRequest, res: Response) => {
       || 'System User';
     const actorRole = formatRole(entry.changer?.role);
     const message = humanizeChangeHistory(entry);
-    const details = entry.reason || entry.field || undefined;
+    const isSensitiveLearnerChange =
+      entry.entityType?.toLowerCase() === 'learner' &&
+      entry.action?.toUpperCase() === 'UPDATE' &&
+      !!entry.field &&
+      SENSITIVE_LEARNER_FIELDS.has(entry.field);
+    const details = isSensitiveLearnerChange
+      ? `Field: ${entry.field}${entry.reason ? ` • Reason: ${entry.reason}` : ''}`
+      : (entry.reason || entry.field || undefined);
 
     return {
       id: `chg-${entry.id}`,
@@ -138,6 +148,7 @@ export const getSystemLogs = async (req: AuthRequest, res: Response) => {
       action: entry.action,
       message,
       details,
+      sensitiveLearnerChange: isSensitiveLearnerChange,
     };
   });
 
