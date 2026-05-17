@@ -423,7 +423,7 @@ function renderComposePreview() {
       `  ${service}:`,
       `    image: ${image}`,
       '    restart: unless-stopped',
-      `    ports: ["${fePort}:8069", "${bePort}:8072"]`,
+      `    ports: ["${fePort}:8069"]`,
       `    environment: [HOST=${dbService}, USER=${dbName}, PASSWORD=${dbName}, ADMIN_EMAIL=${adminEmail}]`,
       `    depends_on: [${dbService}]`,
       `  ${dbService}:`,
@@ -441,7 +441,7 @@ function renderComposePreview() {
       `  ${service}:`,
       `    image: ${image}`,
       '    restart: unless-stopped',
-      `    ports: ["${fePort}:80", "${bePort}:443"]`,
+      `    ports: ["${fePort}:80"]`,
       `    environment: [WORDPRESS_DB_HOST=${dbService}:3306, WORDPRESS_DB_USER=${dbName}, WORDPRESS_DB_PASSWORD=${dbName}, WORDPRESS_DB_NAME=${dbName}, WP_ADMIN_EMAIL=${adminEmail}]`,
       `    depends_on: [${dbService}]`,
       `  ${dbService}:`,
@@ -476,11 +476,13 @@ function renderComposePreview() {
 function applyProvisionMode(appKey) {
   currentProvisionApp = APP_PROVISIONING_CATALOG[appKey] ? appKey : 'school';
   const app = APP_PROVISIONING_CATALOG[currentProvisionApp];
+  const appRange = APP_PORT_RANGES[currentProvisionApp] || APP_PORT_RANGES.school;
   if ($('f-app')) $('f-app').value = currentProvisionApp;
   if ($('modal-title')) $('modal-title').textContent = app.modalTitle;
   if ($('modal-submit')) $('modal-submit').textContent = app.submitLabel;
   if ($('f-port-fe-label')) $('f-port-fe-label').textContent = app.feLabel;
   if ($('f-port-be-label')) $('f-port-be-label').textContent = app.beLabel;
+  if ($('f-port-be-row')) $('f-port-be-row').style.display = appRange.requireBe ? '' : 'none';
   if ($('f-type-row')) $('f-type-row').style.display = app.showInstitutionFields ? '' : 'none';
   if ($('f-plan-row')) $('f-plan-row').style.display = app.showInstitutionFields ? '' : 'none';
   if ($('f-admin-email-row')) $('f-admin-email-row').style.display = app.showAdminEmail ? '' : 'none';
