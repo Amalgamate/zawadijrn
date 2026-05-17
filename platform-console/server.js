@@ -141,7 +141,7 @@ function mapContainersToInstances(containers) {
 
   for (const c of containers) {
     const cname = (c.Names?.[0] || c.Id || '').replace(/^\//, '');
-    const matched = cname.match(/(.*?)(frontend|backend|db|database|redis|worker)$/i);
+    const matched = cname.match(/(.*?)(?:[-_])?(frontend|backend|db|database|redis|worker)(?:[-_]?\d+)?$/i);
     const keyBase = matched ? matched[1].replace(/[-_]+$/, '') : cname;
     const key = keyBase || cname;
 
