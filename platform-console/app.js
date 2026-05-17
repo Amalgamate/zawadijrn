@@ -229,11 +229,22 @@ function nextPortInLine(basePort, usedPorts = []) {
   return port;
 }
 
-function suggestNextPorts() {
+const APP_PORT_RANGES = {
+  school: { fe: [3000, 3499], be: [5000, 5499], requireBe: true },
+  odoo: { fe: [3500, 3999], be: [0, 0], requireBe: false },
+  wordpress: { fe: [4000, 4499], be: [0, 0], requireBe: false },
+  sacco: { fe: [4500, 4799], be: [5500, 5799], requireBe: true },
+  hospital: { fe: [4800, 5099], be: [5800, 6099], requireBe: true },
+  hotel: { fe: [5100, 5399], be: [6100, 6399], requireBe: true },
+  organization: { fe: [5400, 5699], be: [6400, 6699], requireBe: true },
+};
+
+function suggestNextPorts(appKey = 'school') {
+  const range = APP_PORT_RANGES[appKey] || APP_PORT_RANGES.school;
   const usedFe = INSTANCES.map(i => Number(i.fe)).filter(Number.isFinite);
   const usedBe = INSTANCES.map(i => Number(i.be)).filter(Number.isFinite);
-  const fe = nextPortInLine(3000, usedFe);
-  const be = nextPortInLine(5000, usedBe);
+  const fe = nextPortInLine(range.fe[0], usedFe);
+  const be = range.requireBe ? nextPortInLine(range.be[0], usedBe) : 0;
   return { fe, be };
 }
 
@@ -501,9 +512,9 @@ async function loadProvisionCatalog(appKey) {
 function prepareProvisionDefaults(appKey = 'school') {
   applyProvisionMode(appKey);
   loadProvisionCatalog(currentProvisionApp);
-  const { fe, be } = suggestNextPorts();
+  const { fe, be } = suggestNextPorts(currentProvisionApp);
   if ($('f-port-fe')) $('f-port-fe').value = fe;
-  if ($('f-port-be')) $('f-port-be').value = be;
+  if ($('f-port-be')) $('f-port-be').value = be || '';
   if (!$('f-domain')?.value.trim() && $('f-name')?.value.trim()) {
     $('f-domain').value = `${slugify($('f-name').value)}.${APP_PROVISIONING_CATALOG[currentProvisionApp].defaultDomainSuffix}`;
   }
@@ -1208,7 +1219,7 @@ function renderFeatureMatrix() {
 }
 
 // Navigation
-const SECTIONS = ['overview', 'instances', 'storage', 'deployments', 'controls', 'pricing', 'logs'];
+const SECTIONS = ['overview', 'instances', 'storage', 'deployments', 'controls', 'pricing', 'logs', 'leads'];
 const SECTION_LABELS = {
   overview: 'Overview',
   instances: 'Instances',
@@ -1217,6 +1228,7 @@ const SECTION_LABELS = {
   controls: 'Controls',
   pricing: 'Pricing Plans',
   logs: 'Audit Log',
+  leads: 'Leads & CRM',
 };
 
 function showSection(id) {
@@ -1608,6 +1620,7 @@ function bindModalEvents() {
       }
 
       const version = selectedProvisionVersion(currentProvisionApp);
+      const appRange = APP_PORT_RANGES[currentProvisionApp] || APP_PORT_RANGES.school;
       const payload = {
         appType: currentProvisionApp,
         name,
@@ -1615,7 +1628,7 @@ function bindModalEvents() {
         version: version?.value || 'latest',
         image: version?.image || '',
         fePort: Number($('f-port-fe')?.value || 0),
-        bePort: Number($('f-port-be')?.value || 0),
+        bePort: appRange.requireBe ? Number($('f-port-be')?.value || 0) : 0,
         institutionType: $('f-type')?.value || 'PRIMARY_CBC',
         planId: $('f-plan')?.value || 'professional',
         adminEmail: $('f-admin-email')?.value.trim() || '',
@@ -1627,7 +1640,7 @@ function bindModalEvents() {
         toast('Please provide a valid domain/subdomain.');
         return;
       }
-      if (!payload.fePort || !payload.bePort) {
+      if (!payload.fePort || (appRange.requireBe && !payload.bePort)) {
         toast('Please provide valid ports for this instance.');
         return;
       }
@@ -1846,3 +1859,5 @@ $('lead-modal-submit')?.addEventListener('click', () => {
   renderEverything();
   toast(editId ? 'Lead updated' : 'Lead added successfully');
 });
+
+init();

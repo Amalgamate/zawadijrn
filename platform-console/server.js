@@ -79,6 +79,16 @@ const DEFAULT_IMAGE_CATALOG = {
   ],
 };
 
+const APP_PORT_RANGES = {
+  school: { fe: [3000, 3499], be: [5000, 5499], requireBe: true },
+  odoo: { fe: [3500, 3999], be: [0, 0], requireBe: false },
+  wordpress: { fe: [4000, 4499], be: [0, 0], requireBe: false },
+  sacco: { fe: [4500, 4799], be: [5500, 5799], requireBe: true },
+  hospital: { fe: [4800, 5099], be: [5800, 6099], requireBe: true },
+  hotel: { fe: [5100, 5399], be: [6100, 6399], requireBe: true },
+  organization: { fe: [5400, 5699], be: [6400, 6699], requireBe: true },
+};
+
 function pushAudit(action, instance, by, details, status = 'Success') {
   auditLog.unshift({
     time: new Date().toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' }) + ' EAT',
@@ -298,6 +308,14 @@ function isPortValid(value) {
   return Number.isInteger(port) && port >= 1 && port <= 65535;
 }
 
+function isPortInRange(value, range) {
+  if (!Array.isArray(range) || range.length !== 2) return false;
+  const port = Number(value);
+  const min = Number(range[0]);
+  const max = Number(range[1]);
+  return Number.isInteger(port) && port >= min && port <= max;
+}
+
 function isDomainLike(value) {
   const domain = String(value || '').trim().toLowerCase();
   return /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(domain);
@@ -448,6 +466,7 @@ app.post('/api/instances/preflight', requireAuth, requireRole('super_admin'), as
   } = req.body || {};
 
   const normalizedAppType = String(appType || 'school').toLowerCase();
+  const appRange = APP_PORT_RANGES[normalizedAppType] || APP_PORT_RANGES.school;
   const issues = [];
   const warnings = [];
 
@@ -460,9 +479,20 @@ app.post('/api/instances/preflight', requireAuth, requireRole('super_admin'), as
     issues.push('Domain format is invalid.');
   }
 
-  if (!isPortValid(fePort)) issues.push('Frontend/HTTP port is invalid.');
-  if (!isPortValid(bePort)) issues.push('Backend/secondary port is invalid.');
-  if (Number(fePort) === Number(bePort)) issues.push('Port conflict: frontend and backend ports cannot be the same.');
+  if (!isPortValid(fePort)) {
+    issues.push('Frontend/HTTP port is invalid.');
+  } else if (!isPortInRange(fePort, appRange.fe)) {
+    issues.push(`Frontend/HTTP port must be in range ${appRange.fe[0]}-${appRange.fe[1]} for ${normalizedAppType}.`);
+  }
+
+  if (appRange.requireBe) {
+    if (!isPortValid(bePort)) {
+      issues.push('Backend/secondary port is invalid.');
+    } else if (!isPortInRange(bePort, appRange.be)) {
+      issues.push(`Backend/secondary port must be in range ${appRange.be[0]}-${appRange.be[1]} for ${normalizedAppType}.`);
+    }
+    if (Number(fePort) === Number(bePort)) issues.push('Port conflict: frontend and backend ports cannot be the same.');
+  }
 
   if (APP_TYPE_SET.has(normalizedAppType) && image && !validateImageForAppType(normalizedAppType, image)) {
     issues.push(`Image "${image}" does not look valid for app type "${normalizedAppType}".`);
@@ -477,7 +507,7 @@ app.post('/api/instances/preflight', requireAuth, requireRole('super_admin'), as
     }
 
     if (usedPorts.has(Number(fePort))) issues.push(`Port ${fePort} is already in use.`);
-    if (usedPorts.has(Number(bePort))) issues.push(`Port ${bePort} is already in use.`);
+    if (appRange.requireBe && usedPorts.has(Number(bePort))) issues.push(`Port ${bePort} is already in use.`);
 
     const domains = listKnownDomains(instances);
     if (domains.has(normalizedDomain)) issues.push(`Domain "${normalizedDomain}" is already in use.`);
@@ -567,12 +597,16 @@ app.post('/api/instances/create', requireAuth, requireRole('super_admin'), async
   } = req.body || {};
 
   const normalizedAppType = String(appType || 'school').toLowerCase();
+  const appRange = APP_PORT_RANGES[normalizedAppType] || APP_PORT_RANGES.school;
   if (!APP_TYPE_SET.has(normalizedAppType)) {
     return res.status(400).json({ error: 'Unsupported appType.' });
   }
 
-  if (!name || !domain || !fePort || !bePort) {
-    return res.status(400).json({ error: 'name, domain, fePort and bePort are required' });
+  if (!name || !domain || !fePort) {
+    return res.status(400).json({ error: 'name, domain, and fePort are required' });
+  }
+  if (appRange.requireBe && !bePort) {
+    return res.status(400).json({ error: 'bePort is required for this app type' });
   }
 
   if (!INSTANCE_PROVISION_SCRIPT) {
@@ -593,7 +627,7 @@ app.post('/api/instances/create', requireAuth, requireRole('super_admin'), async
     adminEmail,
     notes,
     fePort,
-    bePort,
+    bePort: appRange.requireBe ? bePort : 0,
     db,
     requestedBy: req.user.email
   });
