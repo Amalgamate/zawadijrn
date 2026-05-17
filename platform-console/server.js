@@ -44,6 +44,40 @@ const NGINX_SITES_DIR = process.env.CONSOLE_NGINX_SITES_DIR || '/etc/nginx/sites
 
 const deploymentLog = [];
 const auditLog = [];
+const APP_TYPE_SET = new Set(['school', 'odoo', 'wordpress', 'sacco', 'hospital', 'hotel', 'organization']);
+
+const DEFAULT_IMAGE_CATALOG = {
+  school: [
+    { value: 'latest', label: 'Latest stable', image: 'ghcr.io/amalgamate/zawadi-frontend:latest' },
+    { value: 'v1.0.x', label: 'v1.0.x LTS', image: 'ghcr.io/amalgamate/zawadi-frontend:v1.0.x' },
+  ],
+  odoo: [
+    { value: '18.0', label: 'Odoo 18.0', image: 'odoo:18.0' },
+    { value: '17.0', label: 'Odoo 17.0', image: 'odoo:17.0' },
+    { value: '16.0', label: 'Odoo 16.0', image: 'odoo:16.0' },
+  ],
+  wordpress: [
+    { value: 'latest', label: 'WordPress latest', image: 'wordpress:latest' },
+    { value: '6.5', label: 'WordPress 6.5', image: 'wordpress:6.5' },
+    { value: '6.4', label: 'WordPress 6.4', image: 'wordpress:6.4' },
+  ],
+  sacco: [
+    { value: 'latest', label: 'Sacco latest', image: 'ghcr.io/amalgamate/sacco-app:latest' },
+    { value: 'v1.0', label: 'Sacco v1.0', image: 'ghcr.io/amalgamate/sacco-app:v1.0' },
+  ],
+  hospital: [
+    { value: 'latest', label: 'Hospital latest', image: 'ghcr.io/amalgamate/hospital-app:latest' },
+    { value: 'v1.0', label: 'Hospital v1.0', image: 'ghcr.io/amalgamate/hospital-app:v1.0' },
+  ],
+  hotel: [
+    { value: 'latest', label: 'Hotel latest', image: 'ghcr.io/amalgamate/hotel-app:latest' },
+    { value: 'v1.0', label: 'Hotel v1.0', image: 'ghcr.io/amalgamate/hotel-app:v1.0' },
+  ],
+  organization: [
+    { value: 'latest', label: 'Organization latest', image: 'ghcr.io/amalgamate/organization-app:latest' },
+    { value: 'v1.0', label: 'Organization v1.0', image: 'ghcr.io/amalgamate/organization-app:v1.0' },
+  ],
+};
 
 function pushAudit(action, instance, by, details, status = 'Success') {
   auditLog.unshift({
@@ -241,6 +275,86 @@ function parseNginxDomainMap() {
   return mapping;
 }
 
+function listKnownDomains(runtimeInstances = []) {
+  const known = new Set();
+  for (const instance of runtimeInstances) {
+    const domain = String(instance?.domain || '').trim().toLowerCase();
+    if (domain) known.add(domain);
+  }
+  const nginxMap = parseNginxDomainMap();
+  Object.values(nginxMap.byFePort || {}).forEach(domain => {
+    const normalized = String(domain || '').trim().toLowerCase();
+    if (normalized) known.add(normalized);
+  });
+  Object.values(nginxMap.byBePort || {}).forEach(domain => {
+    const normalized = String(domain || '').trim().toLowerCase();
+    if (normalized) known.add(normalized);
+  });
+  return known;
+}
+
+function isPortValid(value) {
+  const port = Number(value);
+  return Number.isInteger(port) && port >= 1 && port <= 65535;
+}
+
+function isDomainLike(value) {
+  const domain = String(value || '').trim().toLowerCase();
+  return /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(domain);
+}
+
+function validateImageForAppType(appType, image) {
+  const normalized = String(image || '').toLowerCase();
+  if (!normalized) return false;
+  if (appType === 'odoo') return normalized.includes('odoo');
+  if (appType === 'wordpress') return normalized.includes('wordpress');
+  if (appType === 'sacco') return normalized.includes('sacco');
+  if (appType === 'hospital') return normalized.includes('hospital');
+  if (appType === 'hotel') return normalized.includes('hotel');
+  if (appType === 'organization') return normalized.includes('organization');
+  if (appType === 'school') return normalized.includes('zawadi') || normalized.includes('trends') || normalized.includes('ghcr.io/amalgamate');
+  return false;
+}
+
+async function fetchDockerHubTags(repo, limit = 6) {
+  const url = `https://registry.hub.docker.com/v2/repositories/${repo}/tags?page_size=${limit}`;
+  const response = await fetch(url, { method: 'GET' });
+  if (!response.ok) throw new Error(`dockerhub ${repo} ${response.status}`);
+  const body = await response.json();
+  return (body?.results || [])
+    .map(tag => String(tag?.name || '').trim())
+    .filter(Boolean)
+    .slice(0, limit);
+}
+
+async function buildImageCatalog() {
+  const catalog = JSON.parse(JSON.stringify(DEFAULT_IMAGE_CATALOG));
+  try {
+    const [odooTags, wordpressTags] = await Promise.all([
+      fetchDockerHubTags('library/odoo', 8),
+      fetchDockerHubTags('library/wordpress', 8),
+    ]);
+
+    if (odooTags.length) {
+      catalog.odoo = odooTags.map(tag => ({
+        value: tag,
+        label: `Odoo ${tag}`,
+        image: `odoo:${tag}`,
+      }));
+    }
+    if (wordpressTags.length) {
+      catalog.wordpress = wordpressTags.map(tag => ({
+        value: tag,
+        label: `WordPress ${tag}`,
+        image: `wordpress:${tag}`,
+      }));
+    }
+  } catch (_) {
+    // fall back to defaults silently
+  }
+  return catalog;
+}
+
 async function collectRuntime() {
   const [containers, mem, disk, load, dockerDf] = await Promise.all([
     docker.listContainers({ all: true, size: true }),
@@ -312,6 +426,73 @@ app.get('/api/runtime', requireAuth, async (_req, res) => {
   }
 });
 
+app.get('/api/catalog/images', requireAuth, requireRole('super_admin', 'platform_owner'), async (req, res) => {
+  const appType = String(req.query.appType || '').toLowerCase();
+  const catalog = await buildImageCatalog();
+  if (appType) {
+    if (!APP_TYPE_SET.has(appType)) {
+      return res.status(400).json({ error: 'Unsupported appType.' });
+    }
+    return res.json({ ok: true, appType, versions: catalog[appType] || [] });
+  }
+  return res.json({ ok: true, catalog });
+});
+
+app.post('/api/instances/preflight', requireAuth, requireRole('super_admin'), async (req, res) => {
+  const {
+    appType = 'school',
+    domain,
+    fePort,
+    bePort,
+    image = '',
+  } = req.body || {};
+
+  const normalizedAppType = String(appType || 'school').toLowerCase();
+  const issues = [];
+  const warnings = [];
+
+  if (!APP_TYPE_SET.has(normalizedAppType)) {
+    issues.push('Unsupported app type.');
+  }
+
+  const normalizedDomain = String(domain || '').trim().toLowerCase();
+  if (!isDomainLike(normalizedDomain)) {
+    issues.push('Domain format is invalid.');
+  }
+
+  if (!isPortValid(fePort)) issues.push('Frontend/HTTP port is invalid.');
+  if (!isPortValid(bePort)) issues.push('Backend/secondary port is invalid.');
+  if (Number(fePort) === Number(bePort)) issues.push('Port conflict: frontend and backend ports cannot be the same.');
+
+  if (APP_TYPE_SET.has(normalizedAppType) && image && !validateImageForAppType(normalizedAppType, image)) {
+    issues.push(`Image "${image}" does not look valid for app type "${normalizedAppType}".`);
+  }
+
+  try {
+    const { instances } = await collectRuntime();
+    const usedPorts = new Set();
+    for (const instance of instances) {
+      if (Number.isFinite(Number(instance.fe))) usedPorts.add(Number(instance.fe));
+      if (Number.isFinite(Number(instance.be))) usedPorts.add(Number(instance.be));
+    }
+
+    if (usedPorts.has(Number(fePort))) issues.push(`Port ${fePort} is already in use.`);
+    if (usedPorts.has(Number(bePort))) issues.push(`Port ${bePort} is already in use.`);
+
+    const domains = listKnownDomains(instances);
+    if (domains.has(normalizedDomain)) issues.push(`Domain "${normalizedDomain}" is already in use.`);
+  } catch (error) {
+    warnings.push(`Live runtime preflight unavailable: ${error.message}`);
+  }
+
+  return res.json({
+    ok: true,
+    valid: issues.length === 0,
+    issues,
+    warnings,
+  });
+});
+
 app.get('/api/instances/:key/logs', requireAuth, requireRole('super_admin', 'platform_owner'), async (req, res) => {
   try {
     const { instances } = await collectRuntime();
@@ -369,7 +550,27 @@ app.post('/api/instances/:key/:action', requireAuth, requireRole('super_admin'),
 });
 
 app.post('/api/instances/create', requireAuth, requireRole('super_admin'), async (req, res) => {
-  const { name, domain, type, fePort, bePort, db } = req.body || {};
+  const {
+    appType = 'school',
+    name,
+    domain,
+    type,
+    institutionType,
+    planId,
+    version = 'latest',
+    image = '',
+    adminEmail = '',
+    notes = '',
+    fePort,
+    bePort,
+    db,
+  } = req.body || {};
+
+  const normalizedAppType = String(appType || 'school').toLowerCase();
+  if (!APP_TYPE_SET.has(normalizedAppType)) {
+    return res.status(400).json({ error: 'Unsupported appType.' });
+  }
+
   if (!name || !domain || !fePort || !bePort) {
     return res.status(400).json({ error: 'name, domain, fePort and bePort are required' });
   }
@@ -381,11 +582,25 @@ app.post('/api/instances/create', requireAuth, requireRole('super_admin'), async
     });
   }
 
-  const payload = JSON.stringify({ name, domain, type, fePort, bePort, db, requestedBy: req.user.email });
+  const payload = JSON.stringify({
+    appType: normalizedAppType,
+    name,
+    domain,
+    type: type || institutionType || 'PRIMARY_CBC',
+    planId: planId || 'professional',
+    version,
+    image,
+    adminEmail,
+    notes,
+    fePort,
+    bePort,
+    db,
+    requestedBy: req.user.email
+  });
 
   try {
     const { stdout, stderr } = await execFileAsync(INSTANCE_PROVISION_SCRIPT, [payload], { timeout: 8 * 60 * 1000 });
-    pushAudit('PROVISION', name, req.user.email, `Provision script executed for ${name}`, 'Warning');
+    pushAudit('PROVISION', name, req.user.email, `Provision script executed for ${name} (${normalizedAppType})`, 'Warning');
     res.json({ ok: true, output: stdout?.trim(), warning: stderr?.trim() || null });
   } catch (error) {
     res.status(500).json({ error: `Provision failed: ${error.message}` });

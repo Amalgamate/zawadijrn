@@ -146,6 +146,14 @@ button,input,select,textarea{font:inherit}
 .btn.primary:hover{background:var(--brand-dark)}
 .btn.teal{background:var(--teal);border-color:var(--teal);color:#fff}
 .btn.teal:hover{background:#0b8077}
+.btn.sacco{background:#7c3aed;border-color:#7c3aed;color:#fff}
+.btn.sacco:hover{background:#6d28d9}
+.btn.hospital{background:#dc2626;border-color:#dc2626;color:#fff}
+.btn.hospital:hover{background:#b91c1c}
+.btn.hotel{background:#d97706;border-color:#d97706;color:#fff}
+.btn.hotel:hover{background:#b45309}
+.btn.organization{background:#2563eb;border-color:#2563eb;color:#fff}
+.btn.organization:hover{background:#1d4ed8}
 
 /* ── Content ───────────────────────────────────────────────────────── */
 .content{padding:24px 28px;flex:1}

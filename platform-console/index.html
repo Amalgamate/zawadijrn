@@ -154,7 +154,7 @@
         </div>
         <button class="btn btn-signout" id="btn-logout" type="button">Sign out</button>
         <button class="btn" id="btn-refresh" type="button">↺ Refresh</button>
-        <button class="btn primary" id="btn-create" type="button">+ New Instance</button>
+        <button class="btn primary" id="btn-create-school" type="button">+ New School</button>
       </div>
     </div>
 
@@ -204,7 +204,15 @@
               <div class="panel-title">School Instances</div>
               <div class="panel-sub">All active deployments on this server</div>
             </div>
-            <button class="btn teal" id="btn-create2" type="button">+ New Instance</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn teal" id="btn-create2-school" type="button">+ New School</button>
+              <button class="btn" id="btn-create2-odoo" type="button">+ Odoo</button>
+              <button class="btn" id="btn-create2-wordpress" type="button">+ WordPress</button>
+              <button class="btn sacco" id="btn-create2-sacco" type="button">+ New Sacco</button>
+              <button class="btn hospital" id="btn-create2-hospital" type="button">+ New Hospital</button>
+              <button class="btn hotel" id="btn-create2-hotel" type="button">+ New Hotel</button>
+              <button class="btn organization" id="btn-create2-organization" type="button">+ New Organization</button>
+            </div>
           </div>
           <div class="table-wrap">
             <table>
@@ -250,7 +258,15 @@
             <div class="page-sub">Full management view for all deployed instances</div>
           </div>
           <div class="page-actions">
-            <button class="btn teal" id="btn-create3" type="button">+ New Instance</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn teal" id="btn-create3-school" type="button">+ New School</button>
+              <button class="btn" id="btn-create3-odoo" type="button">+ Odoo</button>
+              <button class="btn" id="btn-create3-wordpress" type="button">+ WordPress</button>
+              <button class="btn sacco" id="btn-create3-sacco" type="button">+ New Sacco</button>
+              <button class="btn hospital" id="btn-create3-hospital" type="button">+ New Hospital</button>
+              <button class="btn hotel" id="btn-create3-hotel" type="button">+ New Hotel</button>
+              <button class="btn organization" id="btn-create3-organization" type="button">+ New Organization</button>
+            </div>
           </div>
         </div>
         <div class="panel">
@@ -656,10 +672,19 @@
 <div class="overlay" id="modal-overlay" aria-modal="true" role="dialog">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">Provision New Instance</div>
+      <div class="modal-title" id="modal-title">Provision New School</div>
       <button class="modal-close" id="modal-close" type="button" aria-label="Close">×</button>
     </div>
     <div class="modal-body">
+      <input id="f-app" type="hidden" value="school"/>
+      <div class="form-row">
+        <label class="form-label" for="f-version">Version</label>
+        <select class="form-select" id="f-version"></select>
+      </div>
+      <div class="form-row" id="f-image-row">
+        <label class="form-label" for="f-image">Docker Image</label>
+        <input class="form-input" id="f-image" type="text" readonly/>
+      </div>
       <div class="form-row">
         <label class="form-label" for="f-name">School Name</label>
         <input class="form-input" id="f-name" placeholder="e.g. Sunshine Academy" type="text"/>
@@ -668,7 +693,7 @@
         <label class="form-label" for="f-domain">Subdomain</label>
         <input class="form-input" id="f-domain" placeholder="e.g. sunshine → sunshine.elimucrown.co.ke" type="text"/>
       </div>
-      <div class="form-row">
+      <div class="form-row" id="f-type-row">
         <label class="form-label" for="f-type">Institution Type</label>
         <select class="form-select" id="f-type">
           <option value="">Select type…</option>
@@ -677,7 +702,7 @@
           <option value="TERTIARY">Tertiary / College</option>
         </select>
       </div>
-      <div class="form-row">
+      <div class="form-row" id="f-plan-row">
         <label class="form-label" for="f-plan">Pricing Plan</label>
         <select class="form-select" id="f-plan">
           <option value="">Select plan…</option>
@@ -687,20 +712,32 @@
           <option value="enterprise">Enterprise</option>
         </select>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px" id="f-ports-grid">
         <div class="form-row" style="margin-bottom:0">
-          <label class="form-label" for="f-port-fe">Frontend Port</label>
+          <label class="form-label" for="f-port-fe" id="f-port-fe-label">Frontend Port</label>
           <input class="form-input" id="f-port-fe" placeholder="e.g. 3003" type="number"/>
         </div>
         <div class="form-row" style="margin-bottom:0">
-          <label class="form-label" for="f-port-be">Backend Port</label>
+          <label class="form-label" for="f-port-be" id="f-port-be-label">Backend Port</label>
           <input class="form-input" id="f-port-be" placeholder="e.g. 5003" type="number"/>
         </div>
+      </div>
+      <div class="form-row" id="f-admin-email-row">
+        <label class="form-label" for="f-admin-email">Admin Email</label>
+        <input class="form-input" id="f-admin-email" placeholder="e.g. admin@school.co.ke" type="email"/>
+      </div>
+      <div class="form-row" id="f-notes-row">
+        <label class="form-label" for="f-notes">Provisioning Notes</label>
+        <input class="form-input" id="f-notes" placeholder="Optional deployment notes" type="text"/>
+      </div>
+      <div class="form-row" id="f-compose-preview-row">
+        <label class="form-label" for="f-compose-preview">Preview Compose</label>
+        <pre class="code-block" id="f-compose-preview" style="max-height:260px;overflow:auto;white-space:pre-wrap"></pre>
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn" id="modal-cancel" type="button">Cancel</button>
-      <button class="btn primary" id="modal-submit" type="button">Provision Instance</button>
+      <button class="btn primary" id="modal-submit" type="button">Provision</button>
     </div>
   </div>
 </div>

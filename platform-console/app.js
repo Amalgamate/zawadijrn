@@ -237,6 +237,279 @@ function suggestNextPorts() {
   return { fe, be };
 }
 
+const APP_PROVISIONING_CATALOG = {
+  school: {
+    label: 'School',
+    modalTitle: 'Provision New School',
+    submitLabel: 'Provision School',
+    defaultDomainSuffix: 'elimucrown.co.ke',
+    feLabel: 'Frontend Port',
+    beLabel: 'Backend Port',
+    versions: [
+      { value: 'latest', label: 'Latest stable', image: 'ghcr.io/amalgamate/zawadi-frontend:latest' },
+      { value: 'v1.0.x', label: 'v1.0.x LTS', image: 'ghcr.io/amalgamate/zawadi-frontend:v1.0.x' },
+    ],
+    showInstitutionFields: true,
+    showAdminEmail: false,
+  },
+  odoo: {
+    label: 'Odoo',
+    modalTitle: 'Provision Odoo Instance',
+    submitLabel: 'Provision Odoo',
+    defaultDomainSuffix: 'elimucrown.co.ke',
+    feLabel: 'HTTP Port',
+    beLabel: 'Longpolling Port',
+    versions: [
+      { value: '18.0', label: 'Odoo 18.0', image: 'odoo:18.0' },
+      { value: '17.0', label: 'Odoo 17.0', image: 'odoo:17.0' },
+      { value: '16.0', label: 'Odoo 16.0', image: 'odoo:16.0' },
+    ],
+    showInstitutionFields: false,
+    showAdminEmail: true,
+  },
+  wordpress: {
+    label: 'WordPress',
+    modalTitle: 'Provision WordPress Instance',
+    submitLabel: 'Provision WordPress',
+    defaultDomainSuffix: 'elimucrown.co.ke',
+    feLabel: 'HTTP Port',
+    beLabel: 'PHP-FPM/Admin Port',
+    versions: [
+      { value: 'latest', label: 'WordPress latest', image: 'wordpress:latest' },
+      { value: '6.5', label: 'WordPress 6.5', image: 'wordpress:6.5' },
+      { value: '6.4', label: 'WordPress 6.4', image: 'wordpress:6.4' },
+    ],
+    showInstitutionFields: false,
+    showAdminEmail: true,
+  },
+  sacco: {
+    label: 'Sacco',
+    modalTitle: 'Provision New Sacco',
+    submitLabel: 'Provision Sacco',
+    defaultDomainSuffix: 'elimucrown.co.ke',
+    feLabel: 'HTTP Port',
+    beLabel: 'API Port',
+    versions: [
+      { value: 'latest', label: 'Sacco latest', image: 'ghcr.io/amalgamate/sacco-app:latest' },
+      { value: 'v1.0', label: 'Sacco v1.0', image: 'ghcr.io/amalgamate/sacco-app:v1.0' },
+    ],
+    showInstitutionFields: false,
+    showAdminEmail: true,
+  },
+  hospital: {
+    label: 'Hospital',
+    modalTitle: 'Provision New Hospital',
+    submitLabel: 'Provision Hospital',
+    defaultDomainSuffix: 'elimucrown.co.ke',
+    feLabel: 'HTTP Port',
+    beLabel: 'API Port',
+    versions: [
+      { value: 'latest', label: 'Hospital latest', image: 'ghcr.io/amalgamate/hospital-app:latest' },
+      { value: 'v1.0', label: 'Hospital v1.0', image: 'ghcr.io/amalgamate/hospital-app:v1.0' },
+    ],
+    showInstitutionFields: false,
+    showAdminEmail: true,
+  },
+  hotel: {
+    label: 'Hotel',
+    modalTitle: 'Provision New Hotel',
+    submitLabel: 'Provision Hotel',
+    defaultDomainSuffix: 'elimucrown.co.ke',
+    feLabel: 'HTTP Port',
+    beLabel: 'API Port',
+    versions: [
+      { value: 'latest', label: 'Hotel latest', image: 'ghcr.io/amalgamate/hotel-app:latest' },
+      { value: 'v1.0', label: 'Hotel v1.0', image: 'ghcr.io/amalgamate/hotel-app:v1.0' },
+    ],
+    showInstitutionFields: false,
+    showAdminEmail: true,
+  },
+  organization: {
+    label: 'Organization',
+    modalTitle: 'Provision New Organization',
+    submitLabel: 'Provision Organization',
+    defaultDomainSuffix: 'elimucrown.co.ke',
+    feLabel: 'HTTP Port',
+    beLabel: 'API Port',
+    versions: [
+      { value: 'latest', label: 'Organization latest', image: 'ghcr.io/amalgamate/organization-app:latest' },
+      { value: 'v1.0', label: 'Organization v1.0', image: 'ghcr.io/amalgamate/organization-app:v1.0' },
+    ],
+    showInstitutionFields: false,
+    showAdminEmail: true,
+  },
+};
+
+let currentProvisionApp = 'school';
+const provisionCatalogCache = {};
+
+function selectedProvisionVersion(appKey) {
+  const app = APP_PROVISIONING_CATALOG[appKey] || APP_PROVISIONING_CATALOG.school;
+  const versions = provisionCatalogCache[appKey] || app.versions;
+  const selected = $('f-version')?.value;
+  return versions.find(v => v.value === selected) || versions[0];
+}
+
+function renderProvisionVersionOptions(appKey) {
+  const app = APP_PROVISIONING_CATALOG[appKey] || APP_PROVISIONING_CATALOG.school;
+  const versions = provisionCatalogCache[appKey] || app.versions;
+  const select = $('f-version');
+  if (!select) return;
+  select.innerHTML = versions.map(version => `<option value="${esc(version.value)}">${esc(version.label)}</option>`).join('');
+}
+
+function syncProvisionImage() {
+  const version = selectedProvisionVersion(currentProvisionApp);
+  if ($('f-image')) $('f-image').value = version?.image || '';
+  renderComposePreview();
+}
+
+function composeServiceName(rawName) {
+  const base = slugify(rawName || currentProvisionApp || 'instance');
+  return base || 'instance';
+}
+
+function renderComposePreview() {
+  const app = APP_PROVISIONING_CATALOG[currentProvisionApp] || APP_PROVISIONING_CATALOG.school;
+  const name = $('f-name')?.value.trim() || `${app.label} Instance`;
+  const domain = $('f-domain')?.value.trim() || `${slugify(name || app.label)}.${app.defaultDomainSuffix}`;
+  const version = selectedProvisionVersion(currentProvisionApp);
+  const image = $('f-image')?.value.trim() || version?.image || '';
+  const fePort = Number($('f-port-fe')?.value || 0) || 0;
+  const bePort = Number($('f-port-be')?.value || 0) || 0;
+  const adminEmail = $('f-admin-email')?.value.trim() || 'admin@example.com';
+  const service = composeServiceName(name);
+  const dbService = `${service}-db`;
+  const dbName = `${currentProvisionApp}_${slugify(name).replace(/-/g, '_') || 'instance'}`;
+
+  let preview = '';
+  if (currentProvisionApp === 'school') {
+    preview = [
+      'version: "3.9"',
+      'services:',
+      `  ${service}-frontend:`,
+      `    image: ${image}`,
+      '    restart: unless-stopped',
+      `    ports: ["${fePort}:3000"]`,
+      `    environment: [APP_DOMAIN=${domain}]`,
+      `  ${service}-backend:`,
+      '    image: ghcr.io/amalgamate/zawadi-backend:latest',
+      '    restart: unless-stopped',
+      `    ports: ["${bePort}:5000"]`,
+      `    environment: [DATABASE_URL=postgres://${dbName}:${dbName}@${dbService}:5432/${dbName}]`,
+      `  ${dbService}:`,
+      '    image: postgres:16',
+      '    restart: unless-stopped',
+      `    environment: [POSTGRES_DB=${dbName}, POSTGRES_USER=${dbName}, POSTGRES_PASSWORD=${dbName}]`,
+      `    volumes: ["${service}-db-data:/var/lib/postgresql/data"]`,
+      'volumes:',
+      `  ${service}-db-data: {}`,
+    ].join('\n');
+  } else if (currentProvisionApp === 'odoo') {
+    preview = [
+      'version: "3.9"',
+      'services:',
+      `  ${service}:`,
+      `    image: ${image}`,
+      '    restart: unless-stopped',
+      `    ports: ["${fePort}:8069", "${bePort}:8072"]`,
+      `    environment: [HOST=${dbService}, USER=${dbName}, PASSWORD=${dbName}, ADMIN_EMAIL=${adminEmail}]`,
+      `    depends_on: [${dbService}]`,
+      `  ${dbService}:`,
+      '    image: postgres:16',
+      '    restart: unless-stopped',
+      `    environment: [POSTGRES_DB=postgres, POSTGRES_USER=${dbName}, POSTGRES_PASSWORD=${dbName}]`,
+      `    volumes: ["${service}-db-data:/var/lib/postgresql/data"]`,
+      'volumes:',
+      `  ${service}-db-data: {}`,
+    ].join('\n');
+  } else if (currentProvisionApp === 'wordpress') {
+    preview = [
+      'version: "3.9"',
+      'services:',
+      `  ${service}:`,
+      `    image: ${image}`,
+      '    restart: unless-stopped',
+      `    ports: ["${fePort}:80", "${bePort}:443"]`,
+      `    environment: [WORDPRESS_DB_HOST=${dbService}:3306, WORDPRESS_DB_USER=${dbName}, WORDPRESS_DB_PASSWORD=${dbName}, WORDPRESS_DB_NAME=${dbName}, WP_ADMIN_EMAIL=${adminEmail}]`,
+      `    depends_on: [${dbService}]`,
+      `  ${dbService}:`,
+      '    image: mysql:8.0',
+      '    restart: unless-stopped',
+      `    environment: [MYSQL_DATABASE=${dbName}, MYSQL_USER=${dbName}, MYSQL_PASSWORD=${dbName}, MYSQL_ROOT_PASSWORD=${dbName}]`,
+      `    volumes: ["${service}-db-data:/var/lib/mysql"]`,
+      'volumes:',
+      `  ${service}-db-data: {}`,
+    ].join('\n');
+  } else {
+    preview = [
+      'version: "3.9"',
+      'services:',
+      `  ${service}:`,
+      `    image: ${image}`,
+      '    restart: unless-stopped',
+      `    ports: ["${fePort}:80", "${bePort}:8080"]`,
+      `    environment: [APP_DOMAIN=${domain}, ADMIN_EMAIL=${adminEmail}]`,
+      `  ${dbService}:`,
+      '    image: postgres:16',
+      '    restart: unless-stopped',
+      `    environment: [POSTGRES_DB=${dbName}, POSTGRES_USER=${dbName}, POSTGRES_PASSWORD=${dbName}]`,
+      `    volumes: ["${service}-db-data:/var/lib/postgresql/data"]`,
+      'volumes:',
+      `  ${service}-db-data: {}`,
+    ].join('\n');
+  }
+  if ($('f-compose-preview')) $('f-compose-preview').textContent = preview;
+}
+
+function applyProvisionMode(appKey) {
+  currentProvisionApp = APP_PROVISIONING_CATALOG[appKey] ? appKey : 'school';
+  const app = APP_PROVISIONING_CATALOG[currentProvisionApp];
+  if ($('f-app')) $('f-app').value = currentProvisionApp;
+  if ($('modal-title')) $('modal-title').textContent = app.modalTitle;
+  if ($('modal-submit')) $('modal-submit').textContent = app.submitLabel;
+  if ($('f-port-fe-label')) $('f-port-fe-label').textContent = app.feLabel;
+  if ($('f-port-be-label')) $('f-port-be-label').textContent = app.beLabel;
+  if ($('f-type-row')) $('f-type-row').style.display = app.showInstitutionFields ? '' : 'none';
+  if ($('f-plan-row')) $('f-plan-row').style.display = app.showInstitutionFields ? '' : 'none';
+  if ($('f-admin-email-row')) $('f-admin-email-row').style.display = app.showAdminEmail ? '' : 'none';
+  renderProvisionVersionOptions(currentProvisionApp);
+  syncProvisionImage();
+  renderComposePreview();
+}
+
+async function loadProvisionCatalog(appKey) {
+  try {
+    const response = await fetch(`/api/catalog/images?appType=${encodeURIComponent(appKey)}`, {
+      credentials: 'same-origin',
+    });
+    if (!response.ok) return;
+    const data = await response.json();
+    const versions = Array.isArray(data?.versions) ? data.versions : [];
+    if (versions.length > 0) {
+      provisionCatalogCache[appKey] = versions;
+      if (currentProvisionApp === appKey) {
+        renderProvisionVersionOptions(appKey);
+        syncProvisionImage();
+      }
+    }
+  } catch (_) {
+    // fallback to static defaults
+  }
+}
+
+function prepareProvisionDefaults(appKey = 'school') {
+  applyProvisionMode(appKey);
+  loadProvisionCatalog(currentProvisionApp);
+  const { fe, be } = suggestNextPorts();
+  if ($('f-port-fe')) $('f-port-fe').value = fe;
+  if ($('f-port-be')) $('f-port-be').value = be;
+  if (!$('f-domain')?.value.trim() && $('f-name')?.value.trim()) {
+    $('f-domain').value = `${slugify($('f-name').value)}.${APP_PROVISIONING_CATALOG[currentProvisionApp].defaultDomainSuffix}`;
+  }
+  renderComposePreview();
+}
+
 async function fetchRuntimeData() {
   const response = await fetch('/api/runtime', { credentials: 'same-origin' });
   if (!response.ok) throw new Error(`runtime http ${response.status}`);
@@ -965,7 +1238,8 @@ document.querySelectorAll('.nav-item').forEach(el => {
 });
 
 // Modals
-function openModal() {
+function openModal(appKey = 'school') {
+  prepareProvisionDefaults(appKey);
   $('modal-overlay')?.classList.add('open');
 }
 
@@ -1183,8 +1457,26 @@ document.body.addEventListener('click', event => {
   if (!btn) return;
 
   const id = btn.id;
-  if (['btn-create', 'btn-create2', 'btn-create3'].includes(id)) {
-    openModal();
+  const createButtonMap = {
+    'btn-create-school': 'school',
+    'btn-create2-school': 'school',
+    'btn-create3-school': 'school',
+    'btn-create2-odoo': 'odoo',
+    'btn-create3-odoo': 'odoo',
+    'btn-create2-wordpress': 'wordpress',
+    'btn-create3-wordpress': 'wordpress',
+    'btn-create2-sacco': 'sacco',
+    'btn-create3-sacco': 'sacco',
+    'btn-create2-hospital': 'hospital',
+    'btn-create3-hospital': 'hospital',
+    'btn-create2-hotel': 'hotel',
+    'btn-create3-hotel': 'hotel',
+    'btn-create2-organization': 'organization',
+    'btn-create3-organization': 'organization',
+  };
+
+  if (createButtonMap[id]) {
+    openModal(createButtonMap[id]);
     return;
   }
 
@@ -1292,60 +1584,102 @@ function bindModalEvents() {
   $('modal-close')?.addEventListener('click', closeModal);
   $('modal-cancel')?.addEventListener('click', closeModal);
   $('modal-overlay')?.addEventListener('click', event => { if (event.target === $('modal-overlay')) closeModal(); });
-  $('btn-create')?.addEventListener('click', () => {
-    const { fe, be } = suggestNextPorts();
-    if ($('f-port-fe')) $('f-port-fe').value = fe;
-    if ($('f-port-be')) $('f-port-be').value = be;
+  $('f-version')?.addEventListener('change', syncProvisionImage);
+  $('f-name')?.addEventListener('input', () => {
+    const name = $('f-name')?.value.trim();
+    if (!name) return;
+    if ($('f-domain') && !$('f-domain').value.trim()) {
+      $('f-domain').value = `${slugify(name)}.${APP_PROVISIONING_CATALOG[currentProvisionApp].defaultDomainSuffix}`;
+    }
+    renderComposePreview();
   });
-  $('btn-create2')?.addEventListener('click', () => {
-    const { fe, be } = suggestNextPorts();
-    if ($('f-port-fe')) $('f-port-fe').value = fe;
-    if ($('f-port-be')) $('f-port-be').value = be;
+  ['f-domain', 'f-port-fe', 'f-port-be', 'f-admin-email', 'f-notes', 'f-type', 'f-plan', 'f-image'].forEach(id => {
+    $(id)?.addEventListener('input', renderComposePreview);
+    $(id)?.addEventListener('change', renderComposePreview);
   });
-  $('btn-create3')?.addEventListener('click', () => {
-    const { fe, be } = suggestNextPorts();
-    if ($('f-port-fe')) $('f-port-fe').value = fe;
-    if ($('f-port-be')) $('f-port-be').value = be;
-  });
+
   $('modal-submit')?.addEventListener('click', () => {
     (async () => {
-    const name = $('f-name')?.value.trim();
-    if (!name) {
-      toast('Please enter a school name.');
-      return;
-    }
-    const payload = {
-      name,
-      domain: $('f-domain')?.value.trim() || `${slugify(name)}.elimucrown.co.ke`,
-      type: $('f-type')?.value || 'PRIMARY_CBC',
-      fePort: Number($('f-port-fe')?.value || 0),
-      bePort: Number($('f-port-be')?.value || 0),
-      db: `trends_core_${slugify(name).replace(/-/g, '_')}`,
-    };
-
-    try {
-      const response = await fetch('/api/instances/create', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        toast(error.error || 'Create instance failed.');
+      const app = APP_PROVISIONING_CATALOG[currentProvisionApp] || APP_PROVISIONING_CATALOG.school;
+      const name = $('f-name')?.value.trim();
+      if (!name) {
+        toast(`Please enter a ${app.label} instance name.`);
         return;
       }
 
-      addAudit({ action: 'Provision Instance', instance: payload.name, details: 'Provision request sent to server', status: 'Warning' });
-      await refreshFromRuntime();
-      renderEverything();
-      closeModal();
-      toast(`Provisioning "${name}" started.`);
-      return;
-    } catch (_) {}
+      const version = selectedProvisionVersion(currentProvisionApp);
+      const payload = {
+        appType: currentProvisionApp,
+        name,
+        domain: $('f-domain')?.value.trim() || `${slugify(name)}.${app.defaultDomainSuffix}`,
+        version: version?.value || 'latest',
+        image: version?.image || '',
+        fePort: Number($('f-port-fe')?.value || 0),
+        bePort: Number($('f-port-be')?.value || 0),
+        institutionType: $('f-type')?.value || 'PRIMARY_CBC',
+        planId: $('f-plan')?.value || 'professional',
+        adminEmail: $('f-admin-email')?.value.trim() || '',
+        notes: $('f-notes')?.value.trim() || '',
+        db: `${currentProvisionApp}_${slugify(name).replace(/-/g, '_')}`,
+      };
 
-    toast('Provision endpoint unreachable.');
+      if (!payload.domain) {
+        toast('Please provide a valid domain/subdomain.');
+        return;
+      }
+      if (!payload.fePort || !payload.bePort) {
+        toast('Please provide valid ports for this instance.');
+        return;
+      }
+
+      try {
+        const preflightResponse = await fetch('/api/instances/preflight', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (preflightResponse.ok) {
+          const preflight = await preflightResponse.json().catch(() => null);
+          if (preflight && preflight.valid === false) {
+            const msg = Array.isArray(preflight.issues) && preflight.issues.length
+              ? preflight.issues.join(' ')
+              : 'Preflight check failed.';
+            toast(msg);
+            return;
+          }
+          if (preflight && Array.isArray(preflight.warnings) && preflight.warnings.length) {
+            toast(`Preflight warning: ${preflight.warnings[0]}`);
+          }
+        }
+
+        const response = await fetch('/api/instances/create', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({}));
+          toast(error.error || `Create ${app.label} instance failed.`);
+          return;
+        }
+
+        addAudit({
+          action: `Provision ${app.label}`,
+          instance: payload.name,
+          details: `${app.label} ${payload.version} requested (${payload.image})`,
+          status: 'Warning',
+        });
+        await refreshFromRuntime();
+        renderEverything();
+        closeModal();
+        toast(`Provisioning "${name}" (${app.label}) started.`);
+        return;
+      } catch (_) {}
+
+      toast('Provision endpoint unreachable.');
     })();
   });
 
@@ -1396,3 +1730,119 @@ async function init() {
 }
 
 init();
+function renderEverything() {
+  renderMetrics();
+  renderInstances();
+  renderRunningInstances();
+  renderCapacity();
+  renderTimeline('timeline-mini', 3);
+  renderTimeline('timeline-full');
+  renderStorageSection();
+  renderSpaceUsage();
+  renderAuditLog();
+  renderControlInstances();
+  renderModuleToggles();
+  renderPricingPlans();
+  if(typeof renderPipeline === 'function') renderPipeline();
+  if(typeof renderLeadsList === 'function') renderLeadsList();
+}
+
+// CRM View Toggles
+$('btn-view-pipeline')?.addEventListener('click', () => {
+  if($('kanban-board')) $('kanban-board').style.display = 'flex';
+  if($('leads-list-panel')) $('leads-list-panel').style.display = 'none';
+  $('btn-view-pipeline')?.classList.add('active');
+  $('btn-view-list')?.classList.remove('active');
+  $('btn-view-clients')?.classList.remove('active');
+});
+
+$('btn-view-list')?.addEventListener('click', () => {
+  if($('kanban-board')) $('kanban-board').style.display = 'none';
+  if($('leads-list-panel')) $('leads-list-panel').style.display = 'block';
+  if($('leads-panel-title')) $('leads-panel-title').textContent = 'All Leads';
+  if($('crm-table-sub')) $('crm-table-sub').textContent = 'Showing all pipeline stages';
+  activeLeadFilter = null;
+  renderLeadsList();
+  $('btn-view-pipeline')?.classList.remove('active');
+  $('btn-view-list')?.classList.add('active');
+  $('btn-view-clients')?.classList.remove('active');
+});
+
+$('btn-view-clients')?.addEventListener('click', () => {
+  if($('kanban-board')) $('kanban-board').style.display = 'none';
+  if($('leads-list-panel')) $('leads-list-panel').style.display = 'block';
+  if($('leads-panel-title')) $('leads-panel-title').textContent = 'Client Base';
+  if($('crm-table-sub')) $('crm-table-sub').textContent = 'Showing converted clients only';
+  activeLeadFilter = 'converted';
+  renderLeadsList();
+  $('btn-view-pipeline')?.classList.remove('active');
+  $('btn-view-list')?.classList.remove('active');
+  $('btn-view-clients')?.classList.add('active');
+});
+
+window.openLeadModal = function(defaultStage = 'new', editLeadId = null) {
+  const lead = editLeadId ? LEADS.find(l => l.id === editLeadId) : null;
+  
+  if($('lead-modal-title')) $('lead-modal-title').textContent = lead ? 'Edit Lead' : 'Add New Lead';
+  if($('lead-modal-submit')) $('lead-modal-submit').dataset.editId = editLeadId || '';
+
+  if($('l-name')) $('l-name').value = lead?.name || '';
+  if($('l-phone')) $('l-phone').value = lead?.phone || '';
+  if($('l-school')) $('l-school').value = lead?.school || '';
+  if($('l-stage')) $('l-stage').value = lead?.stage || defaultStage;
+  if($('l-priority')) $('l-priority').value = lead?.priority || '1';
+  if($('l-students')) $('l-students').value = lead?.students || '';
+  if($('l-tags')) $('l-tags').value = (lead?.tags || []).join(', ');
+  
+  if($('l-sys-assessment')) $('l-sys-assessment').value = lead?.systems?.assessment || '';
+  if($('l-sys-fees')) $('l-sys-fees').value = lead?.systems?.fees || '';
+  if($('l-sys-lms')) $('l-sys-lms').value = lead?.systems?.lms || '';
+  if($('l-notes')) $('l-notes').value = lead?.notes || '';
+
+  $('lead-modal-overlay')?.classList.add('open');
+};
+
+$('lead-modal-close')?.addEventListener('click', () => $('lead-modal-overlay')?.classList.remove('open'));
+$('lead-modal-cancel')?.addEventListener('click', () => $('lead-modal-overlay')?.classList.remove('open'));
+$('btn-new-lead')?.addEventListener('click', () => openLeadModal('new', null));
+
+$('lead-modal-submit')?.addEventListener('click', () => {
+  const name = $('l-name').value?.trim();
+  const school = $('l-school').value?.trim();
+  if (!name || !school) {
+    toast('Name and School are required.');
+    return;
+  }
+
+  const editId = $('lead-modal-submit').dataset.editId;
+  const newLead = {
+    id: editId || 'L' + Date.now(),
+    name,
+    school,
+    phone: $('l-phone').value?.trim(),
+    stage: $('l-stage').value,
+    priority: $('l-priority').value,
+    students: Number($('l-students').value) || 0,
+    tags: ($('l-tags').value || '').split(',').map(t => t.trim()).filter(Boolean),
+    systems: {
+      assessment: $('l-sys-assessment').value?.trim() || 'None',
+      fees: $('l-sys-fees').value?.trim() || 'None',
+      lms: $('l-sys-lms').value?.trim() || 'None',
+    },
+    notes: $('l-notes').value?.trim(),
+    nextActivity: editId ? (LEADS.find(l=>l.id===editId)?.nextActivity) : 'New lead added'
+  };
+
+  if (editId) {
+    const idx = LEADS.findIndex(l => l.id === editId);
+    if (idx >= 0) LEADS[idx] = { ...LEADS[idx], ...newLead };
+  } else {
+    LEADS.push(newLead);
+  }
+
+  addAudit({ action: editId ? 'Lead Updated' : 'Lead Added', instance: school, details: `Stage: ${newLead.stage}` });
+  
+  $('lead-modal-overlay')?.classList.remove('open');
+  renderEverything();
+  toast(editId ? 'Lead updated' : 'Lead added successfully');
+});
