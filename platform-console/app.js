@@ -784,11 +784,15 @@ function renderRunningInstances() {
 
 // ── Space & Usage panel ───────────────────────────────────────────────────
 const TOTAL_DISK = 80;
+function totalDiskGb() {
+  return Number(RUNTIME_METRICS?.diskTotalGb || TOTAL_DISK);
+}
 
 function renderSpaceUsage() {
   const el = $('space-usage-panel');
   if (!el) return;
 
+  const diskTotal = totalDiskGb();
   const totalSchoolDb = INSTANCES.reduce((s, i) => s + i.dbGb, 0);
   const totalUploads  = INSTANCES.reduce((s, i) => s + i.uploads, 0);
   const totalBackups  = INSTANCES.reduce((s, i) => s + i.backups, 0);
@@ -796,8 +800,8 @@ function renderSpaceUsage() {
   const runtimeUsed   = Number(RUNTIME_METRICS?.storageUsedGb || 0);
   const appStack      = Math.max(0, runtimeUsed - schoolData);
   const usedTotal     = appStack + schoolData;
-  const freeSpace     = Math.max(0, TOTAL_DISK - usedTotal);
-  const usedPct       = Math.round(usedTotal / TOTAL_DISK * 100);
+  const freeSpace     = Math.max(0, diskTotal - usedTotal);
+  const usedPct       = Math.round(usedTotal / Math.max(diskTotal, 1) * 100);
 
   const segments = [
     { label: 'Platform Stack', value: appStack, color: '#030b82' },
@@ -811,7 +815,7 @@ function renderSpaceUsage() {
     <div class="su-summary-row">
       <div class="su-summary-stat">
         <div class="su-stat-val">${fmt(usedTotal)} <span class="su-stat-unit">GB</span></div>
-        <div class="su-stat-label">Used of ${TOTAL_DISK} GB</div>
+        <div class="su-stat-label">Used of ${fmt(diskTotal)} GB</div>
       </div>
       <div class="su-summary-stat">
         <div class="su-stat-val">${fmt(freeSpace)} <span class="su-stat-unit">GB</span></div>
@@ -829,7 +833,7 @@ function renderSpaceUsage() {
 
     <div class="su-stacked-bar">
       ${segments.filter(s => s.value > 0).map(s =>
-        `<div class="su-seg" style="width:${(s.value / TOTAL_DISK * 100).toFixed(2)}%;background:${s.color}" title="${s.label}: ${fmt(s.value)} GB"></div>`
+        `<div class="su-seg" style="width:${(s.value / Math.max(diskTotal, 1) * 100).toFixed(2)}%;background:${s.color}" title="${s.label}: ${fmt(s.value)} GB"></div>`
       ).join('')}
     </div>
     <div class="su-legend">
@@ -844,14 +848,14 @@ function renderSpaceUsage() {
 
     <div class="su-breakdown-grid">
       ${segments.filter(s => s.label !== 'Free').map(s => {
-        const pct = Math.round(s.value / TOTAL_DISK * 100);
+        const pct = Math.round(s.value / Math.max(diskTotal, 1) * 100);
         return `<div class="su-breakdown-item">
           <div class="su-b-row">
             <span class="su-b-label">${esc(s.label)}</span>
             <span class="su-b-val">${fmt(s.value)} GB</span>
           </div>
           <div class="su-meter"><div class="su-meter-fill" style="width:${pct}%;background:${s.color}"></div></div>
-          <div class="su-b-pct">${pct}% of ${TOTAL_DISK} GB disk</div>
+          <div class="su-b-pct">${pct}% of ${fmt(diskTotal)} GB disk</div>
         </div>`;
       }).join('')}
     </div>
@@ -860,7 +864,7 @@ function renderSpaceUsage() {
       <div class="su-section-label">Per-Instance Breakdown</div>
       <div class="su-per-instance-grid">
         ${INSTANCES.map(inst => {
-          const instPct = Math.round(inst.storage / TOTAL_DISK * 100);
+          const instPct = Math.round(inst.storage / Math.max(diskTotal, 1) * 100);
           return `<div class="su-pi-card">
             <div class="su-pi-head">
               <span class="su-pi-name">${esc(inst.name)}</span>
@@ -1230,23 +1234,30 @@ function renderTimeline(elId, maxItems = 99) {
 }
 
 function renderCapacity() {
+  const diskTotal = totalDiskGb();
+  const capacitySub = $('capacity-sub');
+  if (capacitySub) capacitySub.textContent = `VPS disk allocation \u00b7 ${fmt(diskTotal)} GB total`;
   const totalStorage = INSTANCES.reduce((sum, instance) => sum + instance.storage, 0);
+  const imagesUsed = Number(RUNTIME_METRICS?.imagesGb || 0);
+  const volumesUsed = Number(RUNTIME_METRICS?.volumesGb || 0);
   const runtimeUsed = Number(RUNTIME_METRICS?.storageUsedGb || 0);
   const stackUsed = Math.max(0, runtimeUsed - totalStorage);
-  const freeUsed = Math.max(0, TOTAL_DISK - runtimeUsed);
+  const freeUsed = Math.max(0, diskTotal - runtimeUsed);
   const items = [
-    { label: 'Platform Stack', used: stackUsed, total: TOTAL_DISK, color: 'brand', meta: 'Containers and shared volumes' },
-    { label: 'School Data', used: totalStorage, total: TOTAL_DISK, color: 'teal', meta: 'DB + uploads + backups across all instances' },
-    { label: 'Free Space', used: freeUsed, total: TOTAL_DISK, color: 'green', meta: 'Available for new instances' },
+    { label: 'Images', used: imagesUsed, total: diskTotal, color: 'brand', meta: 'Docker images stored on this server' },
+    { label: 'Volumes', used: volumesUsed, total: diskTotal, color: 'teal', meta: 'Persistent Docker volumes' },
+    { label: 'Platform Stack', used: stackUsed, total: diskTotal, color: 'amber', meta: 'Containers and shared runtime layers' },
+    { label: 'School Data', used: totalStorage, total: diskTotal, color: 'teal', meta: 'DB + uploads + backups across all instances' },
+    { label: 'Free Space', used: freeUsed, total: diskTotal, color: 'green', meta: 'Available for new instances' },
   ];
   const el = $('capacity-items');
   if (!el) return;
   el.innerHTML = items.map(item => {
-    const pct = Math.round(Math.max(0, item.used) / item.total * 100);
+    const pct = Math.round(Math.max(0, item.used) / Math.max(item.total, 1) * 100);
     return `<div class="capacity-item">
       <div class="cap-row"><span class="cap-name">${esc(item.label)}</span><span class="cap-val">${fmt(item.used)} GB</span></div>
       <div class="meter"><div class="meter-fill ${item.color}" style="width:${pct}%"></div></div>
-      <div class="cap-meta">${esc(item.meta)} · ${pct}% of ${item.total} GB</div>
+      <div class="cap-meta">${esc(item.meta)} · ${pct}% of ${fmt(item.total)} GB</div>
     </div>`;
   }).join('');
 }
@@ -1257,13 +1268,14 @@ function renderStorageSection() {
 
   const disk = $('disk-breakdown');
   if (disk) {
+    const diskTotal = totalDiskGb();
     const runtimeUsed = Number(RUNTIME_METRICS?.storageUsedGb || 0);
     const platformUsed = Math.max(0, runtimeUsed - total);
     const rows = [
-      { label: 'Platform Stack', used: platformUsed, total: TOTAL_DISK, color: 'brand' },
-      { label: 'School Databases', used: INSTANCES.reduce((sum, instance) => sum + instance.dbGb, 0), total: TOTAL_DISK, color: 'green' },
-      { label: 'Uploaded Files', used: INSTANCES.reduce((sum, instance) => sum + instance.uploads, 0), total: TOTAL_DISK, color: 'amber' },
-      { label: 'Backups', used: INSTANCES.reduce((sum, instance) => sum + instance.backups, 0), total: TOTAL_DISK, color: 'brand' },
+      { label: 'Platform Stack', used: platformUsed, total: diskTotal, color: 'brand' },
+      { label: 'School Databases', used: INSTANCES.reduce((sum, instance) => sum + instance.dbGb, 0), total: diskTotal, color: 'green' },
+      { label: 'Uploaded Files', used: INSTANCES.reduce((sum, instance) => sum + instance.uploads, 0), total: diskTotal, color: 'amber' },
+      { label: 'Backups', used: INSTANCES.reduce((sum, instance) => sum + instance.backups, 0), total: diskTotal, color: 'brand' },
     ];
     disk.innerHTML = rows.map(row => {
       const pct = Math.round(row.used / row.total * 100);

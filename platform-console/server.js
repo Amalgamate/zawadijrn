@@ -498,12 +498,19 @@ async function collectRuntime() {
   const totalDiskBytes = disk.reduce((sum, d) => sum + Number(d.size || 0), 0);
   const usedDiskBytes = disk.reduce((sum, d) => sum + Number(d.used || 0), 0);
 
+  const imageBytes = Number(dockerDf?.LayersSize || 0);
+  const volumeBytes = Array.isArray(dockerDf?.Volumes)
+    ? dockerDf.Volumes.reduce((s, v) => s + Number(v?.UsageData?.Size || 0), 0)
+    : 0;
+
   const metrics = {
     liveSchools: instances.filter(i => i.hasFrontend && i.hasBackend && i.hasDatabase).length,
     containersHealthy: `${instances.reduce((s, i) => s + i.runningContainers, 0)}/${Math.max(1, instances.reduce((s, i) => s + i.containers, 0))}`,
     storageUsedGb: dockerDf
-      ? Number((((Number(dockerDf.LayersSize || 0) + (dockerDf.Volumes || []).reduce((s, v) => s + Number(v?.UsageData?.Size || 0), 0)) / (1024 ** 3))).toFixed(2))
+      ? Number((((imageBytes + volumeBytes) / (1024 ** 3))).toFixed(2))
       : Number(instances.reduce((s, i) => s + i.storage, 0).toFixed(2)),
+    imagesGb: Number((imageBytes / (1024 ** 3)).toFixed(2)),
+    volumesGb: Number((volumeBytes / (1024 ** 3)).toFixed(2)),
     cpuLoadPercent: Math.round(load.currentLoad || 0),
     memoryUsedPercent: Math.round((mem.used / Math.max(mem.total, 1)) * 100),
     diskTotalGb: Number((totalDiskBytes / (1024 ** 3)).toFixed(1)),
