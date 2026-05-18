@@ -495,8 +495,15 @@ async function collectRuntime() {
     }
   }
 
-  const totalDiskBytes = disk.reduce((sum, d) => sum + Number(d.size || 0), 0);
-  const usedDiskBytes = disk.reduce((sum, d) => sum + Number(d.used || 0), 0);
+  // Capacity should reflect the primary filesystem available to deployed services,
+  // not the sum of every mounted filesystem on the host.
+  const rootFs =
+    disk.find(d => String(d.mount || '').trim() === '/') ||
+    disk.find(d => String(d.fs || '').trim() === '/dev/sda2') ||
+    disk.reduce((max, d) => (Number(d.size || 0) > Number(max?.size || 0) ? d : max), null);
+
+  const totalDiskBytes = Number(rootFs?.size || 0);
+  const usedDiskBytes = Number(rootFs?.used || 0);
 
   const imageBytes = Number(dockerDf?.LayersSize || 0);
   const volumeBytes = Array.isArray(dockerDf?.Volumes)
