@@ -4,25 +4,14 @@
  * On desktop: Normal layout with sidebar
  */
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import SummativeAssessmentMobile from './SummativeAssessmentMobile';
 import SummativeAssessment from './SummativeAssessment';
+import { useMobile } from '../../../hooks/useMobileDetection';
 
 const SummativeAssessmentRouter = ({ learners, initialTestId, defaultTestType = null, onBack, isMobile: deviceIsMobile, brandingSettings, embedded }) => {
-  const [isMobile, setIsMobile] = useState(deviceIsMobile ?? window.innerWidth < 768);
-
-  useEffect(() => {
-    const handleResize = () => {
-      const mobile = window.innerWidth < 768;
-      setIsMobile(mobile);
-      console.log(`[SummativeAssessmentRouter] Viewport: ${mobile ? 'MOBILE' : 'DESKTOP'} (${window.innerWidth}px)`);
-    };
-
-    window.addEventListener('resize', handleResize);
-    console.log(`[SummativeAssessmentRouter] Initialized: ${isMobile ? 'MOBILE' : 'DESKTOP'} (${window.innerWidth}px)`);
-
-    return () => window.removeEventListener('resize', handleResize);
-  }, [isMobile]);
+  const mobileByViewport = useMobile();
+  const isMobile = typeof deviceIsMobile === 'boolean' ? deviceIsMobile : mobileByViewport;
 
   // On mobile: return full-screen component (breaks out of sidebar layout)
   if (isMobile) {

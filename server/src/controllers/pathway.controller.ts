@@ -4,6 +4,7 @@ import { AuthRequest } from '../middleware/auth.middleware';
 import { ApiError } from '../utils/error.util';
 import { seedSeniorPathways } from '../services/ss-pathways.seed';
 import { runSeniorPathwayIntegrityCheck } from '../services/pathway-integrity.service';
+import { hasFinalizedTransitionDecision } from '../services/pathway-transition-decision.service';
 
 type SelectionItem = { learningAreaId: string; active?: boolean };
 
@@ -135,6 +136,11 @@ export const pathwayController = {
     assertSecondaryLearner(learner);
     if (!learner.pathwayId) throw new ApiError(400, 'Learner must select a pathway first');
 
+    const subjectSelectionLocked = await hasFinalizedTransitionDecision(learnerId);
+    if (subjectSelectionLocked) {
+      throw new ApiError(409, 'Subject selection is locked after pathway approval');
+    }
+
     const activeSelections = selections
       .filter(s => s && s.learningAreaId)
       .map(s => ({ learningAreaId: String(s.learningAreaId), active: s.active !== false }));
@@ -184,7 +190,8 @@ export const pathwayController = {
 
   getLearnerPathwayAndSubjects: async (req: AuthRequest, res: Response) => {
     const { learnerId } = req.params;
-    const learner = await prisma.learner.findUnique({
+    const [learner, subjectSelectionLocked] = await Promise.all([
+      prisma.learner.findUnique({
       where: { id: learnerId },
       select: {
         id: true,
@@ -197,9 +204,11 @@ export const pathwayController = {
           orderBy: { createdAt: 'asc' },
         },
       }
-    });
+      }),
+      hasFinalizedTransitionDecision(learnerId),
+    ]);
     if (!learner) throw new ApiError(404, 'Learner not found');
     assertSecondaryLearner(learner);
-    res.json({ success: true, data: learner });
+    res.json({ success: true, data: { ...learner, subjectSelectionLocked } });
   },
 };

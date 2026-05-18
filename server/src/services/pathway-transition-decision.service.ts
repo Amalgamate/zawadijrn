@@ -83,3 +83,16 @@ export async function getTransitionDecisionHistory(learnerId: string) {
   return rows || [];
 }
 
+export async function hasFinalizedTransitionDecision(learnerId: string): Promise<boolean> {
+  await ensureDecisionTable();
+  const rows = await prisma.$queryRawUnsafe<Array<{ id: string }>>(`
+    SELECT id
+    FROM learner_pathway_recommendations
+    WHERE "learnerId" = $1
+      AND "finalApprovedPathway" IS NOT NULL
+      AND TRIM("finalApprovedPathway") <> ''
+    ORDER BY "createdAt" DESC
+    LIMIT 1;
+  `, learnerId);
+  return rows.length > 0;
+}

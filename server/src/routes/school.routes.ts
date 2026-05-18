@@ -48,7 +48,13 @@ const updateSchoolSchema = z.object({
   welcomeTitle: z.string().max(255).optional().nullable(),
   welcomeMessage: z.string().max(2000).optional().nullable(),
   onboardingTitle: z.string().max(255).optional().nullable(),
-  onboardingMessage: z.string().max(2000).optional().nullable()
+  onboardingMessage: z.string().max(2000).optional().nullable(),
+  admissionNumberMode: z.enum(['AUTO', 'MANUAL']).optional(),
+  admissionPattern: z.string().min(1).max(120).optional(),
+  admissionSequenceWidth: z.number().int().min(1).max(12).optional(),
+  admissionStartNumber: z.number().int().min(1).max(999999999).optional(),
+  admissionResetRule: z.enum(['NEVER', 'YEARLY']).optional(),
+  admissionNumberingLocked: z.boolean().optional()
 });
 
 const configureInstitutionSchema = z.object({

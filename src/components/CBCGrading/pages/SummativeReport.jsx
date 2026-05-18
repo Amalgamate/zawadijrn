@@ -1246,7 +1246,6 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user, pa
         };
         if (stagedStream && stagedStream !== 'all') params.stream = stagedStream;
 
-        console.log('🔄 Fetching learners for selection from API...', params);
         const response = await api.learners.getAll(params);
 
         if (response.success) {
@@ -1315,19 +1314,15 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user, pa
   useEffect(() => {
     const fetchStreamConfigs = async () => {
       try {
-        console.log('🔍 Fetching stream configurations (single-tenant mode)');
 
         const response = await configAPI.getStreamConfigs();
 
-        console.log('📦 Raw API Response:', response);
 
         const configs = Array.isArray(response) ? response : (response?.data ? response.data : []);
-        console.log('✅ Stream configs processed:', configs.length, 'configs');
 
         if (configs.length === 0) {
           console.warn('⚠️ No stream configs returned from API');
         } else {
-          console.log('   Stream names:', configs.map(c => c.name));
         }
 
         setStreamConfigs(configs || []);
@@ -1342,17 +1337,13 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user, pa
     if (user) {
       fetchStreamConfigs();
     } else {
-      console.log('⏳ User prop not available yet, waiting...');
     }
   }, [user]);
 
   // Monitor learners prop changes
   useEffect(() => {
     if (learners && learners.length > 0) {
-      console.log('✅ Learners loaded:', learners.length);
-      console.log('   Sample learner grades:', learners.slice(0, 3).map(l => l.grade));
     } else {
-      console.log('⏳ Waiting for learners to load... (Learners:', learners?.length || 0, ')');
       // If no learners after a delay, try to fetch them again
       const timer = setTimeout(() => {
         if (!learners || learners.length === 0) {
@@ -1379,7 +1370,6 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user, pa
           params.grade = stagedGrade;
         }
 
-        console.log('🔄 Fetching available tests for reports...', params);
         const res = await api.assessments.getTests(params);
 
         if (res.success) {
@@ -1388,7 +1378,6 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user, pa
           setStagedTestIds([]);
 
           setAvailableTests(res.data || []);
-          console.log('✅ Tests loaded:', res.data?.length || 0);
         }
       } catch (err) {
         console.error('Fetch tests error:', err);
@@ -1415,7 +1404,6 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user, pa
     });
 
     const groups = Array.from(groupsSet);
-    console.log('📊 Available test groups detected:', groups);
     return groups.sort(compareTestGroups);
   }, [availableTests]);
 
@@ -1436,7 +1424,6 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user, pa
   // Derive unique streams from stream configurations (Source of Truth)
   // Falls back to learner streams if configs not loaded yet
   const availableStreams = useMemo(() => {
-    console.log('📊 useMemo recalculating - streamConfigs:', streamConfigs.length);
 
     // Priority 1: Use official stream configs if available
     if (streamConfigs && streamConfigs.length > 0) {
@@ -1448,13 +1435,11 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user, pa
           value: s.name
         }));
 
-      console.log('✅ Using official stream configs:', activeStreams.map(s => s.name));
       return activeStreams;
     }
 
     // Fallback: Extract from learners if configs haven't loaded yet
     if (!learners || learners.length === 0) {
-      console.log('⏳ No learners or stream configs available yet');
       return [];
     }
 
@@ -1464,7 +1449,6 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user, pa
     }
 
     const learnerStreams = Array.from(new Set(filtered.map(l => l.stream).filter(Boolean)));
-    console.log('⚠️ Fallback: Using streams from learners:', learnerStreams);
 
     return learnerStreams.map(s => ({
       id: s,
@@ -1491,7 +1475,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user, pa
       const result = await generateJPEG(
         'single-print-content',
         filename,
-        (msg) => { setPdfProgress(msg); console.log(`🖼️ JPEG: ${msg}`); }
+        (msg) => { setPdfProgress(msg); }
       );
 
       if (result?.success) {
@@ -1547,7 +1531,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user, pa
         autoPrint: true,
         fitToSinglePage: isSingleLearnerReport,
         orientation: isBroadsheetReport ? 'landscape' : 'portrait',
-        onProgress: (msg) => { setPdfProgress(msg); console.log(`🖨️ PRINT: ${msg}`); }
+        onProgress: (msg) => { setPdfProgress(msg); }
       });
 
       if (result?.success) {
@@ -2132,7 +2116,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user, pa
       const result = await pdfPrintWindow('bulk-print-content', {
         title: filename,
         autoPrint: true,
-        onProgress: (msg) => { setPdfProgress(msg); console.log(`🖨️ BULK PRINT: ${msg}`); }
+        onProgress: (msg) => { setPdfProgress(msg); }
       });
 
       if (result.success) {
@@ -2184,7 +2168,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user, pa
         title: filename,
         autoPrint: true,
         fitToSinglePage: true,
-        onProgress: (msg) => console.log(`🖨️ SINGLE PRINT: ${msg}`)
+        onProgress: () => {}
       });
 
       if (result.success) {
@@ -2496,7 +2480,6 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user, pa
         const allCommunications = bulkRes.success ? (bulkRes.communications || []) : [];
         const allPredictions = bulkRes.success ? (bulkRes.predictions || {}) : {};
 
-        console.log(`[Report] Bulk fetch returned ${allResults.length} results, ${allCommunications.length} comm histories, and ${Object.keys(allPredictions).length} predictions`);
 
         for (const learnerId of selectedLearnerIds) {
           const learner = filteredLearners?.find(l => l.id === learnerId);
@@ -3547,7 +3530,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user, pa
                               const learner = row.learner;
                               const parentPhone = getLearnerPhone(learner);
                               if (!parentPhone) {
-                                alert('No parent phone number');
+                                showError('No parent phone number');
                                 return;
                               }
                               const msg = `*${brandingSettings?.schoolName || 'SCHOOL'} REPORT*\nName: ${learner.firstName}\nMean: ${row.averagePct}%\nGrade: ${row.grade}`;

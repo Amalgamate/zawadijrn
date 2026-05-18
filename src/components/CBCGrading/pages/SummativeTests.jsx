@@ -95,7 +95,6 @@ const SummativeTests = ({ onNavigate, defaultTestType = null }) => {
       });
 
       setTests(testsData);
-      console.log('✅ Loaded tests from database:', testsData.length);
     } catch (error) {
       console.error('❌ Error fetching tests:', error);
       showError('Failed to load tests from database');
@@ -260,9 +259,6 @@ const SummativeTests = ({ onNavigate, defaultTestType = null }) => {
 
   // eslint-disable-next-line no-unused-vars -- reserved for SummativeTestForm integration
   const handleSaveTest = async (formData) => {
-    console.log('=== SAVING TEST ===');
-    console.log('View mode:', viewMode);
-    console.log('Form data:', formData);
 
     try {
       // Ensure testDate is present (backend expects testDate, frontend uses date)
@@ -287,7 +283,6 @@ const SummativeTests = ({ onNavigate, defaultTestType = null }) => {
         }
         fetchTests();
 
-      console.log('✅ Save completed');
       setViewMode('list');
     } catch (error) {
       console.error('❌ Save failed:', error);
@@ -336,8 +331,6 @@ const SummativeTests = ({ onNavigate, defaultTestType = null }) => {
         initialTestType={viewMode === 'create' ? normalizedDefaultTestType : null}
         onBack={() => setViewMode('list')}
         onSuccess={(createdTest, selectedLearners) => {
-          console.log('Test created:', createdTest);
-          console.log('Selected learners:', selectedLearners);
           fetchTests(); // Refresh the tests list
           setViewMode('list');
           showSuccess('Test created successfully!');

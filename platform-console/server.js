@@ -42,10 +42,83 @@ const APP_VERSION = process.env.CONSOLE_APP_VERSION || 'live';
 const INSTANCE_PROVISION_SCRIPT = process.env.CONSOLE_INSTANCE_PROVISION_SCRIPT || '';
 const NGINX_SITES_DIR = process.env.CONSOLE_NGINX_SITES_DIR || '/etc/nginx/sites-enabled';
 
-const deploymentLog = [];
-const auditLog = [];
-const APP_TYPE_SET = new Set(['school', 'odoo', 'wordpress', 'sacco', 'hospital', 'hotel', 'organization']);
+// ── Persistent stores ─────────────────────────────────────────────────────
 const LEADS_STORE_FILE = path.join(__dirname, 'leads.store.json');
+const AUDIT_STORE_FILE = path.join(__dirname, 'audit.store.json');
+const MAX_AUDIT_ENTRIES = 2000;
+
+// In-memory deployment log (ephemeral — only tracks this process session)
+const deploymentLog = [];
+
+// ── Audit log helpers (file-backed, survives restarts) ────────────────────
+function ensureAuditStore() {
+  if (!fs.existsSync(AUDIT_STORE_FILE)) {
+    fs.writeFileSync(AUDIT_STORE_FILE, JSON.stringify({ logs: [] }, null, 2), 'utf8');
+  }
+}
+
+function readAuditStore() {
+  ensureAuditStore();
+  try {
+    const raw = fs.readFileSync(AUDIT_STORE_FILE, 'utf8');
+    const parsed = JSON.parse(raw || '{}');
+    return Array.isArray(parsed.logs) ? parsed.logs : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeAuditStore(logs) {
+  try {
+    fs.writeFileSync(AUDIT_STORE_FILE, JSON.stringify({ logs }, null, 2), 'utf8');
+  } catch (err) {
+    // Non-fatal: log to stderr but don't crash the request
+    console.error('[audit] Failed to persist audit log:', err.message);
+  }
+}
+
+function pushAudit(action, instance, by, details, status = 'Success') {
+  const entry = {
+    time: new Date().toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' }) + ' EAT',
+    isoTime: new Date().toISOString(),
+    action,
+    instance,
+    by,
+    details,
+    status,
+  };
+
+  // Read current log, prepend new entry, cap at MAX_AUDIT_ENTRIES, write back
+  const logs = readAuditStore();
+  logs.unshift(entry);
+  if (logs.length > MAX_AUDIT_ENTRIES) logs.length = MAX_AUDIT_ENTRIES;
+  writeAuditStore(logs);
+}
+
+// ── Leads store helpers ───────────────────────────────────────────────────
+function ensureLeadsStore() {
+  if (!fs.existsSync(LEADS_STORE_FILE)) {
+    fs.writeFileSync(LEADS_STORE_FILE, JSON.stringify({ leads: [] }, null, 2), 'utf8');
+  }
+}
+
+function readLeadsStore() {
+  ensureLeadsStore();
+  try {
+    const raw = fs.readFileSync(LEADS_STORE_FILE, 'utf8');
+    const parsed = JSON.parse(raw || '{}');
+    return Array.isArray(parsed.leads) ? parsed.leads : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeLeadsStore(leads) {
+  fs.writeFileSync(LEADS_STORE_FILE, JSON.stringify({ leads }, null, 2), 'utf8');
+}
+
+// ── App catalog & port ranges ─────────────────────────────────────────────
+const APP_TYPE_SET = new Set(['school', 'odoo', 'wordpress', 'sacco', 'hospital', 'hotel', 'organization']);
 
 const DEFAULT_IMAGE_CATALOG = {
   school: [
@@ -83,44 +156,21 @@ const DEFAULT_IMAGE_CATALOG = {
 const APP_PORT_RANGES = {
   school: { fe: [3000, 3499], be: [5000, 5499], requireBe: true },
   odoo: { fe: [3500, 3999], be: [0, 0], requireBe: false },
-  wordpress: { fe: [4000, 4499], be: [0, 0], requireBe: false },
+  wordpress: { fe: [3000, 4499], be: [0, 0], requireBe: false },
   sacco: { fe: [4500, 4799], be: [5500, 5799], requireBe: true },
   hospital: { fe: [4800, 5099], be: [5800, 6099], requireBe: true },
   hotel: { fe: [5100, 5399], be: [6100, 6399], requireBe: true },
   organization: { fe: [5400, 5699], be: [6400, 6699], requireBe: true },
 };
 
-function pushAudit(action, instance, by, details, status = 'Success') {
-  auditLog.unshift({
-    time: new Date().toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' }) + ' EAT',
-    action,
-    instance,
-    by,
-    details,
-    status,
-  });
-  if (auditLog.length > 500) auditLog.length = 500;
+const PORT_RANGES = Object.values(APP_PORT_RANGES);
+function isLikelyFrontendPort(port) {
+  const n = Number(port);
+  return Number.isInteger(n) && PORT_RANGES.some(range => n >= range.fe[0] && n <= range.fe[1]);
 }
-
-function ensureLeadsStore() {
-  if (!fs.existsSync(LEADS_STORE_FILE)) {
-    fs.writeFileSync(LEADS_STORE_FILE, JSON.stringify({ leads: [] }, null, 2), 'utf8');
-  }
-}
-
-function readLeadsStore() {
-  ensureLeadsStore();
-  try {
-    const raw = fs.readFileSync(LEADS_STORE_FILE, 'utf8');
-    const parsed = JSON.parse(raw || '{}');
-    return Array.isArray(parsed.leads) ? parsed.leads : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeLeadsStore(leads) {
-  fs.writeFileSync(LEADS_STORE_FILE, JSON.stringify({ leads }, null, 2), 'utf8');
+function isLikelyBackendPort(port) {
+  const n = Number(port);
+  return Number.isInteger(n) && PORT_RANGES.some(range => range.requireBe && n >= range.be[0] && n <= range.be[1]);
 }
 
 if (process.env.NODE_ENV === 'production') {
@@ -182,10 +232,12 @@ app.post('/api/login', (req, res) => {
     maxAge: 8 * 60 * 60 * 1000,
   });
 
+  pushAudit('LOGIN', 'Console', user.email, `User logged in`, 'Success');
   return res.json({ ok: true, user: { email: user.email, role: user.role, name: user.name }, access: ROLE_ACCESS[user.role] || [] });
 });
 
-app.post('/api/logout', (req, res) => {
+app.post('/api/logout', requireAuth, (req, res) => {
+  pushAudit('LOGOUT', 'Console', req.user.email, `User logged out`, 'Success');
   res.clearCookie(COOKIE_NAME);
   return res.json({ ok: true });
 });
@@ -248,10 +300,19 @@ function mapContainersToInstances(containers) {
     if (/(^|[-_])(backend|be|api|server)($|[-_])/.test(descriptor)) inst.hasBackend = true;
     if (/(^|[-_])(db|database|postgres|mysql|mariadb)($|[-_])/.test(descriptor)) inst.hasDatabase = true;
 
+    const likelyFrontendContainer = /(^|[-_])(frontend|fe|web|ui|wordpress|odoo|apache|nginx)($|[-_])/.test(descriptor);
+    const likelyBackendContainer = /(^|[-_])(backend|be|api|server)($|[-_])/.test(descriptor);
     const ports = c.Ports || [];
     for (const p of ports) {
-      if (p.PublicPort >= 3000 && p.PublicPort < 4000 && !inst.fe) inst.fe = p.PublicPort;
-      if (p.PublicPort >= 5000 && p.PublicPort < 6000 && !inst.be) inst.be = p.PublicPort;
+      const publicPort = Number(p.PublicPort);
+      if (!Number.isInteger(publicPort) || publicPort <= 0) continue;
+
+      if (!inst.fe && isLikelyFrontendPort(publicPort) && (likelyFrontendContainer || !likelyBackendContainer)) {
+        inst.fe = publicPort;
+      }
+      if (!inst.be && isLikelyBackendPort(publicPort) && likelyBackendContainer) {
+        inst.be = publicPort;
+      }
     }
 
     const sizeBytes = Math.max(0, Number(c.SizeRw || 0));
@@ -300,8 +361,8 @@ function parseNginxDomainMap() {
       const hit = line.match(/proxy_pass\s+http:\/\/127\.0\.0\.1:(\d+)/);
       if (!hit) continue;
       const p = Number(hit[1]);
-      if (p >= 3000 && p < 4000) mapping.byFePort[p] = domain;
-      if (p >= 5000 && p < 6000) mapping.byBePort[p] = domain;
+      if (isLikelyBackendPort(p)) mapping.byBePort[p] = domain;
+      else if (isLikelyFrontendPort(p)) mapping.byFePort[p] = domain;
     }
   }
   return mapping;
@@ -347,7 +408,7 @@ function validateImageForAppType(appType, image) {
   const normalized = String(image || '').toLowerCase();
   if (!normalized) return false;
   if (appType === 'odoo') return normalized.includes('odoo');
-  if (appType === 'wordpress') return normalized.includes('wordpress');
+  if (appType === 'wordpress') return normalized.includes('wordpress') && !normalized.includes('fpm');
   if (appType === 'sacco') return normalized.includes('sacco');
   if (appType === 'hospital') return normalized.includes('hospital');
   if (appType === 'hotel') return normalized.includes('hotel');
@@ -382,8 +443,12 @@ async function buildImageCatalog() {
         image: `odoo:${tag}`,
       }));
     }
-    if (wordpressTags.length) {
-      catalog.wordpress = wordpressTags.map(tag => ({
+    const webReadyWordpressTags = wordpressTags.filter(tag => {
+      const normalized = String(tag || '').toLowerCase();
+      return normalized && !normalized.includes('fpm') && !normalized.includes('cli');
+    });
+    if (webReadyWordpressTags.length) {
+      catalog.wordpress = webReadyWordpressTags.map(tag => ({
         value: tag,
         label: `WordPress ${tag}`,
         image: `wordpress:${tag}`,
@@ -410,7 +475,6 @@ async function collectRuntime() {
     i.domain = (i.fe && nginxMap.byFePort[i.fe]) || (i.be && nginxMap.byBePort[i.be]) || i.domain || '';
   }
 
-  // Prefer real Docker volume usage per compose project when available.
   if (dockerDf && Array.isArray(dockerDf.Volumes)) {
     const volumeBytesByProject = {};
     for (const v of dockerDf.Volumes) {
@@ -424,7 +488,6 @@ async function collectRuntime() {
       const bytes = volumeBytesByProject[i.composeProject] || 0;
       if (bytes > 0) {
         i.storage = Number((bytes / (1024 ** 3)).toFixed(2));
-        // For now treat volume storage as DB bucket unless specialized buckets are tracked.
         i.dbGb = i.storage;
         i.uploads = 0;
         i.backups = 0;
@@ -457,7 +520,7 @@ app.get('/api/runtime', requireAuth, async (_req, res) => {
       ok: true,
       ...runtime,
       deployments: deploymentLog.slice(0, 50),
-      auditLogs: auditLog.slice(0, 200),
+      auditLogs: readAuditStore().slice(0, 200),
       mode: 'live',
       generatedAt: new Date().toISOString(),
     });
@@ -590,7 +653,9 @@ app.post('/api/instances/:key/:action', requireAuth, requireRole('super_admin'),
   }
 
   try {
-    const target = action === 'health' ? (await collectRuntime()).instances.find(i => i.key === req.params.key || i.name === req.params.key) : await applyInstanceAction(req.params.key, action);
+    const target = action === 'health'
+      ? (await collectRuntime()).instances.find(i => i.key === req.params.key || i.name === req.params.key)
+      : await applyInstanceAction(req.params.key, action);
     if (!target) return res.status(404).json({ error: 'Instance not found' });
 
     pushAudit(action.toUpperCase(), target.name, req.user.email, `Action ${action} executed on ${target.name}`, action === 'stop' || action === 'drop' ? 'Warning' : 'Success');
@@ -651,7 +716,7 @@ app.post('/api/instances/create', requireAuth, requireRole('super_admin'), async
     fePort,
     bePort: appRange.requireBe ? bePort : 0,
     db,
-    requestedBy: req.user.email
+    requestedBy: req.user.email,
   });
 
   try {
@@ -663,7 +728,6 @@ app.post('/api/instances/create', requireAuth, requireRole('super_admin'), async
   }
 });
 
-// Backward compatibility endpoint used by current app.js control handler
 app.post('/api/controls/:action', requireAuth, requireRole('super_admin'), async (req, res) => {
   const action = String(req.params.action || '').toLowerCase();
   if (action === 'start-all' || action === 'stop-all' || action === 'redeploy-all') {
@@ -684,14 +748,18 @@ app.post('/api/controls/:action', requireAuth, requireRole('super_admin'), async
   return res.json({ ok: true, action, status: 'accepted' });
 });
 
+// ── Audit log endpoint (now reads from file) ──────────────────────────────
 app.get('/api/audit-logs', requireAuth, (req, res) => {
-  res.json({ ok: true, logs: auditLog.slice(0, 200) });
+  const logs = readAuditStore();
+  const limit = Math.min(Number(req.query.limit) || 200, MAX_AUDIT_ENTRIES);
+  res.json({ ok: true, logs: logs.slice(0, limit), total: logs.length });
 });
 
 app.get('/api/deployments', requireAuth, (_req, res) => {
   res.json({ ok: true, deployments: deploymentLog.slice(0, 50) });
 });
 
+// ── Leads endpoints ───────────────────────────────────────────────────────
 app.get('/api/leads', requireAuth, requireRole('super_admin', 'platform_owner'), (_req, res) => {
   const leads = readLeadsStore();
   res.json({ ok: true, leads });
@@ -778,6 +846,7 @@ app.listen(PORT, () => {
   console.log(`Users configured: ${USERS.map(u => `${u.email} (${u.role})`).join(', ') || 'none'}`);
   console.log(`JWT expires: ${JWT_EXPIRES_IN} · Secure cookie: ${COOKIE_SECURE}`);
   console.log(`Host metrics: ${os.hostname()} · docker host ${process.env.DOCKER_HOST ? 'tcp://localhost:2375' : '/var/run/docker.sock'}`);
+  console.log(`Audit log: ${AUDIT_STORE_FILE} (persisted, max ${MAX_AUDIT_ENTRIES} entries)`);
 });
 
 module.exports = { requireAuth, requireRole };

@@ -381,7 +381,7 @@ async function fetchFormativeAssessments(learnerId: string, term: Term, academic
 }
 
 async function fetchSummativeResults(learnerId: string, term: Term, academicYear: number) {
-  return await prisma.summativeResult.findMany({
+  const results = await prisma.summativeResult.findMany({
     where: { learnerId, test: { term, academicYear } },
     include: {
       test: {
@@ -402,6 +402,28 @@ async function fetchSummativeResults(learnerId: string, term: Term, academicYear
       { test: { learningArea: 'asc' } },
       { test: { testDate: 'asc' } }
     ]
+  });
+
+  const learner = await prisma.learner.findUnique({
+    where: { id: learnerId },
+    select: { institutionType: true },
+  });
+
+  if (String(learner?.institutionType || '').toUpperCase() !== 'SECONDARY') {
+    return results;
+  }
+
+  const selections = await prisma.learnerSubjectSelection.findMany({
+    where: { learnerId, active: true },
+    select: { learningAreaId: true },
+  });
+
+  if (!selections.length) return results;
+  const selectedAreaIds = new Set(selections.map((s) => s.learningAreaId));
+
+  return results.filter((r: any) => {
+    const learningAreaId = r.test?.learningAreaId;
+    return Boolean(learningAreaId && selectedAreaIds.has(learningAreaId));
   });
 }
 

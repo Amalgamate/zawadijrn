@@ -142,6 +142,12 @@ model School {
   mission             String?
   admissionFormatType AdmissionFormatType @default(BRANCH_PREFIX_START)
   branchSeparator     String              @default("-")
+  admissionNumberMode AdmissionNumberingMode @default(AUTO)
+  admissionPattern    String              @default("ADM-{YEAR}-{SEQ}")
+  admissionSequenceWidth Int              @default(4)
+  admissionStartNumber Int                @default(1000)
+  admissionResetRule  AdmissionSequenceResetRule @default(YEARLY)
+  admissionNumberingLocked Boolean        @default(true)
   active              Boolean             @default(true)
   status              String              @default("ACTIVE")
   institutionType     InstitutionType     @default(PRIMARY_CBC)
@@ -2427,6 +2433,16 @@ enum AdmissionFormatType {
   BRANCH_PREFIX_START
   BRANCH_PREFIX_MIDDLE
   BRANCH_PREFIX_END
+}
+
+enum AdmissionNumberingMode {
+  AUTO
+  MANUAL
+}
+
+enum AdmissionSequenceResetRule {
+  NEVER
+  YEARLY
 }
 
 enum RubricRating {

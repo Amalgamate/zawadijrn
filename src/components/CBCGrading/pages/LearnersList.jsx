@@ -17,6 +17,7 @@ import { useSchoolData } from '../../../contexts/SchoolDataContext';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { MOBILE_MEDIA_QUERY } from '../../../constants/breakpoints';
 import { buildLearnerQueryParams } from './learnersListQuery';
+import { useNotifications } from '../hooks/useNotifications';
 
 const LearnersList = ({
   learners,
@@ -56,6 +57,7 @@ const LearnersList = ({
   const { user } = useAuth();
   const { grades } = useSchoolData();
   const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
+  const { showSuccess, showError } = useNotifications();
 
   const formatGradeLabel = (g) => {
     const s = String(g || '');
@@ -220,7 +222,7 @@ const LearnersList = ({
 
   const handleSendQuickMessage = async () => {
     if (!selectedGuardian || !quickMessage.trim()) {
-      alert('Please select a parent/guardian and enter a message');
+      showError('Please select a parent/guardian and enter a message');
       return;
     }
 
@@ -244,16 +246,16 @@ const LearnersList = ({
         });
 
         if (response && (response.message || response.success)) {
-          alert('Message sent successfully!');
+          showSuccess('Message sent successfully');
           setShowQuickContact(false);
           setQuickMessage('');
         } else {
-          alert('Failed to send message. Please try again.');
+          showError('Failed to send message. Please try again.');
         }
       }
     } catch (error) {
       console.error('Error sending message:', error);
-      alert('Error sending message: ' + (error.message || 'Unknown error'));
+      showError(`Error sending message: ${error.message || 'Unknown error'}`);
     } finally {
       setIsSendingSMS(false);
     }
@@ -611,7 +613,7 @@ const LearnersList = ({
                     <StatusBadge status={learner.status} size="sm" />
                   </div>
                   <div className="flex items-center gap-2 mt-1 text-xs font-semibold text-gray-500">
-                    <span className="bg-gray-100 px-2 py-0.5 rounded text-gray-700">{learner.admNo}</span>
+                    <span className="bg-gray-100 px-2 py-0.5 rounded text-gray-700">{learner.admissionNumber}</span>
                     <span>•</span>
                     <span>{learner.grade.replace('GRADE_', 'G')} {learner.stream}</span>
                     <span>•</span>
@@ -769,7 +771,7 @@ const LearnersList = ({
                     </div>
                   </div>
                 </td>
-                <td className="px-3 py-1.5 border-r border-gray-100 text-gray-600">{learner.admNo || learner.admissionNumber}</td>
+                <td className="px-3 py-1.5 border-r border-gray-100 text-gray-600">{learner.admissionNumber}</td>
                 <td className="px-3 py-1.5 border-r border-gray-100 font-semibold">{learner.grade} {learner.stream}</td>
                 <td className="px-3 py-1.5 border-r border-gray-100">
                   <div className="flex items-center gap-2">

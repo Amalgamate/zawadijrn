@@ -100,9 +100,7 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                 showSuccess('Profile photo updated successfully');
                 setCurrentLearner(prev => ({
                     ...prev,
-                    photoUrl: response.data?.photoUrl || photoData,
-                    photo: response.data?.photoUrl || photoData,
-                    avatar: response.data?.photoUrl || photoData
+                    photoUrl: response.data?.photoUrl || photoData
                 }));
             }
         } catch (error) {
@@ -149,13 +147,13 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
         >
             <ProfileHeader
                 name={`${currentLearner.firstName} ${currentLearner.middleName || ''} ${currentLearner.lastName}`}
-                avatar={currentLearner.photoUrl || currentLearner.photo || currentLearner.avatar}
+                avatar={currentLearner.photoUrl}
                 avatarFallback={`${currentLearner.firstName?.[0]}${currentLearner.lastName?.[0]}`}
                 status={currentLearner.status}
                 bannerColor="brand-purple"
                 compact={true}
                 badges={[
-                    { text: currentLearner.admissionNumber || currentLearner.admNo, icon: GraduationCap, className: "bg-gray-100 border border-gray-200 px-2.5 py-0.5 rounded-md" },
+                    { text: currentLearner.admissionNumber, icon: GraduationCap, className: "bg-gray-100 border border-gray-200 px-2.5 py-0.5 rounded-md" },
                     { text: `${currentLearner.grade} ${currentLearner.stream || ''}`, className: "font-medium text-gray-700" }
                 ]}
                 quickStats={[
@@ -204,7 +202,7 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                                         <h3 className="text-base font-medium text-gray-800">Academic</h3>
                                     </div>
                                     <div className="space-y-3">
-                                        <InfoRow label="Adm Number" value={currentLearner.admissionNumber || currentLearner.admNo} />
+                                        <InfoRow label="Adm Number" value={currentLearner.admissionNumber} />
                                         <InfoRow label="Date of Adm" value={currentLearner.dateOfAdmission ? new Date(currentLearner.dateOfAdmission).toLocaleDateString() : 'N/A'} />
                                         <InfoRow label="Current Grade" value={currentLearner.grade} />
                                         <InfoRow label="Stream" value={currentLearner.stream} />
@@ -631,7 +629,7 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
                 isOpen={showPhotoModal}
                 onClose={() => setShowPhotoModal(false)}
                 onSave={handleSavePhoto}
-                currentPhoto={currentLearner.photoUrl || currentLearner.photo || currentLearner.avatar}
+                currentPhoto={currentLearner.photoUrl}
             />
         </ProfileLayout>
     );

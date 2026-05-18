@@ -323,6 +323,8 @@ const UserManagement = () => {
         addActivityLog('USER_UPDATED', `${formData.firstName} ${formData.lastName} (${formData.role})`);
         showNotification('User updated successfully!');
       } else {
+        // Let backend generate incremental Staff ID (STF-0001, STF-0002, ...)
+        delete payload.staffId;
         await userAPI.create(payload);
         addActivityLog('USER_CREATED', `${formData.firstName} ${formData.lastName} (${formData.role})`);
         showNotification('User created successfully!');
@@ -1126,11 +1128,15 @@ const UserManagement = () => {
                     <label className="block text-sm font-semibold mb-2 text-gray-700">Staff ID</label>
                     <input
                       type="text"
-                      value={formData.staffId}
+                      value={editingUser ? (formData.staffId || '') : 'Auto-generated'}
                       onChange={(e) => setFormData({ ...formData, staffId: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="EMP001"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Auto-generated"
+                      disabled={!editingUser}
                     />
+                    {!editingUser && (
+                      <p className="mt-1 text-xs text-gray-500">Staff ID is assigned automatically in sequence.</p>
+                    )}
                   </div>
 
                   <div>

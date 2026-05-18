@@ -341,7 +341,7 @@ function finishInstallProgress(ok = true) {
 const APP_PORT_RANGES = {
   school: { fe: [3000, 3499], be: [5000, 5499], requireBe: true },
   odoo: { fe: [3500, 3999], be: [0, 0], requireBe: false },
-  wordpress: { fe: [4000, 4499], be: [0, 0], requireBe: false },
+  wordpress: { fe: [3000, 4499], be: [0, 0], requireBe: false },
   sacco: { fe: [4500, 4799], be: [5500, 5799], requireBe: true },
   hospital: { fe: [4800, 5099], be: [5800, 6099], requireBe: true },
   hotel: { fe: [5100, 5399], be: [6100, 6399], requireBe: true },
@@ -360,6 +360,8 @@ function suggestNextPorts(appKey = 'school') {
 const APP_PROVISIONING_CATALOG = {
   school: {
     label: 'School',
+    nameLabel: 'School Name',
+    namePlaceholder: 'e.g. Sunshine Academy',
     modalTitle: 'Provision New School',
     submitLabel: 'Provision School',
     defaultDomainSuffix: 'elimucrown.co.ke',
@@ -374,6 +376,8 @@ const APP_PROVISIONING_CATALOG = {
   },
   odoo: {
     label: 'Odoo',
+    nameLabel: 'Company Name',
+    namePlaceholder: 'e.g. Acme Limited',
     modalTitle: 'Provision Odoo Instance',
     submitLabel: 'Provision Odoo',
     defaultDomainSuffix: 'elimucrown.co.ke',
@@ -389,6 +393,8 @@ const APP_PROVISIONING_CATALOG = {
   },
   wordpress: {
     label: 'WordPress',
+    nameLabel: 'Organization Name',
+    namePlaceholder: 'e.g. Acme Foundation',
     modalTitle: 'Provision WordPress Instance',
     submitLabel: 'Provision WordPress',
     defaultDomainSuffix: 'elimucrown.co.ke',
@@ -404,6 +410,8 @@ const APP_PROVISIONING_CATALOG = {
   },
   sacco: {
     label: 'Sacco',
+    nameLabel: 'Sacco Name',
+    namePlaceholder: 'e.g. Umoja Sacco',
     modalTitle: 'Provision New Sacco',
     submitLabel: 'Provision Sacco',
     defaultDomainSuffix: 'elimucrown.co.ke',
@@ -418,6 +426,8 @@ const APP_PROVISIONING_CATALOG = {
   },
   hospital: {
     label: 'Hospital',
+    nameLabel: 'Hospital Name',
+    namePlaceholder: 'e.g. St. Mary Hospital',
     modalTitle: 'Provision New Hospital',
     submitLabel: 'Provision Hospital',
     defaultDomainSuffix: 'elimucrown.co.ke',
@@ -432,6 +442,8 @@ const APP_PROVISIONING_CATALOG = {
   },
   hotel: {
     label: 'Hotel',
+    nameLabel: 'Hotel Name',
+    namePlaceholder: 'e.g. Skyline Hotel',
     modalTitle: 'Provision New Hotel',
     submitLabel: 'Provision Hotel',
     defaultDomainSuffix: 'elimucrown.co.ke',
@@ -446,6 +458,8 @@ const APP_PROVISIONING_CATALOG = {
   },
   organization: {
     label: 'Organization',
+    nameLabel: 'Organization Name',
+    namePlaceholder: 'e.g. Bright Future NGO',
     modalTitle: 'Provision New Organization',
     submitLabel: 'Provision Organization',
     defaultDomainSuffix: 'elimucrown.co.ke',
@@ -589,6 +603,8 @@ function applyProvisionMode(appKey) {
   if ($('f-app')) $('f-app').value = currentProvisionApp;
   if ($('modal-title')) $('modal-title').textContent = app.modalTitle;
   if ($('modal-submit')) $('modal-submit').textContent = app.submitLabel;
+  if ($('f-name-label')) $('f-name-label').textContent = app.nameLabel || `${app.label} Name`;
+  if ($('f-name')) $('f-name').placeholder = app.namePlaceholder || `e.g. ${app.label} Name`;
   if ($('f-port-fe-label')) $('f-port-fe-label').textContent = app.feLabel;
   if ($('f-port-be-label')) $('f-port-be-label').textContent = app.beLabel;
   if ($('f-port-be-row')) $('f-port-be-row').style.display = appRange.requireBe ? '' : 'none';

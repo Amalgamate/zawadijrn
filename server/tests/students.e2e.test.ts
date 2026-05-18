@@ -35,6 +35,7 @@ describe('Students module end-to-end', () => {
     id: 'test-super-admin-id',
     email: 'test-super-admin@example.com',
     role: 'SUPER_ADMIN' as Role,
+    institutionType: 'PRIMARY_CBC',
   });
 
   const uniqueSuffix = Date.now();
@@ -107,5 +108,56 @@ describe('Students module end-to-end', () => {
     expect(response.body.data).toHaveProperty('admissionNumber', createdAdmissionNumber);
     expect(response.body.data).toHaveProperty('firstName', learnerPayload.firstName.toUpperCase());
     expect(response.body.data).toHaveProperty('lastName', learnerPayload.lastName.toUpperCase());
+  });
+
+  it('uploads learner photo explicitly via photo endpoint', async () => {
+    expect(createdLearnerId).toBeTruthy();
+    const photoData = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO7Z2ioAAAAASUVORK5CYII=';
+
+    const response = await request(app)
+      .post(`/api/learners/${createdLearnerId}/photo`)
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({ photoData })
+      .expect(200);
+
+    expect(response.body).toHaveProperty('success', true);
+    expect(response.body.data).toHaveProperty('photoUrl', photoData);
+  });
+
+  it('rejects unknown learner fields to enforce strict frontend-backend contract', async () => {
+    const response = await request(app)
+      .post('/api/learners')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        ...learnerPayload,
+        firstName: 'Strict',
+        lastName: 'Contract',
+        unknownFieldX: 'must-fail',
+      })
+      .expect(400);
+
+    expect(response.body?.message || '').toContain('Validation failed');
+  });
+
+  it('maps doctor orphan fields to emergency fallback and preserves orphanFields payload', async () => {
+    const uniqueLocal = Date.now();
+    const response = await request(app)
+      .post('/api/learners')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        ...learnerPayload,
+        firstName: 'Orphan',
+        lastName: `Mapping${uniqueLocal}`,
+        guardianEmail: `orphan-${uniqueLocal}@example.com`,
+        doctorName: 'Dr House',
+        doctorPhone: '0700000000',
+        nationality: 'Kenyan',
+        previousClass: 'PP2',
+      })
+      .expect(201);
+
+    expect(response.body).toHaveProperty('success', true);
+    expect(response.body.data).toHaveProperty('emergencyContact', 'Dr House');
+    expect(response.body.data).toHaveProperty('emergencyPhone', '0700000000');
   });
 });

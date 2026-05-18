@@ -12,6 +12,46 @@ import { gradingService } from '../services/grading.service';
 import * as reportService from '../services/report.service';
 
 import logger from '../utils/logger';
+
+type SummativeWithTestArea = { learnerId: string; test?: { learningAreaId?: string | null } | null };
+
+async function filterSummativeResultsBySecondarySelection<T extends SummativeWithTestArea>(results: T[]): Promise<T[]> {
+  if (!results.length) return results;
+
+  const learnerIds = Array.from(new Set(results.map((r) => String(r.learnerId)).filter(Boolean)));
+  if (!learnerIds.length) return results;
+
+  const [learners, selections] = await Promise.all([
+    prisma.learner.findMany({
+      where: { id: { in: learnerIds } },
+      select: { id: true, institutionType: true },
+    }),
+    prisma.learnerSubjectSelection.findMany({
+      where: { learnerId: { in: learnerIds }, active: true },
+      select: { learnerId: true, learningAreaId: true },
+    }),
+  ]);
+
+  const secondaryLearnerIds = new Set(
+    learners.filter((l: any) => String(l.institutionType || '').toUpperCase() === 'SECONDARY').map((l: any) => l.id),
+  );
+  const selectedByLearner = new Map<string, Set<string>>();
+  for (const row of selections) {
+    const set = selectedByLearner.get(row.learnerId) || new Set<string>();
+    set.add(row.learningAreaId);
+    selectedByLearner.set(row.learnerId, set);
+  }
+
+  return results.filter((result) => {
+    const learnerId = String(result.learnerId);
+    if (!secondaryLearnerIds.has(learnerId)) return true;
+    const selected = selectedByLearner.get(learnerId);
+    if (!selected || selected.size === 0) return true;
+    const learningAreaId = result.test?.learningAreaId;
+    return Boolean(learningAreaId && selected.has(learningAreaId));
+  });
+}
+
 export const reportController = {
   /**
    * Get Comprehensive Formative Report for a Learner
@@ -161,7 +201,8 @@ export const reportController = {
         ]
       });
 
-      const subjectSummary = calculateSubjectSummary(results, ranges);
+      const filteredResults = await filterSummativeResultsBySecondarySelection(results as any[]);
+      const subjectSummary = calculateSubjectSummary(filteredResults, ranges);
 
       res.json({
         success: true,
@@ -169,7 +210,7 @@ export const reportController = {
           learner,
           term,
           academicYear: parseInt(academicYear as string),
-          results,
+          results: filteredResults,
           subjectSummary,
           generatedDate: new Date()
         }
@@ -243,7 +284,7 @@ export const reportController = {
 
       const learnerIds = classInfo.enrollments.map((e: any) => e.learnerId);
 
-      const [formative, summative] = await Promise.all([
+      const [formative, summativeRaw] = await Promise.all([
         prisma.formativeAssessment.findMany({
           where: { learnerId: { in: learnerIds }, term: term as Term, academicYear: yearValue },
           include: { learningAreaRef: { select: { id: true, pathway: true, category: true, isCore: true } } }
@@ -253,6 +294,7 @@ export const reportController = {
           include: { test: { select: { learningArea: true, learningAreaId: true, totalMarks: true, learningAreaRef: { select: { id: true, pathway: true, category: true, isCore: true } } } } }
         })
       ]);
+      const summative = await filterSummativeResultsBySecondarySelection(summativeRaw as any[]);
 
       res.json({
         success: true,
@@ -298,7 +340,7 @@ export const reportController = {
       if (!learner) throw new ApiError(404, 'Learner not found');
 
       // Fetch all summative results for the year across all 3 terms
-      const summativeResults = await prisma.summativeResult.findMany({
+      const summativeResultsRaw = await prisma.summativeResult.findMany({
         where: {
           learnerId,
           test: { academicYear: yearValue, archived: false }
@@ -317,6 +359,7 @@ export const reportController = {
         },
         orderBy: { test: { term: 'asc' } }
       });
+      const summativeResults = await filterSummativeResultsBySecondarySelection(summativeResultsRaw as any[]);
 
       // Fetch all formative results for the year
       const formativeResults = await prisma.formativeAssessment.findMany({

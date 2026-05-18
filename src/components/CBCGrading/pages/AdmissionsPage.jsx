@@ -12,6 +12,7 @@ import { toInputDate } from '../utils/dateHelpers';
 import ParentGuardianStep from './steps/ParentGuardianStep';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { MOBILE_MEDIA_QUERY } from '../../../constants/breakpoints';
+import { sanitizeLearnerPayload } from '../contracts/learnerPayload.contract';
 
 const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
   const { showSuccess, showError } = useNotifications();
@@ -116,8 +117,8 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
         dateOfAdmission: toInputDate(learner.admissionDate) || initialFormData.dateOfAdmission,
       });
       // Set photo preview if exists
-      if (learner.photo) {
-        setPhotoPreview(learner.photo);
+      if (learner.photoUrl) {
+        setPhotoPreview(learner.photoUrl);
       }
       setChangeReason('');
     } else {
@@ -154,25 +155,35 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
     fetchAdmPreview();
   }, [isEdit]);
 
+  const toDraftPayload = React.useCallback((data) => {
+    // Do not persist base64 photo blobs in draft storage.
+    const { photo, ...rest } = data || {};
+    return { ...rest, photo: null };
+  }, []);
+
   // Debounced auto-save to localStorage (new admissions only — never save edit state)
   useEffect(() => {
     // Never persist draft state when editing an existing learner: the `id` field
     // would be written to localStorage and get picked up on the next *new* admission,
     // silently turning a create into an update.
     if (isEdit) return;
+    // Keep review/upload step stable: avoid background draft writes while user is finalizing.
+    if (currentStep === 3) return;
+    const draftPayload = toDraftPayload(formData);
+    const initialDraftPayload = toDraftPayload(initialFormData);
     // Check if the form has been interacted with (not initial state)
-    const isInitial = JSON.stringify(formData) === JSON.stringify(initialFormData);
+    const isInitial = JSON.stringify(draftPayload) === JSON.stringify(initialDraftPayload);
     if (isInitial) return;
 
     const timeoutId = setTimeout(() => {
-      localStorage.setItem('admission-form-draft', JSON.stringify(formData));
+      localStorage.setItem('admission-form-draft', JSON.stringify(draftPayload));
       setIsDraft(true);
       setLastSaved(new Date());
       console.log('Admission draft saved.');
     }, 2000);
 
     return () => clearTimeout(timeoutId);
-  }, [formData, initialFormData]);
+  }, [formData, initialFormData, isEdit, currentStep, toDraftPayload]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -432,6 +443,8 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
       changeReason: hasSensitiveFieldChanges ? changeReason.trim() : undefined
     };
 
+    const sanitizedPayload = sanitizeLearnerPayload(finalFormData);
+
     if (hasSensitiveFieldChanges && (!changeReason || changeReason.trim().length < 10)) {
       showError('Please provide a clear reason (minimum 10 characters) for changing UPI/NEMIS, Date of Birth, or Grade.');
       setCurrentStep(3);
@@ -444,7 +457,7 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
     if (onSave) {
       setIsSaving(true);
       try {
-        const result = await onSave(finalFormData);
+        const result = await onSave(sanitizedPayload);
         console.log('📥 Save result:', result);
 
         if (result?.success) {

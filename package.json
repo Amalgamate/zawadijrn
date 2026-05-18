@@ -57,7 +57,9 @@
     "icons": "node scripts/generate-icons.mjs",
     "seed:demo": "npm --prefix server run prisma:generate && node --no-warnings \"scripts/seed-demo-users.mjs\"",
     "audit:api-contract": "node scripts/audit-api-contract-drift.js",
-    "audit:api-contract:strict": "node scripts/audit-api-contract-drift.js --fail"
+    "audit:api-contract:strict": "node scripts/audit-api-contract-drift.js --fail",
+    "test:ui": "vitest run",
+    "test:ui:watch": "vitest"
   },
   "eslintConfig": {
     "extends": [
@@ -85,6 +87,9 @@
     ]
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
     "@vitejs/plugin-react": "^6.0.1",
     "autoprefixer": "^10.4.14",
     "concurrently": "^9.2.1",
@@ -100,6 +105,7 @@
     "vite": "^8.0.2",
     "vite-plugin-svgr": "^4.5.0",
     "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^2.1.8",
     "wait-on": "^9.0.3"
   }
 }

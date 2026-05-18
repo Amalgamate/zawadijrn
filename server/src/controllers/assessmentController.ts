@@ -29,6 +29,45 @@ const DEFAULT_SUMMATIVE_TOTAL_MARKS = 100;
 const DEFAULT_SUMMATIVE_PASS_MARKS = 40;
 const MAX_SUMMATIVE_TOTAL_MARKS = 100;
 
+type SummativeWithTestArea = { learnerId: string; test?: { learningAreaId?: string | null } | null };
+
+async function filterSummativeResultsBySecondarySelection<T extends SummativeWithTestArea>(results: T[]): Promise<T[]> {
+  if (!results.length) return results;
+
+  const learnerIds = Array.from(new Set(results.map((r) => String(r.learnerId)).filter(Boolean)));
+  if (!learnerIds.length) return results;
+
+  const [learners, selections] = await Promise.all([
+    prisma.learner.findMany({
+      where: { id: { in: learnerIds } },
+      select: { id: true, institutionType: true },
+    }),
+    prisma.learnerSubjectSelection.findMany({
+      where: { learnerId: { in: learnerIds }, active: true },
+      select: { learnerId: true, learningAreaId: true },
+    }),
+  ]);
+
+  const secondaryLearnerIds = new Set(
+    learners.filter((l: any) => String(l.institutionType || '').toUpperCase() === 'SECONDARY').map((l: any) => l.id),
+  );
+  const selectedByLearner = new Map<string, Set<string>>();
+  for (const row of selections) {
+    const set = selectedByLearner.get(row.learnerId) || new Set<string>();
+    set.add(row.learningAreaId);
+    selectedByLearner.set(row.learnerId, set);
+  }
+
+  return results.filter((result) => {
+    const learnerId = String(result.learnerId);
+    if (!secondaryLearnerIds.has(learnerId)) return true;
+    const selected = selectedByLearner.get(learnerId);
+    if (!selected || selected.size === 0) return true; // Fallback for learners without configured selections.
+    const learningAreaId = result.test?.learningAreaId;
+    return Boolean(learningAreaId && selected.has(learningAreaId));
+  });
+}
+
 function normalizeGradeCode(grade: string): string {
   return String(grade || '').trim().toUpperCase().replace(/\s+/g, '_');
 }
@@ -1432,6 +1471,7 @@ export const getSummativeByLearner = async (req: AuthRequest, res: Response) => 
             select: {
               title: true,
               learningArea: true,
+              learningAreaId: true,
               testType: true,
               term: true,
               academicYear: true,
@@ -1465,10 +1505,12 @@ export const getSummativeByLearner = async (req: AuthRequest, res: Response) => 
       }),
     ]);
 
+    const filteredResults = await filterSummativeResultsBySecondarySelection(results as any[]);
+
     res.json({
       success: true,
-      data: results,
-      count: results.length,
+      data: filteredResults,
+      count: filteredResults.length,
       communication: {
         hasSentSms: communicationLogs.some((log: { channel: string }) => log.channel === 'SMS'),
         hasSentWhatsApp: communicationLogs.some((log: { channel: string }) => log.channel === 'WHATSAPP'),
@@ -1722,6 +1764,7 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
             st.id AS test_id,
             st.title AS test_title,
             st."learningArea" AS test_learning_area,
+            st."learningAreaId" AS test_learning_area_id,
             st."totalMarks" AS test_total_marks,
             st."testType"::text AS test_test_type
           FROM summative_results sr
@@ -1757,6 +1800,7 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
               id: row.test_id,
               title: row.test_title,
               learningArea: row.test_learning_area,
+              learningAreaId: row.test_learning_area_id,
               totalMarks: row.test_total_marks,
               testType: row.test_test_type
             }
@@ -1824,6 +1868,7 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
           st.id AS test_id,
           st.title AS test_title,
           st."learningArea" AS test_learning_area,
+          st."learningAreaId" AS test_learning_area_id,
           st."totalMarks" AS test_total_marks,
           st."testType"::text AS test_test_type
         FROM summative_results sr
@@ -1858,11 +1903,14 @@ export const getBulkSummativeResults = async (req: AuthRequest, res: Response) =
           id: row.test_id,
           title: row.test_title,
           learningArea: row.test_learning_area,
+          learningAreaId: row.test_learning_area_id,
           totalMarks: row.test_total_marks,
           testType: row.test_test_type
         }
       }));
     }
+
+    results = await filterSummativeResultsBySecondarySelection(results as any[]);
 
     logger.info('📦 [ASSESSMENT] Results fetched:', {
       resultsCount: results.length,

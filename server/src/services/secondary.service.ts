@@ -5,11 +5,30 @@ import logger from '../utils/logger';
 
 export const secondaryService = {
   /**
-   * Calculate mean grade and points for a student for a specific term
+   * Calculate mean grade and points for a learner for a specific term.
+   *
+   * FIX (2026-05-17): Only include results for subjects in the learner's
+   * active LearnerSubjectSelection.  If no selections exist (e.g. Junior
+   * School learners who haven't gone through pathway assignment) we fall
+   * back to all subjects so non-Senior learners are unaffected.
    */
   async calculateMeanGrade(learnerId: string, term: Term, academicYear: number) {
     try {
-      // 1. Fetch all summative results for the term
+      // 1a. Resolve active subject selections for this learner
+      const activeSelections = await prisma.learnerSubjectSelection.findMany({
+        where: { learnerId, active: true },
+        select: { learningAreaId: true },
+      });
+
+      const selectedAreaIds = activeSelections.map((s) => s.learningAreaId);
+
+      // Build the learning-area filter only when selections exist
+      const learningAreaFilter =
+        selectedAreaIds.length > 0
+          ? { learningAreaId: { in: selectedAreaIds } }
+          : {};
+
+      // 1b. Fetch summative results scoped to selected subjects (or all if no selections)
       const results = await prisma.summativeResult.findMany({
         where: {
           learnerId,
@@ -17,6 +36,7 @@ export const secondaryService = {
             term,
             academicYear,
             archived: false,
+            ...learningAreaFilter,
           },
         },
         include: {
@@ -43,7 +63,7 @@ export const secondaryService = {
 
       for (const result of results) {
         totalPercentage += result.percentage;
-        
+
         // Find points for this specific result's percentage
         const range = ranges.find(
           (r) => result.percentage >= r.minPercentage && result.percentage <= r.maxPercentage
@@ -52,7 +72,7 @@ export const secondaryService = {
       }
 
       const meanScore = totalPercentage / results.length;
-      
+
       // 4. Determine mean grade letter
       const meanGradeRange = ranges.find(
         (r) => meanScore >= r.minPercentage && meanScore <= r.maxPercentage

@@ -10,12 +10,20 @@ import prisma from '../config/database';
  * - BRANCH_PREFIX_END:   ADM-{YEAR}-{SEQUENCE}-{BRANCH_CODE}
  */
 export async function generateAdmissionNumber(
-  _branchCode: string = 'MC',
-  _academicYear: number = new Date().getFullYear()
+  branchCode: string = 'MC',
+  academicYear: number = new Date().getFullYear()
 ): Promise<string> {
   try {
     const admissionNumber = await prisma.$transaction(async (tx) => {
-      return await findNextAvailableAdmissionNumber(tx);
+      const settings = await getAdmissionSettings(tx);
+      if (settings.mode === 'MANUAL') {
+        throw new Error('Admission numbering is set to MANUAL. Provide admission number explicitly.');
+      }
+      return await findNextAvailableAdmissionNumber(tx, settings, {
+        branchCode,
+        academicYear,
+        persistSequence: true
+      });
     });
 
     return admissionNumber;
@@ -26,22 +34,31 @@ export async function generateAdmissionNumber(
 }
 
 export async function getCurrentSequenceValue(academicYear: number): Promise<number | null> {
-  const sequence = await prisma.admissionSequence.findUnique({ where: { academicYear } });
+  const settings = await getAdmissionSettings(prisma);
+  const sequenceYear = settings.resetRule === 'YEARLY' ? academicYear : 0;
+  const sequence = await prisma.admissionSequence.findUnique({ where: { academicYear: sequenceYear } });
   return sequence ? sequence.currentValue : null;
 }
 
 export async function getNextAdmissionNumberPreview(
-  _branchCode: string = 'MC',
-  _academicYear: number = new Date().getFullYear()
+  branchCode: string = 'MC',
+  academicYear: number = new Date().getFullYear()
 ): Promise<string | null> {
-  return await findNextAvailableAdmissionNumber(prisma);
+  const settings = await getAdmissionSettings(prisma);
+  return await findNextAvailableAdmissionNumber(prisma, settings, {
+    branchCode,
+    academicYear,
+    persistSequence: false
+  });
 }
 
 export async function resetSequence(academicYear: number, newValue: number = 0): Promise<void> {
+  const settings = await getAdmissionSettings(prisma);
+  const sequenceYear = settings.resetRule === 'YEARLY' ? academicYear : 0;
   await prisma.admissionSequence.upsert({
-    where: { academicYear },
+    where: { academicYear: sequenceYear },
     update: { currentValue: newValue },
-    create: { academicYear, currentValue: newValue }
+    create: { academicYear: sequenceYear, currentValue: newValue }
   });
 }
 
@@ -74,38 +91,76 @@ export function extractSequenceNumber(
   return match ? parseInt(match[1], 10) : null;
 }
 
-function defaultAdmissionStart(): string {
-  return '1000';
-}
+type AdmissionSettings = {
+  mode: 'AUTO' | 'MANUAL';
+  pattern: string;
+  width: number;
+  startNumber: number;
+  resetRule: 'NEVER' | 'YEARLY';
+};
 
-function incrementAdmissionNumber(admissionNumber: string, increment: number = 1): string {
-  const match = admissionNumber.match(/^(.*?)(\d+)$/);
-  if (!match) {
-    return `${admissionNumber}${increment}`;
-  }
-
-  const prefix = match[1] ?? '';
-  const numericPart = match[2] ?? '0';
-  const width = numericPart.length;
-  const nextNumber = Number.parseInt(numericPart, 10) + increment;
-  const nextNumericPart = String(nextNumber).padStart(width, '0');
-  return `${prefix}${nextNumericPart}`;
-}
-
-async function findNextAvailableAdmissionNumber(db: any): Promise<string> {
-  const lastLearner = await db.learner.findFirst({
-    orderBy: { createdAt: 'desc' },
-    select: { admissionNumber: true }
+async function getAdmissionSettings(db: any): Promise<AdmissionSettings> {
+  const school = await db.school.findFirst({
+    where: { archived: false },
+    orderBy: [{ active: 'desc' }, { updatedAt: 'desc' }, { createdAt: 'desc' }],
+    select: {
+      admissionNumberMode: true,
+      admissionPattern: true,
+      admissionSequenceWidth: true,
+      admissionStartNumber: true,
+      admissionResetRule: true
+    }
   });
 
-  const seed = lastLearner?.admissionNumber || defaultAdmissionStart();
-  let candidate = lastLearner?.admissionNumber ? incrementAdmissionNumber(seed) : seed;
+  return {
+    mode: school?.admissionNumberMode || 'AUTO',
+    pattern: school?.admissionPattern || 'ADM-{YEAR}-{SEQ}',
+    width: Math.max(1, Number(school?.admissionSequenceWidth || 4)),
+    startNumber: Math.max(1, Number(school?.admissionStartNumber || 1000)),
+    resetRule: school?.admissionResetRule || 'YEARLY'
+  };
+}
 
-  // Always validate against DB and move forward until we find a free key.
-  // This prevents stale preview collisions and out-of-order historical numbering issues.
+function formatAdmissionNumber(
+  settings: AdmissionSettings,
+  value: number,
+  academicYear: number,
+  branchCode: string
+): string {
+  const seq = String(value).padStart(settings.width, '0');
+  if (!settings.pattern || settings.pattern.trim() === '') return seq;
+  return settings.pattern
+    .replaceAll('{YEAR}', String(academicYear))
+    .replaceAll('{SEQ}', seq)
+    .replaceAll('{BRANCH}', String(branchCode || '').toUpperCase());
+}
+
+async function findNextAvailableAdmissionNumber(
+  db: any,
+  settings: AdmissionSettings,
+  options: { branchCode: string; academicYear: number; persistSequence: boolean }
+): Promise<string> {
+  const sequenceYear = settings.resetRule === 'YEARLY' ? options.academicYear : 0;
+  const sequence = await db.admissionSequence.upsert({
+    where: { academicYear: sequenceYear },
+    create: { academicYear: sequenceYear, currentValue: 0 },
+    update: {}
+  });
+
+  let nextValue = sequence.currentValue > 0 ? sequence.currentValue + 1 : settings.startNumber;
+
   while (true) {
+    const candidate = formatAdmissionNumber(settings, nextValue, options.academicYear, options.branchCode);
     const exists = await db.learner.findUnique({ where: { admissionNumber: candidate } });
-    if (!exists) return candidate;
-    candidate = incrementAdmissionNumber(candidate);
+    if (!exists) {
+      if (options.persistSequence) {
+        await db.admissionSequence.update({
+          where: { id: sequence.id },
+          data: { currentValue: nextValue }
+        });
+      }
+      return candidate;
+    }
+    nextValue += 1;
   }
 }

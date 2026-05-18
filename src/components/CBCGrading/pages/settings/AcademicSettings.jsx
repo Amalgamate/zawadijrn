@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Calendar, Save, BookOpen, Plus, Edit, Trash2, Users, Loader, X, UserPlus, Layers, Gauge } from 'lucide-react';
+import { Calendar, Save, BookOpen, Plus, Edit, Trash2, Users, Loader, X, UserPlus, Layers, Gauge, Hash } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useNotifications } from '../../hooks/useNotifications';
 import { useAuth } from '../../../../hooks/useAuth';
@@ -231,11 +231,114 @@ const AcademicSettings = () => {
   const [seedingClasses, setSeedingClasses] = useState(false);
   const [seedingStreams, setSeedingStreams] = useState(false);
   const [deletingLearningAreas, setDeletingLearningAreas] = useState(false);
+  const [admissionSettings, setAdmissionSettings] = useState({
+    mode: 'AUTO',
+    formatType: 'ALPHANUMERIC',
+    pattern: 'ADM-{YEAR}-{SEQ}',
+    sequenceWidth: 4,
+    startingNumber: 1000,
+    resetRule: 'YEARLY',
+    lockAfterFirstAdmission: true
+  });
+  const [admissionPreview, setAdmissionPreview] = useState('');
+  const [admissionSequenceValue, setAdmissionSequenceValue] = useState(0);
+  const [admissionBusy, setAdmissionBusy] = useState(false);
 
   useEffect(() => {
     const currentIds = new Set((learningAreas || []).map((area) => area.id));
     setSelectedLearningAreas((prev) => prev.filter((id) => currentIds.has(id)));
   }, [learningAreas]);
+
+  useEffect(() => {
+    const loadAdmissionControls = async () => {
+      try {
+        const local = localStorage.getItem('admission-numbering-settings');
+        if (local) {
+          const parsed = JSON.parse(local);
+          setAdmissionSettings((prev) => ({ ...prev, ...parsed }));
+        }
+      } catch (e) {
+        console.warn('Failed to read local admission settings', e);
+      }
+
+      try {
+        const school = await schoolAPI.getAll();
+        if (school?.data) {
+          setAdmissionSettings((prev) => ({
+            ...prev,
+            mode: school.data.admissionNumberMode || prev.mode,
+            pattern: school.data.admissionPattern || prev.pattern,
+            sequenceWidth: Number(school.data.admissionSequenceWidth || prev.sequenceWidth),
+            startingNumber: Number(school.data.admissionStartNumber || prev.startingNumber),
+            resetRule: school.data.admissionResetRule || prev.resetRule,
+            lockAfterFirstAdmission:
+              typeof school.data.admissionNumberingLocked === 'boolean'
+                ? school.data.admissionNumberingLocked
+                : prev.lockAfterFirstAdmission
+          }));
+        }
+      } catch (e) {
+        console.warn('Failed to load school admission settings', e);
+      }
+    };
+    loadAdmissionControls();
+  }, []);
+
+  useEffect(() => {
+    if (activeTab !== 'admissions-numbering') return;
+    const fetchAdmissionMeta = async () => {
+      try {
+        const [previewRes, seqRes] = await Promise.all([
+          schoolAPI.getAdmissionNumberPreview(selectedYear),
+          api.get(`/schools/admission-sequence/${selectedYear}`)
+        ]);
+        setAdmissionPreview(previewRes?.data?.preview || '');
+        setAdmissionSequenceValue(seqRes?.data?.currentValue || 0);
+      } catch (e) {
+        console.warn('Failed to load admission numbering meta', e);
+      }
+    };
+    fetchAdmissionMeta();
+  }, [activeTab, selectedYear]);
+
+  const handleSaveAdmissionControls = async () => {
+    try {
+      setAdmissionBusy(true);
+      localStorage.setItem('admission-numbering-settings', JSON.stringify(admissionSettings));
+      await api.put('/schools', {
+        admissionNumberMode: admissionSettings.mode,
+        admissionPattern: admissionSettings.pattern,
+        admissionSequenceWidth: Number(admissionSettings.sequenceWidth),
+        admissionStartNumber: Number(admissionSettings.startingNumber),
+        admissionResetRule: admissionSettings.resetRule,
+        admissionNumberingLocked: !!admissionSettings.lockAfterFirstAdmission
+      });
+      notifySuccess('Admissions numbering controls saved.');
+    } catch (e) {
+      showError('Failed to save admissions numbering controls');
+    } finally {
+      setAdmissionBusy(false);
+    }
+  };
+
+  const handleResetAdmissionSequence = async () => {
+    if (!window.confirm(`Reset admission sequence for ${selectedYear}?`)) return;
+    try {
+      setAdmissionBusy(true);
+      await api.post('/schools/reset-sequence', { academicYear: selectedYear });
+      notifySuccess(`Admission sequence reset for ${selectedYear}.`);
+      const [previewRes, seqRes] = await Promise.all([
+        schoolAPI.getAdmissionNumberPreview(selectedYear),
+        api.get(`/schools/admission-sequence/${selectedYear}`)
+      ]);
+      setAdmissionPreview(previewRes?.data?.preview || '');
+      setAdmissionSequenceValue(seqRes?.data?.currentValue || 0);
+    } catch (e) {
+      showError('Failed to reset admission sequence');
+    } finally {
+      setAdmissionBusy(false);
+    }
+  };
 
   const [formData, setFormData] = useState({
     name: '',
@@ -747,6 +850,16 @@ const AcademicSettings = () => {
               <Gauge size={20} />
               Performance Levels
             </button>
+            <button
+              onClick={() => setActiveTab('admissions-numbering')}
+              className={`flex items-center gap-2 px-6 py-4 font-semibold transition ${activeTab === 'admissions-numbering'
+                ? 'border-b-2 border-blue-600 text-blue-600'
+                : 'text-gray-600 hover:text-gray-800'
+                }`}
+            >
+              <Hash size={20} />
+              Admissions Numbering
+            </button>
           </div>
         </div>
       </div>
@@ -1172,6 +1285,124 @@ const AcademicSettings = () => {
       {activeTab === 'performance-levels' && (
         <div className="bg-white rounded-xl shadow-md p-6">
           <PerformanceLevelManager />
+        </div>
+      )}
+
+      {activeTab === 'admissions-numbering' && (
+        <div className="bg-white rounded-xl shadow-md p-6 space-y-6">
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="text-lg font-medium">Admissions Numbering Controls</h3>
+              <p className="text-sm text-gray-600 mt-1">Configure how admission numbers are generated for new learners.</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-gray-500">Current Year: <span className="font-semibold">{selectedYear}</span></p>
+              <p className="text-xs text-gray-500">Current Sequence: <span className="font-semibold">{admissionSequenceValue}</span></p>
+              <p className="text-xs text-gray-500">Next Preview: <span className="font-semibold">{admissionPreview || '—'}</span></p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Mode</label>
+              <select
+                value={admissionSettings.mode}
+                onChange={(e) => setAdmissionSettings((p) => ({ ...p, mode: e.target.value }))}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+              >
+                <option value="AUTO">Auto-generate</option>
+                <option value="MANUAL">Manual</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Format Type</label>
+              <select
+                value={admissionSettings.formatType}
+                onChange={(e) => setAdmissionSettings((p) => ({ ...p, formatType: e.target.value }))}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+              >
+                <option value="NUMERIC">Numeric only</option>
+                <option value="ALPHANUMERIC">Alphanumeric pattern</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Pattern</label>
+              <input
+                type="text"
+                value={admissionSettings.pattern}
+                onChange={(e) => setAdmissionSettings((p) => ({ ...p, pattern: e.target.value }))}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                placeholder="ADM-{YEAR}-{SEQ}"
+              />
+              <p className="text-xs text-gray-500 mt-1">Use placeholders like <span className="font-mono">{'{YEAR}'}</span>, <span className="font-mono">{'{SEQ}'}</span>, <span className="font-mono">{'{BRANCH}'}</span>.</p>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Sequence Width</label>
+              <select
+                value={admissionSettings.sequenceWidth}
+                onChange={(e) => setAdmissionSettings((p) => ({ ...p, sequenceWidth: Number(e.target.value) }))}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+              >
+                <option value={3}>3 digits</option>
+                <option value={4}>4 digits</option>
+                <option value={5}>5 digits</option>
+                <option value={6}>6 digits</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Starting Number</label>
+              <input
+                type="number"
+                min="1"
+                value={admissionSettings.startingNumber}
+                onChange={(e) => setAdmissionSettings((p) => ({ ...p, startingNumber: Number(e.target.value || 1) }))}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Reset Rule</label>
+              <select
+                value={admissionSettings.resetRule}
+                onChange={(e) => setAdmissionSettings((p) => ({ ...p, resetRule: e.target.value }))}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+              >
+                <option value="NEVER">Never reset</option>
+                <option value="YEARLY">Reset every academic year</option>
+              </select>
+            </div>
+          </div>
+
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+            <input
+              type="checkbox"
+              checked={admissionSettings.lockAfterFirstAdmission}
+              onChange={(e) => setAdmissionSettings((p) => ({ ...p, lockAfterFirstAdmission: e.target.checked }))}
+              className="w-4 h-4"
+            />
+            Prevent edits after first admission
+          </label>
+
+          <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-green-800 text-xs">
+            These controls are saved to school settings and enforced for new auto-generated admission numbers.
+          </div>
+
+          <div className="flex flex-wrap gap-3 pt-2">
+            <button
+              onClick={handleSaveAdmissionControls}
+              disabled={admissionBusy}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-60 flex items-center gap-2"
+            >
+              <Save size={16} />
+              {admissionBusy ? 'Saving...' : 'Save Controls'}
+            </button>
+            <button
+              onClick={handleResetAdmissionSequence}
+              disabled={admissionBusy}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-60"
+            >
+              Reset Current Year Sequence
+            </button>
+          </div>
         </div>
       )}
 

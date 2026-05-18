@@ -10,34 +10,14 @@ import { requirePermission, requireRole, ResourceAccessControl, auditLog } from 
 import { asyncHandler } from '../utils/async.util';
 import { validate } from '../middleware/validation.middleware';
 import { rateLimit } from '../middleware/enhanced-rateLimit.middleware';
-import { z } from 'zod';
 import { getNextAdmissionNumberPreview } from '../services/admissionNumber.service';
+import { createLearnerPayloadSchema, updateLearnerPayloadSchema } from '../contracts/learnerPayload.contract';
 
 const router = Router();
 const learnerController = new LearnerController();
 
-// Define validation schemas for learner operations
-const createLearnerSchema = z.object({
-  firstName: z.string().min(2).max(100),
-  lastName: z.string().min(2).max(100),
-  // auto-generated in controller if empty/missing
-  admissionNumber: z.string().max(50).optional(),
-  dateOfBirth: z.string().optional(),
-  grade: z.string(),
-  // only required when guardian is the primary contact
-  guardianName: z.string().max(100).optional().or(z.literal(''))
-}).passthrough();
-
-const updateLearnerSchema = z.object({
-  firstName: z.string().min(2).max(100).optional(),
-  lastName: z.string().min(2).max(100).optional(),
-  dateOfBirth: z.string().optional(),
-  upiNumber: z.string().max(100).optional().or(z.literal('')),
-  grade: z.string().max(50).optional().or(z.literal('')),
-  changeReason: z.string().min(10).max(500).optional().or(z.literal('')),
-  // Match create: empty string is valid when father/mother is primary (guardian fields unused)
-  guardianName: z.string().max(100).optional().or(z.literal(''))
-}).passthrough();
+const createLearnerSchema = createLearnerPayloadSchema;
+const updateLearnerSchema = updateLearnerPayloadSchema;
 
 // Protect all routes
 router.use(authenticate);

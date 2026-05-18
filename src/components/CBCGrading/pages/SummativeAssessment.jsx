@@ -823,7 +823,6 @@ const SummativeAssessment = ({ learners, initialTestId, defaultTestType = null, 
       localStorage.setItem(draftMetaKey, JSON.stringify({ savedAt: new Date().toISOString() }));
       setIsDraft(true);
       setLastSaved(new Date());
-      console.log('[AutoSave] Draft saved to localStorage.');
 
       // 2. Persist to backend on every autosave cycle (no hard cap)
       autoSaveInProgressRef.current = true;
@@ -848,7 +847,6 @@ const SummativeAssessment = ({ learners, initialTestId, defaultTestType = null, 
           setLastBackendSave(new Date());
           setIsDraft(false);
           // Keep draft cache for conflict recovery instead of deleting it silently.
-          console.log('[AutoSave] Backend persist complete.');
 
           // Mark this test as having results in the tests list (so tick appears immediately)
           setTests(prev => prev.map(t =>
@@ -1030,7 +1028,6 @@ const SummativeAssessment = ({ learners, initialTestId, defaultTestType = null, 
           scale: 2,
           multiPage: true,
           onProgress: (message, progress) => {
-            console.log(`PDF Generation: ${message} (${progress}%)`);
             if (onProgress) {
               onProgress(message, progress);
             }

@@ -195,6 +195,9 @@ export class LearnerController {
       try {
         admissionNumber = await generateAdmissionNumber(stream || 'A', new Date().getFullYear());
       } catch (error: any) {
+        if (String(error?.message || '').includes('MANUAL')) {
+          throw new ApiError(400, 'Admission number is required when numbering mode is MANUAL.');
+        }
         throw new ApiError(500, 'Could not generate admission number: ' + error.message);
       }
     }

@@ -33,7 +33,6 @@ export const useLearners = (options = {}) => {
         const transformedLearners = response.data.map(learner => ({
           id: learner.id,
           admissionNumber: learner.admissionNumber,
-          admNo: learner.admissionNumber,
           name: `${learner.firstName} ${learner.lastName}`,
           firstName: learner.firstName,
           lastName: learner.lastName,
@@ -47,7 +46,6 @@ export const useLearners = (options = {}) => {
 
           // Profiling
           photoUrl: learner.photoUrl,
-          photo: learner.photoUrl,
           status: learner.status,
           admissionDate: learner.admissionDate || null,  // keep ISO string — do NOT format as locale string
           exitDate: learner.exitDate ? new Date(learner.exitDate).toLocaleDateString() : null,
