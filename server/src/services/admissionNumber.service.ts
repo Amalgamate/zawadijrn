@@ -130,9 +130,9 @@ function formatAdmissionNumber(
   const seq = String(value).padStart(settings.width, '0');
   if (!settings.pattern || settings.pattern.trim() === '') return seq;
   return settings.pattern
-    .replaceAll('{YEAR}', String(academicYear))
-    .replaceAll('{SEQ}', seq)
-    .replaceAll('{BRANCH}', String(branchCode || '').toUpperCase());
+    .replace(/\{YEAR\}/g, String(academicYear))
+    .replace(/\{SEQ\}/g, seq)
+    .replace(/\{BRANCH\}/g, String(branchCode || '').toUpperCase());
 }
 
 async function findNextAvailableAdmissionNumber(
