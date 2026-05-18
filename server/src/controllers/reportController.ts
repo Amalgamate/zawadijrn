@@ -12,6 +12,7 @@ import { gradingService } from '../services/grading.service';
 import * as reportService from '../services/report.service';
 
 import logger from '../utils/logger';
+const CATEGORY_BUCKETS = ['STEM', 'SOCIAL', 'ARTS'] as const;
 
 type SummativeWithTestArea = { learnerId: string; test?: { learningAreaId?: string | null } | null };
 
@@ -50,6 +51,15 @@ async function filterSummativeResultsBySecondarySelection<T extends SummativeWit
     const learningAreaId = result.test?.learningAreaId;
     return Boolean(learningAreaId && selected.has(learningAreaId));
   });
+}
+
+function normalizeCategoryBucket(input?: string | null): 'STEM' | 'SOCIAL' | 'ARTS' | null {
+  const value = String(input || '').trim().toUpperCase();
+  if (!value) return null;
+  if (value.includes('STEM')) return 'STEM';
+  if (value.includes('SOCIAL')) return 'SOCIAL';
+  if (value.includes('ART')) return 'ARTS';
+  return null;
 }
 
 export const reportController = {
@@ -535,7 +545,31 @@ function calculateSubjectSummary(results: any[], ranges: any[]) {
     summary[key].passRate = tests.length > 0 ? Math.round((summary[key].passCount / tests.length) * 100) : 0;
   }
 
-  return summary;
+  const byCategory: Record<string, { total: number; count: number }> = {};
+  Object.values(summary).forEach((row: any) => {
+    const bucket =
+      normalizeCategoryBucket(row?.learningAreaMeta?.category) ||
+      normalizeCategoryBucket(row?.learningAreaMeta?.pathway);
+    if (!bucket) return;
+    if (!byCategory[bucket]) byCategory[bucket] = { total: 0, count: 0 };
+    byCategory[bucket].total += Number(row.averagePercentage || 0);
+    byCategory[bucket].count += 1;
+  });
+
+  const byCategoryAverages = CATEGORY_BUCKETS
+    .filter((bucket) => byCategory[bucket]?.count > 0)
+    .map((bucket) => {
+      const data = byCategory[bucket];
+      const averagePercentage = Math.round(data.total / data.count);
+      return {
+        category: bucket,
+        averagePercentage,
+        grade: gradingService.calculateGradeSync(averagePercentage, ranges),
+        subjectCount: data.count,
+      };
+    });
+
+  return { ...summary, byCategoryAverages };
 }
 
 function analyzeFormativePerformance(assessments: any[]) {

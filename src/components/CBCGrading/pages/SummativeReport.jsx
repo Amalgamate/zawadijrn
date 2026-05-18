@@ -292,6 +292,12 @@ const formatTestName = (str) => (formatTestTypeLabel(str) || '').toUpperCase();
 const resolveTestGroup = (item) => resolveTestType(item);
 const compareTestGroups = (a, b) => compareTestTypes(a, b);
 
+const CATEGORY_KEYWORDS = {
+  STEM: PATHWAY_MAP.STEM,
+  SOCIAL: PATHWAY_MAP.SOCIAL,
+  ARTS: PATHWAY_MAP.ARTS,
+};
+
 // ============================================================================
 // LEARNER REPORT TEMPLATE COMPONENT (Reusable for Bulk Print)
 // ============================================================================
@@ -444,6 +450,30 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
   const gradeFromMeanPointsColor = pointRows.length > 0
     ? (pointBand?.color || gradeByPct?.color || '#64748b')
     : '#64748b';
+
+  const categoryAverages = React.useMemo(() => {
+    const compute = (keywords) => {
+      const matched = tableRows.filter((r) =>
+        keywords.some((k) => String(r.area || '').toUpperCase().includes(String(k).toUpperCase()))
+      );
+      if (!matched.length) return null;
+      const totalScore = matched.reduce((sum, row) => sum + Number(row.totalScore || 0), 0);
+      const totalMarks = matched.reduce((sum, row) => sum + Number(row.totalMarks || 0), 0);
+      if (totalMarks <= 0) return null;
+      const averagePercentage = Math.round((totalScore / totalMarks) * 100);
+      return {
+        averagePercentage,
+        subjectCount: matched.length,
+        grade: getGrade(averagePercentage)?.grade || '—',
+      };
+    };
+
+    return [
+      { key: 'STEM', label: 'STEM', color: '#2563eb', bg: '#eff6ff', ...compute(CATEGORY_KEYWORDS.STEM) },
+      { key: 'SOCIAL', label: 'Social', color: '#16a34a', bg: '#f0fdf4', ...compute(CATEGORY_KEYWORDS.SOCIAL) },
+      { key: 'ARTS', label: 'Arts', color: '#d97706', bg: '#fffbeb', ...compute(CATEGORY_KEYWORDS.ARTS) },
+    ].filter((row) => row.averagePercentage !== undefined);
+  }, [tableRows, getGrade]);
 
   const isJSS = /\b(GRADE_7|GRADE_8|GRADE_9|7|8|9)\b/.test((learner.grade || '').toUpperCase());
   const pdfTypeWeight = {
@@ -878,6 +908,23 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
             );
           })()}
         </div>
+
+        {categoryAverages.length > 0 && (
+          <div style={{ marginBottom: '10px', border: '1px solid #e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+            <div style={{ padding: '6px 10px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', color: '#4b5563', letterSpacing: '0.4px' }}>
+              Category Averages
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)' }}>
+              {categoryAverages.map((row) => (
+                <div key={row.key} style={{ padding: '8px 10px', borderRight: row.key === 'ARTS' ? 'none' : '1px solid #e5e7eb', textAlign: 'center', background: row.bg }}>
+                  <div style={{ fontSize: '9px', fontWeight: '800', textTransform: 'uppercase', color: '#6b7280' }}>{row.label}</div>
+                  <div style={{ fontSize: '16px', fontWeight: '900', color: '#111827', marginTop: '2px' }}>{row.averagePercentage}%</div>
+                  <div style={{ fontSize: '10px', fontWeight: '800', color: row.color }}>{row.grade}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Grading Key — full width below */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '30px', marginBottom: '2px' }}>

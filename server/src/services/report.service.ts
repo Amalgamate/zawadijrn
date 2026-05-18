@@ -6,6 +6,7 @@ import { calculationService } from './calculation.service';
 import { aiAssistantService } from './ai-assistant.service';
 
 const LEGACY_SUMMATIVE_CBC_GRADES: string[] = ['A', 'B', 'C', 'D', 'E'];
+const CATEGORY_BUCKETS = ['STEM', 'SOCIAL', 'ARTS'] as const;
 
 function isValidCbcGrade(value: string | null | undefined, cbcRanges?: any[]): boolean {
   if (!value) return false;
@@ -13,6 +14,15 @@ function isValidCbcGrade(value: string | null | undefined, cbcRanges?: any[]): b
     return cbcRanges.some((range: any) => range.rubricRating === value);
   }
   return !LEGACY_SUMMATIVE_CBC_GRADES.includes(value);
+}
+
+function normalizeCategoryBucket(input?: string | null): 'STEM' | 'SOCIAL' | 'ARTS' | null {
+  const value = String(input || '').trim().toUpperCase();
+  if (!value) return null;
+  if (value.includes('STEM')) return 'STEM';
+  if (value.includes('SOCIAL')) return 'SOCIAL';
+  if (value.includes('ART')) return 'ARTS';
+  return null;
 }
 
 // ============================================
@@ -537,7 +547,7 @@ async function calculateFormativeSummaryWithService(
 }
 
 function calculateSummativeSummary(results: any[], summativeRanges?: any[], cbcRanges?: any[]) {
-  if (results.length === 0) return { overallPercentage: 0, bySubject: [] };
+  if (results.length === 0) return { overallPercentage: 0, bySubject: [], byCategoryAverages: [] };
   const overallPercentage = Math.round(results.reduce((sum, r) => sum + r.percentage, 0) / results.length);
 
   const subjectMap = new Map<string, { subject: string; learningAreaId: string | null; meta: any; percentages: number[]; cbcGrades: string[] }>();
@@ -588,7 +598,32 @@ function calculateSummativeSummary(results: any[], summativeRanges?: any[], cbcR
     };
   });
 
-  return { overallPercentage, bySubject };
+  const categoryMap = new Map<'STEM' | 'SOCIAL' | 'ARTS', number[]>();
+  bySubject.forEach((subject: any) => {
+    const bucket =
+      normalizeCategoryBucket(subject?.learningAreaMeta?.category) ||
+      normalizeCategoryBucket(subject?.learningAreaMeta?.pathway);
+    if (!bucket) return;
+    const rows = categoryMap.get(bucket) || [];
+    rows.push(Number(subject.averagePercentage || 0));
+    categoryMap.set(bucket, rows);
+  });
+
+  const byCategoryAverages = CATEGORY_BUCKETS
+    .filter((bucket) => categoryMap.has(bucket))
+    .map((bucket) => {
+      const scores = categoryMap.get(bucket)!;
+      const averagePercentage = Math.round(scores.reduce((sum, value) => sum + value, 0) / scores.length);
+      return {
+        category: bucket,
+        averagePercentage,
+        grade: summativeRanges ? gradingService.calculateGradeSync(averagePercentage, summativeRanges) : 'E',
+        cbcGrade: cbcRanges ? gradingService.calculateRatingSync(averagePercentage, cbcRanges) : 'ME',
+        subjectCount: scores.length,
+      };
+    });
+
+  return { overallPercentage, bySubject, byCategoryAverages };
 }
 
 function calculateAttendanceSummary(records: any[]): AttendanceSummary {

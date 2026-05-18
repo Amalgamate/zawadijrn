@@ -103,6 +103,7 @@ const PathwaysWizard = ({ learner, brandingSettings }) => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [subjectSelectionLocked, setSubjectSelectionLocked] = useState(false);
   const [activeCategoryIdx, setActiveCategoryIdx] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -317,6 +318,7 @@ const PathwaysWizard = ({ learner, brandingSettings }) => {
 
         const pathways = pathwaysRes?.data || [];
         const profile = learnerPathwayRes?.data || null;
+        setSubjectSelectionLocked(Boolean(profile?.subjectSelectionLocked));
         let areaRows = learningAreasRes?.data || [];
         if (!Array.isArray(areaRows) || areaRows.length === 0) {
           const fb = await api
@@ -376,6 +378,7 @@ const PathwaysWizard = ({ learner, brandingSettings }) => {
   // ── actions ────────────────────────────────────────────────────────────────
 
   const handlePathwaySelect = async (code) => {
+    if (subjectSelectionLocked) return;
     if (code === selectedPathwayCode) return;
     setSaving(true);
     try {
@@ -410,6 +413,7 @@ const PathwaysWizard = ({ learner, brandingSettings }) => {
   };
 
   const toggleSubject = (id) => {
+    if (subjectSelectionLocked) return;
     const row = canonicalSubjects.find((r) => r.id === id);
     if (isCoreSubject(row)) return;
     setSelectedSubjectIds((prev) => {
@@ -420,6 +424,7 @@ const PathwaysWizard = ({ learner, brandingSettings }) => {
   };
 
   const applySuggestedCombo = (mode) => {
+    if (subjectSelectionLocked) return;
     const next = new Set(coreSubjects.map((r) => r.id));
     const electives = canonicalSubjects.filter((r) => !isCoreSubject(r));
     if (mode === 'MIN') {
@@ -448,6 +453,10 @@ const PathwaysWizard = ({ learner, brandingSettings }) => {
   };
 
   const handleSave = async () => {
+    if (subjectSelectionLocked) {
+      showError('Subject selection is locked after pathway approval.');
+      return;
+    }
     if (!isValid) {
       showError('Fix compliance issues before saving.');
       return;
@@ -465,6 +474,9 @@ const PathwaysWizard = ({ learner, brandingSettings }) => {
       await api.pathways.setLearnerSubjects(learner.id, selections);
       showSuccess('Subject selection saved successfully!');
     } catch (e) {
+      if (String(e?.message || '').toLowerCase().includes('locked')) {
+        setSubjectSelectionLocked(true);
+      }
       showError(e?.message || 'Failed to save subjects');
     } finally {
       setSaving(false);
@@ -678,6 +690,11 @@ const PathwaysWizard = ({ learner, brandingSettings }) => {
           LEFT PANEL – Wizard
       ════════════════════════════════════════════════════════════════════ */}
       <div className="flex flex-col w-[54%] min-w-0 border-r border-gray-200">
+        {subjectSelectionLocked && (
+          <div className="mx-5 mt-5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
+            Subject selection is locked after pathway approval.
+          </div>
+        )}
 
         {/* ── Step indicator ── */}
         <div className="flex items-center px-5 pt-5 pb-4 border-b border-gray-100 gap-0 shrink-0">
@@ -742,7 +759,7 @@ const PathwaysWizard = ({ learner, brandingSettings }) => {
                       <button
                         key={p.id || p.code}
                         type="button"
-                        disabled={saving}
+                        disabled={saving || subjectSelectionLocked}
                         onClick={() => handlePathwaySelect(p.code)}
                         className={`w-full text-left rounded-xl border-2 p-4 transition-all ${
                           active
@@ -862,20 +879,22 @@ const PathwaysWizard = ({ learner, brandingSettings }) => {
                     </p>
                   </div>
                   <div className="flex gap-1.5 shrink-0">
-                    <button
-                      type="button"
-                      title="Apply minimum rules pack"
-                      onClick={() => applySuggestedCombo('MIN')}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-brand-purple text-white text-[11px] font-bold hover:bg-brand-purple/90 transition"
-                    >
+                  <button
+                    type="button"
+                    title="Apply minimum rules pack"
+                    onClick={() => applySuggestedCombo('MIN')}
+                    disabled={subjectSelectionLocked}
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-brand-purple text-white text-[11px] font-bold hover:bg-brand-purple/90 transition"
+                  >
                       <Sparkles size={11} /> Min Pack
                     </button>
-                    <button
-                      type="button"
-                      title="Apply pure sciences pack"
-                      onClick={() => applySuggestedCombo('PURE')}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-gray-200 bg-white text-[11px] font-bold text-gray-700 hover:bg-gray-50 transition"
-                    >
+                  <button
+                    type="button"
+                    title="Apply pure sciences pack"
+                    onClick={() => applySuggestedCombo('PURE')}
+                    disabled={subjectSelectionLocked}
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-gray-200 bg-white text-[11px] font-bold text-gray-700 hover:bg-gray-50 transition"
+                  >
                       Pure Sci
                     </button>
                   </div>
@@ -968,7 +987,7 @@ const PathwaysWizard = ({ learner, brandingSettings }) => {
                               <input
                                 type="checkbox"
                                 checked={checked}
-                                disabled={atMax}
+                                disabled={atMax || subjectSelectionLocked}
                                 onChange={() => toggleSubject(row.id)}
                                 className="sr-only"
                               />
@@ -1111,7 +1130,7 @@ const PathwaysWizard = ({ learner, brandingSettings }) => {
                 <button
                   type="button"
                   onClick={handleSave}
-                  disabled={!isValid || saving}
+                  disabled={!isValid || saving || subjectSelectionLocked}
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-brand-purple text-white text-sm font-semibold hover:bg-brand-purple/90 disabled:opacity-50 transition"
                 >
                   {saving ? (

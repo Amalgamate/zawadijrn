@@ -108,6 +108,23 @@ const TermlyReportTemplate = ({ reportData, id = "termly-report-content" }) => {
                     </table>
                 </div>
 
+                {(reportData.summative?.summary?.byCategoryAverages || []).length > 0 && (
+                    <div className="mb-6 border border-gray-200 rounded-lg overflow-hidden bg-white">
+                        <div className="px-4 py-2 bg-gray-50 border-b border-gray-200 text-[10px] font-semibold text-gray-500 uppercase tracking-widest">
+                            Category Averages
+                        </div>
+                        <div className="grid grid-cols-3 divide-x divide-gray-200">
+                            {(reportData.summative.summary.byCategoryAverages || []).map((row, idx) => (
+                                <div key={`${row.category}-${idx}`} className="px-4 py-3 text-center">
+                                    <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">{row.category}</p>
+                                    <p className="text-lg font-semibold text-gray-900 mt-0.5">{row.averagePercentage}%</p>
+                                    <p className="text-xs font-medium mt-0.5" style={{ color: brandColor }}>{row.grade}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* 4. PERFORMANCE SUMMARY & KEY */}
                 <div className="grid grid-cols-2 gap-6 mb-6">
                     <div className="bg-gray-50 border border-gray-200 rounded p-4">
