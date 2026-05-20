@@ -46,6 +46,7 @@ ENV_DIR="${ENV_DIR:-${APPS_DIR}/env}"
 FRONTEND_IMAGE="${FRONTEND_IMAGE:-ghcr.io/amalgamate/zawadi-frontend:latest}"
 BACKEND_IMAGE="${BACKEND_IMAGE:-ghcr.io/amalgamate/zawadi-backend:latest}"
 DEFAULT_HOST_IP="${DEFAULT_HOST_IP:-185.127.16.124}"
+WORDPRESS_CONFIG_EXTRA_DEFAULT="${WORDPRESS_CONFIG_EXTRA_DEFAULT:-define('FS_METHOD','direct');}"
 
 range_for_app() {
   local app="$1"
@@ -249,6 +250,10 @@ VAPID_PRIVATE_KEY=
 VAPID_SUBJECT=mailto:admin@example.com
 EOF
 
+if [[ "${APP_TYPE}" == "wordpress" ]]; then
+  echo "WORDPRESS_CONFIG_EXTRA=${WORDPRESS_CONFIG_EXTRA_DEFAULT}" >> "${ENV_FILE}"
+fi
+
 echo "[provision] env file created: ${ENV_FILE}"
 else
   # Existing env file is source of truth for retry runs.
@@ -259,6 +264,14 @@ else
   FE_PORT="$(grep -E '^FRONTEND_PORT=' "${ENV_FILE}" | tail -n1 | cut -d= -f2)"
   BE_PORT="$(grep -E '^BACKEND_PORT=' "${ENV_FILE}" | tail -n1 | cut -d= -f2)"
   DB_NAME="$(grep -E '^DB_NAME=' "${ENV_FILE}" | tail -n1 | cut -d= -f2)"
+fi
+
+if [[ "${APP_TYPE}" == "wordpress" ]]; then
+  if grep -q '^WORDPRESS_CONFIG_EXTRA=' "${ENV_FILE}"; then
+    sed -i "s#^WORDPRESS_CONFIG_EXTRA=.*#WORDPRESS_CONFIG_EXTRA=${WORDPRESS_CONFIG_EXTRA_DEFAULT}#" "${ENV_FILE}"
+  else
+    echo "WORDPRESS_CONFIG_EXTRA=${WORDPRESS_CONFIG_EXTRA_DEFAULT}" >> "${ENV_FILE}"
+  fi
 fi
 
 pushd "${APPS_DIR}" >/dev/null
@@ -308,8 +321,7 @@ EOF
   fi
   "${COMPOSE_CMD[@]}" --env-file "${ENV_FILE}" -p "${PROJECT_NAME}" -f "${ODOO_COMPOSE_FILE}" up -d db odoo
 elif [[ "${APP_TYPE}" == "wordpress" ]]; then
-  if [[ ! -f "${WORDPRESS_COMPOSE_FILE}" ]]; then
-    cat > "${WORDPRESS_COMPOSE_FILE}" <<'EOF'
+  cat > "${WORDPRESS_COMPOSE_FILE}" <<'EOF'
 services:
   db:
     image: mysql:8.0
@@ -325,6 +337,10 @@ services:
 
   wordpress:
     image: ${WORDPRESS_IMAGE:-wordpress:latest}
+    command:
+      - sh
+      - -c
+      - chown -R www-data:www-data /var/www/html/wp-content && docker-entrypoint.sh apache2-foreground
     restart: always
     depends_on:
       - db
@@ -335,6 +351,7 @@ services:
       WORDPRESS_DB_NAME: ${DB_NAME}
       WORDPRESS_DB_USER: ${DB_USER}
       WORDPRESS_DB_PASSWORD: ${DB_PASSWORD}
+      WORDPRESS_CONFIG_EXTRA: ${WORDPRESS_CONFIG_EXTRA}
     volumes:
       - wordpress_data:/var/www/html
 
@@ -342,7 +359,6 @@ volumes:
   wordpress_db_data:
   wordpress_data:
 EOF
-  fi
   "${COMPOSE_CMD[@]}" --env-file "${ENV_FILE}" -p "${PROJECT_NAME}" -f "${WORDPRESS_COMPOSE_FILE}" up -d db wordpress
 fi
 

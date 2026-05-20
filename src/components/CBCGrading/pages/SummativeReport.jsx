@@ -301,7 +301,7 @@ const CATEGORY_KEYWORDS = {
 // ============================================================================
 // LEARNER REPORT TEMPLATE COMPONENT (Reusable for Bulk Print)
 // ============================================================================
-const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, academicYear, brandingSettings, user, streamConfigs, remarks, commentData, gradingRanges }) => {
+const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, academicYear, brandingSettings, user, streamConfigs, remarks, commentData, gradingRanges, categoryAverages }) => {
   // Build a grade function from DB ranges (or defaults if not yet loaded).
   // useMemo keeps it stable across re-renders when gradingRanges hasn't changed.
   const getGrade = React.useMemo(() => makeCBCGrader(gradingRanges), [gradingRanges]);
@@ -451,7 +451,7 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
     ? (pointBand?.color || gradeByPct?.color || '#64748b')
     : '#64748b';
 
-  const categoryAverages = React.useMemo(() => {
+  const fallbackCategoryAverages = React.useMemo(() => {
     const compute = (keywords) => {
       const matched = tableRows.filter((r) =>
         keywords.some((k) => String(r.area || '').toUpperCase().includes(String(k).toUpperCase()))
@@ -474,6 +474,10 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
       { key: 'ARTS', label: 'Arts', color: '#d97706', bg: '#fffbeb', ...compute(CATEGORY_KEYWORDS.ARTS) },
     ].filter((row) => row.averagePercentage !== undefined);
   }, [tableRows, getGrade]);
+  const effectiveCategoryAverages =
+    Array.isArray(categoryAverages) && categoryAverages.length > 0
+      ? categoryAverages
+      : fallbackCategoryAverages;
 
   const isJSS = /\b(GRADE_7|GRADE_8|GRADE_9|7|8|9)\b/.test((learner.grade || '').toUpperCase());
   const pdfTypeWeight = {
@@ -909,13 +913,13 @@ const LearnerReportTemplate = ({ learner, results, pathwayPrediction, term, acad
           })()}
         </div>
 
-        {categoryAverages.length > 0 && (
+        {effectiveCategoryAverages.length > 0 && (
           <div style={{ marginBottom: '10px', border: '1px solid #e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
             <div style={{ padding: '6px 10px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', color: '#4b5563', letterSpacing: '0.4px' }}>
               Category Averages
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)' }}>
-              {categoryAverages.map((row) => (
+              {effectiveCategoryAverages.map((row) => (
                 <div key={row.key} style={{ padding: '8px 10px', borderRight: row.key === 'ARTS' ? 'none' : '1px solid #e5e7eb', textAlign: 'center', background: row.bg }}>
                   <div style={{ fontSize: '9px', fontWeight: '800', textTransform: 'uppercase', color: '#6b7280' }}>{row.label}</div>
                   <div style={{ fontSize: '16px', fontWeight: '900', color: '#111827', marginTop: '2px' }}>{row.averagePercentage}%</div>
@@ -2488,6 +2492,50 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user, pa
 
     try {
       const isSeniorSecondaryGrade = (grade) => ['GRADE_10', 'GRADE_11', 'GRADE_12'].includes(String(grade || ''));
+      const computeCategoryAveragesFromResults = (rows = []) => {
+        const buckets = { STEM: [], SOCIAL: [], ARTS: [] };
+        rows.forEach((r) => {
+          const area = String(r.learningArea || r.test?.learningArea || '').toUpperCase();
+          if (!area) return;
+          const percentage = Number(r.percentage ?? ((Number(r.totalMarks || 0) > 0) ? (Number(r.score || 0) / Number(r.totalMarks || 1)) * 100 : 0));
+          if (CATEGORY_KEYWORDS.STEM.some((k) => area.includes(k))) buckets.STEM.push(percentage);
+          else if (CATEGORY_KEYWORDS.SOCIAL.some((k) => area.includes(k))) buckets.SOCIAL.push(percentage);
+          else if (CATEGORY_KEYWORDS.ARTS.some((k) => area.includes(k))) buckets.ARTS.push(percentage);
+        });
+        return Object.entries(buckets)
+          .filter(([, values]) => values.length > 0)
+          .map(([category, values]) => {
+            const avg = Math.round(values.reduce((sum, v) => sum + v, 0) / values.length);
+            return {
+              category,
+              averagePercentage: avg,
+              grade: getCBCGrade(avg)?.grade || '—',
+              subjectCount: values.length,
+            };
+          });
+      };
+      const fetchCategoryAveragesFromReportApi = async (learnerId) => {
+        try {
+          const params = { term: normalize(stagedTerm), academicYear: stagedAcademicYear || setup.academicYear };
+          if (selectedType === 'LEARNER_TERMLY_REPORT') {
+            const resp = await reportAPI.getTermlyReport(learnerId, params);
+            return resp?.data?.summative?.summary?.byCategoryAverages || [];
+          }
+          const resp = await reportAPI.getSummativeReport(learnerId, params);
+          return resp?.data?.subjectSummary?.byCategoryAverages || [];
+        } catch {
+          return [];
+        }
+      };
+      const buildCategoryAveragesMap = async (learnerRows = []) => {
+        const pairs = await Promise.all(
+          (learnerRows || []).map(async (learner) => {
+            const rows = await fetchCategoryAveragesFromReportApi(learner.id);
+            return [learner.id, rows];
+          })
+        );
+        return new Map(pairs);
+      };
       const buildAllowedSubjectsMap = async (learnerRows) => {
         const secondaryLearners = (learnerRows || []).filter((l) => isSeniorSecondaryGrade(l?.grade));
         if (secondaryLearners.length === 0) return new Map();
@@ -2520,6 +2568,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user, pa
           .map((id) => filteredLearners?.find((l) => l.id === id))
           .filter(Boolean);
         const allowedSubjectsByLearner = await buildAllowedSubjectsMap(selectedLearners);
+        const categoryAveragesByLearner = await buildCategoryAveragesMap(selectedLearners);
 
         // OPTIMIZED: Fetch all results and communication history for the whole group in one hit
         const bulkRes = await api.assessments.getBulkResults(queryParams);
@@ -2593,11 +2642,18 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user, pa
             return dateA - dateB;
           });
 
+          const apiCategoryAverages = categoryAveragesByLearner.get(learnerId) || [];
+          const rowCategoryAverages =
+            Array.isArray(apiCategoryAverages) && apiCategoryAverages.length > 0
+              ? apiCategoryAverages
+              : computeCategoryAveragesFromResults(processedResults);
+
           allReportRows.push({
             learner,
             results: processedResults,
             communication,
             pathwayPrediction: allPredictions[learnerId] || null,
+            byCategoryAverages: rowCategoryAverages,
             averageScore: processedResults.length > 0
               ? (processedResults.reduce((sum, r) => sum + (r.score || r.percentage || 0), 0) / processedResults.length).toFixed(1)
               : 0
@@ -3154,6 +3210,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user, pa
                     learner={reportData.learner || reportData.rows[0].learner}
                     results={reportData.results?.length > 0 ? reportData.results : reportData.rows[0].results}
                     pathwayPrediction={reportData.pathwayPrediction || reportData.rows[0].pathwayPrediction}
+                    categoryAverages={reportData.byCategoryAverages || reportData.rows?.[0]?.byCategoryAverages || []}
                     term={reportData.term}
                     academicYear={reportData.academicYear}
                     brandingSettings={brandingSettings}
@@ -3813,6 +3870,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user, pa
                   learner={row.learner}
                   results={row.results}
                   pathwayPrediction={row.pathwayPrediction}
+                  categoryAverages={row.byCategoryAverages || []}
                   term={stagedTerm || selectedTerm}
                   academicYear={academicYear || setup.academicYear}
                   commentData={commentMap?.[row?.learner?.id]}
@@ -3833,6 +3891,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user, pa
               learner={singleDownloadData.learner}
               results={singleDownloadData.results}
               pathwayPrediction={singleDownloadData.pathwayPrediction}
+              categoryAverages={singleDownloadData.byCategoryAverages || []}
               term={stagedTerm || selectedTerm}
               academicYear={academicYear || setup.academicYear}
               commentData={singleCommentData}
@@ -4110,6 +4169,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user, pa
               learner={singleDownloadData?.learner || reportData?.learner || reportData?.rows?.[0]?.learner}
               results={singleDownloadData?.results || reportData?.results || reportData?.rows?.[0]?.results || []}
               pathwayPrediction={singleDownloadData?.pathwayPrediction || reportData?.pathwayPrediction || reportData?.rows?.[0]?.pathwayPrediction}
+              categoryAverages={singleDownloadData?.byCategoryAverages || reportData?.byCategoryAverages || reportData?.rows?.[0]?.byCategoryAverages || []}
               term={selectedTerm || reportData?.term}
               academicYear={academicYear || reportData?.academicYear}
               brandingSettings={brandingSettings}
@@ -4130,6 +4190,7 @@ const SummativeReport = ({ learners, onFetchLearners, brandingSettings, user, pa
                   learner={row.learner}
                   results={row.results || []}
                   pathwayPrediction={row.pathwayPrediction}
+                  categoryAverages={row.byCategoryAverages || []}
                   term={selectedTerm || reportData?.term}
                   academicYear={academicYear || reportData?.academicYear}
                   brandingSettings={brandingSettings}
