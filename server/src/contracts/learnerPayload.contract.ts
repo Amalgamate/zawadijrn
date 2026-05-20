@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
 const asOptionalString = z.string().trim().max(255).optional().or(z.literal(''));
+const asOptionalPhotoString = z.preprocess(
+  (value) => (value === null || value === '' ? undefined : value),
+  z.string().optional()
+);
 
 const rawLearnerSchema = z.object({
   admissionNumber: z.string().trim().max(50).optional(),
@@ -46,7 +50,7 @@ const rawLearnerSchema = z.object({
   doctorName: asOptionalString,
   doctorPhone: asOptionalString,
   isTransportStudent: z.boolean().optional(),
-  photo: z.string().optional(),
+  photo: asOptionalPhotoString,
   isScholarshipStudent: z.boolean().optional(),
   scholarshipType: asOptionalString,
   scholarshipAmount: z.union([z.string(), z.number()]).optional(),

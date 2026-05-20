@@ -23,12 +23,14 @@ export const sanitizeLearnerPayload = (payload = {}) => {
 
   const normalized = {
     ...payload,
+    // Do not send null/empty photo values; backend treats missing photo as optional.
+    photo: payload.photo || undefined,
     emergencyContact: payload.emergencyContact || payload.doctorName || '',
     emergencyPhone: payload.emergencyPhone || payload.doctorPhone || '',
     orphanFields,
   };
 
   return Object.fromEntries(
-    Object.entries(normalized).filter(([key]) => LEARNER_PAYLOAD_KEYS.includes(key))
+    Object.entries(normalized).filter(([key, value]) => LEARNER_PAYLOAD_KEYS.includes(key) && value !== undefined)
   );
 };
