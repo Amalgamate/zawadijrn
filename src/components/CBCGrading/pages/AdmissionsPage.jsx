@@ -29,6 +29,9 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
   const [photoPreview, setPhotoPreview] = useState(null);
   const [stepErrors, setStepErrors] = useState({}); // Track validation errors per step
   const [generateInvoice, setGenerateInvoice] = useState(true); // Default to true
+  const [editBaseline, setEditBaseline] = useState(null);
+  const [hasShownEditNotice, setHasShownEditNotice] = useState(false);
+  const formId = 'learner-admissions-form';
 
   // Fetch streams — single-tenant, no schoolId needed
   useEffect(() => {
@@ -101,6 +104,22 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
     return upiChanged || gradeChanged || dobChanged;
   }, [formData.dateOfBirth, formData.grade, formData.upiNumber, isEdit, learner]);
 
+  const buildSubmissionPayload = React.useCallback((data) => {
+    const primaryContact = computePrimaryContact(data);
+    const finalFormData = {
+      ...data,
+      ...primaryContact,
+      generateInvoice: data.isScholarshipStudent ? false : generateInvoice
+    };
+    return sanitizeLearnerPayload(finalFormData);
+  }, [generateInvoice]);
+
+  const hasUnsavedEdits = React.useMemo(() => {
+    if (!isEdit || !editBaseline) return false;
+    const currentPayload = buildSubmissionPayload(formData);
+    return JSON.stringify(currentPayload) !== JSON.stringify(editBaseline);
+  }, [buildSubmissionPayload, editBaseline, formData, isEdit]);
+
   // Initialize form with learner data if editing
   useEffect(() => {
     if (learner) {
@@ -116,6 +135,14 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
         dateOfBirth: toInputDate(learner.dateOfBirth),
         dateOfAdmission: toInputDate(learner.admissionDate) || initialFormData.dateOfAdmission,
       });
+      setEditBaseline(buildSubmissionPayload({
+        ...initialFormData,
+        ...sanitizedLearner,
+        id: learner.id,
+        dateOfBirth: toInputDate(learner.dateOfBirth),
+        dateOfAdmission: toInputDate(learner.admissionDate) || initialFormData.dateOfAdmission,
+      }));
+      setHasShownEditNotice(false);
       // Set photo preview if exists
       if (learner.photoUrl) {
         setPhotoPreview(learner.photoUrl);
@@ -136,7 +163,13 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [learner]);
+  }, [buildSubmissionPayload, initialFormData, learner]);
+
+  useEffect(() => {
+    if (!isEdit || !hasUnsavedEdits || hasShownEditNotice) return;
+    showSuccess('You have unsaved changes. Click Save Changes to update this student.');
+    setHasShownEditNotice(true);
+  }, [hasShownEditNotice, hasUnsavedEdits, isEdit, showSuccess]);
 
   // Fetch Next Admission Number Preview (only for new admissions)
   useEffect(() => {
@@ -475,6 +508,10 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
             setLastSaved(null);
             setCurrentStep(1);
           }
+          if (isEdit) {
+            setEditBaseline(sanitizedPayload);
+            setHasShownEditNotice(false);
+          }
           if (onCancel) onCancel(); // Go back to list
         } else {
           console.log('❌ Save failed:', result?.error);
@@ -504,6 +541,9 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
           <div>
             <h2 className="text-2xl font-medium text-gray-900">{isEdit ? 'Edit Student Details' : 'Student Admission'}</h2>
             <p className="text-sm text-gray-500">{isEdit ? 'Update student records below.' : 'Fill in the details below to admit a new student.'}</p>
+            {isEdit && hasUnsavedEdits && (
+              <p className="text-xs font-medium text-amber-700 mt-1">Unsaved edits detected. Click Save Changes to apply updates.</p>
+            )}
           </div>
           {isDraft && !isEdit && (
             <div className="flex items-center gap-2 mb-1 px-3 py-1 bg-green-50 rounded-full border border-green-100 animate-in fade-in slide-in-from-top-2 duration-500">
@@ -514,6 +554,18 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
             </div>
           )}
           <div className="flex items-center gap-2">
+            {isEdit && (
+              <button
+                type="submit"
+                form={formId}
+                disabled={isSaving || !hasUnsavedEdits}
+                className="flex items-center gap-2 px-3 py-1.5 bg-brand-purple text-white hover:bg-brand-purple/90 rounded-md transition-all text-sm font-medium border border-brand-purple shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                title="Save student changes"
+              >
+                {isSaving ? <Loader size={16} className="animate-spin" /> : <Save size={16} />}
+                <span className="hidden sm:inline">{isSaving ? 'Saving...' : 'Save Changes'}</span>
+              </button>
+            )}
             {isEdit && onDelete && (
               <button
                 type="button"
@@ -569,7 +621,7 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
             )}
           </div>
 
-          <form onSubmit={handleSubmit}>
+          <form id={formId} onSubmit={handleSubmit}>
             {/* Step 1: Students Information */}
             {currentStep === 1 && (
               <div className="space-y-6">
