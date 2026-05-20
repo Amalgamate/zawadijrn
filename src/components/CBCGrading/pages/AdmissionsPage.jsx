@@ -446,7 +446,7 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
     const sanitizedPayload = sanitizeLearnerPayload(finalFormData);
 
     if (hasSensitiveFieldChanges && (!changeReason || changeReason.trim().length < 10)) {
-      showError('Please provide a clear reason (minimum 10 characters) for changing UPI/NEMIS, Date of Birth, or Grade.');
+      showError('Please provide a clear reason (minimum 10 characters) for changing Assessment number, Date of Birth, or Grade.');
       setCurrentStep(3);
       return;
     }
@@ -663,7 +663,7 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 uppercase tracking-tight mb-1">UPI Number (NEMIS)</label>
+                      <label className="block text-xs font-medium text-gray-500 uppercase tracking-tight mb-1">Assessment number</label>
                       <input
                         type="text"
                         name="upiNumber"
@@ -848,7 +848,7 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
                     <h4 className="text-xs font-medium text-orange-600 uppercase tracking-widest mb-2 border-b border-orange-50 pb-1">Admin Info</h4>
                     <div className="space-y-2 text-sm">
                       <p className="flex justify-between"><span className="text-gray-500">Adm No:</span> <span className="font-semibold text-gray-800">{formData.admissionNumber || 'Auto-generated'}</span></p>
-                      <p className="flex justify-between"><span className="text-gray-500">UPI (NEMIS):</span> <span className="font-semibold text-emerald-600 font-mono">{formData.upiNumber || 'N/A'}</span></p>
+                      <p className="flex justify-between"><span className="text-gray-500">Assessment number:</span> <span className="font-semibold text-emerald-600 font-mono">{formData.upiNumber || 'N/A'}</span></p>
                       <p className="flex justify-between"><span className="text-gray-500">Scholarship:</span> <span className="font-semibold text-gray-800">{formData.isScholarshipStudent ? (formData.scholarshipType === 'PARTIAL' ? 'Partial' : 'Full') : 'No'}</span></p>
                       {formData.isScholarshipStudent && formData.scholarshipType === 'PARTIAL' && (
                         <p className="flex justify-between"><span className="text-gray-500">Fee To Pay:</span> <span className="font-semibold text-gray-800">{formData.scholarshipAmount || 'N/A'}</span></p>
@@ -868,7 +868,7 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
                       Reason for Sensitive Change <span className="text-red-600">*</span>
                     </label>
                     <p className="text-xs text-amber-800 mb-2">
-                      Required because UPI/NEMIS, Date of Birth, or Grade was changed.
+                      Required because Assessment number, Date of Birth, or Grade was changed.
                     </p>
                     <textarea
                       value={changeReason}
