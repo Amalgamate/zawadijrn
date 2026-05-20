@@ -41,6 +41,7 @@ const docker = process.env.DOCKER_HOST
 const APP_VERSION = process.env.CONSOLE_APP_VERSION || 'live';
 const INSTANCE_PROVISION_SCRIPT = process.env.CONSOLE_INSTANCE_PROVISION_SCRIPT || '';
 const NGINX_SITES_DIR = process.env.CONSOLE_NGINX_SITES_DIR || '/etc/nginx/sites-enabled';
+const DEFAULT_DOMAIN_SUFFIX = process.env.CONSOLE_DEFAULT_DOMAIN_SUFFIX || 'elimcrown.co.ke';
 
 // ── Persistent stores ─────────────────────────────────────────────────────
 const LEADS_STORE_FILE = path.join(__dirname, 'leads.store.json');
@@ -404,6 +405,62 @@ function isDomainLike(value) {
   return /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(domain);
 }
 
+function slugifyName(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function nextAvailablePort(min, max, usedPorts) {
+  for (let p = Number(min); p <= Number(max); p += 1) {
+    if (!usedPorts.has(p)) return p;
+  }
+  return null;
+}
+
+function nextAvailableDomain(baseSlug, knownDomains) {
+  const safeBase = baseSlug || 'school';
+  let attempt = `${safeBase}.${DEFAULT_DOMAIN_SUFFIX}`;
+  if (!knownDomains.has(attempt)) return attempt;
+  let n = 2;
+  while (n < 10000) {
+    attempt = `${safeBase}-${n}.${DEFAULT_DOMAIN_SUFFIX}`;
+    if (!knownDomains.has(attempt)) return attempt;
+    n += 1;
+  }
+  return null;
+}
+
+function buildAutoAllocation({ name, appType, appRange, instances }) {
+  const usedPorts = new Set();
+  for (const instance of instances) {
+    const fe = Number(instance.fe);
+    const be = Number(instance.be);
+    if (Number.isInteger(fe) && fe > 0) usedPorts.add(fe);
+    if (Number.isInteger(be) && be > 0) usedPorts.add(be);
+  }
+
+  const fePort = nextAvailablePort(appRange.fe[0], appRange.fe[1], usedPorts);
+  if (!fePort) throw new Error(`No available frontend port in range ${appRange.fe[0]}-${appRange.fe[1]}.`);
+  usedPorts.add(fePort);
+
+  let bePort = 0;
+  if (appRange.requireBe) {
+    bePort = nextAvailablePort(appRange.be[0], appRange.be[1], usedPorts);
+    if (!bePort) throw new Error(`No available backend port in range ${appRange.be[0]}-${appRange.be[1]}.`);
+    usedPorts.add(bePort);
+  }
+
+  const knownDomains = listKnownDomains(instances);
+  const baseSlug = slugifyName(name || appType || 'school');
+  const domain = nextAvailableDomain(baseSlug, knownDomains);
+  if (!domain) throw new Error('No available subdomain could be generated.');
+
+  return { domain, fePort, bePort };
+}
+
 function validateImageForAppType(appType, image) {
   const normalized = String(image || '').toLowerCase();
   if (!normalized) return false;
@@ -558,9 +615,7 @@ app.get('/api/catalog/images', requireAuth, requireRole('super_admin', 'platform
 app.post('/api/instances/preflight', requireAuth, requireRole('super_admin'), async (req, res) => {
   const {
     appType = 'school',
-    domain,
-    fePort,
-    bePort,
+    name = '',
     image = '',
   } = req.body || {};
 
@@ -573,43 +628,32 @@ app.post('/api/instances/preflight', requireAuth, requireRole('super_admin'), as
     issues.push('Unsupported app type.');
   }
 
-  const normalizedDomain = String(domain || '').trim().toLowerCase();
-  if (!isDomainLike(normalizedDomain)) {
-    issues.push('Domain format is invalid.');
-  }
-
-  if (!isPortValid(fePort)) {
-    issues.push('Frontend/HTTP port is invalid.');
-  } else if (!isPortInRange(fePort, appRange.fe)) {
-    issues.push(`Frontend/HTTP port must be in range ${appRange.fe[0]}-${appRange.fe[1]} for ${normalizedAppType}.`);
-  }
-
-  if (appRange.requireBe) {
-    if (!isPortValid(bePort)) {
-      issues.push('Backend/secondary port is invalid.');
-    } else if (!isPortInRange(bePort, appRange.be)) {
-      issues.push(`Backend/secondary port must be in range ${appRange.be[0]}-${appRange.be[1]} for ${normalizedAppType}.`);
-    }
-    if (Number(fePort) === Number(bePort)) issues.push('Port conflict: frontend and backend ports cannot be the same.');
-  }
+  if (!String(name || '').trim()) issues.push('Instance name is required.');
 
   if (APP_TYPE_SET.has(normalizedAppType) && image && !validateImageForAppType(normalizedAppType, image)) {
     issues.push(`Image "${image}" does not look valid for app type "${normalizedAppType}".`);
   }
 
+  let suggested = null;
   try {
     const { instances } = await collectRuntime();
-    const usedPorts = new Set();
-    for (const instance of instances) {
-      if (Number.isFinite(Number(instance.fe))) usedPorts.add(Number(instance.fe));
-      if (Number.isFinite(Number(instance.be))) usedPorts.add(Number(instance.be));
+    if (!issues.length) {
+      suggested = buildAutoAllocation({
+        name,
+        appType: normalizedAppType,
+        appRange,
+        instances,
+      });
+      if (!isDomainLike(suggested.domain)) {
+        issues.push('Auto-generated domain is invalid.');
+      }
+      if (!isPortInRange(suggested.fePort, appRange.fe)) {
+        issues.push('Auto-generated frontend port is outside allowed range.');
+      }
+      if (appRange.requireBe && !isPortInRange(suggested.bePort, appRange.be)) {
+        issues.push('Auto-generated backend port is outside allowed range.');
+      }
     }
-
-    if (usedPorts.has(Number(fePort))) issues.push(`Port ${fePort} is already in use.`);
-    if (appRange.requireBe && usedPorts.has(Number(bePort))) issues.push(`Port ${bePort} is already in use.`);
-
-    const domains = listKnownDomains(instances);
-    if (domains.has(normalizedDomain)) issues.push(`Domain "${normalizedDomain}" is already in use.`);
   } catch (error) {
     warnings.push(`Live runtime preflight unavailable: ${error.message}`);
   }
@@ -619,6 +663,7 @@ app.post('/api/instances/preflight', requireAuth, requireRole('super_admin'), as
     valid: issues.length === 0,
     issues,
     warnings,
+    autoAssigned: suggested,
   });
 });
 
@@ -684,7 +729,6 @@ app.post('/api/instances/create', requireAuth, requireRole('super_admin'), async
   const {
     appType = 'school',
     name,
-    domain,
     type,
     institutionType,
     planId,
@@ -692,8 +736,6 @@ app.post('/api/instances/create', requireAuth, requireRole('super_admin'), async
     image = '',
     adminEmail = '',
     notes = '',
-    fePort,
-    bePort,
     db,
   } = req.body || {};
 
@@ -703,11 +745,8 @@ app.post('/api/instances/create', requireAuth, requireRole('super_admin'), async
     return res.status(400).json({ error: 'Unsupported appType.' });
   }
 
-  if (!name || !domain || !fePort) {
-    return res.status(400).json({ error: 'name, domain, and fePort are required' });
-  }
-  if (appRange.requireBe && !bePort) {
-    return res.status(400).json({ error: 'bePort is required for this app type' });
+  if (!name) {
+    return res.status(400).json({ error: 'name is required' });
   }
 
   if (!INSTANCE_PROVISION_SCRIPT) {
@@ -717,18 +756,31 @@ app.post('/api/instances/create', requireAuth, requireRole('super_admin'), async
     });
   }
 
+  let autoAssigned;
+  try {
+    const { instances } = await collectRuntime();
+    autoAssigned = buildAutoAllocation({
+      name,
+      appType: normalizedAppType,
+      appRange,
+      instances,
+    });
+  } catch (error) {
+    return res.status(400).json({ error: `Auto-assignment failed: ${error.message}` });
+  }
+
   const payload = JSON.stringify({
     appType: normalizedAppType,
     name,
-    domain,
+    domain: autoAssigned.domain,
     type: type || institutionType || 'PRIMARY_CBC',
     planId: planId || 'professional',
     version,
     image,
     adminEmail,
     notes,
-    fePort,
-    bePort: appRange.requireBe ? bePort : 0,
+    fePort: autoAssigned.fePort,
+    bePort: appRange.requireBe ? autoAssigned.bePort : 0,
     db,
     requestedBy: req.user.email,
   });

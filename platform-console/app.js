@@ -1854,26 +1854,17 @@ function bindModalEvents() {
       const payload = {
         appType: currentProvisionApp,
         name,
-        domain: $('f-domain')?.value.trim() || `${slugify(name)}.${app.defaultDomainSuffix}`,
+        domain: $('f-domain')?.value.trim() || '',
         version: version?.value || 'latest',
         image: version?.image || '',
-        fePort: Number($('f-port-fe')?.value || 0),
-        bePort: appRange.requireBe ? Number($('f-port-be')?.value || 0) : 0,
+        fePort: Number($('f-port-fe')?.value || 0) || 0,
+        bePort: appRange.requireBe ? (Number($('f-port-be')?.value || 0) || 0) : 0,
         institutionType: $('f-type')?.value || 'PRIMARY_CBC',
         planId: $('f-plan')?.value || 'professional',
         adminEmail: $('f-admin-email')?.value.trim() || '',
         notes: $('f-notes')?.value.trim() || '',
         db: `${currentProvisionApp}_${slugify(name).replace(/-/g, '_')}`,
       };
-
-      if (!payload.domain) {
-        toast('Please provide a valid domain/subdomain.');
-        return;
-      }
-      if (!payload.fePort || (appRange.requireBe && !payload.bePort)) {
-        toast('Please provide valid ports for this instance.');
-        return;
-      }
 
       try {
         setProvisionSubmitBusy(true);
@@ -1901,6 +1892,17 @@ function bindModalEvents() {
             });
             toast(msg);
             return;
+          }
+          if (preflight?.autoAssigned) {
+            payload.domain = preflight.autoAssigned.domain || payload.domain;
+            payload.fePort = Number(preflight.autoAssigned.fePort || payload.fePort || 0);
+            payload.bePort = appRange.requireBe
+              ? Number(preflight.autoAssigned.bePort || payload.bePort || 0)
+              : 0;
+            if ($('f-domain')) $('f-domain').value = payload.domain || '';
+            if ($('f-port-fe')) $('f-port-fe').value = payload.fePort || '';
+            if ($('f-port-be') && appRange.requireBe) $('f-port-be').value = payload.bePort || '';
+            renderComposePreview();
           }
           if (preflight && Array.isArray(preflight.warnings) && preflight.warnings.length) {
             toast(`Preflight warning: ${preflight.warnings[0]}`);
