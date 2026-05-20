@@ -935,42 +935,6 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
                   </div>
                 )}
 
-                <div className="border border-gray-200 rounded-lg p-4 bg-gray-50/40 mt-4">
-                  <h4 className="text-lg font-medium text-gray-800 mb-4">Student Photo (Optional)</h4>
-                  <div className="flex items-start gap-6">
-                    {photoPreview ? (
-                      <div className="relative">
-                        <img
-                          src={photoPreview}
-                          alt="Student preview"
-                          className="w-32 h-32 object-cover rounded-lg border-2 border-gray-200 shadow-sm"
-                        />
-                        <button
-                          type="button"
-                          onClick={handleRemovePhoto}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors shadow-md"
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-white">
-                        <User size={48} className="text-gray-300" />
-                      </div>
-                    )}
-                    <div className="flex-1">
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Upload Photo</label>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handlePhotoChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-purple"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">Accepted formats: JPG, PNG. Max size: 5MB</p>
-                    </div>
-                  </div>
-                </div>
-
                 <div className="mt-6 flex items-center gap-3 p-4 bg-gray-50 border border-gray-200 rounded-lg">
                   <input
                     id="generateInvoice"
