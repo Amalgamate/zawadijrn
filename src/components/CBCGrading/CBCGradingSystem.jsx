@@ -503,8 +503,11 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
         : await createLearner(data);
       if (result.success) {
         notify.showSuccess(`Learner ${editingLearner ? 'updated' : 'added'} successfully!`);
-        setCurrentPage('learners-list');
-        setEditingLearner(null);
+        if (!editingLearner) {
+          // For new admissions, return to list after successful create.
+          setCurrentPage('learners-list');
+          setEditingLearner(null);
+        }
       } else {
         notify.showError(result.error || 'Failed to save learner');
       }

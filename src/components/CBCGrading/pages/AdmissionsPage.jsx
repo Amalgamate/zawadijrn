@@ -509,10 +509,13 @@ const AdmissionsPage = ({ onSave, onCancel, onDelete, learner = null }) => {
             setCurrentStep(1);
           }
           if (isEdit) {
+            // Stay on edit page after save so user can continue updates
+            // such as uploading/replacing photo without leaving this screen.
             setEditBaseline(sanitizedPayload);
             setHasShownEditNotice(false);
+          } else if (onCancel) {
+            onCancel(); // New admission flow returns to list
           }
-          if (onCancel) onCancel(); // Go back to list
         } else {
           console.log('❌ Save failed:', result?.error);
           const actionLabel = isEdit ? 'update' : 'create';
