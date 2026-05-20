@@ -497,8 +497,8 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
       setShowConfirmDialog(true);
     },
     handleBulkDeleteLearners: bulkDeleteLearners,
-    handleSaveLearner: async (data) => {
-      const targetLearnerId = data?.__targetLearnerId || editingLearner?.id || data?.id || null;
+    handleSaveLearner: async (data, options = {}) => {
+      const targetLearnerId = options?.targetLearnerId || editingLearner?.id || data?.id || null;
       const { __targetLearnerId, ...payload } = data || {};
       const result = targetLearnerId
         ? await updateLearner(targetLearnerId, payload)
