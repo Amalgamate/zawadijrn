@@ -498,12 +498,13 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
     },
     handleBulkDeleteLearners: bulkDeleteLearners,
     handleSaveLearner: async (data) => {
-      const result = editingLearner
-        ? await updateLearner(editingLearner.id, data)
+      const targetLearnerId = editingLearner?.id || data?.id || null;
+      const result = targetLearnerId
+        ? await updateLearner(targetLearnerId, data)
         : await createLearner(data);
       if (result.success) {
-        notify.showSuccess(`Learner ${editingLearner ? 'updated' : 'added'} successfully!`);
-        if (!editingLearner) {
+        notify.showSuccess(`Learner ${targetLearnerId ? 'updated' : 'added'} successfully!`);
+        if (!targetLearnerId) {
           // For new admissions, return to list after successful create.
           setCurrentPage('learners-list');
           setEditingLearner(null);
