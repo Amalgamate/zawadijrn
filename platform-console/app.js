@@ -201,6 +201,9 @@ let pendingConfirm = null;
 let editingPlanId = null;
 let liveMode = false;
 let RUNTIME_METRICS = null;
+const DOMAIN_OVERRIDES = {
+  mertics: 'merti-cs.elimcrown.co.ke',
+};
 
 function toast(message) {
   const el = $('toast');
@@ -660,7 +663,7 @@ async function refreshFromRuntime() {
     if (runtime?.ok && Array.isArray(runtime.instances)) {
       INSTANCES = runtime.instances.map(item => ({
         ...item,
-        domain: item.domain || `${slugify(item.name).replace(/-(frontend|backend|db|database)-?\d*$/i, '')}.elimcrown.co.ke`,
+        domain: item.domain || DOMAIN_OVERRIDES[inferGroupKey(item)] || `${slugify(item.name).replace(/-(frontend|backend|db|database)-?\d*$/i, '')}.elimcrown.co.ke`,
         type: item.type || 'PRIMARY_CBC',
         typeLabel: item.typeLabel || 'Managed',
         planId: item.planId || 'professional',
@@ -1172,7 +1175,7 @@ function renderInstances() {
 
   const renderGroupHeader = group => {
     const primary = group.items.find(item => Number(item.fe) > 0) || group.items[0] || {};
-    const domain = primary.domain || `${slugify(group.name).replace(/-(frontend|backend|db|database)-?\d*$/i, '')}.elimcrown.co.ke`;
+    const domain = primary.domain || DOMAIN_OVERRIDES[group.key] || `${slugify(group.name).replace(/-(frontend|backend|db|database)-?\d*$/i, '')}.elimcrown.co.ke`;
     const feLabel = Number.isFinite(group.fePort) ? `${serverIp}:${group.fePort}` : '-';
     const openIpUrl = Number.isFinite(group.fePort) ? `http://${serverIp}:${group.fePort}` : '';
     const openDomainUrl = domain ? `https://${domain}` : '';
