@@ -498,10 +498,11 @@ export default function CBCGradingSystem({ user, onLogout, brandingSettings, set
     },
     handleBulkDeleteLearners: bulkDeleteLearners,
     handleSaveLearner: async (data) => {
-      const targetLearnerId = editingLearner?.id || data?.id || null;
+      const targetLearnerId = data?.__targetLearnerId || editingLearner?.id || data?.id || null;
+      const { __targetLearnerId, ...payload } = data || {};
       const result = targetLearnerId
-        ? await updateLearner(targetLearnerId, data)
-        : await createLearner(data);
+        ? await updateLearner(targetLearnerId, payload)
+        : await createLearner(payload);
       if (result.success) {
         notify.showSuccess(`Learner ${targetLearnerId ? 'updated' : 'added'} successfully!`);
         if (!targetLearnerId) {
