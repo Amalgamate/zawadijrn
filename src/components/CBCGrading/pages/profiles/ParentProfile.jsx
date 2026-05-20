@@ -17,13 +17,17 @@ const ParentProfile = ({ parent, onBack }) => {
     const handleSavePhoto = async (photoData) => {
         try {
             const response = await api.users.uploadPhoto(parent.id, photoData);
-            if (response.success) {
+            if (response?.success) {
                 showSuccess('Profile photo updated successfully');
                 window.location.reload();
+                return true;
             }
+            showError(response?.error || 'Failed to update profile photo');
+            return false;
         } catch (error) {
             console.error('Failed to upload photo:', error);
             showError('Failed to update profile photo');
+            return false;
         }
     };
 

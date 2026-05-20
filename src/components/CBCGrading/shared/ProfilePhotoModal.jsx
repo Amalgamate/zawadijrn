@@ -18,13 +18,20 @@ const ProfilePhotoModal = ({ isOpen, onClose, onSave, currentPhoto }) => {
     }, [stream]);
 
     useEffect(() => {
-        if (isOpen && currentPhoto) {
-            setPreviewUrl(currentPhoto);
+        if (isOpen) {
+            setMode('select');
+            setPreviewUrl(currentPhoto || null);
         }
         return () => {
             stopCamera();
         };
     }, [isOpen, currentPhoto, stopCamera]);
+
+    useEffect(() => {
+        if (mode === 'camera' && stream && videoRef.current) {
+            videoRef.current.srcObject = stream;
+        }
+    }, [mode, stream]);
 
     const startCamera = async () => {
         try {
@@ -33,9 +40,6 @@ const ProfilePhotoModal = ({ isOpen, onClose, onSave, currentPhoto }) => {
             });
             setStream(mediaStream);
             setMode('camera');
-            if (videoRef.current) {
-                videoRef.current.srcObject = mediaStream;
-            }
         } catch (err) {
             console.error("Error accessing camera:", err);
             toast.error("Could not access camera. Please check permissions.");
@@ -76,10 +80,10 @@ const ProfilePhotoModal = ({ isOpen, onClose, onSave, currentPhoto }) => {
         }
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (previewUrl) {
-            onSave(previewUrl);
-            onClose();
+            const ok = await onSave(previewUrl);
+            if (ok !== false) onClose();
         }
     };
 

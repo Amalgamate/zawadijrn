@@ -96,16 +96,20 @@ const LearnerProfile = ({ learner: initialLearner, onBack, brandingSettings, onN
         try {
             const learnerId = currentLearner?.id || initialLearner?.id;
             const response = await api.learners.uploadPhoto(learnerId, photoData);
-            if (response.success) {
+            if (response?.success) {
                 showSuccess('Profile photo updated successfully');
                 setCurrentLearner(prev => ({
                     ...prev,
                     photoUrl: response.data?.photoUrl || photoData
                 }));
+                return true;
             }
+            showError(response?.error || 'Failed to update profile photo');
+            return false;
         } catch (error) {
             console.error('Failed to upload photo:', error);
             showError('Failed to update profile photo');
+            return false;
         }
     };
 
