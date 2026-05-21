@@ -99,6 +99,33 @@ export async function ensureSuperAdmin() {
         if (!createExtraDemoUsers) {
             console.log('ℹ️ Extra demo users are disabled (CREATE_EXTRA_DEMO_USERS=false).');
         }
+
+        // Ensure every fresh tenant DB has a resolvable active school context.
+        const schoolCode = (process.env.SCHOOL_CODE || 'school').trim().toLowerCase();
+        const schoolNameRaw = (process.env.SCHOOL_NAME || '').trim();
+        const schoolName = schoolNameRaw || schoolCode
+            .split(/[-_]+/)
+            .filter(Boolean)
+            .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+            .join(' ') || 'School';
+
+        await prisma.school.upsert({
+            where: { id: schoolCode },
+            create: {
+                id: schoolCode,
+                name: schoolName,
+                active: true,
+                status: 'ACTIVE',
+                archived: false,
+            },
+            update: {
+                name: schoolName,
+                active: true,
+                status: 'ACTIVE',
+                archived: false,
+            },
+        });
+        console.log(`✅ School context ready: ${schoolCode} (${schoolName})`);
     } catch (error: any) {
         console.error('❌ Error during user setup:', error.message);
     }

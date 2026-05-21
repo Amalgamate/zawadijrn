@@ -159,13 +159,14 @@ export const secureCookies = (
   next: NextFunction
 ) => {
   const isDevelopment = process.env.NODE_ENV === 'development';
+  const allowSecure = !isDevelopment && (process.env.SECURE_COOKIES || '').toLowerCase() === 'true';
 
   res.setHeader(
     'Set-Cookie',
     (res.getHeader('Set-Cookie') as string[])?.map((cookie) => {
       let secureCookie = cookie;
 
-      if (!isDevelopment && !secureCookie.includes('Secure')) {
+      if (allowSecure && !secureCookie.includes('Secure')) {
         secureCookie += '; Secure';
       }
 

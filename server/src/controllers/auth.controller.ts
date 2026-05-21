@@ -35,10 +35,12 @@ const ACCOUNT_LOCK_MINUTES = 1;
 export class AuthController {
   private setTokenCookies(res: Response, accessToken: string, refreshToken: string) {
     const isProd = process.env.NODE_ENV === 'production';
+    const secureCookies = (process.env.SECURE_COOKIES || '').toLowerCase() === 'true';
+    const useSecureCookies = isProd ? secureCookies : false;
     const commonOptions: any = {
       httpOnly: true,
-      secure: isProd,
-      sameSite: isProd ? 'none' : 'lax', // Use 'none' for cross-domain production support
+      secure: useSecureCookies,
+      sameSite: useSecureCookies ? 'none' : 'lax',
       path: '/'
     };
 
