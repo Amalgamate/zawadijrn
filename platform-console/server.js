@@ -433,14 +433,20 @@ function nextAvailableDomain(baseSlug, knownDomains) {
   return null;
 }
 
-function buildAutoAllocation({ name, appType, appRange, instances }) {
+async function getUsedPublishedPorts() {
+  const containers = await docker.listContainers({ all: true });
   const usedPorts = new Set();
-  for (const instance of instances) {
-    const fe = Number(instance.fe);
-    const be = Number(instance.be);
-    if (Number.isInteger(fe) && fe > 0) usedPorts.add(fe);
-    if (Number.isInteger(be) && be > 0) usedPorts.add(be);
+  for (const container of containers) {
+    for (const p of (container.Ports || [])) {
+      const publicPort = Number(p.PublicPort);
+      if (Number.isInteger(publicPort) && publicPort > 0) usedPorts.add(publicPort);
+    }
   }
+  return usedPorts;
+}
+
+async function buildAutoAllocation({ name, appType, appRange, instances }) {
+  const usedPorts = await getUsedPublishedPorts();
 
   const fePort = nextAvailablePort(appRange.fe[0], appRange.fe[1], usedPorts);
   if (!fePort) throw new Error(`No available frontend port in range ${appRange.fe[0]}-${appRange.fe[1]}.`);
@@ -638,7 +644,7 @@ app.post('/api/instances/preflight', requireAuth, requireRole('super_admin'), as
   try {
     const { instances } = await collectRuntime();
     if (!issues.length) {
-      suggested = buildAutoAllocation({
+      suggested = await buildAutoAllocation({
         name,
         appType: normalizedAppType,
         appRange,
@@ -759,7 +765,7 @@ app.post('/api/instances/create', requireAuth, requireRole('super_admin'), async
   let autoAssigned;
   try {
     const { instances } = await collectRuntime();
-    autoAssigned = buildAutoAllocation({
+    autoAssigned = await buildAutoAllocation({
       name,
       appType: normalizedAppType,
       appRange,
