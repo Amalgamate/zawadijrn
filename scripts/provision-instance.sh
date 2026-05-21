@@ -43,6 +43,7 @@ STACK_COMPOSE_FILE="${STACK_COMPOSE_FILE:-${APPS_DIR}/docker-compose.stack.yml}"
 ODOO_COMPOSE_FILE="${ODOO_COMPOSE_FILE:-${APPS_DIR}/docker-compose.odoo.yml}"
 WORDPRESS_COMPOSE_FILE="${WORDPRESS_COMPOSE_FILE:-${APPS_DIR}/docker-compose.wordpress.yml}"
 ENV_DIR="${ENV_DIR:-${APPS_DIR}/env}"
+WORDPRESS_PHP_DIR="${WORDPRESS_PHP_DIR:-${APPS_DIR}/wordpress-php}"
 FRONTEND_IMAGE="${FRONTEND_IMAGE:-ghcr.io/amalgamate/zawadi-frontend:latest}"
 BACKEND_IMAGE="${BACKEND_IMAGE:-ghcr.io/amalgamate/zawadi-backend:latest}"
 DEFAULT_HOST_IP="${DEFAULT_HOST_IP:-185.127.16.124}"
@@ -170,6 +171,18 @@ port_in_range() {
   [[ "${p}" =~ ^[0-9]+$ ]] && [[ "${p}" -ge "${min}" ]] && [[ "${p}" -le "${max}" ]]
 }
 
+env_value() {
+  local key="$1"
+  local fallback="${2:-}"
+  local value
+  value="$(grep -E "^${key}=" "${ENV_FILE}" | tail -n1 | cut -d= -f2- | tr -d '\r' || true)"
+  if [[ -z "${value}" ]]; then
+    echo "${fallback}"
+  else
+    echo "${value}"
+  fi
+}
+
 read FE_MIN FE_MAX < <(range_for_app "${APP_TYPE}" fe)
 read BE_MIN BE_MAX < <(range_for_app "${APP_TYPE}" be)
 
@@ -260,18 +273,19 @@ EOF
 
 if [[ "${APP_TYPE}" == "wordpress" ]]; then
   echo "WORDPRESS_CONFIG_EXTRA=${WORDPRESS_CONFIG_EXTRA_DEFAULT}" >> "${ENV_FILE}"
+  echo "WORDPRESS_UPLOADS_INI=${WORDPRESS_PHP_DIR}/${PROJECT_NAME}/uploads.ini" >> "${ENV_FILE}"
 fi
 
 echo "[provision] env file created: ${ENV_FILE}"
 else
   # Existing env file is source of truth for retry runs.
-  APP_TYPE="$(grep -E '^APP_TYPE=' "${ENV_FILE}" | tail -n1 | cut -d= -f2 || true)"
+  APP_TYPE="$(env_value APP_TYPE school)"
   if [[ -z "${APP_TYPE}" ]]; then
     APP_TYPE="school"
   fi
-  FE_PORT="$(grep -E '^FRONTEND_PORT=' "${ENV_FILE}" | tail -n1 | cut -d= -f2)"
-  BE_PORT="$(grep -E '^BACKEND_PORT=' "${ENV_FILE}" | tail -n1 | cut -d= -f2)"
-  DB_NAME="$(grep -E '^DB_NAME=' "${ENV_FILE}" | tail -n1 | cut -d= -f2)"
+  FE_PORT="$(env_value FRONTEND_PORT "${FE_PORT}")"
+  BE_PORT="$(env_value BACKEND_PORT "${BE_PORT}")"
+  DB_NAME="$(env_value DB_NAME "${DB_NAME}")"
 fi
 
 if [[ "${APP_TYPE}" == "wordpress" ]]; then
@@ -280,6 +294,20 @@ if [[ "${APP_TYPE}" == "wordpress" ]]; then
   else
     echo "WORDPRESS_CONFIG_EXTRA=${WORDPRESS_CONFIG_EXTRA_DEFAULT}" >> "${ENV_FILE}"
   fi
+  WORDPRESS_UPLOADS_INI="${WORDPRESS_PHP_DIR}/${PROJECT_NAME}/uploads.ini"
+  if grep -q '^WORDPRESS_UPLOADS_INI=' "${ENV_FILE}"; then
+    WORDPRESS_UPLOADS_INI="$(env_value WORDPRESS_UPLOADS_INI "${WORDPRESS_UPLOADS_INI}")"
+  else
+    echo "WORDPRESS_UPLOADS_INI=${WORDPRESS_UPLOADS_INI}" >> "${ENV_FILE}"
+  fi
+  mkdir -p "$(dirname "${WORDPRESS_UPLOADS_INI}")"
+  cat > "${WORDPRESS_UPLOADS_INI}" <<'EOF'
+upload_max_filesize=64M
+post_max_size=64M
+memory_limit=256M
+max_execution_time=300
+max_input_time=300
+EOF
 fi
 
 pushd "${APPS_DIR}" >/dev/null
@@ -367,6 +395,7 @@ services:
       WORDPRESS_CONFIG_EXTRA: ${WORDPRESS_CONFIG_EXTRA}
     volumes:
       - wordpress_data:/var/www/html
+      - ${WORDPRESS_UPLOADS_INI}:/usr/local/etc/php/conf.d/uploads.ini:ro
 
 volumes:
   wordpress_db_data:
