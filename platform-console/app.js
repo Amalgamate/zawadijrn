@@ -479,6 +479,7 @@ const APP_PROVISIONING_CATALOG = {
 
 let currentProvisionApp = 'school';
 const provisionCatalogCache = {};
+let provisionSuggestRequestId = 0;
 
 function selectedProvisionVersion(appKey) {
   const app = APP_PROVISIONING_CATALOG[appKey] || APP_PROVISIONING_CATALOG.school;
@@ -499,6 +500,37 @@ function syncProvisionImage() {
   const version = selectedProvisionVersion(currentProvisionApp);
   if ($('f-image')) $('f-image').value = version?.image || '';
   renderComposePreview();
+}
+
+async function refreshProvisionAutoAssignment() {
+  const requestId = ++provisionSuggestRequestId;
+  const app = APP_PROVISIONING_CATALOG[currentProvisionApp] || APP_PROVISIONING_CATALOG.school;
+  const name = $('f-name')?.value.trim() || `${app.label} Instance`;
+
+  try {
+    const response = await fetch('/api/instances/suggest', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        appType: currentProvisionApp,
+        name,
+      }),
+    });
+    if (!response.ok || requestId !== provisionSuggestRequestId) return;
+    const data = await response.json().catch(() => null);
+    const assigned = data?.autoAssigned;
+    if (!assigned) return;
+
+    if ($('f-domain') && !$('f-domain').dataset.userEdited) {
+      $('f-domain').value = assigned.domain || '';
+    }
+    if ($('f-port-fe')) $('f-port-fe').value = Number(assigned.fePort || 0) || '';
+    if ($('f-port-be')) $('f-port-be').value = Number(assigned.bePort || 0) || '';
+    renderComposePreview();
+  } catch (_) {
+    // The create endpoint performs the same allocation again; this only improves the modal preview.
+  }
 }
 
 function composeServiceName(rawName) {
@@ -642,13 +674,13 @@ async function loadProvisionCatalog(appKey) {
 function prepareProvisionDefaults(appKey = 'school') {
   applyProvisionMode(appKey);
   loadProvisionCatalog(currentProvisionApp);
-  const { fe, be } = suggestNextPorts(currentProvisionApp);
-  if ($('f-port-fe')) $('f-port-fe').value = fe;
-  if ($('f-port-be')) $('f-port-be').value = be || '';
+  if ($('f-port-fe')) $('f-port-fe').value = '';
+  if ($('f-port-be')) $('f-port-be').value = '';
   if (!$('f-domain')?.value.trim() && $('f-name')?.value.trim()) {
     $('f-domain').value = `${slugify($('f-name').value)}.${APP_PROVISIONING_CATALOG[currentProvisionApp].defaultDomainSuffix}`;
   }
   renderComposePreview();
+  refreshProvisionAutoAssignment();
 }
 
 async function fetchRuntimeData() {
@@ -1030,7 +1062,10 @@ window.convertLeadToProvision = function(leadId) {
 
   const schoolName = (lead.school || '').trim() || `${lead.name || 'School'} Instance`;
   if ($('f-name')) $('f-name').value = schoolName;
-  if ($('f-domain')) $('f-domain').value = `${slugify(schoolName)}.${APP_PROVISIONING_CATALOG.school.defaultDomainSuffix}`;
+  if ($('f-domain')) {
+    $('f-domain').value = `${slugify(schoolName)}.${APP_PROVISIONING_CATALOG.school.defaultDomainSuffix}`;
+    delete $('f-domain').dataset.userEdited;
+  }
 
   const studentCount = Number(lead.students || 0);
   const inferredPlan = studentCount >= 1000
@@ -1047,6 +1082,7 @@ window.convertLeadToProvision = function(leadId) {
   if ($('f-notes')) $('f-notes').value = existingNotes ? `${existingNotes}\n${source}` : source;
 
   renderComposePreview();
+  refreshProvisionAutoAssignment();
   addAudit({ action: 'Lead Convert Initiated', instance: schoolName, details: `Provision form opened from CRM lead ${lead.id}` });
   toast(`Provision form prefilled from ${schoolName}.`);
 };
@@ -1480,6 +1516,12 @@ document.querySelectorAll('.nav-item').forEach(el => {
 // Modals
 function openModal(appKey = 'school', sourceLeadId = null) {
   pendingProvisionLeadId = sourceLeadId;
+  if ($('f-domain')) {
+    $('f-domain').value = '';
+    delete $('f-domain').dataset.userEdited;
+  }
+  if ($('f-name')) $('f-name').value = '';
+  if ($('f-notes')) $('f-notes').value = '';
   prepareProvisionDefaults(appKey);
   $('modal-overlay')?.classList.add('open');
 }
@@ -1831,9 +1873,14 @@ function bindModalEvents() {
     const name = $('f-name')?.value.trim();
     if (!name) return;
     if ($('f-domain') && !$('f-domain').value.trim()) {
+      $('f-domain').dataset.userEdited = '';
       $('f-domain').value = `${slugify(name)}.${APP_PROVISIONING_CATALOG[currentProvisionApp].defaultDomainSuffix}`;
     }
     renderComposePreview();
+    refreshProvisionAutoAssignment();
+  });
+  $('f-domain')?.addEventListener('input', () => {
+    if ($('f-domain')) $('f-domain').dataset.userEdited = 'true';
   });
   ['f-domain', 'f-port-fe', 'f-port-be', 'f-admin-email', 'f-notes', 'f-type', 'f-plan', 'f-image'].forEach(id => {
     $(id)?.addEventListener('input', renderComposePreview);

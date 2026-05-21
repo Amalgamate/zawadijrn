@@ -618,6 +618,33 @@ app.get('/api/catalog/images', requireAuth, requireRole('super_admin', 'platform
   return res.json({ ok: true, catalog });
 });
 
+app.post('/api/instances/suggest', requireAuth, requireRole('super_admin'), async (req, res) => {
+  const {
+    appType = 'school',
+    name = '',
+  } = req.body || {};
+
+  const normalizedAppType = String(appType || 'school').toLowerCase();
+  const appRange = APP_PORT_RANGES[normalizedAppType] || APP_PORT_RANGES.school;
+
+  if (!APP_TYPE_SET.has(normalizedAppType)) {
+    return res.status(400).json({ error: 'Unsupported appType.' });
+  }
+
+  try {
+    const { instances } = await collectRuntime();
+    const autoAssigned = await buildAutoAllocation({
+      name: String(name || '').trim() || normalizedAppType,
+      appType: normalizedAppType,
+      appRange,
+      instances,
+    });
+    return res.json({ ok: true, autoAssigned });
+  } catch (error) {
+    return res.status(400).json({ error: `Auto-assignment failed: ${error.message}` });
+  }
+});
+
 app.post('/api/instances/preflight', requireAuth, requireRole('super_admin'), async (req, res) => {
   const {
     appType = 'school',
