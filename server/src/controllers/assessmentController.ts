@@ -31,6 +31,42 @@ const MAX_SUMMATIVE_TOTAL_MARKS = 100;
 
 type SummativeWithTestArea = { learnerId: string; test?: { learningAreaId?: string | null } | null };
 
+const SUMMATIVE_TEST_TYPE_ALIASES: Record<string, SummativeTestType> = {
+  OPENER: 'OPENER',
+  OPENING: 'OPENER',
+  MIDTERM: 'MID_TERM',
+  MID_TERM: 'MID_TERM',
+  ENDTERM: 'END_TERM',
+  END_TERM: 'END_TERM',
+  END_OF_TERM: 'END_TERM',
+  CAT: 'CAT',
+  ASSESSMENT: 'ASSESSMENT',
+  MONTHLY: 'ASSESSMENT',
+  WEEKLY: 'ASSESSMENT',
+  RANDOM: 'OTHER',
+  MOCK: 'OTHER',
+  MOCK_EXAM: 'OTHER',
+  OTHER: 'OTHER',
+};
+
+function normalizeSummativeTestType(rawType: unknown): SummativeTestType {
+  const normalized = String(rawType || 'ASSESSMENT')
+    .trim()
+    .toUpperCase()
+    .replace(/[\s-]+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '');
+
+  if (SUMMATIVE_TEST_TYPE_ALIASES[normalized]) return SUMMATIVE_TEST_TYPE_ALIASES[normalized];
+  if (normalized.includes('MOCK')) return 'OTHER';
+  if (normalized.includes('MONTH') || normalized.includes('WEEK') || normalized.includes('ASSESS')) return 'ASSESSMENT';
+  if (normalized.includes('MID_TERM') || normalized === 'MID') return 'MID_TERM';
+  if (normalized.includes('END_TERM')) return 'END_TERM';
+  if (normalized.includes('OPEN')) return 'OPENER';
+  if (normalized.includes('CAT')) return 'CAT';
+  return 'ASSESSMENT';
+}
+
 async function filterSummativeResultsBySecondarySelection<T extends SummativeWithTestArea>(results: T[]): Promise<T[]> {
   if (!results.length) return results;
 
@@ -711,7 +747,7 @@ export const createSummativeTest = async (req: AuthRequest, res: Response) => {
     const resolvedLearningArea = resolvedArea.name;
     const resolvedLearningAreaId = resolvedArea.id;
 
-    const resolvedTestType = testType || 'ASSESSMENT';
+    const resolvedTestType = normalizeSummativeTestType(testType);
 
     // Build title: if the provided title already contains the subject name,
     // use it as-is to avoid doubling up ("Maths End Term" → "Maths End Term - Maths - …")
@@ -838,7 +874,7 @@ export const generateTestsBulk = async (req: AuthRequest, res: Response) => {
       .toUpperCase()
       .replace(/\s+/g, '_') as 'TERM_1' | 'TERM_2' | 'TERM_3';
 
-    const resolvedTestType = testType || 'ASSESSMENT';
+    const resolvedTestType = normalizeSummativeTestType(testType);
 
     const gradingSystems = await prisma.gradingSystem.findMany({
       where: {
